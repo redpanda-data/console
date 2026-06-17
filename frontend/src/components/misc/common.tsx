@@ -13,7 +13,6 @@ import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Modal
 import { AlertIcon } from 'components/icons';
 import React, { type PropsWithChildren, useState } from 'react';
 
-import type { TopicLogDirSummary } from '../../state/rest-interfaces';
 import { uiState } from '../../state/ui-state';
 import env, { IsDev } from '../../utils/env';
 import { ZeroSizeWrapper } from '../../utils/tsx-utils';
@@ -122,14 +121,17 @@ export const UpdatePopup = () => {
   );
 };
 
-export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
-  if (!summary.hint) {
-    return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>;
+// Accepts both the REST `TopicLogDirSummary` (number) and the gRPC `ListTopicsResponse_LogDirSummary`
+// (bigint, optional) shapes — only `totalSizeBytes` and `hint` are rendered.
+export function renderLogDirSummary(summary?: { totalSizeBytes: number | bigint; hint?: string | null }): JSX.Element {
+  const totalSizeBytes = Number(summary?.totalSizeBytes ?? 0);
+  if (!summary?.hint) {
+    return <>{prettyBytesOrNA(totalSizeBytes)}</>;
   }
 
   return (
     <>
-      {prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} position="left" />
+      {prettyBytesOrNA(totalSizeBytes)} <WarningToolip content={summary.hint} position="left" />
     </>
   );
 }

@@ -10,7 +10,6 @@ import {
   type ListTopicsRequest,
   ListTopicsRequestSchema,
   type ListTopicsResponse,
-  type ListTopicsResponse_Topic,
   TopicService,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
@@ -21,7 +20,7 @@ import {
   TOPIC_CONFIG_CACHE_STALE_TIME,
 } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
-import type { Topic, TopicDescription } from 'state/rest-interfaces';
+import type { TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { api } from '../../state/backend-api';
@@ -31,66 +30,9 @@ type ListTopicsExtraOptions = {
 };
 
 /**
- * Maps a gRPC `ListTopicsResponse_Topic` to the richer REST-shaped `Topic` consumed across the UI.
- * `documentation` and `allowedActions` are not provided by the gRPC endpoint (they were never part
- * of the REST topic-list response either), so they fall back to their neutral defaults.
- */
-const mapListTopicToRest = (topic: ListTopicsResponse_Topic): Topic => ({
-  topicName: topic.name,
-  isInternal: topic.internal,
-  partitionCount: topic.partitionCount,
-  replicationFactor: topic.replicationFactor,
-  cleanupPolicy: topic.cleanupPolicy,
-  documentation: 'UNKNOWN',
-  logDirSummary: {
-    // total_size_bytes is an int64 → bigint in protobuf-es; the UI works with numbers.
-    totalSizeBytes: Number(topic.logDirSummary?.totalSizeBytes ?? 0n),
-    replicaErrors:
-      topic.logDirSummary?.replicaErrors.map((replicaError) => ({
-        brokerId: replicaError.brokerId,
-        error: replicaError.error,
-      })) ?? null,
-    hint: topic.logDirSummary?.hint ?? null,
-  },
-  allowedActions: undefined,
-});
-
-/**
- * Lists topics via the gRPC `TopicService.ListTopics` endpoint and maps the response to the
- * REST-shaped `Topic` the UI consumes. Returns the full topic list (pagination disabled) so callers
- * can paginate and filter client-side, matching the previous REST `/topics` behavior.
- */
-export const useLegacyListTopicsQuery = (
-  input?: MessageInit<ListTopicsRequest>,
-  {
-    hideInternalTopics = false,
-    staleTime,
-    refetchOnWindowFocus,
-  }: ListTopicsExtraOptions & { staleTime?: number; refetchOnWindowFocus?: boolean } = {}
-) => {
-  const listTopicsRequest = create(ListTopicsRequestSchema, {
-    // -1 disables server-side pagination so the full topic list is returned.
-    pageSize: -1,
-    pageToken: '',
-    ...input,
-  });
-
-  const listTopicsResult = useQuery(listTopics, listTopicsRequest, {
-    staleTime,
-    refetchOnWindowFocus,
-  });
-
-  const allRetrievedTopics = listTopicsResult.data?.topics.map(mapListTopicToRest);
-
-  const topics = hideInternalTopics
-    ? allRetrievedTopics?.filter((topic) => !(topic.isInternal || topic.topicName.startsWith('_')))
-    : allRetrievedTopics;
-
-  return { ...listTopicsResult, data: { topics } };
-};
-
-/**
- * WARNING: Only use once Console v3 is released.
+ * Lists topics via the gRPC `TopicService.ListTopics` endpoint, returning the native gRPC topic
+ * shape (`ListTopicsResponse_Topic`). Defaults to a single page of `MAX_PAGE_SIZE`; pass
+ * `{ pageSize: -1 }` to disable server-side pagination and retrieve the full topic list.
  */
 export const useListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
@@ -105,6 +47,10 @@ export const useListTopicsQuery = (
 
   const listTopicsResult = useQuery(listTopics, listTopicsRequest, {
     enabled: options?.enabled,
+    // Narrow to primitives: the function-form types of these options reference the request message
+    // shape, which would otherwise pollute useQuery's generic inference and mistype the response.
+    staleTime: options?.staleTime as number | undefined,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus as boolean | undefined,
   });
 
   const allRetrievedTopics = listTopicsResult?.data?.topics;

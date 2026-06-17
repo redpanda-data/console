@@ -24,31 +24,30 @@ import {
   DataTable,
   Flex,
   Icon,
-  Popover,
   SearchField,
   Text,
   Tooltip,
   useToast,
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { BanIcon, CheckIcon, ErrorIcon, EyeOffIcon, TrashIcon, WarningIcon } from 'components/icons';
+import { ErrorIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useQueryStateWithCallback } from 'hooks/use-query-state-with-callback';
 import { parseAsBoolean, parseAsString, useQueryState } from 'nuqs';
+import type { ListTopicsResponse_Topic } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import React, { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useListTopicsQuery } from 'react-query/api/topic';
 
 import { CreateTopicModal } from './CreateTopicModal/create-topic-modal';
 import colors from '../../../colors';
 import usePaginationParams from '../../../hooks/use-pagination-params';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { onPaginationChange } from '../../../utils/pagination';
 import { editQuery } from '../../../utils/query-helper';
-import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsx-utils';
+import { Code, DefaultSkeleton } from '../../../utils/tsx-utils';
 import { renderLogDirSummary } from '../../misc/common';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
@@ -75,8 +74,9 @@ const TopicList: FC = () => {
     parseAsBoolean
   );
 
-  const { data, isLoading, isError, refetch: refetchTopics } = useLegacyListTopicsQuery();
-  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  // pageSize -1 disables server-side pagination so the full topic list is returned for client-side filtering.
+  const { data, isLoading, isError, refetch: refetchTopics } = useListTopicsQuery({ pageSize: -1 });
+  const [topicToDelete, setTopicToDelete] = useState<ListTopicsResponse_Topic | null>(null);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
 
   const refreshData = useCallback(() => {
@@ -95,7 +95,7 @@ const TopicList: FC = () => {
   const topics = useMemo(() => {
     let filteredTopics = data.topics ?? [];
     if (!showInternalTopics) {
-      filteredTopics = filteredTopics.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
+      filteredTopics = filteredTopics.filter((x) => !(x.internal || x.name.startsWith('_')));
     }
 
     const searchQuery = localSearchValue;
@@ -106,12 +106,12 @@ const TopicList: FC = () => {
           quickSearchRegExp = new RegExp(searchQuery, 'i');
           QUICK_SEARCH_REGEX_CACHE.set(searchQuery, quickSearchRegExp);
         }
-        filteredTopics = filteredTopics.filter((topic) => Boolean(topic.topicName.match(quickSearchRegExp)));
+        filteredTopics = filteredTopics.filter((topic) => Boolean(topic.name.match(quickSearchRegExp)));
       } catch (_e) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.warn('Invalid expression');
         const searchLower = searchQuery.toLowerCase();
-        filteredTopics = filteredTopics.filter((topic) => topic.topicName.toLowerCase().includes(searchLower));
+        filteredTopics = filteredTopics.filter((topic) => topic.name.toLowerCase().includes(searchLower));
       }
     }
 
@@ -219,29 +219,32 @@ const TopicList: FC = () => {
   );
 };
 
-const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = ({ topics, onDelete }) => {
+const TopicsTable: FC<{
+  topics: ListTopicsResponse_Topic[];
+  onDelete: (record: ListTopicsResponse_Topic) => void;
+}> = ({ topics, onDelete }) => {
   const paginationParams = usePaginationParams(topics.length, uiSettings.topicList.pageSize);
 
   return (
     <div data-testid="topics-table">
-      <DataTable<Topic>
+      <DataTable<ListTopicsResponse_Topic>
         columns={[
           {
             header: 'Name',
-            accessorKey: 'topicName',
+            accessorKey: 'name',
             cell: ({ row: { original: topic } }) => {
               const leaderLessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-                ({ topicName }) => topicName === topic.topicName
+                ({ topicName }) => topicName === topic.name
               )?.partitionIds;
               const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-                ({ topicName }) => topicName === topic.topicName
+                ({ topicName }) => topicName === topic.name
               )?.partitionIds;
 
               return (
                 <Flex alignItems="center" gap={2} whiteSpace="break-spaces" wordBreak="break-word">
                   <Link
-                    data-testid={`topic-link-${topic.topicName}`}
-                    params={{ topicName: encodeURIComponent(topic.topicName) }}
+                    data-testid={`topic-link-${topic.name}`}
+                    params={{ topicName: encodeURIComponent(topic.name) }}
                     search={{} as never}
                     to="/topics/$topicName"
                   >
@@ -300,7 +303,7 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
               <Flex gap={1}>
                 <DeleteDisabledTooltip topic={record}>
                   <button
-                    data-testid={`delete-topic-button-${record.topicName}`}
+                    data-testid={`delete-topic-button-${record.name}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       onDelete(record);
@@ -329,83 +332,16 @@ const TopicsTable: FC<{ topics: Topic[]; onDelete: (record: Topic) => void }> = 
   );
 };
 
-const iconAllowed = (
-  <span style={{ color: 'green' }}>
-    <CheckIcon size={16} />
-  </span>
-);
-const iconForbidden = (
-  <span style={{ color: '#ca000a' }}>
-    <BanIcon size={15} />
-  </span>
-);
-const iconClosedEye = (
-  <span style={{ color: '#0008', paddingLeft: '4px', transform: 'translateY(-1px)', display: 'inline-block' }}>
-    <EyeOffIcon size={14} />
-  </span>
-);
-
-const TopicName = ({ topic }: { topic: Topic }) => {
-  const actions = topic.allowedActions;
-
-  if (!actions || actions[0] === 'all') {
-    return topic.topicName; // happens in non-business version
-  }
-
-  let missing = 0;
-  for (const a of TopicActions) {
-    if (!actions.includes(a)) {
-      missing += 1;
-    }
-  }
-
-  if (missing === 0) {
-    return topic.topicName; // everything is allowed
-  }
-
-  // There's at least one action the user can't do
-  // Show a table of what they can't do
-  const popoverContent = (
-    <div>
-      <div style={{ marginBottom: '1em' }}>
-        You're missing permissions to view
-        <br />
-        one more aspects of this topic.
-      </div>
-      {QuickTable(
-        TopicActions.map((a) => ({
-          key: a,
-          value: actions.includes(a) ? iconAllowed : iconForbidden,
-        })),
-        {
-          gapWidth: '6px',
-          gapHeight: '2px',
-          keyAlign: 'right',
-          keyStyle: { fontSize: '86%', fontWeight: 700, textTransform: 'capitalize' },
-          tableStyle: { margin: 'auto' },
-        }
-      )}
-    </div>
-  );
-
-  return (
-    <Box whiteSpace="break-spaces" wordBreak="break-word">
-      <Popover closeDelay={10} content={popoverContent} hideCloseButton placement="right" size="stretch">
-        <span>
-          {topic.topicName}
-          {iconClosedEye}
-        </span>
-      </Popover>
-    </Box>
-  );
-};
+// The gRPC ListTopics endpoint does not return per-topic permissions, so the topic name is rendered
+// as-is (the previous REST-based permission popover was dead code — allowedActions was never set).
+const TopicName = ({ topic }: { topic: ListTopicsResponse_Topic }) => <>{topic.name}</>;
 
 function ConfirmDeletionModal({
   topicToDelete,
   onFinish,
   onCancel,
 }: {
-  topicToDelete: Topic | null;
+  topicToDelete: ListTopicsResponse_Topic | null;
   onFinish: () => void;
   onCancel: () => void;
 }) {
@@ -427,7 +363,7 @@ function ConfirmDeletionModal({
       title: 'Topic Deleted',
       description: (
         <Text as="span">
-          Topic <Code>{topicToDelete?.topicName}</Code> deleted
+          Topic <Code>{topicToDelete?.name}</Code> deleted
         </Text>
       ),
       status: 'success',
@@ -452,14 +388,14 @@ function ConfirmDeletionModal({
                 {`An error occurred: ${typeof error === 'string' ? error : (error?.message ?? 'Unknown error')}`}
               </Alert>
             )}
-            {Boolean(topicToDelete?.isInternal) && (
+            {Boolean(topicToDelete?.internal) && (
               <Alert mb={2} status="error">
                 <AlertIcon />
                 This is an internal topic, deleting it might have unintended side-effects!
               </Alert>
             )}
             <Text>
-              Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br />
+              Are you sure you want to delete topic <Code>{topicToDelete?.name}</Code>?<br />
               This action cannot be undone.
             </Text>
           </AlertDialogBody>
@@ -474,10 +410,10 @@ function ConfirmDeletionModal({
               isLoading={deletionPending}
               ml={3}
               onClick={() => {
-                if (topicToDelete?.topicName) {
+                if (topicToDelete?.name) {
                   setDeletionPending(true);
                   api
-                    .deleteTopic(topicToDelete?.topicName)
+                    .deleteTopic(topicToDelete?.name)
                     .then(finish)
                     .catch((err) => {
                       toast({
@@ -501,7 +437,7 @@ function ConfirmDeletionModal({
   );
 }
 
-function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): JSX.Element {
+function DeleteDisabledTooltip(props: { topic: ListTopicsResponse_Topic; children: JSX.Element }): JSX.Element {
   const deleteButton = props.children;
 
   const wrap = (button: JSX.Element, message: string) => (

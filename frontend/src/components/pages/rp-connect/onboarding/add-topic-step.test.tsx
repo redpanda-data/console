@@ -60,18 +60,16 @@ import { AddTopicStep } from './add-topic-step';
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-/** REST response for useLegacyListTopicsQuery */
+/** gRPC ListTopicsResponse (proto JSON shape) for useListTopicsQuery */
 function createTopicsResponse(topicNames: string[]) {
   return {
     topics: topicNames.map((name) => ({
-      topicName: name,
-      isInternal: false,
+      name,
+      internal: false,
       partitionCount: 1,
       replicationFactor: 3,
       cleanupPolicy: 'delete',
-      documentation: 'UNKNOWN' as const,
-      logDirSummary: { totalSizeBytes: 0, partitionCount: 0, replicaErrors: [] },
-      allowedActions: undefined,
+      logDirSummary: { totalSizeBytes: 0, replicaErrors: [], hint: '' },
     })),
   };
 }
