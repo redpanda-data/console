@@ -126,8 +126,6 @@ const RpConnectPipelinesCreateContent = () => {
 
   return (
     <PageContent>
-      {/* Page top divider. Negative margin cancels the layout's pt-8. */}
-      <div className="-mt-8 border-divider-default border-b" />
       <div className="my-2">
         <UIText>
           For help creating your pipeline, see our{' '}
