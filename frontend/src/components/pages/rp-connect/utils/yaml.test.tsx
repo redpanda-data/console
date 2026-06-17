@@ -8,17 +8,21 @@ import {
   applyRedpandaSetup,
   buildInsertableComponent,
   configToYaml,
+  createResourceAndReturnLabel,
   type EditTarget,
   extractAllTopics,
   extractConnectorTopics,
   generateYamlFromWizardData,
   getComponentAt,
   getConnectTemplate,
+  insertComponentAt,
   insertProcessorAt,
+  listResourceLabels,
   mergeConnectConfigs,
   parseConfigComponents,
   patchRedpandaConfig,
   removeComponentAt,
+  renameResourceLabel,
   setComponentAt,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
@@ -1672,6 +1676,134 @@ output:
       const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
       const parsed = parseYaml(next as string) as { cache_resources: Record<string, unknown>[] };
       expect(parsed.cache_resources).toEqual([{ label: 'c', memory: {} }]);
+    });
+  });
+
+  describe('insertComponentAt (nested)', () => {
+    const switchYaml = `pipeline:
+  processors:
+    - switch:
+        - check: a == 1
+          processors:
+            - mapping: 'root = this'
+        - processors:
+            - mapping: 'root = that'
+output:
+  drop: {}`;
+
+    test('inserts a processor into a specific switch case at an index', () => {
+      const casePath = ['pipeline', 'processors', 0, 'switch', 0, 'processors'];
+      const next = insertComponentAt(switchYaml, casePath, 0, { log: { message: 'first' } });
+      expect(next).not.toBeNull();
+      const parsed = parseYaml(next as string) as {
+        pipeline: { processors: { switch: { processors: Record<string, unknown>[] }[] }[] };
+      };
+      const case0 = parsed.pipeline.processors[0].switch[0].processors;
+      expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
+      // The other case is untouched.
+      expect(parsed.pipeline.processors[0].switch[1].processors).toEqual([{ mapping: 'root = that' }]);
+    });
+
+    test('creates a nested processors array when the container has none yet', () => {
+      const branchYaml = `pipeline:
+  processors:
+    - branch:
+        request_map: 'root = this'
+output:
+  drop: {}`;
+      const next = insertComponentAt(branchYaml, ['pipeline', 'processors', 0, 'branch', 'processors'], 0, {
+        mapping: 'root = x',
+      });
+      const parsed = parseYaml(next as string) as {
+        pipeline: { processors: { branch: { processors: unknown[]; request_map: string } }[] };
+      };
+      expect(parsed.pipeline.processors[0].branch.processors).toEqual([{ mapping: 'root = x' }]);
+      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+    });
+
+    test('appends a structural switch-case skeleton', () => {
+      const next = insertComponentAt(switchYaml, ['pipeline', 'processors', 0, 'switch'], 99, {
+        check: '',
+        processors: [],
+      });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { switch: unknown[] }[] } };
+      expect(parsed.pipeline.processors[0].switch).toHaveLength(3);
+      expect(parsed.pipeline.processors[0].switch.at(-1)).toEqual({ check: '', processors: [] });
+    });
+  });
+
+  describe('resource references', () => {
+    const withResources = `pipeline:
+  processors:
+    - cache:
+        resource: dedupe
+        operator: add
+        key: x
+    - branch:
+        processors:
+          - cache:
+              resource: dedupe
+              operator: get
+              key: y
+    - rate_limit:
+        resource: limiter
+output:
+  drop: {}
+cache_resources:
+  - label: dedupe
+    memory: {}
+rate_limit_resources:
+  - label: limiter
+    local: { count: 1, interval: 1s }`;
+
+    test('listResourceLabels returns labels per kind', () => {
+      expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
+      expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
+      expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
+    });
+
+    test('renameResourceLabel cascades to every reference (incl. nested), leaving others intact', () => {
+      const next = renameResourceLabel(withResources, 'cache_resources', 0, 'dedupe_v2');
+      expect(next).not.toBeNull();
+      const parsed = parseYaml(next as string) as {
+        pipeline: {
+          processors: { cache?: { resource: string }; branch?: { processors: { cache: { resource: string } }[] } }[];
+        };
+        cache_resources: { label: string }[];
+        rate_limit_resources: { local: unknown }[];
+      };
+      expect(parsed.cache_resources[0].label).toBe('dedupe_v2');
+      // Top-level + nested cache references both follow the rename.
+      expect(parsed.pipeline.processors[0].cache?.resource).toBe('dedupe_v2');
+      expect(parsed.pipeline.processors[1].branch?.processors[0].cache.resource).toBe('dedupe_v2');
+      // The unrelated rate_limit reference is untouched.
+      const yamlStr = next as string;
+      expect(yamlStr).toContain('resource: limiter');
+    });
+
+    test('renameResourceLabel leaves references alone when nothing matches the old label', () => {
+      const next = renameResourceLabel(withResources, 'cache_resources', 0, 'dedupe') as string;
+      // No-op rename (same label) keeps references valid.
+      expect(listResourceLabels(next, 'cache')).toEqual(['dedupe']);
+    });
+
+    test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {
+      const base = 'output:\n  drop: {}';
+      const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
+      expect(result).not.toBeNull();
+      expect(result?.label).toBeTruthy();
+      const parsed = parseYaml((result as { yaml: string }).yaml) as { cache_resources: { label: string }[] };
+      expect(parsed.cache_resources).toHaveLength(1);
+      expect(parsed.cache_resources[0].label).toBe(result?.label);
+      // The label the caller gets back is exactly the one it can link into a node.
+      expect(listResourceLabels((result as { yaml: string }).yaml, 'cache')).toContain(result?.label);
+    });
+
+    test('createResourceAndReturnLabel makes the label collision-safe', () => {
+      const base = 'cache_resources:\n  - label: memory\n    memory: {}\noutput:\n  drop: {}';
+      const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
+      expect(result?.label).not.toBe('memory');
+      expect(listResourceLabels((result as { yaml: string }).yaml, 'cache')).toHaveLength(2);
     });
   });
 

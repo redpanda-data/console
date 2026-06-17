@@ -55,14 +55,15 @@ describe('PipelineStructureTree', () => {
     expect(highlightId).toBe(editableId);
   });
 
-  it('resolves a structural sub-node (switch case) to its editable ancestor', async () => {
+  it('resolves a switch case to itself so its routing condition is editable', async () => {
     const onSelectNode = vi.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     await userEvent.click(screen.getByText('case 1'));
     const [highlightId, editableId] = onSelectNode.mock.calls[0];
-    // The case row itself is highlighted, but the editor reveals the parent switch.
+    // The case is now selectable in its own right (switchCase editTarget) so the
+    // inspector can edit its `check` — both ids point at the case row.
     expect(highlightId).toContain('case');
-    expect(editableId).toBe('proc-1');
+    expect(editableId).toContain('case');
   });
 
   it('collapses a group to hide its descendants', async () => {

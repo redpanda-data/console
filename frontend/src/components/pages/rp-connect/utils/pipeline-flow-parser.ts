@@ -74,6 +74,18 @@ export type PipelineFlowNode = {
   // renders as a condition-forward "case" card and, when clicked, selects its
   // parent switch rather than itself.
   isCase?: boolean;
+  // For container nodes that accept new children: the YAML path of the array to
+  // insert into, and the component kind that array holds. Drives the in-container
+  // "+" affordances (add a processor into a switch case, an input into a broker, …).
+  insertSlot?: { containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output' };
+  // For a `switch` node: the path of its `cases`/value array and the section its
+  // cases live in, so we can append a fresh (structural) case skeleton.
+  addChildSlot?: { containerPath: (string | number)[]; section: 'processor' | 'output' };
+  // A component references a resource (`resource:`) whose label has no matching
+  // `*_resources` entry — a dangling link. Drives an error badge + quick-fix.
+  danglingRef?: boolean;
+  // For a resource node: how many components reference its label (for "Used by N").
+  usedByCount?: number;
 };
 
 type BranchContext = {
@@ -134,6 +146,11 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
       collapsible: true,
       // A `sequence` input runs its children in order; broker/switch/fallback fan out.
       childFlow: spec.groupLabel === 'sequence' ? 'sequential' : 'parallel',
+      // An output `switch` grows by appending a (structural) case; its cases hold one
+      // output each, so they don't take child inserts (unlike a processor switch).
+      ...(spec.section === 'output' && spec.groupLabel === 'switch'
+        ? { addChildSlot: { containerPath: ['output', 'switch', 'cases'], section: 'output' as const } }
+        : {}),
     },
     ...children.map(
       (child, i): PipelineFlowNode => ({
@@ -371,8 +388,12 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       condition: hasCheck ? (check as string) : undefined,
       isDefault: hasCheck ? undefined : true,
       isErrorPath: isErroredCheck(check) ? true : undefined,
-      // A structural sub-node: no editTarget (clicking selects the parent switch).
       isCase: true,
+      // The case object is editable for its routing condition (`check`); its processors
+      // are their own nodes. Selecting the case opens the condition editor.
+      editTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
+      // Explicit so even an empty case (no children to derive from) is fillable.
+      insertSlot: { containerPath: [...ctx.path, ci, 'processors'], accepts: 'processor' },
     });
     pushProcessorChildren(nodes, caseProcs, {
       ...ctx,
@@ -527,7 +548,10 @@ function parseDirectArrayBranching(
   if (componentName === 'switch') {
     const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
     if (caseNodes.length > 0) {
-      return [makeGroup(componentName, ctx), ...caseNodes];
+      const group = makeGroup(componentName, ctx);
+      // The switch can grow a new (structural) case appended to its value array.
+      group.addChildSlot = { containerPath: valuePath, section: 'processor' };
+      return [group, ...caseNodes];
     }
     return [makeLeaf(componentName, ctx)];
   }
@@ -786,9 +810,67 @@ export function parsePipelineFlowTree(
     buildResourceSection(nodes, config);
     buildOutputSection(nodes, config);
 
+    annotateFlowMeta(nodes);
+
     return { nodes: prefix ? prefixNodeIds(nodes, prefix) : nodes };
   } catch (err) {
     return { nodes: [], error: err instanceof Error ? err.message : 'Invalid YAML' };
+  }
+}
+
+// A single post-parse pass that derives cross-node metadata the per-node parsers
+// can't see in isolation: which containers accept inserts, which resource references
+// dangle, and how many components use each resource.
+function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
+  const childrenByParent = new Map<string, PipelineFlowNode[]>();
+  for (const node of nodes) {
+    if (node.parentId) {
+      const list = childrenByParent.get(node.parentId);
+      if (list) {
+        list.push(node);
+      } else {
+        childrenByParent.set(node.parentId, [node]);
+      }
+    }
+  }
+
+  // Insert slots: a container whose children sit at numeric indices of a YAML array
+  // (broker inputs/outputs, fallback tiers, branch/while/catch processors, switch-case
+  // processors) can accept a new child into that array. Derived from any one child's
+  // path; parse-site slots (empty switch cases) are left untouched.
+  for (const node of nodes) {
+    if (node.kind !== 'group' || node.insertSlot) {
+      continue;
+    }
+    const child = childrenByParent
+      .get(node.id)
+      ?.find((c) => c.editTarget?.kind === 'path' && typeof c.editTarget.path.at(-1) === 'number');
+    if (child && child.editTarget?.kind === 'path') {
+      node.insertSlot = {
+        containerPath: child.editTarget.path.slice(0, -1),
+        accepts: child.editTarget.componentType as 'input' | 'processor' | 'output',
+      };
+    }
+  }
+
+  // Resource references: flag dangling links and count usages per label.
+  const resourceLabels = new Set<string>();
+  const usedBy = new Map<string, number>();
+  for (const node of nodes) {
+    if (node.section === 'resource' && node.labelText) {
+      resourceLabels.add(node.labelText);
+    }
+    if (node.resourceRef) {
+      usedBy.set(node.resourceRef, (usedBy.get(node.resourceRef) ?? 0) + 1);
+    }
+  }
+  for (const node of nodes) {
+    if (node.resourceRef && !resourceLabels.has(node.resourceRef)) {
+      node.danglingRef = true;
+    }
+    if (node.section === 'resource' && node.labelText) {
+      node.usedByCount = usedBy.get(node.labelText) ?? 0;
+    }
   }
 }
 
@@ -1247,6 +1329,36 @@ function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   };
 }
 
+// What an in-container "+" affordance does when clicked: insert a chosen component
+// into a nested array (switch case / branch / broker / fallback), or append a fresh
+// structural case to a switch. Carried on `flowInsert` nodes and handed to the editor.
+export type FlowInsertPayload =
+  | { kind: 'insert'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
+  | { kind: 'addChild'; containerPath: (string | number)[]; section: 'processor' | 'output' };
+
+// Height of the in-container insert affordance row (full canvas only).
+const FLOW_INSERT_SLOT_H = 30;
+
+// The insert affordance a container shows at the foot of its child stack, if any.
+// Skipped in the compact lane (read-only) and while collapsed (children hidden).
+function insertAffordanceFor(
+  node: PipelineFlowNode,
+  collapsed: boolean,
+  compact: boolean,
+  childCount: number
+): FlowInsertPayload | null {
+  if (compact || collapsed) {
+    return null;
+  }
+  if (node.insertSlot) {
+    return { kind: 'insert', ...node.insertSlot, index: childCount };
+  }
+  if (node.addChildSlot) {
+    return { kind: 'addChild', ...node.addChildSlot };
+  }
+  return null;
+}
+
 function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
   // The compact lane draws no fan-out/copy/merge edges, so it needs no routing
   // gutters — children just nest in by a consistent small inset.
@@ -1271,9 +1383,14 @@ function measureFlowNode(
 ): SizedNode {
   const collapsed = collapsedIds.has(node.id);
   const kids = node.kind === 'group' && !collapsed ? childrenOf(node.id) : [];
+  const affordance = insertAffordanceFor(node, collapsed, dims.compact, kids.length);
   if (kids.length === 0) {
-    // A collapsed group is a standalone card sized so the spine hits its centre;
-    // an empty group keeps the bare header height; leaves are content-sized.
+    // An empty container that still accepts inserts (e.g. a freshly added switch case)
+    // keeps room for its "+" row; otherwise a collapsed group is a standalone card, an
+    // empty group keeps the bare header, and leaves are content-sized.
+    if (node.kind === 'group' && affordance) {
+      return { node, w: dims.cardW, h: dims.headerH + FLOW_INSERT_SLOT_H + 2 * dims.pad, collapsed, children: [] };
+    }
     let h = leafCardHeight(node, dims);
     if (node.kind === 'group') {
       h = collapsed ? dims.collapsedH : dims.headerH;
@@ -1283,7 +1400,11 @@ function measureFlowNode(
   const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds, dims));
   const insets = containerInsets(node, dims);
   const innerW = Math.max(...children.map((c) => c.w));
-  const innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
+  let innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
+  // Reserve a row at the foot of the stack for the "+" affordance, like an extra child.
+  if (affordance) {
+    innerH += insets.gap + FLOW_INSERT_SLOT_H;
+  }
   return {
     node,
     w: innerW + insets.left + insets.right,
@@ -1370,6 +1491,10 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.missingSasl ? { missingSasl: true } : {}),
     ...(node.isCase ? { isCase: true } : {}),
     ...(node.editTarget ? { editTarget: node.editTarget } : {}),
+    ...(node.insertSlot ? { insertSlot: node.insertSlot } : {}),
+    ...(node.addChildSlot ? { addChildSlot: node.addChildSlot } : {}),
+    ...(node.danglingRef ? { danglingRef: true } : {}),
+    ...(typeof node.usedByCount === 'number' ? { usedByCount: node.usedByCount } : {}),
     ...(childCount > 0 ? { childCount } : {}),
     ...routingData(node, compact),
   };
@@ -1430,6 +1555,25 @@ function emitFlowNode(
 
   if (isContainer && children.length > 0) {
     emitContainerEdges(node, children, ctx);
+  }
+
+  // The in-container "+" row, stacked like a final child (see measureFlowNode).
+  const affordance = insertAffordanceFor(node, collapsed, ctx.compact, children.length);
+  if (isContainer && affordance) {
+    const label = affordance.kind === 'addChild' ? 'Add case' : `Add ${affordance.accepts}`;
+    ctx.rfNodes.push({
+      id: `${node.id}-insert`,
+      type: 'flowInsert',
+      parentId: node.id,
+      extent: 'parent',
+      position: { x: insets.left, y: childY },
+      initialWidth: w - insets.left - insets.right,
+      initialHeight: FLOW_INSERT_SLOT_H,
+      selectable: false,
+      draggable: false,
+      style: { pointerEvents: 'all' },
+      data: { payload: affordance, label },
+    });
   }
 }
 

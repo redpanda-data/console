@@ -26,7 +26,12 @@ import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
 import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
-import { computeFlowLayout, type FlowOrientation, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import {
+  computeFlowLayout,
+  type FlowInsertPayload,
+  type FlowOrientation,
+  parsePipelineFlowTree,
+} from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
@@ -193,6 +198,7 @@ type CanvasCallbacks = {
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
+  onSlotInsert?: (payload: FlowInsertPayload) => void;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
@@ -231,6 +237,9 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   }
   if (data.missingSasl && cb.onAddSasl) {
     data.onAddSasl = cb.onAddSasl;
+  }
+  if (node.type === 'flowInsert' && cb.onSlotInsert) {
+    (data as { onInsert?: (payload: FlowInsertPayload) => void }).onInsert = cb.onSlotInsert;
   }
   // A node that wasn't here last render (e.g. a child revealed by expanding its
   // container) should appear in place — not slide in from the canvas origin. Drop
@@ -390,6 +399,7 @@ type PipelineFlowCanvasProps = {
   onClearSelection?: () => void;
   // Edit-mode callbacks. When omitted the canvas is a read-only viewer.
   onInsert?: (processorIndex: number) => void;
+  onSlotInsert?: (payload: FlowInsertPayload) => void;
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
@@ -407,6 +417,7 @@ export function PipelineFlowCanvas({
   onSelectNode,
   onClearSelection,
   onInsert,
+  onSlotInsert,
   onAddConnector,
   onAddTopic,
   onAddSasl,
@@ -440,6 +451,7 @@ export function PipelineFlowCanvas({
       onAddConnector,
       onAddTopic,
       onAddSasl,
+      onSlotInsert,
       collapsedIds,
       toggleCollapse,
       selectedNodeId,
@@ -488,6 +500,7 @@ export function PipelineFlowCanvas({
     onAddConnector,
     onAddTopic,
     onAddSasl,
+    onSlotInsert,
   ]);
 
   // Record the committed node ids so the next render can tell which nodes are new

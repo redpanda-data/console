@@ -35,6 +35,7 @@ import {
   FLOW_COMPACT_CARD_WIDTH,
   FLOW_SPINE_HANDLE_LEFT,
   FLOW_SPINE_HANDLE_TOP,
+  type FlowInsertPayload,
 } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
@@ -659,6 +660,33 @@ const FlowSectionLabel = ({ data }: { data: { label?: string } }) => (
   </Text>
 );
 
+export type FlowInsertData = {
+  label?: string;
+  payload?: FlowInsertPayload;
+  // Injected by the canvas (edit mode only). Absent in read-only mode → not rendered.
+  onInsert?: (payload: FlowInsertPayload) => void;
+};
+
+// The in-container "+" row: a dashed, full-width add button at the foot of a switch
+// case / branch / broker stack. Only interactive in edit mode (onInsert injected).
+const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
+  if (!(data.onInsert && data.payload)) {
+    return null;
+  }
+  const payload = data.payload;
+  return (
+    <button
+      aria-label={data.label ?? 'Add'}
+      className="nodrag nopan flex h-full w-full cursor-pointer items-center justify-center gap-1 rounded-md border border-border border-dashed text-muted-foreground text-xs transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+      onClick={() => data.onInsert?.(payload)}
+      type="button"
+    >
+      <PlusIcon className="size-3.5" />
+      {data.label}
+    </button>
+  );
+};
+
 export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, data }: EdgeProps) {
   // The spine runs along a single row, so a straight line reads cleanest.
   const [path, labelX, labelY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
@@ -908,6 +936,7 @@ export const flowNodeTypes = {
   flowCard: FlowCardNode,
   flowContainer: FlowContainerNode,
   flowSectionLabel: FlowSectionLabel,
+  flowInsert: FlowInsertNode,
 };
 
 export const flowEdgeTypes = {

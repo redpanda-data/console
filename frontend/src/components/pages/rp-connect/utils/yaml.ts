@@ -1,7 +1,7 @@
 import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { Document, isSeq, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
+import { Document, isScalar, isSeq, parseDocument, parse as parseYaml, visit, stringify as yamlStringify } from 'yaml';
 
 import { schemaToConfig } from './schema';
 import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
@@ -987,7 +987,10 @@ export type EditTarget =
   | { kind: 'output' }
   | { kind: 'processor'; index: number }
   | { kind: 'resource'; resourceKey: ResourceArrayKey; index: number }
-  | { kind: 'path'; path: (string | number)[]; componentType: ConnectComponentType };
+  | { kind: 'path'; path: (string | number)[]; componentType: ConnectComponentType }
+  // A `switch` case object (`{ check, processors|output }`) — edited for its routing
+  // condition; its body components are their own nodes.
+  | { kind: 'switchCase'; path: (string | number)[] };
 
 /** The YAML path (for `getIn`/`setIn`) of an edit target's component object. */
 export function editTargetPath(target: EditTarget): (string | number)[] {
@@ -999,6 +1002,7 @@ export function editTargetPath(target: EditTarget): (string | number)[] {
     case 'processor':
       return ['pipeline', 'processors', target.index];
     case 'path':
+    case 'switchCase':
       return target.path;
     default:
       return [target.resourceKey, target.index];
@@ -1026,7 +1030,7 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
     }
   } else if (target.kind === 'resource' && isEmptySeq(doc.getIn([target.resourceKey]))) {
     doc.delete(target.resourceKey);
-  } else if (target.kind === 'path') {
+  } else if (target.kind === 'path' || target.kind === 'switchCase') {
     // Removing a nested component: if its containing array is now empty, drop the
     // array key too (e.g. an emptied branch's `processors`) so it doesn't linger.
     const last = target.path.at(-1);
@@ -1077,26 +1081,42 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
   }
 }
 
-/** Insert a processor object into `pipeline.processors` at `index` (creating structure as needed). */
-export function insertProcessorAt(
+/**
+ * Insert a component object into any array in the config at `index` (creating the
+ * array as needed). `containerPath` is the YAML path of the target array — e.g.
+ * `['pipeline','processors']` (top level), `['pipeline','processors',0,'switch','cases',1,'processors']`
+ * (a switch case's processors), or `['input','broker','inputs']`. This is the one
+ * primitive behind every visual insertion, nested or not.
+ */
+export function insertComponentAt(
   yaml: string,
+  containerPath: (string | number)[],
   index: number,
-  processorObject: Record<string, unknown>
+  componentObject: Record<string, unknown>
 ): string | null {
   try {
     const doc = parseDocument(yaml);
-    const seq = doc.getIn(['pipeline', 'processors']);
+    const seq = doc.getIn(containerPath);
     if (isSeq(seq)) {
       const clamped = Math.max(0, Math.min(index, seq.items.length));
-      seq.items.splice(clamped, 0, doc.createNode(processorObject));
+      seq.items.splice(clamped, 0, doc.createNode(componentObject));
     } else {
-      // No processors yet — create the array with this item as its only element.
-      doc.setIn(['pipeline', 'processors'], [processorObject]);
+      // No array yet (or the container is absent) — create it with this lone item.
+      doc.setIn(containerPath, [componentObject]);
     }
     return doc.toString();
   } catch {
     return null;
   }
+}
+
+/** Insert a processor object into `pipeline.processors` at `index`. Thin wrapper over `insertComponentAt`. */
+export function insertProcessorAt(
+  yaml: string,
+  index: number,
+  processorObject: Record<string, unknown>
+): string | null {
+  return insertComponentAt(yaml, ['pipeline', 'processors'], index, processorObject);
 }
 
 /** Append a resource object to a resource array (creating the array as needed). */
@@ -1126,7 +1146,7 @@ export function appendResource(
  */
 export function buildInsertableComponent(
   connectionName: string,
-  connectionType: 'processor' | 'cache' | 'rate_limit',
+  connectionType: 'processor' | 'cache' | 'rate_limit' | 'input' | 'output',
   components: ConnectComponentSpec[]
 ): Record<string, unknown> | undefined {
   const yaml = getConnectTemplate({ connectionName, connectionType, components, existingYaml: '' });
@@ -1142,10 +1162,166 @@ export function buildInsertableComponent(
       const procs = (parsed.pipeline as { processors?: unknown[] } | undefined)?.processors;
       return Array.isArray(procs) ? (procs[0] as Record<string, unknown>) : undefined;
     }
+    if (connectionType === 'input' || connectionType === 'output') {
+      // A bare input/output object (e.g. `{ kafka: {...} }`) to splice into a
+      // broker/fallback/switch member array.
+      const obj = parsed[connectionType];
+      return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
+    }
     const key: ResourceArrayKey = connectionType === 'cache' ? 'cache_resources' : 'rate_limit_resources';
     const arr = parsed[key];
     return Array.isArray(arr) ? (arr[0] as Record<string, unknown>) : undefined;
   } catch {
     return;
+  }
+}
+
+// ============================================================================
+// Resource references (cache/rate_limit) — link by label, no manual sync.
+// ----------------------------------------------------------------------------
+// A `cache`/`rate_limit` processor points at a resource via its `resource:` field,
+// which must equal a `*_resources` entry's `label:`. These helpers let the visual
+// editor offer a typed dropdown, create-and-link in one step, and rename a label
+// while cascading the change to every reference — so labels never drift out of sync.
+// ============================================================================
+
+export type ResourceKind = 'cache' | 'rate_limit';
+
+const RESOURCE_KEY_BY_KIND: Record<ResourceKind, ResourceArrayKey> = {
+  cache: 'cache_resources',
+  rate_limit: 'rate_limit_resources',
+};
+
+/** Labels of every resource of a kind, in document order — the options for a reference dropdown. */
+export function listResourceLabels(yaml: string, kind: ResourceKind): string[] {
+  try {
+    const node = parseDocument(yaml).getIn([RESOURCE_KEY_BY_KIND[kind]]) as { toJSON?: () => unknown } | undefined;
+    const items = node?.toJSON?.();
+    if (!Array.isArray(items)) {
+      return [];
+    }
+    return items
+      .map((r) => (r && typeof r === 'object' ? (r as Record<string, unknown>).label : undefined))
+      .filter((l): l is string => typeof l === 'string' && l !== '');
+  } catch {
+    return [];
+  }
+}
+
+/** Pick a label not already used by a resource of this kind, suffixing `_N` on collision. */
+function uniqueResourceLabel(existing: string[], base: string): string {
+  if (!existing.includes(base)) {
+    return base;
+  }
+  let counter = 1;
+  while (existing.includes(`${base}_${counter}`)) {
+    counter += 1;
+  }
+  return `${base}_${counter}`;
+}
+
+/**
+ * Create a new resource of `kind` from a connector template and return the YAML plus
+ * its (collision-safe) label, so the caller can immediately select it back into the
+ * node's `resource:` field — create-and-link in one action.
+ */
+export function createResourceAndReturnLabel(
+  yaml: string,
+  kind: ResourceKind,
+  connectionName: string,
+  components: ConnectComponentSpec[]
+): { yaml: string; label: string } | null {
+  const resourceObject = buildInsertableComponent(connectionName, kind, components);
+  if (!resourceObject) {
+    return null;
+  }
+  try {
+    const doc = parseDocument(yaml);
+    const key = RESOURCE_KEY_BY_KIND[kind];
+    const base =
+      typeof resourceObject.label === 'string' && resourceObject.label !== '' ? resourceObject.label : connectionName;
+    const label = uniqueResourceLabel(listResourceLabels(yaml, kind), base);
+    resourceObject.label = label;
+    const seq = doc.getIn([key]);
+    if (isSeq(seq)) {
+      seq.items.push(doc.createNode(resourceObject));
+    } else {
+      doc.setIn([key], [resourceObject]);
+    }
+    return { yaml: doc.toString(), label };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Repoint every `resource:` reference from `oldLabel` to `newLabel` across the whole
+ * document. Matches by string value, consistent with the editor's label-based linking.
+ */
+export function renameResourceReferences(yaml: string, oldLabel: string, newLabel: string): string | null {
+  if (oldLabel === '' || oldLabel === newLabel) {
+    return yaml;
+  }
+  try {
+    const doc = parseDocument(yaml);
+    visit(doc, {
+      Pair(_, pair) {
+        if (
+          isScalar(pair.key) &&
+          pair.key.value === 'resource' &&
+          isScalar(pair.value) &&
+          pair.value.value === oldLabel
+        ) {
+          pair.value.value = newLabel;
+        }
+      },
+    });
+    return doc.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Rename a resource's `label:` and cascade the change to every `resource:` reference
+ * pointing at the old label — so renaming never leaves dangling references.
+ */
+export function renameResourceLabel(
+  yaml: string,
+  resourceKey: ResourceArrayKey,
+  index: number,
+  newLabel: string
+): string | null {
+  try {
+    const doc = parseDocument(yaml);
+    const oldLabel = doc.getIn([resourceKey, index, 'label']);
+    doc.setIn([resourceKey, index, 'label'], newLabel);
+    const withLabel = doc.toString();
+    return typeof oldLabel === 'string'
+      ? (renameResourceReferences(withLabel, oldLabel, newLabel) ?? withLabel)
+      : withLabel;
+  } catch {
+    return null;
+  }
+}
+
+/** Count how many components reference a resource label (via their `resource:` field). */
+export function countResourceReferences(yaml: string, label: string): number {
+  if (!label) {
+    return 0;
+  }
+  try {
+    const doc = parseDocument(yaml);
+    let count = 0;
+    visit(doc, {
+      Pair(_, pair) {
+        if (isScalar(pair.key) && pair.key.value === 'resource' && isScalar(pair.value) && pair.value.value === label) {
+          count += 1;
+        }
+      },
+    });
+    return count;
+  } catch {
+    return 0;
   }
 }

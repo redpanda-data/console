@@ -9,7 +9,7 @@ import {
 import { Link } from 'components/redpanda-ui/components/typography';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-import { ConnectTiles } from './connect-tiles';
+import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType } from '../types/schema';
 
 function getDocsUrl(connectorType?: ConnectComponentType | ConnectComponentType[]): string | null {
@@ -60,16 +60,12 @@ export const AddConnectorDialog = ({
             ) : null}
           </DialogDescription>
         </DialogHeader>
-        <DialogBody>
-          <ConnectTiles
-            className="px-0 py-0"
+        <DialogBody padding="none" scrollShadow={false}>
+          <ConnectCommandPalette
+            allowedTypes={typeFilter}
             components={components}
-            componentTypeFilter={typeFilter}
-            gridCols={3}
-            hideHeader
-            onChange={onAddConnector}
+            onSelect={(name, type) => onAddConnector?.(name, type)}
             searchPlaceholder={searchPlaceholder}
-            variant="ghost"
           />
         </DialogBody>
       </DialogContent>

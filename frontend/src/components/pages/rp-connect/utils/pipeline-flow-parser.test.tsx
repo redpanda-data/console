@@ -1118,7 +1118,7 @@ cache_resources:
     expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
   });
 
-  it('marks switch cases as structural (isCase, no editTarget) so clicks select the parent switch', () => {
+  it('marks switch cases as selectable wrappers that edit their routing condition', () => {
     const withSwitch = `pipeline:
   processors:
     - switch:
@@ -1129,11 +1129,10 @@ output:
   drop: {}`;
     const { nodes } = parsePipelineFlowTree(withSwitch);
     const case1 = nodes.find((n) => n.id === 'proc-0-case-1');
-    // The case is a structural wrapper: flagged isCase, carrying its condition, and
-    // deliberately NOT independently selectable (no editTarget — the canvas walks up
-    // to the parent switch on click).
+    // The case is a wrapper flagged isCase, carrying its condition, and selectable via a
+    // switchCase editTarget so the inspector can edit its `check`.
     expect(case1).toMatchObject({ isCase: true, condition: 'this.region == "eu"', parentId: 'proc-0' });
-    expect(case1?.editTarget).toBeUndefined();
+    expect(case1?.editTarget).toEqual({ kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] });
     // The default case carries no condition.
     expect(nodes.find((n) => n.id === 'proc-0-case-2')).toMatchObject({ isCase: true, isDefault: true });
     // The parent switch IS selectable.
@@ -1329,6 +1328,79 @@ cache_resources:
     const closed = computeFlowLayout(nodes, new Set(['proc-0']));
     expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
     expect(channelX(closed)).toBe(resourceLeft(closed) + HANDLE);
+  });
+
+  it('gives nested containers insert slots and switches an add-case slot', () => {
+    const yaml = `pipeline:
+  processors:
+    - switch:
+        - check: a == 1
+          processors:
+            - mapping: 'root = this'
+        - processors: []
+    - branch:
+        processors:
+          - mapping: 'root = that'
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const byId = (id: string) => nodes.find((n) => n.id === id);
+
+    // The switch node can append a structural case.
+    expect(byId('proc-0')?.addChildSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 0, 'switch'],
+      section: 'processor',
+    });
+    // Each case (including the empty second one) accepts processor inserts.
+    expect(byId('proc-0-case-1')?.insertSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 0, 'switch', 0, 'processors'],
+      accepts: 'processor',
+    });
+    expect(byId('proc-0-case-2')?.insertSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 0, 'switch', 1, 'processors'],
+      accepts: 'processor',
+    });
+    // The branch container (derived in the post-pass) accepts processor inserts.
+    const branch = nodes.find((n) => n.kind === 'group' && n.label === 'branch');
+    expect(branch?.insertSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 1, 'branch', 'processors'],
+      accepts: 'processor',
+    });
+  });
+
+  it('derives an input broker insert slot that accepts inputs', () => {
+    const yaml = `input:
+  broker:
+    inputs:
+      - generate: { mapping: 'root = {}' }
+      - kafka: { topics: [t] }
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const broker = nodes.find((n) => n.kind === 'group' && n.label === 'broker');
+    expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
+  });
+
+  it('flags dangling resource references and counts resource usage', () => {
+    const yaml = `pipeline:
+  processors:
+    - cache: { resource: dedupe, operator: get }
+    - cache: { resource: dedupe, operator: add }
+    - rate_limit: { resource: ghost }
+output:
+  drop: {}
+cache_resources:
+  - label: dedupe
+    memory: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    // `ghost` has no matching resource → dangling.
+    const ghost = nodes.find((n) => n.resourceRef === 'ghost');
+    expect(ghost?.danglingRef).toBe(true);
+    // `dedupe` resolves → not dangling, and used by 2 components.
+    const dedupeUser = nodes.find((n) => n.resourceRef === 'dedupe');
+    expect(dedupeUser?.danglingRef).toBeUndefined();
+    const resource = nodes.find((n) => n.section === 'resource' && n.labelText === 'dedupe');
+    expect(resource?.usedByCount).toBe(2);
   });
 
   it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {

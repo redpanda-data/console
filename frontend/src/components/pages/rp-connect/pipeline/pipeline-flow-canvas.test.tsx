@@ -103,10 +103,27 @@ describe('selectionTargetForNode', () => {
     });
   });
 
-  it('walks up from a structural case to select its parent switch', () => {
+  it('walks up from a structural node (no editTarget) to select its parent', () => {
     expect(selectionTargetForNode(caseNode, [switchNode, caseNode])).toEqual({
       id: 'proc-0',
       target: { kind: 'processor', index: 0 },
+    });
+  });
+
+  it('selects a switch case directly when it carries a switchCase editTarget', () => {
+    const editableCase: Node = {
+      id: 'proc-0-case-1',
+      parentId: 'proc-0',
+      position: { x: 0, y: 0 },
+      data: {
+        label: 'case 1',
+        isCase: true,
+        editTarget: { kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] },
+      },
+    };
+    expect(selectionTargetForNode(editableCase, [switchNode, editableCase])).toEqual({
+      id: 'proc-0-case-1',
+      target: { kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] },
     });
   });
 

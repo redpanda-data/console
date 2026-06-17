@@ -25,12 +25,92 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
+import { createContext, useContext } from 'react';
 import { type Control, Controller, type FieldPath, useForm } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ScrollShadow } from './scroll-shadow';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+
+export type ResourceKind = 'cache' | 'rate_limit';
+
+// Resource-link context: the existing labels to offer and a create-and-link action.
+// Provided by the inspector (which owns the full YAML) and consumed by resource-ref
+// fields, so the form itself stays a pure config editor.
+type ResourceFieldContextValue = {
+  labels: Record<ResourceKind, string[]>;
+  onCreateResource?: (kind: ResourceKind) => void;
+  // The resource kind of the component being edited (cache/rate_limit processor), so a
+  // plainly-typed `resource:` string field is still recognised as a link.
+  componentResourceKind?: ResourceKind;
+};
+const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
+
+const CREATE_RESOURCE_VALUE = '__create_resource__';
+
+// Resolve which resource kind a field links to: by its field type, or — for a field
+// literally named `resource` — the kind of the cache/rate_limit component it sits in
+// (some schemas type the reference as a plain string).
+function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: ResourceKind): ResourceKind | undefined {
+  if (spec.type === 'cache' || spec.type === 'rate_limit') {
+    return spec.type;
+  }
+  if (spec.name === 'resource' && spec.kind === 'scalar' && componentResourceKind) {
+    return componentResourceKind;
+  }
+  return;
+}
+
+// A typed dropdown for a `resource:` link: pick an existing label or create-and-link a
+// new resource. Never free text, so the reference can't be mistyped or dangle. A value
+// that isn't among the known labels (e.g. a stale link) is still shown, flagged missing.
+const ResourceReferenceSelect = ({
+  kind,
+  value,
+  onChange,
+}: {
+  kind: ResourceKind;
+  value: string;
+  onChange: (value: unknown) => void;
+}) => {
+  const { labels, onCreateResource } = useContext(ResourceFieldContext);
+  const options = labels[kind];
+  const current = value ?? '';
+  const isMissing = current !== '' && !options.includes(current);
+  return (
+    <Select
+      onValueChange={(v) => {
+        if (v === CREATE_RESOURCE_VALUE) {
+          onCreateResource?.(kind);
+          return;
+        }
+        onChange(v);
+      }}
+      value={current}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select a resource…" />
+      </SelectTrigger>
+      <SelectContent>
+        {isMissing ? <SelectItem value={current}>{current} (missing)</SelectItem> : null}
+        {options.map((label) => (
+          <SelectItem key={label} value={label}>
+            {label}
+          </SelectItem>
+        ))}
+        {onCreateResource ? (
+          <SelectItem value={CREATE_RESOURCE_VALUE}>
+            <span className="flex items-center gap-1.5 text-primary">
+              <Plus className="size-3.5" />
+              Create new {kind === 'cache' ? 'cache' : 'rate limit'}…
+            </span>
+          </SelectItem>
+        ) : null}
+      </SelectContent>
+    </Select>
+  );
+};
 
 const SCALAR_TYPES = new Set(['string', 'int', 'float', 'bool']);
 
@@ -38,9 +118,26 @@ function hasOptions(spec: RawFieldSpec): boolean {
   return (spec.annotatedOptions?.length ?? 0) > 0;
 }
 
-// A single editable value: a primitive (string/int/float/bool) or an enum select.
+// A reference to a cache/rate_limit resource: a scalar string whose field type names
+// the resource kind (not an inline component). Rendered as a label dropdown so the
+// link can't be mistyped, and stored/assembled like any other scalar string.
+export function isResourceRefField(spec: RawFieldSpec): boolean {
+  return (
+    Boolean(spec.name) &&
+    spec.kind === 'scalar' &&
+    (spec.type === 'cache' || spec.type === 'rate_limit') &&
+    !(spec.children?.length ?? 0)
+  );
+}
+
+// A single editable value: a primitive (string/int/float/bool), an enum select, or a
+// resource reference (stored as a string).
 function isScalarField(spec: RawFieldSpec): boolean {
-  return Boolean(spec.name) && spec.kind === 'scalar' && (SCALAR_TYPES.has(spec.type) || hasOptions(spec));
+  return (
+    Boolean(spec.name) &&
+    spec.kind === 'scalar' &&
+    (SCALAR_TYPES.has(spec.type) || hasOptions(spec) || isResourceRefField(spec))
+  );
 }
 
 // A list of primitives (e.g. `topics: [a, b]`), edited as one-per-line text.
@@ -69,7 +166,8 @@ const COMPONENT_FIELD_TYPES = new Set([
   'scanner',
 ]);
 function isComponentField(spec: RawFieldSpec): boolean {
-  return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type);
+  // A resource reference is a string link, not an inline nested component.
+  return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
 }
 
 // Fields rendered as form controls. Nested components are excluded (edited on the
@@ -316,8 +414,13 @@ const ScalarControl = ({
   value: string | boolean;
   onChange: (value: unknown) => void;
 }) => {
+  const { componentResourceKind } = useContext(ResourceFieldContext);
   if (spec.type === 'bool') {
     return <Switch checked={Boolean(value)} onCheckedChange={onChange} />;
+  }
+  const resourceKind = resolveResourceKind(spec, componentResourceKind);
+  if (resourceKind) {
+    return <ResourceReferenceSelect kind={resourceKind} onChange={onChange} value={String(value ?? '')} />;
   }
   if (hasOptions(spec)) {
     return (
@@ -488,9 +591,20 @@ type NodeConfigFormProps = {
   value: Record<string, unknown>;
   /** Apply the edited config back to the YAML. */
   onApply: (next: Record<string, unknown>) => void;
+  /** Existing resource labels offered by `resource:` dropdowns. */
+  resourceLabels?: Record<ResourceKind, string[]>;
+  /** Create a new resource of a kind and link it to the field being edited. */
+  onCreateResource?: (kind: ResourceKind) => void;
 };
 
-export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConfigFormProps) {
+export function NodeConfigForm({
+  spec,
+  componentName,
+  value,
+  onApply,
+  resourceLabels,
+  onCreateResource,
+}: NodeConfigFormProps) {
   const fields = spec.config?.children ?? [];
   const inner =
     value[componentName] && typeof value[componentName] === 'object' && !Array.isArray(value[componentName])
@@ -536,84 +650,93 @@ export function NodeConfigForm({ spec, componentName, value, onApply }: NodeConf
     onApply(buildComponentEntry({ componentName, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
   );
 
+  const resourceCtx: ResourceFieldContextValue = {
+    labels: resourceLabels ?? { cache: [], rate_limit: [] },
+    onCreateResource,
+    componentResourceKind:
+      componentName === 'cache' ? 'cache' : componentName === 'rate_limit' ? 'rate_limit' : undefined,
+  };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <ScrollShadow contentClassName="space-y-4 px-4 py-4">
-        <div className="flex flex-col gap-1.5">
-          <Label className="font-medium text-sm">label</Label>
-          <Controller
-            control={control}
-            name="label"
-            render={({ field }) => (
-              <Input
-                onChange={field.onChange}
-                placeholder="Optional identifier for this component"
-                value={field.value}
-              />
-            )}
-          />
-        </div>
-
-        {required.map((f) => (
-          <SchemaField control={control} key={f.name} path={[]} spec={f} />
-        ))}
-
-        {optional.length > 0 ? (
-          <FieldGroup label="Optional">
-            {optional.map((f) => (
-              <SchemaField control={control} key={f.name} path={[]} spec={f} />
-            ))}
-          </FieldGroup>
-        ) : null}
-
-        {advanced.length > 0 ? (
-          <FieldGroup defaultOpen={false} label="Advanced">
-            {advanced.map((f) => (
-              <SchemaField control={control} key={f.name} path={[]} spec={f} />
-            ))}
-          </FieldGroup>
-        ) : null}
-
-        {componentFields.length > 0 ? (
-          <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
-            <Text className="text-muted-foreground" variant="bodySmall">
-              {componentFields.map((f) => f.name).join(', ')}{' '}
-              {componentFields.length === 1 ? 'is a nested component' : 'are nested components'} — select{' '}
-              {componentFields.length === 1 ? 'it' : 'them'} on the canvas to edit.
-            </Text>
-          </div>
-        ) : null}
-
-        {showRaw ? (
-          <FieldGroup defaultOpen={false} label="Other settings (YAML)">
+    <ResourceFieldContext.Provider value={resourceCtx}>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ScrollShadow contentClassName="space-y-4 px-4 py-4">
+          <div className="flex flex-col gap-1.5">
+            <Label className="font-medium text-sm">label</Label>
             <Controller
               control={control}
-              name="raw"
+              name="label"
               render={({ field }) => (
-                <div className="h-[200px] overflow-hidden rounded-md border border-border">
-                  <YamlEditor
-                    onChange={(v) => field.onChange(v || '')}
-                    options={{ minimap: { enabled: false } }}
-                    transparentBackground
-                    value={field.value}
-                  />
-                </div>
+                <Input
+                  onChange={field.onChange}
+                  placeholder="Optional identifier for this component"
+                  value={field.value}
+                />
               )}
             />
-          </FieldGroup>
-        ) : null}
-      </ScrollShadow>
+          </div>
 
-      <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
-        {isDirty ? (
-          <Button onClick={() => reset()} type="button" variant="ghost">
-            Reset
+          {required.map((f) => (
+            <SchemaField control={control} key={f.name} path={[]} spec={f} />
+          ))}
+
+          {optional.length > 0 ? (
+            <FieldGroup label="Optional">
+              {optional.map((f) => (
+                <SchemaField control={control} key={f.name} path={[]} spec={f} />
+              ))}
+            </FieldGroup>
+          ) : null}
+
+          {advanced.length > 0 ? (
+            <FieldGroup defaultOpen={false} label="Advanced">
+              {advanced.map((f) => (
+                <SchemaField control={control} key={f.name} path={[]} spec={f} />
+              ))}
+            </FieldGroup>
+          ) : null}
+
+          {componentFields.length > 0 ? (
+            <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
+              <Text className="text-muted-foreground" variant="bodySmall">
+                {componentFields.map((f) => f.name).join(', ')}{' '}
+                {componentFields.length === 1 ? 'is a nested component' : 'are nested components'} — select{' '}
+                {componentFields.length === 1 ? 'it' : 'them'} on the canvas to edit.
+              </Text>
+            </div>
+          ) : null}
+
+          {showRaw ? (
+            <FieldGroup defaultOpen={false} label="Other settings (YAML)">
+              <Controller
+                control={control}
+                name="raw"
+                render={({ field }) => (
+                  <div className="h-[200px] overflow-hidden rounded-md border border-border">
+                    <YamlEditor
+                      onChange={(v) => field.onChange(v || '')}
+                      options={{ minimap: { enabled: false } }}
+                      transparentBackground
+                      value={field.value}
+                    />
+                  </div>
+                )}
+              />
+            </FieldGroup>
+          ) : null}
+        </ScrollShadow>
+
+        <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
+          {isDirty ? (
+            <Button onClick={() => reset()} type="button" variant="ghost">
+              Reset
+            </Button>
+          ) : null}
+          <Button disabled={!isDirty} onClick={submit} type="button">
+            Apply changes
           </Button>
-        ) : null}
-        <Button disabled={!isDirty} onClick={submit} type="button">
-          Apply changes
-        </Button>
+        </div>
       </div>
-    </div>
+    </ResourceFieldContext.Provider>
   );
 }
