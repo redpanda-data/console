@@ -120,3 +120,28 @@ ignore:
           never executed in this browser-only MF remote.
         expires: '2027-04-22T00:00:00.000Z'
         created: '2026-04-22T00:00:00.000Z'
+  SNYK-JS-REMIXRUNSERVERRUNTIME-17138702:
+    - '*':
+        reason: >-
+          Allocation of Resources Without Limits (CVE-2026-42342) in
+          @remix-run/server-runtime. Pulled via the same
+          @tanstack/react-form > @remix-run/node SSR chain as the
+          undici/remix-run-node/remix-run-router advisories above. Frontend is
+          a browser-only Module Federation remote; source imports only the
+          browser entry of @tanstack/react-form, never the /start subpath, so
+          the server runtime never executes. Short-dated: console v2.8 is
+          approaching end of maintenance and goes unmaintained after expiry.
+        expires: '2026-07-17T00:00:00.000Z'
+        created: '2026-06-17T00:00:00.000Z'
+  SNYK-JS-TURBOSTREAM-17138884:
+    - '*':
+        reason: >-
+          Allocation of Resources Without Limits (CVE-2026-34077) in
+          turbo-stream. Transitive under @tanstack/react-form > @remix-run/node
+          > @remix-run/server-runtime; used only for SSR data streaming.
+          Frontend is a browser-only Module Federation remote importing only
+          the browser entry of @tanstack/react-form, never the /start subpath,
+          so turbo-stream never executes. Short-dated: console v2.8 is
+          approaching end of maintenance and goes unmaintained after expiry.
+        expires: '2026-07-17T00:00:00.000Z'
+        created: '2026-06-17T00:00:00.000Z'
