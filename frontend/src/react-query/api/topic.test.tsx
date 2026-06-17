@@ -9,51 +9,68 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
-import { config } from 'config';
+import { ListTopicsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
 import { useLegacyListTopicsQuery } from './topic';
 
 // Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
 
-const jsonResponse = (body: unknown, init?: ResponseInit) =>
-  new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
-    ...init,
-  });
-
 describe('useLegacyListTopicsQuery', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  test('maps gRPC topics to the REST-shaped topic on a successful response', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listTopics, () =>
+        create(ListTopicsResponseSchema, {
+          topics: [
+            {
+              name: 'orders',
+              internal: false,
+              partitionCount: 3,
+              replicationFactor: 2,
+              cleanupPolicy: 'delete',
+              logDirSummary: { totalSizeBytes: 1024n, hint: '', replicaErrors: [] },
+            },
+          ],
+          nextPageToken: '',
+        })
+      );
+    });
 
-  test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
-    // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
-    // so without an explicit response.ok check the query settles as a success and the
-    // error UI never renders — the user sees 0 topics instead of an auth failure.
-    vi.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeInstanceOf(Error);
-  });
-
-  test('returns topics on a successful response', async () => {
-    vi.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ topics: [{ topicName: 'orders', isInternal: false }] }, { status: 200 })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
+    const { wrapper } = connectQueryWrapper(NO_RETRY, transport);
+    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
+    expect(result.current.data.topics).toEqual([
+      {
+        topicName: 'orders',
+        isInternal: false,
+        partitionCount: 3,
+        replicationFactor: 2,
+        cleanupPolicy: 'delete',
+        documentation: 'UNKNOWN',
+        logDirSummary: { totalSizeBytes: 1024, replicaErrors: [], hint: '' },
+        allowedActions: undefined,
+      },
+    ]);
+  });
+
+  test('surfaces an error when the topics endpoint fails', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listTopics, () => {
+        throw new ConnectError('forbidden', Code.PermissionDenied);
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper(NO_RETRY, transport);
+    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(ConnectError);
   });
 });

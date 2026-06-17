@@ -6,11 +6,11 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
-import { config } from 'config';
 import {
   type ListTopicsRequest,
   ListTopicsRequestSchema,
   type ListTopicsResponse,
+  type ListTopicsResponse_Topic,
   TopicService,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
@@ -21,7 +21,7 @@ import {
   TOPIC_CONFIG_CACHE_STALE_TIME,
 } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
-import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
+import type { Topic, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { api } from '../../state/backend-api';
@@ -31,9 +31,34 @@ type ListTopicsExtraOptions = {
 };
 
 /**
- * We need to use legacy API to list topics for now
- * because of authorization that is only possible with Console v3 and above.
- * TODO: Remove once Console v3 is released.
+ * Maps a gRPC `ListTopicsResponse_Topic` to the richer REST-shaped `Topic` consumed across the UI.
+ * `documentation` and `allowedActions` are not provided by the gRPC endpoint (they were never part
+ * of the REST topic-list response either), so they fall back to their neutral defaults.
+ */
+const mapListTopicToRest = (topic: ListTopicsResponse_Topic): Topic => ({
+  topicName: topic.name,
+  isInternal: topic.internal,
+  partitionCount: topic.partitionCount,
+  replicationFactor: topic.replicationFactor,
+  cleanupPolicy: topic.cleanupPolicy,
+  documentation: 'UNKNOWN',
+  logDirSummary: {
+    // total_size_bytes is an int64 → bigint in protobuf-es; the UI works with numbers.
+    totalSizeBytes: Number(topic.logDirSummary?.totalSizeBytes ?? 0n),
+    replicaErrors:
+      topic.logDirSummary?.replicaErrors.map((replicaError) => ({
+        brokerId: replicaError.brokerId,
+        error: replicaError.error,
+      })) ?? null,
+    hint: topic.logDirSummary?.hint ?? null,
+  },
+  allowedActions: undefined,
+});
+
+/**
+ * Lists topics via the gRPC `TopicService.ListTopics` endpoint and maps the response to the
+ * REST-shaped `Topic` the UI consumes. Returns the full topic list (pagination disabled) so callers
+ * can paginate and filter client-side, matching the previous REST `/topics` behavior.
  */
 export const useLegacyListTopicsQuery = (
   input?: MessageInit<ListTopicsRequest>,
@@ -44,50 +69,24 @@ export const useLegacyListTopicsQuery = (
   }: ListTopicsExtraOptions & { staleTime?: number; refetchOnWindowFocus?: boolean } = {}
 ) => {
   const listTopicsRequest = create(ListTopicsRequestSchema, {
-    pageSize: MAX_PAGE_SIZE,
+    // -1 disables server-side pagination so the full topic list is returned.
+    pageSize: -1,
     pageToken: '',
     ...input,
   });
 
-  const infiniteQueryKey = createConnectQueryKey({
-    schema: listTopics,
-    input: listTopicsRequest,
-    cardinality: 'infinite',
-  });
-
-  const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
-    queryKey: infiniteQueryKey,
-    queryFn: async () => {
-      // Add JWT Bearer token if available (same as REST and gRPC calls)
-      const headers: HeadersInit = {};
-      if (config.jwt) {
-        headers.Authorization = `Bearer ${config.jwt}`;
-      }
-
-      const response = await config.fetch(`${config.restBasePath}/topics`, {
-        method: 'GET',
-        headers,
-      });
-
-      // config.fetch wraps window.fetch, which does not reject on 4xx/5xx — guard explicitly, or an
-      // error body parses as a "successful" empty result and the topics page silently shows 0 topics.
-      if (!response.ok) {
-        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
-      }
-
-      return response.json();
-    },
+  const listTopicsResult = useQuery(listTopics, listTopicsRequest, {
     staleTime,
     refetchOnWindowFocus,
   });
 
-  const allRetrievedTopics = legacyListTopicsResult?.data?.topics;
+  const allRetrievedTopics = listTopicsResult.data?.topics.map(mapListTopicToRest);
 
   const topics = hideInternalTopics
     ? allRetrievedTopics?.filter((topic) => !(topic.isInternal || topic.topicName.startsWith('_')))
     : allRetrievedTopics;
 
-  return { ...legacyListTopicsResult, data: { topics } };
+  return { ...listTopicsResult, data: { topics } };
 };
 
 /**
@@ -132,7 +131,7 @@ export const useCreateTopicMutation = () => {
         queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
             schema: TopicService.method.listTopics,
-            cardinality: 'infinite',
+            cardinality: 'finite',
           }),
           exact: false,
         }),
