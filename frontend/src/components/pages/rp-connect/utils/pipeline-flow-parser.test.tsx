@@ -1268,6 +1268,35 @@ output:
     expect(resourceX).toBe(procX);
   });
 
+  it('parks each resource below its own column, not below the tallest column', () => {
+    // A short processor (cache) references `c`; a much taller switch references `lim`
+    // from a deep case. `c` must rise to just below the short cache rather than being
+    // dragged down to the switch's depth alongside `lim`.
+    const mixedHeights = `pipeline:
+  processors:
+    - cache: { resource: c, operator: get }
+    - switch:
+        - check: a == 1
+          processors: [{ mapping: 'root = this' }, { mapping: 'root = this' }, { mapping: 'root = this' }]
+        - check: a == 2
+          processors: [{ rate_limit: { resource: lim } }]
+        - processors: [{ mapping: 'root = this' }]
+output:
+  drop: {}
+cache_resources:
+  - label: c
+    memory: {}
+rate_limit_resources:
+  - label: lim
+    local: { count: 1, interval: 1s }`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(mixedHeights).nodes);
+    const cacheRes = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
+    const limitRes = layout.rfNodes.find((n) => n.id === 'resource-rate_limit_resources-0');
+    expect(cacheRes?.position.y ?? 0).toBeGreaterThan(0);
+    // The short column's resource sits well above the tall switch's resource.
+    expect(cacheRes?.position.y ?? 0).toBeLessThan(limitRes?.position.y ?? 0);
+  });
+
   it('connects a reference to the exact node, re-anchoring to a visible ancestor when collapsed', () => {
     const nested = `pipeline:
   processors:

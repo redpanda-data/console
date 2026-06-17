@@ -1719,7 +1719,11 @@ function computeReferenceCables(
   nodes: PipelineFlowNode[],
   ctx: EmitContext,
   columns: { id: string; left: number; right: number }[]
-): { cables: ReferenceCable[]; desiredResourceLeft: Map<string, number> } {
+): {
+  cables: ReferenceCable[];
+  desiredResourceLeft: Map<string, number>;
+  desiredResourceTop: Map<string, number>;
+} {
   // Absolute bounding box of every placed node (positions are relative to the parent
   // container), used both to find a node's drop x and to test whether the space
   // straight below it is clear.
@@ -1754,15 +1758,20 @@ function computeReferenceCables(
 
   const placedIds = new Set(rel.keys());
   const parentById = new Map(nodes.map((n) => [n.id, n.parentId]));
-  // Every node maps to the left/right edges of its top-level column.
+  // Every node maps to the left/right edges and bottom of its top-level column, so a
+  // resource can be parked just below the column that actually uses it (rather than
+  // below the tallest column in the whole flow).
   const columnLeftById = new Map<string, number>();
   const columnRightById = new Map<string, number>();
+  const columnBottomById = new Map<string, number>();
   for (const column of columns) {
+    const columnBottom = box(column.id)?.bottom ?? 0;
     const queue = [column.id];
     while (queue.length > 0) {
       const id = queue.pop() as string;
       columnLeftById.set(id, column.left);
       columnRightById.set(id, column.right);
+      columnBottomById.set(id, columnBottom);
       for (const child of ctx.childrenMap.get(id) ?? []) {
         queue.push(child.id);
       }
@@ -1788,6 +1797,9 @@ function computeReferenceCables(
   const inset = ctx.dims.colGap / 2;
   const cables: ReferenceCable[] = [];
   const desiredResourceLeft = new Map<string, number>();
+  // The deepest column bottom among a resource's users — the lane row it must clear so
+  // every cable reaching it drops straight down past its source column's cards.
+  const desiredResourceTop = new Map<string, number>();
   const channelUse = new Map<string, number>();
   // How many cables already leave a given source, so several cables out of the same
   // node run as parallel drops instead of stacking on one line.
@@ -1835,8 +1847,12 @@ function computeReferenceCables(
     if (!desiredResourceLeft.has(targetId)) {
       desiredResourceLeft.set(targetId, channelX - FLOW_SPINE_HANDLE_LEFT);
     }
+    // Lay the resource just below its referencing column. A resource used by several
+    // columns sinks below the deepest one so all of its cables clear their cards.
+    const columnBottom = columnBottomById.get(sourceId) ?? 0;
+    desiredResourceTop.set(targetId, Math.max(desiredResourceTop.get(targetId) ?? 0, columnBottom));
   }
-  return { cables, desiredResourceLeft };
+  return { cables, desiredResourceLeft, desiredResourceTop };
 }
 
 // Dashed cables from a component to the resource it references (cache/rate_limit
@@ -1845,15 +1861,11 @@ function computeReferenceCables(
 // node without ever crossing the cards around or below it. With the resource placed
 // at the channel x (see computeReferenceCables) the bus run is usually zero, so the
 // cable is a straight drop (top-level) or a single clean jog (nested).
-function pushReferenceEdges(
-  ctx: EmitContext,
-  cables: ReferenceCable[],
-  bounds: { laneStart: number; maxCross: number }
-): void {
-  const busBaseY = bounds.laneStart - 12;
-  const busTopY = bounds.maxCross + 12;
-  const step = cables.length > 1 ? Math.min(10, (busBaseY - busTopY) / (cables.length - 1)) : 0;
+function pushReferenceEdges(ctx: EmitContext, cables: ReferenceCable[], laneY: Map<string, number>): void {
+  // Each cable runs along a bus just above its target resource's row, staggered per
+  // cable so cables sharing a row don't collapse onto a single line.
   cables.forEach((cable, i) => {
+    const busY = Math.max(12, (laneY.get(cable.targetId) ?? 0) - 12 - i * 8);
     // No label — the legend documents the dashed muted line as "uses resource".
     ctx.rfEdges.push(
       linkEdge({
@@ -1864,7 +1876,7 @@ function pushReferenceEdges(
         targetHandle: 't',
         tone: 'muted',
         dashed: true,
-        route: { channelX: cable.channelX, busY: busBaseY - i * step },
+        route: { channelX: cable.channelX, busY },
       })
     );
   });
@@ -1915,33 +1927,41 @@ export function computeFlowLayout(
   ctx.rfEdges.push(...buildSpineEdges(mainSequence, isVertical));
   // The resource lane sits past the main flow along the cross axis: below the row
   // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
-  const laneStart = (isVertical ? mainExtent : maxCross) + 2 * dims.stackGap + 24;
+  // In horizontal layout this is only the fallback for unreferenced resources — a
+  // referenced resource rises to just below its own column (desiredResourceTop).
+  const laneStart = (isVertical ? mainExtent : maxCross) + laneGap(dims);
 
   // Resource-reference cables (cache/rate_limit → resource). Skipped in the compact
   // lane to keep it clean. Geometry is computed first so each resource can be placed
   // directly under its cable's drop, making the cable a straight (or single-jog) line.
-  const { cables, desiredResourceLeft } =
+  const { cables, desiredResourceLeft, desiredResourceTop } =
     isVertical || compact
-      ? { cables: [] as ReferenceCable[], desiredResourceLeft: new Map<string, number>() }
+      ? {
+          cables: [] as ReferenceCable[],
+          desiredResourceLeft: new Map<string, number>(),
+          desiredResourceTop: new Map<string, number>(),
+        }
       : computeReferenceCables(nodes, ctx, columns);
 
-  const { resources, resourceRight } = placeResourceLane({
+  const { resources, resourceRight, resourceBottom, laneY } = placeResourceLane({
     nodes,
     childrenMap,
     isVertical,
     laneStart,
+    maxCross,
     ctx,
     desiredResourceLeft,
+    desiredResourceTop,
   });
 
   if (!compact) {
-    pushReferenceEdges(ctx, cables, { laneStart, maxCross });
+    pushReferenceEdges(ctx, cables, laneY);
   }
 
   return {
     rfNodes: ctx.rfNodes,
     rfEdges: ctx.rfEdges,
-    ...flowDimensions({ isVertical, mainExtent, maxCross, laneStart, resources, resourceRight, dims }),
+    ...flowDimensions({ isVertical, mainExtent, maxCross, laneStart, resources, resourceRight, resourceBottom, dims }),
   };
 }
 
@@ -1987,21 +2007,31 @@ function placeTopLevelSteps(
 // In horizontal layout, place each resource at the x its cable drops into (computed
 // in computeReferenceCables) so the cable lands straight; unreferenced resources fall
 // back to left-to-right order. A left→right sweep then de-overlaps the cards with a
-// tight gap so clusters don't spread far.
+// tight gap so clusters don't spread far. The sweep is per lane row (resources sit at
+// different y's, below their own column), so cards in different rows never push each
+// other sideways.
 function resourceLaneX(
   resources: PipelineFlowNode[],
   desiredLeft: Map<string, number>,
+  laneY: Map<string, number>,
   ctx: EmitContext
 ): Map<string, number> {
   const step = ctx.dims.cardW + RESOURCE_GAP;
   const desired = resources.map((resource, i) => ({
     id: resource.id,
     x: desiredLeft.get(resource.id) ?? i * step,
+    y: laneY.get(resource.id) ?? 0,
   }));
-  desired.sort((a, b) => a.x - b.x);
+  // Sweep each row independently: group by y, then de-overlap left→right within it.
+  desired.sort((a, b) => a.y - b.y || a.x - b.x);
   const out = new Map<string, number>();
   let prevX = Number.NEGATIVE_INFINITY;
+  let prevY = Number.NaN;
   for (const d of desired) {
+    if (d.y !== prevY) {
+      prevX = Number.NEGATIVE_INFINITY;
+      prevY = d.y;
+    }
     const x = Math.max(d.x, prevX === Number.NEGATIVE_INFINITY ? d.x : prevX + step);
     out.set(d.id, x);
     prevX = x;
@@ -2009,41 +2039,67 @@ function resourceLaneX(
   return out;
 }
 
-// Resources lane after the flow (referenced by label, so no flow edges).
+// The cross-axis gap between a column's bottom (or the main row) and the lane row
+// beneath it, so resource cards clearly sit below the flow rather than touching it.
+function laneGap(dims: FlowDims): number {
+  return 2 * dims.stackGap + 24;
+}
+
+// Resources lane after the flow (referenced by label, so no flow edges). In horizontal
+// layout each resource sits below the column that uses it (desiredResourceTop), so a
+// resource of a short column rises up beside a taller neighbour instead of every
+// resource being pushed below the tallest column. Vertical layout keeps the simple
+// stack below the whole flow.
 function placeResourceLane({
   nodes,
   childrenMap,
   isVertical,
   laneStart,
+  maxCross,
   ctx,
   desiredResourceLeft,
+  desiredResourceTop,
 }: {
   nodes: PipelineFlowNode[];
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
   isVertical: boolean;
   laneStart: number;
+  maxCross: number;
   ctx: EmitContext;
   desiredResourceLeft: Map<string, number>;
-}): { resources: PipelineFlowNode[]; resourceRight: number } {
+  desiredResourceTop: Map<string, number>;
+}): { resources: PipelineFlowNode[]; resourceRight: number; resourceBottom: number; laneY: Map<string, number> } {
   const resources = sectionChildren(nodes, childrenMap, 'resource');
-  const laneX = isVertical ? null : resourceLaneX(resources, desiredResourceLeft, ctx);
+  // Per-resource lane row: just below its referencing column (or the main row for an
+  // unreferenced resource, which has no cable to anchor it).
+  const laneY = new Map<string, number>(
+    resources.map((resource) => [
+      resource.id,
+      isVertical ? laneStart : (desiredResourceTop.get(resource.id) ?? maxCross) + laneGap(ctx.dims),
+    ])
+  );
+  const laneX = isVertical ? null : resourceLaneX(resources, desiredResourceLeft, laneY, ctx);
   let stackY = laneStart;
   let resourceRight = 0;
+  let resourceBottom = 0;
   for (const [i, resource] of resources.entries()) {
     const x = isVertical ? 0 : (laneX?.get(resource.id) ?? i * (ctx.dims.cardW + ctx.dims.colGap));
+    const y = isVertical ? stackY : (laneY.get(resource.id) ?? laneStart);
+    const height = leafCardHeight(resource, ctx.dims);
     ctx.rfNodes.push({
       id: resource.id,
       type: 'flowCard',
-      position: { x, y: isVertical ? stackY : laneStart },
+      position: { x, y },
       initialWidth: ctx.dims.cardW,
-      initialHeight: leafCardHeight(resource, ctx.dims),
+      initialHeight: height,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
       data: makeFlowNodeData(resource, false, 0, ctx.compact),
     });
     resourceRight = Math.max(resourceRight, x + ctx.dims.cardW);
-    stackY += leafCardHeight(resource, ctx.dims) + ctx.dims.stackGap;
+    resourceBottom = Math.max(resourceBottom, y + height);
+    stackY += height + ctx.dims.stackGap;
   }
-  return { resources, resourceRight };
+  return { resources, resourceRight, resourceBottom, laneY };
 }
 
 function flowDimensions({
@@ -2053,6 +2109,7 @@ function flowDimensions({
   laneStart,
   resources,
   resourceRight,
+  resourceBottom,
   dims,
 }: {
   isVertical: boolean;
@@ -2061,6 +2118,7 @@ function flowDimensions({
   laneStart: number;
   resources: PipelineFlowNode[];
   resourceRight: number;
+  resourceBottom: number;
   dims: FlowDims;
 }): { width: number; height: number } {
   if (isVertical) {
@@ -2070,8 +2128,10 @@ function flowDimensions({
       height: resources.length > 0 ? laneStart + resourcesExtent : Math.max(mainExtent, dims.leafBaseH),
     };
   }
+  // Resources sit on per-column rows, so the tallest is the deepest card bottom — not
+  // necessarily the first resource at a single shared laneStart.
   return {
     width: Math.max(mainExtent, resourceRight, dims.cardW),
-    height: resources.length > 0 ? laneStart + leafCardHeight(resources[0], dims) : Math.max(maxCross, dims.leafBaseH),
+    height: resources.length > 0 ? Math.max(resourceBottom, maxCross) : Math.max(maxCross, dims.leafBaseH),
   };
 }
