@@ -74,9 +74,11 @@ function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: numbe
   return { minX, minY, maxX, maxY };
 }
 // The minimap always shows in the full editor (it's hidden only in the compact
-// side-lane). It draws the content at a fixed scale, tight to the diagram.
+// side-lane). Fixed width; its height tracks the diagram's aspect (clamped) so the
+// drawing fills the frame — no dead letterbox space the viewport can't reach.
 const MINIMAP_WIDTH = 132;
-const MINIMAP_HEIGHT = 84;
+const MINIMAP_MIN_INNER_H = 32;
+const MINIMAP_MAX_INNER_H = 168;
 const MINIMAP_PAD = 6;
 // The frame's 1px border (border-box) shrinks the svg's drawing area on each side.
 const MINIMAP_BORDER = 1;
@@ -104,13 +106,15 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   // The svg fills the frame's content box — i.e. the frame minus its 1px border on
   // each side — so nothing the svg draws is clipped by the border.
   const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
-  const mapH = MINIMAP_HEIGHT - 2 * MINIMAP_BORDER;
 
   const bounds = useMemo(() => contentBounds(nodes), [nodes]);
   const contentW = Math.max(bounds.maxX - bounds.minX, 1);
   const contentH = Math.max(bounds.maxY - bounds.minY, 1);
   const innerW = mapW - 2 * MINIMAP_PAD;
-  const innerH = mapH - 2 * MINIMAP_PAD;
+  // Match the content's aspect so the drawing fills the frame (scale fits both axes
+  // equally → no letterbox); clamp for extreme aspect ratios so the box stays usable.
+  const innerH = Math.min(Math.max(innerW * (contentH / contentW), MINIMAP_MIN_INNER_H), MINIMAP_MAX_INNER_H);
+  const mapH = innerH + 2 * MINIMAP_PAD;
   const scale = Math.min(innerW / contentW, innerH / contentH);
   // Centre the content within the frame.
   const offsetX = MINIMAP_PAD + (innerW - contentW * scale) / 2 - bounds.minX * scale;
@@ -137,7 +141,7 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   return (
     <div
       className="nodrag nopan absolute z-10 overflow-hidden rounded-md border border-border bg-card shadow-sm"
-      style={{ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT, right: 52, bottom: 12 }}
+      style={{ width: MINIMAP_WIDTH, height: mapH + 2 * MINIMAP_BORDER, right: 52, bottom: 12 }}
     >
       <svg
         className="block cursor-pointer"

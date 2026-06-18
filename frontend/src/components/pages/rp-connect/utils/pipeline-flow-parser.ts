@@ -1286,8 +1286,10 @@ export function computeTreeLayout(
 // position). Shares node IDs with `computeTreeLayout`.
 // ============================================================================
 
-/** Leaf card width on the full canvas; the node component must match this. */
-export const FLOW_CARD_WIDTH = 240;
+/** Leaf card width on the full canvas; the node component must match this. A touch
+ * wider than the bare minimum so labeled cards (an extra badge row competing for width)
+ * and longer meta values don't feel horizontally cramped. */
+export const FLOW_CARD_WIDTH = 256;
 /** Leaf card width on the compact (sidebar) canvas. */
 export const FLOW_COMPACT_CARD_WIDTH = 188;
 const FLOW_MAX_META_ROWS = 4;
@@ -1316,15 +1318,17 @@ type FlowDims = {
 };
 const FULL_DIMS: FlowDims = {
   cardW: FLOW_CARD_WIDTH,
-  leafBaseH: 56,
+  // The tinted header band (kind label row + logo/name row + divider). Measured to
+  // match what ComponentCard renders, so stacked siblings don't overlap.
+  leafBaseH: 68,
   metaRowH: 22,
   headerH: 48,
   collapsedH: 72,
   pad: 16,
-  stackGap: 18,
+  stackGap: 14,
   colGap: 72,
-  fanGutter: 72,
-  fanGap: 32,
+  fanGutter: 48,
+  fanGap: 20,
   compact: false,
 };
 const COMPACT_DIMS: FlowDims = {
@@ -1361,6 +1365,10 @@ const FLOW_SECTION_LABEL_INDENT = 30;
 const FLOW_PLACEHOLDER_LEAF_H = 72;
 // Extra height for the label's own row on a compact-lane card.
 const FLOW_COMPACT_LABEL_ROW_H = 22;
+// A `label:` badge renders on its own padded row beneath the full-card header.
+const FLOW_LABEL_ROW_H = 30;
+// The meta block's own vertical padding (its rows are counted at dims.metaRowH each).
+const FLOW_META_BLOCK_PAD = 12;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   if (dims.metaRowH === 0) {
@@ -1378,9 +1386,17 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
       (node.missingSasl ? 1 : 0),
     FLOW_MAX_META_ROWS
   );
-  // The label badge (e.g. a resource's label) gets its own row so it isn't truncated.
-  const rows = metaRows + (node.labelText ? 1 : 0);
-  return dims.leafBaseH + (rows > 0 ? 8 + rows * dims.metaRowH : 0);
+  // The label badge and the meta block are separately-padded rows below the header;
+  // sum them individually (rather than as one lumped block) so the measured height
+  // tracks the rendered card and adjacent nodes keep their gap.
+  let h = dims.leafBaseH;
+  if (node.labelText) {
+    h += FLOW_LABEL_ROW_H;
+  }
+  if (metaRows > 0) {
+    h += FLOW_META_BLOCK_PAD + metaRows * dims.metaRowH;
+  }
+  return h;
 }
 
 type SizedNode = {
@@ -1419,8 +1435,12 @@ export type FlowInsertPayload =
   | { kind: 'insert'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
   | { kind: 'addChild'; containerPath: (string | number)[]; section: 'processor' | 'output' };
 
-// Height of the in-container insert affordance row (full canvas only).
-const FLOW_INSERT_SLOT_H = 30;
+// Height of the in-container insert affordance row (full canvas only). Kept compact —
+// a quiet "add" action, not a heavy dashed bar.
+const FLOW_INSERT_SLOT_H = 22;
+// The "+" row hugs the foot of the stack with a small lead gap (less than the
+// inter-child gap), so it reads as an action under the children, not a sibling.
+const FLOW_INSERT_SLOT_GAP = 8;
 
 // The insert affordance a container shows at the foot of its child stack, if any.
 // Skipped in the compact lane (read-only) and while collapsed (children hidden).
@@ -1483,10 +1503,11 @@ function measureFlowNode(
   const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds, dims));
   const insets = containerInsets(node, dims);
   const innerW = Math.max(...children.map((c) => c.w));
-  let innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
-  // Reserve a row at the foot of the stack for the "+" affordance, like an extra child.
+  let innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * Math.max(0, children.length - 1);
+  // Reserve a row at the foot of the stack for the "+" affordance, tucked just below
+  // the children (a smaller lead gap than between siblings).
   if (affordance) {
-    innerH += insets.gap + FLOW_INSERT_SLOT_H;
+    innerH += (children.length > 0 ? FLOW_INSERT_SLOT_GAP : 0) + FLOW_INSERT_SLOT_H;
   }
   return {
     node,
@@ -1640,16 +1661,18 @@ function emitFlowNode(
     emitContainerEdges(node, children, ctx);
   }
 
-  // The in-container "+" row, stacked like a final child (see measureFlowNode).
+  // The in-container "+" row, tucked just below the stack (see measureFlowNode). The
+  // child loop leaves a trailing `insets.gap`; swap it for the smaller lead gap.
   const affordance = insertAffordanceFor(node, collapsed, ctx.compact, children.length);
   if (isContainer && affordance) {
     const label = affordance.kind === 'addChild' ? 'Add case' : `Add ${affordance.accepts}`;
+    const insertY = children.length > 0 ? childY - insets.gap + FLOW_INSERT_SLOT_GAP : childY;
     ctx.rfNodes.push({
       id: `${node.id}-insert`,
       type: 'flowInsert',
       parentId: node.id,
       extent: 'parent',
-      position: { x: insets.left, y: childY },
+      position: { x: insets.left, y: insertY },
       initialWidth: w - insets.left - insets.right,
       initialHeight: FLOW_INSERT_SLOT_H,
       selectable: false,
@@ -2161,12 +2184,11 @@ export function computeFlowLayout(
   // Resource-reference cables (cache/rate_limit → resource). Skipped in the compact
   // lane to keep it clean. Geometry is computed first so each resource can be placed
   // directly under its cable's drop, making the cable a straight (or single-jog) line.
-  const { cables, desiredResourceLeft, desiredResourceTop } =
+  const { cables, desiredResourceLeft } =
     isVertical || compact
       ? {
           cables: [] as ReferenceCable[],
           desiredResourceLeft: new Map<string, number>(),
-          desiredResourceTop: new Map<string, number>(),
         }
       : computeReferenceCables(nodes, ctx, columns);
 
@@ -2178,7 +2200,6 @@ export function computeFlowLayout(
     maxCross,
     ctx,
     desiredResourceLeft,
-    desiredResourceTop,
   });
 
   if (!compact) {
@@ -2285,7 +2306,6 @@ function placeResourceLane({
   maxCross,
   ctx,
   desiredResourceLeft,
-  desiredResourceTop,
 }: {
   nodes: PipelineFlowNode[];
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
@@ -2294,17 +2314,13 @@ function placeResourceLane({
   maxCross: number;
   ctx: EmitContext;
   desiredResourceLeft: Map<string, number>;
-  desiredResourceTop: Map<string, number>;
 }): { resources: PipelineFlowNode[]; resourceRight: number; resourceBottom: number; laneY: Map<string, number> } {
   const resources = sectionChildren(nodes, childrenMap, 'resource');
-  // Per-resource lane row: just below its referencing column (or the main row for an
-  // unreferenced resource, which has no cable to anchor it).
-  const laneY = new Map<string, number>(
-    resources.map((resource) => [
-      resource.id,
-      isVertical ? laneStart : (desiredResourceTop.get(resource.id) ?? maxCross) + laneGap(ctx.dims),
-    ])
-  );
+  // Resources sit in a single lane below the entire flow. Anchoring each one under its
+  // own (possibly short) column let it ride up beside a taller neighbour and overlap it,
+  // so they all share a y just past the flow's deepest point (`maxCross`).
+  const laneTop = maxCross + laneGap(ctx.dims);
+  const laneY = new Map<string, number>(resources.map((resource) => [resource.id, isVertical ? laneStart : laneTop]));
   const laneX = isVertical ? null : resourceLaneX(resources, desiredResourceLeft, laneY, ctx);
   let stackY = laneStart;
   let resourceRight = 0;

@@ -1267,10 +1267,10 @@ output:
     expect(resourceX).toBe(procX);
   });
 
-  it('parks each resource below its own column, not below the tallest column', () => {
-    // A short processor (cache) references `c`; a much taller switch references `lim`
-    // from a deep case. `c` must rise to just below the short cache rather than being
-    // dragged down to the switch's depth alongside `lim`.
+  it('parks resources in a single lane below the whole flow, clear of a taller neighbour', () => {
+    // A short processor (cache) references `c`; a much taller switch references `lim`.
+    // Both resources share one lane below the deepest column — anchoring `c` up beside
+    // the short cache used to let it overlap the taller switch column next to it.
     const mixedHeights = `pipeline:
   processors:
     - cache: { resource: c, operator: get }
@@ -1291,9 +1291,13 @@ rate_limit_resources:
     const layout = computeFlowLayout(parsePipelineFlowTree(mixedHeights).nodes);
     const cacheRes = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
     const limitRes = layout.rfNodes.find((n) => n.id === 'resource-rate_limit_resources-0');
+    // Both resources sit in the same lane row...
     expect(cacheRes?.position.y ?? 0).toBeGreaterThan(0);
-    // The short column's resource sits well above the tall switch's resource.
-    expect(cacheRes?.position.y ?? 0).toBeLessThan(limitRes?.position.y ?? 0);
+    expect(cacheRes?.position.y).toBe(limitRes?.position.y);
+    // ...which is below the tall switch column, so neither card overlaps it.
+    const sw = layout.rfNodes.find((n) => n.id === 'proc-1');
+    const switchBottom = (sw?.position.y ?? 0) + ((sw?.initialHeight as number) ?? 0);
+    expect(cacheRes?.position.y ?? 0).toBeGreaterThan(switchBottom);
   });
 
   it('connects a reference to the exact node, re-anchoring to a visible ancestor when collapsed', () => {

@@ -47,6 +47,13 @@ import {
 // they reference. Passed to AddConnectorDialog's type filter.
 const INSERTABLE_TYPES = ['processor', 'cache', 'rate_limit'] satisfies ConnectComponentType[];
 
+// Reads the picker title for a typed slot, e.g. "Insert an output" inside a switch.
+const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
+  input: 'an input',
+  output: 'an output',
+  processor: 'a processor',
+};
+
 // Where a chosen connector should land: a top-level spine slot (insert into
 // pipeline.processors at an index) or a nested container slot (insert into an
 // arbitrary YAML array — a switch case, branch, broker, fallback).
@@ -472,11 +479,22 @@ export function VisualEditorPanel({
     insertTypes = [pendingInsert.kind];
   }
 
-  // The picker's title/placeholder adapt to what's being added.
+  // The picker's title/placeholder adapt to what's being added — a nested slot (or an
+  // output-switch case) names its exact kind, so an output added inside a switch reads
+  // "Insert an output", not the generic "Insert a step".
   const isResourceInsert = pendingInsert?.context === 'resourceForNode';
-  const insertTitle = isResourceInsert
-    ? `Add ${pendingInsert.kind === 'cache' ? 'cache' : 'rate limit'} resource`
-    : 'Insert a step';
+  const slotKind =
+    pendingInsert?.context === 'slot'
+      ? pendingInsert.accepts
+      : pendingInsert?.context === 'switchCaseOutput'
+        ? 'output'
+        : undefined;
+  let insertTitle = 'Insert a step';
+  if (isResourceInsert) {
+    insertTitle = `Add ${pendingInsert.kind === 'cache' ? 'cache' : 'rate limit'} resource`;
+  } else if (slotKind) {
+    insertTitle = `Insert ${INSERT_KIND_LABEL[slotKind]}`;
+  }
 
   return (
     <div className="flex h-full w-full">
@@ -571,7 +589,9 @@ export function VisualEditorPanel({
         isOpen={pendingInsert !== null}
         onAddConnector={handleInsertSelected}
         onCloseAddConnector={() => setPendingInsert(null)}
-        searchPlaceholder={isResourceInsert ? 'Search caches, rate limits…' : 'Search components…'}
+        searchPlaceholder={
+          isResourceInsert ? 'Search caches, rate limits…' : slotKind ? `Search ${slotKind}s…` : 'Search components…'
+        }
         title={insertTitle}
       />
 

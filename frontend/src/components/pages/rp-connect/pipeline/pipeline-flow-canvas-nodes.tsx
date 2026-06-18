@@ -612,7 +612,7 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
-          'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/20 shadow-sm',
+          'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/40 shadow-sm',
           cardRing(data)
         )}
       >
@@ -677,11 +677,11 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
   return (
     <button
       aria-label={data.label ?? 'Add'}
-      className="nodrag nopan flex h-full w-full cursor-pointer items-center justify-center gap-1 rounded-md border border-border border-dashed text-muted-foreground text-xs transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+      className="nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-muted-foreground text-xs transition-colors hover:bg-primary/5 hover:text-primary"
       onClick={() => data.onInsert?.(payload)}
       type="button"
     >
-      <PlusIcon className="size-3.5" />
+      <PlusIcon className="size-3" />
       {data.label}
     </button>
   );

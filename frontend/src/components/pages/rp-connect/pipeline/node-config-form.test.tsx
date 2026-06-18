@@ -47,6 +47,22 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.getByText('tls')).toBeInTheDocument();
   });
 
+  test('marks only no-default fields required; a defaulted field (sasl.mechanism) is not', async () => {
+    const user = userEvent.setup();
+    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+
+    // A scalar with no default is genuinely required.
+    expect(screen.getByText('topic').closest('div')?.querySelector('[title="Required"]')).not.toBeNull();
+
+    // `mechanism` has a default (`none`), so even though the backend left `optional`
+    // unset it must NOT be flagged required.
+    await user.click(screen.getByText('Advanced'));
+    await user.click(screen.getByText('sasl'));
+    const mechRow = screen.getByText('mechanism').closest('div');
+    expect(mechRow).not.toBeNull();
+    expect(mechRow?.querySelector('[title="Required"]')).toBeNull();
+  });
+
   test('shows the schema default as a hint for optional fields', () => {
     renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
     // partitioner defaults to fnv1a_hash.

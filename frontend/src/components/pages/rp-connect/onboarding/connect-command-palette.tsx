@@ -16,6 +16,7 @@ import { ExternalLink, Waypoints } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useMemo, useState } from 'react';
+import ReactMarkdown, { type Components } from 'react-markdown';
 
 import { ConnectorLogo } from './connector-logo';
 import { getConnectorDocsUrl } from '../pipeline/pipeline-flow-nodes';
@@ -148,9 +149,9 @@ function ComponentIcon({ component, className = 'size-5' }: { component: Connect
   return <Waypoints className={`${className} shrink-0 text-muted-foreground`} />;
 }
 
-// Component summaries/descriptions arrive as AsciiDoc, peppered with link macros
+// Component summaries arrive as one-line AsciiDoc, peppered with link macros
 // (`url[label]`, `xref:page[label]`, `link:url[label]`). Reduce those to their label
-// text so the preview reads as prose instead of leaking markup.
+// text and flatten to a single line for use as the preview's lead sentence.
 function cleanText(text: string): string {
   return text
     .replace(/(?:xref|link):[^\s[]*\[([^\]]*)\]/g, '$1')
@@ -158,6 +159,92 @@ function cleanText(text: string): string {
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Descriptions are multi-line AsciiDoc fragments (section titles like `== Performance`,
+// link macros, `*` bullets). Convert the handful of constructs Connect actually uses to
+// Markdown so react-markdown can render structured, readable prose — rather than the raw
+// markup leaking through. Newlines are preserved (unlike cleanText) so titles/paragraphs
+// stay distinct.
+export function asciidocToMarkdown(raw: string): string {
+  return (
+    raw
+      .replace(/\r\n/g, '\n')
+      // Internal/explicit-link macros → their label text.
+      .replace(/(?:xref|link):[^\s[\]]*\[([^\]]*)\]/g, '$1')
+      // Bare URL macro `https://host/path[label]` → a Markdown link.
+      .replace(/(https?:\/\/[^\s[\]]+)\[([^\]]*)\]/g, '[$2]($1)')
+      // Section titles on their own line (`==`/`===`/… Title) → a small Markdown heading.
+      .replace(/^=+\s+(.{1,60})$/gm, '#### $1')
+      // Strip any leftover heading markers (over-long titles that didn't match above).
+      .replace(/^=+\s+/gm, '')
+      // AsciiDoc unordered list markers → Markdown bullets.
+      .replace(/^\*\s+/gm, '- ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
+}
+
+// A compact section title, matching the inspector's small-label style (e.g. "CATEGORIES").
+const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
+  <Text className="mt-2 font-semibold text-foreground text-xs uppercase tracking-wide">{children}</Text>
+);
+
+// DS-styled element map so the rendered Markdown matches the inspector's type scale
+// (small headings, relaxed body, inline code, external links). Every heading level
+// collapses to the same compact label — these are short section titles, not a hierarchy.
+const MARKDOWN_COMPONENTS: Components = {
+  h1: MarkdownHeading,
+  h2: MarkdownHeading,
+  h3: MarkdownHeading,
+  h4: MarkdownHeading,
+  h5: MarkdownHeading,
+  h6: MarkdownHeading,
+  p: ({ children }) => <Text className="text-foreground text-sm leading-relaxed">{children}</Text>,
+  a: ({ href, children }) => (
+    <Link href={href} rel="noopener noreferrer" target="_blank">
+      {children}
+    </Link>
+  ),
+  code: ({ children }) => <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>,
+  ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-foreground text-sm">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal space-y-0.5 pl-4 text-foreground text-sm">{children}</ol>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+};
+
+function FormattedDescription({ markdown }: { markdown: string }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <ReactMarkdown components={MARKDOWN_COMPONENTS}>{markdown}</ReactMarkdown>
+    </div>
+  );
+}
+
+// Long descriptions (a minority, but up to ~6.7k chars) are clamped behind a "Show
+// more" toggle so the preview stays scannable — the full reference is a click away via
+// the docs link. Keyed by component name at the call site so the toggle resets per row.
+function DescriptionBlock({ markdown, collapsible }: { markdown: string; collapsible: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!collapsible) {
+    return <FormattedDescription markdown={markdown} />;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      <div className={expanded ? '' : 'relative max-h-44 overflow-hidden'}>
+        <FormattedDescription markdown={markdown} />
+        {expanded ? null : (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
+        )}
+      </div>
+      <button
+        className="self-start font-medium text-primary text-xs hover:underline"
+        onClick={() => setExpanded((v) => !v)}
+        type="button"
+      >
+        {expanded ? 'Show less' : 'Show more'}
+      </button>
+    </div>
+  );
 }
 
 function statusBadge(status: ComponentStatus, name: string) {
@@ -210,17 +297,15 @@ function Row({
       value={`${component.type}:${component.name}`}
     >
       <ComponentIcon component={component} />
-      <div className="flex min-w-0 flex-col">
-        <span className="flex items-center gap-2">
-          <HighlightedName name={component.name} query={query} />
-          {statusBadge(component.status, component.name)}
-        </span>
-        {component.summary ? <span className="truncate text-muted-foreground text-xs">{component.summary}</span> : null}
-      </div>
-      <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground text-xs capitalize">
-        {component.type.replace(/_/g, ' ')}
-        {category ? ` · ${getCategoryDisplayName(category)}` : ''}
+      <span className="flex min-w-0 items-center gap-2">
+        <HighlightedName name={component.name} query={query} />
+        {statusBadge(component.status, component.name)}
       </span>
+      {category ? (
+        <Badge className="ml-auto shrink-0" size="sm" variant="simple-outline">
+          {getCategoryDisplayName(category)}
+        </Badge>
+      ) : null}
     </CommandItem>
   );
 }
@@ -245,7 +330,11 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   }
 
   const categories = (component.categories ?? []).map(getCategoryDisplayName).filter(Boolean);
-  const description = cleanText(component.description || component.summary || '');
+  // Lead with the concise summary, then the fuller description rendered as Markdown.
+  const summary = cleanText(component.summary ?? '');
+  const descriptionMd = component.description ? asciidocToMarkdown(component.description) : '';
+  // Skip the description when it's just the summary repeated (some components set both).
+  const showDescription = descriptionMd !== '' && cleanText(component.description ?? '') !== summary;
   const docsUrl = getConnectorDocsUrl(component.type, component.name);
 
   return (
@@ -264,7 +353,15 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
         </div>
       </div>
 
-      {description ? <Text className="text-foreground text-sm leading-relaxed">{description}</Text> : null}
+      {summary ? <Text className="text-foreground text-sm leading-relaxed">{summary}</Text> : null}
+
+      {showDescription ? (
+        <DescriptionBlock
+          collapsible={(component.description?.length ?? 0) > 700}
+          key={`${component.type}:${component.name}`}
+          markdown={descriptionMd}
+        />
+      ) : null}
 
       {categories.length > 0 ? (
         <div className="flex flex-col gap-1.5">
@@ -458,17 +555,19 @@ export const ConnectCommandPalette = ({
         value={activeValue}
       >
         <CommandInput onValueChange={setQuery} placeholder={searchPlaceholder ?? 'Search components…'} value={query} />
-        <div className="flex h-11 shrink-0 items-center gap-2 border-b pr-2">
-          {q ? (
-            <Text className="flex-1 px-3 text-muted-foreground text-xs">
+        {q ? (
+          <div className="flex h-10 shrink-0 items-center border-b px-3">
+            <Text className="text-muted-foreground text-xs">
               {results.length} result{results.length === 1 ? '' : 's'}
             </Text>
-          ) : (
-            <Tabs className="h-full min-w-0 flex-1 gap-0" onValueChange={setTab} value={currentTab}>
-              <TabsList
-                className="h-full w-full justify-start overflow-x-auto border-b-0 bg-transparent px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                variant="underline"
-              >
+          </div>
+        ) : (
+          // The scroll lives on the wrapper (not the TabsList) and adds 1px of bottom
+          // room: a scroll container clips to its padding box, which would otherwise cut
+          // off the active underline's 1px overhang and make it look thinner than the DS.
+          <div className="shrink-0 overflow-x-auto pb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Tabs className="w-max min-w-full gap-0" onValueChange={setTab} value={currentTab}>
+              <TabsList className="w-full px-2" variant="underline">
                 {tabs.map((t) => (
                   <TabsTrigger key={t.id} value={t.id} variant="underline">
                     {t.label}
@@ -476,8 +575,8 @@ export const ConnectCommandPalette = ({
                 ))}
               </TabsList>
             </Tabs>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex min-h-0 flex-1">
           <CommandList className="h-full max-h-none min-w-0 flex-1 md:max-w-[28rem] md:border-r">

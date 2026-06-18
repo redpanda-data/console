@@ -32,6 +32,7 @@ import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ScrollShadow } from './scroll-shadow';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import { checkRequired } from '../utils/schema';
 
 export type ResourceKind = 'cache' | 'rate_limit';
 
@@ -384,11 +385,11 @@ function buildComponentEntry({
 const FieldLabel = ({ spec }: { spec: RawFieldSpec }) => (
   <div className="flex items-center gap-2">
     <Label className="font-medium text-sm">{spec.name}</Label>
-    {spec.optional ? null : (
+    {checkRequired(spec) ? (
       <span className="text-destructive text-xs" title="Required">
         *
       </span>
-    )}
+    ) : null}
     {spec.type && spec.type !== 'string' ? <span className="text-muted-foreground text-xs">{spec.type}</span> : null}
     {spec.defaultValue ? (
       <span className="text-muted-foreground text-xs">
@@ -551,7 +552,7 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   }
   if (isObjectGroup(spec)) {
     return (
-      <FieldGroup defaultOpen={!(spec.optional || spec.advanced)} label={spec.name}>
+      <FieldGroup defaultOpen={checkRequired(spec) && !spec.advanced} label={spec.name}>
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />
       </FieldGroup>
     );
@@ -571,8 +572,8 @@ const SchemaFields = ({
 }) => {
   const formFields = fields.filter(isFormField);
   const ordered = [
-    ...formFields.filter((f) => !(f.optional || f.advanced)),
-    ...formFields.filter((f) => f.optional && !f.advanced),
+    ...formFields.filter((f) => checkRequired(f) && !f.advanced),
+    ...formFields.filter((f) => !(checkRequired(f) || f.advanced)),
     ...formFields.filter((f) => f.advanced),
   ];
   return (
@@ -612,8 +613,8 @@ export function NodeConfigForm({
       : {};
 
   const topFields = fields.filter(isFormField);
-  const required = topFields.filter((f) => !(f.optional || f.advanced));
-  const optional = topFields.filter((f) => f.optional && !f.advanced);
+  const required = topFields.filter((f) => checkRequired(f) && !f.advanced);
+  const optional = topFields.filter((f) => !(checkRequired(f) || f.advanced));
   const advanced = topFields.filter((f) => f.advanced);
   // Nested-component fields are edited on the canvas; surface a hint, never a control.
   const componentFields = fields.filter(isComponentField);
