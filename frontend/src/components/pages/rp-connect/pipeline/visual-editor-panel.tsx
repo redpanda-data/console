@@ -23,6 +23,7 @@ import { NodeInspector } from './node-inspector';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { TemplateGalleryCta } from './template-cta';
+import { usePipelineEditorStore } from './use-pipeline-editor-store';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
@@ -239,6 +240,8 @@ type VisualEditorPanelProps = {
   onAddSasl?: (section: string, componentName: string) => void;
   /** Open the template gallery (edit mode); shows a floating entry point when empty. */
   onBrowseTemplates?: () => void;
+  /** Switch to the YAML lane and reveal the given node there (inspector "View in YAML"). */
+  onNavigateToYaml?: (nodeId: string) => void;
 };
 
 /**
@@ -258,10 +261,18 @@ export function VisualEditorPanel({
   onAddTopic,
   onAddSasl,
   onBrowseTemplates,
+  onNavigateToYaml,
 }: VisualEditorPanelProps) {
   const isEditing = mode !== 'view';
   const [selected, setSelected] = useState<{ id: string; target: EditTarget } | null>(null);
   const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
+
+  // Mirror the selection into the shared store so switching to the YAML lane can
+  // reveal the same node (the lanes are separate component trees).
+  const setSelectedNodeId = usePipelineEditorStore((s) => s.setSelectedNodeId);
+  useEffect(() => {
+    setSelectedNodeId(selected?.id ?? null);
+  }, [selected, setSelectedNodeId]);
 
   // Briefly pulse the node(s) an undo/redo touched, so the change is easy to spot.
   const [flash, setFlash] = useState<{ ids: ReadonlySet<string>; token: number }>({ ids: new Set(), token: 0 });
@@ -576,6 +587,7 @@ export function VisualEditorPanel({
             onApply={onYamlChange}
             onCreateResource={isEditing ? handleRequestCreateResource : undefined}
             onDelete={isEditing ? handleDeleteNode : undefined}
+            onOpenInYaml={onNavigateToYaml && selected ? () => onNavigateToYaml(selected.id) : undefined}
             readOnly={!isEditing}
             target={selected?.target ?? null}
             yaml={yamlContent}

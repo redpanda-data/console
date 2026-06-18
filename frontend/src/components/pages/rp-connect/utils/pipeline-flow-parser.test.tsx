@@ -1135,6 +1135,64 @@ cache_resources:
     expect(refEdge?.target).toBe('resource-cache_resources-0');
   });
 
+  it('renders *_resources definitions and links resource: indirection to them', () => {
+    // A fully resource-indirected pipeline (valid in Cloud): input/output/processor are
+    // `resource:` references; the real components live in *_resources arrays.
+    const yaml = `input:
+  resource: my_input
+pipeline:
+  processors:
+    - resource: my_proc
+output:
+  resource: my_output
+input_resources:
+  - label: my_input
+    generate:
+      mapping: 'root = {}'
+processor_resources:
+  - label: my_proc
+    mapping: 'root = this'
+output_resources:
+  - label: my_output
+    drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+
+    // The three resource definitions render in the resource lane, inspectable via a
+    // path edit target whose schema follows the matching component type.
+    const inputRes = nodes.find((n) => n.id === 'resource-input_resources-0');
+    expect(inputRes).toMatchObject({ section: 'resource', label: 'generate', labelText: 'my_input' });
+    expect(inputRes?.editTarget).toEqual({ kind: 'path', path: ['input_resources', 0], componentType: 'input' });
+    expect(nodes.find((n) => n.id === 'resource-processor_resources-0')?.editTarget).toEqual({
+      kind: 'path',
+      path: ['processor_resources', 0],
+      componentType: 'processor',
+    });
+    expect(nodes.find((n) => n.id === 'resource-output_resources-0')?.editTarget).toEqual({
+      kind: 'path',
+      path: ['output_resources', 0],
+      componentType: 'output',
+    });
+
+    // The references resolve (not dangling) and link to their definitions.
+    const input = nodes.find((n) => n.id === 'input-0');
+    expect(input?.resourceRef).toBe('my_input');
+    expect(input?.danglingRef).toBeUndefined();
+    expect(nodes.find((n) => n.id === 'proc-0')?.resourceRef).toBe('my_proc');
+    expect(nodes.find((n) => n.id === 'output-0')?.resourceRef).toBe('my_output');
+
+    const layout = computeFlowLayout(nodes);
+    const refFromInput = layout.rfEdges.find((e) => e.id.startsWith('ref-') && e.source === 'input-0');
+    expect(refFromInput?.target).toBe('resource-input_resources-0');
+  });
+
+  it('flags a resource: indirection with no matching *_resources entry as dangling', () => {
+    const { nodes } = parsePipelineFlowTree(`input:
+  resource: ghost
+output:
+  drop: {}`);
+    expect(nodes.find((n) => n.id === 'input-0')).toMatchObject({ resourceRef: 'ghost', danglingRef: true });
+  });
+
   it('marks switch cases as selectable wrappers that edit their routing condition', () => {
     const withSwitch = `pipeline:
   processors:

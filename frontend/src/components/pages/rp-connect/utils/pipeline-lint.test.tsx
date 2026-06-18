@@ -12,7 +12,7 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { describe, expect, it } from 'vitest';
 
-import { mapLintHintsToNodes, mergeLintHints } from './pipeline-lint';
+import { mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from './pipeline-lint';
 
 const hint = (line: number, msg: string): LintHint => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
 
@@ -63,6 +63,29 @@ describe('mapLintHintsToNodes', () => {
     expect(mapLintHintsToNodes(yaml, [hint(1, 'top-level')]).size).toBe(0);
     expect(mapLintHintsToNodes('{{{', [hint(1, 'x')]).size).toBe(0);
     expect(mapLintHintsToNodes('', [hint(1, 'x')]).size).toBe(0);
+  });
+});
+
+describe('nodeLineRanges', () => {
+  it('ends a node on its last content line, not the line below', () => {
+    const ranges = nodeLineRanges(yaml);
+    // The single-line `mapping` processor is line 3 only — it must not extend to the
+    // `- branch:` line below it (the trailing-newline over-select bug).
+    expect(ranges.find((r) => r.id === 'proc-0')).toEqual({ id: 'proc-0', start: 3, end: 3, span: 0 });
+    // The branch container spans its own block (lines 4–9), stopping before `output:`.
+    expect(ranges.find((r) => r.id === 'proc-1')).toMatchObject({ start: 4, end: 9 });
+  });
+
+  it('keeps a multi-line block scalar fully selected', () => {
+    const multiline = `pipeline:
+  processors:
+    - mapping: |
+        root = this
+        root.x = 1
+output:
+  drop: {}`;
+    // Lines: 3 `- mapping: |`, 4–5 the block body. The node ends on line 5, not 6.
+    expect(nodeLineRanges(multiline).find((r) => r.id === 'proc-0')).toMatchObject({ start: 3, end: 5 });
   });
 });
 

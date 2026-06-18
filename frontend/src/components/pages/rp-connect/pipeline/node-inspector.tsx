@@ -20,6 +20,7 @@ import {
   AlertCircle,
   BookOpenIcon,
   Box,
+  FileCode2,
   type LucideIcon,
   MousePointerClick,
   MousePointerSquareDashed,
@@ -90,6 +91,8 @@ type NodeInspectorProps = {
   readOnly?: boolean;
   /** Lint problems that map to the selected node. */
   lintHints?: LintHint[];
+  /** Jump to this node's lines in the YAML lane (header "View in YAML" action). */
+  onOpenInYaml?: () => void;
 };
 
 /**
@@ -106,6 +109,7 @@ export function NodeInspector({
   onDelete,
   readOnly,
   lintHints,
+  onOpenInYaml,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   const componentName = component ? firstKey(component) : undefined;
@@ -134,6 +138,7 @@ export function NodeInspector({
           }
         }}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
+        onOpenInYaml={onOpenInYaml}
         readOnly={readOnly}
       />
     );
@@ -205,6 +210,7 @@ export function NodeInspector({
         docsUrl={docsUrl}
         kindLabel={kindLabel}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
+        onOpenInYaml={onOpenInYaml}
         usedByCount={resourceLabel ? usedByCount : undefined}
       />
       {lintHints && lintHints.length > 0 ? <InspectorLintErrors hints={lintHints} /> : null}
@@ -264,11 +270,13 @@ const SwitchCaseEditor = ({
   caseObject,
   onApply,
   onDelete,
+  onOpenInYaml,
   readOnly,
 }: {
   caseObject: Record<string, unknown>;
   onApply: (next: Record<string, unknown>) => void;
   onDelete?: () => void;
+  onOpenInYaml?: () => void;
   readOnly?: boolean;
 }) => {
   const initial = typeof caseObject.check === 'string' ? caseObject.check : '';
@@ -300,11 +308,24 @@ const SwitchCaseEditor = ({
             Case condition
           </Text>
         </div>
-        {onDelete ? (
-          <Button aria-label="Remove case" className="ml-auto" onClick={onDelete} size="icon-sm" variant="ghost">
-            <Trash2 />
-          </Button>
-        ) : null}
+        <div className="ml-auto flex shrink-0 items-center gap-0.5">
+          {onOpenInYaml ? (
+            <Button
+              aria-label="View in YAML"
+              onClick={onOpenInYaml}
+              size="icon-sm"
+              title="View in YAML"
+              variant="ghost"
+            >
+              <FileCode2 />
+            </Button>
+          ) : null}
+          {onDelete ? (
+            <Button aria-label="Remove case" onClick={onDelete} size="icon-sm" variant="ghost">
+              <Trash2 />
+            </Button>
+          ) : null}
+        </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-4">
         <Label className="font-medium text-sm">Condition (check)</Label>
@@ -379,12 +400,14 @@ const InspectorHeader = ({
   componentName,
   docsUrl,
   onDelete,
+  onOpenInYaml,
   usedByCount,
 }: {
   kindLabel: string;
   componentName: string;
   docsUrl?: string;
   onDelete?: () => void;
+  onOpenInYaml?: () => void;
   usedByCount?: number;
 }) => (
   <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
@@ -399,6 +422,11 @@ const InspectorHeader = ({
       </Text>
     </div>
     <div className="ml-auto flex shrink-0 items-center gap-0.5">
+      {onOpenInYaml ? (
+        <Button aria-label="View in YAML" onClick={onOpenInYaml} size="icon-sm" title="View in YAML" variant="ghost">
+          <FileCode2 />
+        </Button>
+      ) : null}
       {docsUrl ? (
         <Button
           aria-label={`${componentName} documentation`}

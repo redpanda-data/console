@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { render, screen } from 'test-utils';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { PipelineEditorProvider } from './use-pipeline-editor-store';
 import { VisualEditorPanel } from './visual-editor-panel';
 import { mockComponents } from '../utils/__fixtures__/component-schemas';
 
@@ -78,14 +79,16 @@ const EMPTY_STATE_TEXT = /select a node/i;
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
   const onYamlChange = vi.fn();
   render(
-    <VisualEditorPanel
-      componentList={{} as ComponentList}
-      components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
-      mode="edit"
-      onYamlChange={onYamlChange}
-      yamlContent={sampleYaml}
-      {...overrides}
-    />
+    <PipelineEditorProvider initialSlashTipVisible={false}>
+      <VisualEditorPanel
+        componentList={{} as ComponentList}
+        components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+        mode="edit"
+        onYamlChange={onYamlChange}
+        yamlContent={sampleYaml}
+        {...overrides}
+      />
+    </PipelineEditorProvider>
   );
   return { onYamlChange };
 };
@@ -154,13 +157,15 @@ describe('VisualEditorPanel', () => {
     function Harness() {
       const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
       return (
-        <VisualEditorPanel
-          componentList={{} as ComponentList}
-          components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
-          mode="edit"
-          onYamlChange={setYaml}
-          yamlContent={yaml}
-        />
+        <PipelineEditorProvider initialSlashTipVisible={false}>
+          <VisualEditorPanel
+            componentList={{} as ComponentList}
+            components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+            mode="edit"
+            onYamlChange={setYaml}
+            yamlContent={yaml}
+          />
+        </PipelineEditorProvider>
       );
     }
     render(<Harness />);
@@ -186,13 +191,15 @@ describe('VisualEditorPanel', () => {
     function Harness() {
       const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
       return (
-        <VisualEditorPanel
-          componentList={{} as ComponentList}
-          components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
-          mode="edit"
-          onYamlChange={setYaml}
-          yamlContent={yaml}
-        />
+        <PipelineEditorProvider initialSlashTipVisible={false}>
+          <VisualEditorPanel
+            componentList={{} as ComponentList}
+            components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+            mode="edit"
+            onYamlChange={setYaml}
+            yamlContent={yaml}
+          />
+        </PipelineEditorProvider>
       );
     }
     render(<Harness />);

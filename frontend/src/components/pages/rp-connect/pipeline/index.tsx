@@ -485,27 +485,38 @@ function YamlViewPanel({
   // this the sync closures (which capture the editor) keep the editor + listener graph alive
   // per mount of the view page.
   const scrollSyncSubscriptions = useRef<ReturnType<editor.IStandaloneCodeEditor['onDidScrollChange']>[]>([]);
-  const handleMount = useCallback((instance: editor.IStandaloneCodeEditor) => {
-    const sync = () => {
-      const scrollTop = instance.getScrollTop();
-      const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
-      setOverflow({ top: scrollTop > 1, bottom: scrollTop < maxY - 1 });
-    };
-    scrollSyncSubscriptions.current = [
-      instance.onDidScrollChange(sync),
-      instance.onDidContentSizeChange(sync),
-      instance.onDidLayoutChange(sync),
-    ];
-    sync();
-  }, []);
-  useEffect(function disposeScrollSyncListeners() {
-    return () => {
-      for (const subscription of scrollSyncSubscriptions.current) {
-        subscription.dispose();
-      }
-      scrollSyncSubscriptions.current = [];
-    };
-  }, []);
+  // Register the (read-only) viewer as the active editor so node selection from the
+  // sidebar / Visual lane can reveal + select lines here too, just like edit mode.
+  const setEditorInstance = usePipelineEditorStore((s) => s.setEditorInstance);
+  const handleMount = useCallback(
+    (instance: editor.IStandaloneCodeEditor) => {
+      const sync = () => {
+        const scrollTop = instance.getScrollTop();
+        const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
+        setOverflow({ top: scrollTop > 1, bottom: scrollTop < maxY - 1 });
+      };
+      scrollSyncSubscriptions.current = [
+        instance.onDidScrollChange(sync),
+        instance.onDidContentSizeChange(sync),
+        instance.onDidLayoutChange(sync),
+      ];
+      sync();
+      setEditorInstance(instance);
+    },
+    [setEditorInstance]
+  );
+  useEffect(
+    function disposeScrollSyncListeners() {
+      return () => {
+        for (const subscription of scrollSyncSubscriptions.current) {
+          subscription.dispose();
+        }
+        scrollSyncSubscriptions.current = [];
+        setEditorInstance(null);
+      };
+    },
+    [setEditorInstance]
+  );
 
   const edge =
     'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
@@ -746,6 +757,24 @@ function SidebarPanel({
     });
     return () => sub.dispose();
   }, [editorInstance]);
+
+  // A pending reveal request from the Visual lane (switching to YAML with a node
+  // selected, or the inspector's "View in YAML"). Honour it once the editor + ranges
+  // are mounted after the lane switch, then clear it so it fires only once.
+  const revealNodeId = usePipelineEditorStore((s) => s.revealNodeId);
+  const requestRevealNode = usePipelineEditorStore((s) => s.requestRevealNode);
+  useEffect(() => {
+    if (!revealNodeId) {
+      return;
+    }
+    const range = nodeRanges.find((r) => r.id === revealNodeId);
+    if (!(editorInstance?.getModel() && range)) {
+      return;
+    }
+    setActiveNodeId(revealNodeId);
+    revealNodeInEditor(revealNodeId);
+    requestRevealNode(null);
+  }, [revealNodeId, editorInstance, nodeRanges, revealNodeInEditor, requestRevealNode]);
   const showTemplateCta = showNewLane && canEdit && Boolean(onBrowseTemplates) && isEmpty;
   // The old mini-diagram renders its own template entry point internally; the new
   // lane uses the floating CTA below instead.
@@ -885,6 +914,7 @@ function PipelinePageContent() {
     setAllowNavigation,
     setActiveViewLane,
     setActiveEditLane,
+    requestRevealNode,
     setCommandMenuFilter,
     setAddConnectorType,
     setSlashTipVisible,
@@ -900,6 +930,7 @@ function PipelinePageContent() {
   const hydratedPipelineId = usePipelineEditorStore((s) => s.hydratedPipelineId);
   const activeViewLane = usePipelineEditorStore((s) => s.activeViewLane);
   const activeEditLane = usePipelineEditorStore((s) => s.activeEditLane);
+  const selectedNodeId = usePipelineEditorStore((s) => s.selectedNodeId);
   const commandMenuFilter = usePipelineEditorStore((s) => s.commandMenuFilter);
   const addConnectorType = usePipelineEditorStore((s) => s.addConnectorType);
   const slashTipVisible = usePipelineEditorStore((s) => s.slashTipVisible);
@@ -1092,6 +1123,24 @@ function PipelinePageContent() {
   const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
   const showSidebar = !(isViewVisualLane || isEditVisualLane);
 
+  // Open the YAML lane and reveal a node there: an explicit id (the inspector's
+  // "View in YAML"), else the currently-selected node (switching tabs with a
+  // selection). Routes to the right lane for the current mode.
+  const goToYamlNode = useCallback(
+    (nodeId?: string) => {
+      const target = nodeId ?? selectedNodeId;
+      if (target) {
+        requestRevealNode(target);
+      }
+      if (mode === 'view') {
+        setActiveViewLane('configuration');
+      } else {
+        setActiveEditLane('yaml');
+      }
+    },
+    [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane]
+  );
+
   return (
     // overflow-x-clip guards against stray horizontal overflow (clip, not hidden, to keep overflow-y visible).
     <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
@@ -1129,7 +1178,7 @@ function PipelinePageContent() {
             <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
               Monitor
             </TabsTrigger>
-            <TabsTrigger onClick={() => setActiveViewLane('configuration')} value="configuration" variant="underline">
+            <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
               YAML
             </TabsTrigger>
             {isVisualEditorEnabled ? (
@@ -1144,7 +1193,7 @@ function PipelinePageContent() {
       {mode !== 'view' && isVisualEditorEnabled ? (
         <Tabs value={activeEditLane}>
           <TabsList className="w-fit" variant="underline">
-            <TabsTrigger onClick={() => setActiveEditLane('yaml')} value="yaml" variant="underline">
+            <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
               YAML
             </TabsTrigger>
             <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
@@ -1179,6 +1228,7 @@ function PipelinePageContent() {
               components={components}
               lintHints={Object.values(lintHints)}
               mode="view"
+              onNavigateToYaml={goToYamlNode}
               onYamlChange={setYamlContent}
               yamlContent={pipeline.configYaml}
             />
@@ -1193,6 +1243,7 @@ function PipelinePageContent() {
               onAddSasl={handleAddSasl}
               onAddTopic={handleAddTopic}
               onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
+              onNavigateToYaml={goToYamlNode}
               onYamlChange={setYamlContent}
               yamlContent={yamlContent}
             />

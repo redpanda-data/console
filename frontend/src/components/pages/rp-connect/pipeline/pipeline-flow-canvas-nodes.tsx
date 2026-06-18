@@ -715,27 +715,30 @@ export function FlowSpineEdge({ sourceX, sourceY, targetX, targetY, markerEnd, d
   const onInsert = d?.onInsert;
   return (
     <>
+      {/* A faint static rail; the moving particles on top are the dominant element so
+          the direction of flow actually reads (a same-colour, full-opacity base would
+          swallow the motion). Fully dimmed when the edge is unrelated to the selection. */}
       <BaseEdge
         markerEnd={markerEnd}
         path={path}
         style={{
           stroke: 'var(--color-primary)',
           strokeWidth: d?.emphasized ? 2.5 : 1.5,
-          opacity: d?.dimmed ? 0.25 : 1,
+          opacity: d?.dimmed ? 0.2 : 0.4,
         }}
       />
-      {/* Marching dots over the solid spine show which way data flows; quieted on
-          idle edges and dropped entirely on edges unrelated to the selection. */}
+      {/* Marching particles over the rail show which way data flows; dropped entirely on
+          edges unrelated to the selection. */}
       {d?.dimmed ? null : (
         <path
           className="pipeline-flow-dash"
           d={path}
           fill="none"
           stroke="var(--color-primary)"
-          strokeDasharray="1 9"
+          strokeDasharray="2 8"
           strokeLinecap="round"
-          strokeWidth={d?.emphasized ? 3 : 2}
-          style={{ opacity: d?.emphasized ? 0.85 : 0.5, pointerEvents: 'none' }}
+          strokeWidth={d?.emphasized ? 3.5 : 2.5}
+          style={{ opacity: 1, pointerEvents: 'none' }}
         />
       )}
       {onInsert ? (

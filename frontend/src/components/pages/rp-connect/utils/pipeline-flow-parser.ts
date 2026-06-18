@@ -23,6 +23,12 @@ type ParsedYamlConfig = {
   pipeline?: { processors?: Record<string, unknown>[] };
   cache_resources?: unknown[];
   rate_limit_resources?: unknown[];
+  // Inputs/outputs/processors can be declared as named resources and referenced via
+  // `resource:` indirection (valid in Redpanda Cloud too). We render their definitions
+  // in the resource lane and link the references to them.
+  input_resources?: unknown[];
+  output_resources?: unknown[];
+  processor_resources?: unknown[];
   buffer?: Record<string, unknown>;
   metrics?: Record<string, unknown>;
   tracer?: Record<string, unknown>;
@@ -338,6 +344,7 @@ function parseInputNodes(
       missingSasl: isRedpanda && !hasSaslConfig(inputObj[inputKey], config) ? true : undefined,
       editTarget: { kind: 'input' },
       meta: summarizeComponent(inputKey, inputObj[inputKey]),
+      resourceRef: indirectionResourceRef(inputKey, inputObj[inputKey]),
       resourceRefCandidates: extractRefCandidates(inputObj[inputKey]),
     },
   ];
@@ -388,6 +395,15 @@ function extractResourceRef(componentValue: unknown): string | undefined {
   return typeof ref === 'string' && ref !== '' ? ref : undefined;
 }
 
+// A `resource:` indirection component — `input: { resource: foo }`, a `resource`
+// processor/output whose value is the label string — runs a named *_resources entry.
+// Capture that label so the canvas links the reference to its definition.
+function indirectionResourceRef(componentName: string | undefined, componentValue: unknown): string | undefined {
+  return componentName === 'resource' && typeof componentValue === 'string' && componentValue !== ''
+    ? componentValue
+    : undefined;
+}
+
 // A resource reference may live in a field whose name isn't `resource` (e.g. a CDC
 // input's `checkpoint_cache`). Without the component schema here we can't know the
 // field's type, so collect every top-level string value as a candidate; the post-pass
@@ -417,7 +433,7 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     label: name,
     section: ctx.section,
     parentId: ctx.parentId,
-    resourceRef: extractResourceRef(componentValue),
+    resourceRef: extractResourceRef(componentValue) ?? indirectionResourceRef(name, componentValue),
     resourceRefCandidates: extractRefCandidates(componentValue),
     // Surface key config on nested leaves too (http inside try/branch/switch, etc.),
     // just like top-level processors.
@@ -736,6 +752,9 @@ function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: s
 const RESOURCE_YAML_KEYS = [
   'cache_resources',
   'rate_limit_resources',
+  'input_resources',
+  'processor_resources',
+  'output_resources',
   'buffer',
   'metrics',
   'tracer',
@@ -747,9 +766,27 @@ const RESOURCE_YAML_KEYS = [
 // root resources (buffer/metrics/tracer/…) are read-only for now.
 const EDITABLE_RESOURCE_KEYS: ReadonlySet<string> = new Set(['cache_resources', 'rate_limit_resources']);
 
+// input/output/processor resources hold a real component, so they're inspectable via a
+// path edit target whose schema follows the matching component type.
+const RESOURCE_KEY_COMPONENT_TYPE: Record<string, 'input' | 'processor' | 'output'> = {
+  input_resources: 'input',
+  processor_resources: 'processor',
+  output_resources: 'output',
+};
+
+// The edit target for the i-th item of a resource array: cache/rate-limit use the
+// dedicated `resource` target; input/output/processor resources use a path target so
+// they reuse the same nested-component editing as everything else.
+function resourceItemEditTarget(key: string, index: number): EditTarget | undefined {
+  if (EDITABLE_RESOURCE_KEYS.has(key)) {
+    return { kind: 'resource', resourceKey: key as ResourceArrayKey, index };
+  }
+  const componentType = RESOURCE_KEY_COMPONENT_TYPE[key];
+  return componentType ? { kind: 'path', path: [key, index], componentType } : undefined;
+}
+
 function parseArrayResource(value: unknown[], key: string, sectionId: string): PipelineFlowNode[] {
   const nodes: PipelineFlowNode[] = [];
-  const editable = EDITABLE_RESOURCE_KEYS.has(key);
   for (const [i, item] of value.entries()) {
     if (item && typeof item === 'object') {
       const itemObj = item as Record<string, unknown>;
@@ -762,7 +799,7 @@ function parseArrayResource(value: unknown[], key: string, sectionId: string): P
         labelText,
         section: 'resource',
         parentId: sectionId,
-        editTarget: editable ? { kind: 'resource', resourceKey: key as ResourceArrayKey, index: i } : undefined,
+        editTarget: resourceItemEditTarget(key, i),
         meta: itemName ? summarizeComponent(itemName, itemObj[itemName]) : undefined,
       });
     }
@@ -829,6 +866,7 @@ function parseOutputNodes(
       missingSasl: isRedpanda && !hasSaslConfig(outputObj[outputKey], config) ? true : undefined,
       editTarget: { kind: 'output' },
       meta: summarizeComponent(outputKey, outputObj[outputKey]),
+      resourceRef: indirectionResourceRef(outputKey, outputObj[outputKey]),
       resourceRefCandidates: extractRefCandidates(outputObj[outputKey]),
     },
   ];

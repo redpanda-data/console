@@ -46,6 +46,12 @@ type UiSlice = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   activeViewLane: ViewLane;
   activeEditLane: EditLane;
+  // The node currently selected in the Visual lane, mirrored here so the YAML lane
+  // can reveal it when the user switches tabs (the lanes don't share a component tree).
+  selectedNodeId: string | null;
+  // A one-shot request to reveal + select a node's lines in the Monaco editor. Set when
+  // jumping from the Visual lane to YAML; consumed and cleared by the editor side.
+  revealNodeId: string | null;
   commandMenuFilter: CommandMenuFilter;
   addConnectorType: AddConnectorType;
   slashTipVisible: boolean;
@@ -56,6 +62,8 @@ type UiSlice = {
   setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
   setActiveViewLane: (activeViewLane: ViewLane) => void;
   setActiveEditLane: (activeEditLane: EditLane) => void;
+  setSelectedNodeId: (selectedNodeId: string | null) => void;
+  requestRevealNode: (revealNodeId: string | null) => void;
   setCommandMenuFilter: (commandMenuFilter: CommandMenuFilter) => void;
   setAddConnectorType: (addConnectorType: AddConnectorType) => void;
   setSlashTipVisible: (slashTipVisible: boolean) => void;
@@ -91,6 +99,8 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   editorInstance: null,
   activeViewLane: 'monitor',
   activeEditLane: 'yaml',
+  selectedNodeId: null,
+  revealNodeId: null,
   commandMenuFilter: null,
   addConnectorType: null,
   slashTipVisible: false,
@@ -101,6 +111,8 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   setEditorInstance: (editorInstance) => set({ editorInstance }),
   setActiveViewLane: (activeViewLane) => set({ activeViewLane }),
   setActiveEditLane: (activeEditLane) => set({ activeEditLane }),
+  setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId }),
+  requestRevealNode: (revealNodeId) => set({ revealNodeId }),
   setCommandMenuFilter: (commandMenuFilter) => set({ commandMenuFilter }),
   setAddConnectorType: (addConnectorType) => set({ addConnectorType }),
   setSlashTipVisible: (slashTipVisible) => set({ slashTipVisible }),

@@ -36,7 +36,12 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
       continue;
     }
     const start = lineCounter.linePos(range[0]).line;
-    const end = lineCounter.linePos(range[2] ?? range[1]).line;
+    // `range[1]` is the end of the node's own content; `range[2]` extends past the
+    // trailing newline into the *next* line, which would over-select by a line. Use
+    // the content end, and if it lands at column 1 (i.e. just past the final
+    // newline) step back to the last line that actually belongs to the node.
+    const endPos = lineCounter.linePos(range[1]);
+    const end = endPos.col === 1 && endPos.line > start ? endPos.line - 1 : endPos.line;
     ranges.push({ id: node.id, start, end, span: end - start });
   }
   return ranges;

@@ -699,6 +699,62 @@ rate_limit_resources:
       interval: 1s
 `;
 
+const resourceIndirection = `# Resource indirection — the input, output, and a processor are declared as named
+# *_resources entries and referenced by label with \`resource:\`. The HTTP enrichment
+# processor is defined ONCE and reused in two places (the main path and the catch
+# handler), so editing it updates both. Valid in Redpanda Cloud.
+# See: https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/resources/
+input:
+  resource: orders_in
+
+pipeline:
+  processors:
+    - resource: enrich_http
+    - catch:
+        - resource: enrich_http
+        - log:
+            level: WARN
+            message: 'enrichment retry failed: \${! error() }'
+
+output:
+  resource: orders_out
+
+input_resources:
+  - label: orders_in
+    redpanda:
+      seed_brokers:
+        - \${REDPANDA_BROKERS}
+      topics: [orders]
+      consumer_group: connect-resource-demo
+      sasl:
+        - mechanism: SCRAM-SHA-256
+          username: \${secrets.KAFKA_USER}
+          password: \${secrets.KAFKA_PASSWORD}
+      tls:
+        enabled: true
+
+processor_resources:
+  - label: enrich_http
+    http:
+      url: https://internal.api/enrich
+      verb: POST
+      timeout: 2s
+      retries: 3
+
+output_resources:
+  - label: orders_out
+    redpanda:
+      seed_brokers:
+        - \${REDPANDA_BROKERS}
+      topic: orders-enriched
+      sasl:
+        - mechanism: SCRAM-SHA-256
+          username: \${secrets.KAFKA_USER}
+          password: \${secrets.KAFKA_PASSWORD}
+      tls:
+        enabled: true
+`;
+
 const malformedYaml = `# Intentionally broken — for testing editor error states.
 input:
   redpanda
@@ -873,6 +929,14 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
       'Broker fan-in, nested switch → branch → try/catch, for_each, parallel, cache/rate-limit refs, switch+fallback DLQ output. Built to exercise the visualizer.',
     yaml: heavyBranching,
     tags: ['complex'],
+  },
+  {
+    id: 'edge-resource-indirection',
+    name: 'Edge — resource indirection (*_resources)',
+    description:
+      'input/output/processor declared as named *_resources and referenced via resource:. Exercises the visualizer’s reference linking and a reused processor resource.',
+    yaml: resourceIndirection,
+    tags: ['edge-case'],
   },
   {
     id: 'edge-secrets-heavy',
