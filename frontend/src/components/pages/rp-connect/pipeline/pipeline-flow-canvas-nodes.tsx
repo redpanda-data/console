@@ -612,7 +612,10 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
-          'flex h-full w-full flex-col rounded-lg border border-border border-dashed bg-muted/40 shadow-sm',
+          // A quiet grouping frame: a solid hairline with a transparent body, so nesting
+          // never compounds into mud (only the neutral header bar carries a fill, and
+          // headers don't stack). Leaf cards stay the solid, role-coloured focal elements.
+          'flex h-full w-full flex-col rounded-lg border border-border bg-transparent',
           cardRing(data)
         )}
       >
@@ -621,13 +624,11 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
             'flex items-center gap-2',
             selectable && 'cursor-pointer',
             data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2',
-            // Collapsed: the header is the whole card, so fill + centre it (no divider)
-            // so the spine arrows align with its middle. Expanded: header on top.
-            data.collapsed ? 'h-full rounded-lg' : 'rounded-t-lg border-border/60 border-b'
+            // A neutral title bar so the group reads as structure, not another coloured
+            // card. Collapsed: the header is the whole card (centred, no divider) so the
+            // spine arrows hit its middle. Expanded: a title bar with a divider.
+            data.collapsed ? 'h-full rounded-lg bg-muted/40' : 'rounded-t-lg border-border/60 border-b bg-muted/40'
           )}
-          // Tinted title band (role colour) over the card surface; falls back to a
-          // plain card header when the section has no accent.
-          style={headerTintStyle(accent) ?? { backgroundColor: 'var(--color-card)' }}
         >
           <ContainerHeaderTitle accent={accent} data={data} />
           <LintBadge errors={data.lintErrors} />

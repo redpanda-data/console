@@ -1267,10 +1267,10 @@ output:
     expect(resourceX).toBe(procX);
   });
 
-  it('parks resources in a single lane below the whole flow, clear of a taller neighbour', () => {
+  it('drops each resource just below its own column, not the flow-wide deepest point', () => {
     // A short processor (cache) references `c`; a much taller switch references `lim`.
-    // Both resources share one lane below the deepest column — anchoring `c` up beside
-    // the short cache used to let it overlap the taller switch column next to it.
+    // `c` should sit right under the short cache (close to it), while `lim` sits far
+    // lower under the tall switch — each near its connection, neither overlapping a column.
     const mixedHeights = `pipeline:
   processors:
     - cache: { resource: c, operator: get }
@@ -1291,13 +1291,16 @@ rate_limit_resources:
     const layout = computeFlowLayout(parsePipelineFlowTree(mixedHeights).nodes);
     const cacheRes = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
     const limitRes = layout.rfNodes.find((n) => n.id === 'resource-rate_limit_resources-0');
-    // Both resources sit in the same lane row...
-    expect(cacheRes?.position.y ?? 0).toBeGreaterThan(0);
-    expect(cacheRes?.position.y).toBe(limitRes?.position.y);
-    // ...which is below the tall switch column, so neither card overlaps it.
-    const sw = layout.rfNodes.find((n) => n.id === 'proc-1');
-    const switchBottom = (sw?.position.y ?? 0) + ((sw?.initialHeight as number) ?? 0);
-    expect(cacheRes?.position.y ?? 0).toBeGreaterThan(switchBottom);
+    const cacheCol = layout.rfNodes.find((n) => n.id === 'proc-0'); // the short cache leaf
+    const switchCol = layout.rfNodes.find((n) => n.id === 'proc-1'); // the tall switch
+    const cacheBottom = (cacheCol?.position.y ?? 0) + ((cacheCol?.initialHeight as number) ?? 0);
+    const switchBottom = (switchCol?.position.y ?? 0) + ((switchCol?.initialHeight as number) ?? 0);
+    // `c` parks just under the short cache column — close to it, not dragged down to the
+    // flow's deepest point under the switch.
+    expect(cacheRes?.position.y ?? 0).toBeGreaterThan(cacheBottom);
+    expect(cacheRes?.position.y ?? 0).toBeLessThan(switchBottom);
+    // `lim` sits far lower, under the tall switch column that references it.
+    expect(limitRes?.position.y ?? 0).toBeGreaterThan(cacheRes?.position.y ?? 0);
   });
 
   it('connects a reference to the exact node, re-anchoring to a visible ancestor when collapsed', () => {

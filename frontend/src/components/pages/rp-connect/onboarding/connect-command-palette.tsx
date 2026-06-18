@@ -485,21 +485,44 @@ export const ConnectCommandPalette = ({
 
   // All in-scope components grouped by primary category — powers the "All" tab and the
   // per-category tabs (each tab just reads its matching group).
+  // One group per category, and a component appears under EVERY category it lists (not
+  // just its first) — so e.g. a Parsing+Integration processor is found under both tabs.
   const grouped = useMemo(() => {
     const groups = new Map<string, ConnectComponentSpec[]>();
     for (const component of inScope) {
-      const key = component.categories?.[0] ?? 'other';
-      const list = groups.get(key);
-      if (list) {
-        list.push(component);
-      } else {
-        groups.set(key, [component]);
+      const cats = component.categories?.length ? component.categories : ['other'];
+      for (const key of cats) {
+        const list = groups.get(key);
+        if (list) {
+          list.push(component);
+        } else {
+          groups.set(key, [component]);
+        }
       }
     }
     return [...groups.entries()]
       .map(([id, list]) => ({ id, name: getCategoryDisplayName(id), components: list.sort(byProminence) }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [inScope]);
+
+  // The "All" tab lists every component once (deduped across the category groups it may
+  // appear in), so browsing the full catalog doesn't repeat multi-category components.
+  const allGroups = useMemo(() => {
+    const seen = new Set<string>();
+    return grouped
+      .map((group) => ({
+        ...group,
+        components: group.components.filter((c) => {
+          const key = `${c.type}:${c.name}`;
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+          return true;
+        }),
+      }))
+      .filter((group) => group.components.length > 0);
+  }, [grouped]);
 
   const tabs = useMemo(() => {
     const list: Tab[] = [];
@@ -605,7 +628,7 @@ export const ConnectCommandPalette = ({
                 ))}
               </CommandGroup>
             ) : (
-              grouped.map((group) => (
+              allGroups.map((group) => (
                 <CommandGroup heading={group.name} key={group.id}>
                   {group.components.map((component) => (
                     <Row

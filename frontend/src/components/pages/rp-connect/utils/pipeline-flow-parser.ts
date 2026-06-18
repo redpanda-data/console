@@ -2200,6 +2200,7 @@ export function computeFlowLayout(
     maxCross,
     ctx,
     desiredResourceLeft,
+    columns,
   });
 
   if (!compact) {
@@ -2219,11 +2220,13 @@ function placeTopLevelSteps(
   sized: SizedNode[],
   isVertical: boolean,
   ctx: EmitContext
-): { mainExtent: number; maxCross: number; columns: { id: string; left: number; right: number }[] } {
+): { mainExtent: number; maxCross: number; columns: { id: string; left: number; right: number; bottom: number }[] } {
   let cursor = 0;
   let maxCross = 0;
   let prevSection: PipelineFlowNode['section'];
-  const columns: { id: string; left: number; right: number }[] = [];
+  // Each column starts at y=0, so its `bottom` is just its height — used to park a
+  // resource right below the tallest column its x-span overlaps (close, but clear).
+  const columns: { id: string; left: number; right: number; bottom: number }[] = [];
   // Steps are separated by the main-axis gap (colGap) in both orientations; the
   // tighter stackGap is reserved for children inside a container.
   const gap = ctx.dims.colGap;
@@ -2244,7 +2247,7 @@ function placeTopLevelSteps(
     prevSection = section;
     emitFlowNode(step, undefined, isVertical ? { x: 0, y: cursor } : { x: cursor, y: 0 }, ctx);
     if (!isVertical) {
-      columns.push({ id: step.node.id, left: cursor, right: cursor + step.w });
+      columns.push({ id: step.node.id, left: cursor, right: cursor + step.w, bottom: step.h });
     }
     cursor += (isVertical ? step.h : step.w) + gap;
     maxCross = Math.max(maxCross, isVertical ? step.w : step.h);
@@ -2252,37 +2255,25 @@ function placeTopLevelSteps(
   return { mainExtent: cursor - gap, maxCross, columns };
 }
 
-// In horizontal layout, place each resource at the x its cable drops into (computed
-// in computeReferenceCables) so the cable lands straight; unreferenced resources fall
-// back to left-to-right order. A left→right sweep then de-overlaps the cards with a
-// tight gap so clusters don't spread far. The sweep is per lane row (resources sit at
-// different y's, below their own column), so cards in different rows never push each
-// other sideways.
+// In horizontal layout, place each resource at the x its cable drops into (computed in
+// computeReferenceCables) so the cable lands straight; unreferenced resources fall back
+// to left-to-right order. A single left→right sweep de-overlaps the cards, so no two
+// ever collide regardless of the per-card y they end up at.
 function resourceLaneX(
   resources: PipelineFlowNode[],
   desiredLeft: Map<string, number>,
-  laneY: Map<string, number>,
   ctx: EmitContext
 ): Map<string, number> {
   const step = ctx.dims.cardW + RESOURCE_GAP;
-  const desired = resources.map((resource, i) => ({
-    id: resource.id,
-    x: desiredLeft.get(resource.id) ?? i * step,
-    y: laneY.get(resource.id) ?? 0,
-  }));
-  // Sweep each row independently: group by y, then de-overlap left→right within it.
-  desired.sort((a, b) => a.y - b.y || a.x - b.x);
+  const ordered = resources
+    .map((resource, i) => ({ id: resource.id, x: desiredLeft.get(resource.id) ?? i * step }))
+    .sort((a, b) => a.x - b.x);
   const out = new Map<string, number>();
-  let prevX = Number.NEGATIVE_INFINITY;
-  let prevY = Number.NaN;
-  for (const d of desired) {
-    if (d.y !== prevY) {
-      prevX = Number.NEGATIVE_INFINITY;
-      prevY = d.y;
-    }
-    const x = Math.max(d.x, prevX === Number.NEGATIVE_INFINITY ? d.x : prevX + step);
+  let prevRight = Number.NEGATIVE_INFINITY;
+  for (const d of ordered) {
+    const x = Math.max(d.x, prevRight);
     out.set(d.id, x);
-    prevX = x;
+    prevRight = x + step;
   }
   return out;
 }
@@ -2293,11 +2284,25 @@ function laneGap(dims: FlowDims): number {
   return 2 * dims.stackGap + 24;
 }
 
+function pushResourceNode(resource: PipelineFlowNode, x: number, y: number, ctx: EmitContext): number {
+  const height = leafCardHeight(resource, ctx.dims);
+  ctx.rfNodes.push({
+    id: resource.id,
+    type: 'flowCard',
+    position: { x, y },
+    initialWidth: ctx.dims.cardW,
+    initialHeight: height,
+    style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
+    data: makeFlowNodeData(resource, false, 0, ctx.compact),
+  });
+  return height;
+}
+
 // Resources lane after the flow (referenced by label, so no flow edges). In horizontal
-// layout each resource sits below the column that uses it (desiredResourceTop), so a
-// resource of a short column rises up beside a taller neighbour instead of every
-// resource being pushed below the tallest column. Vertical layout keeps the simple
-// stack below the whole flow.
+// layout each resource drops to just below the tallest column its x-span overlaps — so a
+// resource used by a short, isolated column sits right under that column rather than
+// being dragged down beside the flow's deepest container, while a resource over a tall
+// column still clears it (no overlap). Vertical (compact) layout keeps a simple stack.
 function placeResourceLane({
   nodes,
   childrenMap,
@@ -2306,6 +2311,7 @@ function placeResourceLane({
   maxCross,
   ctx,
   desiredResourceLeft,
+  columns,
 }: {
   nodes: PipelineFlowNode[];
   childrenMap: Map<string | undefined, PipelineFlowNode[]>;
@@ -2314,33 +2320,41 @@ function placeResourceLane({
   maxCross: number;
   ctx: EmitContext;
   desiredResourceLeft: Map<string, number>;
+  columns: { id: string; left: number; right: number; bottom: number }[];
 }): { resources: PipelineFlowNode[]; resourceRight: number; resourceBottom: number; laneY: Map<string, number> } {
   const resources = sectionChildren(nodes, childrenMap, 'resource');
-  // Resources sit in a single lane below the entire flow. Anchoring each one under its
-  // own (possibly short) column let it ride up beside a taller neighbour and overlap it,
-  // so they all share a y just past the flow's deepest point (`maxCross`).
-  const laneTop = maxCross + laneGap(ctx.dims);
-  const laneY = new Map<string, number>(resources.map((resource) => [resource.id, isVertical ? laneStart : laneTop]));
-  const laneX = isVertical ? null : resourceLaneX(resources, desiredResourceLeft, laneY, ctx);
-  let stackY = laneStart;
+  const laneY = new Map<string, number>();
   let resourceRight = 0;
   let resourceBottom = 0;
-  for (const [i, resource] of resources.entries()) {
-    const x = isVertical ? 0 : (laneX?.get(resource.id) ?? i * (ctx.dims.cardW + ctx.dims.colGap));
-    const y = isVertical ? stackY : (laneY.get(resource.id) ?? laneStart);
-    const height = leafCardHeight(resource, ctx.dims);
-    ctx.rfNodes.push({
-      id: resource.id,
-      type: 'flowCard',
-      position: { x, y },
-      initialWidth: ctx.dims.cardW,
-      initialHeight: height,
-      style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-      data: makeFlowNodeData(resource, false, 0, ctx.compact),
-    });
-    resourceRight = Math.max(resourceRight, x + ctx.dims.cardW);
+
+  if (isVertical) {
+    let stackY = laneStart;
+    for (const resource of resources) {
+      laneY.set(resource.id, stackY);
+      const height = pushResourceNode(resource, 0, stackY, ctx);
+      resourceRight = Math.max(resourceRight, ctx.dims.cardW);
+      resourceBottom = Math.max(resourceBottom, stackY + height);
+      stackY += height + ctx.dims.stackGap;
+    }
+    return { resources, resourceRight, resourceBottom, laneY };
+  }
+
+  const cardW = ctx.dims.cardW;
+  const gap = laneGap(ctx.dims);
+  const floor = columns.length > 0 ? Math.min(...columns.map((c) => c.bottom)) : maxCross;
+  // The deepest column whose x-span the card overlaps; nothing overlapping ⇒ the floor.
+  const dropBelow = (x: number) => {
+    const hits = columns.filter((c) => x < c.right && x + cardW > c.left);
+    return (hits.length > 0 ? Math.max(...hits.map((c) => c.bottom)) : floor) + gap;
+  };
+  const finalX = resourceLaneX(resources, desiredResourceLeft, ctx);
+  for (const resource of resources) {
+    const x = finalX.get(resource.id) ?? 0;
+    const y = dropBelow(x);
+    laneY.set(resource.id, y);
+    const height = pushResourceNode(resource, x, y, ctx);
+    resourceRight = Math.max(resourceRight, x + cardW);
     resourceBottom = Math.max(resourceBottom, y + height);
-    stackY += height + ctx.dims.stackGap;
   }
   return { resources, resourceRight, resourceBottom, laneY };
 }
