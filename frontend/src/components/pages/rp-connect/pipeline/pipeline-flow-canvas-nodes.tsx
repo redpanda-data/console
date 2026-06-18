@@ -612,10 +612,11 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
-          // A quiet grouping frame: a solid hairline with a transparent body, so nesting
-          // never compounds into mud (only the neutral header bar carries a fill, and
-          // headers don't stack). Leaf cards stay the solid, role-coloured focal elements.
-          'flex h-full w-full flex-col rounded-lg border border-border bg-transparent',
+          // A quiet grouping frame: a solid hairline, a soft shadow, and a light fill so
+          // the group reads clearly against the dotted canvas. The fill is kept low (a
+          // light wash, well under the old value) so nesting stays legible rather than
+          // compounding to mud; leaf cards remain the solid, role-coloured focal elements.
+          'flex h-full w-full flex-col rounded-lg border border-border bg-muted/20 shadow-sm',
           cardRing(data)
         )}
       >
@@ -678,7 +679,7 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
   return (
     <button
       aria-label={data.label ?? 'Add'}
-      className="nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-muted-foreground text-xs transition-colors hover:bg-primary/5 hover:text-primary"
+      className="nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 rounded-md px-2 font-medium text-primary text-xs transition-colors hover:bg-primary/10"
       onClick={() => data.onInsert?.(payload)}
       type="button"
     >
@@ -739,6 +740,7 @@ type LinkTone = 'primary' | 'muted' | 'error';
 type FlowLinkData = {
   label?: string;
   labelOffsetY?: number;
+  labelOffsetX?: number;
   tone?: LinkTone;
   dashed?: boolean;
   laneFromSource?: number;
@@ -905,7 +907,9 @@ export function FlowLinkEdge({
           y={d.portDot === 'source' ? sourceY : targetY}
         />
       ) : null}
-      {d?.label ? <LinkLabel d={d} tone={tone} x={labelX} y={labelY + (d.labelOffsetY ?? 0)} /> : null}
+      {d?.label ? (
+        <LinkLabel d={d} tone={tone} x={labelX + (d.labelOffsetX ?? 0)} y={labelY + (d.labelOffsetY ?? 0)} />
+      ) : null}
     </>
   );
 }

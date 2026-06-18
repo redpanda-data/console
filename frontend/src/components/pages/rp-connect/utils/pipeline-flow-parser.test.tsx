@@ -1095,9 +1095,9 @@ cache_resources:
         portInY?: number;
       };
     // branch (one child): copy leaves and merge returns level with the child's
-    // connector row (headerH 48 + pad 16 + handle 36) — clean horizontal lines
+    // connector row (headerH 48 + pad 12 + handle 36) — clean horizontal lines
     // that never cross the container header or its icon.
-    expect(nodeData('proc-1')).toMatchObject({ portOutY: 100, portInY: 100 });
+    expect(nodeData('proc-1')).toMatchObject({ portOutY: 96, portInY: 96 });
     // The output switch fans out from the children-area centre (a trunk).
     const switchNode = layout.rfNodes.find((n) => n.id === 'output-switch');
     const switchH = (switchNode?.style as { height?: number })?.height ?? 0;

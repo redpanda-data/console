@@ -1324,7 +1324,9 @@ const FULL_DIMS: FlowDims = {
   metaRowH: 22,
   headerH: 48,
   collapsedH: 72,
-  pad: 16,
+  // Inner inset on all sides of a container's body — kept tight so children sit close
+  // under the header and the "+ add" row doesn't float far from the stack.
+  pad: 12,
   stackGap: 14,
   colGap: 72,
   fanGutter: 48,
@@ -1419,6 +1421,9 @@ function reconverges(node: PipelineFlowNode): boolean {
   return node.childFlow === 'parallel' && node.section === 'processor' && !node.branch;
 }
 
+// Extra gutter width a branch reserves for its "COPY"/"MERGE" labels.
+const FLOW_BRANCH_LABEL_PAD = 22;
+
 // Which sides of a container carry routed edges: `out` is the `gs` source side
 // (entry / copy / fan-out), `in` is the `gt` target side (merge-back / fan-in).
 function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
@@ -1469,9 +1474,12 @@ function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number
     return { left: dims.fanGutter, right: dims.pad, gap: dims.stackGap };
   }
   const sides = fanSides(node);
+  // A branch carries "COPY"/"MERGE" labels in its gutters, which need more room than a
+  // bare fan-out line — widen those gutters so the labels sit clear of the child card.
+  const gutter = node.branch ? dims.fanGutter + FLOW_BRANCH_LABEL_PAD : dims.fanGutter;
   return {
-    left: sides.out ? dims.fanGutter : dims.pad,
-    right: sides.in ? dims.fanGutter : dims.pad,
+    left: sides.out ? gutter : dims.pad,
+    right: sides.in ? gutter : dims.pad,
     gap: sides.out || sides.in ? dims.fanGap : dims.stackGap,
   };
 }
@@ -1702,6 +1710,9 @@ function linkEdge(params: {
   // Nudge the label off the line (px); used to lift copy/merge labels above their
   // (horizontal) edge so they don't sit on it.
   labelOffsetY?: number;
+  // Nudge the label sideways (px); pushes copy/merge labels out into the gutter so they
+  // clear the child card.
+  labelOffsetX?: number;
   dashed?: boolean;
   // Distinct vertical lane (px offset from the container edge) so sibling fan-out /
   // fan-in edges don't overlap on a shared bend. From the source for fan-out, from
@@ -1724,6 +1735,7 @@ function linkEdge(params: {
     data: {
       label: params.label,
       labelOffsetY: params.labelOffsetY,
+      labelOffsetX: params.labelOffsetX,
       tone: params.tone,
       dashed: params.dashed ?? false,
       laneFromSource: params.laneFromSource,
@@ -1873,6 +1885,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
         dashed: true,
         label: label('copy'),
         labelOffsetY: -18,
+        labelOffsetX: -20,
         portDot: 'source',
       })
     );
@@ -1888,6 +1901,7 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
         dashed: true,
         label: label('merge'),
         labelOffsetY: -18,
+        labelOffsetX: 20,
         portDot: 'target',
       })
     );
