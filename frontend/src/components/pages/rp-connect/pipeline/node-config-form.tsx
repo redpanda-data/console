@@ -311,6 +311,8 @@ type DirtyState = { fields?: Record<string, unknown>; arrays?: Record<string, un
 
 type BuildArgs = {
   componentName: string;
+  /** The full component entry being edited, e.g. `{ label, switch: [...] }`. */
+  value: Record<string, unknown>;
   inner: Record<string, unknown>;
   leaves: { scalars: Leaf[]; arrays: Leaf[] };
   rawKeys: string[];
@@ -353,6 +355,7 @@ function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: 
 // the user actually changed: the raw-YAML section, and each edited scalar/array.
 function buildComponentEntry({
   componentName,
+  value,
   inner,
   leaves,
   rawKeys,
@@ -360,6 +363,22 @@ function buildComponentEntry({
   data,
   dirty,
 }: BuildArgs): Record<string, unknown> {
+  const next: Record<string, unknown> = {};
+  if (data.label.trim()) {
+    next.label = data.label.trim();
+  }
+
+  const original = value[componentName];
+  // A component whose value isn't a plain object — e.g. a `switch`/`try`/`catch`/
+  // `for_each` whose value is a list of cases/processors, or a scalar-valued component.
+  // The object-field form can't model these (their nested items are edited on the
+  // canvas), so preserve the value verbatim and only patch the label. Rebuilding it
+  // here would drop the children (it would write `{}` over the array).
+  if (!(original && typeof original === 'object') || Array.isArray(original)) {
+    next[componentName] = original ?? {};
+    return next;
+  }
+
   const config: Record<string, unknown> = structuredClone(inner);
   if (showRaw && dirty.raw) {
     for (const key of rawKeys) {
@@ -372,10 +391,6 @@ function buildComponentEntry({
   applyArrayEdits(config, leaves.arrays, data, dirty);
   pruneEmptyObjects(config);
 
-  const next: Record<string, unknown> = {};
-  if (data.label.trim()) {
-    next.label = data.label.trim();
-  }
   next[componentName] = config;
   return next;
 }
@@ -607,9 +622,15 @@ export function NodeConfigForm({
   onCreateResource,
 }: NodeConfigFormProps) {
   const fields = spec.config?.children ?? [];
+  const componentValue = value[componentName];
+  // A list-valued component (switch/try/catch/for_each): its value is an array of
+  // cases/processors edited on the canvas, not a set of object fields. The schema's
+  // field list actually describes a single case, so rendering it here is misleading and
+  // saving it would clobber the array — show a hint instead.
+  const isListValued = Array.isArray(componentValue);
   const inner =
-    value[componentName] && typeof value[componentName] === 'object' && !Array.isArray(value[componentName])
-      ? (value[componentName] as Record<string, unknown>)
+    componentValue && typeof componentValue === 'object' && !isListValued
+      ? (componentValue as Record<string, unknown>)
       : {};
 
   const topFields = fields.filter(isFormField);
@@ -648,7 +669,7 @@ export function NodeConfigForm({
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
   const { dirtyFields, isDirty } = formState;
   const submit = handleSubmit((data) =>
-    onApply(buildComponentEntry({ componentName, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
+    onApply(buildComponentEntry({ componentName, value, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
   );
 
   const resourceCtx: ResourceFieldContextValue = {
@@ -677,11 +698,17 @@ export function NodeConfigForm({
             />
           </div>
 
-          {required.map((f) => (
-            <SchemaField control={control} key={f.name} path={[]} spec={f} />
-          ))}
+          {isListValued ? (
+            <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
+              <Text className="text-muted-foreground" variant="bodySmall">
+                This component's items (cases / processors) are edited on the canvas — select one to edit it.
+              </Text>
+            </div>
+          ) : null}
 
-          {optional.length > 0 ? (
+          {isListValued ? null : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
+
+          {!isListValued && optional.length > 0 ? (
             <FieldGroup label="Optional">
               {optional.map((f) => (
                 <SchemaField control={control} key={f.name} path={[]} spec={f} />
@@ -689,7 +716,7 @@ export function NodeConfigForm({
             </FieldGroup>
           ) : null}
 
-          {advanced.length > 0 ? (
+          {!isListValued && advanced.length > 0 ? (
             <FieldGroup defaultOpen={false} label="Advanced">
               {advanced.map((f) => (
                 <SchemaField control={control} key={f.name} path={[]} spec={f} />
@@ -697,7 +724,7 @@ export function NodeConfigForm({
             </FieldGroup>
           ) : null}
 
-          {componentFields.length > 0 ? (
+          {!isListValued && componentFields.length > 0 ? (
             <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
               <Text className="text-muted-foreground" variant="bodySmall">
                 {componentFields.map((f) => f.name).join(', ')}{' '}
@@ -707,7 +734,7 @@ export function NodeConfigForm({
             </div>
           ) : null}
 
-          {showRaw ? (
+          {!isListValued && showRaw ? (
             <FieldGroup defaultOpen={false} label="Other settings (YAML)">
               <Controller
                 control={control}

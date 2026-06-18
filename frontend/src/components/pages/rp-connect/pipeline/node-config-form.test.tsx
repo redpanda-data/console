@@ -181,3 +181,47 @@ describe('NodeConfigForm — full schema', () => {
     expect(next.kafka.addresses).toEqual(['b:9092', 'c:9092']);
   });
 });
+
+describe('NodeConfigForm — list-valued components (switch/try/…)', () => {
+  // A switch's value is an array of cases, not an object of fields. Its schema lists a
+  // single case's fields, so the form must NOT render them or rebuild the value.
+  const switchSpec = {
+    name: 'switch',
+    type: 'processor',
+    config: {
+      name: 'root',
+      type: 'object',
+      kind: 'scalar',
+      children: [
+        { name: 'check', type: 'string', kind: 'scalar', optional: false },
+        { name: 'processors', type: 'processor', kind: 'array' },
+      ],
+    },
+  } as unknown as ConnectComponentSpec;
+
+  const switchValue = () => ({
+    switch: [
+      { check: 'this.region == "us"', processors: [{ mapping: 'root = this' }] },
+      { processors: [{ log: { message: 'default' } }] },
+    ],
+  });
+
+  test('editing the label preserves the array of cases (no data loss)', async () => {
+    const user = userEvent.setup();
+    const onApply = vi.fn();
+    const value = switchValue();
+    render(<NodeConfigForm componentName="switch" onApply={onApply} spec={switchSpec} value={value} />);
+
+    await user.type(screen.getByPlaceholderText('Optional identifier for this component'), 'router');
+    await user.click(screen.getByRole('button', { name: 'Apply changes' }));
+
+    expect(onApply).toHaveBeenCalledWith({ label: 'router', switch: value.switch });
+  });
+
+  test('hides the (misleading) per-case fields and shows a canvas hint instead', () => {
+    render(<NodeConfigForm componentName="switch" onApply={vi.fn()} spec={switchSpec} value={switchValue()} />);
+    // The case-level `check` field must not appear on the container.
+    expect(screen.queryByText('check')).toBeNull();
+    expect(screen.getByText(/edited on the canvas/i)).toBeInTheDocument();
+  });
+});
