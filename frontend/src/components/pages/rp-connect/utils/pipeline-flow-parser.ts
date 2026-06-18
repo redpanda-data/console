@@ -70,6 +70,10 @@ export type PipelineFlowNode = {
   // Label of a resource this component references (cache/rate_limit `resource`), used
   // to draw a dashed reference edge to the matching resource node.
   resourceRef?: string;
+  // Other string values on the component that MIGHT be resource labels (e.g. a field
+  // named `checkpoint_cache` rather than `resource`, on an input/output/processor). The
+  // post-pass promotes whichever matches a real resource label to `resourceRef`.
+  resourceRefCandidates?: string[];
   // A `switch` case wrapper — a structural sub-node (not an editable component). It
   // renders as a condition-forward "case" card and, when clicked, selects its
   // parent switch rather than itself.
@@ -334,6 +338,7 @@ function parseInputNodes(
       missingSasl: isRedpanda && !hasSaslConfig(inputObj[inputKey], config) ? true : undefined,
       editTarget: { kind: 'input' },
       meta: summarizeComponent(inputKey, inputObj[inputKey]),
+      resourceRefCandidates: extractRefCandidates(inputObj[inputKey]),
     },
   ];
 }
@@ -383,6 +388,20 @@ function extractResourceRef(componentValue: unknown): string | undefined {
   return typeof ref === 'string' && ref !== '' ? ref : undefined;
 }
 
+// A resource reference may live in a field whose name isn't `resource` (e.g. a CDC
+// input's `checkpoint_cache`). Without the component schema here we can't know the
+// field's type, so collect every top-level string value as a candidate; the post-pass
+// promotes the one(s) that match an actual resource label to a real reference.
+function extractRefCandidates(componentValue: unknown): string[] | undefined {
+  if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
+    return;
+  }
+  const values = Object.values(componentValue as Record<string, unknown>).filter(
+    (v): v is string => typeof v === 'string' && v !== ''
+  );
+  return values.length > 0 ? values : undefined;
+}
+
 // A Bloblang check references the error flag (`errored()`), i.e. this branch handles
 // failed messages — a dead-letter path.
 const ERRORED_CHECK_RE = /errored\s*\(/;
@@ -399,6 +418,7 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     section: ctx.section,
     parentId: ctx.parentId,
     resourceRef: extractResourceRef(componentValue),
+    resourceRefCandidates: extractRefCandidates(componentValue),
     // Surface key config on nested leaves too (http inside try/branch/switch, etc.),
     // just like top-level processors.
     ...(meta.length > 0 ? { meta } : {}),
@@ -809,6 +829,7 @@ function parseOutputNodes(
       missingSasl: isRedpanda && !hasSaslConfig(outputObj[outputKey], config) ? true : undefined,
       editTarget: { kind: 'output' },
       meta: summarizeComponent(outputKey, outputObj[outputKey]),
+      resourceRefCandidates: extractRefCandidates(outputObj[outputKey]),
     },
   ];
 }
@@ -938,11 +959,21 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
 
   // Resource references: flag dangling links and count usages per label.
   const resourceLabels = new Set<string>();
-  const usedBy = new Map<string, number>();
   for (const node of nodes) {
     if (node.section === 'resource' && node.labelText) {
       resourceLabels.add(node.labelText);
     }
+  }
+  // Promote a candidate value to a real reference when it matches a resource label —
+  // catches refs in non-`resource` fields (e.g. a CDC input's `checkpoint_cache`) and on
+  // input/output nodes, which carry no explicit `resource` field.
+  for (const node of nodes) {
+    if (!node.resourceRef && node.resourceRefCandidates) {
+      node.resourceRef = node.resourceRefCandidates.find((c) => resourceLabels.has(c));
+    }
+  }
+  const usedBy = new Map<string, number>();
+  for (const node of nodes) {
     if (node.resourceRef) {
       usedBy.set(node.resourceRef, (usedBy.get(node.resourceRef) ?? 0) + 1);
     }
@@ -1369,6 +1400,8 @@ const FLOW_PLACEHOLDER_LEAF_H = 72;
 const FLOW_COMPACT_LABEL_ROW_H = 22;
 // A `label:` badge renders on its own padded row beneath the full-card header.
 const FLOW_LABEL_ROW_H = 30;
+// Bottom inset added when the label badge is the card's last row (no meta follows).
+const FLOW_LABEL_ROW_BOTTOM_PAD = 12;
 // The meta block's own vertical padding (its rows are counted at dims.metaRowH each).
 const FLOW_META_BLOCK_PAD = 12;
 
@@ -1393,7 +1426,9 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   // tracks the rendered card and adjacent nodes keep their gap.
   let h = dims.leafBaseH;
   if (node.labelText) {
-    h += FLOW_LABEL_ROW_H;
+    // When the label is the card's last row (no meta follows), it carries a bottom
+    // inset so the badge doesn't sit flush against the card edge — mirror that here.
+    h += FLOW_LABEL_ROW_H + (metaRows > 0 ? 0 : FLOW_LABEL_ROW_BOTTOM_PAD);
   }
   if (metaRows > 0) {
     h += FLOW_META_BLOCK_PAD + metaRows * dims.metaRowH;
@@ -1589,11 +1624,12 @@ function containerPortYs(
   return {};
 }
 
-function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean) {
+function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean, depth = 0) {
   return {
     label: node.label,
     collapsible: node.collapsible ?? false,
     collapsed,
+    depth,
     ...(compact ? { compact: true } : {}),
     ...(node.section ? { section: node.section } : {}),
     ...(node.labelText ? { labelText: node.labelText } : {}),
@@ -1627,7 +1663,8 @@ function emitFlowNode(
   sized: SizedNode,
   parentId: string | undefined,
   pos: { x: number; y: number },
-  ctx: EmitContext
+  ctx: EmitContext,
+  depth = 0
 ): void {
   const { node, w, h, collapsed, children } = sized;
   // A group is always a container (so a collapsed group keeps its header + toggle,
@@ -1652,7 +1689,7 @@ function emitFlowNode(
       ? { width: w, height: h, pointerEvents: 'all', transition: 'transform 200ms ease' }
       : { pointerEvents: 'all', transition: 'transform 200ms ease' },
     data: {
-      ...makeFlowNodeData(node, collapsed, childCount, ctx.compact),
+      ...makeFlowNodeData(node, collapsed, childCount, ctx.compact, depth),
       ...(ports.portOutY === undefined ? {} : { portOutY: ports.portOutY }),
       ...(ports.portInY === undefined ? {} : { portInY: ports.portInY }),
     },
@@ -1661,7 +1698,7 @@ function emitFlowNode(
   const insets = containerInsets(node, ctx.dims);
   let childY = ctx.dims.headerH + ctx.dims.pad;
   for (const child of children) {
-    emitFlowNode(child, node.id, { x: insets.left, y: childY }, ctx);
+    emitFlowNode(child, node.id, { x: insets.left, y: childY }, ctx, depth + 1);
     childY += child.h + insets.gap;
   }
 

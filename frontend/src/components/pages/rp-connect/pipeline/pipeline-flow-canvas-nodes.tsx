@@ -114,6 +114,14 @@ function headerTintStyle(accent?: string): React.CSSProperties | undefined {
   return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
 }
 
+// Opaque, depth-alternating container surface: even levels read a touch greyer, odd
+// levels lighter, so a nested container is never the same shade as its parent. Opaque
+// (a color-mix over the canvas, not an alpha wash) so stacking never compounds to mud.
+function containerSurface(depth: number): string {
+  const pct = depth % 2 === 0 ? 13 : 5;
+  return `color-mix(in srgb, var(--color-muted-foreground) ${pct}%, var(--color-background))`;
+}
+
 // The connector logo in a small elevated tile, so the icon sits cleanly on the tinted
 // header band.
 const LogoTile = ({ name, compact }: { name: string; compact?: boolean }) => (
@@ -175,6 +183,9 @@ export type FlowCardData = {
   collapsible?: boolean;
   collapsed?: boolean;
   childCount?: number;
+  /** Container nesting level (0 = top-level), used to alternate the surface so adjacent
+      levels don't blend. */
+  depth?: number;
   labelText?: string;
   topics?: string[];
   meta?: NodeMetaEntry[];
@@ -281,9 +292,13 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
   );
 };
 
+// Whether a leaf card renders any meta rows (config preview / topics / missing chips).
+function cardHasMeta(data: FlowCardData): boolean {
+  return Boolean(data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl);
+}
+
 const MetaRows = ({ data }: { data: FlowCardData }) => {
-  const hasContent = data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl;
-  if (!hasContent) {
+  if (!cardHasMeta(data)) {
     return null;
   }
   return (
@@ -481,7 +496,9 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         </div>
       </div>
       {data.labelText ? (
-        <div className="px-3 pt-2">
+        // When no meta rows follow, the label badge is the card's last row — give it a
+        // bottom inset so it doesn't sit flush against the card edge.
+        <div className={cn('px-3 pt-2', cardHasMeta(data) ? '' : 'pb-3')}>
           <LabelBadge label={data.labelText} />
         </div>
       ) : null}
@@ -612,23 +629,25 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
-          // A quiet grouping frame: a solid hairline, a soft shadow, and a light fill so
-          // the group reads clearly against the dotted canvas. The fill is kept low (a
-          // light wash, well under the old value) so nesting stays legible rather than
-          // compounding to mud; leaf cards remain the solid, role-coloured focal elements.
-          'flex h-full w-full flex-col rounded-lg border border-border bg-muted/20 shadow-sm',
+          // A grouping frame whose surface ALTERNATES by nesting depth so a container is
+          // never the same shade as its parent — the key to keeping deeply-nested levels
+          // from blending. The fill is OPAQUE (a color-mix, not an alpha wash) so nesting
+          // never compounds to mud; a hairline border + soft shadow outline each frame.
+          // Leaf cards stay the solid, role-coloured focal elements within.
+          'flex h-full w-full flex-col rounded-lg border border-border shadow-sm',
           cardRing(data)
         )}
+        style={{ backgroundColor: containerSurface(data.depth ?? 0) }}
       >
         <div
           className={cn(
             'flex items-center gap-2',
             selectable && 'cursor-pointer',
             data.compact ? 'px-2.5 py-1.5' : 'px-3 py-2',
-            // A neutral title bar so the group reads as structure, not another coloured
-            // card. Collapsed: the header is the whole card (centred, no divider) so the
-            // spine arrows hit its middle. Expanded: a title bar with a divider.
-            data.collapsed ? 'h-full rounded-lg bg-muted/40' : 'rounded-t-lg border-border/60 border-b bg-muted/40'
+            // The header uses the box's own (depth-alternating) surface; a divider line
+            // separates it from the body. Collapsed: the header is the whole card
+            // (centred, no divider) so the spine arrows hit its middle.
+            data.collapsed ? 'h-full rounded-lg' : 'rounded-t-lg border-border/60 border-b'
           )}
         >
           <ContainerHeaderTitle accent={accent} data={data} />

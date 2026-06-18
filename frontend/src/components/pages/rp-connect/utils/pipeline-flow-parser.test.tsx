@@ -1118,6 +1118,23 @@ cache_resources:
     expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
   });
 
+  it('connects an input to a cache referenced via a non-`resource` field (checkpoint_cache)', () => {
+    // CDC inputs reference their checkpoint cache by a field named `checkpoint_cache`,
+    // not `resource` — the edge must still be drawn from the input to the cache.
+    const yaml = `input:
+  mongodb_cdc:
+    url: mongodb://x
+    checkpoint_cache: cdc_checkpoint
+output:
+  drop: {}
+cache_resources:
+  - label: cdc_checkpoint
+    memory: {}`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes);
+    const refEdge = layout.rfEdges.find((e) => e.id.startsWith('ref-') && e.source === 'input-0');
+    expect(refEdge?.target).toBe('resource-cache_resources-0');
+  });
+
   it('marks switch cases as selectable wrappers that edit their routing condition', () => {
     const withSwitch = `pipeline:
   processors:
