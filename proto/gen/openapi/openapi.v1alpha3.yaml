@@ -379,7 +379,7 @@ components:
       properties:
         name:
           type: string
-        namespace_name:
+        namespace:
           type: string
         type:
           $ref: '#/components/schemas/CatalogType'
@@ -390,12 +390,21 @@ components:
         - CATALOG_TYPE_REDPANDA
       type: string
     Column:
-      description: Column descriptor as reported by the Postgres driver.
+      description: Column descriptor for a table or query result.
       properties:
+        fields:
+          description: |-
+            Nested columns for a composite/struct (json) column, parsed from the
+            engine's structural type. Empty for scalar columns.
+          items:
+            $ref: '#/components/schemas/Column'
+          type: array
         name:
           type: string
         type:
-          description: Postgres type name (e.g. "INT8", "TEXT", "TIMESTAMPTZ").
+          description: |-
+            Engine-reported type name (e.g. "integer", "double precision", "text");
+            array types carry a "[]" suffix (e.g. "text[]").
           type: string
       type: object
     ComponentType:
@@ -1946,12 +1955,17 @@ components:
       type: object
     Table:
       description: |-
-        Table mirrors a row from `SHOW TABLES FROM <catalog>`. Backing-specific
+        Table mirrors a row from `SHOW REDPANDA TABLES <catalog>`. Backing-specific
         fields (connection_name, topic_name, *_policy) are only populated for
         Kafka-backed tables.
       properties:
-        connection_name:
+        catalog:
           nullable: true
+          type: string
+        catalog_namespace:
+          description: |-
+            Namespaces attach to catalogs, not to tables; tables of
+            same-named catalogs in different namespaces are distinguished by this field.
           type: string
         error_handling_policy:
           nullable: true
@@ -1961,18 +1975,16 @@ components:
           type: string
         name:
           type: string
-        namespace_name:
-          type: string
-        output_schema_full_message_name:
+        output_schema_full_message:
           nullable: true
           type: string
         struct_mapping_policy:
           nullable: true
           type: string
-        subject_name:
+        subject:
           nullable: true
           type: string
-        topic_name:
+        topic:
           nullable: true
           type: string
       type: object
@@ -3186,6 +3198,11 @@ paths:
           name: filter
           schema:
             type: string
+        - description: Optional namespace of the catalog. When unset, tables from all catalogs with the given name are returned.
+          in: query
+          name: catalog_namespace
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -3216,6 +3233,11 @@ paths:
           required: true
           schema:
             type: string
+        - description: Optional namespace of the catalog. Required when catalogs with the given name exist in more than one namespace.
+          in: query
+          name: catalog_namespace
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -3223,6 +3245,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/DescribeTableResponse'
           description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Catalog name is ambiguous (exists in multiple namespaces); provide catalog_namespace
         "404":
           content:
             application/json:

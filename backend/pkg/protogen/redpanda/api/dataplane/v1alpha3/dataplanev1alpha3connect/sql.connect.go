@@ -59,9 +59,14 @@ var (
 type SQLServiceClient interface {
 	// ListCatalogs lists all catalogs visible to the caller.
 	ListCatalogs(context.Context, *connect.Request[v1alpha3.ListCatalogsRequest]) (*connect.Response[v1alpha3.ListCatalogsResponse], error)
-	// ListTables lists tables in a catalog.
+	// ListTables lists tables in a catalog. The catalog is identified by name;
+	// when catalogs with the same name exist in more than one namespace, tables
+	// from all of them are returned unless catalog_namespace narrows the scope.
 	ListTables(context.Context, *connect.Request[v1alpha3.ListTablesRequest]) (*connect.Response[v1alpha3.ListTablesResponse], error)
-	// DescribeTable returns metadata and column shape for a single table.
+	// DescribeTable returns metadata and column shape for a single table. The
+	// catalog is resolved by name; when catalogs with the same name exist in
+	// more than one namespace, the request must disambiguate via
+	// catalog_namespace or it fails with INVALID_ARGUMENT.
 	DescribeTable(context.Context, *connect.Request[v1alpha3.DescribeTableRequest]) (*connect.Response[v1alpha3.DescribeTableResponse], error)
 	// ExecuteQuery runs a single SQL statement. Rows returned are capped
 	// server-side; `truncated` indicates the cap fired.
@@ -137,9 +142,14 @@ func (c *sQLServiceClient) ExecuteQuery(ctx context.Context, req *connect.Reques
 type SQLServiceHandler interface {
 	// ListCatalogs lists all catalogs visible to the caller.
 	ListCatalogs(context.Context, *connect.Request[v1alpha3.ListCatalogsRequest]) (*connect.Response[v1alpha3.ListCatalogsResponse], error)
-	// ListTables lists tables in a catalog.
+	// ListTables lists tables in a catalog. The catalog is identified by name;
+	// when catalogs with the same name exist in more than one namespace, tables
+	// from all of them are returned unless catalog_namespace narrows the scope.
 	ListTables(context.Context, *connect.Request[v1alpha3.ListTablesRequest]) (*connect.Response[v1alpha3.ListTablesResponse], error)
-	// DescribeTable returns metadata and column shape for a single table.
+	// DescribeTable returns metadata and column shape for a single table. The
+	// catalog is resolved by name; when catalogs with the same name exist in
+	// more than one namespace, the request must disambiguate via
+	// catalog_namespace or it fails with INVALID_ARGUMENT.
 	DescribeTable(context.Context, *connect.Request[v1alpha3.DescribeTableRequest]) (*connect.Response[v1alpha3.DescribeTableResponse], error)
 	// ExecuteQuery runs a single SQL statement. Rows returned are capped
 	// server-side; `truncated` indicates the cap fired.

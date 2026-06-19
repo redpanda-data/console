@@ -209,18 +209,14 @@ service CloudStorageService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MountTopicsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.MountTopicsResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -245,18 +241,14 @@ service CloudStorageService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.UnmountTopicsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UnmountTopicsResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -275,18 +267,14 @@ service CloudStorageService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListMountableTopicsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListMountableTopicsResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -307,18 +295,14 @@ service CloudStorageService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListMountTasksResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListMountTasksResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -341,18 +325,14 @@ service CloudStorageService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetMountTaskResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetMountTaskResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -371,18 +351,14 @@ service CloudStorageService {
         key: "202"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteMountTaskResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteMountTaskResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -404,18 +380,14 @@ service CloudStorageService {
         key: "201"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateMountTaskResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateMountTaskResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };

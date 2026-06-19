@@ -14,6 +14,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
+import { DebugHelper } from '../components/debug-helper/debug-dialog';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
 import { LicenseNotification } from '../components/license/license-notification';
@@ -21,6 +22,9 @@ import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
 import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
+import { RouterSync } from '../components/misc/router-sync';
+import { Toaster } from '../components/redpanda-ui/components/sonner';
+import RequireAuth from '../components/require-auth';
 import { ModalContainer } from '../utils/modal-container';
 
 /**
@@ -60,11 +64,22 @@ export const federatedRootRoute = createRootRouteWithContext<FederatedRouterCont
  */
 function FederatedRootLayout() {
   return (
-    <NuqsAdapter>
-      <ErrorBoundary>
-        <FederatedAppContent />
-      </ErrorBoundary>
-    </NuqsAdapter>
+    <>
+      <RouterSync />
+      <NuqsAdapter>
+        <ErrorBoundary>
+          {/* RequireAuth triggers the user-data fetch (api.refreshUserData) that
+              gates Console's endpoint-compatibility fetch and, in turn, the
+              embedded sidebar items. The standalone root (__root.tsx) wraps its
+              embedded layout the same way. */}
+          <RequireAuth>
+            <FederatedAppContent />
+          </RequireAuth>
+        </ErrorBoundary>
+        {/* Cmd+Shift+D debug dialog — mirrors __root.tsx; dev-only. */}
+        {process.env.NODE_ENV === 'development' && <DebugHelper />}
+      </NuqsAdapter>
+    </>
   );
 }
 
@@ -73,6 +88,9 @@ function FederatedRootLayout() {
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
+  // Mirrors __root.tsx's EmbeddedLayout so the embedded experience matches
+  // production: AppPageHeader renders the page title (it already suppresses
+  // the breadcrumb/sidebar-trigger in embedded mode — the host supplies those).
   return (
     <div id="mainLayout">
       <NullFallbackBoundary>
@@ -82,12 +100,18 @@ function FederatedAppContent() {
       <AppPageHeader />
 
       <ErrorDisplay>
-        <Outlet />
+        <div className="pt-8">
+          <Outlet />
+        </div>
       </ErrorDisplay>
 
       <AppFooter />
 
       <ErrorModalsRenderer />
+
+      {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
+          surface Console's toasts; mirror __root.tsx's AppContent. */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }

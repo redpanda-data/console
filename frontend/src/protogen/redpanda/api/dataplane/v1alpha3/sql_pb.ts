@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/dataplane/v1alpha3/sql.proto.
  */
 export const file_redpanda_api_dataplane_v1alpha3_sql: GenFile = /*@__PURE__*/
-  fileDesc("CilyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL3NxbC5wcm90bxIfcmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMyJrCgdDYXRhbG9nEgwKBG5hbWUYASABKAkSFgoObmFtZXNwYWNlX25hbWUYAiABKAkSOgoEdHlwZRgDIAEoDjIsLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ2F0YWxvZ1R5cGUixAMKBVRhYmxlEhYKDm5hbWVzcGFjZV9uYW1lGAIgASgJEgwKBG5hbWUYAyABKAkSHAoPY29ubmVjdGlvbl9uYW1lGAQgASgJSACIAQESFwoKdG9waWNfbmFtZRgFIAEoCUgBiAEBEhkKDHN1YmplY3RfbmFtZRgGIAEoCUgCiAEBEhoKDWxvb2t1cF9wb2xpY3kYByABKAlIA4gBARIiChVlcnJvcl9oYW5kbGluZ19wb2xpY3kYCCABKAlIBIgBARIiChVzdHJ1Y3RfbWFwcGluZ19wb2xpY3kYCSABKAlIBYgBARIsCh9vdXRwdXRfc2NoZW1hX2Z1bGxfbWVzc2FnZV9uYW1lGAogASgJSAaIAQFCEgoQX2Nvbm5lY3Rpb25fbmFtZUINCgtfdG9waWNfbmFtZUIPCg1fc3ViamVjdF9uYW1lQhAKDl9sb29rdXBfcG9saWN5QhgKFl9lcnJvcl9oYW5kbGluZ19wb2xpY3lCGAoWX3N0cnVjdF9tYXBwaW5nX3BvbGljeUIiCiBfb3V0cHV0X3NjaGVtYV9mdWxsX21lc3NhZ2VfbmFtZUoECAEQAlINZGF0YWJhc2VfbmFtZSIkCgZDb2x1bW4SDAoEbmFtZRgBIAEoCRIMCgR0eXBlGAIgASgJIjkKBVZhbHVlEhIKBXZhbHVlGAEgASgJSACIAQESEgoKbnVsbF92YWx1ZRgCIAEoCEIICgZfdmFsdWUiPQoDUm93EjYKBnZhbHVlcxgBIAMoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVmFsdWUiywEKE0xpc3RDYXRhbG9nc1JlcXVlc3QSnwEKCXBhZ2Vfc2l6ZRgBIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgCIAEoCSJrChRMaXN0Q2F0YWxvZ3NSZXNwb25zZRI6CghjYXRhbG9ncxgBIAMoCzIoLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ2F0YWxvZxIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAki3wIKEUxpc3RUYWJsZXNSZXF1ZXN0Eh4KB2NhdGFsb2cYASABKAlCDbpICsgBAXIFEAEY/wESnwEKCXBhZ2Vfc2l6ZRgCIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgDIAEoCRJpCgZmaWx0ZXIYBCABKAlCVJJBSTJHT3B0aW9uYWwgU1FMIExJS0UgcGF0dGVybiBtYXRjaGVkIGFnYWluc3QgdGFibGUgbmFtZSAoZS5nLiAnb3JkZXJzXyUnKS66SAVyAxj/AUgAiAEBQgkKB19maWx0ZXIiZQoSTGlzdFRhYmxlc1Jlc3BvbnNlEjYKBnRhYmxlcxgBIAMoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVGFibGUSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIlMKFERlc2NyaWJlVGFibGVSZXF1ZXN0Eh4KB2NhdGFsb2cYASABKAlCDbpICsgBAXIFEAEY/wESGwoEbmFtZRgCIAEoCUINukgKyAEBcgUQARj/ASKIAQoVRGVzY3JpYmVUYWJsZVJlc3BvbnNlEjUKBXRhYmxlGAEgASgLMiYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5UYWJsZRI4Cgdjb2x1bW5zGAIgAygLMicucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Db2x1bW4iuAEKE0V4ZWN1dGVRdWVyeVJlcXVlc3QSIQoJc3RhdGVtZW50GAEgASgJQg66SAvIAQFyBhABGICAEBIiCglyb3dfbGltaXQYAiABKAVCCrpIBxoFGJBOKAFIAIgBARJACgd0aW1lb3V0GAMgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uQg+6SAyqAQkiAwisAjICCAFIAYgBAUIMCgpfcm93X2xpbWl0QgoKCF90aW1lb3V0IpcBChRFeGVjdXRlUXVlcnlSZXNwb25zZRI4Cgdjb2x1bW5zGAEgAygLMicucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5Db2x1bW4SMgoEcm93cxgCIAMoCzIkLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuUm93EhEKCXRydW5jYXRlZBgDIAEoCCpiCgtDYXRhbG9nVHlwZRIcChhDQVRBTE9HX1RZUEVfVU5TUEVDSUZJRUQQABIZChVDQVRBTE9HX1RZUEVfUkVEUEFOREEQASIECAIQAioUQ0FUQUxPR19UWVBFX0lDRUJFUkcyzgkKClNRTFNlcnZpY2US/gEKDExpc3RDYXRhbG9ncxI0LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdENhdGFsb2dzUmVxdWVzdBo1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdENhdGFsb2dzUmVzcG9uc2UigAGSQVcSDUxpc3QgY2F0YWxvZ3NKRgoDMjAwEj8KAk9LEjkKNxo1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdENhdGFsb2dzUmVzcG9uc2WKph0ECAEQC4LT5JMCGBIWL3YxYWxwaGEzL3NxbC9jYXRhbG9ncxKFAgoKTGlzdFRhYmxlcxIyLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFRhYmxlc1JlcXVlc3QaMy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RUYWJsZXNSZXNwb25zZSKNAZJBUxILTGlzdCB0YWJsZXNKRAoDMjAwEj0KAk9LEjcKNRozLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuTGlzdFRhYmxlc1Jlc3BvbnNliqYdBAgBEAuC0+STAikSJy92MWFscGhhMy9zcWwvY2F0YWxvZ3Mve2NhdGFsb2d9L3RhYmxlcxLZAgoNRGVzY3JpYmVUYWJsZRI1LnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuRGVzY3JpYmVUYWJsZVJlcXVlc3QaNi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkRlc2NyaWJlVGFibGVSZXNwb25zZSLYAZJBlgESDkRlc2NyaWJlIHRhYmxlSkcKAzIwMBJACgJPSxI6CjgaNi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkRlc2NyaWJlVGFibGVSZXNwb25zZUo7CgM0MDQSNAoaQ2F0YWxvZyBvciB0YWJsZSBub3QgZm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAEQC4LT5JMCMBIuL3YxYWxwaGEzL3NxbC9jYXRhbG9ncy97Y2F0YWxvZ30vdGFibGVzL3tuYW1lfRKAAgoMRXhlY3V0ZVF1ZXJ5EjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUXVlcnlSZXF1ZXN0GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUXVlcnlSZXNwb25zZSKCAZJBVxINRXhlY3V0ZSBxdWVyeUpGCgMyMDASPwoCT0sSOQo3GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUXVlcnlSZXNwb25zZYqmHQQIARALgtPkkwIaOgEqIhUvdjFhbHBoYTMvc3FsL3F1ZXJpZXMaWJJBVQoDU1FMEk5JbnRlcmFjdCB3aXRoIFJlZHBhbmRhIFNRTCBieSBicm93c2luZyBjYXRhbG9ncywgdGFibGVzIGFuZCBleGVjdXRpbmcgcXVlcmllcy5iBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_protobuf_duration, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
+  fileDesc("CilyZWRwYW5kYS9hcGkvZGF0YXBsYW5lL3YxYWxwaGEzL3NxbC5wcm90bxIfcmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMyJmCgdDYXRhbG9nEgwKBG5hbWUYASABKAkSEQoJbmFtZXNwYWNlGAIgASgJEjoKBHR5cGUYAyABKA4yLC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkNhdGFsb2dUeXBlIpkDCgVUYWJsZRIMCgRuYW1lGAIgASgJEhkKEWNhdGFsb2dfbmFtZXNwYWNlGAMgASgJEhQKB2NhdGFsb2cYBCABKAlIAIgBARISCgV0b3BpYxgFIAEoCUgBiAEBEhQKB3N1YmplY3QYBiABKAlIAogBARIaCg1sb29rdXBfcG9saWN5GAcgASgJSAOIAQESIgoVZXJyb3JfaGFuZGxpbmdfcG9saWN5GAggASgJSASIAQESIgoVc3RydWN0X21hcHBpbmdfcG9saWN5GAkgASgJSAWIAQESJwoab3V0cHV0X3NjaGVtYV9mdWxsX21lc3NhZ2UYCiABKAlIBogBAUIKCghfY2F0YWxvZ0IICgZfdG9waWNCCgoIX3N1YmplY3RCEAoOX2xvb2t1cF9wb2xpY3lCGAoWX2Vycm9yX2hhbmRsaW5nX3BvbGljeUIYChZfc3RydWN0X21hcHBpbmdfcG9saWN5Qh0KG19vdXRwdXRfc2NoZW1hX2Z1bGxfbWVzc2FnZUoECAEQAlINZGF0YWJhc2VfbmFtZSJdCgZDb2x1bW4SDAoEbmFtZRgBIAEoCRIMCgR0eXBlGAIgASgJEjcKBmZpZWxkcxgDIAMoCzInLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ29sdW1uIjkKBVZhbHVlEhIKBXZhbHVlGAEgASgJSACIAQESEgoKbnVsbF92YWx1ZRgCIAEoCEIICgZfdmFsdWUiPQoDUm93EjYKBnZhbHVlcxgBIAMoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVmFsdWUiywEKE0xpc3RDYXRhbG9nc1JlcXVlc3QSnwEKCXBhZ2Vfc2l6ZRgBIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgCIAEoCSJrChRMaXN0Q2F0YWxvZ3NSZXNwb25zZRI6CghjYXRhbG9ncxgBIAMoCzIoLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ2F0YWxvZxIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkikAQKEUxpc3RUYWJsZXNSZXF1ZXN0Eh4KB2NhdGFsb2cYASABKAlCDbpICsgBAXIFEAEY/wESnwEKCXBhZ2Vfc2l6ZRgCIAEoBUKLAZJBdTJhTGltaXQgdGhlIHBhZ2luYXRlZCByZXNwb25zZSB0byBhIG51bWJlciBvZiBpdGVtcy4gRGVmYXVsdHMgdG8gMTAwLiBVc2UgLTEgdG8gZGlzYWJsZSBwYWdpbmF0aW9uLlkAAAAAAECPQGkAAAAAAADwv7pIEBoOGOgHKP///////////wESEgoKcGFnZV90b2tlbhgDIAEoCRJpCgZmaWx0ZXIYBCABKAlCVJJBSTJHT3B0aW9uYWwgU1FMIExJS0UgcGF0dGVybiBtYXRjaGVkIGFnYWluc3QgdGFibGUgbmFtZSAoZS5nLiAnb3JkZXJzXyUnKS66SAVyAxj/AUgAiAEBEpgBChFjYXRhbG9nX25hbWVzcGFjZRgFIAEoCUJ4kkFrMmlPcHRpb25hbCBuYW1lc3BhY2Ugb2YgdGhlIGNhdGFsb2cuIFdoZW4gdW5zZXQsIHRhYmxlcyBmcm9tIGFsbCBjYXRhbG9ncyB3aXRoIHRoZSBnaXZlbiBuYW1lIGFyZSByZXR1cm5lZC66SAdyBRABGP8BSAGIAQFCCQoHX2ZpbHRlckIUChJfY2F0YWxvZ19uYW1lc3BhY2UiZQoSTGlzdFRhYmxlc1Jlc3BvbnNlEjYKBnRhYmxlcxgBIAMoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVGFibGUSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIooCChREZXNjcmliZVRhYmxlUmVxdWVzdBIeCgdjYXRhbG9nGAEgASgJQg26SArIAQFyBRABGP8BEhsKBG5hbWUYAiABKAlCDbpICsgBAXIFEAEY/wESngEKEWNhdGFsb2dfbmFtZXNwYWNlGAMgASgJQn6SQXEyb09wdGlvbmFsIG5hbWVzcGFjZSBvZiB0aGUgY2F0YWxvZy4gUmVxdWlyZWQgd2hlbiBjYXRhbG9ncyB3aXRoIHRoZSBnaXZlbiBuYW1lIGV4aXN0IGluIG1vcmUgdGhhbiBvbmUgbmFtZXNwYWNlLrpIB3IFEAEY/wFIAIgBAUIUChJfY2F0YWxvZ19uYW1lc3BhY2UiiAEKFURlc2NyaWJlVGFibGVSZXNwb25zZRI1CgV0YWJsZRgBIAEoCzImLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuVGFibGUSOAoHY29sdW1ucxgCIAMoCzInLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ29sdW1uIrgBChNFeGVjdXRlUXVlcnlSZXF1ZXN0EiEKCXN0YXRlbWVudBgBIAEoCUIOukgLyAEBcgYQARiAgBASIgoJcm93X2xpbWl0GAIgASgFQgq6SAcaBRiQTigBSACIAQESQAoHdGltZW91dBgDIAEoCzIZLmdvb2dsZS5wcm90b2J1Zi5EdXJhdGlvbkIPukgMqgEJIgMIrAIyAggBSAGIAQFCDAoKX3Jvd19saW1pdEIKCghfdGltZW91dCKXAQoURXhlY3V0ZVF1ZXJ5UmVzcG9uc2USOAoHY29sdW1ucxgBIAMoCzInLnJlZHBhbmRhLmFwaS5kYXRhcGxhbmUudjFhbHBoYTMuQ29sdW1uEjIKBHJvd3MYAiADKAsyJC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLlJvdxIRCgl0cnVuY2F0ZWQYAyABKAgqYgoLQ2F0YWxvZ1R5cGUSHAoYQ0FUQUxPR19UWVBFX1VOU1BFQ0lGSUVEEAASGQoVQ0FUQUxPR19UWVBFX1JFRFBBTkRBEAEiBAgCEAIqFENBVEFMT0dfVFlQRV9JQ0VCRVJHMsUKCgpTUUxTZXJ2aWNlEv4BCgxMaXN0Q2F0YWxvZ3MSNC5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RDYXRhbG9nc1JlcXVlc3QaNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RDYXRhbG9nc1Jlc3BvbnNlIoABkkFXEg1MaXN0IGNhdGFsb2dzSkYKAzIwMBI/CgJPSxI5CjcaNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RDYXRhbG9nc1Jlc3BvbnNliqYdBAgBEAuC0+STAhgSFi92MWFscGhhMy9zcWwvY2F0YWxvZ3MShQIKCkxpc3RUYWJsZXMSMi5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RUYWJsZXNSZXF1ZXN0GjMucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5MaXN0VGFibGVzUmVzcG9uc2UijQGSQVMSC0xpc3QgdGFibGVzSkQKAzIwMBI9CgJPSxI3CjUaMy5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkxpc3RUYWJsZXNSZXNwb25zZYqmHQQIARALgtPkkwIpEicvdjFhbHBoYTMvc3FsL2NhdGFsb2dzL3tjYXRhbG9nfS90YWJsZXMS0AMKDURlc2NyaWJlVGFibGUSNS5yZWRwYW5kYS5hcGkuZGF0YXBsYW5lLnYxYWxwaGEzLkRlc2NyaWJlVGFibGVSZXF1ZXN0GjYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5EZXNjcmliZVRhYmxlUmVzcG9uc2UizwKSQY0CEg5EZXNjcmliZSB0YWJsZUpHCgMyMDASQAoCT0sSOgo4GjYucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5EZXNjcmliZVRhYmxlUmVzcG9uc2VKdQoDNDAwEm4KVENhdGFsb2cgbmFtZSBpcyBhbWJpZ3VvdXMgKGV4aXN0cyBpbiBtdWx0aXBsZSBuYW1lc3BhY2VzKTsgcHJvdmlkZSBjYXRhbG9nX25hbWVzcGFjZRIWChQaEi5nb29nbGUucnBjLlN0YXR1c0o7CgM0MDQSNAoaQ2F0YWxvZyBvciB0YWJsZSBub3QgZm91bmQSFgoUGhIuZ29vZ2xlLnJwYy5TdGF0dXOKph0ECAEQC4LT5JMCMBIuL3YxYWxwaGEzL3NxbC9jYXRhbG9ncy97Y2F0YWxvZ30vdGFibGVzL3tuYW1lfRKAAgoMRXhlY3V0ZVF1ZXJ5EjQucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUXVlcnlSZXF1ZXN0GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUXVlcnlSZXNwb25zZSKCAZJBVxINRXhlY3V0ZSBxdWVyeUpGCgMyMDASPwoCT0sSOQo3GjUucmVkcGFuZGEuYXBpLmRhdGFwbGFuZS52MWFscGhhMy5FeGVjdXRlUXVlcnlSZXNwb25zZYqmHQQIARALgtPkkwIaOgEqIhUvdjFhbHBoYTMvc3FsL3F1ZXJpZXMaWJJBVQoDU1FMEk5JbnRlcmFjdCB3aXRoIFJlZHBhbmRhIFNRTCBieSBicm93c2luZyBjYXRhbG9ncywgdGFibGVzIGFuZCBleGVjdXRpbmcgcXVlcmllcy5iBnByb3RvMw", [file_buf_validate_validate, file_google_api_annotations, file_google_protobuf_duration, file_protoc_gen_openapiv2_options_annotations, file_redpanda_api_auth_v1_authorization]);
 
 /**
  * @generated from message redpanda.api.dataplane.v1alpha3.Catalog
@@ -28,9 +28,9 @@ export type Catalog = Message<"redpanda.api.dataplane.v1alpha3.Catalog"> & {
   name: string;
 
   /**
-   * @generated from field: string namespace_name = 2;
+   * @generated from field: string namespace = 2;
    */
-  namespaceName: string;
+  namespace: string;
 
   /**
    * @generated from field: redpanda.api.dataplane.v1alpha3.CatalogType type = 3;
@@ -46,7 +46,7 @@ export const CatalogSchema: GenMessage<Catalog> = /*@__PURE__*/
   messageDesc(file_redpanda_api_dataplane_v1alpha3_sql, 0);
 
 /**
- * Table mirrors a row from `SHOW TABLES FROM <catalog>`. Backing-specific
+ * Table mirrors a row from `SHOW REDPANDA TABLES <catalog>`. Backing-specific
  * fields (connection_name, topic_name, *_policy) are only populated for
  * Kafka-backed tables.
  *
@@ -54,29 +54,32 @@ export const CatalogSchema: GenMessage<Catalog> = /*@__PURE__*/
  */
 export type Table = Message<"redpanda.api.dataplane.v1alpha3.Table"> & {
   /**
-   * @generated from field: string namespace_name = 2;
-   */
-  namespaceName: string;
-
-  /**
-   * @generated from field: string name = 3;
+   * @generated from field: string name = 2;
    */
   name: string;
 
   /**
-   * @generated from field: optional string connection_name = 4;
+   * Namespaces attach to catalogs, not to tables; tables of
+   * same-named catalogs in different namespaces are distinguished by this field.
+   *
+   * @generated from field: string catalog_namespace = 3;
    */
-  connectionName?: string;
+  catalogNamespace: string;
 
   /**
-   * @generated from field: optional string topic_name = 5;
+   * @generated from field: optional string catalog = 4;
    */
-  topicName?: string;
+  catalog?: string;
 
   /**
-   * @generated from field: optional string subject_name = 6;
+   * @generated from field: optional string topic = 5;
    */
-  subjectName?: string;
+  topic?: string;
+
+  /**
+   * @generated from field: optional string subject = 6;
+   */
+  subject?: string;
 
   /**
    * @generated from field: optional string lookup_policy = 7;
@@ -94,9 +97,9 @@ export type Table = Message<"redpanda.api.dataplane.v1alpha3.Table"> & {
   structMappingPolicy?: string;
 
   /**
-   * @generated from field: optional string output_schema_full_message_name = 10;
+   * @generated from field: optional string output_schema_full_message = 10;
    */
-  outputSchemaFullMessageName?: string;
+  outputSchemaFullMessage?: string;
 };
 
 /**
@@ -107,7 +110,7 @@ export const TableSchema: GenMessage<Table> = /*@__PURE__*/
   messageDesc(file_redpanda_api_dataplane_v1alpha3_sql, 1);
 
 /**
- * Column descriptor as reported by the Postgres driver.
+ * Column descriptor for a table or query result.
  *
  * @generated from message redpanda.api.dataplane.v1alpha3.Column
  */
@@ -118,11 +121,20 @@ export type Column = Message<"redpanda.api.dataplane.v1alpha3.Column"> & {
   name: string;
 
   /**
-   * Postgres type name (e.g. "INT8", "TEXT", "TIMESTAMPTZ").
+   * Engine-reported type name (e.g. "integer", "double precision", "text");
+   * array types carry a "[]" suffix (e.g. "text[]").
    *
    * @generated from field: string type = 2;
    */
   type: string;
+
+  /**
+   * Nested columns for a composite/struct (json) column, parsed from the
+   * engine's structural type. Empty for scalar columns.
+   *
+   * @generated from field: repeated redpanda.api.dataplane.v1alpha3.Column fields = 3;
+   */
+  fields: Column[];
 };
 
 /**
@@ -244,6 +256,14 @@ export type ListTablesRequest = Message<"redpanda.api.dataplane.v1alpha3.ListTab
    * @generated from field: optional string filter = 4;
    */
   filter?: string;
+
+  /**
+   * Namespace of the catalog. When unset, tables from ALL catalogs with the
+   * given name are returned (rows are distinguished by Table.namespace_name).
+   *
+   * @generated from field: optional string catalog_namespace = 5;
+   */
+  catalogNamespace?: string;
 };
 
 /**
@@ -288,6 +308,15 @@ export type DescribeTableRequest = Message<"redpanda.api.dataplane.v1alpha3.Desc
    * @generated from field: string name = 2;
    */
   name: string;
+
+  /**
+   * Namespace of the catalog. When unset, the catalog is resolved by name
+   * alone; if catalogs with that name exist in more than one namespace, the
+   * request fails with INVALID_ARGUMENT and the namespace must be provided.
+   *
+   * @generated from field: optional string catalog_namespace = 3;
+   */
+  catalogNamespace?: string;
 };
 
 /**
@@ -422,7 +451,9 @@ export const SQLService: GenService<{
     output: typeof ListCatalogsResponseSchema;
   },
   /**
-   * ListTables lists tables in a catalog.
+   * ListTables lists tables in a catalog. The catalog is identified by name;
+   * when catalogs with the same name exist in more than one namespace, tables
+   * from all of them are returned unless catalog_namespace narrows the scope.
    *
    * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.ListTables
    */
@@ -432,7 +463,10 @@ export const SQLService: GenService<{
     output: typeof ListTablesResponseSchema;
   },
   /**
-   * DescribeTable returns metadata and column shape for a single table.
+   * DescribeTable returns metadata and column shape for a single table. The
+   * catalog is resolved by name; when catalogs with the same name exist in
+   * more than one namespace, the request must disambiguate via
+   * catalog_namespace or it fails with INVALID_ARGUMENT.
    *
    * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.DescribeTable
    */
