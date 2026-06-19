@@ -386,6 +386,11 @@ const AclRules = ({
                   <Label className="font-medium text-gray-700 text-sm">Selector</Label>
                   <div className="grid grid-cols-4 gap-3">
                     <Select
+                      items={{
+                        [ResourcePatternTypeAny]: `All ${getPluralResourceName(rule.resourceType)}`,
+                        [ResourcePatternTypeLiteral]: `${getResourceName(rule.resourceType)} names matching`,
+                        [ResourcePatternTypePrefix]: `${getResourceName(rule.resourceType)} names starting with`,
+                      }}
                       onValueChange={(value) =>
                         updateRule(rule.id, {
                           selectorType: value as ResourcePatternType,
@@ -624,6 +629,11 @@ const SharedConfiguration = ({
               <div className="grid grid-cols-4 gap-3">
                 <Select
                   disabled={edit}
+                  items={{
+                    [RoleTypeUser]: 'User',
+                    [RoleTypeGroup]: 'Group',
+                    [RoleTypeRedpandaRole]: 'Redpanda role',
+                  }}
                   onValueChange={(value) => {
                     setPrincipalType(value);
                     // Update the principal to include the new type
@@ -693,6 +703,10 @@ const SharedConfiguration = ({
             <div className="flex gap-3">
               <Select
                 disabled={edit}
+                items={{
+                  [HostTypeAllowAllHosts]: 'Allow all hosts',
+                  [HostTypeSpecificHost]: 'Specific IP addresses',
+                }}
                 onValueChange={(value) => {
                   setHostType(value as HostType);
                   if (value === HostTypeAllowAllHosts) {

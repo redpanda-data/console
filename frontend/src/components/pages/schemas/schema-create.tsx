@@ -629,6 +629,12 @@ const SchemaEditor = (p: {
           <FieldLabel>Strategy</FieldLabel>
           <Select
             disabled={isAddVersion}
+            items={{
+              TOPIC: 'Topic Name',
+              RECORD_NAME: 'Record Name',
+              TOPIC_RECORD_NAME: 'Topic-Record Name',
+              CUSTOM: 'Custom',
+            }}
             onValueChange={(e) => {
               p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
             }}
@@ -919,6 +925,7 @@ const ReferencesEditor = (p: {
             <Field>
               <FieldLabel>Context</FieldLabel>
               <Select
+                items={p.contextSelectOptions}
                 onValueChange={(contextId) => {
                   p.onStateChange((prev) => ({
                     ...prev,

@@ -211,7 +211,11 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
       <div className="flex items-center justify-between gap-2">
         <Heading level={3}>Throughput</Heading>
         <div className="flex items-center gap-1">
-          <Select onValueChange={(v) => setSelectedTimeRange(v as TimeRange)} value={selectedTimeRange}>
+          <Select
+            items={TIME_RANGES}
+            onValueChange={(v) => setSelectedTimeRange(v as TimeRange)}
+            value={selectedTimeRange}
+          >
             <SelectTrigger size="sm">
               <SelectValue />
             </SelectTrigger>
