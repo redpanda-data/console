@@ -794,18 +794,18 @@ describe('PipelinePage', () => {
   // ── Feature flags and mode routing ──────────────────────────────────
 
   describe('feature flags and mode routing', () => {
-    it('shows a slash-command tip banner when the feature is enabled', async () => {
+    it('shows the slash-command tip in the editor tips bar when the feature is enabled', async () => {
       mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableConnectSlashMenu');
 
       render(<PipelinePage />, { transport: createTransport() });
 
+      // The tips bar leads with the slash tip (rotation starts at index 0).
       await waitFor(() => {
-        expect(screen.getByText(/Tip: Use/)).toBeInTheDocument();
         expect(screen.getByText(/to insert variables/)).toBeInTheDocument();
       });
     });
 
-    it('hides the slash-command tip banner when the feature is disabled', async () => {
+    it('omits the slash-command tip when the feature is disabled', async () => {
       // Default: all flags return false
       render(<PipelinePage />, { transport: createTransport() });
 
@@ -813,7 +813,7 @@ describe('PipelinePage', () => {
         expect(screen.getByTestId('yaml-editor')).toBeInTheDocument();
       });
 
-      expect(screen.queryByText(/Tip: Use/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/to insert variables/)).not.toBeInTheDocument();
     });
 
     it('uses the new log explorer when the feature flag is enabled', async () => {

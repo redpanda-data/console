@@ -17,7 +17,6 @@ import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-r
 import { getUserTagEntries, isSystemTag } from 'components/constants';
 import { ArrowLeftIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import {
@@ -29,7 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -83,6 +81,7 @@ import { z } from 'zod';
 
 import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
+import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
@@ -134,6 +133,16 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
     return `Search ${type}s...`;
   }
   return;
+}
+
+// Which usage tips to show beneath the editor for the active lane. Read-only YAML
+// (the view-mode config viewer) and the Monitor lane get none — their tips would be
+// stale or irrelevant.
+function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
+  if (isView) {
+    return viewLane === 'visual' ? 'visual' : null;
+  }
+  return editLane === 'visual' ? 'visual' : 'yaml';
 }
 
 const pipelineFormSchema = z.object({
@@ -589,8 +598,6 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
 
 function EditorPanel({
   isServerlessInitializing,
-  slashTipVisible,
-  onDismissSlashTip,
   yamlContent,
   onYamlChange,
   onEditorMount,
@@ -599,8 +606,6 @@ function EditorPanel({
   isLintPending,
 }: {
   isServerlessInitializing: boolean;
-  slashTipVisible: boolean;
-  onDismissSlashTip: () => void;
   yamlContent: string;
   onYamlChange: (val: string) => void;
   onEditorMount: (editorRef: editor.IStandaloneCodeEditor) => void;
@@ -615,33 +620,16 @@ function EditorPanel({
           {isServerlessInitializing ? (
             <EditorSkeleton />
           ) : (
-            <>
-              {slashTipVisible ? (
-                <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
-                  <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
-                    <BannerContent>
-                      Tip: Use{' '}
-                      <Kbd size="xs" variant="filled">
-                        /
-                      </Kbd>{' '}
-                      to insert variables
-                    </BannerContent>
-                    <BannerClose onClick={onDismissSlashTip} variant="ghost" />
-                  </Banner>
-                </div>
-              ) : null}
-              {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
-              <div className="absolute inset-0">
-                <YamlEditor
-                  onChange={(val) => onYamlChange(val || '')}
-                  onEditorMount={onEditorMount}
-                  options={slashTipVisible ? { padding: { top: 32 } } : undefined}
-                  schema={yamlEditorSchema}
-                  transparentBackground
-                  value={yamlContent}
-                />
-              </div>
-            </>
+            // Out of flow so Monaco can't feed its width up the layout and latch the page wide.
+            <div className="absolute inset-0">
+              <YamlEditor
+                onChange={(val) => onYamlChange(val || '')}
+                onEditorMount={onEditorMount}
+                schema={yamlEditorSchema}
+                transparentBackground
+                value={yamlContent}
+              />
+            </div>
           )}
         </div>
       </ResizablePanel>
@@ -875,17 +863,12 @@ function SidebarPanel({
 }
 
 export default function PipelinePage() {
-  const { mode, pipelineId } = usePipelineMode();
-  const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
+  const { pipelineId } = usePipelineMode();
   // When the visual editor is enabled, open editing on the Visual lane by default.
   const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isEmbedded();
   // Keyed by pipeline id so each pipeline gets a fresh editor store.
   return (
-    <PipelineEditorProvider
-      initialEditLane={isVisualEditorEnabled ? 'visual' : 'yaml'}
-      initialSlashTipVisible={isSlashMenuEnabled && mode !== 'view'}
-      key={pipelineId ?? 'create'}
-    >
+    <PipelineEditorProvider initialEditLane={isVisualEditorEnabled ? 'visual' : 'yaml'} key={pipelineId ?? 'create'}>
       <PipelinePageContent />
     </PipelineEditorProvider>
   );
@@ -917,7 +900,6 @@ function PipelinePageContent() {
     requestRevealNode,
     setCommandMenuFilter,
     setAddConnectorType,
-    setSlashTipVisible,
     setIsConfigDialogOpen,
     setIsViewConfigDialogOpen,
     setIsDeleteAlertOpen,
@@ -933,11 +915,11 @@ function PipelinePageContent() {
   const selectedNodeId = usePipelineEditorStore((s) => s.selectedNodeId);
   const commandMenuFilter = usePipelineEditorStore((s) => s.commandMenuFilter);
   const addConnectorType = usePipelineEditorStore((s) => s.addConnectorType);
-  const slashTipVisible = usePipelineEditorStore((s) => s.slashTipVisible);
   const isConfigDialogOpen = usePipelineEditorStore((s) => s.isConfigDialogOpen);
   const isViewConfigDialogOpen = usePipelineEditorStore((s) => s.isViewConfigDialogOpen);
   const isDeleteAlertOpen = usePipelineEditorStore((s) => s.isDeleteAlertOpen);
   const isTemplateDialogOpen = usePipelineEditorStore((s) => s.isTemplateDialogOpen);
+  const tipsContext = tipsContextForLane(mode === 'view', activeViewLane, activeEditLane);
 
   const form = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
@@ -1202,66 +1184,70 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
-      <div className="flex min-h-[640px] min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
-        {showSidebar ? (
-          <SidebarPanel
-            isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
-            isVisualEditorEnabled={isVisualEditorEnabled}
-            mode={mode}
-            onAddConnector={(type) => setAddConnectorType(type)}
-            onAddSasl={handleAddSasl}
-            onAddTopic={handleAddTopic}
-            onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
-            onOpenCommandMenu={handleCommandMenuOpen}
-            yamlContent={yamlContent}
-          />
-        ) : null}
-        <div className="min-w-0 flex-1">
-          {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
-          {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
-            <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
-          ) : null}
-          {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
-            <VisualEditorPanel
-              componentList={componentListResponse?.components ?? ({} as ComponentList)}
-              components={components}
-              lintHints={Object.values(lintHints)}
-              mode="view"
-              onNavigateToYaml={goToYamlNode}
-              onYamlChange={setYamlContent}
-              yamlContent={pipeline.configYaml}
-            />
-          ) : null}
-          {mode !== 'view' && activeEditLane === 'visual' ? (
-            <VisualEditorPanel
-              componentList={componentListResponse?.components ?? ({} as ComponentList)}
-              components={components}
-              lintHints={Object.values(lintHints)}
+      {/* Editor area: the bordered frame flexes to fill the column, with a minimal tips strip pinned just beneath it (so it stays visible instead of being pushed below the fold). */}
+      <div className="flex min-h-[640px] min-w-0 flex-1 flex-col gap-2">
+        {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
+          {showSidebar ? (
+            <SidebarPanel
+              isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
+              isVisualEditorEnabled={isVisualEditorEnabled}
               mode={mode}
               onAddConnector={(type) => setAddConnectorType(type)}
               onAddSasl={handleAddSasl}
               onAddTopic={handleAddTopic}
               onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
-              onNavigateToYaml={goToYamlNode}
-              onYamlChange={setYamlContent}
+              onOpenCommandMenu={handleCommandMenuOpen}
               yamlContent={yamlContent}
             />
           ) : null}
-          {mode === 'view' || activeEditLane === 'visual' ? null : (
-            <EditorPanel
-              isLintPending={isLintPending}
-              isServerlessInitializing={isServerlessInitializing}
-              lintHints={lintHints}
-              onDismissSlashTip={() => setSlashTipVisible(false)}
-              onEditorMount={setEditorInstance}
-              onYamlChange={setYamlContent}
-              slashTipVisible={slashTipVisible}
-              yamlContent={yamlContent}
-              yamlEditorSchema={yamlEditorSchema}
-            />
-          )}
+          <div className="min-w-0 flex-1">
+            {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
+            {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
+              <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
+            ) : null}
+            {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
+              <VisualEditorPanel
+                componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                components={components}
+                lintHints={Object.values(lintHints)}
+                mode="view"
+                onNavigateToYaml={goToYamlNode}
+                onYamlChange={setYamlContent}
+                yamlContent={pipeline.configYaml}
+              />
+            ) : null}
+            {mode !== 'view' && activeEditLane === 'visual' ? (
+              <VisualEditorPanel
+                componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                components={components}
+                lintHints={Object.values(lintHints)}
+                mode={mode}
+                onAddConnector={(type) => setAddConnectorType(type)}
+                onAddSasl={handleAddSasl}
+                onAddTopic={handleAddTopic}
+                onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
+                onNavigateToYaml={goToYamlNode}
+                onYamlChange={setYamlContent}
+                yamlContent={yamlContent}
+              />
+            ) : null}
+            {mode === 'view' || activeEditLane === 'visual' ? null : (
+              <EditorPanel
+                isLintPending={isLintPending}
+                isServerlessInitializing={isServerlessInitializing}
+                lintHints={lintHints}
+                onEditorMount={setEditorInstance}
+                onYamlChange={setYamlContent}
+                yamlContent={yamlContent}
+                yamlEditorSchema={yamlEditorSchema}
+              />
+            )}
+          </div>
         </div>
+        {tipsContext ? (
+          <EditorTipsBar context={tipsContext} readOnly={mode === 'view'} slashMenuEnabled={isSlashMenuEnabled} />
+        ) : null}
       </div>
 
       <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />

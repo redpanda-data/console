@@ -762,7 +762,6 @@ type LinkTone = 'primary' | 'muted' | 'error';
 type FlowLinkData = {
   label?: string;
   labelOffsetY?: number;
-  labelOffsetX?: number;
   tone?: LinkTone;
   dashed?: boolean;
   laneFromSource?: number;
@@ -930,7 +929,7 @@ export function FlowLinkEdge({
         />
       ) : null}
       {d?.label ? (
-        <LinkLabel d={d} tone={tone} x={labelX + (d.labelOffsetX ?? 0)} y={labelY + (d.labelOffsetY ?? 0)} />
+        <LinkLabel d={d} tone={tone} x={labelX} y={labelY + (d.labelOffsetY ?? 0)} />
       ) : null}
     </>
   );
@@ -944,6 +943,13 @@ const LINK_LABEL_STYLE: Record<LinkTone, string> = {
   error: 'border-destructive/40 text-destructive',
   muted: 'border-border text-foreground',
 };
+// React Flow renders every edge label into one shared `edgelabel-renderer` layer that
+// sits *below* the nodes layer, while each edge's own SVG inherits an elevated z-index
+// from the (nested) node it touches. So a copy/merge label positioned in a container's
+// gutter — directly over the card — paints behind the card even though the line and its
+// port socket paint in front. Lifting the pill above the cards keeps it readable.
+// (Nodes here aren't selectable, so their z-indices stay small and well under this.)
+const LINK_LABEL_Z = 1000;
 const LinkLabel = ({ d, tone, x, y }: { d: FlowLinkData; tone: LinkTone; x: number; y: number }) => (
   <EdgeLabelRenderer>
     <div
@@ -951,7 +957,11 @@ const LinkLabel = ({ d, tone, x, y }: { d: FlowLinkData; tone: LinkTone; x: numb
         'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide shadow-sm',
         LINK_LABEL_STYLE[tone]
       )}
-      style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`, opacity: d.dimmed ? 0.25 : 1 }}
+      style={{
+        transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+        opacity: d.dimmed ? 0.25 : 1,
+        zIndex: LINK_LABEL_Z,
+      }}
       title={d.label}
     >
       {d.label}

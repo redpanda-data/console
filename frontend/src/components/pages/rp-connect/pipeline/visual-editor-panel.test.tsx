@@ -79,7 +79,7 @@ const EMPTY_STATE_TEXT = /select a node/i;
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
   const onYamlChange = vi.fn();
   const utils = render(
-    <PipelineEditorProvider initialSlashTipVisible={false}>
+    <PipelineEditorProvider>
       <VisualEditorPanel
         componentList={{} as ComponentList}
         components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
@@ -161,7 +161,7 @@ describe('VisualEditorPanel', () => {
     function Harness() {
       const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
       return (
-        <PipelineEditorProvider initialSlashTipVisible={false}>
+        <PipelineEditorProvider>
           <VisualEditorPanel
             componentList={{} as ComponentList}
             components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
@@ -195,7 +195,7 @@ describe('VisualEditorPanel', () => {
     function Harness() {
       const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
       return (
-        <PipelineEditorProvider initialSlashTipVisible={false}>
+        <PipelineEditorProvider>
           <VisualEditorPanel
             componentList={{} as ComponentList}
             components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}

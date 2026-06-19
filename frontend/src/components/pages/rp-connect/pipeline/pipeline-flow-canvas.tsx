@@ -197,6 +197,58 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   );
 }
 
+// Breathing room (px) to leave between the selected node and the canvas edge when
+// nudging it back into view, and how long to wait for the inspector rail's open
+// animation to settle before measuring.
+const SELECTION_REVEAL_MARGIN = 32;
+const RAIL_SETTLE_MS = 240;
+
+/**
+ * Keeps the selected node visible when the inspector rail opens. The rail is a flex
+ * sibling that steals ~384px on the right, shrinking the canvas — so a node near the
+ * right edge ends up hidden behind it. Once the rail's open animation settles (the
+ * pane stops resizing), we nudge the viewport just enough to reveal the node with a
+ * little margin, but only if it's actually clipped — nodes already in view stay put.
+ *
+ * The minimal dx keeps the result inside `translateExtent` (which allows panning a
+ * generous margin past the content), so no clamping is needed.
+ */
+function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: string; enabled: boolean }) {
+  const { getNodesBounds, getViewport, setViewport } = useReactFlow();
+  // Re-runs as the canvas resizes during the rail animation; each change resets the
+  // settle timer, so the nudge fires once the pane width finally stops changing.
+  const paneWidth = useStore((s) => s.width);
+
+  useEffect(() => {
+    // Disabled in the static (sidebar) overview, and a no-op until something is selected.
+    if (!(enabled && selectedNodeId)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      const bounds = getNodesBounds([selectedNodeId]);
+      if (!bounds || bounds.width === 0) {
+        return;
+      }
+      const { x, y, zoom } = getViewport();
+      const screenLeft = bounds.x * zoom + x;
+      const screenRight = (bounds.x + bounds.width) * zoom + x;
+      let dx = 0;
+      if (screenRight > paneWidth - SELECTION_REVEAL_MARGIN) {
+        // Off the right edge / behind the rail — pan content left to reveal it.
+        dx = paneWidth - SELECTION_REVEAL_MARGIN - screenRight;
+      } else if (screenLeft < SELECTION_REVEAL_MARGIN) {
+        dx = SELECTION_REVEAL_MARGIN - screenLeft;
+      }
+      if (dx !== 0) {
+        setViewport({ x: x + dx, y, zoom }, { duration: 200 });
+      }
+    }, RAIL_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [enabled, selectedNodeId, paneWidth, getNodesBounds, getViewport, setViewport]);
+
+  return null;
+}
+
 type CanvasCallbacks = {
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
@@ -623,6 +675,7 @@ export function PipelineFlowCanvas({
             />
           )}
           {simple ? null : <PipelineMiniMap nodes={rfNodes} />}
+          <KeepSelectionInView enabled={!simple} selectedNodeId={selectedNodeId} />
         </ReactFlow>
       </ReactFlowProvider>
       {simple ? null : <FlowLegend flags={legend} />}

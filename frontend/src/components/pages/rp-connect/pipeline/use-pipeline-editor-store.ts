@@ -54,7 +54,6 @@ type UiSlice = {
   revealNodeId: string | null;
   commandMenuFilter: CommandMenuFilter;
   addConnectorType: AddConnectorType;
-  slashTipVisible: boolean;
   isConfigDialogOpen: boolean;
   isViewConfigDialogOpen: boolean;
   isDeleteAlertOpen: boolean;
@@ -66,7 +65,6 @@ type UiSlice = {
   requestRevealNode: (revealNodeId: string | null) => void;
   setCommandMenuFilter: (commandMenuFilter: CommandMenuFilter) => void;
   setAddConnectorType: (addConnectorType: AddConnectorType) => void;
-  setSlashTipVisible: (slashTipVisible: boolean) => void;
   setIsConfigDialogOpen: (open: boolean) => void;
   setIsViewConfigDialogOpen: (open: boolean) => void;
   setIsDeleteAlertOpen: (open: boolean) => void;
@@ -103,7 +101,6 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   revealNodeId: null,
   commandMenuFilter: null,
   addConnectorType: null,
-  slashTipVisible: false,
   isConfigDialogOpen: false,
   isViewConfigDialogOpen: false,
   isDeleteAlertOpen: false,
@@ -115,7 +112,6 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   requestRevealNode: (revealNodeId) => set({ revealNodeId }),
   setCommandMenuFilter: (commandMenuFilter) => set({ commandMenuFilter }),
   setAddConnectorType: (addConnectorType) => set({ addConnectorType }),
-  setSlashTipVisible: (slashTipVisible) => set({ slashTipVisible }),
   setIsConfigDialogOpen: (open) => set({ isConfigDialogOpen: open }),
   setIsViewConfigDialogOpen: (open) => set({ isViewConfigDialogOpen: open }),
   setIsDeleteAlertOpen: (open) => set({ isDeleteAlertOpen: open }),
@@ -135,18 +131,15 @@ const PipelineEditorContext = createContext<StoreApi<PipelineEditorStore> | null
 // Context-scoped: each mount gets its own store (key the provider by pipeline id for clean nav).
 export function PipelineEditorProvider({
   children,
-  initialSlashTipVisible,
   initialEditLane = 'yaml',
 }: {
   children: ReactNode;
-  initialSlashTipVisible: boolean;
   // Which edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
   initialEditLane?: EditLane;
 }) {
   const storeRef = useRef<StoreApi<PipelineEditorStore>>();
   if (!storeRef.current) {
     storeRef.current = createPipelineEditorStore({
-      slashTipVisible: initialSlashTipVisible,
       activeEditLane: initialEditLane,
     });
   }

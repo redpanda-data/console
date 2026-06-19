@@ -1785,9 +1785,6 @@ function linkEdge(params: {
   // Nudge the label off the line (px); used to lift copy/merge labels above their
   // (horizontal) edge so they don't sit on it.
   labelOffsetY?: number;
-  // Nudge the label sideways (px); pushes copy/merge labels out into the gutter so they
-  // clear the child card.
-  labelOffsetX?: number;
   dashed?: boolean;
   // Distinct vertical lane (px offset from the container edge) so sibling fan-out /
   // fan-in edges don't overlap on a shared bend. From the source for fan-out, from
@@ -1810,7 +1807,6 @@ function linkEdge(params: {
     data: {
       label: params.label,
       labelOffsetY: params.labelOffsetY,
-      labelOffsetX: params.labelOffsetX,
       tone: params.tone,
       dashed: params.dashed ?? false,
       laneFromSource: params.laneFromSource,
@@ -1960,7 +1956,6 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
         dashed: true,
         label: label('copy'),
         labelOffsetY: -18,
-        labelOffsetX: -20,
         portDot: 'source',
       })
     );
@@ -1976,7 +1971,6 @@ function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], c
         dashed: true,
         label: label('merge'),
         labelOffsetY: -18,
-        labelOffsetX: 20,
         portDot: 'target',
       })
     );
