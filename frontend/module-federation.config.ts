@@ -69,11 +69,12 @@ export const moduleFederationConfig: ModuleFederationPluginOptions = {
       singleton: true,
       requiredVersion: deps.zod,
     },
-    'lucide-react': {
-      singleton: true,
-      requiredVersion: deps['lucide-react'],
-      eager: false,
-    },
+    // lucide-react is intentionally NOT shared. It is stateless SVG components
+    // (no context/hooks), so it has no singleton requirement. Sharing it as a
+    // singleton forced the whole package (~1.5 MiB / 1700+ icons) into a shared
+    // chunk regardless of which icons are used; unshared, this remote tree-shakes
+    // to only the icons it imports and can upgrade lucide independently of the
+    // cloud-ui host. The host and the adp-ui remote unshare it too.
     'class-variance-authority': {
       singleton: false,
       requiredVersion: deps['class-variance-authority'],
