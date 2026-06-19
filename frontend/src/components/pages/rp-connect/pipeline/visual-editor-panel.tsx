@@ -604,7 +604,9 @@ export function VisualEditorPanel({
             key="node-inspector"
             transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
           >
-            <div className="absolute inset-y-0 right-0 flex w-96 flex-col overflow-hidden">
+            {/* Fill the rail's actual width (so the content never leaves a gap), with a
+                min-width so it clips rather than reflows while the width animates. */}
+            <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
               <NodeInspector
                 components={components}
                 lintHints={lintByNode.get(selected.id)}
@@ -650,8 +652,8 @@ export function VisualEditorPanel({
             <AlertDialogDescription>
               {pendingDeleteName ? (
                 <>
-                  This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You can
-                  undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.
+                  This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You
+                  can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.
                 </>
               ) : (
                 <>This removes the node from the pipeline. You can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.</>
