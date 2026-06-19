@@ -38,12 +38,42 @@ import { protobufRegistry } from 'protobuf-registry';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 
 import { FederatedProviders } from './federated-providers';
+import { federatedRootRoute } from './federated-routes';
 import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
+
+/**
+ * Re-root the generated route tree onto Console's federated root.
+ *
+ * In the federated dev build, the generated tree's root route (from
+ * `src/routes/__root.tsx`) can be substituted by Cloud UI's own `__root` route
+ * — both apps compile a module with the identical id `./src/routes/__root.tsx`,
+ * and in the shared rsbuild/MF dev runtime the host's wins. The result is that
+ * the embedded Console renders Cloud UI's root chrome (its react NuqsAdapter,
+ * Builder.io `<Content>`, and `<CommandPalette>`/KBar) instead of Console's own
+ * federated layout — which breaks nuqs (NUQS-404), crashes on KBar
+ * (`getState is not a function`, no `KBarProvider` in this subtree), and leaves
+ * the embedded sidebar empty.
+ *
+ * `federatedRootRoute` lives at a Console-unique module path
+ * (`src/federation/federated-routes.tsx`) that cannot collide with Cloud UI, so
+ * reattaching the generated child routes to it guarantees the embedded app
+ * renders Console's own root. Standalone (`app.tsx`) and the legacy embedded
+ * entry keep using the generated `routeTree` unchanged.
+ */
+function createFederatedRouteTree() {
+  const childRoutes = routeTree.children ? Object.values(routeTree.children) : [];
+  for (const child of childRoutes) {
+    child.options.getParentRoute = () => federatedRootRoute;
+  }
+  return federatedRootRoute._addFileChildren(childRoutes);
+}
+
+const federatedRouteTree = createFederatedRouteTree();
 
 /**
  * Creates an interceptor that refreshes the token on 401 and retries the request.
@@ -255,7 +285,7 @@ function ConsoleAppInner({
     });
 
     const r = createRouter({
-      routeTree,
+      routeTree: federatedRouteTree,
       history: memoryHistory,
       context: {
         basePath: '',

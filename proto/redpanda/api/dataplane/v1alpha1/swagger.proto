@@ -9,18 +9,14 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
     key: "401"
     value: {
       description: "Unauthenticated."
-      schema: {
-        json_schema: {ref: ".google.rpc.Status"}
-      }
+      schema: {json_schema: {ref: ".google.rpc.Status"}}
     }
   }
   responses: {
     key: "500"
     value: {
       description: "Internal Server Error. Reach out to support."
-      schema: {
-        json_schema: {ref: ".google.rpc.Status"}
-      }
+      schema: {json_schema: {ref: ".google.rpc.Status"}}
     }
   }
 };

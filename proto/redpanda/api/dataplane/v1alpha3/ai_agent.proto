@@ -67,9 +67,7 @@ message AIAgent {
   // They help organize AI agents and enable filtering when listing them.
   map<string, string> tags = 10 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The current AI agent state.
@@ -343,9 +341,7 @@ service AIAgentService {
         key: "201"
         value: {
           description: "Created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
     };
@@ -369,18 +365,14 @@ service AIAgentService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -406,9 +398,7 @@ service AIAgentService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListAIAgentsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListAIAgentsResponse"}}
         }
       }
     };
@@ -439,9 +429,7 @@ service AIAgentService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
     };
@@ -473,9 +461,7 @@ service AIAgentService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -500,18 +486,14 @@ service AIAgentService {
         key: "200"
         value: {
           description: "Stopped"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -536,18 +518,14 @@ service AIAgentService {
         key: "200"
         value: {
           description: "Started"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -608,9 +586,7 @@ message AIAgentCreate {
   // Optional list of tags to attach to an AI agent.
   map<string, string> tags = 8 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
@@ -701,9 +677,7 @@ message ListAIAgentsRequest {
     map<string, string> tags = 2 [
       (buf.validate.field).map = {
         max_pairs: 16
-        values: {
-          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-        }
+        values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "AI agents that match all the provided tags will be returned."}
     ];
@@ -754,9 +728,7 @@ message AIAgentUpdate {
   // If a tag's value is empty, the server interprets that as a deletion.
   map<string, string> tags = 8 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The number of resources that are guaranteed to be assigned to the AI agent.

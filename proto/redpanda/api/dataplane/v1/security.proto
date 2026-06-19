@@ -213,9 +213,7 @@ service SecurityService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListRolesResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListRolesResponse"}}
         }
       }
     };
@@ -237,9 +235,7 @@ service SecurityService {
         key: "201"
         value: {
           description: "Role created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.CreateRoleResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.CreateRoleResponse"}}
         }
       }
     };
@@ -259,18 +255,14 @@ service SecurityService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetRoleResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetRoleResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -297,9 +289,7 @@ service SecurityService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -319,9 +309,7 @@ service SecurityService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListRoleMembersResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListRoleMembersResponse"}}
         }
       }
     };
@@ -348,18 +336,14 @@ service SecurityService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateRoleMembershipResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateRoleMembershipResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
