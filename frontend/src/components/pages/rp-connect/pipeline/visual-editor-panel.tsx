@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { Redo2, Undo2 } from 'lucide-react';
@@ -148,7 +149,9 @@ const REDO_SHORTCUT = MAC ? '⌘⇧Z' : 'Ctrl+Shift+Z';
 const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
   <span className="flex items-center gap-2">
     {label}
-    <kbd className="rounded bg-foreground/15 px-1 py-0.5 font-medium text-[11px]">{keys}</kbd>
+    <Kbd size="xs" variant="filled">
+      {keys}
+    </Kbd>
   </span>
 );
 

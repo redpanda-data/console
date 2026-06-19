@@ -82,58 +82,28 @@ const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectCo
   }
 };
 
-const mergeCacheResource = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
-  const cacheResourcesNode = doc.getIn(['cache_resources']) as { toJSON?: () => unknown } | undefined;
-  const cacheResources = (cacheResourcesNode?.toJSON?.() as unknown[]) || [];
-
-  const cacheConfigObj = newConfigObject as Record<string, unknown[]>;
-  // biome-ignore lint/style/useConst: newResource.label is mutated below
-  let newResource = cacheConfigObj?.cache_resources?.[0] as Record<string, unknown> | undefined;
-
-  if (newResource) {
-    const existingLabels = Array.isArray(cacheResources)
-      ? (cacheResources as Record<string, unknown>[]).map((r) => r?.label).filter(Boolean)
-      : [];
-
-    if (existingLabels.includes(newResource.label as string)) {
-      let counter = 1;
-      let uniqueLabel = `${newResource.label}_${counter}`;
-      while (existingLabels.includes(uniqueLabel)) {
-        counter += 1;
-        uniqueLabel = `${newResource.label}_${counter}`;
-      }
-      newResource.label = uniqueLabel;
-    }
-
-    doc.setIn(['cache_resources'], [...(cacheResources as unknown[]), newResource]);
+// Append a cache_resources / rate_limit_resources entry, suffixing its label on
+// collision so two resources never share a label (which would make the link ambiguous).
+const mergeResourceArray = (
+  doc: Document.Parsed,
+  newConfigObject: Partial<ConnectConfigObject>,
+  key: ResourceArrayKey
+): void => {
+  const node = doc.getIn([key]) as { toJSON?: () => unknown } | undefined;
+  const existing = (node?.toJSON?.() as unknown[]) || [];
+  const newResource = (newConfigObject as Record<string, unknown[]>)?.[key]?.[0] as Record<string, unknown> | undefined;
+  if (!newResource) {
+    return;
   }
-};
 
-const mergeRateLimitResource = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
-  const rateLimitResourcesNode = doc.getIn(['rate_limit_resources']) as { toJSON?: () => unknown } | undefined;
-  const rateLimitResources = (rateLimitResourcesNode?.toJSON?.() as unknown[]) || [];
-
-  const rateLimitConfigObj = newConfigObject as Record<string, unknown[]>;
-  // biome-ignore lint/style/useConst: newResource.label is mutated below
-  let newResource = rateLimitConfigObj?.rate_limit_resources?.[0] as Record<string, unknown> | undefined;
-
-  if (newResource) {
-    const existingLabels = Array.isArray(rateLimitResources)
-      ? (rateLimitResources as Record<string, unknown>[]).map((r) => r?.label).filter(Boolean)
-      : [];
-
-    if (existingLabels.includes(newResource.label as string)) {
-      let counter = 1;
-      let uniqueLabel = `${newResource.label}_${counter}`;
-      while (existingLabels.includes(uniqueLabel)) {
-        counter += 1;
-        uniqueLabel = `${newResource.label}_${counter}`;
-      }
-      newResource.label = uniqueLabel;
-    }
-
-    doc.setIn(['rate_limit_resources'], [...(rateLimitResources as unknown[]), newResource]);
+  const existingLabels = (Array.isArray(existing) ? (existing as Record<string, unknown>[]) : [])
+    .map((r) => r?.label)
+    .filter((l): l is string => typeof l === 'string' && l !== '');
+  if (typeof newResource.label === 'string') {
+    newResource.label = uniqueResourceLabel(existingLabels, newResource.label);
   }
+
+  doc.setIn([key], [...existing, newResource]);
 };
 
 const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -224,10 +194,10 @@ const mergeByComponentType = (
       mergeProcessor(doc, newConfigObject);
       break;
     case 'cache':
-      mergeCacheResource(doc, newConfigObject);
+      mergeResourceArray(doc, newConfigObject, 'cache_resources');
       break;
     case 'rate_limit':
-      mergeRateLimitResource(doc, newConfigObject);
+      mergeResourceArray(doc, newConfigObject, 'rate_limit_resources');
       break;
     case 'root':
       mergeRootComponent(doc, newConfigObject);
