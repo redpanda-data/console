@@ -167,6 +167,9 @@ message Column {
   // Engine-reported type name (e.g. "integer", "double precision", "text");
   // array types carry a "[]" suffix (e.g. "text[]").
   string type = 2;
+  // Nested columns for a composite/struct (json) column, parsed from the
+  // engine's structural type. Empty for scalar columns.
+  repeated Column fields = 3;
 }
 
 // Value is a single cell. `null_value` distinguishes SQL NULL from an
