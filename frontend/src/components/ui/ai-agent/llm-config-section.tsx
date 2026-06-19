@@ -201,6 +201,7 @@ export const LLMConfigSection: React.FC<LLMConfigSectionProps> = ({
             render={({ field }) => (
               <Select
                 disabled={isLoadingProviders || (hasAigwDeployed && availableProviders.length === 0)}
+                items={availableProviders.map((provider) => ({ value: provider.id, label: provider.label }))}
                 onValueChange={(value) => {
                   field.onChange(value);
                   handleProviderChange(value);

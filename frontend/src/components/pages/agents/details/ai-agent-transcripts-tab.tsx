@@ -107,7 +107,7 @@ export const AIAgentTranscriptsTab = () => {
             value={searchQuery}
           />
         </div>
-        <Select onValueChange={setStatusFilter} value={statusFilter}>
+        <Select items={STATUS_FILTER_OPTIONS} onValueChange={setStatusFilter} value={statusFilter}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>

@@ -35,7 +35,7 @@ export const SelectSlotField = ({ slot, control }: SelectSlotFieldProps) => (
     required={slot.required}
   >
     {(field) => (
-      <Select onValueChange={field.onChange} value={field.value ?? ''}>
+      <Select items={slot.options} onValueChange={field.onChange} value={field.value ?? ''}>
         <SelectTrigger data-testid={`slot-${slot.id}`}>
           <SelectValue placeholder="Select an option..." />
         </SelectTrigger>
