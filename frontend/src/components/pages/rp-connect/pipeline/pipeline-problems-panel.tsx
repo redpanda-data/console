@@ -9,9 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, ChevronDown, MousePointerClick } from 'lucide-react';
+import { AlertCircle, ChevronDown, KeyRound, MousePointerClick } from 'lucide-react';
 import { useState } from 'react';
 
 import type { EditTarget } from '../utils/yaml';
@@ -29,31 +30,145 @@ export type PipelineProblem = {
 type PipelineProblemsPanelProps = {
   problems: PipelineProblem[];
   onSelectProblem: (nodeId: string, target: EditTarget) => void;
+  /** Secrets referenced by the pipeline that don't exist in the store yet. */
+  missingSecrets?: string[];
+  /** Open the add-secrets flow (omit to hide the action, e.g. in view mode). */
+  onAddSecrets?: () => void;
 };
 
+// A small section heading inside the expanded panel, shown only when more than one
+// kind of issue is present (so a single-kind panel stays uncluttered).
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <Text
+    as="div"
+    className="px-2 pt-1.5 pb-0.5 text-muted-foreground uppercase tracking-wide"
+    variant="captionStrongMedium"
+  >
+    {children}
+  </Text>
+);
+
+// One lint problem: a clickable row that selects its node, or an inert row when the
+// problem doesn't map to a node (e.g. a top-level config error).
+const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?: () => void }) => {
+  const body = (
+    <>
+      <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+      <span className="flex min-w-0 flex-col">
+        <Text as="span" className="text-foreground text-xs" variant="bodySmall">
+          {problem.message}
+        </Text>
+        {onSelect ? (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <MousePointerClick className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+            {problem.nodeLabel}
+            {problem.line ? ` · line ${problem.line}` : ''}
+          </span>
+        ) : (
+          problem.line && <span className="text-[11px] text-muted-foreground">line {problem.line}</span>
+        )}
+      </span>
+    </>
+  );
+  return onSelect ? (
+    <button
+      className="group flex w-full cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
+      onClick={onSelect}
+      type="button"
+    >
+      {body}
+    </button>
+  ) : (
+    <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left">{body}</div>
+  );
+};
+
+// The missing-secrets block: a labelled header with the "Add secrets" action and one
+// row per referenced-but-missing secret.
+const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: string[]; onAddSecrets?: () => void }) => (
+  <div data-testid="pipeline-problems-secrets">
+    <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
+      <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
+        Missing secrets
+      </Text>
+      {onAddSecrets ? (
+        <Button
+          className="h-6 gap-1 px-2 text-xs"
+          data-testid="missing-secrets-add"
+          icon={<KeyRound className="size-3" />}
+          onClick={onAddSecrets}
+          size="xs"
+          variant="outline"
+        >
+          Add secrets
+        </Button>
+      ) : null}
+    </div>
+    {missingSecrets.map((name) => (
+      <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left" key={`secret-${name}`}>
+        <KeyRound className="mt-0.5 size-3.5 shrink-0 text-warning" />
+        <span className="flex min-w-0 flex-col">
+          <Text as="span" className="text-foreground text-xs" variant="bodySmall">
+            Missing secret <span className="font-medium font-mono">{name}</span>
+          </Text>
+          <span className="text-[11px] text-muted-foreground">Referenced by the pipeline but not created</span>
+        </span>
+      </div>
+    ))}
+  </div>
+);
+
+// The chip's wording: specific when there's only one kind of issue, "issues" for a mix.
+function issuesLabel(problemCount: number, secretCount: number): string {
+  if (secretCount === 0) {
+    return problemCount === 1 ? '1 problem' : `${problemCount} problems`;
+  }
+  if (problemCount > 0) {
+    return `${problemCount + secretCount} issues`;
+  }
+  return secretCount === 1 ? '1 missing secret' : `${secretCount} missing secrets`;
+}
+
 /**
- * A floating "N problems" chip on the Visual canvas. Expands into the list of lint
- * problems; clicking one selects the offending node (opening it in the inspector).
- * Problems that don't map to a node (e.g. top-level config) are listed inert.
+ * A floating "issues" chip on the Visual canvas, unifying lint problems and missing
+ * secrets. Expands into a list: missing secrets (with an add action) and lint problems;
+ * clicking a problem selects the offending node. Problems that don't map to a node are
+ * listed inert.
  */
-export function PipelineProblemsPanel({ problems, onSelectProblem }: PipelineProblemsPanelProps) {
+export function PipelineProblemsPanel({
+  problems,
+  onSelectProblem,
+  missingSecrets = [],
+  onAddSecrets,
+}: PipelineProblemsPanelProps) {
   const [open, setOpen] = useState(false);
 
-  if (problems.length === 0) {
+  const hasLint = problems.length > 0;
+  const hasSecrets = missingSecrets.length > 0;
+  if (!(hasLint || hasSecrets)) {
     return null;
   }
+
+  // Lint errors are red; a secrets-only state is an (amber) warning.
+  const Icon = hasLint ? AlertCircle : KeyRound;
+  const tone = hasLint
+    ? 'border-destructive/40 text-destructive hover:bg-destructive/5'
+    : 'border-warning/50 text-warning hover:bg-warning-subtle';
 
   return (
     <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
       <button
         aria-expanded={open}
-        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-destructive/40 bg-background/90 px-2.5 py-1.5 font-medium text-destructive text-xs shadow-sm backdrop-blur-sm transition-colors hover:bg-destructive/5"
+        className={cn(
+          'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 font-medium text-xs shadow-sm backdrop-blur-sm transition-colors',
+          tone
+        )}
         data-testid="pipeline-problems-chip"
         onClick={() => setOpen((o) => !o)}
         type="button"
       >
-        <AlertCircle className="size-3.5" />
-        {problems.length === 1 ? '1 problem' : `${problems.length} problems`}
+        <Icon className="size-3.5" />
+        {issuesLabel(problems.length, missingSecrets.length)}
         <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
       </button>
 
@@ -62,41 +177,39 @@ export function PipelineProblemsPanel({ problems, onSelectProblem }: PipelinePro
           className="flex max-h-72 w-80 flex-col overflow-y-auto rounded-md border border-border bg-background/95 p-1 shadow-md backdrop-blur-sm"
           data-testid="pipeline-problems-list"
         >
-          {problems.map((problem) =>
-            problem.nodeId && problem.target ? (
-              <button
-                className="group flex w-full cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
-                key={problem.key}
-                onClick={() => {
-                  onSelectProblem(problem.nodeId as string, problem.target as EditTarget);
-                  setOpen(false);
-                }}
-                type="button"
-              >
-                <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
-                <span className="flex min-w-0 flex-col">
-                  <Text as="span" className="text-foreground text-xs" variant="bodySmall">
-                    {problem.message}
-                  </Text>
-                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <MousePointerClick className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                    {problem.nodeLabel}
-                    {problem.line ? ` · line ${problem.line}` : ''}
-                  </span>
-                </span>
-              </button>
-            ) : (
-              <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left" key={problem.key}>
-                <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
-                <span className="flex min-w-0 flex-col">
-                  <Text as="span" className="text-foreground text-xs" variant="bodySmall">
-                    {problem.message}
-                  </Text>
-                  {problem.line ? <span className="text-[11px] text-muted-foreground">line {problem.line}</span> : null}
-                </span>
-              </div>
-            )
-          )}
+          {hasSecrets ? (
+            <SecretsSection
+              missingSecrets={missingSecrets}
+              onAddSecrets={
+                onAddSecrets
+                  ? () => {
+                      onAddSecrets();
+                      setOpen(false);
+                    }
+                  : undefined
+              }
+            />
+          ) : null}
+
+          {hasLint && hasSecrets ? (
+            <div className="mt-1 border-border/60 border-t pt-1">
+              <SectionLabel>Problems</SectionLabel>
+            </div>
+          ) : null}
+          {problems.map((problem) => (
+            <ProblemRow
+              key={problem.key}
+              onSelect={
+                problem.nodeId && problem.target
+                  ? () => {
+                      onSelectProblem(problem.nodeId as string, problem.target as EditTarget);
+                      setOpen(false);
+                    }
+                  : undefined
+              }
+              problem={problem}
+            />
+          ))}
         </div>
       ) : null}
     </div>

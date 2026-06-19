@@ -12,6 +12,13 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -20,12 +27,14 @@ import {
   AlertCircle,
   BookOpenIcon,
   Box,
+  EllipsisVertical,
   FileCode2,
   type LucideIcon,
   MousePointerClick,
   MousePointerSquareDashed,
   Plus,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
@@ -91,8 +100,10 @@ type NodeInspectorProps = {
   readOnly?: boolean;
   /** Lint problems that map to the selected node. */
   lintHints?: LintHint[];
-  /** Jump to this node's lines in the YAML lane (header "View in YAML" action). */
+  /** Jump to this node's lines in the YAML lane (footer "View in YAML" action). */
   onOpenInYaml?: () => void;
+  /** Close the inspector (deselect). Shown as an X in the header. */
+  onClose?: () => void;
 };
 
 /**
@@ -110,6 +121,7 @@ export function NodeInspector({
   readOnly,
   lintHints,
   onOpenInYaml,
+  onClose,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   const componentName = component ? firstKey(component) : undefined;
@@ -137,6 +149,7 @@ export function NodeInspector({
             onApply(updated);
           }
         }}
+        onClose={onClose}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
         onOpenInYaml={onOpenInYaml}
         readOnly={readOnly}
@@ -148,6 +161,9 @@ export function NodeInspector({
   const kindLabel = COMPONENT_TYPE_LABEL[kind] ?? 'Component';
   const docsUrl = getConnectorDocsUrl(kind, componentName);
   const useForm = (spec?.config?.children?.length ?? 0) > 0;
+  // The destructive remove action now lives in the footer (the header's trailing slot
+  // is the close X). Disabled in read-only / when no delete handler is wired.
+  const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
 
   // A resource's own label, and how many components reference it (shown as "Used by N").
   const resourceLabel = target.kind === 'resource' && typeof component.label === 'string' ? component.label : undefined;
@@ -209,7 +225,8 @@ export function NodeInspector({
         componentName={componentName}
         docsUrl={docsUrl}
         kindLabel={kindLabel}
-        onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
+        onClose={onClose}
+        onDelete={handleDelete}
         onOpenInYaml={onOpenInYaml}
         usedByCount={resourceLabel ? usedByCount : undefined}
       />
@@ -243,6 +260,49 @@ export function NodeInspector({
   );
 }
 
+// Secondary node actions (View in YAML, Delete) tucked into a 3-dot menu in the
+// header, so the destructive Delete sits well away from the footer's Apply/Save.
+const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () => void; onDelete?: () => void }) => {
+  if (!(onOpenInYaml || onDelete)) {
+    return null;
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button aria-label="More actions" size="icon-sm" variant="ghost">
+          <EllipsisVertical />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {onOpenInYaml ? (
+          <DropdownMenuItem onClick={onOpenInYaml}>
+            <FileCode2 className="size-4" />
+            View in YAML
+          </DropdownMenuItem>
+        ) : null}
+        {onOpenInYaml && onDelete ? <DropdownMenuSeparator /> : null}
+        {onDelete ? (
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+            <Trash2 className="size-4" />
+            Delete
+          </DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+// The inspector's bottom action bar: the component's own actions (Reset / Apply),
+// right-aligned. Secondary actions live in the header's 3-dot menu, not here.
+const InspectorFooter = ({ children }: { children?: React.ReactNode }) => {
+  if (!children) {
+    return null;
+  }
+  return (
+    <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">{children}</div>
+  );
+};
+
 // Lint problems for the selected node, shown in context above its config.
 const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
   <div className="shrink-0 border-destructive/30 border-b bg-destructive/5 px-4 py-3">
@@ -271,12 +331,14 @@ const SwitchCaseEditor = ({
   onApply,
   onDelete,
   onOpenInYaml,
+  onClose,
   readOnly,
 }: {
   caseObject: Record<string, unknown>;
   onApply: (next: Record<string, unknown>) => void;
   onDelete?: () => void;
   onOpenInYaml?: () => void;
+  onClose?: () => void;
   readOnly?: boolean;
 }) => {
   const initial = typeof caseObject.check === 'string' ? caseObject.check : '';
@@ -309,20 +371,10 @@ const SwitchCaseEditor = ({
           </Text>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-0.5">
-          {onOpenInYaml ? (
-            <Button
-              aria-label="View in YAML"
-              onClick={onOpenInYaml}
-              size="icon-sm"
-              title="View in YAML"
-              variant="ghost"
-            >
-              <FileCode2 />
-            </Button>
-          ) : null}
-          {onDelete ? (
-            <Button aria-label="Remove case" onClick={onDelete} size="icon-sm" variant="ghost">
-              <Trash2 />
+          <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
+          {onClose ? (
+            <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
+              <X />
             </Button>
           ) : null}
         </div>
@@ -339,13 +391,13 @@ const SwitchCaseEditor = ({
           A Bloblang expression. Messages route to this case when it's true. Leave empty for the default (else) case.
         </Text>
       </div>
-      {readOnly ? null : (
-        <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
+      <InspectorFooter>
+        {readOnly ? null : (
           <Button disabled={!dirty} onClick={apply} type="button">
             Apply changes
           </Button>
-        </div>
-      )}
+        )}
+      </InspectorFooter>
     </div>
   );
 };
@@ -399,15 +451,17 @@ const InspectorHeader = ({
   kindLabel,
   componentName,
   docsUrl,
-  onDelete,
+  onClose,
   onOpenInYaml,
+  onDelete,
   usedByCount,
 }: {
   kindLabel: string;
   componentName: string;
   docsUrl?: string;
-  onDelete?: () => void;
+  onClose?: () => void;
   onOpenInYaml?: () => void;
+  onDelete?: () => void;
   usedByCount?: number;
 }) => (
   <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
@@ -422,11 +476,6 @@ const InspectorHeader = ({
       </Text>
     </div>
     <div className="ml-auto flex shrink-0 items-center gap-0.5">
-      {onOpenInYaml ? (
-        <Button aria-label="View in YAML" onClick={onOpenInYaml} size="icon-sm" title="View in YAML" variant="ghost">
-          <FileCode2 />
-        </Button>
-      ) : null}
       {docsUrl ? (
         <Button
           aria-label={`${componentName} documentation`}
@@ -440,9 +489,10 @@ const InspectorHeader = ({
           <BookOpenIcon />
         </Button>
       ) : null}
-      {onDelete ? (
-        <Button aria-label="Remove node" onClick={onDelete} size="icon-sm" variant="ghost">
-          <Trash2 />
+      <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
+      {onClose ? (
+        <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
+          <X />
         </Button>
       ) : null}
     </div>
@@ -516,11 +566,11 @@ const RawComponentEditor = ({
           </Text>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
+      <InspectorFooter>
         <Button disabled={draft === initial} onClick={apply} type="button">
           Apply changes
         </Button>
-      </div>
+      </InspectorFooter>
     </div>
   );
 };

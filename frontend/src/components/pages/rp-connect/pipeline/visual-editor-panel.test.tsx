@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
-import { render, screen } from 'test-utils';
+import { render, screen, waitForElementToBeRemoved } from 'test-utils';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { PipelineEditorProvider } from './use-pipeline-editor-store';
@@ -78,7 +78,7 @@ const EMPTY_STATE_TEXT = /select a node/i;
 
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
   const onYamlChange = vi.fn();
-  render(
+  const utils = render(
     <PipelineEditorProvider initialSlashTipVisible={false}>
       <VisualEditorPanel
         componentList={{} as ComponentList}
@@ -90,7 +90,7 @@ const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]>
       />
     </PipelineEditorProvider>
   );
-  return { onYamlChange };
+  return { onYamlChange, ...utils };
 };
 
 describe('VisualEditorPanel', () => {
@@ -104,9 +104,10 @@ describe('VisualEditorPanel', () => {
     expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toBe(sampleYaml);
   });
 
-  test('the inspector shows an empty state until a node is selected', () => {
+  test('the inspector is closed until a node is selected', () => {
     renderPanel();
-    expect(screen.getByText(EMPTY_STATE_TEXT)).toBeInTheDocument();
+    // The rail is unmounted (no empty-state placeholder) until something is selected.
+    expect(screen.queryByText(EMPTY_STATE_TEXT)).not.toBeInTheDocument();
     expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
   });
 
@@ -132,7 +133,10 @@ describe('VisualEditorPanel', () => {
     const { onYamlChange } = renderPanel();
 
     await user.click(screen.getByText('select-proc0'));
-    await user.click(await screen.findByRole('button', { name: 'Remove node' }));
+    // Delete lives in the header's 3-dot menu now, then a confirm dialog.
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
 
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     // The only processor (`log`) is gone, so `pipeline` is pruned entirely.
@@ -252,38 +256,49 @@ describe('VisualEditorPanel', () => {
   // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect secret reference, not a JS template
   const yamlWithSecretRef = 'input:\n  redpanda:\n    sasl:\n      - password: ${secrets.KAFKA_PASSWORD}\n';
 
-  test('warns about referenced secrets missing from the store and opens the add-secrets flow', async () => {
+  test('surfaces a missing secret in the problems panel and opens the add-secrets flow', async () => {
     const user = userEvent.setup();
     mockSecretsData = { secrets: [{ id: 'EXISTS' }] };
     renderPanel({ yamlContent: yamlWithSecretRef });
 
-    const banner = await screen.findByTestId('missing-secrets-banner');
-    expect(banner).toHaveTextContent('Missing secret: KAFKA_PASSWORD');
+    // The missing secret is folded into the unified problems chip (no separate banner).
+    const chip = await screen.findByTestId('pipeline-problems-chip');
+    expect(chip).toHaveTextContent('1 missing secret');
 
-    await user.click(banner);
+    await user.click(chip);
+    expect(screen.getByTestId('pipeline-problems-secrets')).toHaveTextContent('KAFKA_PASSWORD');
+
+    await user.click(screen.getByTestId('missing-secrets-add'));
     expect(screen.getByTestId('add-secrets-dialog')).toHaveTextContent('KAFKA_PASSWORD');
   });
 
-  test('does not warn about secrets that exist, or in view mode', () => {
+  test('does not surface missing secrets when they exist, or in view mode', () => {
     mockSecretsData = { secrets: [{ id: 'KAFKA_PASSWORD' }] };
-    renderPanel({ yamlContent: yamlWithSecretRef });
-    expect(screen.queryByTestId('missing-secrets-banner')).not.toBeInTheDocument();
+    const { unmount } = renderPanel({ yamlContent: yamlWithSecretRef });
+    expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();
+    unmount();
+
+    // View mode never runs the missing-secrets check, so nothing surfaces.
+    mockSecretsData = { secrets: [{ id: 'EXISTS' }] };
+    renderPanel({ yamlContent: yamlWithSecretRef, mode: 'view' });
+    expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();
   });
 
   test('Escape clears the selection and Delete removes the selected node', async () => {
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel();
 
-    // Escape → back to the empty state.
+    // Escape → the rail slides out and unmounts.
     await user.click(screen.getByText('select-input'));
     await screen.findByTestId('node-yaml');
     await user.keyboard('{Escape}');
-    expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() => screen.queryByTestId('node-yaml'));
 
-    // Delete → removes the selected processor from the YAML.
+    // Delete → asks to confirm, then removes the selected processor from the YAML.
     await user.click(screen.getByText('select-proc0'));
     await screen.findByTestId('node-yaml');
     await user.keyboard('{Delete}');
+    await user.click(await screen.findByRole('button', { name: 'Remove' }));
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     expect(onYamlChange.mock.calls[0][0]).not.toContain('message: hi');
   });
@@ -296,7 +311,7 @@ describe('VisualEditorPanel', () => {
     // The component is shown (read-only), but there's no way to apply or remove it.
     await screen.findByTestId('node-yaml');
     expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove node' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(onYamlChange).not.toHaveBeenCalled();
   });
 });

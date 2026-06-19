@@ -10,10 +10,21 @@
  */
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { KeyRound, Redo2, Undo2 } from 'lucide-react';
+import { Redo2, Undo2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -377,16 +388,27 @@ export function VisualEditorPanel({
     [yamlContent, onYamlChange]
   );
 
-  const handleDeleteNode = useCallback(
-    (target: EditTarget) => {
-      const next = removeComponentAt(yamlContent, target);
+  // Deleting a node is confirmed first (it's destructive, even if ⌘Z can undo it):
+  // the trash action / Delete key stage the target, and the dialog commits the removal.
+  const [pendingDelete, setPendingDelete] = useState<EditTarget | null>(null);
+  const pendingDeleteName = useMemo(() => {
+    if (!pendingDelete) {
+      return;
+    }
+    const comp = getComponentAt(yamlContent, pendingDelete);
+    return comp ? firstKey(comp) : undefined;
+  }, [pendingDelete, yamlContent]);
+
+  const confirmDeleteNode = useCallback(() => {
+    if (pendingDelete) {
+      const next = removeComponentAt(yamlContent, pendingDelete);
       if (next !== null) {
         onYamlChange(next);
       }
-      setSelected(null);
-    },
-    [yamlContent, onYamlChange]
-  );
+    }
+    setSelected(null);
+    setPendingDelete(null);
+  }, [pendingDelete, yamlContent, onYamlChange]);
 
   // Canvas keyboard: ⌘Z/⌘⇧Z undo/redo, Escape deselects, Delete/Backspace removes
   // the selected node — all ignored while typing in a field or the YAML editor.
@@ -396,7 +418,7 @@ export function VisualEditorPanel({
       delete: (e) => {
         if (isEditing && selected) {
           e.preventDefault();
-          handleDeleteNode(selected.target);
+          setPendingDelete(selected.target);
         }
       },
       undo: (e) => {
@@ -420,7 +442,7 @@ export function VisualEditorPanel({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEditing, undo, redo, selected, handleDeleteNode]);
+  }, [isEditing, undo, redo, selected]);
 
   const handleInsertSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -552,21 +574,12 @@ export function VisualEditorPanel({
             </div>
           </TooltipProvider>
         ) : null}
-        <PipelineProblemsPanel onSelectProblem={(id, target) => setSelected({ id, target })} problems={problems} />
-        {missingSecrets.length > 0 ? (
-          <button
-            className="absolute top-3 left-1/2 z-10 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-md border border-warning/50 bg-background/90 px-2.5 py-1.5 font-medium text-warning text-xs shadow-sm backdrop-blur-sm transition-colors hover:bg-warning-subtle"
-            data-testid="missing-secrets-banner"
-            onClick={() => setIsSecretsDialogOpen(true)}
-            type="button"
-          >
-            <KeyRound className="size-3.5" />
-            {missingSecrets.length === 1
-              ? `Missing secret: ${missingSecrets[0]}`
-              : `${missingSecrets.length} missing secrets`}
-            <span className="underline underline-offset-2">Add</span>
-          </button>
-        ) : null}
+        <PipelineProblemsPanel
+          missingSecrets={missingSecrets}
+          onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
+          onSelectProblem={(id, target) => setSelected({ id, target })}
+          problems={problems}
+        />
         {onBrowseTemplates ? (
           <TemplateGalleryCta
             className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
@@ -576,24 +589,38 @@ export function VisualEditorPanel({
         ) : null}
       </div>
 
-      {/* Always-present inspector rail (Figma-style): the selected node's config.
-          The content is absolutely positioned so the rail never grows the editor
-          region to fit its content — it stays the canvas height and scrolls. */}
-      <aside className="relative w-96 shrink-0 border-border border-l bg-background">
-        <div className="absolute inset-0 flex flex-col overflow-hidden">
-          <NodeInspector
-            components={components}
-            lintHints={selected ? lintByNode.get(selected.id) : undefined}
-            onApply={onYamlChange}
-            onCreateResource={isEditing ? handleRequestCreateResource : undefined}
-            onDelete={isEditing ? handleDeleteNode : undefined}
-            onOpenInYaml={onNavigateToYaml && selected ? () => onNavigateToYaml(selected.id) : undefined}
-            readOnly={!isEditing}
-            target={selected?.target ?? null}
-            yaml={yamlContent}
-          />
-        </div>
-      </aside>
+      {/* Inspector rail (Figma-style): mounted only when a node is selected. We animate
+          its WIDTH (the flex slot) rather than a transform, so the canvas — and its
+          right-anchored minimap / zoom controls — glide in lockstep instead of snapping
+          when the rail finishes closing. The content is pinned to the rail's right edge
+          at a fixed width so it doesn't reflow while the width animates. */}
+      <AnimatePresence>
+        {selected ? (
+          <motion.aside
+            animate={{ width: 384, opacity: 1 }}
+            className="relative shrink-0 overflow-hidden border-border border-l bg-background"
+            exit={{ width: 0, opacity: 0 }}
+            initial={{ width: 0, opacity: 0 }}
+            key="node-inspector"
+            transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+          >
+            <div className="absolute inset-y-0 right-0 flex w-96 flex-col overflow-hidden">
+              <NodeInspector
+                components={components}
+                lintHints={lintByNode.get(selected.id)}
+                onApply={onYamlChange}
+                onClose={() => setSelected(null)}
+                onCreateResource={isEditing ? handleRequestCreateResource : undefined}
+                onDelete={isEditing ? setPendingDelete : undefined}
+                onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+                readOnly={!isEditing}
+                target={selected.target}
+                yaml={yamlContent}
+              />
+            </div>
+          </motion.aside>
+        ) : null}
+      </AnimatePresence>
 
       <AddConnectorDialog
         components={componentList}
@@ -615,6 +642,32 @@ export function VisualEditorPanel({
         onSecretsCreated={() => setIsSecretsDialogOpen(false)}
         onUpdateEditorContent={handleRenameSecretReferences}
       />
+
+      <AlertDialog onOpenChange={(open) => (open ? undefined : setPendingDelete(null))} open={pendingDelete !== null}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="text-left">
+            <AlertDialogTitle>Remove this node?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDeleteName ? (
+                <>
+                  This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You can
+                  undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.
+                </>
+              ) : (
+                <>This removes the node from the pipeline. You can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="secondary-ghost">Cancel</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild onClick={confirmDeleteNode}>
+              <Button variant="destructive">Remove</Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
