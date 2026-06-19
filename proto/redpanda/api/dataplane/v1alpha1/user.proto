@@ -148,18 +148,14 @@ service UserService {
         key: "201"
         value: {
           description: "User created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.CreateUserRequest.User"}}
         }
       }
       responses: {
         key: "400"
         value: {
           description: "Bad request. Check API documentation and update request."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -181,18 +177,14 @@ service UserService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateUserResponse.User"}}
         }
       }
       responses: {
         key: "400"
         value: {
           description: "Bad request. Check API documentation and update request."
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -211,9 +203,7 @@ service UserService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListUsersResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListUsersResponse"}}
         }
       }
     };
@@ -239,9 +229,7 @@ service UserService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };

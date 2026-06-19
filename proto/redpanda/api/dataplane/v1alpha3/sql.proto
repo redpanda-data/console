@@ -25,9 +25,7 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListCatalogsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListCatalogsResponse"}}
         }
       }
     };
@@ -48,9 +46,7 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTablesResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTablesResponse"}}
         }
       }
     };
@@ -72,27 +68,21 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.DescribeTableResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.DescribeTableResponse"}}
         }
       }
       responses: {
         key: "400"
         value: {
           description: "Catalog name is ambiguous (exists in multiple namespaces); provide catalog_namespace"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Catalog or table not found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -115,9 +105,7 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}}
         }
       }
     };

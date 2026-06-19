@@ -83,9 +83,7 @@ service ShadowLinkService {
         key: "201"
         value: {
           description: "Shadow link created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.CreateShadowLinkResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.console.v1alpha1.CreateShadowLinkResponse"}}
         }
       }
     };
@@ -104,9 +102,7 @@ service ShadowLinkService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.ListShadowLinksResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.console.v1alpha1.ListShadowLinksResponse"}}
         }
       }
     };
@@ -128,9 +124,7 @@ service ShadowLinkService {
         key: "200"
         value: {
           description: "Shadow link updated"
-          schema: {
-            json_schema: {ref: ".redpanda.api.console.v1alpha1.UpdateShadowLinkResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.console.v1alpha1.UpdateShadowLinkResponse"}}
         }
       }
     };
