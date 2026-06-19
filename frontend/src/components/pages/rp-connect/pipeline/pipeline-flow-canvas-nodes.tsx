@@ -24,7 +24,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, Box, ChevronDown, ChevronRight, PlusIcon } from 'lucide-react';
+import { AlertCircle, Box, ChevronDown, ChevronRight, GitMerge, PlusIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 
@@ -197,6 +197,13 @@ export type FlowCardData = {
   isErrorPath?: boolean;
   // A `switch` case wrapper — rendered as a condition-forward "case" card.
   isCase?: boolean;
+  // Logical parent (parser parentId) used for selection/scope when the node carries no
+  // React Flow `parentId` (the block layout positions everything absolutely).
+  ownerId?: string;
+  // Lane-label header variant (see the layout's `LaneLabelVariant`).
+  variant?: 'case' | 'route' | 'stage' | 'name' | 'plain';
+  // Lane band: an error/dead-letter lane is tinted red.
+  isError?: boolean;
   editTarget?: EditTarget;
   /** Highlighted because it's the node selected in the inspector. */
   selected?: boolean;
@@ -684,27 +691,40 @@ const FlowSectionLabel = ({ data }: { data: { label?: string } }) => (
 export type FlowInsertData = {
   label?: string;
   payload?: FlowInsertPayload;
+  /** A "ghost branch" add (e.g. Add case) reached by a dashed connector — styled as a pill. */
+  ghost?: boolean;
   // Injected by the canvas (edit mode only). Absent in read-only mode → not rendered.
   onInsert?: (payload: FlowInsertPayload) => void;
 };
 
-// The in-container "+" row: a dashed, full-width add button at the foot of a switch
-// case / branch / broker stack. Only interactive in edit mode (onInsert injected).
+// An "add" affordance: a quiet "+" button. As a ghost branch (Add case / Add input) it's a
+// dashed pill reached by a faint connector; inline it's a plain "+". Edit mode only. The
+// l/r handles let the ghost connector edge attach.
 const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
   if (!(data.onInsert && data.payload)) {
     return null;
   }
   const payload = data.payload;
+  const handlePin = { top: 12, transform: 'none' } as const;
   return (
-    <button
-      aria-label={data.label ?? 'Add'}
-      className="nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 rounded-md px-2 font-medium text-primary text-xs transition-colors hover:bg-primary/10"
-      onClick={() => data.onInsert?.(payload)}
-      type="button"
-    >
-      <PlusIcon className="size-3" />
-      {data.label}
-    </button>
+    <>
+      <Handle className={invisibleHandle} id="l" position={Position.Left} style={handlePin} type="target" />
+      <Handle className={invisibleHandle} id="r" position={Position.Right} style={handlePin} type="source" />
+      <button
+        aria-label={data.label ?? 'Add'}
+        className={cn(
+          'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 font-medium text-primary text-xs transition-colors',
+          data.ghost
+            ? 'justify-center rounded-full border border-primary/40 border-dashed bg-background hover:border-primary hover:bg-primary/10'
+            : 'rounded-md hover:bg-primary/10'
+        )}
+        onClick={() => data.onInsert?.(payload)}
+        type="button"
+      >
+        <PlusIcon className="size-3" />
+        {data.label}
+      </button>
+    </>
   );
 };
 
@@ -928,9 +948,7 @@ export function FlowLinkEdge({
           y={d.portDot === 'source' ? sourceY : targetY}
         />
       ) : null}
-      {d?.label ? (
-        <LinkLabel d={d} tone={tone} x={labelX} y={labelY + (d.labelOffsetY ?? 0)} />
-      ) : null}
+      {d?.label ? <LinkLabel d={d} tone={tone} x={labelX} y={labelY + (d.labelOffsetY ?? 0)} /> : null}
     </>
   );
 }
@@ -950,33 +968,267 @@ const LINK_LABEL_STYLE: Record<LinkTone, string> = {
 // port socket paint in front. Lifting the pill above the cards keeps it readable.
 // (Nodes here aren't selectable, so their z-indices stay small and well under this.)
 const LINK_LABEL_Z = 1000;
-const LinkLabel = ({ d, tone, x, y }: { d: FlowLinkData; tone: LinkTone; x: number; y: number }) => (
-  <EdgeLabelRenderer>
-    <div
-      className={cn(
-        'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide shadow-sm',
-        LINK_LABEL_STYLE[tone]
+const LinkLabel = ({
+  d,
+  tone,
+  x,
+  y,
+  onClick,
+}: {
+  d: FlowLinkData;
+  tone: LinkTone;
+  x: number;
+  y: number;
+  onClick?: () => void;
+}) => {
+  const className = cn(
+    'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide shadow-sm',
+    LINK_LABEL_STYLE[tone],
+    // A condition label is clickable to edit its case — make that affordance obvious.
+    onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
+  );
+  const style = {
+    transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+    opacity: d.dimmed ? 0.25 : 1,
+    zIndex: LINK_LABEL_Z,
+  } as const;
+  return (
+    <EdgeLabelRenderer>
+      {onClick ? (
+        <button className={className} onClick={onClick} style={style} title={d.label} type="button">
+          {d.label}
+        </button>
+      ) : (
+        <div className={className} style={style} title={d.label}>
+          {d.label}
+        </div>
       )}
-      style={{
-        transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
-        opacity: d.dimmed ? 0.25 : 1,
-        zIndex: LINK_LABEL_Z,
-      }}
-      title={d.label}
-    >
-      {d.label}
+    </EdgeLabelRenderer>
+  );
+};
+
+// The collapse/expand chevron shared by the split card and the (compact) container.
+// A control-flow processor (switch / branch / try / parallel / for_each / …) as a COMPACT
+// card. It never grows to wrap children — in the Dagre graph its branches fan out as
+// labelled edges and reconverge at a merge node. The card is the fan-out / scope marker.
+const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
+  const ref = useStopPanOnControls();
+  const accent = SECTION_ACCENT[data.section ?? ''];
+  return (
+    <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
+      <NodeHandles />
+      {data.flash ? <FlashPulse token={data.flashToken} /> : null}
+      <div
+        className={cn(
+          'flex cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md',
+          cardRing(data)
+        )}
+        style={headerTintStyle(accent)}
+      >
+        <ContainerHeaderTitle accent={accent} data={data} />
+        <LintBadge errors={data.lintErrors} />
+      </div>
     </div>
+  );
+};
+
+// The join point where a fan's branches reconverge and flow continues: a small circular
+// node carrying the primary colour. Fan-in edges plug into its left, flow leaves its right.
+const FlowMergeNode = ({ data }: { data: FlowCardData }) => {
+  const handle = { top: 16, transform: 'none' } as const;
+  return (
+    <div className="relative flex h-8 items-center justify-center" style={{ width: 48 }}>
+      <Handle className={invisibleHandle} id="l" position={Position.Left} style={handle} type="target" />
+      <Handle className={invisibleHandle} id="r" position={Position.Right} style={handle} type="source" />
+      <Handle
+        className={invisibleHandle}
+        id="t"
+        position={Position.Top}
+        style={{ left: 24, transform: 'none' }}
+        type="target"
+      />
+      <span
+        className="flex size-8 items-center justify-center rounded-full border-2 bg-background shadow-sm"
+        style={{ borderColor: 'var(--color-primary)' }}
+        title={data.label ?? 'merge'}
+      >
+        <GitMerge className="size-4 text-primary" />
+      </span>
+    </div>
+  );
+};
+
+// A "+" button rendered at an edge's midpoint (edit mode), for inserting a step there.
+const EdgeInsertButton = ({ x, y, onInsert }: { x: number; y: number; onInsert: () => void }) => (
+  <EdgeLabelRenderer>
+    <button
+      aria-label="Insert a step"
+      className="nodrag nopan pointer-events-auto absolute flex size-6 cursor-pointer items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+      onClick={onInsert}
+      style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`, zIndex: 1001 }}
+      type="button"
+    >
+      <PlusIcon className="size-3.5" />
+    </button>
   </EdgeLabelRenderer>
 );
+
+// The point at half the polyline's arc length — so an edge label / "+" sits ON the line
+// (a raw middle waypoint can sit well off a curved edge).
+function polylineMidpoint(points: { x: number; y: number }[]): { x: number; y: number } {
+  if (points.length === 0) {
+    return { x: 0, y: 0 };
+  }
+  const segLen = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
+  const total = segLen.reduce((a, b) => a + b, 0);
+  let half = total / 2;
+  for (let i = 0; i < segLen.length; i += 1) {
+    if (half <= segLen[i]) {
+      const t = segLen[i] === 0 ? 0 : half / segLen[i];
+      return {
+        x: points[i].x + (points[i + 1].x - points[i].x) * t,
+        y: points[i].y + (points[i + 1].y - points[i].y) * t,
+      };
+    }
+    half -= segLen[i];
+  }
+  return points.at(-1) as { x: number; y: number };
+}
+
+// Smoothly route a polyline through waypoints (quadratic segments via midpoints).
+function smoothGraphPath(points: { x: number; y: number }[]): string {
+  if (points.length < 2) {
+    return '';
+  }
+  if (points.length === 2) {
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  }
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const mid = { x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2 };
+    d += ` Q ${points[i].x} ${points[i].y} ${mid.x} ${mid.y}`;
+  }
+  const last = points.at(-1) as { x: number; y: number };
+  return `${d} L ${last.x} ${last.y}`;
+}
+
+type FlowGraphEdgeData = {
+  graphType?: string;
+  tone?: LinkTone;
+  dashed?: boolean;
+  label?: string;
+  points?: { x: number; y: number }[];
+  insertIndex?: number;
+  animated?: boolean;
+  dimmed?: boolean;
+  emphasized?: boolean;
+  faint?: boolean;
+  onInsert?: () => void;
+  /** Click the (condition) label to select+edit its case. */
+  onLabelClick?: () => void;
+  /** A faint, decorative "ghost" edge (an add-branch hint) — drawn lighter. */
+  ghost?: boolean;
+};
+
+// Every edge in the Dagre DAG: routed through Dagre's own waypoints (so lines avoid nodes),
+// styled by semantic type — solid primary for flow, animated marching dashes for live data
+// flow, red dashed for error/dead-letter, dashed for branch copy/merge and resource refs.
+export function FlowGraphEdge({
+  sourceX,
+  sourceY,
+  sourcePosition,
+  targetX,
+  targetY,
+  targetPosition,
+  markerEnd,
+  data,
+}: EdgeProps) {
+  const d = data as FlowGraphEdgeData | undefined;
+  let path: string;
+  let labelX: number;
+  let labelY: number;
+  const dagrePts = d?.points;
+  if (dagrePts && dagrePts.length >= 2) {
+    // Cap Dagre's routed waypoints with the real handle endpoints for a clean attach.
+    const pts = [{ x: sourceX, y: sourceY }, ...dagrePts.slice(1, -1), { x: targetX, y: targetY }];
+    path = smoothGraphPath(pts);
+    const mid = polylineMidpoint(pts);
+    labelX = mid.x;
+    labelY = mid.y;
+  } else {
+    const [p, lx, ly] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 10,
+    });
+    path = p;
+    labelX = lx;
+    labelY = ly;
+  }
+  const tone: LinkTone = d?.tone ?? 'muted';
+  let stroke = LINK_STROKE[tone];
+  if (d?.emphasized && tone !== 'error') {
+    stroke = HIGHLIGHT_STROKE;
+  } else if (d?.faint) {
+    stroke = 'var(--color-muted-foreground)';
+  }
+  let opacity = 1;
+  if (d?.dimmed) {
+    opacity = 0.25;
+  } else if (d?.ghost) {
+    opacity = 0.4;
+  } else if (d?.faint) {
+    opacity = 0.6;
+  }
+  const width = d?.emphasized ? 2.5 : 1.75;
+  return (
+    <>
+      <BaseEdge
+        markerEnd={markerEnd}
+        path={path}
+        style={{ stroke, strokeWidth: width, strokeDasharray: d?.dashed ? '5 4' : undefined, opacity }}
+      />
+      {d?.animated && !d?.dimmed ? (
+        <path
+          className="pipeline-flow-dash"
+          d={path}
+          fill="none"
+          stroke={stroke}
+          strokeDasharray="2 8"
+          strokeLinecap="round"
+          strokeWidth={d?.emphasized ? 3 : 2}
+          style={{ opacity: 0.9, pointerEvents: 'none' }}
+        />
+      ) : null}
+      {d?.label ? (
+        <LinkLabel
+          d={{ label: d.label, tone, dimmed: d.dimmed }}
+          onClick={d.onLabelClick}
+          tone={tone}
+          x={labelX}
+          y={labelY}
+        />
+      ) : null}
+      {d?.onInsert ? <EdgeInsertButton onInsert={d.onInsert} x={labelX} y={labelY} /> : null}
+    </>
+  );
+}
 
 export const flowNodeTypes = {
   flowCard: FlowCardNode,
   flowContainer: FlowContainerNode,
   flowSectionLabel: FlowSectionLabel,
   flowInsert: FlowInsertNode,
+  flowSplit: FlowSplitNode,
+  flowMerge: FlowMergeNode,
 };
 
 export const flowEdgeTypes = {
   flowSpine: FlowSpineEdge,
   flowLink: FlowLinkEdge,
+  flowGraphEdge: FlowGraphEdge,
 };

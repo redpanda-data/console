@@ -832,7 +832,7 @@ export function DebugHelper() {
   const [open, setOpen] = useState(false);
 
   useHotKey({
-    key: 'u',
+    key: 'd',
     modifiers: ['meta', 'shift'],
     enabled: Boolean(IsDev),
     onTrigger: () => setOpen((v) => !v),

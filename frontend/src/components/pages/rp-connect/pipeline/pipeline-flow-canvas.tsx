@@ -363,6 +363,10 @@ type DecorateEdgeOptions = {
   /** The hovered node and its descendants. */
   hoveredScope?: ReadonlySet<string>;
   onInsert?: (processorIndex: number) => void;
+  /** Nested insert (into a control-flow body) carried on an edge's `slotPayload`. */
+  onSlotInsert?: (payload: FlowInsertPayload) => void;
+  /** Click a routing-condition label to edit its case (`selectId`/`selectTarget` on the edge). */
+  onSelectNode?: (nodeId: string, target: EditTarget) => void;
 };
 
 /**
@@ -394,18 +398,27 @@ function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | un
   return touchesActive ? withHighlightMarker(next) : next;
 }
 
-export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onInsert }: DecorateEdgeOptions): Edge[] {
+export function decorateEdges(
+  edges: Edge[],
+  { selectedScope, hoveredScope, onInsert, onSlotInsert, onSelectNode }: DecorateEdgeOptions
+): Edge[] {
   const activeScope = selectedScope ?? hoveredScope;
   return edges.map((edge) => {
     let next = edge;
-    if (onInsert && next.type === 'flowSpine') {
-      next = {
-        ...next,
-        data: {
-          ...next.data,
-          onInsert: () => onInsert((next.data as { insertIndex?: number })?.insertIndex ?? 0),
-        },
-      };
+    const edgeData = next.data as
+      | { insertIndex?: number; slotPayload?: FlowInsertPayload; selectId?: string; selectTarget?: EditTarget }
+      | undefined;
+    const insertIndex = edgeData?.insertIndex;
+    const slotPayload = edgeData?.slotPayload;
+    if (onInsert && (next.type === 'flowSpine' || next.type === 'flowGraphEdge') && insertIndex !== undefined) {
+      next = { ...next, data: { ...next.data, onInsert: () => onInsert(insertIndex) } };
+    } else if (onSlotInsert && next.type === 'flowGraphEdge' && slotPayload) {
+      next = { ...next, data: { ...next.data, onInsert: () => onSlotInsert(slotPayload) } };
+    }
+    // A routing-condition label that selects its case to edit the condition.
+    if (onSelectNode && edgeData?.selectId && edgeData.selectTarget) {
+      const { selectId, selectTarget } = edgeData;
+      next = { ...next, data: { ...next.data, onLabelClick: () => onSelectNode(selectId, selectTarget) } };
     }
     if (next.id.startsWith('ref-')) {
       return decorateReferenceEdge(next, activeScope);
@@ -427,7 +440,10 @@ export function decorateEdges(edges: Edge[], { selectedScope, hoveredScope, onIn
 export function selectionTargetForNode(node: Node, nodes: Node[]): { id: string; target: EditTarget } | null {
   let current: Node | undefined = node;
   while (current && !(current.data as FlowCardData).editTarget) {
-    current = current.parentId ? nodes.find((n) => n.id === current?.parentId) : undefined;
+    // The block layout positions nodes absolutely (no RF parentId), so walk the logical
+    // owner carried in data; the compact lane still nests via parentId.
+    const ownerId: string | undefined = current.parentId ?? (current.data as FlowCardData).ownerId;
+    current = ownerId ? nodes.find((n) => n.id === ownerId) : undefined;
   }
   const target = current && (current.data as FlowCardData).editTarget;
   return current && target ? { id: current.id, target } : null;
@@ -500,7 +516,9 @@ export function PipelineFlowCanvas({
   }, []);
 
   const { rfNodes, layoutEdges, translateExtent, contentHeight, legend } = useMemo(() => {
-    const layout = computeFlowLayout(nodes, collapsedIds, orientation, simple);
+    // Edit mode (nested inserts wired) shows the ghost "add" branches; read-only hides them.
+    const editable = Boolean(onSlotInsert);
+    const layout = computeFlowLayout(nodes, collapsedIds, orientation, simple, editable);
 
     const callbacks: CanvasCallbacks = {
       onAddConnector,
@@ -603,8 +621,10 @@ export function PipelineFlowCanvas({
         selectedScope: scopeOf(selectedNodeId),
         hoveredScope: scopeOf(hoveredNodeId),
         onInsert,
+        onSlotInsert,
+        onSelectNode,
       }),
-    [layoutEdges, scopeOf, selectedNodeId, hoveredNodeId, onInsert]
+    [layoutEdges, scopeOf, selectedNodeId, hoveredNodeId, onInsert, onSlotInsert, onSelectNode]
   );
 
   if (rfNodes.length === 0) {

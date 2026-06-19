@@ -891,31 +891,34 @@ describe('computeFlowLayout', () => {
     const log = byId('proc-0');
     const branch = byId('proc-1');
     const output = byId('output-0');
-    // Top-level steps are absolutely positioned (no parent) along a level row.
+    // Dagre lays the DAG out left→right: top-level steps are absolutely positioned (no
+    // parent) at strictly increasing x along the flow (the branch is now a compact split).
     for (const node of [input, log, branch, output]) {
       expect(node?.parentId).toBeUndefined();
-      expect(node?.position.y).toBe(0);
     }
-    // Strictly increasing x along the flow.
     expect((input?.position.x ?? 0) < (log?.position.x ?? 0)).toBe(true);
     expect((log?.position.x ?? 0) < (branch?.position.x ?? 0)).toBe(true);
     expect((branch?.position.x ?? 0) < (output?.position.x ?? 0)).toBe(true);
   });
 
-  it('renders a branch as a container that encloses its sub-pipeline', () => {
+  it('renders a branch as a compact split whose body fans out to a lane and merges back', () => {
     const branch = byId('proc-1');
     const child = byId('proc-1-processors-p0');
-    // The branch is a container; its inner processor is a React Flow child of it.
-    expect(branch?.type).toBe('flowContainer');
-    expect(child?.parentId).toBe('proc-1');
-    expect(child?.extent).toBe('parent');
-    // The child sits inside the container body (below the title bar).
-    expect((child?.position.y ?? 0) > 0).toBe(true);
+    // The branch no longer grows to enclose its body: it is a compact split card and its
+    // body processor is an absolutely-positioned lane node to its right (not nested).
+    expect(branch?.type).toBe('flowSplit');
+    expect(child?.parentId).toBeUndefined();
+    expect((child?.position.x ?? 0) > (branch?.position.x ?? 0)).toBe(true);
+    // An explicit merge node reconverges the branch body.
+    expect(rfNodes.some((n) => n.id === 'proc-1-merge' && n.type === 'flowMerge')).toBe(true);
   });
 
-  it('annotates each spine edge with the processor index an insertion there would use', () => {
-    const spine = rfEdges.filter((e) => e.type === 'flowSpine');
-    expect(spine.map((e) => (e.data as { insertIndex: number }).insertIndex)).toEqual([0, 1, 2]);
+  it('annotates each top-level flow edge with the processor index an insertion there would use', () => {
+    const spineIndices = rfEdges
+      .map((e) => (e.data as { insertIndex?: number } | undefined)?.insertIndex)
+      .filter((i): i is number => typeof i === 'number')
+      .sort((a, b) => a - b);
+    expect(spineIndices).toEqual([0, 1, 2]);
   });
 
   it('carries edit targets and metadata onto the flow nodes', () => {
@@ -978,15 +981,13 @@ output:
     expect(withLabel).toBe(without + 22);
   });
 
-  it('keeps a collapsed group as a container (with a toggle) and hides its children', () => {
+  it('always shows the full graph — collapse is not applied on the Dagre canvas', () => {
+    // Collapse was dropped for the graph canvas: passing collapsedIds has no effect, so a
+    // control-flow construct always renders its split, body, and merge.
     const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(['proc-1']));
-    const branch = layout.rfNodes.find((n) => n.id === 'proc-1');
-    // Still a container so it keeps its header + chevron and can be expanded again.
-    expect(branch?.type).toBe('flowContainer');
-    expect(branch?.data.collapsed).toBe(true);
-    expect(branch?.data.collapsible).toBe(true);
-    // Its inner step is not rendered while collapsed.
-    expect(layout.rfNodes.some((n) => n.id === 'proc-1-processors-p0')).toBe(false);
+    expect(layout.rfNodes.find((n) => n.id === 'proc-1')?.type).toBe('flowSplit');
+    expect(layout.rfNodes.some((n) => n.id === 'proc-1-processors-p0')).toBe(true);
+    expect(layout.rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(true);
   });
 
   it('places array resources in a lane below the flow', () => {
@@ -1036,18 +1037,18 @@ cache_resources:
   const data = (id: string) => edge(id)?.data as { tone?: string; dashed?: boolean; label?: string } | undefined;
 
   it('draws a branch as copy-out (request_map) and merge-back (result_map)', () => {
-    expect(data('copy-proc-1')).toMatchObject({ tone: 'primary', dashed: true, label: 'copy' });
-    expect(data('merge-proc-1')).toMatchObject({ tone: 'primary', dashed: true, label: 'merge' });
-    // Copy leaves the container; merge returns to it.
+    // Dashed primary edges (no text label — the dashed style + merge node convey it).
+    expect(data('copy-proc-1')).toMatchObject({ tone: 'primary', dashed: true });
+    expect(data('merge-proc-1')).toMatchObject({ tone: 'primary', dashed: true });
+    // Copy leaves the split (the branch card); merge returns into the merge node.
     expect(edge('copy-proc-1')?.source).toBe('proc-1');
-    expect(edge('merge-proc-1')?.target).toBe('proc-1');
+    expect(edge('merge-proc-1')?.target).toBe('proc-1-merge');
   });
 
-  it('styles switch fan-out edges by branch (error vs normal) and shows the condition as a chip on the receiving card', () => {
-    // The fan-out edge itself stays unlabeled; the routing condition is a chip on the node.
-    expect(data('fanout-output-switch-0')).toMatchObject({ tone: 'error', dashed: true });
-    expect(data('fanout-output-switch-0')?.label).toBeUndefined();
-    expect(data('fanout-output-switch-1')).toMatchObject({ tone: 'primary' });
+  it('labels switch fan-out edges with their routing condition, styled by branch (error vs normal)', () => {
+    // The condition rides the fan-out edge (pure DAG, labels on edges); the error case is red.
+    expect(data('fanout-output-switch-0')).toMatchObject({ tone: 'error', label: 'errored()' });
+    expect(data('fanout-output-switch-1')).toMatchObject({ tone: 'primary', label: 'default' });
 
     const nodes = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
     const nodeData = (id: string) => nodes.find((n) => n.id === id)?.data as Record<string, unknown> | undefined;
@@ -1055,11 +1056,71 @@ cache_resources:
     expect(nodeData('output-switch-1')).toMatchObject({ isDefault: true });
   });
 
-  it('marks a catch handler as an error path on its card (chip), not via an entry edge', () => {
-    const nodes = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
-    // proc-3 is the `catch` container — its card carries the "on error" semantics.
-    const catchData = nodes.find((n) => n.id === 'proc-3')?.data as Record<string, unknown>;
-    expect(catchData.isErrorPath).toBe(true);
+  it('makes case conditions editable: fan-out edges carry a switchCase select target (processor AND output)', () => {
+    const yaml = `pipeline:
+  processors:
+    - switch:
+        - check: a == 1
+          processors: [{ mapping: 'root = this' }]
+output:
+  switch:
+    cases:
+      - check: errored()
+        output: { drop: {} }
+      - output: { drop: {} }`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes);
+    const selectTarget = (id: string) =>
+      (layout.rfEdges.find((e) => e.id === id)?.data as { selectTarget?: unknown }).selectTarget;
+    // Processor switch case: clicking the condition edits the case.
+    expect(selectTarget('fanout-proc-0-case-1')).toEqual({
+      kind: 'switchCase',
+      path: ['pipeline', 'processors', 0, 'switch', 0],
+    });
+    // Output switch cases — previously NOT editable; now the condition selects the case.
+    expect(selectTarget('fanout-output-switch-0')).toEqual({
+      kind: 'switchCase',
+      path: ['output', 'switch', 'cases', 0],
+    });
+    expect(selectTarget('fanout-output-switch-1')).toEqual({
+      kind: 'switchCase',
+      path: ['output', 'switch', 'cases', 1],
+    });
+    // The output card itself still edits its output component.
+    expect(
+      (layout.rfNodes.find((n) => n.id === 'output-switch-0')?.data as { editTarget?: unknown }).editTarget
+    ).toEqual({
+      kind: 'path',
+      path: ['output', 'switch', 'cases', 0, 'output'],
+      componentType: 'output',
+    });
+  });
+
+  it('renders an input broker as a labeled hub the inputs fan into, with a ghost "Add input"', () => {
+    const yaml = `input:
+  broker:
+    inputs:
+      - generate: { mapping: 'root = {}' }
+      - kafka_franz: { topics: [t] }
+output:
+  drop: {}`;
+    const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes, new Set(), 'horizontal', false, true);
+    // The broker is a labeled hub node (not a generic merge dot); inputs fan into it.
+    const hub = layout.rfNodes.find((n) => n.id === 'input-broker');
+    expect(hub?.type).toBe('flowSplit');
+    expect(layout.rfEdges.some((e) => e.id === 'fanin-input-broker-0' && e.target === 'input-broker')).toBe(true);
+    // "Add input" is a ghost branch (edit mode only) reached by a dashed connector.
+    expect(layout.rfNodes.some((n) => n.id === 'input-broker-add' && n.type === 'flowInsert')).toBe(true);
+    expect(layout.rfEdges.some((e) => (e.data as { ghost?: boolean }).ghost)).toBe(true);
+  });
+
+  it('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {
+    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    // proc-2 = try, proc-3 = catch; they fuse into a success/error structure at a merge.
+    expect(layout.rfNodes.find((n) => n.id === 'proc-3')?.data.isErrorPath).toBe(true);
+    const onError = layout.rfEdges.find((e) => e.id === 'error-proc-2-proc-3');
+    expect(onError).toMatchObject({ source: 'proc-2', target: 'proc-3' });
+    expect((onError?.data as { tone?: string }).tone).toBe('error');
+    expect(layout.rfNodes.some((n) => n.id === 'proc-2-merge' && n.type === 'flowMerge')).toBe(true);
   });
 
   it('draws no entry edges for sequential containers — containment shows the flow', () => {
@@ -1087,29 +1148,17 @@ cache_resources:
     expect(byId('proc-0')?.editTarget).toEqual({ kind: 'processor', index: 0 });
   });
 
-  it('anchors branch ports level with the first/last child row, fans at the centre', () => {
+  it('reconverges a branch at a merge node and fans an output switch from a split', () => {
     const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
-    const nodeData = (id: string) =>
-      layout.rfNodes.find((n) => n.id === id)?.data as {
-        portOutY?: number;
-        portInY?: number;
-      };
-    // branch (one child): copy leaves and merge returns level with the child's
-    // connector row (headerH 48 + pad 12 + handle 36) — clean horizontal lines
-    // that never cross the container header or its icon.
-    expect(nodeData('proc-1')).toMatchObject({ portOutY: 96, portInY: 96 });
-    // The output switch fans out from the children-area centre (a trunk).
-    const switchNode = layout.rfNodes.find((n) => n.id === 'output-switch');
-    const switchH = (switchNode?.style as { height?: number })?.height ?? 0;
-    expect(nodeData('output-switch')?.portOutY).toBe((48 + switchH) / 2);
-  });
-
-  it('marks the container end of copy/merge/fan edges with a port socket', () => {
-    // The container-side endpoint is drawn as a visible port dot so the line
-    // doesn't appear to trail off into the container border.
-    expect(data('copy-proc-1')).toMatchObject({ portDot: 'source' });
-    expect(data('merge-proc-1')).toMatchObject({ portDot: 'target' });
-    expect(data('fanout-output-switch-0')).toMatchObject({ portDot: 'source' });
+    const find = (id: string) => layout.rfNodes.find((n) => n.id === id);
+    // The branch is a compact split with a merge node to its right on the same rail.
+    expect(find('proc-1')?.type).toBe('flowSplit');
+    const branchMerge = find('proc-1-merge');
+    expect(branchMerge?.type).toBe('flowMerge');
+    expect((branchMerge?.position.x ?? 0) > (find('proc-1')?.position.x ?? 0)).toBe(true);
+    // The output switch fans out from a split; its sinks terminate, so it has no merge.
+    expect(find('output-switch')?.type).toBe('flowSplit');
+    expect(find('output-switch-merge')).toBeUndefined();
   });
 
   it('draws dashed reference edges from a component to the resource it uses', () => {
@@ -1228,17 +1277,12 @@ output:
         output: { redpanda: { topic: dlq } }
       - output: { drop: {} }`;
     const layout = computeFlowLayout(parsePipelineFlowTree(withProcessorSwitch).nodes);
-    // Each processor case fans out AND back in — the data continues to the next step.
+    // Each processor case fans out AND back in to the merge — the data continues onward.
     expect(layout.rfEdges.filter((e) => e.id.startsWith('fanin-proc-0-case-'))).toHaveLength(2);
-    expect(layout.rfEdges.find((e) => e.id === 'fanin-proc-0-case-1')?.data).toMatchObject({ portDot: 'target' });
-    // Output cases terminate at their sinks — no fan-in.
+    expect(layout.rfNodes.some((n) => n.id === 'proc-0-merge' && n.type === 'flowMerge')).toBe(true);
+    // Output cases terminate at their sinks — no fan-in, no merge node.
     expect(layout.rfEdges.some((e) => e.id.startsWith('fanin-output-switch'))).toBe(false);
-    // Fan-in lines terminate in the container's port socket — no stacked arrowheads.
-    for (const faninEdge of layout.rfEdges.filter((e) => e.id.startsWith('fanin-'))) {
-      expect(faninEdge.markerEnd).toBeUndefined();
-    }
-    // Fan-out keeps its arrowhead at each child.
-    expect(layout.rfEdges.find((e) => e.id === 'fanout-proc-0-case-1')?.markerEnd).toBeDefined();
+    expect(layout.rfNodes.some((n) => n.id === 'output-switch-merge')).toBe(false);
   });
 
   it('gives each reference edge its own bus lane so cables never overlap', () => {
@@ -1257,15 +1301,16 @@ cache_resources:
     const refEdges = computeFlowLayout(parsePipelineFlowTree(twoResources).nodes).rfEdges.filter((e) =>
       e.id.startsWith('ref-')
     );
-    const busYs = refEdges.map((e) => (e.data as { route?: { busY: number } }).route?.busY);
-    expect(busYs).toHaveLength(2);
-    expect(busYs.every((y) => typeof y === 'number')).toBe(true);
-    expect(new Set(busYs).size).toBe(busYs.length); // distinct bus lanes
+    // One dashed/muted reference edge per resource, to distinct targets.
+    expect(refEdges).toHaveLength(2);
+    expect(new Set(refEdges.map((e) => e.target)).size).toBe(2);
+    for (const e of refEdges) {
+      expect(e.data).toMatchObject({ tone: 'muted', dashed: true });
+    }
   });
 
-  it('drops cables from the same source as distinct parallel lines', () => {
-    // A branch holding two resource users; collapsed, both cables re-anchor to the
-    // branch — they must leave it at staggered x's, not stacked on one line.
+  it('draws a reference edge from each resource user to its resource', () => {
+    // A branch holding two resource users: the cables attach to the actual inner nodes.
     const shared = `pipeline:
   processors:
     - branch:
@@ -1280,21 +1325,16 @@ cache_resources:
 rate_limit_resources:
   - label: lim
     local: { count: 1, interval: 1s }`;
-    const refEdges = computeFlowLayout(parsePipelineFlowTree(shared).nodes, new Set(['proc-0'])).rfEdges.filter((e) =>
+    const refEdges = computeFlowLayout(parsePipelineFlowTree(shared).nodes).rfEdges.filter((e) =>
       e.id.startsWith('ref-')
     );
-    // Both re-anchor to the collapsed branch (same source).
     expect(refEdges).toHaveLength(2);
-    expect(new Set(refEdges.map((e) => e.source))).toEqual(new Set(['proc-0']));
-    // …but drop through distinct channels so the lines don't overlap.
-    const channelXs = refEdges.map((e) => (e.data as { route?: { channelX: number } }).route?.channelX);
-    expect(new Set(channelXs).size).toBe(channelXs.length);
+    // Distinct sources (the two inner processors) and distinct targets.
+    expect(new Set(refEdges.map((e) => e.source)).size).toBe(2);
+    expect(new Set(refEdges.map((e) => e.target)).size).toBe(2);
   });
 
-  it('nests fan lanes like parentheses around the centre port (crossing-free)', () => {
-    // Cases above the port keep the staircase (outermost hugs the border, nearer
-    // cases nest deeper); cases below mirror it. The halves never share a y-range,
-    // so they reuse the same lane offsets — provably no sibling crossings.
+  it('fans every switch case out to its own labelled edge and back to the merge', () => {
     const fourCases = `pipeline:
   processors:
     - switch:
@@ -1308,77 +1348,40 @@ rate_limit_resources:
 output:
   drop: {}`;
     const layout = computeFlowLayout(parsePipelineFlowTree(fourCases).nodes);
-    const lane = (id: string) =>
-      (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromSource?: number }).laneFromSource ?? 0;
-    // Above half: staircase inward; below half mirrors it.
-    expect(lane('fanout-proc-0-case-1')).toBeLessThan(lane('fanout-proc-0-case-2'));
-    expect(lane('fanout-proc-0-case-4')).toBeLessThan(lane('fanout-proc-0-case-3'));
-    expect(lane('fanout-proc-0-case-1')).toBe(lane('fanout-proc-0-case-4'));
-    // Fan-in mirrors the same lanes.
-    const inLane = (id: string) =>
-      (layout.rfEdges.find((e) => e.id === id)?.data as { laneFromTarget?: number }).laneFromTarget ?? 0;
-    expect(inLane('fanin-proc-0-case-1')).toBe(lane('fanout-proc-0-case-1'));
-    expect(inLane('fanin-proc-0-case-1')).toBeLessThan(inLane('fanin-proc-0-case-2'));
+    // Four fan-out edges (each labelled with its routing condition / default) and four
+    // fan-in edges back to the switch's merge node.
+    for (const i of [1, 2, 3, 4]) {
+      const out = layout.rfEdges.find((e) => e.id === `fanout-proc-0-case-${i}`);
+      expect(out).toBeDefined();
+      expect((out?.data as { label?: string }).label).toBeTruthy();
+      expect(layout.rfEdges.some((e) => e.id === `fanin-proc-0-case-${i}`)).toBe(true);
+    }
+    expect(layout.rfNodes.some((n) => n.id === 'proc-0-merge' && n.type === 'flowMerge')).toBe(true);
   });
 
-  it('routes the reference cable bottom→top through a channel and bus lane', () => {
-    // The cable plugs out of the source's bottom into the resource's top, dropping
-    // through a clear channel beside its column then along its own bus lane below the
-    // flow — both positive, so it never crosses the cards around or below the source.
+  it('routes the reference cable as a dashed dependency from the user bottom into the resource top', () => {
     const refEdge = edge('ref-proc-0-resource-cache_resources-0');
+    // A dependency cable, not flow output: it leaves the user's BOTTOM and enters the
+    // resource's TOP, styled as a muted dashed context line.
     expect(refEdge?.sourceHandle).toBe('b');
     expect(refEdge?.targetHandle).toBe('t');
-    const route = (refEdge?.data as { route?: { channelX: number; busY: number } }).route;
-    expect(route?.channelX).toBeGreaterThan(0);
-    expect(route?.busY).toBeGreaterThan(0);
+    expect(refEdge?.type).toBe('flowGraphEdge');
+    expect(refEdge?.data).toMatchObject({ tone: 'muted', dashed: true });
   });
 
-  it('lays a referenced resource under its column so the cable stays short', () => {
-    // dedupe_cache lays out at the same x as its referencing processor's column.
+  it('places a referenced resource below its user, near its x', () => {
+    // Resources are dependencies laid out below the flow, near their user's x (not a far
+    // bottom-left row, and not out to the right in the flow).
     const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
-    const procX = layout.rfNodes.find((n) => n.id === 'proc-0')?.position.x ?? -1;
-    const resourceX = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -2;
-    expect(procX).toBeGreaterThan(0);
-    expect(resourceX).toBe(procX);
+    const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
+    const user = layout.rfNodes.find((n) => n.id === 'proc-0');
+    expect(resource).toBeDefined();
+    // Below the user (its dependency hangs underneath), at roughly the same x.
+    expect((resource?.position.y ?? 0) > (user?.position.y ?? 0)).toBe(true);
+    expect(Math.abs((resource?.position.x ?? 0) - (user?.position.x ?? 0))).toBeLessThan(40);
   });
 
-  it('drops each resource just below its own column, not the flow-wide deepest point', () => {
-    // A short processor (cache) references `c`; a much taller switch references `lim`.
-    // `c` should sit right under the short cache (close to it), while `lim` sits far
-    // lower under the tall switch — each near its connection, neither overlapping a column.
-    const mixedHeights = `pipeline:
-  processors:
-    - cache: { resource: c, operator: get }
-    - switch:
-        - check: a == 1
-          processors: [{ mapping: 'root = this' }, { mapping: 'root = this' }, { mapping: 'root = this' }]
-        - check: a == 2
-          processors: [{ rate_limit: { resource: lim } }]
-        - processors: [{ mapping: 'root = this' }]
-output:
-  drop: {}
-cache_resources:
-  - label: c
-    memory: {}
-rate_limit_resources:
-  - label: lim
-    local: { count: 1, interval: 1s }`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(mixedHeights).nodes);
-    const cacheRes = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
-    const limitRes = layout.rfNodes.find((n) => n.id === 'resource-rate_limit_resources-0');
-    const cacheCol = layout.rfNodes.find((n) => n.id === 'proc-0'); // the short cache leaf
-    const switchCol = layout.rfNodes.find((n) => n.id === 'proc-1'); // the tall switch
-    const cacheBottom = (cacheCol?.position.y ?? 0) + ((cacheCol?.initialHeight as number) ?? 0);
-    const switchBottom = (switchCol?.position.y ?? 0) + ((switchCol?.initialHeight as number) ?? 0);
-    // `c` parks just under the short cache column — close to it, not dragged down to the
-    // flow's deepest point under the switch.
-    expect(cacheRes?.position.y ?? 0).toBeGreaterThan(cacheBottom);
-    expect(cacheRes?.position.y ?? 0).toBeLessThan(switchBottom);
-    // `lim` sits far lower, under the tall switch column that references it.
-    expect(limitRes?.position.y ?? 0).toBeGreaterThan(cacheRes?.position.y ?? 0);
-  });
-
-  it('connects a reference to the exact node, re-anchoring to a visible ancestor when collapsed', () => {
+  it('connects a reference to the exact nested node that uses the resource', () => {
     const nested = `pipeline:
   processors:
     - branch:
@@ -1389,27 +1392,9 @@ output:
 cache_resources:
   - label: dedupe_cache
     redis: { url: x }`;
-    const { nodes } = parsePipelineFlowTree(nested);
-
-    // The resource is placed exactly under each cable's drop, so the cable lands
-    // straight: its channelX equals the resource's top-handle x (left + handle offset).
-    const HANDLE = 18;
-    const channelX = (layout: ReturnType<typeof computeFlowLayout>) =>
-      (layout.rfEdges.find((e) => e.id.startsWith('ref-'))?.data as { route?: { channelX: number } }).route?.channelX;
-    const resourceLeft = (layout: ReturnType<typeof computeFlowLayout>) =>
-      layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0')?.position.x ?? -1;
-
-    // Expanded: the cable attaches to the actual nested cache that uses the resource
-    // (not the outer branch), and lands straight into the resource below it.
-    const open = computeFlowLayout(nodes);
-    expect(open.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
-    expect(channelX(open)).toBe(resourceLeft(open) + HANDLE);
-
-    // Collapsed: the cache is hidden, so the cable re-anchors to its nearest visible
-    // ancestor — the branch — and still lands straight into its resource.
-    const closed = computeFlowLayout(nodes, new Set(['proc-0']));
-    expect(closed.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0');
-    expect(channelX(closed)).toBe(resourceLeft(closed) + HANDLE);
+    const layout = computeFlowLayout(parsePipelineFlowTree(nested).nodes);
+    // The cable attaches to the actual nested cache that uses the resource (not the branch).
+    expect(layout.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
   });
 
   it('gives nested containers insert slots and switches an add-case slot', () => {
