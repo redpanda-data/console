@@ -74,7 +74,11 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
               </div>
               <Label className="font-medium text-sm">Scope</Label>
               <div>
-                <Select onValueChange={setSelectedScope} value={selectedScope}>
+                <Select
+                  items={{ local: 'Local', user: 'User', project: 'Project' }}
+                  onValueChange={setSelectedScope}
+                  value={selectedScope}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>

@@ -203,6 +203,10 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 				// Secrets available - show combobox with create button
 				<div className="flex items-center gap-2">
 					<Select
+						items={availableSecrets.map((secret) => ({
+							value: secret.id,
+							label: secret.name,
+						}))}
 						key={`${extractSecretName(value)}-${availableSecrets.length}`}
 						onValueChange={onChange}
 						value={extractSecretName(value)}

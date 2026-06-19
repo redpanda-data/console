@@ -74,7 +74,7 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
               </div>
               <Label className="font-medium text-sm">Scope</Label>
               <div>
-                <Select onValueChange={setSelectedScope} value={selectedScope}>
+                <Select items={{ user: 'User', project: 'Project' }} onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
