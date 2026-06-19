@@ -34,9 +34,7 @@ type ClientClaudeCodeProps = {
   mcpServer: MCPServer;
 };
 
-// Single source of truth for the scope picker: drives the Select's `items` (so
-// `<SelectValue>` resolves the label without flashing the raw value), the
-// rendered `<SelectItem>`s, the config file shown in step 4, and the help text.
+// Drives the scope Select's items, options, config file, and help text.
 const SCOPE_OPTIONS = [
   {
     value: 'local',

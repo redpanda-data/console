@@ -34,9 +34,7 @@ type ClientGeminiProps = {
   mcpServer: MCPServer;
 };
 
-// Single source of truth for the scope picker: drives the Select's `items` (so
-// `<SelectValue>` resolves the label without flashing the raw value), the
-// rendered `<SelectItem>`s, and the help text below.
+// Drives the scope Select's items, options, and help text.
 const SCOPE_OPTIONS = [
   {
     value: 'user',
