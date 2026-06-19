@@ -22,9 +22,7 @@ service MonitoringService {
         key: "200"
         value: {
           description: "Recent connections"
-          schema: {
-            json_schema: {ref: ".redpanda.core.admin.v2.ListKafkaConnectionsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.core.admin.v2.ListKafkaConnectionsResponse"}}
         }
       }
     };

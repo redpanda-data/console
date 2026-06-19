@@ -392,6 +392,13 @@ components:
     Column:
       description: Column descriptor for a table or query result.
       properties:
+        fields:
+          description: |-
+            Nested columns for a composite/struct (json) column, parsed from the
+            engine's structural type. Empty for scalar columns.
+          items:
+            $ref: '#/components/schemas/Column'
+          type: array
         name:
           type: string
         type:
