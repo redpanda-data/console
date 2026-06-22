@@ -20,7 +20,7 @@ export const FEATURE_FLAGS = {
   enableNewSecurityPage: true,
   enableTeamsBridge: false,
   enableNewTopicPage: true,
-  enableSqlInConsole: true,
+  enableSqlInConsole: false,
 };
 
 // Cloud-managed tag keys for service account integration

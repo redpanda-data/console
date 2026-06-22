@@ -255,7 +255,14 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'SQL',
     icon: Database,
     group: SidebarSection.STREAMING,
-    visibilityCheck: routeVisibility(() => isFeatureFlagEnabled('enableSqlInConsole')),
+    // Cloud (embedded): cloud-ui passes enableSqlInConsole only for BYOC clusters with SQL enabled
+    // (never serverless, since SQL can't be provisioned there).
+    // Self-hosted (standalone): the enterprise backend injects the REDPANDA_SQL app feature when
+    // SQL is enabled, which requires a valid enterprise license.
+    visibilityCheck: () => {
+      const visible = isEmbedded() ? isFeatureFlagEnabled('enableSqlInConsole') : AppFeatures.REDPANDA_SQL;
+      return { visible, disabledReasons: [] };
+    },
   },
   {
     path: '/connect-clusters',
