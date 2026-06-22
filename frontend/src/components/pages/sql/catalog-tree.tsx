@@ -308,11 +308,11 @@ function TableRow({ catalog, table }: TableRowProps) {
   const isActive = activeTableId === table.id;
   const isIceberg = catalog.engine === 'iceberg' || table.iceberg === true;
   // A Redpanda-catalog table is Iceberg-tiered when its backing topic has
-  // `redpanda.iceberg.mode` enabled (read from the Kafka topic config). Fetch
-  // only once the row is expanded — otherwise every visible table fires its own
-  // GetTopicConfigurations request (N+1) just to decide whether to show a badge.
+  // `redpanda.iceberg.mode` enabled (read from the Kafka topic config). Fetched
+  // for every rendered row so the badge always shows; react-query caches each
+  // GetTopicConfigurations result so re-renders don't refetch.
   const { isIceberg: topicTiered } = useTopicIcebergQuery(table.topicName ?? '', {
-    enabled: catalog.engine === 'redpanda' && Boolean(table.topicName) && isOpen,
+    enabled: catalog.engine === 'redpanda' && Boolean(table.topicName),
   });
   const tiered = catalog.engine === 'redpanda' && topicTiered;
   const Chevron = isOpen ? ChevronDown : ChevronRight;

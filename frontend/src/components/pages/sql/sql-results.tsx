@@ -22,8 +22,8 @@ import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Braces, CircleX, Clock, Download, GitMerge, Plus, Rows3, Terminal, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import DataGrid, { type Column } from 'react-data-grid';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import DataGrid, { type Column, type DataGridHandle } from 'react-data-grid';
 import { isMacOS } from 'utils/platform';
 
 import 'react-data-grid/lib/styles.css';
@@ -116,10 +116,15 @@ function prettyJson(raw: string): string {
   }
 }
 
+// The grid's scroll viewport, so cell popovers stay clamped to the table
+// section rather than the page viewport when the anchor row scrolls away.
+const GridBoundaryContext = createContext<Element | null>(null);
+
 // Rich viewer for JSON/composite cells: a header with the column name + type, a
 // copy button and a close affordance, over a syntax-highlighted, formatted body.
 function JsonCellPopover({ value, name, typeLabel }: { value: string; name: string; typeLabel: string }) {
   const [open, setOpen] = useState(false);
+  const boundary = useContext(GridBoundaryContext);
   const pretty = useMemo(() => prettyJson(value), [value]);
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -135,7 +140,12 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
           {value}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-120 max-w-[90vw] overflow-hidden p-0">
+      <PopoverContent
+        align="start"
+        className="w-120 max-w-[90vw] overflow-hidden p-0"
+        collisionBoundary={boundary ?? undefined}
+        sticky
+      >
         <div className="flex items-center gap-2 border-border border-b bg-muted px-3 py-2">
           <Braces className="shrink-0 text-info" size={14} />
           <span className="truncate font-mono font-semibold text-sm text-strong">{name}</span>
@@ -147,16 +157,15 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
             <X size={14} />
           </Button>
         </div>
-        <div className="max-h-96 overflow-auto">
-          <SyncCodeBlock
-            allowCopy={false}
-            className="!my-0 rounded-none border-0"
-            code={pretty}
-            keepBackground
-            lang="json"
-            themes={{ dark: 'github-dark', light: 'github-light' }}
-          />
-        </div>
+        <SyncCodeBlock
+          allowCopy={false}
+          className="!my-0 rounded-none border-0"
+          code={pretty}
+          keepBackground
+          lang="json"
+          themes={{ dark: 'github-dark', light: 'github-light' }}
+          viewportProps={{ className: 'max-h-96' }}
+        />
       </PopoverContent>
     </Popover>
   );
@@ -173,6 +182,7 @@ function CellContent({
   name: string;
   typeLabel: string;
 }) {
+  const boundary = useContext(GridBoundaryContext);
   if (kind === 'bool' && typeof v === 'boolean') {
     return <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>;
   }
@@ -200,7 +210,12 @@ function CellContent({
           {s}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="max-h-72 max-w-120 overflow-auto p-3">
+      <PopoverContent
+        align="start"
+        className="max-h-72 max-w-120 overflow-auto p-3"
+        collisionBoundary={boundary ?? undefined}
+        sticky
+      >
         <Text className="whitespace-pre-wrap break-all font-mono text-xs">{s}</Text>
       </PopoverContent>
     </Popover>
@@ -302,58 +317,69 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   const columns = useMemo(() => buildColumns(cols), [cols]);
   const rowKeys = useMemo(() => buildRowKeys(run.rows), [run.rows]);
 
+  // rdg's root (.rdg) is the scroll viewport; expose it to cell popovers so they
+  // stay confined to the table section as the anchor row scrolls out of view.
+  const gridRef = useRef<DataGridHandle>(null);
+  const [boundary, setBoundary] = useState<Element | null>(null);
+  useEffect(() => {
+    setBoundary(gridRef.current?.element ?? null);
+  }, []);
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="flex flex-shrink-0 items-center gap-4 border-border border-b bg-card px-4 py-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-4">
-          {bridge ? (
-            <BridgeBar />
-          ) : (
-            <span className={cn(RES_STAT, 'font-semibold text-success')}>
-              <StatusDot size="xxs" variant="success" /> Success
+    <GridBoundaryContext.Provider value={boundary}>
+      <div className="flex h-full min-h-0 w-full flex-col">
+        <div className="flex flex-shrink-0 items-center gap-4 border-border border-b bg-card px-4 py-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-4">
+            {bridge ? (
+              <BridgeBar />
+            ) : (
+              <span className={cn(RES_STAT, 'font-semibold text-success')}>
+                <StatusDot size="xxs" variant="success" /> Success
+              </span>
+            )}
+            <span className={cn(RES_STAT, bridge && 'whitespace-nowrap')}>
+              <Rows3 size={14} /> {fmtNum(run.totalRows)} rows
             </span>
-          )}
-          <span className={cn(RES_STAT, bridge && 'whitespace-nowrap')}>
-            <Rows3 size={14} /> {fmtNum(run.totalRows)} rows
-          </span>
-          <span className={cn(RES_STAT, bridge && 'whitespace-nowrap')}>
-            <Clock size={14} /> {run.elapsedMs} ms
-          </span>
-          {run.truncated ? (
-            <Badge
-              className="rounded-full uppercase tracking-wide"
-              size="sm"
-              title="The server row cap fired; not all rows were returned."
-              variant="warning-inverted"
-            >
-              truncated
-            </Badge>
-          ) : null}
+            <span className={cn(RES_STAT, bridge && 'whitespace-nowrap')}>
+              <Clock size={14} /> {run.elapsedMs} ms
+            </span>
+            {run.truncated ? (
+              <Badge
+                className="rounded-full uppercase tracking-wide"
+                size="sm"
+                title="The server row cap fired; not all rows were returned."
+                variant="warning-inverted"
+              >
+                truncated
+              </Badge>
+            ) : null}
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <Button onClick={() => exportData('csv', cols, run.rows)} size="xs" variant="ghost">
+              <Download size={13} /> CSV
+            </Button>
+            <Button onClick={() => exportData('json', cols, run.rows)} size="xs" variant="ghost">
+              <Download size={13} /> JSON
+            </Button>
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-1">
-          <Button onClick={() => exportData('csv', cols, run.rows)} size="xs" variant="ghost">
-            <Download size={13} /> CSV
-          </Button>
-          <Button onClick={() => exportData('json', cols, run.rows)} size="xs" variant="ghost">
-            <Download size={13} /> JSON
-          </Button>
-        </div>
-      </div>
 
-      {bridge ? <BridgeTimeline bridge={bridge} /> : null}
+        {bridge ? <BridgeTimeline bridge={bridge} /> : null}
 
-      {/* Virtualized grid: rdg renders only visible rows, so the full result
+        {/* Virtualized grid: rdg renders only visible rows, so the full result
           set is handed over with no client-side pagination. */}
-      <DataGrid
-        className="sql-results-grid"
-        columns={columns}
-        headerRowHeight={52}
-        rowClass={(_, i) => (i % 2 === 1 ? 'sql-results-row-alt' : undefined)}
-        rowHeight={30}
-        rowKeyGetter={(r) => rowKeys.get(r) ?? -1}
-        rows={run.rows}
-      />
-    </div>
+        <DataGrid
+          className="sql-results-grid"
+          columns={columns}
+          headerRowHeight={52}
+          ref={gridRef}
+          rowClass={(_, i) => (i % 2 === 1 ? 'sql-results-row-alt' : undefined)}
+          rowHeight={30}
+          rowKeyGetter={(r) => rowKeys.get(r) ?? -1}
+          rows={run.rows}
+        />
+      </div>
+    </GridBoundaryContext.Provider>
   );
 }
 
