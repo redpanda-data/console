@@ -12,9 +12,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { SqlWorkspace } from 'components/pages/sql/sql-workspace';
 import { Database } from 'lucide-react';
-import { useLayoutEffect } from 'react';
-
-import { uiState } from '../state/ui-state';
 
 export const Route = createFileRoute('/sql')({
   staticData: {
@@ -22,14 +19,5 @@ export const Route = createFileRoute('/sql')({
     icon: Database,
     fullscreen: true,
   },
-  component: SqlRouteWrapper,
+  component: SqlWorkspace,
 });
-
-function SqlRouteWrapper() {
-  useLayoutEffect(() => {
-    uiState.pageBreadcrumbs = [{ title: 'SQL', linkTo: '' }];
-    uiState.pageTitle = 'SQL';
-  }, []);
-
-  return <SqlWorkspace />;
-}

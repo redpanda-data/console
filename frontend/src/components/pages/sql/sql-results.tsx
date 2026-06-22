@@ -12,6 +12,8 @@
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
@@ -19,24 +21,10 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import {
-  Braces,
-  Brackets,
-  Calendar,
-  CircleX,
-  Clock,
-  Download,
-  GitMerge,
-  Hash,
-  Plus,
-  Rows3,
-  Terminal,
-  ToggleLeft,
-  Type,
-  Waves,
-} from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Braces, CircleX, Clock, Download, GitMerge, Plus, Rows3, Terminal, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import DataGrid, { type Column } from 'react-data-grid';
+import { isMacOS } from 'utils/platform';
 
 import 'react-data-grid/lib/styles.css';
 import './sql-results.css';
@@ -56,66 +44,26 @@ export type SqlResultsProps = {
   /** Current run state: idle | running | error | success. */
   run: QueryRun;
   /** Effective role; gates the admin "Add a topic" CTA on CREATE errors. */
-  role: SqlRole;
+  sqlRole: SqlRole;
   /** Admin entry point for the add-topic wizard. */
   onAddTable?: () => void;
 };
 
 const fmtNum = (n: number) => n.toLocaleString('en-US');
 const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
+const CSV_ESCAPE_RE = /[",\n]/;
+const CSV_QUOTE_RE = /"/g;
 
 // Shared inline-stat layout used across the summary bar.
 const RES_STAT =
   'inline-flex items-center gap-1.5 text-xs text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
 
-function TypeIcon({ kind, isArray, size = 11 }: { kind: ColumnKind; isArray?: boolean; size?: number }) {
-  let icon: ReactNode;
-  switch (kind) {
-    case 'num':
-      icon = <Hash size={size} />;
-      break;
-    case 'bool':
-      icon = <ToggleLeft size={size} />;
-      break;
-    case 'time':
-      icon = <Calendar size={size} />;
-      break;
-    case 'json':
-      icon = <Braces size={size} />;
-      break;
-    default:
-      icon = <Type size={size} />;
-  }
-  if (!isArray) {
-    return icon;
-  }
+// Bridge-query indicator shown in the summary bar.
+function BridgeBar() {
   return (
-    <span className="inline-flex items-center gap-[1px]">
-      <Brackets size={size} />
-      {icon}
-    </span>
-  );
-}
-
-// Inline chip + Iceberg-lag snapshot shown in the summary bar for bridge queries.
-function BridgeBar({ bridge }: { bridge: BridgeInfo }) {
-  return (
-    <>
-      <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" variant="neutral">
-        <GitMerge /> Bridge query
-      </Badge>
-      {bridge.totalLag > 0 && (
-        <span
-          className={cn(RES_STAT, 'whitespace-nowrap font-mono text-muted-foreground text-xs')}
-          title="Iceberg lag at query time"
-        >
-          <Waves size={13} /> Iceberg {offStr(bridge.totalLag)} behind{' '}
-          <span className="ml-[3px] whitespace-nowrap font-normal text-caption-sm text-disabled not-italic">
-            at query time
-          </span>
-        </span>
-      )}
-    </>
+    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" variant="neutral">
+      <GitMerge /> Bridge query
+    </Badge>
   );
 }
 
@@ -137,7 +85,7 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
   return (
     <div className="flex-shrink-0 border-border border-b bg-card px-4 pt-3 pb-3.5">
       <div className="text-muted-foreground text-xs leading-snug">
-        Live tail covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
+        Bridge query covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
         <PendingStat count={bridge.translationLag} label="pending translation" /> +{' '}
         <PendingStat count={bridge.commitLag} label="pending commit" />. Bridging serves them from the topic so results
         stay realtime.
@@ -155,7 +103,73 @@ function cellText(v: CellValue): string {
 const CELL_MAX_W = 'max-w-80';
 const CELL_CLAMP_CHARS = 45;
 
-function CellContent({ v, kind }: { v: CellValue; kind: ColumnKind }) {
+// Pretty-prints a JSON string with 2-space indent, falling back to the raw
+// value when it isn't parseable JSON.
+function prettyJson(raw: string): string {
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
+// Rich viewer for JSON/composite cells: a header with the column name + type, a
+// copy button and a close affordance, over a syntax-highlighted, formatted body.
+function JsonCellPopover({ value, name, typeLabel }: { value: string; name: string; typeLabel: string }) {
+  const [open, setOpen] = useState(false);
+  const pretty = useMemo(() => prettyJson(value), [value]);
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            'block cursor-pointer truncate text-left font-mono text-info underline decoration-dotted underline-offset-2',
+            CELL_MAX_W
+          )}
+          title="Show JSON"
+          type="button"
+        >
+          {value}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-120 max-w-[90vw] overflow-hidden p-0">
+        <div className="flex items-center gap-2 border-border border-b bg-muted px-3 py-2">
+          <Braces className="shrink-0 text-info" size={14} />
+          <span className="truncate font-mono font-semibold text-sm text-strong">{name}</span>
+          <span className="text-muted-foreground text-xs">·</span>
+          <span className="shrink-0 font-mono text-muted-foreground text-xs uppercase tracking-wide">{typeLabel}</span>
+          <span className="flex-1" />
+          <CopyButton className="size-7 p-0" content={pretty} size="sm" variant="ghost" />
+          <Button aria-label="Close" className="size-7 p-0" onClick={() => setOpen(false)} size="sm" variant="ghost">
+            <X size={14} />
+          </Button>
+        </div>
+        <div className="max-h-96 overflow-auto">
+          <SyncCodeBlock
+            allowCopy={false}
+            className="!my-0 rounded-none border-0"
+            code={pretty}
+            keepBackground
+            lang="json"
+            themes={{ dark: 'github-dark', light: 'github-light' }}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function CellContent({
+  v,
+  kind,
+  name,
+  typeLabel,
+}: {
+  v: CellValue;
+  kind: ColumnKind;
+  name: string;
+  typeLabel: string;
+}) {
   if (kind === 'bool' && typeof v === 'boolean') {
     return <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>;
   }
@@ -163,6 +177,9 @@ function CellContent({ v, kind }: { v: CellValue; kind: ColumnKind }) {
     return <span className="text-disabled italic">NULL</span>;
   }
   const s = String(v);
+  if (kind === 'json') {
+    return <JsonCellPopover name={name} typeLabel={typeLabel} value={s} />;
+  }
   if (s.length <= CELL_CLAMP_CHARS) {
     return <span className={cn('block truncate', CELL_MAX_W)}>{s}</span>;
   }
@@ -198,7 +215,7 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
         cols
           .map((c) => {
             const s = cellText(r[c.name]);
-            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            return CSV_ESCAPE_RE.test(s) ? `"${s.replace(CSV_QUOTE_RE, '""')}"` : s;
           })
           .join(',')
       )
@@ -217,7 +234,9 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
 // WeakMap gives each a consistent id for rowKeyGetter without an index key.
 function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
   const map = new WeakMap<ResultRow, number>();
-  rows.forEach((r, i) => map.set(r, i));
+  rows.forEach((r, i) => {
+    map.set(r, i);
+  });
   return map;
 }
 
@@ -254,11 +273,11 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
         >
           <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
           <span className="inline-flex items-center gap-1 font-normal text-caption-sm text-muted-foreground uppercase tracking-wide">
-            <TypeIcon isArray={c.isArray} kind={c.kind} /> {c.short}
+            {c.short}
           </span>
         </span>
       ),
-      renderCell: ({ row }) => <CellContent kind={c.kind} v={row[c.name]} />,
+      renderCell: ({ row }) => <CellContent kind={c.kind} name={c.name} typeLabel={c.short} v={row[c.name]} />,
       cellClass: cn('font-mono text-xs', alignRight && 'text-right'),
       headerCellClass: alignRight ? 'text-right' : undefined,
     };
@@ -281,7 +300,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
       <div className="flex flex-shrink-0 items-center gap-4 border-border border-b bg-card px-4 py-2">
         <div className="flex min-w-0 flex-wrap items-center gap-4">
           {bridge ? (
-            <BridgeBar bridge={bridge} />
+            <BridgeBar />
           ) : (
             <span className={cn(RES_STAT, 'font-semibold text-success')}>
               <StatusDot size="xxs" variant="success" /> Success
@@ -293,7 +312,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
           <span className={cn(RES_STAT, bridge && 'whitespace-nowrap')}>
             <Clock size={14} /> {run.elapsedMs} ms
           </span>
-          {run.truncated && (
+          {run.truncated ? (
             <Badge
               className="rounded-full uppercase tracking-wide"
               size="sm"
@@ -302,7 +321,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
             >
               truncated
             </Badge>
-          )}
+          ) : null}
         </div>
         <div className="ml-auto flex items-center gap-1">
           <Button onClick={() => exportData('csv', cols, run.rows)} size="xs" variant="ghost">
@@ -314,7 +333,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
         </div>
       </div>
 
-      {bridge && <BridgeTimeline bridge={bridge} />}
+      {bridge ? <BridgeTimeline bridge={bridge} /> : null}
 
       {/* Virtualized grid: rdg renders only visible rows, so the full result
           set is handed over with no client-side pagination. */}
@@ -331,8 +350,10 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   );
 }
 
-export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
+export function SqlResults({ run, sqlRole, onAddTable }: SqlResultsProps) {
   if (run.state === 'idle') {
+    const modKey = isMacOS() ? '⌘' : 'Ctrl';
+
     return (
       <Empty className="h-full">
         <EmptyHeader>
@@ -343,7 +364,7 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
           <EmptyDescription>
             Write a <InlineCode>SELECT</InlineCode> against a table in the catalog, then press{' '}
             <KbdGroup>
-              <Kbd size="xs">⌘</Kbd>
+              <Kbd size="xs">{modKey}</Kbd>
               <Kbd size="xs">↵</Kbd>
             </KbdGroup>{' '}
             or hit Run.
@@ -373,16 +394,16 @@ export function SqlResults({ run, role, onAddTable }: SqlResultsProps) {
           <AlertTitle>{run.title}</AlertTitle>
           <AlertDescription>{run.message}</AlertDescription>
         </Alert>
-        {run.hint && (
+        {run.hint ? (
           <div className="flex items-center gap-3 text-muted-foreground text-sm">
             {run.hint}
-            {run.hintAction && role === 'admin' && (
+            {run.hintAction && sqlRole === 'admin' && onAddTable ? (
               <Button onClick={onAddTable} size="sm" variant="primary">
                 <Plus size={14} /> Add a topic to SQL
               </Button>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
       </div>
     );
   }

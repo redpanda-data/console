@@ -17,42 +17,27 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Box,
-  Braces,
-  Brackets,
-  Calendar,
   ChevronDown,
   ChevronRight,
   GitBranch,
-  Hash,
   Layers,
   Lock,
   Table as LucideTable,
   Play,
   Plus,
   Search,
-  ToggleLeft,
-  Type,
 } from 'lucide-react';
 import type { Column } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
 import { createContext, Fragment, type KeyboardEvent, type ReactNode, useContext, useState } from 'react';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 
-import {
-  type Catalog,
-  type CatalogEngine,
-  type ColumnKind,
-  columnKindForPgType,
-  isArrayPgType,
-  type Namespace,
-  type SqlRole,
-  type TableRef,
-} from './sql-types';
+import type { Catalog, CatalogEngine, Namespace, SqlRole, TableRef } from './sql-types';
 
 export type CatalogTreeProps = {
   /** Catalogs to render. Empty array while loading. */
   catalogs: Catalog[];
   /** Effective role of the caller. Drives admin-only affordances (Add a topic). */
-  role: SqlRole;
+  sqlRole: SqlRole;
   /** True while the initial ListCatalogs fetch is in flight. */
   isLoading?: boolean;
   /** id of the table whose query tab is currently active, if any. */
@@ -65,14 +50,6 @@ export type CatalogTreeProps = {
 
 // Promote search past this many tables in a namespace.
 const CAT_LIMIT = 20;
-
-const COL_KIND_ICON: Record<ColumnKind, typeof Hash> = {
-  num: Hash,
-  str: Type,
-  bool: ToggleLeft,
-  time: Calendar,
-  json: Braces,
-};
 
 // Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
 // subtle hover background. Used by namespace rows and the "Add a topic" row.
@@ -237,7 +214,6 @@ function FieldRows({
     <>
       {fields.map((field) => {
         const path = `${pathPrefix}/${field.name}`;
-        const KindIcon = COL_KIND_ICON[columnKindForPgType(field.type)];
         const nested = field.fields ?? [];
         const hasNested = nested.length > 0;
         const isOpen = Boolean(open[path]);
@@ -251,10 +227,6 @@ function FieldRows({
             ) : (
               <span aria-hidden="true" className="shrink-0" style={{ width: '11px' }} />
             )}
-            <span className="inline-flex shrink-0 items-center gap-px text-muted-foreground">
-              {isArrayPgType(field.type) && <Brackets size={11} />}
-              <KindIcon size={11} />
-            </span>
             <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono">
               {field.name}
             </span>
@@ -280,9 +252,9 @@ function FieldRows({
                 {body}
               </div>
             )}
-            {hasNested && isOpen && (
+            {hasNested && isOpen ? (
               <FieldRows depth={depth + 1} fields={nested} open={open} pathPrefix={path} toggle={toggle} />
-            )}
+            ) : null}
           </Fragment>
         );
       })}
@@ -306,6 +278,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
   }
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA trees use role="group" for nested tree item containers.
     <div className="mb-0.5 ml-6.5 border-border-subtle border-l pl-2" role="group">
       {content}
     </div>
@@ -317,6 +290,7 @@ type TableRowProps = {
   table: TableRef;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Leaf row combines grant, selection, tiering and query affordance state.
 function TableRow({ catalog, table }: TableRowProps) {
   const { activeTableId, openTables, toggleTable, onQueryTable } = useCatalogTree();
   const allowed = table.allowed !== false;
@@ -359,12 +333,12 @@ function TableRow({ catalog, table }: TableRowProps) {
           <Chevron className="shrink-0 text-disabled" size={13} />
           <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
-          {isIceberg && (
+          {isIceberg ? (
             <Badge className="uppercase tracking-wide" size="sm" variant="info-inverted">
               Iceberg
             </Badge>
-          )}
-          {tiered && (
+          ) : null}
+          {tiered ? (
             <Badge
               className="uppercase tracking-wide"
               size="sm"
@@ -373,10 +347,10 @@ function TableRow({ catalog, table }: TableRowProps) {
             >
               Iceberg
             </Badge>
-          )}
-          {!allowed && <Lock className="ml-0.5 text-disabled" size={12} />}
+          ) : null}
+          {allowed ? null : <Lock className="ml-0.5 text-disabled" size={12} />}
         </button>
-        {allowed && (
+        {allowed ? (
           <Button
             className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
             onClick={() => onQueryTable(catalog, table)}
@@ -387,9 +361,9 @@ function TableRow({ catalog, table }: TableRowProps) {
           >
             <Play />
           </Button>
-        )}
+        ) : null}
       </div>
-      {isOpen && allowed && <ColumnList catalogName={catalog.name} tableName={table.name} />}
+      {isOpen && allowed ? <ColumnList catalogName={catalog.name} tableName={table.name} /> : null}
     </div>
   );
 }
@@ -401,8 +375,9 @@ type NamespaceNodeProps = {
   isLoading: boolean;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Namespace rendering coordinates search, pagination, loading and admin actions.
 function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: NamespaceNodeProps) {
-  const { query, open, shown, toggle, loadMore, onAddTable } = useCatalogTree();
+  const { role, query, open, shown, toggle, loadMore, onAddTable } = useCatalogTree();
   const isOpen = open[namespace.id] !== false;
   const shownCount = shown[namespace.id] ?? CAT_LIMIT;
 
@@ -419,9 +394,7 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
   const visible = paginate ? matched.slice(0, shownCount) : matched;
   const remaining = paginate ? Math.max(0, matched.length - visible.length) : 0;
 
-  // Shown whenever a handler is wired (Redpanda catalog, not searching). Real
-  // admin-gating is a follow-up once the session role is plumbed through.
-  const showAddTopic = catalog.engine === 'redpanda' && !q && onAddTable;
+  const showAddTopic = role === 'admin' && catalog.engine === 'redpanda' && !q && Boolean(onAddTable);
 
   const NsChevron = isOpen ? ChevronDown : ChevronRight;
 
@@ -439,14 +412,15 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
         <GitBranch className="text-muted-foreground" size={13} />
         <span className={LABEL}>{namespace.name}</span>
       </button>
-      {isOpen && (
+      {isOpen ? (
+        // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA trees use role="group" for nested tree item containers.
         <div className="ml-2.5" role="group">
-          {isLoading && allTables.length === 0 && <LoadingRow label="Loading tables…" />}
+          {isLoading && allTables.length === 0 ? <LoadingRow label="Loading tables…" /> : null}
           {visible.map((t) => (
             <TableRow catalog={catalog} key={t.id} table={t} />
           ))}
-          {!isLoading && matched.length === 0 && !showAddTopic && <EmptyNote>No tables</EmptyNote>}
-          {paginate && remaining > 0 && (
+          {!isLoading && matched.length === 0 && !showAddTopic ? <EmptyNote>No tables</EmptyNote> : null}
+          {paginate && remaining > 0 ? (
             <Button
               className="w-full justify-start px-2"
               onClick={() => loadMore(namespace.id)}
@@ -458,8 +432,8 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
               <ChevronDown />
               <span>Load more · {remaining} remaining</span>
             </Button>
-          )}
-          {showAddTopic && (
+          ) : null}
+          {showAddTopic ? (
             <Button
               className="w-full justify-start px-2"
               onClick={onAddTable}
@@ -471,9 +445,9 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
               <Plus className="ml-4.75" />
               <span className={LABEL}>Add a topic</span>
             </Button>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -495,7 +469,7 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
   }));
 
   const CatChevron = isCatalogOpen ? ChevronDown : ChevronRight;
-  const showAdd = role === 'admin' && catalog.engine === 'redpanda' && onAddTable;
+  const showAdd = role === 'admin' && catalog.engine === 'redpanda' && Boolean(onAddTable);
 
   return (
     <div>
@@ -512,7 +486,7 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
           {engineMark(catalog.engine)}
           <span className={LABEL}>{catalog.displayLabel || catalog.name}</span>
         </button>
-        {showAdd && (
+        {showAdd ? (
           <Button
             className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
             onClick={onAddTable}
@@ -523,9 +497,10 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
           >
             <Plus />
           </Button>
-        )}
+        ) : null}
       </div>
-      {isCatalogOpen && (
+      {isCatalogOpen ? (
+        // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA trees use role="group" for nested tree item containers.
         <div role="group">
           {catalog.namespaces.map((ns) => (
             <NamespaceNode
@@ -537,12 +512,19 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
             />
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
-export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryTable, onAddTable }: CatalogTreeProps) {
+export function CatalogTree({
+  catalogs,
+  sqlRole,
+  isLoading,
+  activeTableId,
+  onQueryTable,
+  onAddTable,
+}: CatalogTreeProps) {
   // Expand/collapse state per node id. Undefined => default open for catalogs
   // and namespaces (see `!== false` checks in the nodes).
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -551,7 +533,7 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
   const [query, setQuery] = useState('');
 
   const context: CatalogTreeContextValue = {
-    role,
+    role: sqlRole,
     query,
     activeTableId,
     open,
@@ -566,15 +548,10 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between px-3.5 pt-3.5 pb-2">
+      <div className="flex items-center px-3.5 pt-3.5 pb-2">
         <Text as="span" className="text-muted-foreground uppercase tracking-wider" variant="labelStrongXSmall">
           Catalogs
         </Text>
-        {role === 'admin' && (
-          <Text as="span" className="text-disabled uppercase tracking-wider" variant="captionSmall">
-            Redpanda only
-          </Text>
-        )}
       </div>
       <div className="px-3 pb-2.5">
         <Input onChange={(e) => setQuery(e.target.value)} placeholder="Search tables" size="sm" value={query}>
@@ -591,8 +568,8 @@ export function CatalogTree({ catalogs, role, isLoading, activeTableId, onQueryT
           onKeyDown={handleTreeKeyDown}
           role="tree"
         >
-          {isLoading && catalogs.length === 0 && <LoadingRow label="Loading catalogs…" />}
-          {!isLoading && catalogs.length === 0 && <EmptyNote>No catalogs</EmptyNote>}
+          {isLoading && catalogs.length === 0 ? <LoadingRow label="Loading catalogs…" /> : null}
+          {!isLoading && catalogs.length === 0 ? <EmptyNote>No catalogs</EmptyNote> : null}
           {catalogs.map((catalog) => (
             <CatalogNode catalog={catalog} key={catalog.name} />
           ))}

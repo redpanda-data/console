@@ -202,7 +202,7 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
                 </ChoiceboxItemTitle>
                 <ChoiceboxItemSubtitle>{describeTopic(topic)}</ChoiceboxItemSubtitle>
               </ChoiceboxItemHeader>
-              {topic.iceberg && <IcebergBadge />}
+              {topic.iceberg ? <IcebergBadge /> : null}
             </ChoiceboxItem>
           ))}
         </Choicebox>
@@ -229,21 +229,21 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
 
       <SummaryRow label="Source topic">
         <GitBranch size={14} /> {topic.name}
-        {topic.iceberg && (
+        {topic.iceberg ? (
           <span className="ml-auto">
             <IcebergBadge />
           </span>
-        )}
+        ) : null}
       </SummaryRow>
 
-      {topic.iceberg && (
+      {topic.iceberg ? (
         <Alert className="border-info bg-info-subtle [&>svg]:text-info" icon={<GitMerge size={15} />}>
           <AlertDescription className="text-foreground text-xs">
             This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes the live
             topic with its Iceberg table so results stay realtime despite the flush lag.
           </AlertDescription>
         </Alert>
-      )}
+      ) : null}
 
       <Controller
         control={form.control}
@@ -263,11 +263,11 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
         <SyncCodeBlock className="my-0" code={createTableSql(tableName, topic.name)} keepBackground lang="sql" />
       </div>
 
-      {error && (
+      {error ? (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -23,6 +23,12 @@ const TOPICS: WizardTopic[] = [
   { name: 'orders', partitions: 12, format: 'AVRO' },
   { name: 'cars-telemetry.v1', partitions: 3, iceberg: true },
 ];
+const ORDERS_RE = /orders/;
+const CARS_TELEMETRY_RE = /cars-telemetry/;
+const CREATE_TABLE_RE = /Create table/;
+const TABLE_NAME_ERROR_RE = /Use lowercase letters, numbers and underscores/;
+const QUERIES_ARE_RE = /Queries are/;
+const BRIDGED_RE = /bridged/;
 
 const renderWizard = (overrides: Partial<SqlWizardProps> = {}) => {
   const props: SqlWizardProps = {
@@ -44,13 +50,13 @@ describe('SqlWizard', () => {
   test('lists topics with details and filters them by search', async () => {
     renderWizard();
 
-    expect(screen.getByRole('radio', { name: /orders/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: ORDERS_RE })).toBeInTheDocument();
     expect(screen.getByText('12 partitions · AVRO')).toBeInTheDocument();
 
     await userEvent.type(screen.getByPlaceholderText('Search topics'), 'cars');
 
-    expect(screen.queryByRole('radio', { name: /orders/ })).toBeNull();
-    expect(screen.getByRole('radio', { name: /cars-telemetry/ })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: ORDERS_RE })).toBeNull();
+    expect(screen.getByRole('radio', { name: CARS_TELEMETRY_RE })).toBeInTheDocument();
   });
 
   test('shows an empty message when no topic matches the search', async () => {
@@ -67,7 +73,7 @@ describe('SqlWizard', () => {
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole('radio', { name: /orders/ }));
+    await userEvent.click(screen.getByRole('radio', { name: ORDERS_RE }));
 
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
@@ -89,9 +95,9 @@ describe('SqlWizard', () => {
     await pickTopicAndContinue('orders');
     await userEvent.clear(screen.getByLabelText('Table name'));
     await userEvent.type(screen.getByLabelText('Table name'), 'Bad Name');
-    await userEvent.click(screen.getByRole('button', { name: /Create table/ }));
+    await userEvent.click(screen.getByRole('button', { name: CREATE_TABLE_RE }));
 
-    expect(screen.getByText(/Use lowercase letters, numbers and underscores/)).toBeInTheDocument();
+    expect(screen.getByText(TABLE_NAME_ERROR_RE)).toBeInTheDocument();
     expect(onCreate).not.toHaveBeenCalled();
   });
 
@@ -101,7 +107,7 @@ describe('SqlWizard', () => {
     await pickTopicAndContinue('orders');
     await userEvent.clear(screen.getByLabelText('Table name'));
     await userEvent.type(screen.getByLabelText('Table name'), 'orders_table');
-    await userEvent.click(screen.getByRole('button', { name: /Create table/ }));
+    await userEvent.click(screen.getByRole('button', { name: CREATE_TABLE_RE }));
 
     expect(onCreate).toHaveBeenCalledWith({ topic: 'orders', tableName: 'orders_table' });
   });
@@ -113,8 +119,8 @@ describe('SqlWizard', () => {
 
     await pickTopicAndContinue('cars-telemetry');
 
-    expect(screen.getByText(/Queries are/)).toBeInTheDocument();
-    expect(screen.getByText(/bridged/)).toBeInTheDocument();
+    expect(screen.getByText(QUERIES_ARE_RE)).toBeInTheDocument();
+    expect(screen.getByText(BRIDGED_RE)).toBeInTheDocument();
   });
 
   test('renders the creation error from the parent', async () => {

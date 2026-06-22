@@ -10,10 +10,9 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { SqlEditor } from './sql-editor';
-import type { SqlRole } from './sql-types';
 
 // CodeMirror's layout/measure loop doesn't run in jsdom; the editor surface is
 // exercised manually/e2e.
@@ -21,20 +20,37 @@ vi.mock('@uiw/react-codemirror', () => ({
   default: ({ value }: { value: string }) => <div data-testid="editor">{value}</div>,
 }));
 
-const ADMIN: SqlRole = 'admin';
 const QUERY_1_TAB = /Query 1/;
 const QUERY_2_TAB = /Query 2/;
 // Matches the Run button's accessible name including its platform Kbd hint.
 const RUN_BUTTON = /Run (Ctrl|⌘)/;
 
 const renderEditor = (onRun = vi.fn()) => {
-  render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} role={ADMIN} />);
+  render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} />);
   return onRun;
 };
 
+function createMemoryStorage(): Storage {
+  const values = new Map<string, string>();
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key: string) => values.get(key) ?? null,
+    key: (index: number) => [...values.keys()][index] ?? null,
+    removeItem: (key: string) => values.delete(key),
+    setItem: (key: string, value: string) => values.set(key, value),
+  };
+}
+
 describe('SqlEditor', () => {
   beforeEach(() => {
-    localStorage.clear();
+    vi.stubGlobal('localStorage', createMemoryStorage());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   test('renders the first query tab as the active tab', () => {

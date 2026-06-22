@@ -17,7 +17,13 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { isEmbedded } from 'config';
 import { Database, Maximize2, Minimize2 } from 'lucide-react';
-import { CatalogType, ExecuteQueryRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
+import {
+  CatalogType,
+  ExecuteQueryRequestSchema,
+  type Column as SqlColumn,
+  type Row as SqlRow,
+  type Value as SqlValue,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
@@ -31,7 +37,7 @@ import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { firstKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -52,22 +58,41 @@ const INITIAL_QUERY = 'SELECT name, type\nFROM system.catalogs\nORDER BY name;';
 
 let RUN_TOKEN = 0;
 
-// Oxla addresses catalog tables as `catalog=>table`. These match the table
-// ref(s) in a statement for the bridge-query indicator.
-const BRIDGE_REF_RE = /=>\s*"?[a-zA-Z0-9._-]+/g;
-const BRIDGE_TABLE_RE = /=>\s*"?([a-zA-Z0-9._-]+)/;
+function nextRunToken(): number {
+  RUN_TOKEN += 1;
+  return RUN_TOKEN;
+}
 
-// Best-effort: a single-table SELECT against a Redpanda-catalog topic resolves
-// to that topic, used to drive the bridge-query indicator. Returns null for
-// joins/multi-table/non-matching shapes; the lag query then self-gates
-// (non-Iceberg topics have no pending-lag series).
-const queriedBridgeTopic = (sql: string): string | null => {
-  const refs = sql.match(BRIDGE_REF_RE);
-  if (!refs || refs.length !== 1) {
-    return null;
+function columnDefFromProto(column: SqlColumn): ColumnDef {
+  return {
+    name: column.name,
+    type: column.type,
+    kind: columnKindForPgType(column.type),
+    short: column.type.toLowerCase(),
+    isArray: isArrayPgType(column.type),
+  };
+}
+
+function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
+  let cell: CellValue = value.nullValue ? null : (value.value ?? null);
+  // Arrays keep their raw string form — only scalar bools coerce.
+  if (cell !== null && column.kind === 'bool' && !column.isArray) {
+    cell = cell === 'true' || cell === 't';
   }
-  return sql.match(BRIDGE_TABLE_RE)?.[1] ?? null;
-};
+  return cell;
+}
+
+function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
+  const result: ResultRow = {};
+  row.values.forEach((value, index) => {
+    const column = columns[index];
+    if (!column) {
+      return;
+    }
+    result[column.name] = cellValueForColumn(value, column);
+  });
+  return result;
+}
 
 // Studio layout mode. 'boxed' caps the studio to the standard page width like
 // every other page; 'full' is edge-to-edge. Persisted per browser.
@@ -85,6 +110,7 @@ const STUDIO_SIDE_GAP = 40; // boxed inset from the centered max-width column
 const STUDIO_TOP_GAP = 16; // boxed gap between the breadcrumb header and the studio header; full mode has none
 const STUDIO_BOTTOM_GAP = 32;
 const STUDIO_EASE = '0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+const SCROLLABLE_OVERFLOW_RE = /(auto|scroll)/;
 // Root animates geometry only; the body card animates its own border/radius/shadow
 // via Tailwind (same easing/duration) so the studio header stays outside the box.
 const STUDIO_TRANSITION = `top ${STUDIO_EASE}, left ${STUDIO_EASE}, right ${STUDIO_EASE}, bottom ${STUDIO_EASE}`;
@@ -180,7 +206,7 @@ function setupOverlayLayout(
     let node: HTMLElement | null = el.parentElement;
     while (node && node !== document.body) {
       const c = getComputedStyle(node);
-      const scrollable = /(auto|scroll)/.test(c.overflowY + c.overflowX);
+      const scrollable = SCROLLABLE_OVERFLOW_RE.test(c.overflowY + c.overflowX);
       if (scrollable && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
         lock(node);
       }
@@ -265,7 +291,7 @@ function setupOverlayLayout(
 
 export type SqlWorkspaceProps = {
   /** Effective role of the caller. Defaults to viewer. */
-  role?: SqlRole;
+  sqlRole?: SqlRole;
 };
 
 // Studio layout mode + the callback ref that wires it to the imperative overlay.
@@ -321,7 +347,7 @@ function useStudioMode(): {
   return { attachOverlay, mode, toggleMode };
 }
 
-export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
+export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
   const [run, setRun] = useState<QueryRun>({ state: 'idle' });
   // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
   // is queried from the catalog tree; the lag itself comes from the
@@ -387,125 +413,14 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
     return { topic: bridgeTopic, translationLag, commitLag, totalLag: translationLag + commitLag };
   }, [bridgeTopic, bridgeTxLag.data, bridgeCommitLag.data]);
 
-  const doRun = useCallback(
-    (sql: string) => {
-      const token = ++RUN_TOKEN;
-      const kw = firstKeyword(sql);
-      // Drive the bridge indicator off the executed query (single tiered topic),
-      // not the catalog click — so it only shows for the topic actually queried.
-      const nextBridgeTopic = kw === 'SELECT' ? queriedBridgeTopic(sql) : null;
-      setBridgeTopic(nextBridgeTopic);
-      setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
-
-      if (kw !== 'SELECT') {
-        let title = 'Statement not allowed';
-        let message = `Only SELECT statements are supported in this release. Found "${kw || 'empty statement'}".`;
-        let hint: string | undefined;
-        let hintAction = false;
-        if (kw === 'CREATE') {
-          title = 'Use the wizard to create tables';
-          message = "CREATE TABLE isn't run from the editor in this release.";
-          hint = 'Creating a table from a topic?';
-          hintAction = true;
-        } else if (kw === 'GRANT' || kw === 'REVOKE') {
-          title = 'Manage access in Security';
-          message = 'Grants are managed in Security in this release.';
-        }
-        setRun({ state: 'error', token, title, message, hint, hintAction });
-        return;
-      }
-
-      setRun({ state: 'running', token });
-      const start = performance.now();
-      executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement: sql }), {
-        onSuccess: (res) => {
-          if (RUN_TOKEN !== token) {
-            return;
-          }
-          const columns: ColumnDef[] = res.columns.map((c) => ({
-            name: c.name,
-            type: c.type,
-            kind: columnKindForPgType(c.type),
-            short: c.type.toLowerCase(),
-            isArray: isArrayPgType(c.type),
-          }));
-          const rows: ResultRow[] = res.rows.map((r) => {
-            const row: ResultRow = {};
-            r.values.forEach((v, i) => {
-              const col = columns[i];
-              if (!col) {
-                return;
-              }
-              let cell: CellValue = v.nullValue ? null : (v.value ?? null);
-              // Arrays keep their raw string form — only scalar bools coerce.
-              if (cell !== null && col.kind === 'bool' && !col.isArray) {
-                cell = cell === 'true' || cell === 't';
-              }
-              row[col.name] = cell;
-            });
-            return row;
-          });
-          setRun({
-            state: 'success',
-            token,
-            columns,
-            rows,
-            totalRows: rows.length,
-            elapsedMs: Math.round(performance.now() - start),
-            truncated: res.truncated,
-          });
-        },
-        onError: (error) => {
-          if (RUN_TOKEN !== token) {
-            return;
-          }
-          setRun({ state: 'error', token, title: 'Query failed', message: error.message });
-        },
-      });
-    },
-    [executeQuery]
-  );
-
-  const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
-    // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
-    // operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`.
-    const ref = `${catalog.name}=>${table.name}`;
-    const sql = `SELECT *\nFROM ${ref}\nLIMIT 100;`;
-    editorRef.current?.setQuery(sql, table.name);
-  }, []);
-
-  // ---- Add-topic wizard ----
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardError, setWizardError] = useState<string | undefined>(undefined);
-  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
-  const invalidateSqlCatalog = useInvalidateSqlCatalog();
-
-  // Topics already exposed as tables in the Redpanda catalog — excluded from
-  // the wizard's topic picker so you can't create a duplicate.
+  // Redpanda-catalog tables, fetched up front so both the add-topic wizard and
+  // editor autocomplete (and the bridge indicator below) can resolve table refs.
   const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
   const { data: redpandaTablesData } = useListTablesQuery({ catalog: redpandaCatalogName });
-  const takenTopics = useMemo(() => {
-    const taken = new Set<string>();
-    for (const t of redpandaTablesData?.tables ?? []) {
-      if (t.topic) {
-        taken.add(t.topic);
-      }
-      taken.add(t.name);
-    }
-    return taken;
-  }, [redpandaTablesData]);
 
-  const wizardTopics = useMemo<WizardTopic[]>(
-    () =>
-      (topicsData?.topics ?? [])
-        .filter((t) => !takenTopics.has(t.topicName))
-        .map((t) => ({ name: t.topicName, partitions: t.partitionCount })),
-    [topicsData, takenTopics]
-  );
-
-  // Catalogs enriched with the Redpanda-catalog tables already fetched for the
-  // wizard above, so editor autocomplete can resolve table references — the
-  // bare catalog list seeds namespaces with empty `tables`.
+  // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
+  // autocomplete can resolve table references — the bare catalog list seeds
+  // namespaces with empty `tables`.
   const completionCatalogs = useMemo<Catalog[]>(
     () =>
       catalogs.map((catalog) => {
@@ -536,6 +451,99 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
         return { ...catalog, namespaces };
       }),
     [catalogs, redpandaCatalogName, redpandaTablesData]
+  );
+
+  const doRun = useCallback(
+    (sql: string) => {
+      const token = nextRunToken();
+      const kw = firstKeyword(sql);
+      // Drive the bridge indicator off the executed query (single tiered topic),
+      // not the catalog click — so it only shows for the topic actually queried.
+      const nextBridgeTopic = kw === 'SELECT' ? bridgeTopicForQuery(sql, completionCatalogs) : null;
+      setBridgeTopic(nextBridgeTopic);
+      setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
+
+      if (kw !== 'SELECT') {
+        let title = 'Statement not allowed';
+        let message = `Only SELECT statements are supported in this release. Found "${kw || 'empty statement'}".`;
+        let hint: string | undefined;
+        let hintAction = false;
+        if (kw === 'CREATE') {
+          title = 'Use the wizard to create tables';
+          message = "CREATE TABLE isn't run from the editor in this release.";
+          hint = 'Creating a table from a topic?';
+          hintAction = true;
+        } else if (kw === 'GRANT' || kw === 'REVOKE') {
+          title = 'Manage access in Security';
+          message = 'Grants are managed in Security in this release.';
+        }
+        setRun({ state: 'error', token, title, message, hint, hintAction });
+        return;
+      }
+
+      setRun({ state: 'running', token });
+      const start = performance.now();
+      executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement: sql }), {
+        onSuccess: (res) => {
+          if (RUN_TOKEN !== token) {
+            return;
+          }
+          const columns = res.columns.map(columnDefFromProto);
+          const rows = res.rows.map((row) => resultRowFromProto(row, columns));
+          setRun({
+            state: 'success',
+            token,
+            columns,
+            rows,
+            totalRows: rows.length,
+            elapsedMs: Math.round(performance.now() - start),
+            truncated: res.truncated,
+          });
+        },
+        onError: (error) => {
+          if (RUN_TOKEN !== token) {
+            return;
+          }
+          setRun({ state: 'error', token, title: 'Query failed', message: error.message });
+        },
+      });
+    },
+    [completionCatalogs, executeQuery]
+  );
+
+  const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
+    // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
+    // operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`.
+    const ref = `${catalog.name}=>${table.name}`;
+    const sql = `SELECT *\nFROM ${ref}\nLIMIT 100;`;
+    editorRef.current?.setQuery(sql, table.name);
+  }, []);
+
+  // ---- Add-topic wizard ----
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardError, setWizardError] = useState<string | undefined>(undefined);
+  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  const invalidateSqlCatalog = useInvalidateSqlCatalog();
+
+  // Topics already exposed as tables in the Redpanda catalog — excluded from
+  // the wizard's topic picker so you can't create a duplicate.
+  const takenTopics = useMemo(() => {
+    const taken = new Set<string>();
+    for (const t of redpandaTablesData?.tables ?? []) {
+      if (t.topic) {
+        taken.add(t.topic);
+      }
+      taken.add(t.name);
+    }
+    return taken;
+  }, [redpandaTablesData]);
+
+  const wizardTopics = useMemo<WizardTopic[]>(
+    () =>
+      (topicsData?.topics ?? [])
+        .filter((t) => !takenTopics.has(t.topicName))
+        .map((t) => ({ name: t.topicName, partitions: t.partitionCount })),
+    [topicsData, takenTopics]
   );
 
   const openWizard = useCallback(() => {
@@ -578,8 +586,8 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" variant={role === 'admin' ? 'info-inverted' : 'simple'}>
-            {role === 'admin' ? 'Admin' : 'Viewer · read-only'}
+          <Badge size="sm" variant={sqlRole === 'admin' ? 'info-inverted' : 'simple'}>
+            {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
           <Button
             aria-label={mode === 'boxed' ? 'Enter fullscreen' : 'Exit fullscreen'}
@@ -611,7 +619,7 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
             isLoading={isLoading}
             onAddTable={openWizard}
             onQueryTable={onQueryTable}
-            role={role}
+            sqlRole={sqlRole}
           />
         </div>
         <div className="flex min-h-0 min-w-0 flex-1">
@@ -630,17 +638,15 @@ export function SqlWorkspace({ role = 'viewer' }: SqlWorkspaceProps) {
                 defaultSize={42}
                 minSize={15}
               >
-                <SqlEditor
-                  catalogs={completionCatalogs}
-                  initialQuery={INITIAL_QUERY}
-                  onRun={(sql) => doRun(sql)}
-                  ref={editorRef}
-                  role={role}
-                />
+                <SqlEditor catalogs={completionCatalogs} initialQuery={INITIAL_QUERY} onRun={doRun} ref={editorRef} />
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize={20}>
-                <SqlResults role={role} run={run.state === 'success' ? { ...run, bridge } : run} />
+                <SqlResults
+                  onAddTable={openWizard}
+                  run={run.state === 'success' ? { ...run, bridge } : run}
+                  sqlRole={sqlRole}
+                />
               </ResizablePanel>
             </ResizablePanelGroup>
           )}

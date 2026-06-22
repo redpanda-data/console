@@ -11,7 +11,31 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { firstKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword } from './sql';
+import type { Catalog } from './sql-types';
+
+const CATALOGS: Catalog[] = [
+  {
+    name: 'default_redpanda_catalog',
+    displayLabel: 'Redpanda Catalog',
+    engine: 'redpanda',
+    namespaces: [
+      {
+        id: 'default_redpanda_catalog.public',
+        name: 'public',
+        tables: [
+          {
+            id: 'default_redpanda_catalog.public.cars_table',
+            name: 'cars_table',
+            namespaceName: 'public',
+            catalogName: 'default_redpanda_catalog',
+            topicName: 'cars-telemetry.v1',
+          },
+        ],
+      },
+    ],
+  },
+];
 
 describe('sql helpers', () => {
   test('firstKeyword skips comments and uppercases', () => {
@@ -21,5 +45,21 @@ describe('sql helpers', () => {
     expect(firstKeyword('  \n grant all on t to u')).toBe('GRANT');
     expect(firstKeyword('-- only a comment')).toBe('');
     expect(firstKeyword('')).toBe('');
+  });
+
+  test('bridgeTopicForQuery resolves a single Redpanda SQL table to its backing topic', () => {
+    expect(bridgeTopicForQuery('SELECT * FROM default_redpanda_catalog=>cars_table LIMIT 100', CATALOGS)).toBe(
+      'cars-telemetry.v1'
+    );
+  });
+
+  test('bridgeTopicForQuery ignores joins and non-Redpanda catalogs', () => {
+    expect(
+      bridgeTopicForQuery(
+        'SELECT * FROM default_redpanda_catalog=>cars_table c JOIN default_redpanda_catalog=>drivers d ON c.id = d.id',
+        CATALOGS
+      )
+    ).toBeNull();
+    expect(bridgeTopicForQuery('SELECT * FROM iceberg=>cars_table', CATALOGS)).toBeNull();
   });
 });

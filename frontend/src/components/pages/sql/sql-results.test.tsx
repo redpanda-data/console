@@ -11,7 +11,7 @@
 
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { SqlResults } from './sql-results';
 import type { QueryRunSuccess, SqlRole } from './sql-types';
@@ -78,18 +78,61 @@ const run: QueryRunSuccess = {
 
 describe('SqlResults cell clamping', () => {
   test('short values render as plain text without a click target', () => {
-    render(<SqlResults role={viewer} run={run} />);
+    render(<SqlResults run={run} sqlRole={viewer} />);
     const short = screen.getByText('row-1');
     expect(short.closest('button')).toBeNull();
   });
 
   test('long values truncate and open the full value in a popover on click', async () => {
-    render(<SqlResults role={viewer} run={run} />);
+    render(<SqlResults run={run} sqlRole={viewer} />);
     const trigger = screen.getByRole('button', { name: LONG_VALUE });
     expect(trigger.className).toContain('truncate');
 
     await userEvent.click(trigger);
     const occurrences = await screen.findAllByText(LONG_VALUE);
     expect(occurrences.length).toBeGreaterThan(1);
+  });
+});
+
+describe('SqlResults create-table hint', () => {
+  test('admin create errors can open the add-topic wizard', async () => {
+    const onAddTable = vi.fn();
+    render(
+      <SqlResults
+        onAddTable={onAddTable}
+        run={{
+          state: 'error',
+          token: 2,
+          title: 'Use the wizard to create tables',
+          message: "CREATE TABLE isn't run from the editor in this release.",
+          hint: 'Creating a table from a topic?',
+          hintAction: true,
+        }}
+        sqlRole="admin"
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add a topic to SQL' }));
+
+    expect(onAddTable).toHaveBeenCalledOnce();
+  });
+
+  test('viewer create errors do not show the add-topic action', () => {
+    render(
+      <SqlResults
+        onAddTable={vi.fn()}
+        run={{
+          state: 'error',
+          token: 2,
+          title: 'Use the wizard to create tables',
+          message: "CREATE TABLE isn't run from the editor in this release.",
+          hint: 'Creating a table from a topic?',
+          hintAction: true,
+        }}
+        sqlRole="viewer"
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Add a topic to SQL' })).toBeNull();
   });
 });

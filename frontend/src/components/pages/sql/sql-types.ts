@@ -50,8 +50,8 @@ export type TableRef = {
   columns?: ColumnDef[];
 };
 
-// Logical kind derived from the Postgres type name, used for icons, alignment,
-// sorting and cell rendering.
+// Logical kind derived from the Postgres type name, used for alignment and
+// cell rendering.
 export type ColumnKind = 'num' | 'str' | 'bool' | 'time' | 'json';
 
 export type ColumnDef = {
@@ -114,6 +114,8 @@ export type SqlRole = 'admin' | 'viewer';
 // Unwraps one level of array syntax — "TEXT[]", "_TEXT" (pg wire naming), or
 // "ARRAY<TEXT>"/"LIST<TEXT>" (Iceberg) — returning the element type, or null
 // when the type is not an array.
+const ARRAY_WRAPPER_RE = /^(?:ARRAY|LIST)\s*<(.+)>$/i;
+
 export function arrayElementPgType(pgType: string): string | null {
   const t = pgType.trim();
   if (t.endsWith('[]')) {
@@ -122,7 +124,7 @@ export function arrayElementPgType(pgType: string): string | null {
   if (t.startsWith('_')) {
     return t.slice(1);
   }
-  const wrapped = /^(?:ARRAY|LIST)\s*<(.+)>$/i.exec(t);
+  const wrapped = ARRAY_WRAPPER_RE.exec(t);
   return wrapped ? wrapped[1] : null;
 }
 
