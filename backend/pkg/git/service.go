@@ -113,6 +113,13 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 		URL:           c.Cfg.Repository.URL,
 		Auth:          c.auth,
 		ReferenceName: referenceName,
+		// Console only ever reads the current revision of the tracked files, so
+		// we fetch a shallow, single-branch snapshot without tags. This avoids
+		// materializing the repository's full history in the in-memory object
+		// store, which for large/active repositories can consume many GB of RAM.
+		SingleBranch: true,
+		Depth:        1,
+		Tags:         git.NoTags,
 	}
 
 	if c.Cfg.CloneSubmodules {
@@ -144,18 +151,16 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 	return nil
 }
 
-// SyncRepo periodically pulls the repository contents to ensure it's always up to date. When changes appear
-// the file cache will be updated. This function will periodically pull the repository until the passed context
-// is done.
+// SyncRepo periodically refreshes the repository contents to ensure they are always up to date. When changes
+// appear the file cache will be updated. This function periodically refreshes the repository until a termination
+// signal is received.
+//
+// Because the repository is cloned shallowly into an in-memory store (see CloneRepository), refreshing is done
+// by re-cloning rather than pulling: a re-clone keeps the in-memory object store bounded to a single revision
+// (the previous store is released and garbage collected) and avoids go-git's unreliable shallow-pull behavior.
 func (c *Service) SyncRepo() {
 	if c.Cfg.RefreshInterval == 0 {
 		c.logger.Info("refresh interval for sync is set to 0 (disabled)")
-		return
-	}
-
-	tree, err := c.repo.Worktree()
-	if err != nil {
-		c.logger.Error("failed to get work tree from repository. stopping git sync", slog.Any("error", err))
 		return
 	}
 
@@ -170,32 +175,12 @@ func (c *Service) SyncRepo() {
 			c.logger.Info("stopped sync", slog.String("reason", "received signal"))
 			return
 		case <-ticker.C:
-			var referenceName plumbing.ReferenceName
-			if c.Cfg.Repository.Branch != "" {
-				referenceName = plumbing.NewBranchReferenceName(c.Cfg.Repository.Branch)
-			}
-			err := tree.Pull(&git.PullOptions{Auth: c.auth, ReferenceName: referenceName})
-			if err != nil {
-				if errors.Is(err, git.NoErrAlreadyUpToDate) {
-					continue
-				}
-				c.logger.Error("pulling the repo has failed", slog.Any("error", err))
+			// Re-clone the latest shallow snapshot. CloneRepository rebuilds the in-memory filesystem and
+			// object store, updates the file cache, and fires OnFilesUpdatedHook on success. On failure it
+			// leaves the previously cached file contents intact, so we keep serving the last good revision.
+			if err := c.CloneRepository(context.Background()); err != nil {
+				c.logger.Error("refreshing the repo has failed", slog.Any("error", err))
 				continue
-			}
-
-			// Update cache with new markdowns
-			empty := make(map[string]filesystem.File)
-			files, err := c.readFiles(c.memFs, empty, c.Cfg.Repository.BaseDirectory, c.Cfg.Repository.MaxDepth)
-			if err != nil {
-				c.logger.Error("failed to read files after pulling", slog.Any("error", err))
-				continue
-			}
-			c.setFileContents(files)
-			c.logger.Info("successfully pulled git repository",
-				slog.Int("read_files", len(files)))
-
-			if c.OnFilesUpdatedHook != nil {
-				c.OnFilesUpdatedHook()
 			}
 		}
 	}
