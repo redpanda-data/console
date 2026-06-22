@@ -159,8 +159,8 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 // by re-cloning rather than pulling: a re-clone keeps the in-memory object store bounded to a single revision
 // (the previous store is released and garbage collected) and avoids go-git's unreliable shallow-pull behavior.
 func (c *Service) SyncRepo() {
-	if c.Cfg.RefreshInterval == 0 {
-		c.logger.Info("refresh interval for sync is set to 0 (disabled)")
+	if c.Cfg.RefreshInterval <= 0 {
+		c.logger.Info("periodic git refresh disabled (refresh interval <= 0); repository was cloned once at startup")
 		return
 	}
 
