@@ -31,6 +31,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
+import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
 export type RouterContext = {
@@ -87,13 +88,15 @@ function EmbeddedLayout() {
 
 function AppContent() {
   const matches = useMatches();
-  const isFullscreen = matches.some((m) => (m.staticData as { fullscreen?: boolean }).fullscreen);
+  const { pathname } = useLocation();
+  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
 
   if (isFullscreen) {
     return (
       <div id="mainLayout">
         <TooltipProvider>
           <ModalContainer />
+          {!isEmbedded() && <AppPageHeader breadcrumbOnly />}
           <ErrorDisplay>
             <Outlet />
           </ErrorDisplay>

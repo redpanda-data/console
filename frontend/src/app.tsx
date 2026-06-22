@@ -42,6 +42,7 @@ import { builderCustomComponents } from 'components/builder-io/builder-custom-co
 import { BUILDER_API_KEY } from 'components/constants';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
+import type { LucideIcon } from 'lucide-react';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 import { useEffect } from 'react';
@@ -97,6 +98,16 @@ declare module '@tanstack/react-router' {
     documentName?: string;
     content?: string;
     score?: number;
+  }
+
+  // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
+  interface StaticDataRouteOption {
+    /** Route title shown in the page header/breadcrumbs. */
+    title?: string;
+    /** Lucide icon for the route's sidebar entry. */
+    icon?: LucideIcon;
+    /** Render the route with minimal chrome (no page header/footer/padding). */
+    fullscreen?: boolean;
   }
 }
 
