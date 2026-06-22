@@ -348,12 +348,7 @@ function TableRow({ catalog, table }: TableRowProps) {
           <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
           {isIceberg || tiered ? (
-            <Badge
-              className="uppercase tracking-wide"
-              size="sm"
-              title={tiered ? 'Iceberg-tiered · bridge queried' : undefined}
-              variant="info-inverted"
-            >
+            <Badge size="sm" title={tiered ? 'Iceberg-tiered · bridge queried' : undefined} variant="info-inverted">
               Iceberg
             </Badge>
           ) : null}

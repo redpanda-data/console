@@ -86,6 +86,10 @@ describe('matchesFullscreenPath', () => {
     expect(matchesFullscreenPath('/mysql', paths)).toBe(false);
   });
 
+  test('does not match an interior segment that merely happens to be named sql', () => {
+    expect(matchesFullscreenPath('/clusters/sql/overview', paths)).toBe(false);
+  });
+
   test('does not match unrelated paths', () => {
     expect(matchesFullscreenPath('/topics', paths)).toBe(false);
   });

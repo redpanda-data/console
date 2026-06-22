@@ -16,9 +16,14 @@ import { arrayElementPgType, columnKindForPgType, isArrayPgType } from './sql-ty
 describe('columnKindForPgType', () => {
   test.each([
     ['INT8', 'num'],
+    ['BIGINT', 'num'],
     ['NUMERIC(10,2)', 'num'],
     ['BOOL', 'bool'],
     ['TIMESTAMPTZ', 'time'],
+    ['TIMESTAMP', 'time'],
+    // INTERVAL/POINT contain the INT substring but must not read as numeric.
+    ['INTERVAL', 'time'],
+    ['POINT', 'str'],
     ['JSON', 'json'],
     ['JSONB', 'json'],
     ['TEXT', 'str'],

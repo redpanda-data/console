@@ -67,7 +67,7 @@ function suggestTableName(topicName: string): string {
   return TABLE_NAME_RE.test(slug) ? slug : `_${slug}`;
 }
 
-function createTableSql(tableName: string, topic: string): string {
+export function createTableSql(tableName: string, topic: string): string {
   return `CREATE TABLE ${CATALOG_NAME}=>${tableName || 'my_table'}\n  WITH (topic='${topic}');`;
 }
 

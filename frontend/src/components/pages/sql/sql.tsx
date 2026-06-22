@@ -27,19 +27,42 @@ export function firstKeyword(stmt: string): string {
   return word ? word[0].toUpperCase() : '';
 }
 
-// Read statements allowed in this release: plain SELECT and CTEs (WITH … SELECT).
-const READ_KEYWORDS = new Set(['SELECT', 'WITH']);
+// Statements that mutate state or manage access. These are blocked in the
+// editor in this release — the server is the authority on what can run; this is
+// a UX guard rail, not a security control. Everything else (SELECT, WITH/CTE,
+// EXPLAIN, SHOW, …) is read-shaped and allowed through.
+const WRITE_KEYWORDS = new Set([
+  'INSERT',
+  'UPDATE',
+  'DELETE',
+  'MERGE',
+  'UPSERT',
+  'REPLACE',
+  'CREATE',
+  'DROP',
+  'ALTER',
+  'TRUNCATE',
+  'RENAME',
+  'COMMENT',
+  'GRANT',
+  'REVOKE',
+]);
 
-export function isReadQuery(stmt: string): boolean {
-  return READ_KEYWORDS.has(firstKeyword(stmt));
+export function isWriteKeyword(stmt: string): boolean {
+  return WRITE_KEYWORDS.has(firstKeyword(stmt));
 }
+
+// Strip line/block comments and single-quoted string literals so `=>` inside
+// them isn't mistaken for a catalog reference. Leaves the structural SQL intact.
+const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/g;
 
 // Oxla addresses catalog tables as `catalog=>table`. A bridge indicator is
 // only meaningful for a single Redpanda-catalog table reference.
 const BRIDGE_REF_RE = /([A-Za-z_][\w$]*)\s*=>\s*"?([a-zA-Z0-9._-]+)/g;
 
 export function bridgeTopicForQuery(stmt: string, catalogs: Catalog[]): string | null {
-  const matches = [...stmt.matchAll(BRIDGE_REF_RE)];
+  const cleaned = stmt.replace(SQL_NOISE_RE, ' ');
+  const matches = [...cleaned.matchAll(BRIDGE_REF_RE)];
   if (matches.length !== 1) {
     return null;
   }

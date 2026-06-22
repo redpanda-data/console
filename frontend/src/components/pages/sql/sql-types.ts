@@ -142,14 +142,15 @@ export function columnKindForPgType(pgType: string): ColumnKind {
     return columnKindForPgType(element);
   }
   const t = pgType.toUpperCase();
+  // Temporal first: INTERVAL would otherwise match the INT substring in NUMERIC.
+  if (TEMPORAL_TYPE.test(t)) {
+    return 'time';
+  }
   if (NUMERIC_TYPE.test(t)) {
     return 'num';
   }
   if (BOOL_TYPE.test(t)) {
     return 'bool';
-  }
-  if (TEMPORAL_TYPE.test(t)) {
-    return 'time';
   }
   if (t.includes('JSON')) {
     return 'json';
@@ -157,6 +158,8 @@ export function columnKindForPgType(pgType: string): ColumnKind {
   return 'str';
 }
 
-const NUMERIC_TYPE = /(INT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/;
+// Word-boundary anchored so geometric/temporal names that merely contain a
+// numeric token (POINT → INT, INTERVAL → INT) don't get misread as numeric.
+const NUMERIC_TYPE = /\b(?:INT|INTEGER|SMALLINT|BIGINT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/;
 const BOOL_TYPE = /BOOL/;
 const TEMPORAL_TYPE = /(TIMESTAMP|DATE|TIME|INTERVAL)/;

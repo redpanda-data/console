@@ -65,19 +65,14 @@ export function collectFullscreenPaths(node: unknown): string[] {
 }
 
 /**
- * True when `pathname` is (or is nested under) one of `paths`. Matches the path
- * as a `/`-bounded segment so it tolerates host prefixes when embedded — e.g.
- * Cloud UI's `/clusters/<id>/sql` — while not matching `/mysql` or `/sqlx`.
+ * True when `pathname` is the fullscreen route itself, a route nested under it
+ * (standalone `/sql/query/123`), or the same trailing segment behind a host
+ * prefix (embedded Cloud UI `/clusters/<id>/sql`). Anchoring to the start or the
+ * trailing segment avoids matching an interior segment that merely happens to be
+ * named `sql` (e.g. `/clusters/sql/overview`), and never matches `/mysql`/`/sqlx`.
  */
 export function matchesFullscreenPath(pathname: string, paths: string[]): boolean {
-  return paths.some((path) => {
-    const index = pathname.indexOf(path);
-    if (index === -1) {
-      return false;
-    }
-    const charAfter = pathname.charAt(index + path.length);
-    return charAfter === '' || charAfter === '/';
-  });
+  return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`) || pathname.endsWith(path));
 }
 
 // Computed lazily, not at module load: `__root.tsx` imports this module and is

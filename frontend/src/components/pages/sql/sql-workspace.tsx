@@ -37,7 +37,7 @@ import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { bridgeTopicForQuery, firstKeyword, isReadQuery } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isWriteKeyword } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -52,16 +52,9 @@ import {
   type SqlRole,
   type TableRef,
 } from './sql-types';
-import { SqlWizard, type WizardTopic } from './sql-wizard';
+import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
 
 const INITIAL_QUERY = 'SELECT name, type\nFROM system.catalogs\nORDER BY name;';
-
-let RUN_TOKEN = 0;
-
-function nextRunToken(): number {
-  RUN_TOKEN += 1;
-  return RUN_TOKEN;
-}
 
 function columnDefFromProto(column: SqlColumn): ColumnDef {
   return {
@@ -75,9 +68,11 @@ function columnDefFromProto(column: SqlColumn): ColumnDef {
 
 function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
   let cell: CellValue = value.nullValue ? null : (value.value ?? null);
-  // Arrays keep their raw string form — only scalar bools coerce.
+  // Arrays keep their raw string form — only scalar bools coerce. Case-insensitive
+  // so 'TRUE'/'T'/'True' don't slip through as a falsey render.
   if (cell !== null && column.kind === 'bool' && !column.isArray) {
-    cell = cell === 'true' || cell === 't';
+    const v = cell.toLowerCase();
+    cell = v === 'true' || v === 't';
   }
   return cell;
 }
@@ -236,9 +231,14 @@ function setupOverlayLayout(
     if (isVisible() && !active) {
       layout();
       lockAll();
+      // Re-assert the host expand attr on show — embedded cloud-ui keeps Console
+      // mounted+hidden, so this is the lifecycle that owns the attribute.
+      setPageExpanded(getMode() === 'full');
       active = true;
     } else if (!isVisible() && active) {
       unlockAll();
+      // Clear it on hide so other cloud-ui pages don't render stuck full-width.
+      setPageExpanded(false);
       active = false;
     }
   };
@@ -358,6 +358,9 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
   // snapshot, and reflects the lag at that query's time.
   const [bridgeRunAt, setBridgeRunAt] = useState<number | null>(null);
   const editorRef = useRef<SqlEditorHandle>(null);
+  // Per-instance monotonic run token: drops out-of-order responses without
+  // sharing state across concurrently-mounted SqlWorkspace instances.
+  const latestRunToken = useRef(0);
   const { mode, toggleMode, attachOverlay } = useStudioMode();
 
   const { data: catalogsData, isLoading } = useListCatalogsQuery();
@@ -455,18 +458,20 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
 
   const doRun = useCallback(
     (sql: string) => {
-      const token = nextRunToken();
+      const token = (latestRunToken.current += 1);
       const kw = firstKeyword(sql);
-      const isRead = isReadQuery(sql);
+      // Block writes/DDL/DCL on the first keyword; read-shaped statements
+      // (SELECT/WITH/EXPLAIN/SHOW/…) pass and the server rejects what it can't run.
+      const blocked = !kw || isWriteKeyword(sql);
       // Drive the bridge indicator off the executed query (single tiered topic),
       // not the catalog click — so it only shows for the topic actually queried.
-      const nextBridgeTopic = isRead ? bridgeTopicForQuery(sql, completionCatalogs) : null;
+      const nextBridgeTopic = blocked ? null : bridgeTopicForQuery(sql, completionCatalogs);
       setBridgeTopic(nextBridgeTopic);
       setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
 
-      if (!isRead) {
+      if (blocked) {
         let title = 'Statement not allowed';
-        let message = `Only read queries (SELECT, WITH) are supported in this release. Found "${kw || 'empty statement'}".`;
+        let message = `Only read queries are supported in this release. Found "${kw || 'empty statement'}".`;
         let hint: string | undefined;
         let hintAction = false;
         if (kw === 'CREATE') {
@@ -486,7 +491,7 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
       const start = performance.now();
       executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement: sql }), {
         onSuccess: (res) => {
-          if (RUN_TOKEN !== token) {
+          if (latestRunToken.current !== token) {
             return;
           }
           const columns = res.columns.map(columnDefFromProto);
@@ -502,7 +507,7 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
           });
         },
         onError: (error) => {
-          if (RUN_TOKEN !== token) {
+          if (latestRunToken.current !== token) {
             return;
           }
           setRun({ state: 'error', token, title: 'Query failed', message: error.message });
@@ -560,7 +565,9 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
   const onCreateTable = useCallback(
     ({ topic, tableName }: { topic: string; tableName: string }) => {
       setWizardError(undefined);
-      const statement = `CREATE TABLE default_redpanda_catalog=>${tableName}\n  WITH (topic='${topic}');`;
+      // Shares one builder with the wizard's "this will run" preview so the two
+      // can't drift.
+      const statement = createTableSql(tableName, topic);
       executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement }), {
         onSuccess: async () => {
           await invalidateSqlCatalog();
