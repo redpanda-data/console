@@ -291,13 +291,10 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       // so the grid always fills horizontally.
       width: 'minmax(max-content, 1fr)',
       minWidth: 96,
+      // Headers stay left-aligned for every kind; only numeric cell values
+      // right-align (so digits line up) — keep the column name readable.
       renderHeaderCell: () => (
-        <span
-          className={cn(
-            'flex h-full flex-col justify-center gap-[3px] font-sans leading-none',
-            alignRight ? 'items-end' : 'items-start'
-          )}
-        >
+        <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
           <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
           <span className="inline-flex items-center gap-1 font-normal text-caption-sm text-muted-foreground uppercase tracking-wide">
             {c.short}
@@ -306,7 +303,6 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       ),
       renderCell: ({ row }) => <CellContent kind={c.kind} name={c.name} typeLabel={c.short} v={row[c.name]} />,
       cellClass: cn('font-mono text-xs', alignRight && 'text-right'),
-      headerCellClass: alignRight ? 'text-right' : undefined,
     };
   });
   return [rowNum, ...dataCols];
