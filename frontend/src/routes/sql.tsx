@@ -12,7 +12,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { SqlWorkspace } from 'components/pages/sql/sql-workspace';
 import { Database } from 'lucide-react';
-import { Feature, isSupported } from 'state/supported-features';
+import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 
 // allow: error-boundary [pure redirect in beforeLoad, no data fetching]
 export const Route = createFileRoute('/sql')({
@@ -21,11 +21,13 @@ export const Route = createFileRoute('/sql')({
     icon: Database,
     fullscreen: true,
   },
-  // Gate direct navigation to /sql on the same capability check as the sidebar:
-  // the SQLService is reported as supported only when SQL is enabled on the
-  // backend (cfg.API.SQL.Enabled), for both embedded and self-hosted.
+  // Gate direct navigation to /sql on the same capability check as the sidebar.
+  // isSupported() returns false both when SQLService is unsupported and when the
+  // endpoint list hasn't loaded yet, so redirecting on the latter bounces a cold
+  // load off /sql before the answer is known. Only redirect once it's loaded.
   beforeLoad: () => {
-    if (!isSupported(Feature.SQLService)) {
+    const { endpointCompatibility } = useSupportedFeaturesStore.getState();
+    if (endpointCompatibility !== null && !isSupported(Feature.SQLService)) {
       throw redirect({ to: '/', replace: true });
     }
   },

@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
@@ -24,7 +25,7 @@ import {
   type Row as SqlRow,
   type Value as SqlValue,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
   useExecuteQueryMutation,
@@ -34,6 +35,7 @@ import {
 } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
+import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
@@ -348,6 +350,16 @@ function useStudioMode(): {
 }
 
 export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
+  const navigate = useNavigate();
+  // The route guard skips the redirect while endpoint compatibility is still
+  // loading; once it resolves, bounce clusters that genuinely lack SQLService.
+  const endpointsLoaded = useSupportedFeaturesStore((s) => s.endpointCompatibility !== null);
+  useEffect(() => {
+    if (endpointsLoaded && !isSupported(Feature.SQLService)) {
+      navigate({ to: '/', replace: true });
+    }
+  }, [endpointsLoaded, navigate]);
+
   const [run, setRun] = useState<QueryRun>({ state: 'idle' });
   // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
   // is queried from the catalog tree; the lag itself comes from the
