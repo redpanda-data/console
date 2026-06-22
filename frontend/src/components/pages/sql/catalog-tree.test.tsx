@@ -68,14 +68,13 @@ describe('CatalogTree', () => {
     expect(screen.queryByRole('treeitem', { name: /orders/ })).toBeNull();
   });
 
-  test('search filters tables and shows the matched count', async () => {
+  test('search filters tables', async () => {
     render(<CatalogTree catalogs={[catalog()]} onQueryTable={vi.fn()} role="viewer" />);
 
     await userEvent.type(screen.getByPlaceholderText('Search tables'), 'ord');
 
     expect(screen.getByRole('treeitem', { name: /orders/ })).toBeInTheDocument();
     expect(screen.queryByRole('treeitem', { name: /users/ })).toBeNull();
-    expect(screen.getByText('1/2')).toBeInTheDocument();
   });
 
   test('clicking the query action calls onQueryTable with the catalog and table', async () => {
@@ -91,12 +90,15 @@ describe('CatalogTree', () => {
   });
 
   test('expanding a table lists its columns with type labels', async () => {
+    // Types arrive lower-cased from the backend; composite columns as "json"
+    // with their nested fields parsed server-side.
     vi.mocked(useDescribeTableQuery).mockReturnValue({
       data: {
         columns: [
-          { name: 'id', type: 'INT8' },
-          { name: 'payload', type: 'JSONB' },
-          { name: 'tags', type: 'TEXT[]' },
+          { name: 'id', type: 'bigint' },
+          { name: 'payload', type: 'jsonb' },
+          { name: 'tags', type: 'text[]' },
+          { name: 'customer', type: 'json', fields: [{ name: 'street', type: 'text' }] },
         ],
       },
       isLoading: false,
@@ -108,6 +110,13 @@ describe('CatalogTree', () => {
     expect(screen.getByText('payload')).toBeInTheDocument();
     expect(screen.getByText('jsonb')).toBeInTheDocument();
     expect(screen.getByText('text[]')).toBeInTheDocument();
+
+    // Composite column shows "json" and expands into its nested fields.
+    const customerRow = screen.getByRole('button', { name: /customer/ });
+    expect(customerRow).toBeInTheDocument();
+    expect(screen.queryByText('street')).not.toBeInTheDocument();
+    await userEvent.click(customerRow);
+    expect(screen.getByText('street')).toBeInTheDocument();
   });
 
   test('locked tables are disabled and show no query action', () => {

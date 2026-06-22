@@ -130,21 +130,23 @@ export function isArrayPgType(pgType: string): boolean {
   return arrayElementPgType(pgType) !== null;
 }
 
-// Maps a Postgres type name to a display kind. Arrays map to their element
-// kind. Conservative defaults: anything unrecognized is treated as a string.
+// Maps a Postgres type name to a display kind. Composite columns arrive as the
+// literal "json"/"json[]" (the backend parses structure into Column.fields), so
+// they fall through to the JSON branch. Arrays map to their element kind;
+// anything unrecognized defaults to a string.
 export function columnKindForPgType(pgType: string): ColumnKind {
   const element = arrayElementPgType(pgType);
   if (element !== null) {
     return columnKindForPgType(element);
   }
   const t = pgType.toUpperCase();
-  if (/(INT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/.test(t)) {
+  if (NUMERIC_TYPE.test(t)) {
     return 'num';
   }
-  if (/BOOL/.test(t)) {
+  if (BOOL_TYPE.test(t)) {
     return 'bool';
   }
-  if (/(TIMESTAMP|DATE|TIME|INTERVAL)/.test(t)) {
+  if (TEMPORAL_TYPE.test(t)) {
     return 'time';
   }
   if (t.includes('JSON')) {
@@ -152,3 +154,7 @@ export function columnKindForPgType(pgType: string): ColumnKind {
   }
   return 'str';
 }
+
+const NUMERIC_TYPE = /(INT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/;
+const BOOL_TYPE = /BOOL/;
+const TEMPORAL_TYPE = /(TIMESTAMP|DATE|TIME|INTERVAL)/;

@@ -33,13 +33,13 @@ import {
   ToggleLeft,
   Type,
 } from 'lucide-react';
-import { createContext, type KeyboardEvent, type ReactNode, useContext, useState } from 'react';
+import type { Column } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
+import { createContext, Fragment, type KeyboardEvent, type ReactNode, useContext, useState } from 'react';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 
 import {
   type Catalog,
   type CatalogEngine,
-  type ColumnDef,
   type ColumnKind,
   columnKindForPgType,
   isArrayPgType,
@@ -218,37 +218,91 @@ type ColumnListProps = {
   tableName: string;
 };
 
+// Recursively renders column fields. Struct (json) fields get an expand chevron
+// that reveals their nested fields, indented one level per depth.
+function FieldRows({
+  fields,
+  depth,
+  pathPrefix,
+  open,
+  toggle,
+}: {
+  fields: Column[];
+  depth: number;
+  pathPrefix: string;
+  open: Record<string, boolean>;
+  toggle: (path: string) => void;
+}) {
+  return (
+    <>
+      {fields.map((field) => {
+        const path = `${pathPrefix}/${field.name}`;
+        const KindIcon = COL_KIND_ICON[columnKindForPgType(field.type)];
+        const nested = field.fields ?? [];
+        const hasNested = nested.length > 0;
+        const isOpen = Boolean(open[path]);
+        const FieldChevron = isOpen ? ChevronDown : ChevronRight;
+        const rowClass = 'flex w-full items-center gap-1.5 px-2 py-0.75 text-foreground text-xs';
+        const indent = { paddingLeft: `${depth * 12}px` };
+        const body = (
+          <>
+            {hasNested ? (
+              <FieldChevron className="shrink-0 text-disabled" size={11} />
+            ) : (
+              <span aria-hidden="true" className="shrink-0" style={{ width: '11px' }} />
+            )}
+            <span className="inline-flex shrink-0 items-center gap-px text-muted-foreground">
+              {isArrayPgType(field.type) && <Brackets size={11} />}
+              <KindIcon size={11} />
+            </span>
+            <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono">
+              {field.name}
+            </span>
+            <span className="shrink-0 whitespace-nowrap font-mono text-caption-sm text-muted-foreground tracking-wide">
+              {field.type}
+            </span>
+          </>
+        );
+        return (
+          <Fragment key={path}>
+            {hasNested ? (
+              <button
+                aria-expanded={isOpen}
+                className={cn(rowClass, 'cursor-pointer border-0 bg-transparent')}
+                onClick={() => toggle(path)}
+                style={indent}
+                type="button"
+              >
+                {body}
+              </button>
+            ) : (
+              <div className={rowClass} style={indent}>
+                {body}
+              </div>
+            )}
+            {hasNested && isOpen && (
+              <FieldRows depth={depth + 1} fields={nested} open={open} pathPrefix={path} toggle={toggle} />
+            )}
+          </Fragment>
+        );
+      })}
+    </>
+  );
+}
+
 // Fetches columns for a single expanded table via DescribeTable.
 function ColumnList({ catalogName, tableName }: ColumnListProps) {
   const { data, isLoading } = useDescribeTableQuery({ catalog: catalogName, name: tableName });
-
-  const columns: ColumnDef[] = (data?.columns ?? []).map((c) => ({
-    name: c.name,
-    type: c.type,
-    kind: columnKindForPgType(c.type),
-    short: c.type.toLowerCase(),
-    isArray: isArrayPgType(c.type),
-  }));
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const toggle = (path: string) => setOpen((s) => ({ ...s, [path]: !s[path] }));
 
   let content: ReactNode;
   if (isLoading) {
     content = <LoadingRow label="Loading columns…" />;
-  } else if (columns.length === 0) {
-    content = <EmptyNote>No columns</EmptyNote>;
+  } else if (data?.columns?.length) {
+    content = <FieldRows depth={0} fields={data.columns} open={open} pathPrefix="" toggle={toggle} />;
   } else {
-    content = columns.map((col) => {
-      const KindIcon = COL_KIND_ICON[col.kind];
-      return (
-        <div className="flex items-center gap-1.75 px-2 py-0.75 text-foreground text-xs" key={col.name}>
-          <span className="inline-flex shrink-0 items-center gap-px text-muted-foreground">
-            {col.isArray && <Brackets size={11} />}
-            <KindIcon size={11} />
-          </span>
-          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono">{col.name}</span>
-          <span className="font-mono text-caption-sm text-muted-foreground tracking-wide">{col.short}</span>
-        </div>
-      );
-    });
+    content = <EmptyNote>No columns</EmptyNote>;
   }
 
   return (
@@ -369,8 +423,6 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
   // admin-gating is a follow-up once the session role is plumbed through.
   const showAddTopic = catalog.engine === 'redpanda' && !q && onAddTable;
 
-  const countLabel =
-    q && matched.length !== allTables.length ? `${matched.length}/${allTables.length}` : allTables.length;
   const NsChevron = isOpen ? ChevronDown : ChevronRight;
 
   return (
@@ -386,9 +438,6 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
         <NsChevron className="shrink-0 text-disabled" size={14} />
         <GitBranch className="text-muted-foreground" size={13} />
         <span className={LABEL}>{namespace.name}</span>
-        <Badge className="rounded-full text-muted-foreground" size="sm" variant="neutral-inverted">
-          {countLabel}
-        </Badge>
       </button>
       {isOpen && (
         <div className="ml-2.5" role="group">
@@ -396,7 +445,7 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
           {visible.map((t) => (
             <TableRow catalog={catalog} key={t.id} table={t} />
           ))}
-          {!isLoading && matched.length === 0 && <EmptyNote>No tables</EmptyNote>}
+          {!isLoading && matched.length === 0 && !showAddTopic && <EmptyNote>No tables</EmptyNote>}
           {paginate && remaining > 0 && (
             <Button
               className="w-full justify-start px-2"
@@ -438,11 +487,11 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
   const { data, isLoading } = useListTablesQuery({ catalog: catalog.name }, { enabled });
 
   const fetchedTables: TableRef[] = (data?.tables ?? []).map((t) => ({
-    id: `${catalog.name}.${t.namespaceName}.${t.name}`,
+    id: `${catalog.name}.${t.catalogNamespace}.${t.name}`,
     name: t.name,
-    namespaceName: t.namespaceName,
+    namespaceName: t.catalogNamespace,
     catalogName: catalog.name,
-    topicName: t.topicName,
+    topicName: t.topic,
   }));
 
   const CatChevron = isCatalogOpen ? ChevronDown : ChevronRight;

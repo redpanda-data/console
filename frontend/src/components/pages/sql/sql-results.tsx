@@ -20,8 +20,6 @@ import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
-  Activity,
-  Box,
   Braces,
   Brackets,
   Calendar,
@@ -129,58 +127,21 @@ function PendingStat({ count, label }: { count: number; label: string }) {
   );
 }
 
-// Horizontal timeline: Iceberg history meshed with the live topic tail at the
-// watermark. Segment widths are illustrative; the offset counts are the real
-// metric snapshot captured at query time.
+// Caption explaining how far the live topic tail runs ahead of Iceberg for a
+// bridge query. The offset counts are the real metric snapshot captured at
+// query time. Renders nothing when Iceberg is fully caught up.
 function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
-  // The bar always renders; only the lag-specific labels/caption (and the
-  // "in sync" wording, which we don't surface) are conditional.
-  const caught = bridge.totalLag === 0;
+  if (bridge.totalLag === 0) {
+    return null;
+  }
   return (
     <div className="flex-shrink-0 border-border border-b bg-card px-4 pt-3 pb-3.5">
-      <div className="mb-[7px] flex justify-between font-semibold text-xs">
-        <span className="inline-flex items-center gap-[5px] text-info">
-          <Box size={12} /> Iceberg history
-        </span>
-        {!caught && (
-          <span className="inline-flex items-center gap-[5px] text-success">
-            <Activity size={12} /> Live topic tail
-          </span>
-        )}
+      <div className="text-muted-foreground text-xs leading-snug">
+        Live tail covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
+        <PendingStat count={bridge.translationLag} label="pending translation" /> +{' '}
+        <PendingStat count={bridge.commitLag} label="pending commit" />. Bridging serves them from the topic so results
+        stay realtime.
       </div>
-      <div className="relative flex h-[30px] items-stretch">
-        {/* Iceberg segment. When caught up it closes its right edge (full
-            radius); otherwise it abuts the live segment. */}
-        <div
-          className={cn(
-            'flex min-w-0 items-center border border-info border-r-0 bg-info-subtle px-[11px]',
-            caught ? 'w-full rounded-md border-r' : 'w-[74%] rounded-l-md'
-          )}
-        />
-        {!caught && (
-          <>
-            <div className="relative z-[2] w-0 self-stretch border-subtle border-l-2 border-dashed">
-              <Badge
-                className="absolute bottom-[-2px] left-1/2 z-[3] -translate-x-1/2 translate-y-[120%] rounded-full bg-muted font-bold text-caption-sm text-foreground uppercase tracking-wide"
-                size="sm"
-                variant="outline"
-              >
-                watermark · {offStr(bridge.totalLag)}
-              </Badge>
-            </div>
-            {/* Live-tail segment with the 45deg hatch overlay. */}
-            <div className="relative w-[26%] overflow-hidden rounded-r-md border border-success border-l-0 bg-background-success-subtle after:absolute after:inset-0 after:content-[''] after:[background:repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-success-subtle)_5px,var(--color-success-subtle)_10px)]" />
-          </>
-        )}
-      </div>
-      {!caught && (
-        <div className="mt-6 text-muted-foreground text-xs leading-snug">
-          Live tail covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
-          <PendingStat count={bridge.translationLag} label="pending translation" /> +{' '}
-          <PendingStat count={bridge.commitLag} label="pending commit" />. Bridging serves them from the topic so
-          results stay realtime.
-        </div>
-      )}
     </div>
   );
 }
