@@ -28,4 +28,3 @@ go.work.sum
 # Claude Code local state
 .claude/worktrees/
 .claude/settings.local.json
-.claude/worktrees/
