@@ -22,8 +22,8 @@ import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Braces, CircleX, Clock, Download, GitMerge, Plus, Rows3, Terminal, X } from 'lucide-react';
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import DataGrid, { type Column, type DataGridHandle } from 'react-data-grid';
+import { createContext, useContext, useMemo, useState } from 'react';
+import DataGrid, { type Column } from 'react-data-grid';
 import { isMacOS } from 'utils/platform';
 
 import 'react-data-grid/lib/styles.css';
@@ -105,6 +105,9 @@ function cellText(v: CellValue): string {
 // (~45 mono-xs chars) open the full value in a popover on click.
 const CELL_MAX_W = 'max-w-80';
 const CELL_CLAMP_CHARS = 45;
+// rdg header row height; also the top inset of the cell-popover clip overlay so
+// popovers slide behind the header rather than over it.
+const GRID_HEADER_H = 52;
 
 // Pretty-prints a JSON string with 2-space indent, falling back to the raw
 // value when it isn't parseable JSON.
@@ -116,15 +119,20 @@ function prettyJson(raw: string): string {
   }
 }
 
-// The grid's scroll viewport, so cell popovers stay clamped to the table
-// section rather than the page viewport when the anchor row scrolls away.
-const GridBoundaryContext = createContext<Element | null>(null);
+// Cell popovers portal into a clip layer that covers the grid's data area
+// (below the sticky header), so they track the anchor cell and slide behind the
+// header — staying within the table section instead of floating over the page.
+const CellPopoverContainerContext = createContext<HTMLElement | null>(null);
+
+// Track the anchor and clip rather than reposition, so popovers stick to the
+// cell and disappear behind the header on scroll instead of pinning in place.
+const TRACK_AND_CLIP = { side: 'flip', align: 'none' } as const;
 
 // Rich viewer for JSON/composite cells: a header with the column name + type, a
 // copy button and a close affordance, over a syntax-highlighted, formatted body.
 function JsonCellPopover({ value, name, typeLabel }: { value: string; name: string; typeLabel: string }) {
   const [open, setOpen] = useState(false);
-  const boundary = useContext(GridBoundaryContext);
+  const container = useContext(CellPopoverContainerContext);
   const pretty = useMemo(() => prettyJson(value), [value]);
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -142,9 +150,9 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-120 max-w-[90vw] overflow-hidden p-0"
-        collisionBoundary={boundary ?? undefined}
-        sticky
+        className="pointer-events-auto w-120 max-w-[90vw] overflow-hidden p-0"
+        collisionAvoidance={TRACK_AND_CLIP}
+        container={container ?? undefined}
       >
         <div className="flex items-center gap-2 border-border border-b bg-muted px-3 py-2">
           <Braces className="shrink-0 text-info" size={14} />
@@ -182,7 +190,7 @@ function CellContent({
   name: string;
   typeLabel: string;
 }) {
-  const boundary = useContext(GridBoundaryContext);
+  const container = useContext(CellPopoverContainerContext);
   if (kind === 'bool' && typeof v === 'boolean') {
     return <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>;
   }
@@ -212,9 +220,9 @@ function CellContent({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="max-h-72 max-w-120 overflow-auto p-3"
-        collisionBoundary={boundary ?? undefined}
-        sticky
+        className="pointer-events-auto max-h-72 max-w-120 overflow-auto p-3"
+        collisionAvoidance={TRACK_AND_CLIP}
+        container={container ?? undefined}
       >
         <Text className="whitespace-pre-wrap break-all font-mono text-xs">{s}</Text>
       </PopoverContent>
@@ -317,16 +325,13 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   const columns = useMemo(() => buildColumns(cols), [cols]);
   const rowKeys = useMemo(() => buildRowKeys(run.rows), [run.rows]);
 
-  // rdg's root (.rdg) is the scroll viewport; expose it to cell popovers so they
-  // stay confined to the table section as the anchor row scrolls out of view.
-  const gridRef = useRef<DataGridHandle>(null);
-  const [boundary, setBoundary] = useState<Element | null>(null);
-  useEffect(() => {
-    setBoundary(gridRef.current?.element ?? null);
-  }, []);
+  // Overlay covering the grid's data area (below the sticky header) that cell
+  // popovers portal into; its `overflow-hidden` clips them to the table section
+  // and behind the header as the anchor row scrolls.
+  const [clipEl, setClipEl] = useState<HTMLElement | null>(null);
 
   return (
-    <GridBoundaryContext.Provider value={boundary}>
+    <CellPopoverContainerContext.Provider value={clipEl}>
       <div className="flex h-full min-h-0 w-full flex-col">
         <div className="flex flex-shrink-0 items-center gap-4 border-border border-b bg-card px-4 py-2">
           <div className="flex min-w-0 flex-wrap items-center gap-4">
@@ -368,18 +373,25 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
 
         {/* Virtualized grid: rdg renders only visible rows, so the full result
           set is handed over with no client-side pagination. */}
-        <DataGrid
-          className="sql-results-grid"
-          columns={columns}
-          headerRowHeight={52}
-          ref={gridRef}
-          rowClass={(_, i) => (i % 2 === 1 ? 'sql-results-row-alt' : undefined)}
-          rowHeight={30}
-          rowKeyGetter={(r) => rowKeys.get(r) ?? -1}
-          rows={run.rows}
-        />
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <DataGrid
+            className="sql-results-grid"
+            columns={columns}
+            headerRowHeight={GRID_HEADER_H}
+            rowClass={(_, i) => (i % 2 === 1 ? 'sql-results-row-alt' : undefined)}
+            rowHeight={30}
+            rowKeyGetter={(r) => rowKeys.get(r) ?? -1}
+            rows={run.rows}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
+            ref={setClipEl}
+            style={{ top: GRID_HEADER_H }}
+          />
+        </div>
       </div>
-    </GridBoundaryContext.Provider>
+    </CellPopoverContainerContext.Provider>
   );
 }
 

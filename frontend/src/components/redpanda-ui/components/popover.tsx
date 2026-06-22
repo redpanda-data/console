@@ -111,6 +111,8 @@ type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Popup> &
     collisionPadding?: number;
     /** Element/rect the popup is confined to (defaults to the clipping ancestors). */
     collisionBoundary?: React.ComponentProps<typeof PopoverPrimitive.Positioner>['collisionBoundary'];
+    /** How the popup avoids collisions; set sides to `'none'` to make it track the anchor and clip instead of repositioning. */
+    collisionAvoidance?: React.ComponentProps<typeof PopoverPrimitive.Positioner>['collisionAvoidance'];
   };
 
 function PopoverContent({
@@ -122,6 +124,7 @@ function PopoverContent({
   sticky,
   collisionPadding,
   collisionBoundary,
+  collisionAvoidance,
   transition = { type: 'spring', stiffness: 300, damping: 25 },
   children,
   testId,
@@ -143,6 +146,7 @@ function PopoverContent({
             alignOffset={alignOffset}
             {...(anchorCtx?.hasAnchor && anchorCtx.anchorRef.current ? { anchor: anchorCtx.anchorRef } : {})}
             className="z-50"
+            collisionAvoidance={collisionAvoidance}
             collisionBoundary={collisionBoundary}
             collisionPadding={collisionPadding}
             side={side}
