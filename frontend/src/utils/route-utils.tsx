@@ -255,14 +255,11 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'SQL',
     icon: Database,
     group: SidebarSection.STREAMING,
-    // Cloud (embedded): cloud-ui passes enableSqlInConsole only for BYOC clusters with SQL enabled
-    // (never serverless, since SQL can't be provisioned there).
-    // Self-hosted (standalone): the enterprise backend injects the REDPANDA_SQL app feature when
-    // SQL is enabled, which requires a valid enterprise license.
-    visibilityCheck: () => {
-      const visible = isEmbedded() ? isFeatureFlagEnabled('enableSqlInConsole') : AppFeatures.REDPANDA_SQL;
-      return { visible, disabledReasons: [] };
-    },
+    // The enterprise backend mounts the SQLService and reports it in endpoint
+    // compatibility only when SQL is enabled (cfg.API.SQL.Enabled). This is the
+    // single source of truth for both embedded (cloud) and self-hosted, so the
+    // nav is gated on capability detection rather than a feature flag.
+    visibilityCheck: routeVisibility(true, [Feature.SQLService]),
   },
   {
     path: '/connect-clusters',

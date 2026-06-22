@@ -231,6 +231,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Method:      "POST",
 			IsSupported: false,
 		},
+		EndpointCompatibilityEndpoint{
+			Endpoint:    dataplanev1alpha3connect.SQLServiceName,
+			Method:      "POST",
+			IsSupported: false,
+		},
 	)
 
 	return EndpointCompatibility{
