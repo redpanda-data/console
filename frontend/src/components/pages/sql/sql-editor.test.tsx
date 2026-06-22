@@ -88,7 +88,7 @@ describe('SqlEditor', () => {
   test('run sends the active tab SQL and records history', async () => {
     const onRun = renderEditor();
     fireEvent.click(screen.getByRole('button', { name: RUN_BUTTON }));
-    expect(onRun).toHaveBeenCalledWith('SELECT 1;', 'all');
+    expect(onRun).toHaveBeenCalledWith('SELECT 1;');
 
     fireEvent.click(screen.getByRole('button', { name: 'History' }));
     expect(await screen.findByText('SELECT 1;', { selector: 'span' })).toBeInTheDocument();

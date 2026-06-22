@@ -37,7 +37,7 @@ import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { bridgeTopicForQuery, firstKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isReadQuery } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -457,15 +457,16 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
     (sql: string) => {
       const token = nextRunToken();
       const kw = firstKeyword(sql);
+      const isRead = isReadQuery(sql);
       // Drive the bridge indicator off the executed query (single tiered topic),
       // not the catalog click — so it only shows for the topic actually queried.
-      const nextBridgeTopic = kw === 'SELECT' ? bridgeTopicForQuery(sql, completionCatalogs) : null;
+      const nextBridgeTopic = isRead ? bridgeTopicForQuery(sql, completionCatalogs) : null;
       setBridgeTopic(nextBridgeTopic);
       setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
 
-      if (kw !== 'SELECT') {
+      if (!isRead) {
         let title = 'Statement not allowed';
-        let message = `Only SELECT statements are supported in this release. Found "${kw || 'empty statement'}".`;
+        let message = `Only read queries (SELECT, WITH) are supported in this release. Found "${kw || 'empty statement'}".`;
         let hint: string | undefined;
         let hintAction = false;
         if (kw === 'CREATE') {

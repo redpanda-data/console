@@ -49,11 +49,9 @@ export type SqlEditorHandle = {
   setQuery: (sql: string, name?: string) => void;
 };
 
-export type RunMode = 'all' | 'selection';
-
 export type SqlEditorProps = {
-  /** Run a statement. `mode` distinguishes whole-tab vs. selection runs. */
-  onRun: (sql: string, mode: RunMode) => void;
+  /** Run a statement (the current selection if any, else the whole tab). */
+  onRun: (sql: string) => void;
   /** Loaded catalog tree; drives schema-aware autocomplete. */
   catalogs: Catalog[];
   /** SQL to seed the first tab with. */
@@ -374,7 +372,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
       setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, sql: queryText } : t)));
     };
 
-    const runText = (text: string, mode: RunMode) => {
+    const runText = (text: string) => {
       const trimmed = text.trim();
       if (!trimmed) {
         return;
@@ -383,7 +381,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
       const nh = [entry, ...history.filter((h) => h.sql !== entry.sql)].slice(0, 40);
       setHistory(nh);
       saveHistory(nh);
-      runQuery(trimmed, mode);
+      runQuery(trimmed);
     };
 
     // Run the current selection if any, else the whole tab.
@@ -391,10 +389,10 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
       const state = editorRef.current?.view?.state;
       const sel = state?.selection.main;
       if (state && sel && !sel.empty) {
-        runText(state.sliceDoc(sel.from, sel.to), 'selection');
+        runText(state.sliceDoc(sel.from, sel.to));
         return;
       }
-      runText(active.sql, 'all');
+      runText(active.sql);
     };
 
     // The Cmd/Ctrl+Enter keymap is part of the extensions array (rebuilt only on
@@ -406,7 +404,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
       const state = editorRef.current?.view?.state;
       const sel = state?.selection.main;
       if (state && sel && !sel.empty) {
-        runText(state.sliceDoc(sel.from, sel.to), 'selection');
+        runText(state.sliceDoc(sel.from, sel.to));
       }
     };
 

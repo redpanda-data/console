@@ -28,7 +28,15 @@ import {
   Search,
 } from 'lucide-react';
 import type { Column } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { createContext, Fragment, type KeyboardEvent, type ReactNode, useContext, useState } from 'react';
+import {
+  createContext,
+  type FocusEvent,
+  Fragment,
+  type KeyboardEvent,
+  type ReactNode,
+  useContext,
+  useState,
+} from 'react';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 
 import type { Catalog, CatalogEngine, Namespace, SqlRole, TableRef } from './sql-types';
@@ -76,6 +84,8 @@ type CatalogTreeContextValue = {
   loadMore: (namespaceId: string) => void;
   onQueryTable: (catalog: Catalog, table: TableRef) => void;
   onAddTable?: () => void;
+  /** tabIndex for a treeitem so the tree is a single tab stop (roving). */
+  rowTabIndex: (id: string) => 0 | -1;
 };
 
 const CatalogTreeContext = createContext<CatalogTreeContextValue | null>(null);
@@ -292,15 +302,17 @@ type TableRowProps = {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Leaf row combines grant, selection, tiering and query affordance state.
 function TableRow({ catalog, table }: TableRowProps) {
-  const { activeTableId, openTables, toggleTable, onQueryTable } = useCatalogTree();
+  const { activeTableId, openTables, toggleTable, onQueryTable, rowTabIndex } = useCatalogTree();
   const allowed = table.allowed !== false;
   const isOpen = Boolean(openTables[table.id]);
   const isActive = activeTableId === table.id;
   const isIceberg = catalog.engine === 'iceberg' || table.iceberg === true;
   // A Redpanda-catalog table is Iceberg-tiered when its backing topic has
-  // `redpanda.iceberg.mode` enabled (read from the Kafka topic config).
+  // `redpanda.iceberg.mode` enabled (read from the Kafka topic config). Fetch
+  // only once the row is expanded — otherwise every visible table fires its own
+  // GetTopicConfigurations request (N+1) just to decide whether to show a badge.
   const { isIceberg: topicTiered } = useTopicIcebergQuery(table.topicName ?? '', {
-    enabled: catalog.engine === 'redpanda' && Boolean(table.topicName),
+    enabled: catalog.engine === 'redpanda' && Boolean(table.topicName) && isOpen,
   });
   const tiered = catalog.engine === 'redpanda' && topicTiered;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
@@ -325,24 +337,21 @@ function TableRow({ catalog, table }: TableRowProps) {
           aria-level={3}
           aria-selected={isActive}
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-sm text-strong disabled:cursor-default disabled:text-disabled"
+          data-tree-id={table.id}
           disabled={!allowed}
           onClick={() => toggleTable(table.id)}
           role="treeitem"
+          tabIndex={rowTabIndex(table.id)}
           type="button"
         >
           <Chevron className="shrink-0 text-disabled" size={13} />
           <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
-          {isIceberg ? (
-            <Badge className="uppercase tracking-wide" size="sm" variant="info-inverted">
-              Iceberg
-            </Badge>
-          ) : null}
-          {tiered ? (
+          {isIceberg || tiered ? (
             <Badge
               className="uppercase tracking-wide"
               size="sm"
-              title="Iceberg-tiered · bridge queried"
+              title={tiered ? 'Iceberg-tiered · bridge queried' : undefined}
               variant="info-inverted"
             >
               Iceberg
@@ -377,7 +386,7 @@ type NamespaceNodeProps = {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Namespace rendering coordinates search, pagination, loading and admin actions.
 function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: NamespaceNodeProps) {
-  const { role, query, open, shown, toggle, loadMore, onAddTable } = useCatalogTree();
+  const { role, query, open, shown, toggle, loadMore, onAddTable, rowTabIndex } = useCatalogTree();
   const isOpen = open[namespace.id] !== false;
   const shownCount = shown[namespace.id] ?? CAT_LIMIT;
 
@@ -404,8 +413,10 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
         aria-expanded={isOpen}
         aria-level={2}
         className={cn(ROW_BASE, 'font-medium text-foreground')}
+        data-tree-id={namespace.id}
         onClick={() => toggle(namespace.id)}
         role="treeitem"
+        tabIndex={rowTabIndex(namespace.id)}
         type="button"
       >
         <NsChevron className="shrink-0 text-disabled" size={14} />
@@ -455,7 +466,7 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
 // One catalog subtree. Owns the per-catalog ListTables fetch, gated on the
 // catalog (or an active search) being expanded.
 function CatalogNode({ catalog }: { catalog: Catalog }) {
-  const { role, query, open, toggle, onAddTable } = useCatalogTree();
+  const { role, query, open, toggle, onAddTable, rowTabIndex } = useCatalogTree();
   const isCatalogOpen = open[catalog.name] !== false;
   const enabled = isCatalogOpen || query.trim().length > 0;
   const { data, isLoading } = useListTablesQuery({ catalog: catalog.name }, { enabled });
@@ -478,8 +489,10 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
           aria-expanded={isCatalogOpen}
           aria-level={1}
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans font-semibold text-sm text-strong"
+          data-tree-id={catalog.name}
           onClick={() => toggle(catalog.name)}
           role="treeitem"
+          tabIndex={rowTabIndex(catalog.name)}
           type="button"
         >
           <CatChevron className="shrink-0 text-disabled" size={14} />
@@ -531,6 +544,10 @@ export function CatalogTree({
   const [openTables, setOpenTables] = useState<Record<string, boolean>>({});
   const [shown, setShown] = useState<Record<string, number>>({});
   const [query, setQuery] = useState('');
+  // The single tabbable treeitem (WAI-ARIA roving tabIndex). Until the user
+  // focuses a row, the first catalog is the entry point.
+  const [activeRowId, setActiveRowId] = useState<string | null>(null);
+  const rovingId = activeRowId ?? catalogs[0]?.name ?? null;
 
   const context: CatalogTreeContextValue = {
     role: sqlRole,
@@ -544,6 +561,16 @@ export function CatalogTree({
     loadMore: (namespaceId) => setShown((s) => ({ ...s, [namespaceId]: (s[namespaceId] ?? CAT_LIMIT) + CAT_LIMIT })),
     onQueryTable,
     onAddTable,
+    rowTabIndex: (id) => (id === rovingId ? 0 : -1),
+  };
+
+  // Keep the roving tabIndex on whichever row the user last focused, so Shift+Tab
+  // and re-entry return to that row rather than the first one.
+  const handleTreeFocus = (e: FocusEvent<HTMLDivElement>) => {
+    const id = e.target.closest<HTMLElement>('[role="treeitem"]')?.getAttribute('data-tree-id');
+    if (id && id !== activeRowId) {
+      setActiveRowId(id);
+    }
   };
 
   return (
@@ -565,6 +592,7 @@ export function CatalogTree({
         <div
           aria-label="Catalogs"
           className="flex-1 overflow-y-auto px-2 pb-2"
+          onFocus={handleTreeFocus}
           onKeyDown={handleTreeKeyDown}
           role="tree"
         >

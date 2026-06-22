@@ -16,13 +16,22 @@
 
 import type { Catalog } from './sql-types';
 
-const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/)*/;
+// Leading whitespace, line/block comments, and opening parens — so a query
+// wrapped like `(SELECT …)` still resolves to its first keyword.
+const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/;
 const FIRST_KEYWORD_RE = /^[A-Za-z_][A-Za-z0-9_]*/;
 
-// First meaningful keyword of a statement (used to gate to SELECT-only).
+// First meaningful keyword of a statement (used to gate which statements run).
 export function firstKeyword(stmt: string): string {
   const word = stmt.replace(LEADING_COMMENTS, '').match(FIRST_KEYWORD_RE);
   return word ? word[0].toUpperCase() : '';
+}
+
+// Read statements allowed in this release: plain SELECT and CTEs (WITH … SELECT).
+const READ_KEYWORDS = new Set(['SELECT', 'WITH']);
+
+export function isReadQuery(stmt: string): boolean {
+  return READ_KEYWORDS.has(firstKeyword(stmt));
 }
 
 // Oxla addresses catalog tables as `catalog=>table`. A bridge indicator is

@@ -53,6 +53,9 @@ const fmtNum = (n: number) => n.toLocaleString('en-US');
 const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
 const CSV_ESCAPE_RE = /[",\n]/;
 const CSV_QUOTE_RE = /"/g;
+// Cells starting with these are interpreted as formulas by Excel/Sheets; prefix
+// with a single quote to neutralize CSV injection.
+const CSV_FORMULA_RE = /^[=+\-@]/;
 
 // Shared inline-stat layout used across the summary bar.
 const RES_STAT =
@@ -214,7 +217,8 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
       .map((r) =>
         cols
           .map((c) => {
-            const s = cellText(r[c.name]);
+            const raw = cellText(r[c.name]);
+            const s = CSV_FORMULA_RE.test(raw) ? `'${raw}` : raw;
             return CSV_ESCAPE_RE.test(s) ? `"${s.replace(CSV_QUOTE_RE, '""')}"` : s;
           })
           .join(',')
@@ -292,8 +296,11 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   const cols = run.columns;
   const bridge = run.bridge;
 
-  const columns = buildColumns(cols);
-  const rowKeys = buildRowKeys(run.rows);
+  // Stable references across re-renders (e.g. when the bridge lag query resolves
+  // and the workspace hands down a new `run` object with the same rows/columns),
+  // so DataGrid keeps user column widths and scroll position.
+  const columns = useMemo(() => buildColumns(cols), [cols]);
+  const rowKeys = useMemo(() => buildRowKeys(run.rows), [run.rows]);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">

@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { bridgeTopicForQuery, firstKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isReadQuery } from './sql';
 import type { Catalog } from './sql-types';
 
 const CATALOGS: Catalog[] = [
@@ -45,6 +45,20 @@ describe('sql helpers', () => {
     expect(firstKeyword('  \n grant all on t to u')).toBe('GRANT');
     expect(firstKeyword('-- only a comment')).toBe('');
     expect(firstKeyword('')).toBe('');
+  });
+
+  test('firstKeyword sees past a leading paren', () => {
+    expect(firstKeyword('(SELECT * FROM t)')).toBe('SELECT');
+    expect(firstKeyword('  ( ( select 1 )')).toBe('SELECT');
+  });
+
+  test('isReadQuery allows SELECT and WITH (CTEs), rejects writes', () => {
+    expect(isReadQuery('SELECT * FROM t')).toBe(true);
+    expect(isReadQuery('WITH t AS (SELECT 1) SELECT * FROM t')).toBe(true);
+    expect(isReadQuery('(SELECT 1)')).toBe(true);
+    expect(isReadQuery('INSERT INTO t VALUES (1)')).toBe(false);
+    expect(isReadQuery('CREATE TABLE t (a int)')).toBe(false);
+    expect(isReadQuery('')).toBe(false);
   });
 
   test('bridgeTopicForQuery resolves a single Redpanda SQL table to its backing topic', () => {
