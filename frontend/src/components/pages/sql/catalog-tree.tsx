@@ -240,7 +240,7 @@ function FieldRows({
             <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono">
               {field.name}
             </span>
-            <span className="shrink-0 whitespace-nowrap font-mono text-caption-sm text-muted-foreground tracking-wide">
+            <span className="shrink-0 whitespace-nowrap font-mono text-caption-sm text-muted-foreground uppercase tracking-wide">
               {field.type}
             </span>
           </>
