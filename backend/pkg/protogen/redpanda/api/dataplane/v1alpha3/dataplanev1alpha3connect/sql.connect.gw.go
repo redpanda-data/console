@@ -17,19 +17,21 @@ import (
 // SQLServiceGatewayServer implements the gRPC server API for the SQLService service.
 type SQLServiceGatewayServer struct {
 	v1alpha3.UnimplementedSQLServiceServer
-	listCatalogs  connect_gateway.UnaryHandler[v1alpha3.ListCatalogsRequest, v1alpha3.ListCatalogsResponse]
-	listTables    connect_gateway.UnaryHandler[v1alpha3.ListTablesRequest, v1alpha3.ListTablesResponse]
-	describeTable connect_gateway.UnaryHandler[v1alpha3.DescribeTableRequest, v1alpha3.DescribeTableResponse]
-	executeQuery  connect_gateway.UnaryHandler[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
+	listCatalogs   connect_gateway.UnaryHandler[v1alpha3.ListCatalogsRequest, v1alpha3.ListCatalogsResponse]
+	listTables     connect_gateway.UnaryHandler[v1alpha3.ListTablesRequest, v1alpha3.ListTablesResponse]
+	describeTable  connect_gateway.UnaryHandler[v1alpha3.DescribeTableRequest, v1alpha3.DescribeTableResponse]
+	executeQuery   connect_gateway.UnaryHandler[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
+	getSqlIdentity connect_gateway.UnaryHandler[v1alpha3.GetSqlIdentityRequest, v1alpha3.GetSqlIdentityResponse]
 }
 
 // NewSQLServiceGatewayServer constructs a Connect-Gateway gRPC server for the SQLService service.
 func NewSQLServiceGatewayServer(svc SQLServiceHandler, opts ...connect_gateway.HandlerOption) *SQLServiceGatewayServer {
 	return &SQLServiceGatewayServer{
-		listCatalogs:  connect_gateway.NewUnaryHandler(SQLServiceListCatalogsProcedure, svc.ListCatalogs, opts...),
-		listTables:    connect_gateway.NewUnaryHandler(SQLServiceListTablesProcedure, svc.ListTables, opts...),
-		describeTable: connect_gateway.NewUnaryHandler(SQLServiceDescribeTableProcedure, svc.DescribeTable, opts...),
-		executeQuery:  connect_gateway.NewUnaryHandler(SQLServiceExecuteQueryProcedure, svc.ExecuteQuery, opts...),
+		listCatalogs:   connect_gateway.NewUnaryHandler(SQLServiceListCatalogsProcedure, svc.ListCatalogs, opts...),
+		listTables:     connect_gateway.NewUnaryHandler(SQLServiceListTablesProcedure, svc.ListTables, opts...),
+		describeTable:  connect_gateway.NewUnaryHandler(SQLServiceDescribeTableProcedure, svc.DescribeTable, opts...),
+		executeQuery:   connect_gateway.NewUnaryHandler(SQLServiceExecuteQueryProcedure, svc.ExecuteQuery, opts...),
+		getSqlIdentity: connect_gateway.NewUnaryHandler(SQLServiceGetSqlIdentityProcedure, svc.GetSqlIdentity, opts...),
 	}
 }
 
@@ -47,6 +49,10 @@ func (s *SQLServiceGatewayServer) DescribeTable(ctx context.Context, req *v1alph
 
 func (s *SQLServiceGatewayServer) ExecuteQuery(ctx context.Context, req *v1alpha3.ExecuteQueryRequest) (*v1alpha3.ExecuteQueryResponse, error) {
 	return s.executeQuery(ctx, req)
+}
+
+func (s *SQLServiceGatewayServer) GetSqlIdentity(ctx context.Context, req *v1alpha3.GetSqlIdentityRequest) (*v1alpha3.GetSqlIdentityResponse, error) {
+	return s.getSqlIdentity(ctx, req)
 }
 
 // RegisterSQLServiceHandlerGatewayServer registers the Connect handlers for the SQLService "svc" to
