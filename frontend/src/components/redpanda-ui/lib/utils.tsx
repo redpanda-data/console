@@ -1,10 +1,14 @@
 import { cva } from 'class-variance-authority';
-import { type ClassValue, clsx } from 'clsx';
+import { type ClassValue, cn as cnfast } from 'cnfast';
 import React from 'react';
-import { twMerge } from 'tailwind-merge';
 
+/**
+ * [upstream] `cn` migrated to cnfast ahead of ui-registry PR #220 (byte-identical
+ * output, same `(...inputs: ClassValue[])` signature). Drop this marker on the
+ * next registry sync once #220 is released.
+ */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return cnfast(...inputs);
 }
 
 export function wrapStringChild(
