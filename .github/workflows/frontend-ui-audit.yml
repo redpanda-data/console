@@ -19,6 +19,7 @@ env:
   CI: true
   UI_REGISTRY_REF: main
 permissions:
+  id-token: write
   contents: read
   pull-requests: write
 jobs:
@@ -32,6 +33,20 @@ jobs:
         with:
           fetch-depth: 0
           path: console
+      # ui-registry is private, and the job's GITHUB_TOKEN is scoped to console
+      # only. Fetch the org-wide actions bot token from AWS Secrets Manager to
+      # check it out — same pattern as fork-pr-dispatch.yml / cloudv2.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+      - name: Get actions bot token
+        uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/actions_bot_token
+          parse-json-secrets: true
       - name: Checkout ui-registry
         uses: actions/checkout@v5
         with:
@@ -39,8 +54,7 @@ jobs:
           ref: ${{ env.UI_REGISTRY_REF }}
           fetch-depth: 0
           path: ui-registry
-          # If ui-registry is private, set UI_REGISTRY_TOKEN to a PAT with read access.
-          token: ${{ secrets.UI_REGISTRY_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ env.ACTIONS_BOT_TOKEN }}
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
       - name: Build registry manifest
