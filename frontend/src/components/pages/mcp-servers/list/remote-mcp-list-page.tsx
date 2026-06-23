@@ -264,7 +264,11 @@ export const updatePageTitle = () => {
   });
 };
 
-const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef> }) => {
+const RemoteMCPListPageContent = ({
+  deleteHandlerRef,
+}: {
+  deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef | null>;
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);

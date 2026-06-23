@@ -146,7 +146,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         )}
         <ScrollAreaPrimitive.Root className="relative" data-slot="scroll-area" dir="ltr">
           <ScrollAreaPrimitive.Viewport
-            ref={areaRef as RefObject<HTMLDivElement>}
+            ref={areaRef as RefObject<HTMLDivElement | null>}
             {...viewportProps}
             className={cn(
               'size-full rounded-[inherit] outline-none selection:bg-selected selection:text-selected-foreground focus-visible:outline-1 focus-visible:ring-[3px] focus-visible:ring-ring/50',
