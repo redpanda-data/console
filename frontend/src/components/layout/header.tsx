@@ -10,7 +10,7 @@
  */
 
 import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
-import { Link, useLocation, useMatchRoute } from '@tanstack/react-router';
+import { Link, useLocation, useMatches, useMatchRoute } from '@tanstack/react-router';
 import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
@@ -69,8 +69,14 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
   );
 }
 
-function AppPageHeader() {
+function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean }) {
   useApiStoreHook((s) => s.userData); // re-render when userData changes
+  // Fullscreen routes (e.g. the SQL studio) carry their own title bar/toolbar, so
+  // they never want the title+actions row — only the breadcrumb. Robust to which
+  // layout branch renders the header (standalone vs embedded misdetection).
+  const matches = useMatches();
+  const isFullscreenRoute = matches.some((m) => m.staticData.fullscreen);
+  const hideTitleRow = breadcrumbOnly || isFullscreenRoute;
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
@@ -104,49 +110,55 @@ function AppPageHeader() {
     <div>
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
 
-      <div className="flex items-center justify-between pt-6">
-        <div className="flex flex-col gap-1">
-          {backLink && (
-            <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" variant="ghost">
-              <Link to={backLink.linkTo}>
-                <ChevronLeft className="h-4 w-4" />
-                {backLink.title}
+      {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
+          studio, which carries its own title bar and toolbar). */}
+      {!hideTitleRow && (
+        <div className="flex items-center justify-between pt-6">
+          <div className="flex flex-col gap-1">
+            {backLink && (
+              <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" variant="ghost">
+                <Link to={backLink.linkTo}>
+                  <ChevronLeft className="h-4 w-4" />
+                  {backLink.title}
+                </Link>
+              </RegistryButton>
+            )}
+            <div className="flex items-center">
+              {pageTitle ? (
+                <Heading
+                  className={cn('mr-2', lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
+                  level={1}
+                >
+                  {pageTitle}
+                </Heading>
+              ) : null}
+              {lastBreadcrumb?.options?.canBeCopied ? (
+                <CopyButton content={lastBreadcrumb.title} variant="ghost" />
+              ) : null}
+              {Boolean(showRefresh) && <DataRefreshButton />}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isEmbedded() && api.isRedpanda && (
+              <Link to="/debug-bundle">
+                <Button
+                  isDisabled={!api.userData?.canViewDebugBundle}
+                  tooltip={
+                    api.userData?.canViewDebugBundle
+                      ? null
+                      : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
+                  }
+                  variant="ghost"
+                >
+                  Debug bundle
+                </Button>
               </Link>
-            </RegistryButton>
-          )}
-          <div className="flex items-center">
-            {pageTitle ? (
-              <Heading
-                className={cn('mr-2', lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
-                level={1}
-              >
-                {pageTitle}
-              </Heading>
-            ) : null}
-            {lastBreadcrumb?.options?.canBeCopied ? (
-              <CopyButton content={lastBreadcrumb.title} variant="ghost" />
-            ) : null}
-            {Boolean(showRefresh) && <DataRefreshButton />}
+            )}
+            <UserPreferencesButton />
+            {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {!isEmbedded() && api.isRedpanda && (
-            <Link to="/debug-bundle">
-              <Button
-                isDisabled={!api.userData?.canViewDebugBundle}
-                tooltip={
-                  api.userData?.canViewDebugBundle ? null : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
-                }
-                variant="ghost"
-              >
-                Debug bundle
-              </Button>
-            </Link>
-          )}
-          <UserPreferencesButton />
-          {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

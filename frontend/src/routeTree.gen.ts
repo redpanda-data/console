@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root';
 import { Route as UploadLicenseRouteImport } from './routes/upload-license';
 import { Route as TrialExpiredRouteImport } from './routes/trial-expired';
 import { Route as TransformsSetupRouteImport } from './routes/transforms-setup';
+import { Route as SqlRouteImport } from './routes/sql';
 import { Route as SecurityRouteImport } from './routes/security';
 import { Route as ReassignPartitionsRouteImport } from './routes/reassign-partitions';
 import { Route as QuotasRouteImport } from './routes/quotas';
@@ -100,6 +101,11 @@ const TrialExpiredRoute = TrialExpiredRouteImport.update({
 const TransformsSetupRoute = TransformsSetupRouteImport.update({
   id: '/transforms-setup',
   path: '/transforms-setup',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const SqlRoute = SqlRouteImport.update({
+  id: '/sql',
+  path: '/sql',
   getParentRoute: () => rootRouteImport,
 } as any);
 const SecurityRoute = SecurityRouteImport.update({
@@ -504,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
   '/security': typeof SecurityRouteWithChildren;
+  '/sql': typeof SqlRoute;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -582,6 +589,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
+  '/sql': typeof SqlRoute;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -662,6 +670,7 @@ export interface FileRoutesById {
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
   '/security': typeof SecurityRouteWithChildren;
+  '/sql': typeof SqlRoute;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -743,6 +752,7 @@ export interface FileRouteTypes {
     | '/quotas'
     | '/reassign-partitions'
     | '/security'
+    | '/sql'
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
@@ -821,6 +831,7 @@ export interface FileRouteTypes {
     | '/'
     | '/quotas'
     | '/reassign-partitions'
+    | '/sql'
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
@@ -900,6 +911,7 @@ export interface FileRouteTypes {
     | '/quotas'
     | '/reassign-partitions'
     | '/security'
+    | '/sql'
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
@@ -980,6 +992,7 @@ export interface RootRouteChildren {
   QuotasRoute: typeof QuotasRoute;
   ReassignPartitionsRoute: typeof ReassignPartitionsRoute;
   SecurityRoute: typeof SecurityRouteWithChildren;
+  SqlRoute: typeof SqlRoute;
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
@@ -1061,6 +1074,13 @@ declare module '@tanstack/react-router' {
       path: '/transforms-setup';
       fullPath: '/transforms-setup';
       preLoaderRoute: typeof TransformsSetupRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/sql': {
+      id: '/sql';
+      path: '/sql';
+      fullPath: '/sql';
+      preLoaderRoute: typeof SqlRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/security': {
@@ -1629,6 +1649,7 @@ const rootRouteChildren: RootRouteChildren = {
   QuotasRoute: QuotasRoute,
   ReassignPartitionsRoute: ReassignPartitionsRoute,
   SecurityRoute: SecurityRouteWithChildren,
+  SqlRoute: SqlRoute,
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,

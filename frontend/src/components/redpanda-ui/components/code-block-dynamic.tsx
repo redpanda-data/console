@@ -349,7 +349,7 @@ export type SyncCodeBlockProps = {
   lang: string;
   /** Both slots default to github-dark so the block reads as a dark terminal in either color mode. */
   themes?: { light: string; dark: string };
-} & Pick<CodeBlockProps, 'keepBackground' | 'title' | 'icon' | 'allowCopy' | 'testId' | 'className'>;
+} & Pick<CodeBlockProps, 'keepBackground' | 'title' | 'icon' | 'allowCopy' | 'testId' | 'className' | 'viewportProps'>;
 
 /**
  * Synchronous variant of {@link DynamicCodeBlock}. Highlights with a pre-bundled
