@@ -264,6 +264,24 @@ type UISettings = {
     configViewType: 'structured' | 'table';
   };
 
+  topicConsumersList: {
+    pageSize: number;
+    sortId: string;
+    sortDesc: boolean;
+  };
+
+  topicPartitionsList: {
+    pageSize: number;
+    sortId: string;
+    sortDesc: boolean;
+  };
+
+  topicAclList: {
+    pageSize: number;
+    sortId: string;
+    sortDesc: boolean;
+  };
+
   clusterOverview: {
     connectorsList: {
       quickSearch: string;
@@ -441,6 +459,24 @@ const defaultUiSettings: UISettings = {
     propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
 
     configViewType: 'structured' as 'structured' | 'table',
+  },
+
+  topicConsumersList: {
+    pageSize: 20,
+    sortId: '',
+    sortDesc: false,
+  },
+
+  topicPartitionsList: {
+    pageSize: 20,
+    sortId: '',
+    sortDesc: false,
+  },
+
+  topicAclList: {
+    pageSize: 20,
+    sortId: '',
+    sortDesc: false,
   },
 
   clusterOverview: {

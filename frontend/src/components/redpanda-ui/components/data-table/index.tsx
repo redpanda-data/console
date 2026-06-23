@@ -219,7 +219,7 @@ export function DataTablePagination<TData>({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
 }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-between px-2" data-testid={testId}>
+    <div className="flex w-full items-center justify-between px-2" data-testid={testId}>
       <div className="flex-1 text-muted-foreground text-sm">
         {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
