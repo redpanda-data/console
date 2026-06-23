@@ -31,13 +31,13 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Pencil as EditIcon, Info as InfoIcon, Search, X as XIcon } from 'lucide-react';
+import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isServerless } from '../../../config';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntryExtended, ConfigEntrySynonym } from '../../../state/rest-interfaces';
 import {
@@ -224,7 +224,7 @@ const ConfigEditorForm: FC<{
             <DialogTitle>{`Edit ${editedEntry.name}`}</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <p className="mb-6">{editedEntry.documentation}</p>
+            <p className="pb-6">{editedEntry.documentation}</p>
 
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
@@ -298,112 +298,7 @@ const ConfigEditorForm: FC<{
   );
 };
 
-const ConfigurationEditorLegacy: FC<ConfigurationEditorProps> = (props) => {
-  const navigate = useNavigate({ from: '/topics/$topicName/' });
-  const { configFilter = '' } = useSearch({ from: '/topics/$topicName/' });
-  const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
-  const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
-
-  const setFilter = (value: string) => {
-    navigate({ search: (prev) => ({ ...prev, configFilter: value || undefined }), replace: true });
-  };
-
-  const editConfig = (configEntry: ConfigEntryExtended) => {
-    setEditedEntry(configEntry);
-  };
-
-  const topic = props.targetTopic;
-  const hasEditPermissions = topic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
-
-  let entries = props.entries;
-  if (configFilter) {
-    // Match name/documentation only — never config values. `configFilter` is URL-backed,
-    // so matching `x.value` would leak sensitive/internal values into browser history and
-    // shareable links.
-    entries = entries.filter((x) => x.name.includes(configFilter) || (x.documentation ?? '').includes(configFilter));
-  }
-
-  const entryOrder = {
-    retention: -3,
-    cleanup: -2,
-  };
-
-  entries = entries.slice().sort((a, b) => {
-    for (const [e, order] of Object.entries(entryOrder)) {
-      if (a.name.includes(e) && !b.name.includes(e)) {
-        return order;
-      }
-      if (b.name.includes(e) && !a.name.includes(e)) {
-        return -order;
-      }
-    }
-    return 0;
-  });
-
-  const categories = entries.groupInto((x) => x.category);
-  for (const e of categories) {
-    if (!e.key) {
-      e.key = 'Other';
-    }
-  }
-
-  const displayOrder = [
-    'Retention',
-    'Compaction',
-    'Replication',
-    'Tiered Storage',
-    'Write Caching',
-    'Iceberg',
-    'Schema Registry and Validation',
-    'Message Handling',
-    'Compression',
-    'Storage Internals',
-    'Other',
-  ];
-
-  categories.sort((a, b) => displayOrder.indexOf(a.key ?? '') - displayOrder.indexOf(b.key ?? ''));
-
-  return (
-    <div>
-      {editedEntry !== null && (
-        <ConfigEditorForm
-          editedEntry={editedEntry}
-          onClose={() => {
-            setEditedEntry(null);
-          }}
-          onSuccess={() => {
-            props.onForceRefresh();
-          }}
-          targetTopic={props.targetTopic}
-        />
-      )}
-      <div
-        className="grid w-full grid-cols-[minmax(300px,auto)_auto_auto_1fr] items-center gap-3"
-        data-testid="config-group-table"
-      >
-        <div className="col-span-4 mb-4">
-          <InputGroup>
-            <InputGroupAddon>
-              <Search className="size-4" />
-            </InputGroupAddon>
-            <InputGroupInput onChange={(e) => setFilter(e.target.value)} placeholder="Filter" value={configFilter} />
-          </InputGroup>
-        </div>
-        {categories.map((x) => (
-          <ConfigGroup
-            entries={x.items}
-            groupName={x.key}
-            hasEditPermissions={hasEditPermissions}
-            key={x.key}
-            onEditEntry={editConfig}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ── Grouped, navigable layout (behind the `enableNewTopicPage` feature flag) ─────
+// ── Grouped, navigable layout ─────
 
 type ConfigSection = {
   name: string;
@@ -412,7 +307,7 @@ type ConfigSection = {
   modifiedCount: number;
 };
 
-const ConfigurationEditorGrouped: FC<ConfigurationEditorProps> = (props) => {
+const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const navigate = useNavigate({ from: '/topics/$topicName/' });
   const { configFilter = '', configScope = 'all' } = useSearch({ from: '/topics/$topicName/' });
   const scope = configScope;
@@ -707,100 +602,7 @@ const ConfigRow: FC<{
   );
 };
 
-const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) =>
-  isFeatureFlagEnabled('enableNewTopicPage') ? (
-    <ConfigurationEditorGrouped {...props} />
-  ) : (
-    <ConfigurationEditorLegacy {...props} />
-  );
-
 export default ConfigurationEditor;
-
-const ConfigGroup = (p: {
-  groupName?: string;
-  onEditEntry: (configEntry: ConfigEntryExtended) => void;
-  entries: ConfigEntryExtended[];
-  hasEditPermissions: boolean;
-}) => (
-  <>
-    <div className="col-span-4 my-4 h-px bg-border first:hidden" />
-    {Boolean(p.groupName) && <div className="configGroupTitle col-span-4 font-semibold text-2xl">{p.groupName}</div>}
-    {p.entries.map((e) => (
-      <ConfigEntryComponent
-        entry={e}
-        hasEditPermissions={p.hasEditPermissions}
-        key={e.name}
-        onEditEntry={p.onEditEntry}
-      />
-    ))}
-  </>
-);
-
-const ConfigEntryComponent = (p: {
-  onEditEntry: (configEntry: ConfigEntryExtended) => void;
-  entry: ConfigEntryExtended;
-  hasEditPermissions: boolean;
-}) => {
-  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(p.entry, p.hasEditPermissions);
-
-  const entry = p.entry;
-  const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
-
-  const editButton = (
-    <button
-      className={
-        canEdit
-          ? 'inline-flex cursor-pointer rounded-sm p-0.5 hover:bg-muted hover:text-primary'
-          : 'inline-flex cursor-default rounded-sm p-0.5 [&_svg]:opacity-50'
-      }
-      onClick={() => {
-        if (canEdit) {
-          p.onEditEntry(p.entry);
-        }
-      }}
-      type="button"
-    >
-      <EditIcon className="size-[21px]" />
-    </button>
-  );
-
-  return (
-    <>
-      <div className="flex flex-col">
-        <span className="font-semibold">{p.entry.name}</span>
-      </div>
-
-      <span>{friendlyValue}</span>
-
-      <span className="mx-5 opacity-50">{Boolean(entry.isExplicitlySet) && 'Custom'}</span>
-
-      <span className="inline-flex items-center gap-3 text-[hsl(0_0%_35%)]">
-        {canEdit ? (
-          editButton
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>{editButton}</TooltipTrigger>
-            <TooltipContent side="left">{nonEdittableReason}</TooltipContent>
-          </Tooltip>
-        )}
-        {Boolean(entry.documentation) && (
-          <Popover>
-            <PopoverTrigger className="inline-flex cursor-pointer rounded-sm p-0.5 hover:bg-muted">
-              <InfoIcon className="size-[18px]" />
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="flex flex-col gap-2">
-                <p className="font-bold text-lg">{entry.name}</p>
-                <p className="text-sm">{entry.documentation}</p>
-                <p className="text-sm">{getConfigDescription(entry.source)}</p>
-              </div>
-            </PopoverContent>
-          </Popover>
-        )}
-      </span>
-    </>
-  );
-};
 
 function isTopicConfigEdittable(
   entry: ConfigEntryExtended,

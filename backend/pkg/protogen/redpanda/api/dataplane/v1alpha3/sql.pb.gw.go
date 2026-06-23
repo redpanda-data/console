@@ -123,6 +123,8 @@ func local_request_SQLService_ListTables_0(ctx context.Context, marshaler runtim
 	return msg, metadata, err
 }
 
+var filter_SQLService_DescribeTable_0 = &utilities.DoubleArray{Encoding: map[string]int{"catalog": 0, "name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+
 func request_SQLService_DescribeTable_0(ctx context.Context, marshaler runtime.Marshaler, client SQLServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq DescribeTableRequest
@@ -147,6 +149,12 @@ func request_SQLService_DescribeTable_0(ctx context.Context, marshaler runtime.M
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SQLService_DescribeTable_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := client.DescribeTable(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -173,6 +181,12 @@ func local_request_SQLService_DescribeTable_0(ctx context.Context, marshaler run
 	protoReq.Name, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SQLService_DescribeTable_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.DescribeTable(ctx, &protoReq)
 	return msg, metadata, err
@@ -202,6 +216,27 @@ func local_request_SQLService_ExecuteQuery_0(ctx context.Context, marshaler runt
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.ExecuteQuery(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_SQLService_GetSqlIdentity_0(ctx context.Context, marshaler runtime.Marshaler, client SQLServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetSqlIdentityRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.GetSqlIdentity(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_SQLService_GetSqlIdentity_0(ctx context.Context, marshaler runtime.Marshaler, server SQLServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetSqlIdentityRequest
+		metadata runtime.ServerMetadata
+	)
+	msg, err := server.GetSqlIdentity(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -290,6 +325,26 @@ func RegisterSQLServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 			return
 		}
 		forward_SQLService_ExecuteQuery_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_SQLService_GetSqlIdentity_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlIdentity", runtime.WithHTTPPathPattern("/v1alpha3/sql/identity"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_SQLService_GetSqlIdentity_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SQLService_GetSqlIdentity_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 
 	return nil
@@ -399,19 +454,38 @@ func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		}
 		forward_SQLService_ExecuteQuery_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_SQLService_GetSqlIdentity_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlIdentity", runtime.WithHTTPPathPattern("/v1alpha3/sql/identity"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_SQLService_GetSqlIdentity_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_SQLService_GetSqlIdentity_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	return nil
 }
 
 var (
-	pattern_SQLService_ListCatalogs_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "sql", "catalogs"}, ""))
-	pattern_SQLService_ListTables_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha3", "sql", "catalogs", "catalog", "tables"}, ""))
-	pattern_SQLService_DescribeTable_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha3", "sql", "catalogs", "catalog", "tables", "name"}, ""))
-	pattern_SQLService_ExecuteQuery_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "sql", "queries"}, ""))
+	pattern_SQLService_ListCatalogs_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "sql", "catalogs"}, ""))
+	pattern_SQLService_ListTables_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1alpha3", "sql", "catalogs", "catalog", "tables"}, ""))
+	pattern_SQLService_DescribeTable_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"v1alpha3", "sql", "catalogs", "catalog", "tables", "name"}, ""))
+	pattern_SQLService_ExecuteQuery_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "sql", "queries"}, ""))
+	pattern_SQLService_GetSqlIdentity_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "sql", "identity"}, ""))
 )
 
 var (
-	forward_SQLService_ListCatalogs_0  = runtime.ForwardResponseMessage
-	forward_SQLService_ListTables_0    = runtime.ForwardResponseMessage
-	forward_SQLService_DescribeTable_0 = runtime.ForwardResponseMessage
-	forward_SQLService_ExecuteQuery_0  = runtime.ForwardResponseMessage
+	forward_SQLService_ListCatalogs_0   = runtime.ForwardResponseMessage
+	forward_SQLService_ListTables_0     = runtime.ForwardResponseMessage
+	forward_SQLService_DescribeTable_0  = runtime.ForwardResponseMessage
+	forward_SQLService_ExecuteQuery_0   = runtime.ForwardResponseMessage
+	forward_SQLService_GetSqlIdentity_0 = runtime.ForwardResponseMessage
 )

@@ -79,9 +79,7 @@ message MCPServer {
   // They help organize MCP servers and enable filtering when listing them.
   map<string, string> tags = 6 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The current MCP server state.
@@ -153,9 +151,7 @@ service MCPServerService {
         key: "201"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}}
         }
       }
     };
@@ -179,18 +175,14 @@ service MCPServerService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -215,9 +207,7 @@ service MCPServerService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListMCPServersResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListMCPServersResponse"}}
         }
       }
     };
@@ -248,9 +238,7 @@ service MCPServerService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}}
         }
       }
     };
@@ -282,9 +270,7 @@ service MCPServerService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -309,18 +295,14 @@ service MCPServerService {
         key: "200"
         value: {
           description: "Stopped"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -345,18 +327,14 @@ service MCPServerService {
         key: "200"
         value: {
           description: "Started"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.MCPServer"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -381,9 +359,7 @@ service MCPServerService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetMCPServerServiceConfigSchemaResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetMCPServerServiceConfigSchemaResponse"}}
         }
       }
     };
@@ -411,9 +387,7 @@ service MCPServerService {
         key: "200"
         value: {
           description: "Linting finished. See `lint_hints` for details."
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.LintMCPConfigResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.LintMCPConfigResponse"}}
         }
       }
     };
@@ -467,9 +441,7 @@ message MCPServerCreate {
   // Optional list of tags to attach to an MCP server.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   MCPServer.ServiceAccount service_account = 6 [
@@ -535,9 +507,7 @@ message ListMCPServersRequest {
     map<string, string> tags = 2 [
       (buf.validate.field).map = {
         max_pairs: 16
-        values: {
-          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-        }
+        values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filters by tags using exact match. Returns only MCP servers that have all the specified key-value pairs."}
     ];
@@ -589,9 +559,7 @@ message MCPServerUpdate {
   // If a tag's value is empty, the server interprets that as a deletion.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   MCPServer.ServiceAccount service_account = 6;

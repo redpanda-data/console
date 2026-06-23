@@ -38,9 +38,7 @@ message ListQueriesRequest {
     map<string, string> tags = 1 [
       (buf.validate.field).map = {
         max_pairs: 16
-        values: {
-          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-        }
+        values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Queries that match all the provided tags will be returned."}
     ];
@@ -93,9 +91,7 @@ message ExecuteRangeQueryParams {
   // Optional filter values to apply to the query, if the query supports them
   map<string, string> filters = 3 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 }
 
@@ -126,9 +122,7 @@ message ExecuteInstantQueryParams {
   // Optional filter values to apply to the query, if the query supports them
   map<string, string> filters = 2 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 }
 
@@ -170,9 +164,7 @@ service ObservabilityService {
         key: "200"
         value: {
           description: "Queries metadata"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListQueriesResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListQueriesResponse"}}
         }
       }
     };
@@ -195,9 +187,7 @@ service ObservabilityService {
         key: "200"
         value: {
           description: "Range query results"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteRangeQueryResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteRangeQueryResponse"}}
         }
       }
     };
@@ -220,9 +210,7 @@ service ObservabilityService {
         key: "200"
         value: {
           description: "Instant query results"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteInstantQueryResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteInstantQueryResponse"}}
         }
       }
     };

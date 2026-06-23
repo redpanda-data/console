@@ -191,9 +191,7 @@ service TransformService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTransformsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTransformsResponse"}}
         }
       }
     };
@@ -216,18 +214,14 @@ service TransformService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTransformResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTransformResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -254,9 +248,7 @@ service TransformService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };

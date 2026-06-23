@@ -279,6 +279,50 @@ async function loadLargeMessage({
   }
 }
 
+/**
+ * A dropdown menu item for the "Add filter" menu. When `disabledReason` is set the item
+ * renders as a visually-disabled row that shows a tooltip explaining why on hover.
+ *
+ * We deliberately do NOT render a disabled `<DropdownMenuItem>` here: Base UI wraps every
+ * menu item in a `MotionHighlight` layer that keeps intercepting pointer events even when
+ * the item is disabled, so a tooltip attached to a wrapping element never receives hover.
+ * Rendering the disabled state as a plain styled `<span>` (mirroring the menu-item styling)
+ * lets the tooltip trigger receive hover reliably while the row stays non-interactive.
+ */
+const AddFilterMenuItem: FC<{
+  testId: string;
+  disabledReason?: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}> = ({ testId, disabledReason, onClick, children }) => {
+  if (!disabledReason) {
+    return (
+      <DropdownMenuItem data-testid={testId} onClick={onClick}>
+        {children}
+      </DropdownMenuItem>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            aria-disabled
+            className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
+            data-testid={testId}
+            role="menuitem"
+            tabIndex={-1}
+          >
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right">{disabledReason}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: this is because of the refactoring effort, the scope will be minimised eventually
 export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   // Zustand store for topic settings
@@ -1224,7 +1268,20 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   });
 
   // Search controls derived state
-  const canUseFilters = (topicPermissions?.canUseSearchFilters ?? true) && !isServerless();
+  // Reasons explaining why a filter cannot be added (undefined = enabled).
+  const partitionFilterDisabledReason = dynamicFilters.includes('partition')
+    ? 'Partition filter is already added. Use the existing Partition control to filter, or remove it first.'
+    : undefined;
+  let jsFilterDisabledReason: string | undefined;
+  if (isServerless()) {
+    jsFilterDisabledReason = 'JavaScript filters are not available in Serverless clusters.';
+  } else if (!(topicPermissions?.canUseSearchFilters ?? true)) {
+    jsFilterDisabledReason = "You don't have permission to use search filters on this topic.";
+  } else if (continuousPaginationEnabled) {
+    jsFilterDisabledReason =
+      'JavaScript filters are not available while continuous pagination is enabled. Turn it off to add a filter.';
+  }
+
   const customStartOffsetValid = !Number.isNaN(Number(customStartOffsetValue));
 
   const startOffsetOptions = [
@@ -1429,7 +1486,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                     >
                       <Select onValueChange={(val) => setPartitionID(Number(val))} value={String(partitionID)}>
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue>
+                            {(value: unknown) => (String(value) === '-1' ? 'All' : String(value))}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="-1">All</SelectItem>
@@ -1454,24 +1513,24 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem
-                  data-testid="add-topic-filter-partition"
-                  disabled={dynamicFilters.includes('partition')}
+                <AddFilterMenuItem
+                  disabledReason={partitionFilterDisabledReason}
                   onClick={() => addDynamicFilter('partition')}
+                  testId="add-topic-filter-partition"
                 >
                   <LayersIcon size="1.5rem" /> Partition
-                </DropdownMenuItem>
+                </AddFilterMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  data-testid="add-topic-filter-javascript"
-                  disabled={!canUseFilters}
+                <AddFilterMenuItem
+                  disabledReason={jsFilterDisabledReason}
                   onClick={() => {
                     const filter = createFilterEntry();
                     setCurrentJSFilter(filter);
                   }}
+                  testId="add-topic-filter-javascript"
                 >
                   <CodeIcon size="1.5rem" /> JavaScript Filter
-                </DropdownMenuItem>
+                </AddFilterMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

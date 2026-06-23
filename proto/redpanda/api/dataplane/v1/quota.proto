@@ -203,9 +203,7 @@ service QuotaService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListQuotasResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListQuotasResponse"}}
         }
       }
     };
@@ -227,9 +225,7 @@ service QuotaService {
         key: "201"
         value: {
           description: "Quota Set"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.SetQuotaResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.SetQuotaResponse"}}
         }
       }
     };
@@ -251,9 +247,7 @@ service QuotaService {
         key: "201"
         value: {
           description: "Quotas Set"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.BatchSetQuotaResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.BatchSetQuotaResponse"}}
         }
       }
     };
@@ -277,9 +271,7 @@ service QuotaService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteQuotaResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.DeleteQuotaResponse"}}
         }
       }
     };
@@ -301,9 +293,7 @@ service QuotaService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.BatchDeleteQuotaResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.BatchDeleteQuotaResponse"}}
         }
       }
     };

@@ -138,9 +138,7 @@ service ShadowLinkService {
         key: "202"
         value: {
           description: "Failover accepted and initiated"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.FailOverResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.FailOverResponse"}}
         }
       }
     };
@@ -159,9 +157,7 @@ service ShadowLinkService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.ListShadowLinkTopicsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.ListShadowLinkTopicsResponse"}}
         }
       }
     };
@@ -180,9 +176,7 @@ service ShadowLinkService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowTopicResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowTopicResponse"}}
         }
       }
     };
@@ -201,9 +195,7 @@ service ShadowLinkService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowMetricsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowMetricsResponse"}}
         }
       }
     };
@@ -222,9 +214,7 @@ service ShadowLinkService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowLinkResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowLinkResponse"}}
         }
       }
     };

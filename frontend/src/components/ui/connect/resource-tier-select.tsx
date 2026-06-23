@@ -93,7 +93,11 @@ export const ResourceTierSelect: React.FC<ResourceTierSelectProps> = ({
   onValueChange,
   placeholder = 'Select resource tier',
 }) => (
-  <Select onValueChange={onValueChange} value={value}>
+  <Select
+    items={RESOURCE_TIERS.map((tier) => ({ value: tier.id, label: tier.displayName }))}
+    onValueChange={onValueChange}
+    value={value}
+  >
     <SelectTrigger>
       <SelectValue placeholder={placeholder} />
     </SelectTrigger>

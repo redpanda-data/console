@@ -12,13 +12,11 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
-const mockIsFeatureFlagEnabled = vi.fn<(flag: string) => boolean>();
 vi.mock('../../../config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../config')>();
   return {
     ...actual,
     isServerless: () => false,
-    isFeatureFlagEnabled: (flag: string) => mockIsFeatureFlagEnabled(flag),
   };
 });
 
@@ -39,57 +37,7 @@ const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string 
 });
 
 describe('TopicConfiguration', () => {
-  describe('legacy layout (enableNewTopicPage off)', () => {
-    beforeEach(() => mockIsFeatureFlagEnabled.mockReturnValue(false));
-
-    test('renders groups in the correct order', () => {
-      // Generate an out of order set of test options
-      const entries: ConfigEntryExtended[] = [
-        'Retention',
-        'Tiered Storage',
-        'Storage Internals',
-        'Compression',
-        'Compaction',
-        'Replication',
-        'Iceberg',
-        '', // unknown options should appear at the end as 'Other'
-        'Message Handling',
-        'Write Caching',
-        'Schema Registry and Validation',
-      ].map((category) => makeEntry({ category }));
-
-      const { container } = render(
-        <ConfigurationEditor
-          entries={entries}
-          onForceRefresh={() => {
-            // no op - test callback
-          }}
-          targetTopic=""
-        />
-      );
-      expect(screen.getByTestId('config-group-table')).toBeVisible();
-
-      const groups = container.querySelectorAll('.configGroupTitle');
-
-      expect(Array.from(groups).map((g) => g.textContent)).toEqual([
-        'Retention',
-        'Compaction',
-        'Replication',
-        'Tiered Storage',
-        'Write Caching',
-        'Iceberg',
-        'Schema Registry and Validation',
-        'Message Handling',
-        'Compression',
-        'Storage Internals',
-        'Other',
-      ]);
-    });
-  });
-
-  describe('grouped layout (enableNewTopicPage on)', () => {
-    beforeEach(() => mockIsFeatureFlagEnabled.mockReturnValue(true));
-
+  describe('grouped layout', () => {
     test('renders a sidebar and titled sections, preserving backend categories and collapsing only unmapped ones into Other', () => {
       const entries: ConfigEntryExtended[] = [
         makeEntry({ name: 'retention.ms', category: 'Retention', isExplicitlySet: true }),

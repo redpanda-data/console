@@ -179,6 +179,7 @@ function RetentionTimeSelect(p: {
     <NumInput
       addonAfter={
         <Select
+          items={options}
           onValueChange={(u) => {
             const newUnit = u as RetentionTimeUnit;
             if (newUnit === 'default') {
@@ -248,6 +249,7 @@ function RetentionSizeSelect(p: {
     <NumInput
       addonAfter={
         <Select
+          items={options}
           onValueChange={(u) => {
             const newUnit = u as RetentionSizeUnit;
             if (newUnit === 'default') {

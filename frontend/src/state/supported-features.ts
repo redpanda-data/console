@@ -84,6 +84,10 @@ export class Feature {
     endpoint: '/api/schema-registry/contexts',
     method: 'GET',
   };
+  static readonly SQLService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1alpha3.SQLService',
+    method: 'POST',
+  };
 }
 
 /**
@@ -98,6 +102,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
       case Feature.TracingService.endpoint:
       case Feature.GetQuotas.endpoint:
       case Feature.SchemaRegistryContexts.endpoint:
+      case Feature.SQLService.endpoint:
         return { supported: false };
       default:
         return { supported: true };
@@ -113,7 +118,8 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
   if (
     f.endpoint.includes('.SecurityService') ||
     f.endpoint.includes('.SecretService') ||
-    f.endpoint.includes('.MCPServerService')
+    f.endpoint.includes('.MCPServerService') ||
+    f.endpoint.includes('.SQLService')
   ) {
     return { supported: false };
   }
@@ -141,7 +147,7 @@ export function isSupported(f: FeatureEntry): boolean {
 /**
  * A list of features we should hide instead of showing a disabled message.
  */
-const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.TracingService];
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.TracingService, Feature.SQLService];
 export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
@@ -178,6 +184,7 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
     shadowLinkService: compute(Feature.ShadowLinkService),
     tracingService: compute(Feature.TracingService),
     schemaRegistryContexts: compute(Feature.SchemaRegistryContexts),
+    sqlApi: compute(Feature.SQLService),
     featureErrors: errors,
   };
 }
@@ -208,6 +215,7 @@ type SupportedFeaturesStore = {
   shadowLinkService: boolean;
   tracingService: boolean;
   schemaRegistryContexts: boolean;
+  sqlApi: boolean;
 
   // Actions
   setEndpointCompatibility: (ec: EndpointCompatibility) => void;
@@ -297,6 +305,9 @@ const Features = {
   },
   get schemaRegistryContexts() {
     return useSupportedFeaturesStore.getState().schemaRegistryContexts;
+  },
+  get sqlApi() {
+    return useSupportedFeaturesStore.getState().sqlApi;
   },
 };
 

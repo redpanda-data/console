@@ -33,13 +33,13 @@ jobs:
           git checkout -b "changelog/${{ steps.tag.outputs.name }}"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
       - name: Cache Claude Code
         id: cache-claude
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: claude-code-${{ runner.os }}
@@ -98,7 +98,7 @@ jobs:
       # the PR mergeable — mirrors enterprise-ci-skip.yml.
       - name: Post Enterprise CI skip status
         if: ${{ steps.changelog_pr.outputs.created == 'true' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ github.token }}
           script: |

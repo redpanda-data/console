@@ -25,6 +25,15 @@
   }
 }
 
+/* Chakra (@redpanda-data/ui) resets every element's border-color via an unlayered
+   `*` rule reading this var; in dark mode it stays light and leaks onto bare-border
+   dividers. This selector out-specifies Chakra's `:root[data-theme="light"]` (0,2,0)
+   so our dark token wins on specificity alone. Lives here (app entry CSS) rather
+   than the registry-synced theme.css so it survives registry re-syncs. (UX-1259) */
+:root[data-theme].dark {
+  --chakra-colors-chakra-border-color: var(--color-border);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

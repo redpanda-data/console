@@ -112,9 +112,7 @@ message KnowledgeBase {
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 7 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   message Indexer {
@@ -266,9 +264,7 @@ message KnowledgeBaseCreate {
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   message Indexer {
@@ -406,9 +402,7 @@ message KnowledgeBaseUpdate {
   // Optional list of tags to attach to a pipeline.
   map<string, string> tags = 5 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   message Indexer {
@@ -504,9 +498,7 @@ message ListKnowledgeBasesRequest {
     map<string, string> tags = 2 [
       (buf.validate.field).map = {
         max_pairs: 16
-        values: {
-          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-        }
+        values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "KnowledgeBases that match all the provided tags will be returned."}
     ];
