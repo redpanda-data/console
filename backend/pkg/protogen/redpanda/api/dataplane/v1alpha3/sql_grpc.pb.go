@@ -20,10 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SQLService_ListCatalogs_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.SQLService/ListCatalogs"
-	SQLService_ListTables_FullMethodName    = "/redpanda.api.dataplane.v1alpha3.SQLService/ListTables"
-	SQLService_DescribeTable_FullMethodName = "/redpanda.api.dataplane.v1alpha3.SQLService/DescribeTable"
-	SQLService_ExecuteQuery_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.SQLService/ExecuteQuery"
+	SQLService_ListCatalogs_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.SQLService/ListCatalogs"
+	SQLService_ListTables_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.SQLService/ListTables"
+	SQLService_DescribeTable_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.SQLService/DescribeTable"
+	SQLService_ExecuteQuery_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.SQLService/ExecuteQuery"
+	SQLService_GetSqlIdentity_FullMethodName = "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlIdentity"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -47,6 +48,12 @@ type SQLServiceClient interface {
 	// ExecuteQuery runs a single SQL statement. Rows returned are capped
 	// server-side; `truncated` indicates the cap fired.
 	ExecuteQuery(ctx context.Context, in *ExecuteQueryRequest, opts ...grpc.CallOption) (*ExecuteQueryResponse, error)
+	// GetSqlIdentity returns the caller's SQL identity: the engine username it is
+	// connected as and whether it holds administrative (superuser) privileges.
+	// Clients use is_admin to gate write/DDL actions (e.g. creating tables) in
+	// the UI; the engine remains the source of truth and enforces privileges on
+	// execution regardless.
+	GetSqlIdentity(ctx context.Context, in *GetSqlIdentityRequest, opts ...grpc.CallOption) (*GetSqlIdentityResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -97,6 +104,16 @@ func (c *sQLServiceClient) ExecuteQuery(ctx context.Context, in *ExecuteQueryReq
 	return out, nil
 }
 
+func (c *sQLServiceClient) GetSqlIdentity(ctx context.Context, in *GetSqlIdentityRequest, opts ...grpc.CallOption) (*GetSqlIdentityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSqlIdentityResponse)
+	err := c.cc.Invoke(ctx, SQLService_GetSqlIdentity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
@@ -118,6 +135,12 @@ type SQLServiceServer interface {
 	// ExecuteQuery runs a single SQL statement. Rows returned are capped
 	// server-side; `truncated` indicates the cap fired.
 	ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error)
+	// GetSqlIdentity returns the caller's SQL identity: the engine username it is
+	// connected as and whether it holds administrative (superuser) privileges.
+	// Clients use is_admin to gate write/DDL actions (e.g. creating tables) in
+	// the UI; the engine remains the source of truth and enforces privileges on
+	// execution regardless.
+	GetSqlIdentity(context.Context, *GetSqlIdentityRequest) (*GetSqlIdentityResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -139,6 +162,9 @@ func (UnimplementedSQLServiceServer) DescribeTable(context.Context, *DescribeTab
 }
 func (UnimplementedSQLServiceServer) ExecuteQuery(context.Context, *ExecuteQueryRequest) (*ExecuteQueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ExecuteQuery not implemented")
+}
+func (UnimplementedSQLServiceServer) GetSqlIdentity(context.Context, *GetSqlIdentityRequest) (*GetSqlIdentityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSqlIdentity not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 func (UnimplementedSQLServiceServer) testEmbeddedByValue()                    {}
@@ -233,6 +259,24 @@ func _SQLService_ExecuteQuery_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_GetSqlIdentity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSqlIdentityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).GetSqlIdentity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_GetSqlIdentity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).GetSqlIdentity(ctx, req.(*GetSqlIdentityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -255,6 +299,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExecuteQuery",
 			Handler:    _SQLService_ExecuteQuery_Handler,
+		},
+		{
+			MethodName: "GetSqlIdentity",
+			Handler:    _SQLService_GetSqlIdentity_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

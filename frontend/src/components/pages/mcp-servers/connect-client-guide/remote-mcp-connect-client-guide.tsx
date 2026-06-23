@@ -105,7 +105,11 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
     <div className="space-y-2">
       <Label className="font-medium text-sm">Connect to your client</Label>
       <div>
-        <Select onValueChange={(value) => setClient(value as ClientType)} value={client}>
+        <Select
+          items={AVAILABLE_CLIENTS.map((clientId) => ({ value: clientId, label: CLIENT_INFO[clientId].name }))}
+          onValueChange={(value) => setClient(value as ClientType)}
+          value={client}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a client" />
           </SelectTrigger>

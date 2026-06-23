@@ -15,6 +15,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
+import { Database } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
@@ -248,6 +249,17 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     icon: ScaleIcon,
     group: SidebarSection.STREAMING,
     visibilityCheck: routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
+  },
+  {
+    path: '/sql',
+    title: 'SQL',
+    icon: Database,
+    group: SidebarSection.STREAMING,
+    // The enterprise backend mounts the SQLService and reports it in endpoint
+    // compatibility only when SQL is enabled (cfg.API.SQL.Enabled). This is the
+    // single source of truth for both embedded (cloud) and self-hosted, so the
+    // nav is gated on capability detection rather than a feature flag.
+    visibilityCheck: routeVisibility(true, [Feature.SQLService]),
   },
   {
     path: '/connect-clusters',

@@ -34,6 +34,20 @@ type ClientGeminiProps = {
   mcpServer: MCPServer;
 };
 
+// Drives the scope Select's items, options, and help text.
+const SCOPE_OPTIONS = [
+  {
+    value: 'user',
+    label: 'User',
+    description: 'Configuration available across all your projects',
+  },
+  {
+    value: 'project',
+    label: 'Project',
+    description: 'Configuration shared with team through project settings',
+  },
+] as const;
+
 export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
   const [selectedScope, setSelectedScope] = useState<string>('user');
 
@@ -74,22 +88,24 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
               </div>
               <Label className="font-medium text-sm">Scope</Label>
               <div>
-                <Select onValueChange={setSelectedScope} value={selectedScope}>
+                <Select items={SCOPE_OPTIONS} onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Configuration Scope</SelectLabel>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
+                      {SCOPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
               <Text className="text-muted-foreground" variant="small">
-                {selectedScope === 'user' && 'Configuration available across all your projects'}
-                {selectedScope === 'project' && 'Configuration shared with team through project settings'}
+                {SCOPE_OPTIONS.find((option) => option.value === selectedScope)?.description}
               </Text>
             </div>
           </ListItem>

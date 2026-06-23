@@ -151,7 +151,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select disabled={field.disabled} onValueChange={field.onChange} value={field.value}>
+                  <Select disabled={field.disabled} items={units} onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-32 bg-gray-200" disabled={field.disabled}>
                       <SelectValue />
                     </SelectTrigger>

@@ -631,6 +631,18 @@ components:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
       type: object
+    GetSqlIdentityResponse:
+      properties:
+        current_user:
+          description: Engine username the caller is connected as (SQL `current_user`).
+          type: string
+        is_admin:
+          description: |-
+            True when the caller holds administrative (superuser) privileges in the
+            engine, i.e. may perform write/DDL actions. Sourced from
+            `pg_roles.rolsuper`.
+          type: boolean
+      type: object
     GetTraceHistogramResponse:
       description: GetTraceHistogramResponse is the response message for getting the trace histogram.
       properties:
@@ -3264,6 +3276,25 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Describe table
+      tags:
+        - SQL
+  /v1alpha3/sql/identity:
+    get:
+      operationId: SQLService_GetSqlIdentity
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSqlIdentityResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get SQL identity
       tags:
         - SQL
   /v1alpha3/sql/queries:

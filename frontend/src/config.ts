@@ -82,6 +82,30 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
 };
 
 /**
+ * Wraps a base `fetch` so REST requests carry the same Bearer token as gRPC
+ * (see {@link addBearerTokenInterceptor}).
+ *
+ * Under Module Federation v2 the Cloud UI host supplies the access token via
+ * `getAccessToken`/`config.jwt` rather than a pre-authenticated `fetch`, so
+ * Console must attach the header itself on every `config.fetch` call. Centralizing
+ * it here covers the REST helpers that call `config.fetch` directly instead of the
+ * `rest<T>()` wrapper, which already injects the token.
+ *
+ * The token is read lazily at call time because the host may refresh `config.jwt`
+ * in place. We never overwrite an `Authorization` header that a legacy
+ * host-provided (V1) authenticatedFetch may already have set.
+ */
+export const createAuthInjectingFetch =
+  (baseFetch: WindowOrWorkerGlobalScope['fetch']): WindowOrWorkerGlobalScope['fetch'] =>
+  (input, init) => {
+    const headers = new Headers(init?.headers);
+    if (config.jwt && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${config.jwt}`);
+    }
+    return baseFetch(input, { ...init, headers });
+  };
+
+/**
  * Interceptor to handle license expiration errors in gRPC responses.
  *
  * This interceptor checks if the error is of type `ConnectError` with the
@@ -250,7 +274,7 @@ const setConfig = ({
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
-    fetch: fetch ?? window.fetch.bind(window),
+    fetch: createAuthInjectingFetch(fetch ?? window.fetch.bind(window)),
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
     licenseClient: licenseGrpcClient,
