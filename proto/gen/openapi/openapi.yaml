@@ -1869,9 +1869,14 @@ components:
       type: object
     ListTopicsResponse.Topic:
       properties:
+        cleanup_policy:
+          description: Topic cleanup policy (e.g. `delete`, `compact`).
+          type: string
         internal:
           description: Whether topic is internal only.
           type: boolean
+        log_dir_summary:
+          $ref: '#/components/schemas/LogDirSummary'
         name:
           description: Topic name.
           type: string
@@ -1940,6 +1945,22 @@ components:
           type: string
         message:
           description: The localized error message in the above locale.
+          type: string
+      type: object
+    LogDirSummary:
+      description: LogDirSummary describes the aggregated on-disk size of a topic.
+      properties:
+        hint:
+          description: Optional human-readable hint explaining a partial or missing result.
+          type: string
+        replica_errors:
+          description: Errors encountered while querying log dirs from individual brokers.
+          items:
+            $ref: '#/components/schemas/ReplicaError'
+          type: array
+        total_size_bytes:
+          description: Total size of the topic in bytes across all replicas.
+          format: int64
           type: string
       type: object
     MCPServer:
@@ -2576,6 +2597,17 @@ components:
             format: int32
             type: integer
           type: array
+      type: object
+    ReplicaError:
+      description: ReplicaError describes a log dir query error for a single broker.
+      properties:
+        broker_id:
+          description: Broker that returned the error.
+          format: int32
+          type: integer
+        error:
+          description: Error message returned by the broker.
+          type: string
       type: object
     Request:
       properties:
@@ -7837,7 +7869,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

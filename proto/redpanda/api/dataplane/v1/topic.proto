@@ -143,6 +143,26 @@ message ListTopicsResponse {
     int32 partition_count = 3;
     // Topic replication factor.
     int32 replication_factor = 4;
+    // Topic cleanup policy (e.g. `delete`, `compact`).
+    string cleanup_policy = 5;
+    // Aggregated log directory size for the topic across all replicas.
+    LogDirSummary log_dir_summary = 6;
+  }
+  // LogDirSummary describes the aggregated on-disk size of a topic.
+  message LogDirSummary {
+    // Total size of the topic in bytes across all replicas.
+    int64 total_size_bytes = 1;
+    // Errors encountered while querying log dirs from individual brokers.
+    repeated ReplicaError replica_errors = 2;
+    // Optional human-readable hint explaining a partial or missing result.
+    string hint = 3;
+  }
+  // ReplicaError describes a log dir query error for a single broker.
+  message ReplicaError {
+    // Broker that returned the error.
+    int32 broker_id = 1;
+    // Error message returned by the broker.
+    string error = 2;
   }
   repeated ListTopicsResponse.Topic topics = 1;
   string next_page_token = 2;
