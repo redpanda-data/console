@@ -224,7 +224,7 @@ const ConfigEditorForm: FC<{
             <DialogTitle>{`Edit ${editedEntry.name}`}</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <p className="mb-6">{editedEntry.documentation}</p>
+            <p className="pb-6">{editedEntry.documentation}</p>
 
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
