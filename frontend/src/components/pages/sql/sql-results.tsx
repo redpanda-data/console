@@ -14,14 +14,21 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Braces, CircleX, Clock, Download, GitMerge, Plus, Rows3, Terminal, X } from 'lucide-react';
+import { Braces, CircleX, Clock, Database, Download, GitMerge, Plus, Rows3, Terminal, X } from 'lucide-react';
 import { createContext, useContext, useMemo, useState } from 'react';
 import DataGrid, { type Column } from 'react-data-grid';
 import { isMacOS } from 'utils/platform';
@@ -47,6 +54,8 @@ export type SqlResultsProps = {
   sqlRole: SqlRole;
   /** Admin entry point for the add-topic wizard. */
   onAddTable?: () => void;
+  /** Whether the Redpanda catalog has any tables; drives the idle empty state. */
+  hasTables?: boolean;
 };
 
 const fmtNum = (n: number) => n.toLocaleString('en-US');
@@ -391,8 +400,35 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   );
 }
 
-export function SqlResults({ run, sqlRole, onAddTable }: SqlResultsProps) {
+export function SqlResults({ run, sqlRole, onAddTable, hasTables = true }: SqlResultsProps) {
   if (run.state === 'idle') {
+    // No tables in the catalog yet: nothing to query, so prompt the caller to
+    // create one from a topic. Admins get the wizard CTA; viewers get told who can.
+    if (!hasTables) {
+      return (
+        <Empty className="h-full">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Database />
+            </EmptyMedia>
+            <EmptyTitle>No tables yet</EmptyTitle>
+            <EmptyDescription>
+              {sqlRole === 'admin'
+                ? 'Create a table from a Redpanda topic to start querying it with SQL.'
+                : 'Ask an admin to create a table from a Redpanda topic before you can query it with SQL.'}
+            </EmptyDescription>
+          </EmptyHeader>
+          {sqlRole === 'admin' && onAddTable ? (
+            <EmptyContent>
+              <Button onClick={onAddTable} size="sm" variant="primary">
+                <Plus size={14} /> Add a topic to SQL
+              </Button>
+            </EmptyContent>
+          ) : null}
+        </Empty>
+      );
+    }
+
     const modKey = isMacOS() ? '⌘' : 'Ctrl';
 
     return (

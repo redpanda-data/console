@@ -220,6 +220,9 @@ const CATALOG_REF_BOUNDARY_RE = /[\w$".]/;
 const COMPLETION_IDENTIFIER_RE = /[\w$]+/;
 const VALID_COMPLETION_RE = /^[\w$]*$/;
 const AFTER_FROM_OR_JOIN_RE = /\b(?:from|join)\s+["\w$]*$/i;
+// Cursor sits immediately after `FROM `/`JOIN ` and a single trailing space —
+// the moment to auto-open the catalog (`catalog=>`) helper.
+const FROM_JOIN_TRIGGER_RE = /\b(?:from|join)\s$/i;
 
 function catalogTableCompletionResult(
   catalog: Catalog,
@@ -294,8 +297,11 @@ function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) =
       return catalogTableCompletionResult(catalog, ref, context.pos);
     }
 
+    // Offer catalogs once the caller is right after FROM/JOIN even with no
+    // partial typed yet, so the auto-trigger below can pop `catalog=>`.
     const word = context.matchBefore(COMPLETION_IDENTIFIER_RE);
-    if (!(word || context.explicit)) {
+    const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
+    if (!(word || context.explicit || afterFromClause)) {
       return null;
     }
     // Skip when completing a dotted member (schema completion's territory).
@@ -439,6 +445,17 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         EditorView.updateListener.of((update) => {
           if (update.selectionSet) {
             setHasSel(!update.state.selection.main.empty);
+          }
+          // Auto-open the catalog helper the moment the caller finishes typing
+          // `FROM `/`JOIN ` (a typed space), so `catalog=>` is suggested without
+          // a manual Ctrl+Space. Guarded to typing events to avoid re-triggering
+          // on programmatic edits (formatting, tab seeding).
+          if (update.docChanged && update.transactions.some((tr) => tr.isUserEvent('input.type'))) {
+            const pos = update.state.selection.main.head;
+            const lineText = update.state.doc.lineAt(pos);
+            if (FROM_JOIN_TRIGGER_RE.test(lineText.text.slice(0, pos - lineText.from))) {
+              startCompletion(update.view);
+            }
           }
         }),
         indentUnit.of('  '),

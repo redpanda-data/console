@@ -17,6 +17,7 @@ import { getTopicConfigurations } from 'protogen/redpanda/api/dataplane/v1/topic
 import {
   type DescribeTableRequest,
   DescribeTableRequestSchema,
+  GetSqlIdentityRequestSchema,
   type ListCatalogsRequest,
   ListCatalogsRequestSchema,
   type ListTablesRequest,
@@ -25,6 +26,7 @@ import {
 import {
   describeTable,
   executeQuery,
+  getSqlIdentity,
   listCatalogs,
   listTables,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql-SQLService_connectquery';
@@ -43,6 +45,15 @@ export const useListCatalogsQuery = (input?: MessageInit<ListCatalogsRequest>, o
   });
 
   return useQuery(listCatalogs, request, {
+    enabled: options?.enabled !== false,
+  });
+};
+
+// Resolves the caller's SQL identity (engine username + admin/superuser flag).
+// Admin gates write/DDL affordances like the "Add a topic" button.
+export const useGetSqlIdentityQuery = (options?: SqlQueryOptions) => {
+  const request = create(GetSqlIdentityRequestSchema, {});
+  return useQuery(getSqlIdentity, request, {
     enabled: options?.enabled !== false,
   });
 };

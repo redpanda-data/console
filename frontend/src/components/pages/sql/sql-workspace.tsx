@@ -29,6 +29,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
   useExecuteQueryMutation,
+  useGetSqlIdentityQuery,
   useInvalidateSqlCatalog,
   useListCatalogsQuery,
   useListTablesQuery,
@@ -56,7 +57,10 @@ import {
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
 
-const INITIAL_QUERY = 'SELECT name, type\nFROM system.catalogs\nORDER BY name;';
+// Start with a blank editor — the results pane prompts the caller to run a
+// query (or create a table from a topic when the catalog is empty) instead of
+// pre-running a system query.
+const INITIAL_QUERY = '';
 
 function columnDefFromProto(column: SqlColumn): ColumnDef {
   return {
@@ -292,7 +296,11 @@ function setupOverlayLayout(
 }
 
 export type SqlWorkspaceProps = {
-  /** Effective role of the caller. Defaults to viewer. */
+  /**
+   * Effective role of the caller. When omitted it's derived from the
+   * SQLService GetSqlIdentity endpoint (admin when the caller is a superuser);
+   * pass it explicitly to override the lookup in tests/storybook.
+   */
   sqlRole?: SqlRole;
 };
 
@@ -349,7 +357,7 @@ function useStudioMode(): {
   return { attachOverlay, mode, toggleMode };
 }
 
-export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
+export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const navigate = useNavigate();
   // The route guard skips the redirect while endpoint compatibility is still
   // loading; once it resolves, bounce clusters that genuinely lack SQLService.
@@ -377,6 +385,12 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
 
   const { data: catalogsData, isLoading } = useListCatalogsQuery();
   const executeQuery = useExecuteQueryMutation();
+
+  // Caller's effective role: an explicit prop wins (tests/storybook), otherwise
+  // derive it from the SQL identity — admin unlocks write/DDL affordances like
+  // the "Add a topic" button. Falls back to viewer until the lookup resolves.
+  const { data: identity } = useGetSqlIdentityQuery();
+  const sqlRole: SqlRole = sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
 
   // Map proto catalogs to the tree view model. Tables/columns are filled in by
   // the catalog-tree agent via ListTables/DescribeTable.
@@ -432,6 +446,7 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
   // editor autocomplete (and the bridge indicator below) can resolve table refs.
   const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
   const { data: redpandaTablesData } = useListTablesQuery({ catalog: redpandaCatalogName });
+  const hasTables = (redpandaTablesData?.tables?.length ?? 0) > 0;
 
   // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
   // autocomplete can resolve table references — the bare catalog list seeds
@@ -601,12 +616,12 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
       className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
       ref={attachOverlay}
     >
-      <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', mode === 'full' && 'px-4')}>
+      <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', mode === 'full' ? 'px-4' : 'mt-3')}>
         <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" variant={sqlRole === 'admin' ? 'info-inverted' : 'simple'}>
+          <Badge size="sm" variant="simple">
             {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
           <Button
@@ -663,6 +678,7 @@ export function SqlWorkspace({ sqlRole = 'viewer' }: SqlWorkspaceProps) {
               <ResizableHandle withHandle />
               <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize={20}>
                 <SqlResults
+                  hasTables={hasTables}
                   onAddTable={openWizard}
                   run={run.state === 'success' ? { ...run, bridge } : run}
                   sqlRole={sqlRole}
