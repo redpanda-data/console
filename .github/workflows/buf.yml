@@ -48,7 +48,7 @@ jobs:
         uses: bufbuild/buf-action@v1
         with:
           # buf CLI version - keep in sync with BUF_VERSION in taskfiles/proto.yaml
-          version: 1.65.0
+          version: 1.71.0
           lint: true
           format: true
           breaking: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Buf Skip Breaking') }}
@@ -82,7 +82,7 @@ jobs:
         uses: bufbuild/buf-action@v1
         with:
           # buf CLI version - keep in sync with BUF_VERSION in taskfiles/proto.yaml
-          version: 1.65.0
+          version: 1.71.0
           # No validation - already done in validate job
           lint: false
           format: false
@@ -117,7 +117,7 @@ jobs:
         uses: bufbuild/buf-action@v1
         with:
           # buf CLI version - keep in sync with BUF_VERSION in taskfiles/proto.yaml
-          version: 1.65.0
+          version: 1.71.0
           # Only archive - no other operations
           push: true
           token: ${{ env.BUF_TOKEN }}
