@@ -667,7 +667,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
               topics={wizardTopics}
             />
           ) : (
-            <ResizablePanelGroup className="min-w-0 flex-1" direction="vertical">
+            <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
               <ResizablePanel
                 className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
                 defaultSize={42}

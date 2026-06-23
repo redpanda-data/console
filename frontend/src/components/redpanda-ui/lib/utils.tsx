@@ -3,9 +3,10 @@ import { type ClassValue, cn as cnfast } from 'cnfast';
 import React from 'react';
 
 /**
- * [upstream] `cn` migrated to cnfast ahead of ui-registry PR #220 (byte-identical
- * output, same `(...inputs: ClassValue[])` signature). Drop this marker on the
- * next registry sync once #220 is released.
+ * Merge class names via cnfast — an optimized adaptation of clsx +
+ * tailwind-merge with byte-identical output. Keeps the original
+ * `(...inputs: ClassValue[])` signature, so every consumer call site is
+ * unaffected.
  */
 export function cn(...inputs: ClassValue[]) {
   return cnfast(...inputs);

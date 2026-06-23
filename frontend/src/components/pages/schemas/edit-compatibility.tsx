@@ -305,16 +305,18 @@ function EditSchemaCompatibility(p: {
 
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="edit-compatibility-save-btn"
-                  disabled={api.userData?.canManageSchemaRegistry === false}
-                  onClick={onSave}
-                  variant="primary"
-                >
-                  Save
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    data-testid="edit-compatibility-save-btn"
+                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    onClick={onSave}
+                    variant="primary"
+                  >
+                    Save
+                  </Button>
+                }
+              />
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
@@ -325,7 +327,6 @@ function EditSchemaCompatibility(p: {
           </div>
         </div>
       </div>
-
       {!!subjectName && schema && (
         <div className="flex-1">
           <Text

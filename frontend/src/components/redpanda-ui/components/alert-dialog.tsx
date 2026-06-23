@@ -1,31 +1,19 @@
-import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
-import React from 'react';
+'use client';
 
-import { buttonVariants } from './button';
+import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
+import type React from 'react';
+
+import { type ButtonVariants, buttonVariants } from './button';
 import { usePortalContainer } from '../lib/use-portal-container';
-import { asChildTrigger, narrowOpenChange, renderDescription, renderWithDataState } from '../lib/base-ui-compat';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
-type AlertDialogRootProps = Omit<React.ComponentProps<typeof AlertDialogPrimitive.Root>, 'onOpenChange'> &
-  SharedProps & {
-    onOpenChange?: (open: boolean) => void;
-  };
+type AlertDialogRootProps = AlertDialogPrimitive.Root.Props & SharedProps;
 
-function AlertDialog({ testId, onOpenChange, ...props }: AlertDialogRootProps) {
-  return (
-    <AlertDialogPrimitive.Root
-      data-slot="alert-dialog"
-      data-testid={testId}
-      onOpenChange={narrowOpenChange(onOpenChange)}
-      {...props}
-    />
-  );
+function AlertDialog({ testId, ...props }: AlertDialogRootProps) {
+  return <AlertDialogPrimitive.Root data-slot="alert-dialog" data-testid={testId} {...props} />;
 }
 
-type AlertDialogTriggerProps = React.ComponentProps<typeof AlertDialogPrimitive.Trigger> &
-  SharedProps & {
-    asChild?: boolean;
-  };
+type AlertDialogTriggerProps = AlertDialogPrimitive.Trigger.Props & SharedProps;
 
 function AlertDialogTrigger({ className, testId, ...props }: AlertDialogTriggerProps) {
   return (
@@ -33,55 +21,45 @@ function AlertDialogTrigger({ className, testId, ...props }: AlertDialogTriggerP
       className={cn('cursor-pointer', className)}
       data-slot="alert-dialog-trigger"
       data-testid={testId}
-      {...asChildTrigger(props)}
-    />
-  );
-}
-
-function AlertDialogPortal({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
-  return <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
-}
-
-function AlertDialogOverlay({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Backdrop>) {
-  return (
-    <AlertDialogPrimitive.Backdrop
-      className={cn(
-        // fill-mode-forwards holds the exit keyframe until Base UI unmounts;
-        // without it the backdrop flashes back to its natural opacity for one frame.
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 fill-mode-forwards data-[state=closed]:animate-out data-[state=open]:animate-in',
-        className
-      )}
-      data-slot="alert-dialog-overlay"
-      render={renderWithDataState('div')}
       {...props}
     />
   );
 }
 
-type AlertDialogContentProps = React.ComponentProps<typeof AlertDialogPrimitive.Popup> &
-  SharedProps &
-  Pick<FixedPositionContentProps, 'container' | 'showOverlay' | 'onOpenAutoFocus'>;
+function AlertDialogPortal({ ...props }: AlertDialogPrimitive.Portal.Props) {
+  return <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
+}
 
-function AlertDialogContent({
-  className,
-  testId,
-  container,
-  showOverlay = true,
-  onOpenAutoFocus: _onOpenAutoFocus,
-  ...props
-}: AlertDialogContentProps) {
+function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdrop.Props) {
+  return (
+    <AlertDialogPrimitive.Backdrop
+      className={cn(
+        // fill-mode-forwards holds the exit keyframe until Base UI unmounts (else a one-frame flash).
+        'data-[closed]:fade-out-0 data-[open]:fade-in-0 fixed inset-0 z-50 bg-black/50 fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in',
+        className
+      )}
+      data-slot="alert-dialog-overlay"
+      {...props}
+    />
+  );
+}
+
+type AlertDialogContentProps = AlertDialogPrimitive.Popup.Props &
+  SharedProps &
+  Pick<FixedPositionContentProps, 'container' | 'showOverlay'>;
+
+function AlertDialogContent({ className, testId, container, showOverlay = true, ...props }: AlertDialogContentProps) {
   const portalContainer = usePortalContainer();
   return (
     <AlertDialogPortal container={container ?? portalContainer}>
       {showOverlay ? <AlertDialogOverlay /> : null}
       <AlertDialogPrimitive.Popup
         className={cn(
-          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col gap-4 overflow-hidden rounded-lg border bg-background fill-mode-forwards p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-lg',
+          'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col gap-4 overflow-hidden rounded-lg border bg-background fill-mode-forwards p-6 shadow-lg duration-200 data-[closed]:animate-out data-[open]:animate-in sm:max-w-lg',
           className
         )}
         data-slot="alert-dialog-content"
         data-testid={testId}
-        render={renderWithDataState('div')}
         {...props}
       />
     </AlertDialogPortal>
@@ -108,7 +86,7 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>)
   );
 }
 
-function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+function AlertDialogTitle({ className, ...props }: AlertDialogPrimitive.Title.Props) {
   return (
     <AlertDialogPrimitive.Title
       className={cn('font-semibold text-lg', className)}
@@ -118,53 +96,40 @@ function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof A
   );
 }
 
-function AlertDialogDescription({
-  className,
-  children,
-  asChild,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description> & { asChild?: boolean }) {
-  // Render as <div> (not <p>) so block-level children don't trigger validateDOMNesting.
+function AlertDialogDescription({ className, ...props }: AlertDialogPrimitive.Description.Props) {
   return (
     <AlertDialogPrimitive.Description
+      className={cn('text-muted-foreground text-sm', className)}
       data-slot="alert-dialog-description"
-      render={renderDescription({
-        asChild,
-        children,
-        className: typeof className === 'string' ? className : undefined,
-        dataSlot: 'alert-dialog-description',
-      })}
+      // Render as <div> (not the default <p>) so block-level children don't trigger validateDOMNesting.
+      render={<div />}
       {...props}
     />
   );
 }
 
-type AlertDialogActionProps = React.ComponentProps<typeof AlertDialogPrimitive.Close> &
-  SharedProps & {
-    asChild?: boolean;
-  };
+type AlertDialogActionProps = AlertDialogPrimitive.Close.Props & SharedProps & Pick<ButtonVariants, 'variant' | 'size'>;
 
-function AlertDialogAction({ className, testId, ...props }: AlertDialogActionProps) {
+function AlertDialogAction({ className, testId, variant, size, ...props }: AlertDialogActionProps) {
   return (
     <AlertDialogPrimitive.Close
-      className={cn(buttonVariants(), 'rounded-md', className)}
+      className={cn(buttonVariants({ variant, size }), 'rounded-md', className)}
+      data-slot="alert-dialog-action"
       data-testid={testId}
-      {...asChildTrigger(props)}
+      {...props}
     />
   );
 }
 
-type AlertDialogCancelProps = React.ComponentProps<typeof AlertDialogPrimitive.Close> &
-  SharedProps & {
-    asChild?: boolean;
-  };
+type AlertDialogCancelProps = AlertDialogPrimitive.Close.Props & SharedProps & Pick<ButtonVariants, 'variant' | 'size'>;
 
-function AlertDialogCancel({ className, testId, ...props }: AlertDialogCancelProps) {
+function AlertDialogCancel({ className, testId, variant = 'outline', size, ...props }: AlertDialogCancelProps) {
   return (
     <AlertDialogPrimitive.Close
-      className={cn(buttonVariants({ variant: 'ghost' }), 'rounded-md', className)}
+      className={cn(buttonVariants({ variant, size }), 'rounded-md', className)}
+      data-slot="alert-dialog-cancel"
       data-testid={testId}
-      {...asChildTrigger(props)}
+      {...props}
     />
   );
 }
@@ -181,4 +146,12 @@ export {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+};
+
+export type {
+  AlertDialogRootProps,
+  AlertDialogTriggerProps,
+  AlertDialogContentProps,
+  AlertDialogActionProps,
+  AlertDialogCancelProps,
 };

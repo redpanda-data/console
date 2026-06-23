@@ -114,34 +114,36 @@ const UserProfile = () => {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuButton
-            aria-label={`User menu for ${user.displayName}`}
-            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            size={isCollapsed ? 'md' : 'lg'}
-            tooltip={isCollapsed ? user.displayName : undefined}
-          >
-            <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
-              <AvatarImage alt="" src={user.avatarUrl} />
-              <AvatarFallback aria-hidden="true" className="bg-primary font-medium text-primary-foreground text-xs">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            {!isCollapsed && (
-              <>
-                <div className="grid flex-1 text-left leading-tight">
-                  <Text as="span" className="truncate" variant="label">
-                    {user.displayName}
-                  </Text>
-                  <Text as="span" className="truncate text-sidebar-foreground/60" variant="muted">
-                    Preferences
-                  </Text>
-                </div>
-                <ChevronUp aria-hidden="true" className="ml-auto size-4" />
-              </>
-            )}
-          </SidebarMenuButton>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <SidebarMenuButton
+              aria-label={`User menu for ${user.displayName}`}
+              className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+              size={isCollapsed ? 'default' : 'lg'}
+              tooltip={isCollapsed ? user.displayName : undefined}
+            >
+              <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
+                <AvatarImage alt="" src={user.avatarUrl} />
+                <AvatarFallback aria-hidden="true" className="bg-primary font-medium text-primary-foreground text-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              {!isCollapsed && (
+                <>
+                  <div className="grid flex-1 text-left leading-tight">
+                    <Text as="span" className="truncate" variant="label">
+                      {user.displayName}
+                    </Text>
+                    <Text as="span" className="truncate text-sidebar-foreground/60" variant="muted">
+                      Preferences
+                    </Text>
+                  </div>
+                  <ChevronUp aria-hidden="true" className="ml-auto size-4" />
+                </>
+              )}
+            </SidebarMenuButton>
+          }
+        />
         <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
           <DropdownMenuLabel>
             <div className="flex flex-col">
@@ -175,7 +177,6 @@ const UserProfile = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
       <UserPreferencesDialog isOpen={preferencesOpen} onClose={() => setPreferencesOpen(false)} />
     </>
   );
@@ -203,19 +204,17 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
       <SidebarMenuButton
         aria-current={isActive ? 'page' : undefined}
         aria-disabled={item.isDisabled}
-        asChild={!item.isDisabled}
         className={item.isDisabled ? 'cursor-not-allowed opacity-50' : ''}
         disabled={item.isDisabled}
         isActive={isActive}
+        render={
+          item.isDisabled ? undefined : (
+            <Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to} />
+          )
+        }
         tooltip={item.isDisabled ? { children: item.disabledText } : titleString}
       >
-        {item.isDisabled ? (
-          <span className="flex items-center gap-2">{itemContent}</span>
-        ) : (
-          <Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to}>
-            {itemContent}
-          </Link>
-        )}
+        {item.isDisabled ? <span className="flex items-center gap-2">{itemContent}</span> : itemContent}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

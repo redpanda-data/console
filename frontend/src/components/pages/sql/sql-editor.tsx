@@ -524,11 +524,13 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
           </Tabs>
           <div className="flex shrink-0 items-center gap-1.5 border-b pr-2">
             <Popover onOpenChange={setHistOpen} open={histOpen}>
-              <PopoverTrigger asChild>
-                <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
-                  <History /> History
-                </Button>
-              </PopoverTrigger>
+              <PopoverTrigger
+                render={
+                  <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
+                    <History /> History
+                  </Button>
+                }
+              />
               <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto p-1">
                 <Text className="px-2 py-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
                   Recent queries · this browser
@@ -578,7 +580,6 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             </Button>
           </div>
         </div>
-
         <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
           <CodeMirror
             basicSetup={{ foldGutter: false }}

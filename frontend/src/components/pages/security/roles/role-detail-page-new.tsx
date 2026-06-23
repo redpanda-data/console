@@ -112,7 +112,6 @@ export const RoleDetailPageNew = () => {
   return (
     <div className="flex flex-col gap-6 pt-4">
       <AclsCard acls={aclData} isLoading={isAclsLoading} principal={`RedpandaRole:${roleName}`} />
-
       {/* Principals */}
       <ListLayout className="my-4 min-h-0 gap-3 py-0">
         <ListLayoutFilters
@@ -163,15 +162,18 @@ export const RoleDetailPageNew = () => {
                         </EmptyDescription>
                       </EmptyHeader>
                       <EmptyContent>
-                        <Button asChild variant="link">
-                          <a
-                            href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            Read the docs →
-                          </a>
-                        </Button>
+                        <Button
+                          render={
+                            <a
+                              href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              Read the docs →
+                            </a>
+                          }
+                          variant="link"
+                        />
                       </EmptyContent>
                     </Empty>
                   </TableCell>

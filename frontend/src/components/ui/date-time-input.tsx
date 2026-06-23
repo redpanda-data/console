@@ -216,8 +216,8 @@ export const DateTimeInput = ({
 
   return (
     <Popover>
-      <PopoverAnchor asChild>
-        <Input
+      <PopoverAnchor
+        render={<Input
           className={className}
           data-testid={rest['data-testid']}
           disabled={disabled}
@@ -235,19 +235,17 @@ export const DateTimeInput = ({
           value={displayedNumber}
         >
           <InputEnd className="pointer-events-auto">
-            <PopoverTrigger asChild>
-              <button
+            <PopoverTrigger
+              render={<button
                 aria-label="Open calendar"
                 className="text-muted-foreground hover:text-foreground"
                 disabled={disabled}
                 type="button"
               >
                 <CalendarIcon className="size-4" />
-              </button>
-            </PopoverTrigger>
+              </button>} />
           </InputEnd>
-        </Input>
-      </PopoverAnchor>
+        </Input>} />
       <PopoverContent align="start" className="w-auto p-3">
         <DateTimePickerPanel
           disabled={disabled}

@@ -203,9 +203,7 @@ export const CreateUserButton = ({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex cursor-not-allowed">{button}</span>
-      </TooltipTrigger>
+      <TooltipTrigger render={<span className="inline-flex cursor-not-allowed">{button}</span>} />
       <TooltipContent>{disabledReason}</TooltipContent>
     </Tooltip>
   );
@@ -285,23 +283,32 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
                 value={state.password}
               />
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label="Refresh"
-                    data-testid="refresh-password-button"
-                    onClick={() => state.setPassword(generatePassword(30, state.generateWithSpecialChars))}
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <RotateCwIcon size={16} />
-                  </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Refresh"
+                      data-testid="refresh-password-button"
+                      onClick={() => state.setPassword(generatePassword(30, state.generateWithSpecialChars))}
+                      size="icon"
+                      variant="ghost"
+                    >
+                      <RotateCwIcon size={16} />
+                    </Button>
+                  }
+                />
                 <TooltipContent side="top">Generate new random password</TooltipContent>
               </Tooltip>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <CopyButton content={state.password} data-testid="copy-password-button" size="icon" variant="ghost" />
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <CopyButton
+                      content={state.password}
+                      data-testid="copy-password-button"
+                      size="icon"
+                      variant="ghost"
+                    />
+                  }
+                />
                 <TooltipContent side="top">Copy password</TooltipContent>
               </Tooltip>
             </div>
@@ -347,7 +354,6 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
           </Select>
         </Field>
       </div>
-
       {rolesApiEnabled && (
         <div className="mt-6">
           <Text className="mb-2 font-medium text-sm">Assign roles</Text>
@@ -391,9 +397,7 @@ export const CreateUserConfirmationModal = ({
       <div className="flex items-center gap-2">
         <Input containerClassName="flex-1" readOnly type="text" value={username} />
         <Tooltip>
-          <TooltipTrigger asChild>
-            <CopyButton content={username} variant="ghost" />
-          </TooltipTrigger>
+          <TooltipTrigger render={<CopyButton content={username} variant="ghost" />} />
           <TooltipContent side="top">Copy username</TooltipContent>
         </Tooltip>
       </div>
@@ -404,9 +408,7 @@ export const CreateUserConfirmationModal = ({
       <div className="flex items-center gap-2">
         <Input readOnly testId="test_field" type="password" value={password} />
         <Tooltip>
-          <TooltipTrigger asChild>
-            <CopyButton content={password} variant="ghost" />
-          </TooltipTrigger>
+          <TooltipTrigger render={<CopyButton content={password} variant="ghost" />} />
           <TooltipContent side="top">Copy password</TooltipContent>
         </Tooltip>
       </div>

@@ -75,7 +75,6 @@ export const RemoteMCPConnectionTab = () => {
           <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
         </CardContent>
       </Card>
-
       {/* Right Column */}
       <div className="space-y-4">
         {/* Connection Information Panel */}
@@ -127,15 +126,17 @@ export const RemoteMCPConnectionTab = () => {
             <div className="grid grid-cols-2 gap-2">
               {AVAILABLE_LANGUAGES.map((language) => (
                 <Sheet key={language}>
-                  <SheetTrigger asChild>
-                    <Button
-                      className="mt-2 flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
-                      onClick={() => setSelectedLanguage(language)}
-                      variant="outline"
-                    >
-                      <img alt={language} src={getLanguageIcon(language)} />
-                    </Button>
-                  </SheetTrigger>
+                  <SheetTrigger
+                    render={
+                      <Button
+                        className="mt-2 flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
+                        onClick={() => setSelectedLanguage(language)}
+                        variant="outline"
+                      >
+                        <img alt={language} src={getLanguageIcon(language)} />
+                      </Button>
+                    }
+                  />
                   <SheetContent className="w-full overflow-y-auto sm:max-w-2xl" side="right">
                     <SheetHeader>
                       <SheetTitle>{language.charAt(0).toUpperCase() + language.slice(1)} Connection Code</SheetTitle>

@@ -71,7 +71,7 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
 
       {/* Accordion for subagents */}
       {fields.length > 0 && (
-        <Accordion collapsible onValueChange={setExpandedItem} type="single" value={expandedItem}>
+        <Accordion onValueChange={([value]) => setExpandedItem(value as string | undefined)} value={expandedItem ? [expandedItem] : []}>
           {fields.map((field, index) => (
             <AccordionItem key={field.id} value={`subagent-${index}`}>
               <AccordionTrigger>

@@ -210,46 +210,48 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {subject.schemas.count((x: { isSoftDeleted?: boolean }) => !x.isSoftDeleted)}
         </SmallStat>
       </div>
-
       {/* Buttons */}
       <div className="flex gap-2">
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              data-testid="schema-details-add-version-btn"
-              disabled={canCreateSchemas === false}
-              onClick={() =>
-                navigate({
-                  to: '/schema-registry/subjects/$subjectName/add-version',
-                  params: { subjectName: subjectNameEncoded },
-                })
-              }
-              variant="outline"
-            >
-              Add new version
-            </Button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <Button
+                data-testid="schema-details-add-version-btn"
+                disabled={canCreateSchemas === false}
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/add-version',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+                variant="outline"
+              >
+                Add new version
+              </Button>
+            }
+          />
           {canCreateSchemas === false && (
             <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
           )}
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              data-testid="schema-details-delete-subject-btn"
-              disabled={canDeleteSchemas === false}
-              onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
-              variant="outline"
-            >
-              Delete subject
-            </Button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <Button
+                data-testid="schema-details-delete-subject-btn"
+                disabled={canDeleteSchemas === false}
+                onClick={() => handleDeleteSubject(isSoftDeleted ?? false)}
+                variant="outline"
+              >
+                Delete subject
+              </Button>
+            }
+          />
           {canDeleteSchemas === false && (
             <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
           )}
         </Tooltip>
       </div>
-
       {/* Definition / Diff */}
       <Tabs data-testid="schema-details-tabs" defaultValue="definition">
         <TabsList variant="underline">
@@ -263,7 +265,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           <VersionDiff subject={subject} />
         </TabsContent>
       </Tabs>
-
       <DeleteDialog
         onConfirm={() => executeDeleteSubject(false)}
         onOpenChange={(open) => {
@@ -486,33 +487,37 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
           {schema.isSoftDeleted ? (
             <>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    className="ml-auto"
-                    data-testid="schema-definition-permanent-delete-btn"
-                    disabled={canDeleteSchemas === false}
-                    onClick={handlePermanentDelete}
-                    variant="outline"
-                  >
-                    Permanent delete
-                  </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      className="ml-auto"
+                      data-testid="schema-definition-permanent-delete-btn"
+                      disabled={canDeleteSchemas === false}
+                      onClick={handlePermanentDelete}
+                      variant="outline"
+                    >
+                      Permanent delete
+                    </Button>
+                  }
+                />
                 {canDeleteSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
                 )}
               </Tooltip>
 
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid="schema-definition-recover-btn"
-                    disabled={canCreateSchemas === false}
-                    onClick={handleRecover}
-                    variant="outline"
-                  >
-                    Recover
-                  </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      data-testid="schema-definition-recover-btn"
+                      disabled={canCreateSchemas === false}
+                      onClick={handleRecover}
+                      variant="outline"
+                    >
+                      Recover
+                    </Button>
+                  }
+                />
                 {canCreateSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
                 )}
@@ -520,17 +525,19 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
             </>
           ) : (
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="ml-auto"
-                  data-testid="schema-definition-delete-version-btn"
-                  disabled={canDeleteSchemas === false}
-                  onClick={handleSoftDelete}
-                  variant="outline"
-                >
-                  Delete
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    className="ml-auto"
+                    data-testid="schema-definition-delete-version-btn"
+                    disabled={canDeleteSchemas === false}
+                    onClick={handleSoftDelete}
+                    variant="outline"
+                  >
+                    Delete
+                  </Button>
+                }
+              />
               {canDeleteSchemas === false && (
                 <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
               )}
@@ -555,12 +562,10 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
           testId="schema-definition-code-block"
         />
       </div>
-
       {/* References Box */}
       <div>
         <SchemaReferences schema={schema} subject={subjectData} />
       </div>
-
       <DeleteDialog
         onConfirm={executeSoftDelete}
         onOpenChange={(open) => {

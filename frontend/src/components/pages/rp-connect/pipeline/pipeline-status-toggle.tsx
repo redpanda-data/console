@@ -138,7 +138,7 @@ export function PipelineStatusToggle({
         <Switch
           aria-label={checked ? 'Stop pipeline' : 'Start pipeline'}
           checked={checked}
-          className={cn(tone === 'success' && 'data-[state=checked]:bg-success')}
+          className={cn(tone === 'success' && 'data-[checked]:bg-success')}
           disabled={isDisabled}
           id={`pipeline-run-toggle-${pipelineId}`}
           onCheckedChange={handleCheckedChange}
@@ -149,7 +149,6 @@ export function PipelineStatusToggle({
           {label}
         </Label>
       </div>
-
       <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>
         <DialogContent>
           <DialogHeader>

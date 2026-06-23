@@ -151,7 +151,6 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
         open={pendingDelete === 'user-and-acls' || pendingDelete === 'user-only'}
         userName={group.principalName}
       />
-
       <Dialog
         onOpenChange={(open) => {
           if (!open) setPendingDelete(null);
@@ -183,101 +182,108 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <Collapsible data-testid={`row-${group.principalName}`} onOpenChange={onToggle} open={isExpanded}>
         <div className="overflow-hidden rounded-lg border">
           {/* Card header — distinct background makes each principal easy to scan */}
-          <CollapsibleTrigger asChild>
-            <div
-              className="flex cursor-pointer items-center gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/60"
-              role="button"
-              tabIndex={0}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-
-              <PrincipalIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-mono font-semibold text-sm">{group.principalName}</span>
-                  {group.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
-                  {group.denyCount > 0 && <Badge variant="destructive">{group.denyCount} deny</Badge>}
-                </div>
-                <span className="text-muted-foreground text-xs">{summaryText}</span>
-              </div>
-
+          <CollapsibleTrigger
+            render={
               <div
-                className="flex shrink-0 items-center gap-1"
-                data-testid={`actions-${group.principalName}`}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-                role="presentation"
+                className="flex cursor-pointer items-center gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/60"
+                role="button"
+                tabIndex={0}
               >
-                {group.principalType === 'User' && (
-                  <Link
-                    className="inline-flex items-center justify-center p-1 text-muted-foreground hover:text-foreground"
-                    onClick={(e) => e.stopPropagation()}
-                    params={{ userName: group.principalName }}
-                    to="/security/users/$userName/details"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Link>
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button asChild size="icon-sm" variant="ghost">
-                      <button type="button">
-                        <MoreHorizontalIcon className="h-4 w-4" />
-                      </button>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {group.principalType === 'User' && (
-                      <>
-                        <DropdownMenuItem
-                          disabled={!canDeleteUser}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPendingDelete('user-and-acls');
-                          }}
-                          variant="destructive"
-                        >
-                          <Trash2Icon />
-                          Delete (User and ACLs)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!canDeleteUser}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPendingDelete('user-only');
-                          }}
-                          variant="destructive"
-                        >
-                          <Trash2Icon />
-                          Delete (User only)
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete('acls-only');
-                      }}
-                      variant="destructive"
+                <PrincipalIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-mono font-semibold text-sm">{group.principalName}</span>
+                    {group.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
+                    {group.denyCount > 0 && <Badge variant="destructive">{group.denyCount} deny</Badge>}
+                  </div>
+                  <span className="text-muted-foreground text-xs">{summaryText}</span>
+                </div>
+
+                <div
+                  className="flex shrink-0 items-center gap-1"
+                  data-testid={`actions-${group.principalName}`}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  role="presentation"
+                >
+                  {group.principalType === 'User' && (
+                    <Link
+                      className="inline-flex items-center justify-center p-1 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                      params={{ userName: group.principalName }}
+                      to="/security/users/$userName/details"
                     >
-                      <Trash2Icon />
-                      Delete (ACLs only)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <ExternalLink className="h-4 w-4" />
+                    </Link>
+                  )}
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          render={
+                            <button type="button">
+                              <MoreHorizontalIcon className="h-4 w-4" />
+                            </button>
+                          }
+                          size="icon-sm"
+                          variant="ghost"
+                        />
+                      }
+                    />
+                    <DropdownMenuContent>
+                      {group.principalType === 'User' && (
+                        <>
+                          <DropdownMenuItem
+                            disabled={!canDeleteUser}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingDelete('user-and-acls');
+                            }}
+                            variant="destructive"
+                          >
+                            <Trash2Icon />
+                            Delete (User and ACLs)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!canDeleteUser}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPendingDelete('user-only');
+                            }}
+                            variant="destructive"
+                          >
+                            <Trash2Icon />
+                            Delete (User only)
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPendingDelete('acls-only');
+                        }}
+                        variant="destructive"
+                      >
+                        <Trash2Icon />
+                        Delete (ACLs only)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-            </div>
-          </CollapsibleTrigger>
+            }
+          />
 
           {/* Expanded ACL table */}
           <CollapsibleContent>
@@ -465,15 +471,18 @@ export const PermissionsListTabNew: FC = () => {
             <EmptyContent>
               <div className="flex items-center gap-3">
                 <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
-                <Button asChild variant="link">
-                  <a
-                    href="https://docs.redpanda.com/current/manage/security/authorization/acl/"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Read the docs →
-                  </a>
-                </Button>
+                <Button
+                  render={
+                    <a
+                      href="https://docs.redpanda.com/current/manage/security/authorization/acl/"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Read the docs →
+                    </a>
+                  }
+                  variant="link"
+                />
               </div>
             </EmptyContent>
           </Empty>

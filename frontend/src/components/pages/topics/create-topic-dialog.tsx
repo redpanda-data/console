@@ -620,16 +620,18 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
                   <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Topic name</p>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <CopyButton
-                          className="max-w-[320px]"
-                          content={result.topicName ?? ''}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <span className="truncate font-mono">{result.topicName}</span>
-                        </CopyButton>
-                      </TooltipTrigger>
+                      <TooltipTrigger
+                        render={
+                          <CopyButton
+                            className="max-w-[320px]"
+                            content={result.topicName ?? ''}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <span className="truncate font-mono">{result.topicName}</span>
+                          </CopyButton>
+                        }
+                      />
                       {(result.topicName?.length ?? 0) > 40 && <TooltipContent>{result.topicName}</TooltipContent>}
                     </Tooltip>
                   </TooltipProvider>
@@ -659,15 +661,18 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               <Button data-testid="create-topic-success__close-button" onClick={handleClose} variant="outline">
                 Close
               </Button>
-              <Button asChild data-testid="create-topic-success__go-to-topic-button">
-                <Link
-                  params={{ topicName: encodeURIComponent(result?.topicName ?? '') }}
-                  search={{} as never}
-                  to="/topics/$topicName"
-                >
-                  Go to topic
-                </Link>
-              </Button>
+              <Button
+                data-testid="create-topic-success__go-to-topic-button"
+                render={
+                  <Link
+                    params={{ topicName: encodeURIComponent(result?.topicName ?? '') }}
+                    search={{} as never}
+                    to="/topics/$topicName"
+                  >
+                    Go to topic
+                  </Link>
+                }
+              />
             </>
           ) : (
             <>

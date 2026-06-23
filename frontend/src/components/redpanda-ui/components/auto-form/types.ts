@@ -63,10 +63,8 @@ export type AutoFormSummaryContext<T extends Record<string, unknown> = Record<st
 export type AutoFormProps<T extends Record<string, unknown> = Record<string, unknown>> = {
   schema: AutoFormSchemaInput<T>;
   /**
-   * Called when a root-level field value changes. Note: nested changes (e.g.
-   * address.city) fire as onFieldChange('address', {...}) when the parent
-   * object reference changes — the callback receives the root-level key, not
-   * the dotted sub-path.
+   * Called on field value change. Nested changes fire with the root-level key
+   * (e.g. `onFieldChange('address', {...})`), not the dotted sub-path.
    */
   onFieldChange?: (
     fieldPath: string,
@@ -92,14 +90,9 @@ export type AutoFormProps<T extends Record<string, unknown> = Record<string, unk
   renderSummary?: (payload: unknown, context: AutoFormSummaryContext<T>) => React.ReactNode;
   fieldRegistry?: FieldTypeRegistry;
   /**
-   * Named data-source implementations consumed by dropdown-style controls
-   * annotated with `field_ui.data_provider`. The keys mirror the proto
-   * `DataProviderId` enum (snake-cased or exact string). Values are React
-   * hooks returning `{ options, isLoading?, error? }` — AutoForm never
-   * inspects internals, so providers can be static arrays or RPC-backed.
-   *
-   * A CI test (see `__tests__/data-providers.test.ts`) enumerates proto
-   * descriptors and asserts every referenced id is registered here.
+   * Named data sources for controls annotated with `field_ui.data_provider`,
+   * keyed by the proto `DataProviderId` enum. A CI test
+   * (`__tests__/data-providers.test.ts`) asserts every referenced id is registered.
    */
   dataProviders?: import('./data-providers').DataProviderRegistry;
   classifyField?: (field: ParsedField) => 'simple' | 'advanced';

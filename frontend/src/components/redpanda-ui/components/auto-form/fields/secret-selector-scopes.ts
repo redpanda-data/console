@@ -1,8 +1,9 @@
+// Kept opaque so the registry needn't depend on a proto package; consumers cast
+// the resolved scopes back to their concrete enum (e.g. dataplane Secret `Scope`).
 type Scope = number;
 
 const SCOPE_MAP: Record<string, Scope> = {
-  // Keep these in sync with the dataplane `Scope` enum numeric values:
-  // redpanda/api/dataplane/v1/secret.proto — SCOPE_* values.
+  // Keep in sync with redpanda/api/dataplane/v1/secret.proto SCOPE_* numeric values.
   REDPANDA_CONNECT: 1,
   REDPANDA_CLUSTER: 2,
   MCP_SERVER: 3,

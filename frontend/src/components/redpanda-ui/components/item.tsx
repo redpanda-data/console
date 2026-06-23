@@ -1,15 +1,16 @@
+import { mergeProps } from '@base-ui/react/merge-props';
+import { useRender } from '@base-ui/react/use-render';
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { Separator } from './separator';
-import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 function ItemGroup({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
   return (
     // biome-ignore lint/a11y/useSemanticElements: part of item group implementation
     <div
-      className={cn('group/item-group flex flex-col', className)}
+      className={cn('group/item-group flex w-full flex-col', className)}
       data-slot="item-group"
       data-testid={testId}
       role="list"
@@ -23,7 +24,7 @@ function ItemSeparator({ className, ...props }: React.ComponentProps<typeof Sepa
 }
 
 const itemVariants = cva(
-  'group/item flex flex-wrap items-center rounded-md border border-transparent text-sm outline-none transition-colors duration-100 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [a]:transition-colors [a]:hover:bg-accent/50',
+  'group/item flex w-full flex-wrap items-center rounded-md border border-transparent text-sm outline-none transition-colors duration-100 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [a]:transition-colors [a]:hover:bg-accent/50',
   {
     variants: {
       variant: {
@@ -34,6 +35,7 @@ const itemVariants = cva(
       size: {
         default: 'gap-4 p-4',
         sm: 'gap-2.5 px-4 py-3',
+        xs: 'gap-2 px-3 py-2',
       },
     },
     defaultVariants: {
@@ -47,21 +49,29 @@ function Item({
   className,
   variant = 'default',
   size = 'default',
-  asChild = false,
   testId,
+  render,
   ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof itemVariants> & SharedProps & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'div';
-  return (
-    <Comp
-      className={cn(itemVariants({ variant, size, className }))}
-      data-size={size}
-      data-slot="item"
-      data-testid={testId}
-      data-variant={variant}
-      {...props}
-    />
-  );
+}: useRender.ComponentProps<'div'> & VariantProps<typeof itemVariants> & SharedProps) {
+  return useRender({
+    defaultTagName: 'div',
+    render,
+    state: {
+      slot: 'item',
+      variant,
+      size,
+    },
+    props: mergeProps<'div'>(
+      {
+        className: cn(itemVariants({ variant, size, className })),
+        'data-size': size,
+        'data-slot': 'item',
+        'data-testid': testId,
+        'data-variant': variant,
+      } as React.ComponentPropsWithRef<'div'>,
+      props
+    ),
+  });
 }
 
 const itemMediaVariants = cva(
@@ -108,7 +118,7 @@ function ItemContent({ className, ...props }: React.ComponentProps<'div'>) {
 function ItemTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex w-fit items-center gap-2 font-medium text-sm leading-snug', className)}
+      className={cn('line-clamp-1 flex w-fit items-center gap-2 font-medium text-sm leading-snug', className)}
       data-slot="item-title"
       {...props}
     />

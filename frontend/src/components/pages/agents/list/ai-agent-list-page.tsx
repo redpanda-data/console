@@ -192,11 +192,13 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
             ))}
             {allTools.length > 3 && (
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
-                    +{allTools.length - 3} more
-                  </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
+                      +{allTools.length - 3} more
+                    </span>
+                  }
+                />
                 <TooltipContent>
                   <div className="space-y-1">
                     {allTools.slice(3).map((toolName) => (

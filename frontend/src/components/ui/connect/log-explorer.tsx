@@ -307,11 +307,10 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           }
           return (
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Text as="span" className="block truncate text-muted-foreground" variant="bodySmall">
+              <TooltipTrigger
+                render={<Text as="span" className="block truncate text-muted-foreground" variant="bodySmall">
                   {abbreviateComponentPath(path)}
-                </Text>
-              </TooltipTrigger>
+                </Text>} />
               <TooltipContent>{path}</TooltipContent>
             </Tooltip>
           );
@@ -401,11 +400,10 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             {liveViewEnabled ? 'Live logs enabled' : 'Enable live logs'}
           </Label>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex cursor-help" data-testid="log-live-tooltip-trigger">
+            <TooltipTrigger
+              render={<span className="inline-flex cursor-help" data-testid="log-live-tooltip-trigger">
                 <InfoIcon className="size-4 text-muted-foreground" />
-              </span>
-            </TooltipTrigger>
+              </span>} />
             <TooltipContent side="top" testId="log-live-tooltip-content">
               {liveViewEnabled
                 ? 'Showing new log messages as they arrive in real time.'
@@ -430,7 +428,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           <RefreshButton loading={isSearching} onClick={refresh} testId="log-refresh-button" />
         </div>
       </div>
-
       <div className="relative min-h-0">
         <div className="overflow-auto">
         <Table className="table-fixed" variant="simple">
@@ -561,14 +558,12 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
         </Table>
         </div>
       </div>
-
       {/* Hide DataTablePagination's "X of N row(s) selected." (no row selection) while keeping its layout slot. */}
       {filteredRowCount > 0 && (
         <div className="[&>div>div:first-child]:invisible">
           <DataTablePagination table={table} />
         </div>
       )}
-
       <LogDetailSheet message={selectedMessage} onClose={() => setSelectedMessage(null)} />
     </div>
   );

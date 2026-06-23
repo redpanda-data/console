@@ -19,10 +19,6 @@ import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
 
-// ---------------------------------------------------------------------------
-// DateFieldComponent
-// ---------------------------------------------------------------------------
-
 function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
   const controlTestId = resolveControlTestId(inputProps, testIds.control);
@@ -43,15 +39,17 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
           value={value}
         />
         <InputGroupAddon align="inline-end">
-          <PopoverTrigger asChild>
-            <InputGroupButton
-              aria-label={`Open calendar for ${getControlLabel(label, field)}`}
-              disabled={inputProps.disabled}
-              testId={`${controlTestId}-calendar`}
-            >
-              <CalendarIcon className="h-4 w-4" />
-            </InputGroupButton>
-          </PopoverTrigger>
+          <PopoverTrigger
+            render={
+              <InputGroupButton
+                aria-label={`Open calendar for ${getControlLabel(label, field)}`}
+                disabled={inputProps.disabled}
+                testId={`${controlTestId}-calendar`}
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </InputGroupButton>
+            }
+          />
         </InputGroupAddon>
       </InputGroup>
       <PopoverContent className="w-auto p-0">
@@ -66,10 +64,6 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
     </Popover>
   );
 }
-
-// ---------------------------------------------------------------------------
-// TimestampFieldComponent
-// ---------------------------------------------------------------------------
 
 function TimestampFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

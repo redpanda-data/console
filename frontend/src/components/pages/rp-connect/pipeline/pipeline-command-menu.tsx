@@ -242,13 +242,12 @@ function CommandMenuContent({
         <div className="!border-input border-b bg-dark-alpha-subtle px-2 py-1.5">
           <ToggleGroup
             attached={false}
-            onValueChange={(v: string) => {
+            onValueChange={([v]) => {
               if (v) {
                 onFilterChange(v as FilterValue);
               }
             }}
-            type="single"
-            value={activeFilter}
+            value={[activeFilter]}
           >
             <ToggleGroupItem value="all">All</ToggleGroupItem>
             <ToggleGroupItem value="variables">Variables</ToggleGroupItem>

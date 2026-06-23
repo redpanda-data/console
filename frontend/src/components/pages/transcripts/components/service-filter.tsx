@@ -60,35 +60,37 @@ export const ServiceFilter: FC<ServiceFilterProps> = ({ services, selected, onCh
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button className="h-8 gap-1.5" disabled={isDisabled} size="sm" variant="outline">
-          <Server className="h-3.5 w-3.5" />
-          Service
-          {selectedSet.size > 0 && (
-            <>
-              <Separator className="mx-1 h-4" orientation="vertical" />
-              <Badge className="lg:hidden" size="sm" variant="primary-inverted">
-                {selectedSet.size}
-              </Badge>
-              <div className="hidden gap-1 lg:flex">
-                {selectedSet.size > 2 ? (
-                  <Badge size="sm" variant="primary-inverted">
-                    {selectedSet.size} selected
-                  </Badge>
-                ) : (
-                  services
-                    .filter((s) => selectedSet.has(s.value))
-                    .map((s) => (
-                      <Badge key={s.value} size="sm" variant="primary-inverted">
-                        {s.name}
-                      </Badge>
-                    ))
-                )}
-              </div>
-            </>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button className="h-8 gap-1.5" disabled={isDisabled} size="sm" variant="outline">
+            <Server className="h-3.5 w-3.5" />
+            Service
+            {selectedSet.size > 0 && (
+              <>
+                <Separator className="mx-1 h-4" orientation="vertical" />
+                <Badge className="lg:hidden" size="sm" variant="primary-inverted">
+                  {selectedSet.size}
+                </Badge>
+                <div className="hidden gap-1 lg:flex">
+                  {selectedSet.size > 2 ? (
+                    <Badge size="sm" variant="primary-inverted">
+                      {selectedSet.size} selected
+                    </Badge>
+                  ) : (
+                    services
+                      .filter((s) => selectedSet.has(s.value))
+                      .map((s) => (
+                        <Badge key={s.value} size="sm" variant="primary-inverted">
+                          {s.name}
+                        </Badge>
+                      ))
+                  )}
+                </div>
+              </>
+            )}
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-[220px] p-0">
         <Command>
           <CommandInput placeholder="Search services..." />

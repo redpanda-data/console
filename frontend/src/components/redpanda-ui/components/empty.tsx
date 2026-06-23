@@ -6,7 +6,7 @@ function Empty({ className, testId, ...props }: React.ComponentProps<'div'> & Sh
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-1 flex-col items-center justify-center gap-6 text-balance rounded-lg border-dashed p-6 text-center md:p-12',
+        'flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-6 text-balance rounded-lg border-dashed p-6 text-center md:p-12',
         className
       )}
       data-slot="empty"
@@ -32,36 +32,45 @@ const emptyMediaVariants = cva(
   {
     variants: {
       variant: {
-        transparent: 'bg-transparent',
+        default: 'bg-transparent',
         icon: "flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground [&_svg:not([class*='size-'])]:size-6",
       },
     },
     defaultVariants: {
-      variant: 'transparent',
+      variant: 'default',
     },
   }
 );
 
 function EmptyMedia({
   className,
-  variant = 'transparent',
+  testId,
+  variant = 'default',
   ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof emptyMediaVariants>) {
+}: React.ComponentProps<'div'> & SharedProps & VariantProps<typeof emptyMediaVariants>) {
   return (
     <div
       className={cn(emptyMediaVariants({ variant, className }))}
       data-slot="empty-icon"
+      data-testid={testId}
       data-variant={variant}
       {...props}
     />
   );
 }
 
-function EmptyTitle({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('font-medium text-lg tracking-tight', className)} data-slot="empty-title" {...props} />;
+function EmptyTitle({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+  return (
+    <div
+      className={cn('font-medium text-lg tracking-tight', className)}
+      data-slot="empty-title"
+      data-testid={testId}
+      {...props}
+    />
+  );
 }
 
-function EmptyDescription({ className, ...props }: React.ComponentProps<'p'>) {
+function EmptyDescription({ className, testId, ...props }: React.ComponentProps<'p'> & SharedProps) {
   return (
     <div
       className={cn(
@@ -69,16 +78,18 @@ function EmptyDescription({ className, ...props }: React.ComponentProps<'p'>) {
         className
       )}
       data-slot="empty-description"
+      data-testid={testId}
       {...props}
     />
   );
 }
 
-function EmptyContent({ className, ...props }: React.ComponentProps<'div'>) {
+function EmptyContent({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
   return (
     <div
       className={cn('flex w-full min-w-0 max-w-sm flex-col items-center gap-4 text-balance text-sm', className)}
       data-slot="empty-content"
+      data-testid={testId}
       {...props}
     />
   );

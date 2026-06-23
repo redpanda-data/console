@@ -137,10 +137,8 @@ export function OneofFieldRenderer({
               </p>
             </div>
           ) : (
-            // Oneof values render conceptually one level deeper than the
-            // selector itself. Bumping depth here keeps headings consulted
-            // by ObjectWrapper consistent with siblings reached via
-            // plain nested-object paths.
+            // Oneof values render one level deeper than the selector, so bump depth to keep
+            // ObjectWrapper headings consistent with plain nested-object paths.
             <FormDepthProvider depth={depth + 1}>
               <AutoFormFieldRenderer field={selectedField} inheritedDisabled={isDisabled} path={[...path, 'value']} />
             </FormDepthProvider>

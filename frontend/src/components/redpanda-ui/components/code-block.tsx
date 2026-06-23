@@ -185,7 +185,6 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
 
 CodeBlock.displayName = 'CodeBlock';
 
-// Simplified interface for backend developers
 type SimpleCodeBlockProps = {
   code: string;
   language?: string;

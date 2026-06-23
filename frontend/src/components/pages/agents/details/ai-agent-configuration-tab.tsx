@@ -1070,7 +1070,10 @@ export const AIAgentConfigurationTab = () => {
                 {displayData.subagents.length === 0 ? (
                   <Text variant="muted">No subagents configured</Text>
                 ) : (
-                  <Accordion collapsible onValueChange={setExpandedSubagent} type="single" value={expandedSubagent}>
+                  <Accordion
+                    onValueChange={([value]) => setExpandedSubagent(value as string | undefined)}
+                    value={expandedSubagent ? [expandedSubagent] : []}
+                  >
                     {displayData.subagents.map((subagent, index) => {
                       // Compute conditional rendering values using helper functions
                       const descriptionContent = renderSubagentDescription(subagent, index, isEditing);
