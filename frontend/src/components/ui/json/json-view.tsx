@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: part of JSONNode implementation */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of JSONNode implementation */
-import clsx from 'clsx';
+import { clsx } from 'cnfast';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { memo, useMemo, useState } from 'react';
 
