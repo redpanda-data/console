@@ -148,7 +148,7 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'block cursor-pointer truncate text-left font-mono text-info underline decoration-dotted underline-offset-2',
+            'block cursor-pointer truncate text-left font-mono underline decoration-dotted underline-offset-2',
             CELL_MAX_W
           )}
           title="Show JSON"
@@ -201,7 +201,7 @@ function CellContent({
 }) {
   const container = useContext(CellPopoverContainerContext);
   if (kind === 'bool' && typeof v === 'boolean') {
-    return <span className={cn('font-semibold', v ? 'text-success' : 'text-warning')}>{String(v)}</span>;
+    return <span className="font-semibold">{String(v)}</span>;
   }
   if (v === null || v === undefined) {
     return <span className="text-disabled italic">NULL</span>;
@@ -289,7 +289,7 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
     width: 'max-content',
     renderHeaderCell: () => <span className="font-mono text-disabled text-xs">#</span>,
     renderCell: ({ rowIdx }) => rowIdx + 1,
-    cellClass: 'text-right font-mono text-disabled text-xs [user-select:none]',
+    cellClass: 'sql-results-rownum text-right font-mono text-disabled text-xs [user-select:none]',
   };
   const dataCols = cols.map((c): Column<ResultRow> => {
     const alignRight = c.kind === 'num';
