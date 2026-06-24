@@ -54,7 +54,7 @@
         "array-move": "^4.0.0",
         "class-variance-authority": "^0.7.1",
         "cmdk": "^1.1.1",
-        "cnfast": "^0.0.8",
+        "cnfast": "0.0.8",
         "date-fns": "^4.3.0",
         "dexie": "^4.2.1",
         "dotenv": "^17.2.3",
