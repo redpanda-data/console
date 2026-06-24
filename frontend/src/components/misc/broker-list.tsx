@@ -11,7 +11,7 @@
 
 import { Tooltip } from '@redpanda-data/ui';
 import { ChevronRightIcon } from 'components/icons';
-import React, { Component } from 'react';
+import React, { Component, type JSX } from 'react';
 
 import { api, brokerMap } from '../../state/backend-api';
 import type { Broker, Partition } from '../../state/rest-interfaces';

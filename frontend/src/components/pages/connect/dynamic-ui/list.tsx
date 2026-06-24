@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from '@hello-pangea/dnd';
 import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon } from 'components/icons';
-import { useEffect, useRef, useState } from 'react';
-import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from 'react-beautiful-dnd';
+import { type JSX, useEffect, useRef, useState } from 'react';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
 

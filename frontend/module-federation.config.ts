@@ -11,8 +11,6 @@
 
 import type { ModuleFederationPluginOptions } from '@module-federation/rsbuild-plugin';
 
-const deps: Record<string, string> = (await import('./package.json', { with: { type: 'json' } })).default.dependencies;
-
 export const moduleFederationConfig: ModuleFederationPluginOptions = {
   name: 'rp_console',
   // IMPORTANT: Keep as 'embedded.js' for backward compatibility with existing Cloud UI
@@ -22,8 +20,17 @@ export const moduleFederationConfig: ModuleFederationPluginOptions = {
   },
 
   exposes: {
-    // V2: New component pattern for Cloud UI MF v2.0 integration
-    './App': './src/federation/console-app.tsx',
+    // './App' is a React 18-safe compatibility shim. Console runs React 19, but
+    // the current Cloud UI host (React 18) still loads 'rp_console/App' and
+    // renders it as a plain element. The shim returns a React 18 element shape
+    // whose ref mounts the real React 19 app via Console's own createRoot, so
+    // the existing host keeps working with no Cloud UI change. New Cloud UI
+    // hosts consume './BridgeApp' instead.
+    './App': './src/federation/console-legacy-app.tsx',
+    // React bridge entry consumed by Cloud UI. Mounts the app with Console's own
+    // React 19 createRoot into a host-provided DOM node, decoupling it from the
+    // host's React 18. See src/federation/console-federated-bridge.tsx.
+    './BridgeApp': './src/federation/console-federated-bridge.tsx',
     './types': './src/federation/types.ts',
 
     // Legacy: Keep for backward compat with old Cloud UI
@@ -33,63 +40,12 @@ export const moduleFederationConfig: ModuleFederationPluginOptions = {
     './config': './src/config.ts',
   },
 
-  shared: {
-    react: {
-      singleton: true,
-      requiredVersion: deps.react,
-      eager: false,
-    },
-    'react-dom': {
-      singleton: true,
-      requiredVersion: deps['react-dom'],
-      eager: false,
-    },
-    '@redpanda-data/ui': {
-      import: '@redpanda-data/ui',
-    },
-    '@tanstack/react-query': {
-      singleton: true,
-      requiredVersion: deps['@tanstack/react-query'],
-      eager: false,
-    },
-    '@tanstack/react-router': {
-      singleton: true,
-      requiredVersion: deps['@tanstack/react-router'],
-      eager: false,
-    },
-    'react-hook-form': {
-      singleton: true,
-      requiredVersion: deps['react-hook-form'],
-    },
-    '@hookform/resolvers': {
-      singleton: true,
-      requiredVersion: deps['@hookform/resolvers'],
-    },
-    zod: {
-      singleton: true,
-      requiredVersion: deps.zod,
-    },
-    // lucide-react is intentionally NOT shared. It is stateless SVG components
-    // (no context/hooks), so it has no singleton requirement. Sharing it as a
-    // singleton forced the whole package (~1.5 MiB / 1700+ icons) into a shared
-    // chunk regardless of which icons are used; unshared, this remote tree-shakes
-    // to only the icons it imports and can upgrade lucide independently of the
-    // cloud-ui host. The host and the adp-ui remote unshare it too.
-    'class-variance-authority': {
-      singleton: false,
-      requiredVersion: deps['class-variance-authority'],
-    },
-    'tailwind-merge': {
-      singleton: false,
-      requiredVersion: deps['tailwind-merge'],
-    },
-    motion: {
-      singleton: false,
-      requiredVersion: deps.motion,
-    },
-    clsx: {
-      singleton: false,
-      requiredVersion: deps.clsx,
-    },
-  },
+  // Nothing is shared. Console runs React 19 while Cloud UI stays on React 18; a
+  // shared React singleton cannot span both majors. The React bridge
+  // ('./BridgeApp') isolates Console's React 19 along with its own
+  // @tanstack/react-query, @tanstack/react-router, react-hook-form and the rest,
+  // so each app bundles its own copies and no cross-major React conflict can
+  // occur in the embedded scene. (lucide-react was never shared either —
+  // stateless SVGs with no singleton requirement.)
+  shared: {},
 };

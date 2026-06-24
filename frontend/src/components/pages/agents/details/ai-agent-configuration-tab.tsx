@@ -73,7 +73,7 @@ import {
   AIAgentUpdateSchema,
   UpdateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import { useCallback, useMemo, useState } from 'react';
+import { type JSX, useCallback, useMemo, useState } from 'react';
 import { useGetAIAgentQuery, useUpdateAIAgentMutation } from 'react-query/api/ai-agent';
 import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
 import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';

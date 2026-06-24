@@ -281,7 +281,7 @@ export const updatePageTitle = () => {
 const AIAgentsListPageContent = ({
   deleteHandlerRef,
 }: {
-  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef>;
+  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef | null>;
 }) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);

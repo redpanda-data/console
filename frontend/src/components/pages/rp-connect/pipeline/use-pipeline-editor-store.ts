@@ -122,7 +122,7 @@ export function PipelineEditorProvider({
   children: ReactNode;
   initialSlashTipVisible: boolean;
 }) {
-  const storeRef = useRef<StoreApi<PipelineEditorStore>>();
+  const storeRef = useRef<StoreApi<PipelineEditorStore>>(undefined);
   if (!storeRef.current) {
     storeRef.current = createPipelineEditorStore({ slashTipVisible: initialSlashTipVisible });
   }

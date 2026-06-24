@@ -1,5 +1,5 @@
 import { FormField } from '@redpanda-data/ui';
-import type { PropsWithoutRef } from 'react';
+import type { JSX, PropsWithoutRef } from 'react';
 import { useState } from 'react';
 
 import type { Property } from '../../../../../state/connect/state';

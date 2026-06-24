@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState } from 'react';
+import React, { type JSX, useState } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';

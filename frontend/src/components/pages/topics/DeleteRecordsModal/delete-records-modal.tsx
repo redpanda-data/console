@@ -32,7 +32,7 @@ import {
   Text,
   useToast,
 } from '@redpanda-data/ui';
-import { useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 
 import styles from './DeleteRecordsModal.module.scss';
 import { api, useApiStoreHook } from '../../../../state/backend-api';

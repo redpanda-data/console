@@ -77,7 +77,7 @@ function useUncontrolledState<T>({
 }: Omit<UseControllableStateParams<T>, 'prop'>): [
   Value: T,
   setValue: React.Dispatch<React.SetStateAction<T>>,
-  OnChangeRef: React.RefObject<ChangeHandler<T> | undefined>,
+  OnChangeRef: React.RefObject<ChangeHandler<T> | undefined | null>,
 ] {
   const [value, setValue] = React.useState(defaultProp);
   const prevValueRef = React.useRef(value);

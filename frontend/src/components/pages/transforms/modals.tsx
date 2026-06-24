@@ -10,7 +10,7 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@redpanda-data/ui';
-import { useState } from 'react';
+import { type JSX, useState } from 'react';
 
 import { openModal } from '../../../utils/modal-container';
 
