@@ -28,7 +28,19 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Braces, CircleX, Clock, Database, Download, GitMerge, Lightbulb, Plus, Rows3, Terminal, X } from 'lucide-react';
+import {
+  Braces,
+  CircleX,
+  Clock,
+  Database,
+  Download,
+  GitMerge,
+  Lightbulb,
+  Plus,
+  Rows3,
+  Terminal,
+  X,
+} from 'lucide-react';
 import { createContext, useContext, useMemo, useState } from 'react';
 import DataGrid, { type Column } from 'react-data-grid';
 import { isMacOS } from 'utils/platform';

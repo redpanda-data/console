@@ -53,8 +53,8 @@ import {
   isArrayPgType,
   type QueryRun,
   type ResultRow,
-  splitQueryError,
   type SqlRole,
+  splitQueryError,
   type TableRef,
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';

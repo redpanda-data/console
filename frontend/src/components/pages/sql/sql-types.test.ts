@@ -66,7 +66,7 @@ describe('arrayElementPgType', () => {
 
 describe('splitQueryError', () => {
   test('splits the trailing hint onto its own field', () => {
-    const { message, hint } = splitQueryError("operator does not exist: record -> unknown\n\nHint: use (user).id");
+    const { message, hint } = splitQueryError('operator does not exist: record -> unknown\n\nHint: use (user).id');
     expect(message).toBe('operator does not exist: record -> unknown');
     expect(hint).toBe('use (user).id');
   });
