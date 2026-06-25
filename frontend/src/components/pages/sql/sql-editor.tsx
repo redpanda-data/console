@@ -15,7 +15,7 @@ import {
   type CompletionResult,
   startCompletion,
 } from '@codemirror/autocomplete';
-import { PostgreSQL, type SQLNamespace, sql as sqlLanguage } from '@codemirror/lang-sql';
+import { PostgreSQL, type SQLNamespace, schemaCompletionSource, sql as sqlLanguage } from '@codemirror/lang-sql';
 import { HighlightStyle, indentUnit, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { EditorState, type Extension, Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
@@ -192,12 +192,9 @@ function tableNamespace(table: TableRef): SQLNamespace {
   };
 }
 
-// Builds the lang-sql completion schema from the loaded catalog tree: bare
-// table names → columns. Tables are deliberately NOT nested under their
-// catalog — Redpanda SQL (Oxla) addresses catalog tables with arrow notation
-// (`catalog=>table`), which catalogArrowSource below handles; dot-style
-// nesting would advertise syntax the server rejects. Bare entries still give
-// alias/column resolution (`FROM default_redpanda_catalog=>cars c` → `c.`).
+// Bare table name → columns. Powers alias/column resolution only
+// (schemaColumnSource); tables aren't nested under catalogs since Oxla uses
+// `catalog=>table` arrow notation, handled by catalogArrowSource.
 function buildSchema(catalogs: Catalog[]): SQLNamespace {
   const root: Record<string, SQLNamespace> = {};
   for (const catalog of catalogs) {
@@ -210,6 +207,20 @@ function buildSchema(catalogs: Catalog[]): SQLNamespace {
     }
   }
   return root;
+}
+
+// Schema completion limited to dotted members (`c.` → columns); bare table
+// names are suppressed at the top level so catalogArrowSource owns them.
+function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
+  const source = schemaCompletionSource({ dialect: PostgreSQL, schema: buildSchema(catalogs) });
+  return (context) => {
+    const result = source(context);
+    if (!result || result instanceof Promise) {
+      return null;
+    }
+    const dotted = context.state.sliceDoc(result.from - 1, result.from) === '.';
+    return dotted ? result : null;
+  };
 }
 
 // Matches an identifier followed by `=>` or `.` and a partial table name,
@@ -415,7 +426,9 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
     };
 
     const extensions = useMemo(() => {
-      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, schema: buildSchema(catalogs), upperCaseKeywords: true });
+      // No `schema` here — schemaColumnSource adds it back for dotted
+      // completions only, avoiding bare table names at the top level.
+      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, upperCaseKeywords: true });
       return [
         // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
         Prec.highest(
@@ -441,6 +454,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         ),
         sqlSupport,
         sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
+        sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
         isDark ? DARK_THEME : LIGHT_THEME,
         EditorView.updateListener.of((update) => {
           if (update.selectionSet) {
