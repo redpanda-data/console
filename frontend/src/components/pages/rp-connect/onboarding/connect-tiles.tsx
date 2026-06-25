@@ -18,7 +18,6 @@ import type { FiltersState } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Search } from 'lucide-react';
-import type { MotionProps } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -178,7 +177,7 @@ export type ConnectTilesProps = {
 };
 
 export const ConnectTiles = memo(
-  forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
+  forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps>(
     (
       {
         components,
@@ -199,7 +198,6 @@ export const ConnectTiles = memo(
         title,
         description,
         searchPlaceholder,
-        ...motionProps
       },
       ref
     ) => {
@@ -333,7 +331,7 @@ export const ConnectTiles = memo(
       }));
 
       return (
-        <Card className={cn(className, 'relative')} size={size} variant={variant} {...motionProps} animated>
+        <Card className={cn(className, 'relative')} size={size} variant={variant}>
           {!hideHeader && (
             <CardHeader className="bg-background">
               <CardTitle>

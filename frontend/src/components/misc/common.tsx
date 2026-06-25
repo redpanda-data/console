@@ -11,7 +11,7 @@
 
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 import { AlertIcon } from 'components/icons';
-import React, { type PropsWithChildren, useState } from 'react';
+import React, { type JSX, type PropsWithChildren, useState } from 'react';
 
 import type { TopicLogDirSummary } from '../../state/rest-interfaces';
 import { uiState } from '../../state/ui-state';

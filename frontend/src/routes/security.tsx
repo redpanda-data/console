@@ -153,7 +153,7 @@ function OldSecurityLayout() {
           <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
             {tabs.map((tab) => (
               <TabsTrigger
-                className="text-base data-[state=active]:text-foreground"
+                className="text-base data-[active]:text-foreground"
                 disabled={tab.disabled}
                 key={tab.key}
                 onClick={() => handleTabClick(tab.key)}

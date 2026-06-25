@@ -9,7 +9,7 @@ import {
 import { Progress } from "components/redpanda-ui/components/progress";
 import { cn } from "components/redpanda-ui/lib/utils";
 import type { LanguageModelUsage } from "ai";
-import { type ComponentProps, createContext, useContext, useMemo } from "react";
+import { type ComponentProps, createContext, type ReactElement, useContext, useMemo } from "react";
 import { getUsage } from "tokenlens";
 
 const PERCENT_MAX = 100;
@@ -139,16 +139,18 @@ export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   }).format(usedPercent);
 
   return (
-    <HoverCardTrigger asChild>
-      {children ?? (
-        <Button type="button" variant="secondary-ghost" {...props}>
-          <span className="font-medium text-muted-foreground">
-            {renderedPercent}
-          </span>
-          <ContextIcon />
-        </Button>
-      )}
-    </HoverCardTrigger>
+    <HoverCardTrigger
+      render={
+        (children ?? (
+          <Button type="button" variant="secondary-ghost" {...props}>
+            <span className="font-medium text-muted-foreground">
+              {renderedPercent}
+            </span>
+            <ContextIcon />
+          </Button>
+        )) as ReactElement
+      }
+    />
   );
 };
 
@@ -197,7 +199,7 @@ export const ContextContentHeader = ({
             </p>
           </div>
           <div className="space-y-2">
-            <Progress className="bg-muted" transition={{ duration: 0 }} value={usedPercent * PERCENT_MAX} />
+            <Progress className="bg-muted" value={usedPercent * PERCENT_MAX} />
           </div>
         </>
       )}

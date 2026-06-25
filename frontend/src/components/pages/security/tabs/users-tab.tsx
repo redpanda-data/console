@@ -115,7 +115,6 @@ const UsersTabOriginal: FC = () => {
         These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication identities
         (for example, OIDC, mTLS) on the Permissions List page.
       </div>
-
       <SearchField
         data-testid="search-field-input"
         placeholderText="Filter by name"
@@ -123,19 +122,20 @@ const UsersTabOriginal: FC = () => {
         setSearchText={(x) => setSearchQuery(x)}
         width="300px"
       />
-
       <Section>
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                data-testid="create-user-button"
-                disabled={createDisabled}
-                onClick={() => appGlobal.historyPush('/security/users/create')}
-              >
-                Create user
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  data-testid="create-user-button"
+                  disabled={createDisabled}
+                  onClick={() => appGlobal.historyPush('/security/users/create')}
+                >
+                  Create user
+                </Button>
+              }
+            />
             {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
           </Tooltip>
         </TooltipProvider>
@@ -247,15 +247,21 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
         open={isDeleteModalOpen}
         userName={user.name}
       />
-
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button asChild className="deleteButton" size="icon-sm" variant="ghost">
-            <button aria-label={`Open actions for ${user.name}`} type="button">
-              <MoreHorizontalIcon className="h-4 w-4" />
-            </button>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              className="deleteButton"
+              render={
+                <button aria-label={`Open actions for ${user.name}`} type="button">
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </button>
+              }
+              size="icon-sm"
+              variant="ghost"
+            />
+          }
+        />
         <DropdownMenuContent>
           <DropdownMenuItem
             onClick={(e) => {

@@ -11,11 +11,17 @@ const alertVariants = cva(
       variant: {
         info: 'bg-card text-card-foreground',
         destructive:
-          '!border-destructive/20 bg-destructive/10 text-destructive *:data-[slot=alert-description]:text-destructive/90 [&>href]:text-current [&>svg]:text-current',
-        warning:
-          '!border-blue-200 bg-blue-50 text-blue-800 *:data-[slot=alert-description]:text-blue-800 [&>href]:text-current [&>svg]:text-current',
+          '!border-destructive/20 bg-destructive/10 text-destructive *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current',
+        // `warning` is a neutral informational alert built from shadcn base
+        // tokens only (bg-card + the shared border), matching shadcn's `default`
+        // variant. It carries no custom color token, so it is inherently
+        // dark-safe. The old value was a light-only raw-blue palette that glared
+        // as a near-white blob in dark mode. Meaning is conveyed by the caller's
+        // icon/content; for a colored status use `destructive` or the Badge
+        // variants rather than tinting the Alert surface.
+        warning: 'bg-card text-card-foreground',
         success:
-          '!border-green-200 dark:!border-green-800/40 bg-green-50 text-green-800 *:data-[slot=alert-description]:text-green-800 dark:bg-green-950/30 dark:text-green-300 dark:*:data-[slot=alert-description]:text-green-300 [&>href]:text-current [&>svg]:text-current',
+          '!border-green-200 dark:!border-green-800/40 bg-green-50 text-green-800 *:data-[slot=alert-description]:text-green-800 dark:bg-green-950/30 dark:text-green-300 dark:*:data-[slot=alert-description]:text-green-300 [&>svg]:text-current',
       },
     },
     defaultVariants: {
@@ -24,54 +30,60 @@ const alertVariants = cva(
   }
 );
 
-const Alert = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<'div'> & VariantProps<typeof alertVariants> & SharedProps & { icon?: React.ReactNode }
->(({ className, variant, testId, icon = <InfoIcon />, children, ...props }, ref) => (
-  <div
-    className={cn(alertVariants({ variant }), className)}
-    data-slot="alert"
-    data-testid={testId}
-    ref={ref}
-    role="alert"
-    {...props}
-  >
-    {icon}
-    {children}
-  </div>
-));
-
-Alert.displayName = 'Alert';
-
-const AlertTitle = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & SharedProps>(
-  ({ className, testId, ...props }, ref) => (
+function Alert({
+  className,
+  variant,
+  testId,
+  icon = <InfoIcon />,
+  children,
+  ...props
+}: React.ComponentProps<'div'> & VariantProps<typeof alertVariants> & SharedProps & { icon?: React.ReactNode }) {
+  return (
     <div
-      className={cn('col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight', className)}
-      data-slot="alert-title"
+      className={cn(alertVariants({ variant }), className)}
+      data-slot="alert"
       data-testid={testId}
-      ref={ref}
+      role="alert"
       {...props}
-    />
-  )
-);
+    >
+      {icon}
+      {children}
+    </div>
+  );
+}
 
-AlertTitle.displayName = 'AlertTitle';
-
-const AlertDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & SharedProps>(
-  ({ className, testId, ...props }, ref) => (
+function AlertTitle({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+  return (
     <div
       className={cn(
-        'col-start-2 grid justify-items-start gap-1 text-muted-foreground text-sm [&_p]:leading-relaxed',
+        'col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground',
+        className
+      )}
+      data-slot="alert-title"
+      data-testid={testId}
+      {...props}
+    />
+  );
+}
+
+function AlertDescription({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+  return (
+    <div
+      className={cn(
+        'col-start-2 grid justify-items-start gap-1 text-muted-foreground text-sm [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p]:leading-relaxed',
         className
       )}
       data-slot="alert-description"
       data-testid={testId}
-      ref={ref}
       {...props}
     />
-  )
-);
+  );
+}
 
-AlertDescription.displayName = 'AlertDescription';
+function AlertAction({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+  return (
+    <div className={cn('absolute top-2 right-2', className)} data-slot="alert-action" data-testid={testId} {...props} />
+  );
+}
 
-export { Alert, AlertTitle, AlertDescription };
+export { Alert, AlertTitle, AlertDescription, AlertAction };

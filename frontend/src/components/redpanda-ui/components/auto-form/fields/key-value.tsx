@@ -49,9 +49,6 @@ function KeyValueFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
 
 export { KeyValueFieldComponent };
 
-/**
- * Helper to check if a field's schema entry is a scalar type suitable for key-value use.
- */
 function isKeyValueScalarField(field: { type?: string } | undefined): boolean {
   if (!field) {
     return false;
@@ -77,13 +74,11 @@ export const keyValueFieldDefinition: FieldTypeDefinition = {
   name: 'keyValue',
   priority: 18,
   match: (field) => {
-    // Array with key-value-like object items
     if (field.type === 'array') {
       const itemField = field.schema?.[0];
       return isSimpleKeyValueLikeObject(itemField);
     }
 
-    // Map with scalar key + value
     if (field.type === 'map') {
       const keyField = field.schema?.[0];
       const valueField = field.schema?.[1];

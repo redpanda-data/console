@@ -9,18 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
-  Box,
-  Button,
-  Checkbox,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  RadioGroup,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import { useState } from 'react';
 
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
@@ -190,42 +189,48 @@ export const SaveMessagesDialog = ({
   };
 
   return (
-    <Modal isOpen={count > 0} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent minW="2xl">
-        <ModalHeader>{title}</ModalHeader>
-        <ModalBody display="flex" flexDirection="column" gap="4">
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      open={count > 0}
+    >
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <div>Select the format in which you want to save {count === 1 ? 'the message' : 'all messages'}</div>
-          <Box py={2}>
-            <RadioGroup
-              name="format"
-              onChange={(value) => setFormat(value)}
-              options={[
-                {
-                  value: 'json',
-                  label: 'JSON',
-                },
-                {
-                  value: 'csv',
-                  label: 'CSV',
-                },
-              ]}
-              value={format}
+          <div className="py-2">
+            <RadioGroup onValueChange={(val) => setFormat(val as 'json' | 'csv')} value={format}>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem id="format-json" value="json" />
+                <label htmlFor="format-json">JSON</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem id="format-csv" testId="csv_field" value="csv" />
+                <label htmlFor="format-csv">CSV</label>
+              </div>
+            </RadioGroup>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={includeRawContent}
+              id="include-raw"
+              onCheckedChange={(checked) => setIncludeRawContent(checked === true)}
             />
-          </Box>
-          <Checkbox isChecked={includeRawContent} onChange={(e) => setIncludeRawContent(e.target.checked)}>
-            Include raw data
-          </Checkbox>
-        </ModalBody>
-        <ModalFooter gap={2}>
+            <label htmlFor="include-raw">Include raw data</label>
+          </div>
+        </DialogBody>
+        <DialogFooter>
           <Button onClick={onClose} variant="ghost">
             Cancel
           </Button>
-          <Button isDisabled={!messages || messages.length === 0} onClick={() => saveMessages()} variant="solid">
+          <Button disabled={!messages || messages.length === 0} onClick={() => saveMessages()} variant="primary">
             Save Messages
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

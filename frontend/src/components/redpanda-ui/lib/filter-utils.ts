@@ -1,3 +1,5 @@
+// ── Types ──────────────────────────────────────────────────────────────
+
 export type FilterType = 'text' | 'option' | 'multiOption';
 
 export type TextFilterOperator = 'contains' | 'does not contain';

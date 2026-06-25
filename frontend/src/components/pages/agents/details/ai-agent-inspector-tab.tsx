@@ -165,17 +165,15 @@ export const AIAgentInspectorTab = () => {
       agent={agent}
       headerActions={
         <Dialog>
-          <DialogTrigger asChild>
-            <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
-              <FileJson className="h-4 w-4" />
-              View Agent Card
-            </Button>
-          </DialogTrigger>
-          <DialogContent
-            className="max-h-[85vh] w-[70vw] max-w-[1200px]"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            size="full"
-          >
+          <DialogTrigger
+            render={
+              <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
+                <FileJson className="h-4 w-4" />
+                View Agent Card
+              </Button>
+            }
+          />
+          <DialogContent className="max-h-[85vh] w-[70vw] max-w-[1200px]" initialFocus={false} size="full">
             <DialogHeader>
               <DialogTitle>Agent Card</DialogTitle>
               {Boolean(cardUrl) && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}

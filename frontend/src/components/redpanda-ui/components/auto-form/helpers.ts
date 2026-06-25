@@ -85,38 +85,23 @@ function toOptionGroups(value: unknown): AutoFormOptionGroup[] | undefined {
   return groups.length > 0 ? groups : undefined;
 }
 
-/**
- * Derive the field-type name from the annotation set so the AutoForm
- * resolver picks the right widget even when a proto `control` is also
- * set. Order:
- *   1. `dataProvider` wins — the field is an opinionated dropdown.
- *   2. `dropzone` + `control === 'json'` wins — the field is a JSON
- *      editor with drag-and-drop.
- *   3. Otherwise, `undefined` so the existing control/type path resolves.
- *
- * Reads from all three UI sources (proto, nested customData.ui, direct
- * customData) so either side can trigger the override.
- */
 interface AnnotatedUi {
   control?: unknown;
   dataProvider?: unknown;
   dropzone?: unknown;
 }
 
-/**
- * `deriveAnnotatedControl` must NOT run for complex field types
- * (array / map / object). If it did, a `repeated string` field
- * annotated with `data_provider` — e.g. `OpenAPI.filter.include_methods`
- * — would short-circuit to `dataProviderSelect` on the array field
- * itself, bypassing `ArrayFieldRenderer`'s Add-button UI entirely.
- * The annotation still flows through to the array's schema[0] item
- * template (same proto descriptor), so each added item picks up
- * `dataProviderSelect` on its own.
- */
+// `deriveAnnotatedControl` must skip complex types: a `repeated string`
+// annotated with `data_provider` would otherwise short-circuit to
+// `dataProviderSelect` on the array itself, bypassing the Add-button UI.
+// The annotation still reaches each item via the array's schema[0] template.
 function isComplexFieldType(type: unknown): boolean {
   return type === 'array' || type === 'map' || type === 'object';
 }
 
+// Picks the widget override from annotations: `dataProvider` wins (opinionated
+// dropdown), else `dropzone` + `control === 'json'` (JSON editor), else undefined
+// so the normal control/type path resolves. Reads all three UI sources.
 function deriveAnnotatedControl(
   fieldType: unknown,
   protoUi: AnnotatedUi | undefined,
@@ -197,13 +182,7 @@ export function getFieldUiConfig(field: ParsedField): {
     : undefined;
 
   // Proto-level widget annotations (data_provider, dropzone) override the
-  // plain control. A string field annotated with `data_provider` should
-  // render as `dataProviderSelect` regardless of any `CONTROL_TYPE_TEXT`
-  // default; a JSON field annotated with `dropzone: true` should render
-  // as `dropzone-json` rather than the default JSON editor. Keeping this
-  // override inside `getFieldUiConfig` means the existing `resolveFieldType`
-  // short-circuit (which prefers explicit control over the registry) stays
-  // intact while still selecting the right widget.
+  // plain control while leaving the explicit-control short-circuit intact.
   const annotatedControl = deriveAnnotatedControl(field.type, protoUi, nested, direct);
 
   return {
@@ -422,16 +401,10 @@ export function resolveRenderFieldType(field: ParsedField): FieldTypes {
     const min = Number(field.fieldConfig?.inputProps?.min);
     const max = Number(field.fieldConfig?.inputProps?.max);
 
-    // NOTE: `sliderFieldDefinition.match` no longer auto-promotes number
-    // fields with min/max to the slider widget — slider is opt-in via the
-    // proto `control = CONTROL_TYPE_SLIDER` annotation (see
-    // `fields/slider.tsx`). This fallback resolver still returns 'slider'
-    // for bounded numbers because `buildFallbackHelp` below reads it to
-    // suppress a redundant range hint; the actual rendered widget is
-    // decided by the registry + `getFieldUiConfig.control` override, not
-    // this function. If you're trying to "fix" a number field that's
-    // rendering as plain when you expected a slider, add the proto
-    // annotation — don't change this branch.
+    // Returns 'slider' only so buildFallbackHelp can suppress a redundant
+    // range hint — the actual widget is opt-in via the proto
+    // `CONTROL_TYPE_SLIDER` annotation, not this resolver. Don't change this
+    // to "fix" a number field rendering as plain; add the annotation instead.
     if (Number.isFinite(min) && Number.isFinite(max)) {
       return 'slider';
     }
@@ -462,9 +435,7 @@ function buildRangeHint(field: ParsedField): string | undefined {
   const min = field.fieldConfig?.inputProps?.min;
   const max = field.fieldConfig?.inputProps?.max;
 
-  // Number.isFinite() matches resolveRenderFieldType's check — NaN/Infinity
-  // passing as `number` would otherwise produce nonsense like
-  // "Accepted range: NaN to Infinity".
+  // Number.isFinite guards against rendering "Accepted range: NaN to Infinity".
   if (Number.isFinite(min) && Number.isFinite(max)) {
     return `Accepted range: ${min} to ${max}.`;
   }
@@ -497,23 +468,19 @@ function buildFallbackHelp(field: ParsedField): string {
 }
 
 /**
- * Tooltip text (shown when hovering the info icon).
- * Pulls from proto `help` annotation. Only shown when it adds information
- * beyond what's already visible in the inline description.
+ * Info-icon tooltip text. Only returned when it adds information beyond the
+ * inline description (otherwise the info icon would be redundant).
  */
 export function getFieldHelpText(field: ParsedField): string {
   const uiConfig = getFieldUiConfig(field);
   const descriptionText = getFieldDescriptionText(field);
 
-  // Build the tooltip from help + example
   const parts = [uiConfig.help, uiConfig.example ? `Example: ${uiConfig.example}` : undefined].filter(
     (value): value is string => Boolean(value)
   );
 
   const tooltip = [...new Set(parts)].join(' ');
 
-  // If tooltip would be identical to the inline description, suppress it
-  // so the info icon doesn't appear redundantly.
   if (tooltip && tooltip === descriptionText) {
     return '';
   }
@@ -522,10 +489,8 @@ export function getFieldHelpText(field: ParsedField): string {
 }
 
 /**
- * Upstream docs URL annotated on the field. Surfaces as a "Learn more"
- * anchor in the field's description slot — so model catalogs, region
- * lists, and API parameter references always point at the vendor's
- * live list rather than a static snapshot maintained inside this repo.
+ * Upstream docs URL annotated on the field, surfaced as a "Learn more" anchor
+ * so catalogs/region lists point at the vendor's live list, not a stale snapshot.
  */
 export function getFieldDocsUrl(field: ParsedField): string | undefined {
   const customData = field.fieldConfig?.customData;
@@ -543,36 +508,30 @@ export function getFieldDocsUrl(field: ParsedField): string | undefined {
 }
 
 /**
- * Inline description text (shown directly below the input field).
- * Prefers proto `description` annotation (concise one-liner), falls back to
- * `help`, then to auto-generated fallback hints.
+ * Inline description below the input. Resolution order: proto `description`,
+ * then `fieldConfig.description`, then `help`, then `example`, then auto hints.
  */
 export function getFieldDescriptionText(field: ParsedField): string | undefined {
   const uiConfig = getFieldUiConfig(field);
 
-  // 1. Prefer explicit proto `description` annotation
   if (uiConfig.description) {
     return uiConfig.description;
   }
 
-  // 2. Fall back to fieldConfig.description (set programmatically)
   const configDescription =
     typeof field.fieldConfig?.description === 'string' ? field.fieldConfig.description : undefined;
   if (configDescription) {
     return configDescription;
   }
 
-  // 3. Fall back to help text (when no separate description exists)
   if (uiConfig.help) {
     return uiConfig.help;
   }
 
-  // 4. Fall back to example
   if (uiConfig.example) {
     return `Example: ${uiConfig.example}`;
   }
 
-  // 5. Fall back to auto-generated hints
   const fallback = buildFallbackHelp(field);
   return fallback.length > 0 ? fallback : undefined;
 }
@@ -583,8 +542,8 @@ function hasSimpleRequiredCount(field: ParsedField): boolean {
 }
 
 /**
- * Default classification: required fields are "simple", optional fields are "advanced".
- * Can be overridden via explicit `advanced` metadata in field config or the `classifyField` prop.
+ * Required fields are "simple", optional are "advanced"; overridable via
+ * `advanced` field-config metadata or the `classifyField` prop.
  */
 export function defaultClassifyField(field: ParsedField): 'simple' | 'advanced' {
   const customData = isRecord(field.fieldConfig?.customData) ? field.fieldConfig.customData : undefined;

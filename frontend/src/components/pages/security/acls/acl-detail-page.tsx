@@ -64,11 +64,14 @@ const AclDetailPage = () => {
     <div className="flex flex-col gap-4">
       <h2 className="pt-4 pb-3 font-semibold text-xl">ACL: {principalName}</h2>
       <Text>Configuration details</Text>
-      <Button asChild variant="outline">
-        <a data-testid="update-acl-button" href={editHref}>
-          Edit
-        </a>
-      </Button>
+      <Button
+        render={
+          <a data-testid="update-acl-button" href={editHref}>
+            Edit
+          </a>
+        }
+        variant="outline"
+      />
       <ACLDetails isSimpleView={false} rules={acls.rules} sharedConfig={acls.sharedConfig} />
     </div>
   );

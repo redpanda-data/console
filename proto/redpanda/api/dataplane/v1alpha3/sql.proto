@@ -114,6 +114,29 @@ service SQLService {
       api: API_REDPANDA_SQL
     };
   }
+
+  // GetSqlIdentity returns the caller's SQL identity: the engine username it is
+  // connected as and whether it holds administrative (superuser) privileges.
+  // Clients use is_admin to gate write/DDL actions (e.g. creating tables) in
+  // the UI; the engine remains the source of truth and enforces privileges on
+  // execution regardless.
+  rpc GetSqlIdentity(GetSqlIdentityRequest) returns (GetSqlIdentityResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/identity"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get SQL identity"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetSqlIdentityResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
 }
 
 // Catalog backing-storage type. Sourced from `system.catalogs.type`.
@@ -284,4 +307,15 @@ message ExecuteQueryResponse {
   // True if the server row cap fired before the result set was
   // exhausted.
   bool truncated = 3;
+}
+
+message GetSqlIdentityRequest {}
+
+message GetSqlIdentityResponse {
+  // Engine username the caller is connected as (SQL `current_user`).
+  string current_user = 1;
+  // True when the caller holds administrative (superuser) privileges in the
+  // engine, i.e. may perform write/DDL actions. Sourced from
+  // `pg_roles.rolsuper`.
+  bool is_admin = 2;
 }

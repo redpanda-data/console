@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, GridItem, Tag, TagCloseButton, TagLabel } from '@redpanda-data/ui';
-import { SettingsIcon } from 'components/icons';
+import { CloseIcon, SettingsIcon } from 'components/icons';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import type { FC } from 'react';
 
 import type { FilterEntry } from '../../../../../state/ui';
@@ -24,47 +24,49 @@ type MessageSearchFilterBarProps = {
 
 export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filters, onEdit, onToggle, onRemove }) => {
   return (
-    <GridItem data-testid="message-filter-bar" display="flex" gridColumn="-1/1" justifyContent="space-between">
-      <Box columnGap="8px" display="inline-flex" flexWrap="wrap" rowGap="2px" width="calc(100% - 200px)">
+    <div className="col-span-full flex justify-between" data-testid="message-filter-bar">
+      <div className="inline-flex flex-wrap items-center gap-2">
         {/* Existing Tags List  */}
         {filters?.map((e) => (
-          <Tag
-            className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
+          <div
+            className={cn(
+              'inline-flex select-none items-center rounded-md border bg-card text-sm shadow-sm',
+              !e.isActive && 'bg-muted text-muted-foreground'
+            )}
             data-testid={`message-filter-tag-${e.id}`}
             key={e.id}
-            style={{ userSelect: 'none' }}
           >
-            <SettingsIcon
+            <button
+              aria-label="Edit filter"
+              className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-edit-${e.id}`}
               onClick={() => {
                 onEdit(e);
               }}
-              size={14}
-            />
-            <TagLabel
-              alignItems="center"
-              border="0px solid hsl(0 0% 85% / 1)"
-              borderWidth="0px 1px"
+              type="button"
+            >
+              <SettingsIcon size={14} />
+            </button>
+            <button
+              className={cn('border-x px-2 py-1 transition-colors hover:bg-accent', !e.isActive && 'line-through')}
               data-testid={`message-filter-toggle-${e.id}`}
-              display="inline-flex"
-              height="100%"
-              mx="2"
               onClick={() => onToggle(e.id)}
-              px="6px"
-              textDecoration={e.isActive ? '' : 'line-through'}
+              type="button"
             >
               {e.name || e.code || 'New Filter'}
-            </TagLabel>
-            <TagCloseButton
+            </button>
+            <button
+              aria-label="Remove filter"
+              className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-remove-${e.id}`}
-              m="0"
               onClick={() => onRemove(e.id)}
-              opacity={1}
-              px="1"
-            />
-          </Tag>
+              type="button"
+            >
+              <CloseIcon size={14} />
+            </button>
+          </div>
         ))}
-      </Box>
-    </GridItem>
+      </div>
+    </div>
   );
 };

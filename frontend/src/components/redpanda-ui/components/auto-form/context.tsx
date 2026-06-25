@@ -39,11 +39,7 @@ export function useAutoFormField(path: string[]) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Legacy aliases – kept during migration, will be removed once all consumers
-// switch to useAutoForm().
-// ---------------------------------------------------------------------------
-
+// Legacy aliases kept until all consumers switch to useAutoForm().
 export type InternalAutoFormRenderContextValue = Pick<AutoFormContextValue, 'uiComponents' | 'formComponents'>;
 export type InternalAutoFormRuntimeContextValue = Pick<
   AutoFormContextValue,

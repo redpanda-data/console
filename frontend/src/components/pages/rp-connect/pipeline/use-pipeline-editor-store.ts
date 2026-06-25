@@ -137,7 +137,7 @@ export function PipelineEditorProvider({
   // Which edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
   initialEditLane?: EditLane;
 }) {
-  const storeRef = useRef<StoreApi<PipelineEditorStore>>();
+  const storeRef = useRef<StoreApi<PipelineEditorStore>>(undefined);
   if (!storeRef.current) {
     storeRef.current = createPipelineEditorStore({
       activeEditLane: initialEditLane,

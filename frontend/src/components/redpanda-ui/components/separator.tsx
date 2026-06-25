@@ -20,7 +20,7 @@ const separatorVariants = cva('shrink-0', {
 // Plain classes (not data-[orientation] variants) so a consumer's explicit size wins.
 const orientationClasses = {
   horizontal: 'h-px w-full',
-  vertical: 'h-full w-px',
+  vertical: 'w-px self-stretch',
 } as const;
 
 export type SeparatorVariant = VariantProps<typeof separatorVariants>['variant'];

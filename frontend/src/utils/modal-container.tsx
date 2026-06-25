@@ -1,5 +1,5 @@
 import { Box } from '@redpanda-data/ui';
-import React, { useEffect, useState } from 'react';
+import React, { type JSX, useEffect, useState } from 'react';
 
 let nextModalId = 1;
 type Modal = { id: number; element: JSX.Element };

@@ -9,7 +9,7 @@ type SliderProps = Omit<React.ComponentProps<typeof SliderPrimitive.Root>, 'valu
   SharedProps & {
     value?: number | readonly number[];
     defaultValue?: number | readonly number[];
-    onValueChange?: (value: number[]) => void;
+    onValueChange?: (value: number[], eventDetails?: SliderPrimitive.Root.ChangeEventDetails) => void;
   };
 
 function Slider({ className, defaultValue, value, min = 0, max = 100, testId, onValueChange, ...props }: SliderProps) {
@@ -27,9 +27,9 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
     if (!onValueChange) {
       return;
     }
-    return (nextValue: number | readonly number[]) => {
+    return (nextValue: number | readonly number[], eventDetails: SliderPrimitive.Root.ChangeEventDetails) => {
       const asArray = Array.isArray(nextValue) ? [...nextValue] : [nextValue as number];
-      onValueChange(asArray);
+      onValueChange(asArray, eventDetails);
     };
   }, [onValueChange]);
 

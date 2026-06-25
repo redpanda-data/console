@@ -177,11 +177,14 @@ export class TopicPage {
   }
 
   async verifyConfigurationGroup(groupName: string) {
-    await expect(this.page.locator('.configGroupTitle').filter({ hasText: groupName })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: groupName })).toBeVisible();
   }
 
   async getConfigurationGroups(): Promise<string[]> {
-    return await this.page.locator('.configGroupTitle').allTextContents();
+    return await this.page
+      .getByRole('navigation', { name: 'Configuration categories' })
+      .getByRole('button')
+      .allTextContents();
   }
 
   /**

@@ -86,16 +86,17 @@ test.describe('Topic Details - Navigation and Tabs', () => {
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
       await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 15_000 });
 
-      // Verify that configuration groups are present
-      // Note: This test is flexible and will pass even if new groups are added
-      const configGroups = page.locator('.configGroupTitle');
-      const groupCount = await configGroups.count();
+      // The grouped layout shows a category sidebar plus titled sections.
+      // Note: This test is flexible and will pass even if new categories are added.
+      const sidebar = page.getByRole('navigation', { name: 'Configuration categories' });
+      await expect(sidebar).toBeVisible();
+      const categoryCount = await sidebar.getByRole('button').count();
 
-      // At least some configuration groups should be visible
-      expect(groupCount).toBeGreaterThan(0);
+      // At least some configuration categories should be visible
+      expect(categoryCount).toBeGreaterThan(0);
 
       // Verify Retention group is present (a core group that should always exist)
-      await expect(page.locator('.configGroupTitle').filter({ hasText: 'Retention' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Retention' })).toBeVisible();
     });
 
     await topicPage.deleteTopic(topicName);

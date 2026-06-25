@@ -102,7 +102,7 @@ export const ConnectTile = ({
   return component.summary ? (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipTrigger render={content} />
         <TooltipContent className="max-w-sm">
           <Text className="line-clamp-4 text-wrap" variant="small">
             {component.summary}

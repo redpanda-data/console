@@ -614,7 +614,7 @@ function EditorPanel({
   isLintPending: boolean;
 }) {
   return (
-    <ResizablePanelGroup direction="vertical">
+    <ResizablePanelGroup orientation="vertical">
       <ResizablePanel defaultSize={70} minSize={30}>
         <div className="relative h-full">
           {isServerlessInitializing ? (

@@ -29,7 +29,9 @@ type Git struct {
 	// Whether or not to use the filename or the full filepath as key in the map
 	IndexByFullFilepath bool `yaml:"-"`
 
-	// RefreshInterval specifies how often the repository shall be pulled to check for new changes.
+	// RefreshInterval specifies how often the repository shall be refreshed to check for new changes.
+	// A value of 0 disables periodic refresh: the repository is cloned once at startup and only
+	// refreshed again on restart.
 	RefreshInterval time.Duration `yaml:"refreshInterval"`
 
 	// Repository that contains markdown files that document a Kafka topic.
@@ -54,9 +56,8 @@ func (c *Git) Validate() error {
 	if !c.Enabled {
 		return nil
 	}
-	if c.RefreshInterval == 0 {
-		return errors.New("git config is enabled but refresh interval is set to 0 (disabled)")
-	}
+	// A refresh interval of 0 (or less) is allowed and disables periodic refresh; the repository
+	// is cloned once at startup. See SetDefaults for the default interval when none is configured.
 	if c.MaxFileSize <= 0 {
 		return errors.New("git config is enabled but file max size is <= 0")
 	}

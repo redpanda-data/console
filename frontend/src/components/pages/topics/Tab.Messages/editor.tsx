@@ -45,7 +45,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   const [editorUri, setEditorUri] = useState<Uri>();
   const [tsWorkerClient, setTsWorkerClient] = useState<languages.typescript.TypeScriptWorker>();
 
-  const editorRef = useRef<undefined | IStandaloneCodeEditor>();
+  const editorRef = useRef<undefined | IStandaloneCodeEditor>(undefined);
 
   const handleOnMount: OnMount = async (editorInstance, monacoInstance) => {
     editorRef.current = editorInstance;

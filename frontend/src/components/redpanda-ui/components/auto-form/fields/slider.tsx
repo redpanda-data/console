@@ -9,13 +9,8 @@ import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
 
-/**
- * Slider widget — renders the track alongside a companion numeric
- * input. The track is for quick coarse adjustments; the input
- * handles precise entry (including tiny step sizes beyond a drag's
- * resolution) and keeps the value readable when the track is tiny
- * on narrow columns. Both controls bind to the same form value.
- */
+// Track + companion numeric input bound to the same value: the track for
+// coarse drags, the input for precise entry below a drag's resolution.
 function SliderFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
   const min = parseNumericProp(inputProps.min) ?? 0;
@@ -24,13 +19,8 @@ function SliderFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
   const step = resolveNumericStep(inputProps, value);
   const clamped = Math.min(max, Math.max(min, value));
 
-  // Seed the form state with the slider's minimum on mount when the
-  // field is undefined/null. Without this, the track renders at `min`
-  // (thanks to the `?? min` fallback above) but the companion number
-  // input shows as empty and the form value stays undefined — users
-  // see a "blank" input even though the slider is clearly at zero.
-  // Seeding once aligns both controls visually and makes 0 (or the
-  // proto-declared min) an explicit starting value in the payload.
+  // Seed form state with `min` on mount when value is undefined/null: otherwise
+  // the track shows at min but the number input reads empty and value stays unset.
   const hasSeededRef = React.useRef(false);
   React.useEffect(() => {
     if (hasSeededRef.current) {
@@ -82,15 +72,9 @@ export { SliderFieldComponent };
 export const sliderFieldDefinition: FieldTypeDefinition = {
   name: 'slider',
   priority: 15,
-  /**
-   * Slider is an opt-in widget — it renders only when the proto field
-   * carries `field_ui.control = CONTROL_TYPE_SLIDER` (surfaced as
-   * `customData.ui.control === 'slider'`). A numeric field with
-   * `min`/`max` alone does NOT auto-promote to slider, because that
-   * collides with the plain number renderer and produces the
-   * "slider + standalone number input" double-render seen on
-   * Max In Flight fields before this change. Proto drives the choice.
-   */
+  // Opt-in only: requires `customData.ui.control === 'slider'`. Numeric
+  // min/max alone must NOT promote to slider or it double-renders with the
+  // plain number field.
   match: (field) => {
     if (field.type !== 'number') {
       return false;

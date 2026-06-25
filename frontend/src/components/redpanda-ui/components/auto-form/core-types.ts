@@ -1,8 +1,7 @@
 import type React from 'react';
 import type { ReactNode } from 'react';
 
-// Re-export schema contract types from shared lib so existing consumers
-// can continue importing from './core-types' without changes.
+// Re-exported from the shared lib so consumers can keep importing from here.
 export type {
   FieldConfig,
   ParsedField,
@@ -14,10 +13,6 @@ export type {
 } from '../../lib/form-types';
 
 import type { ParsedField, Renderable } from '../../lib/form-types';
-
-// ---------------------------------------------------------------------------
-// UI component contracts — AutoForm-specific wrapper and field props.
-// ---------------------------------------------------------------------------
 
 export type FieldWrapperProps = {
   label: Renderable;

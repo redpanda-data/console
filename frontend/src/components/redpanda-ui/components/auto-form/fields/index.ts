@@ -30,10 +30,6 @@ import { urlFieldDefinition } from './url';
 import type { AutoFormFieldComponents } from '../core-types';
 import { FieldTypeRegistry } from '../registry';
 
-// ---------------------------------------------------------------------------
-// Default registry with all built-in field types
-// ---------------------------------------------------------------------------
-
 export const defaultRegistry = new FieldTypeRegistry()
   // Data-provider-annotated fields win over every default matcher — the
   // annotation is an explicit instruction from proto, overriding the
@@ -82,10 +78,7 @@ export const defaultRegistry = new FieldTypeRegistry()
   .register(fieldMaskFieldDefinition)
   .register(jsonFieldDefinition);
 
-// ---------------------------------------------------------------------------
-// Legacy map-based registry for backwards compatibility during migration
-// ---------------------------------------------------------------------------
-
+// Legacy map-based registry for backwards compatibility during migration.
 export const AutoFormFieldComponentRegistry = {
   string: stringFieldDefinition.component,
   textarea: textareaFieldDefinition.component,
@@ -104,9 +97,7 @@ export const AutoFormFieldComponentRegistry = {
   date: dateFieldDefinition.component,
   timestamp: timestampFieldDefinition.component,
   select: selectFieldDefinition.component,
-  // Share the same component with `select` — the routing rule is
-  // different (data-provider annotation vs proto enum), but the
-  // component handles both via its internal provider branch.
+  // Same component as `select`; routing differs (data-provider annotation vs proto enum).
   dataProviderSelect: dataProviderSelectFieldDefinition.component,
   radio: radioFieldDefinition.component,
   combobox: comboboxFieldDefinition.component,
@@ -121,10 +112,6 @@ export const AutoFormFieldComponentRegistry = {
   keyValue: keyValueFieldDefinition.component,
   fallback: MissingFieldComponent,
 } satisfies AutoFormFieldComponents;
-
-// ---------------------------------------------------------------------------
-// Re-exports
-// ---------------------------------------------------------------------------
 
 export { MissingFieldComponent } from './fallback';
 

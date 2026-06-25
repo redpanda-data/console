@@ -207,19 +207,21 @@ export const ShadowLinkListPage = () => {
           </Button>
 
           <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <span className="inline-block">
-                <Button
-                  disabled={hasShadowLink}
-                  onClick={() => navigate({ to: '/shadowlinks/create' })}
-                  size="sm"
-                  variant="primary"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create shadow link
-                </Button>
-              </span>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <span className="inline-block">
+                  <Button
+                    disabled={hasShadowLink}
+                    onClick={() => navigate({ to: '/shadowlinks/create' })}
+                    size="sm"
+                    variant="primary"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create shadow link
+                  </Button>
+                </span>
+              }
+            />
             {Boolean(hasShadowLink) && (
               <TooltipContent>
                 <p>Only one shadowlink can be created at this time</p>

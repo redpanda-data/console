@@ -122,14 +122,7 @@ function FormPanel<T extends Record<string, unknown>>({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-start lg:gap-10">
-      {/*
-        The form column's top-level rhythm is driven by `formSpacing.form`
-        so every root sibling (fields, sections, Submit) is separated by
-        the same token the `<Form>` primitive applies internally. Keeping
-        the two entry points on the same token means Submit always sits
-        one `form` step below the last section regardless of whether the
-        preceding child is a leaf field or a nested group.
-      */}
+      {/* formSpacing.form drives the column rhythm to match the <Form> primitive's internal spacing. */}
       <div className={`min-w-0 lg:pr-2 ${formSpacing.form}`}>{children}</div>
       <aside
         className="min-w-0 lg:sticky lg:top-6 lg:self-start"

@@ -1,5 +1,7 @@
 'use client';
 
+import { mergeProps } from '@base-ui/react/merge-props';
+import { useRender } from '@base-ui/react/use-render';
 import {
   defineStepper as defineStepperPrimitive,
   type Get,
@@ -13,7 +15,6 @@ import React from 'react';
 
 import { Button, type ButtonVariants } from './button';
 import { Heading, Text } from './typography';
-import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const StepperContext = React.createContext<Stepper.ConfigProps | null>(null);
@@ -92,7 +93,6 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
         const step = allSteps[stepIndex];
         const currentIndex = utils.getIndex(current.id);
 
-        // Use icon from step definition if available, otherwise fall back to passed icon
         const stepIcon = step.icon || icon;
 
         const isLast = utils.getLast().id === props.of;
@@ -195,63 +195,69 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       },
       Title,
       Description,
-      Panel: ({ children, asChild, ...props }) => {
-        const Comp = asChild ? Slot : 'div';
+      Panel: ({ children, render, ...props }) => {
         const { tracking } = useStepperProvider();
 
-        return (
-          <Comp
-            data-component="stepper-step-panel"
-            ref={(node: HTMLDivElement | null) => scrollIntoStepperPanel(node, tracking)}
-            {...props}
-          >
-            {children}
-          </Comp>
-        );
+        return useRender({
+          defaultTagName: 'div',
+          render,
+          props: mergeProps<'div'>(
+            {
+              'data-component': 'stepper-step-panel',
+              ref: (node: HTMLDivElement | null) => scrollIntoStepperPanel(node, tracking),
+              children,
+            } as useRender.ElementProps<'div'>,
+            props
+          ),
+        });
       },
-      Controls: ({ children, className, asChild, ...props }) => {
-        const Comp = asChild ? Slot : 'div';
-        return (
-          <Comp className={cn('flex justify-end gap-4', className)} data-component="stepper-controls" {...props}>
-            {children}
-          </Comp>
-        );
-      },
+      Controls: ({ children, className, render, ...props }) =>
+        useRender({
+          defaultTagName: 'div',
+          render,
+          props: mergeProps<'div'>(
+            {
+              className: cn('flex justify-end gap-4', className),
+              'data-component': 'stepper-controls',
+              children,
+            } as useRender.ElementProps<'div'>,
+            props
+          ),
+        }),
     },
   };
 };
 
-const Title = ({ children, className, asChild, ...props }: React.ComponentProps<'h4'> & { asChild?: boolean }) => {
-  const Comp = asChild ? Slot : Heading;
+const Title = ({ children, className, render, ...props }: useRender.ComponentProps<'h4'>) =>
+  useRender({
+    defaultTagName: 'h4',
+    render: render ?? <Heading level={4}>{children}</Heading>,
+    props: mergeProps<'h4'>(
+      {
+        className: cn('font-medium text-base selection:bg-selected selection:text-selected-foreground', className),
+        'data-component': 'stepper-step-title',
+        children,
+      } as useRender.ElementProps<'h4'>,
+      props
+    ),
+  });
 
-  return (
-    <Comp
-      className={cn('font-medium text-base selection:bg-selected selection:text-selected-foreground', className)}
-      data-component="stepper-step-title"
-      level={asChild ? undefined : 4}
-      {...props}
-    >
-      {children}
-    </Comp>
-  );
-};
-
-const Description = ({ children, className, asChild, ...props }: React.ComponentProps<'p'> & { asChild?: boolean }) => {
-  const Comp = asChild ? Slot : Text;
-
-  return (
-    <Comp
-      className={cn(
-        'text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
-        className
-      )}
-      data-component="stepper-step-description"
-      {...props}
-    >
-      {children}
-    </Comp>
-  );
-};
+const Description = ({ children, className, render, ...props }: useRender.ComponentProps<'p'>) =>
+  useRender({
+    defaultTagName: 'p',
+    render: render ?? <Text>{children}</Text>,
+    props: mergeProps<'p'>(
+      {
+        className: cn(
+          'text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
+          className
+        ),
+        'data-component': 'stepper-step-description',
+        children,
+      } as useRender.ElementProps<'p'>,
+      props
+    ),
+  });
 
 const StepperSeparator = ({
   orientation,
@@ -460,10 +466,10 @@ namespace Stepper {
           variant?: ButtonVariants['variant'];
         }
       ) => React.ReactElement;
-      Title: (props: AsChildProps<'h4'>) => React.ReactElement;
-      Description: (props: AsChildProps<'p'>) => React.ReactElement;
-      Panel: (props: AsChildProps<'div'>) => React.ReactElement;
-      Controls: (props: AsChildProps<'div'>) => React.ReactElement;
+      Title: (props: useRender.ComponentProps<'h4'>) => React.ReactElement;
+      Description: (props: useRender.ComponentProps<'p'>) => React.ReactElement;
+      Panel: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
+      Controls: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
     };
   };
 
@@ -474,9 +480,5 @@ namespace Stepper {
     strokeWidth?: number;
   };
 }
-
-type AsChildProps<T extends React.ElementType> = React.ComponentProps<T> & {
-  asChild?: boolean;
-};
 
 export { defineStepper };

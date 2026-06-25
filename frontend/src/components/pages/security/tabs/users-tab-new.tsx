@@ -315,23 +315,28 @@ export const UsersTabNew: FC = () => {
                 <div className="flex items-center gap-3">
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button disabled={Boolean(createTooltip)} onClick={openCreateDialog}>
-                          Create user
-                        </Button>
-                      </TooltipTrigger>
+                      <TooltipTrigger
+                        render={
+                          <Button disabled={Boolean(createTooltip)} onClick={openCreateDialog}>
+                            Create user
+                          </Button>
+                        }
+                      />
                       {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
                     </Tooltip>
                   </TooltipProvider>
-                  <Button asChild variant="link">
-                    <a
-                      href="https://docs.redpanda.com/current/manage/kubernetes/security/authentication/k-authentication/#scram"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      Read the docs →
-                    </a>
-                  </Button>
+                  <Button
+                    render={
+                      <a
+                        href="https://docs.redpanda.com/current/manage/kubernetes/security/authentication/k-authentication/#scram"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Read the docs →
+                      </a>
+                    }
+                    variant="link"
+                  />
                 </div>
               </EmptyContent>
             )}
@@ -357,11 +362,17 @@ export const UsersTabNew: FC = () => {
           actions={
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button data-testid="create-user-button" disabled={Boolean(createTooltip)} onClick={openCreateDialog}>
-                    Create user
-                  </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      data-testid="create-user-button"
+                      disabled={Boolean(createTooltip)}
+                      onClick={openCreateDialog}
+                    >
+                      Create user
+                    </Button>
+                  }
+                />
                 {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
               </Tooltip>
             </TooltipProvider>
@@ -470,7 +481,7 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
       >
         <span className="leading-tight">{`${directAcls.length} ${pluralize(directAcls.length, 'ACL')}`}</span>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[620px]" transition={{ duration: 0 }}>
+      <PopoverContent align="start" className="w-[620px]">
         <Table size="sm" variant="simple">
           <TableHeader>
             <TableRow>
@@ -553,13 +564,14 @@ const UserActions = ({ user }: { user: PrincipalEntry }) => {
         open={isDeleteModalOpen}
         userName={user.name}
       />
-
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="deleteButton" size="icon-sm" variant="ghost">
-            <MoreHorizontalIcon className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button className="deleteButton" size="icon-sm" variant="ghost">
+              <MoreHorizontalIcon className="h-4 w-4" />
+            </Button>
+          }
+        />
         <DropdownMenuContent>
           <DropdownMenuItem
             onClick={(e) => {
