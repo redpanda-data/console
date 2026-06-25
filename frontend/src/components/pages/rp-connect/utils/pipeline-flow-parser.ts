@@ -2285,6 +2285,9 @@ function buildSpineEdges(mainSequence: PipelineFlowNode[], isVertical: boolean):
 
 const GRAPH_SPLIT_W = FLOW_CARD_WIDTH;
 const GRAPH_SPLIT_H = 56;
+// A fan construct (switch / broker / parallel) hosts its "Add case / Add input" affordance as
+// a footer row INSIDE the card (edit mode) — reserve a row for it.
+const GRAPH_SPLIT_FOOTER_H = 34;
 const GRAPH_MERGE_W = 48;
 const GRAPH_MERGE_H = 32;
 const GRAPH_INSERT_W = 150;
@@ -2318,6 +2321,8 @@ type GraphNodeSpec = {
   /** For split (control-flow) markers: how many direct children (cases / steps / stages)
       the construct contains, surfaced on the card as a descriptor. */
   childCount?: number;
+  /** A fan construct's in-card "Add case / Add input" footer affordance (edit mode only). */
+  footerAdd?: { payload: FlowInsertPayload; label: string };
 };
 type GraphEdgeSpec = {
   id: string;
@@ -2360,16 +2365,34 @@ function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode): string {
   ctx.gnodes.push({ id: node.id, kind: 'card', node, w: ctx.dims.cardW, h: leafCardHeight(node, ctx.dims) });
   return node.id;
 }
-function addGraphSplit(ctx: GraphCtx, node: PipelineFlowNode): string {
+// A fan construct's in-card add affordance: "Add case" for a switch, "Add <input/output>" for a
+// broker/sequence/parallel. Computed at parse time (edit mode), rendered as a footer in the card.
+function splitAddAction(node: PipelineFlowNode, childCount: number): { payload: FlowInsertPayload; label: string } | undefined {
+  if (node.addChildSlot) {
+    return { payload: { kind: 'addChild', ...node.addChildSlot }, label: 'Add case' };
+  }
+  if (node.insertSlot) {
+    return { payload: { kind: 'insert', ...node.insertSlot, index: childCount }, label: `Add ${node.insertSlot.accepts}` };
+  }
+  return;
+}
+
+function addGraphSplit(
+  ctx: GraphCtx,
+  node: PipelineFlowNode,
+  footerAdd?: { payload: FlowInsertPayload; label: string }
+): string {
   ctx.gnodes.push({
     id: node.id,
     kind: 'split',
     node,
     w: GRAPH_SPLIT_W,
     // A control-flow construct that is itself a switch-case ENTRY shows the case's routing
-    // condition on its own row beneath the header (like a leaf card), so reserve the extra row.
-    h: GRAPH_SPLIT_H + (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0),
+    // condition on its own row beneath the header (like a leaf card); a fan construct hosts its
+    // add affordance as a footer row — reserve a row for each that's present.
+    h: GRAPH_SPLIT_H + (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0) + (footerAdd ? GRAPH_SPLIT_FOOTER_H : 0),
     childCount: ctx.childrenOf(node.id).length,
+    ...(footerAdd ? { footerAdd } : {}),
   });
   return node.id;
 }
@@ -2454,11 +2477,18 @@ function emitFan(
   sides: { out: boolean; in: boolean },
   ctx: GraphCtx
 ): GraphSegment {
-  const split = sides.out ? addGraphSplit(ctx, node) : undefined;
+  // The construct's "Add case / Add input" affordance renders as a footer INSIDE the fan card
+  // (edit mode only) — tied to the node, not a floating pill below it.
+  const footerAdd = ctx.editable ? splitAddAction(node, kids.length) : undefined;
+  const split = sides.out ? addGraphSplit(ctx, node, footerAdd) : undefined;
   // A fan-in WITHOUT a split (an input broker/sequence) reconverges at the construct
   // itself — render it as a LABELED hub (the broker), not a generic merge dot, so it's
   // clear the inputs feed a broker. A reconverging processor fan keeps a plain merge dot.
-  const merge = sides.in ? (split ? addGraphMerge(ctx, `${node.id}-merge`) : addGraphSplit(ctx, node)) : undefined;
+  const merge = sides.in
+    ? split
+      ? addGraphMerge(ctx, `${node.id}-merge`)
+      : addGraphSplit(ctx, node, footerAdd)
+    : undefined;
   const lanes = fanLaneList(node, kids, ctx);
   const isSwitch = node.label === 'switch';
 
@@ -2502,22 +2532,10 @@ function emitFan(
     }
   }
 
-  // Container-level add affordance, anchored to (and placed just below) the control-flow
-  // node itself — a new switch case, broker sink, or input.
-  const addAnchor = split ?? merge;
-  if (addAnchor) {
-    if (node.addChildSlot) {
-      addGraphInsert(ctx, `${node.id}-addcase`, addAnchor, { kind: 'addChild', ...node.addChildSlot }, 'Add case');
-    } else if (node.insertSlot) {
-      addGraphInsert(
-        ctx,
-        `${node.id}-add`,
-        addAnchor,
-        { kind: 'insert', ...node.insertSlot, index: lanes.length },
-        `Add ${node.insertSlot.accepts}`
-      );
-    }
-  }
+  // The container-level add affordance (a new switch case / broker input/output) is NOT a
+  // floating pill below the construct anymore — it renders as a footer button INSIDE the
+  // construct's card (see `splitAddAction` in computeGraphLayout), so it reads as part of the
+  // node. (Sequential constructs keep their on-edge "+" for appending a step.)
 
   const entry = split ?? merge ?? node.id;
   const exit = merge ?? split ?? node.id;
@@ -2941,6 +2959,7 @@ export function computeGraphLayout(
       data: {
         ...makeFlowNodeData(node, false, gn.childCount ?? 0, false, 0),
         ...(node.parentId ? { ownerId: node.parentId } : {}),
+        ...(gn.footerAdd ? { addAction: gn.footerAdd } : {}),
       },
     });
   }

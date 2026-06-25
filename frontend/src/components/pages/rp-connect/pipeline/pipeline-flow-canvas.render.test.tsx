@@ -84,8 +84,9 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     // Control-flow processors render as compact split markers (not growing containers).
     expect(screen.getAllByText('switch').length).toBeGreaterThan(0);
     expect(screen.getAllByText('branch').length).toBeGreaterThan(0);
-    // try + catch are paired; the catch marker renders as an error path.
-    expect(screen.getByText('catch')).toBeInTheDocument();
+    // try + catch are paired; the catch marker renders as an error path. (The construct name
+    // can also appear as a faint scope-region label, so allow more than one match.)
+    expect(screen.getAllByText('catch').length).toBeGreaterThan(0);
 
     // Each control-flow marker carries a descriptor of what it encloses (so it reads as a
     // router, not an empty card): the switch counts its 3 cases; catch labels its error role.

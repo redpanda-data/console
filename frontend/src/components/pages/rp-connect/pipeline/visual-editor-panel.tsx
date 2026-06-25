@@ -556,21 +556,25 @@ export function VisualEditorPanel({
             <TooltipProvider>
               <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
-                      <Undo2 />
-                    </Button>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
+                        <Undo2 />
+                      </Button>
+                    }
+                  />
                   <TooltipContent>
                     <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
-                      <Redo2 />
-                    </Button>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
+                        <Redo2 />
+                      </Button>
+                    }
+                  />
                   <TooltipContent>
                     <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
                   </TooltipContent>
@@ -665,12 +669,8 @@ export function VisualEditorPanel({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button variant="secondary-ghost">Cancel</Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild onClick={confirmDeleteNode}>
-              <Button variant="destructive">Remove</Button>
-            </AlertDialogAction>
+            <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
+            <AlertDialogAction onClick={confirmDeleteNode} render={<Button variant="destructive">Remove</Button>} />
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

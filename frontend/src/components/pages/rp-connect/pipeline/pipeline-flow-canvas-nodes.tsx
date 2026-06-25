@@ -184,8 +184,8 @@ const BranchConditionChip = ({
   const cls = cn(
     'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
-    tone === 'muted' && 'border-amber-500/30 bg-amber-500/5 text-amber-700/80',
-    tone === 'condition' && 'border-amber-500/40 bg-amber-500/10 text-amber-700',
+    tone === 'muted' && 'border-condition/30 bg-condition/5 text-condition/80',
+    tone === 'condition' && 'border-condition/40 bg-condition/10 text-condition',
     onEdit && 'nodrag nopan cursor-pointer transition-colors hover:bg-foreground/5',
     selected && 'ring-2 ring-primary ring-inset',
     className
@@ -217,8 +217,8 @@ const BranchConditionChip = ({
 // blue, output purple, resource orange) so routing logic is easy to scan for at a glance.
 // Error/dead-letter routes keep red (that semantic wins); a `default` catch-all is a muted amber.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
-  condition: 'border-amber-500/30 bg-amber-500/10 text-amber-700',
-  muted: 'border-amber-500/20 bg-amber-500/5 text-amber-700/80',
+  condition: 'border-condition/30 bg-condition/10 text-condition',
+  muted: 'border-condition/20 bg-condition/5 text-condition/80',
   error: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
@@ -345,6 +345,10 @@ export type FlowCardData = {
   onAddSasl?: (section: string, componentName: string) => void;
   /** Open the case editor for this node's routing condition (clicking the chip). */
   onEditCondition?: () => void;
+  /** A fan construct's in-card add affordance ("Add case" / "Add input"): payload + label. */
+  addAction?: { payload: FlowInsertPayload; label: string };
+  /** Invoke the add affordance (wired by the canvas in edit mode). */
+  onAddChild?: () => void;
 };
 
 const HANDLE_IDS = [
@@ -1245,6 +1249,21 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
             leaf cards) — not the generic switch/catch markers, whose descriptor states their role. */}
         {data.caseEditTarget ? (
           <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} topBorder />
+        ) : null}
+        {/* "Add case / Add input" lives INSIDE the construct card as a footer row — clearly tied
+            to the node — rather than a floating pill below it (edit mode only). */}
+        {data.addAction && data.onAddChild ? (
+          <button
+            className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-border/70 border-t border-dashed px-3 py-1.5 font-medium text-primary text-xs transition-colors hover:bg-primary/5"
+            onClick={(e) => {
+              e.stopPropagation();
+              data.onAddChild?.();
+            }}
+            type="button"
+          >
+            <PlusIcon className="size-3.5" />
+            {data.addAction.label}
+          </button>
         ) : null}
       </div>
     </div>

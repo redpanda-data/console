@@ -1111,8 +1111,10 @@ output:
     const hub = layout.rfNodes.find((n) => n.id === 'input-broker');
     expect(hub?.type).toBe('flowSplit');
     expect(layout.rfEdges.some((e) => e.id === 'fanin-input-broker-0' && e.target === 'input-broker')).toBe(true);
-    // "Add input" is an affordance anchored to (just below) the broker hub, edit mode only.
-    expect(layout.rfNodes.some((n) => n.id === 'input-broker-add' && n.type === 'flowInsert')).toBe(true);
+    // "Add input" lives INSIDE the hub card as a footer affordance (edit mode), not a floating
+    // pill below it — so it carries an `addAction` rather than a separate flowInsert node.
+    expect((hub?.data as { addAction?: { label?: string } }).addAction?.label).toBe('Add input');
+    expect(layout.rfNodes.some((n) => n.id === 'input-broker-add')).toBe(false);
   });
 
   it('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {

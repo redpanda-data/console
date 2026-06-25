@@ -250,8 +250,10 @@ function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: str
   return null;
 }
 
-// Padding (px) left between the construct's member nodes and the highlight region edge.
+// Padding (px) between a construct's member nodes and the region edge. The TOP gets extra
+// room so the region's label sits in a clear band above the first member, never over it.
 const SCOPE_REGION_PAD = 16;
+const SCOPE_REGION_TOP_PAD = 34;
 
 // The accent colour for a construct's scope region: red for an error/dead-letter
 // construct (catch), else the role accent (processors are blue).
@@ -261,18 +263,6 @@ function constructAccent(node?: Node): string {
     return 'var(--color-destructive)';
   }
   return sectionAccent(d?.section) ?? 'var(--color-primary)';
-}
-
-// The construct a hover/selection should reveal: a control-flow marker is itself; a merge
-// dot points back to its owner construct; anything else (a data card) encloses nothing.
-function constructIdForActive(active?: Node): string | undefined {
-  if (active?.type === 'flowSplit') {
-    return active.id;
-  }
-  if (active?.type === 'flowMerge') {
-    return (active.data as FlowCardData).ownerId;
-  }
-  return;
 }
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
@@ -325,72 +315,102 @@ function boxEnclosesForeignNode(nodes: Node[], scope: ReadonlySet<string>, b: Sc
   return false;
 }
 
+type ScopeRegion = {
+  id: string;
+  scope: ReadonlySet<string>;
+  bounds: ScopeBounds;
+  accent: string;
+  label: string;
+};
+
+// One construct's enclosure box. Always drawn FAINT (a quiet structural hint of nesting); it
+// — and its label — strengthen when the construct, or anything inside it, is the active
+// (selected/hovered) node. Non-interactive and behind the nodes, in flow coordinates.
+function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
+  const { bounds, accent, label } = region;
+  return (
+    <div
+      className="pointer-events-none absolute rounded-xl border border-dashed transition-[background-color,border-color] duration-200"
+      style={{
+        transform: `translate(${bounds.minX - SCOPE_REGION_PAD}px, ${bounds.minY - SCOPE_REGION_TOP_PAD}px)`,
+        width: bounds.maxX - bounds.minX + 2 * SCOPE_REGION_PAD,
+        height: bounds.maxY - bounds.minY + SCOPE_REGION_TOP_PAD + SCOPE_REGION_PAD,
+        borderColor: `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`,
+        zIndex: 0,
+      }}
+    >
+      {/* Seated in the reserved top band (never over a member card). Faint until active. */}
+      <span
+        className="absolute top-1.5 left-2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
+        style={{
+          color: accent,
+          opacity: active ? 1 : 0.8,
+          backgroundColor: 'var(--color-background)',
+          border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
 /**
- * On demand (hover or selection of a control-flow marker), paints a faint region behind
- * every node in that construct's sub-graph — so you can *see what's inside* a branch /
- * switch / try / for_each without permanent containment boxes. Drawn in flow coordinates
- * via `ViewportPortal` (moves with pan/zoom) and behind the nodes, so it never perturbs
- * the nodes array (hovering stays cheap) or steals pointer events. The box is suppressed when
- * it would overlap an unrelated card (members not contiguous) — see `boxEnclosesForeignNode`.
+ * Faint enclosure boxes around EVERY control-flow construct's sub-graph, shown at all times as
+ * a quiet hint of nesting, and emphasized when the construct (or anything inside it) is
+ * selected/hovered. Drawn via `ViewportPortal` (flow coordinates, moves with pan/zoom), behind
+ * the nodes, non-interactive — so it never perturbs the nodes array (hover stays cheap). A box
+ * is skipped when it would enclose an UNRELATED card (members not spatially contiguous), since a
+ * misleading container reads worse than none — see `boxEnclosesForeignNode`.
  */
-function ScopeRegionOverlay({
+function ScopeRegions({
   hoveredId,
   selectedId,
-  nodes,
+  rfNodes,
   scopeOf,
 }: {
   hoveredId?: string;
   selectedId?: string;
-  nodes: Node[];
+  rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
 }) {
-  // Hover wins over selection so exploring transiently reveals each construct's scope.
+  // Geometry only depends on the layout, so it's cached across hover/selection changes.
+  const regions = useMemo<ScopeRegion[]>(() => {
+    const out: ScopeRegion[] = [];
+    for (const node of rfNodes) {
+      if (node.type !== 'flowSplit') {
+        continue;
+      }
+      const scope = scopeOf(node.id);
+      if (!scope || scope.size < 2) {
+        continue;
+      }
+      const bounds = scopeMemberBounds(rfNodes, scope);
+      if (!bounds || boxEnclosesForeignNode(rfNodes, scope, bounds, SCOPE_REGION_PAD)) {
+        continue;
+      }
+      out.push({ id: node.id, scope, bounds, accent: constructAccent(node), label: (node.data as FlowCardData).label });
+    }
+    return out;
+  }, [rfNodes, scopeOf]);
+
+  if (regions.length === 0) {
+    return null;
+  }
+  // A region is emphasized when the active node is the construct itself or anywhere in its
+  // sub-graph (incl. a merge dot, matched via its owner id).
   const activeId = hoveredId ?? selectedId;
-  const construct = activeId ? nodes.find((n) => n.id === activeId) : undefined;
-  const constructId = constructIdForActive(construct);
-  const scope = scopeOf(constructId);
-  // Only worth a region when the construct actually encloses a sub-pipeline (≥1 child).
-  if (!(constructId && scope) || scope.size < 2) {
-    return null;
-  }
-  const bounds = scopeMemberBounds(nodes, scope);
-  if (!bounds) {
-    return null;
-  }
-  // Skip the box when it would cut through an unrelated card (members aren't contiguous).
-  if (boxEnclosesForeignNode(nodes, scope, bounds, SCOPE_REGION_PAD)) {
-    return null;
-  }
-  const accent = constructAccent(construct);
-  const label = (construct?.data as FlowCardData | undefined)?.label;
+  const activeOwner = activeId
+    ? (rfNodes.find((n) => n.id === activeId)?.data as FlowCardData | undefined)?.ownerId
+    : undefined;
   return (
     <ViewportPortal>
-      <div
-        className="pointer-events-none absolute rounded-xl border border-dashed"
-        style={{
-          transform: `translate(${bounds.minX - SCOPE_REGION_PAD}px, ${bounds.minY - SCOPE_REGION_PAD}px)`,
-          width: bounds.maxX - bounds.minX + 2 * SCOPE_REGION_PAD,
-          height: bounds.maxY - bounds.minY + 2 * SCOPE_REGION_PAD,
-          borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`,
-          backgroundColor: `color-mix(in srgb, ${accent} 5%, transparent)`,
-          zIndex: 0,
-        }}
-      >
-        {label ? (
-          // Seated inside the top-left padding (not straddling the border) so it never
-          // overlaps a card or label sitting just above the region.
-          <span
-            className="absolute top-1.5 left-2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide"
-            style={{
-              color: accent,
-              backgroundColor: 'var(--color-background)',
-              border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)`,
-            }}
-          >
-            {label}
-          </span>
-        ) : null}
-      </div>
+      {regions.map((region) => {
+        const active =
+          activeId !== undefined && (region.scope.has(activeId) || (activeOwner ? region.scope.has(activeOwner) : false));
+        return <RegionBox active={active} key={region.id} region={region} />;
+      })}
     </ViewportPortal>
   );
 }
@@ -433,6 +453,10 @@ function wireNodeActions(data: FlowCardData, node: Node, cb: CanvasCallbacks): v
   if (data.caseEditTarget && cb.onSelectNode) {
     const target = data.caseEditTarget;
     data.onEditCondition = () => cb.onSelectNode?.(node.id, target);
+  }
+  if (data.addAction && cb.onSlotInsert) {
+    const payload = data.addAction.payload;
+    data.onAddChild = () => cb.onSlotInsert?.(payload);
   }
   if (node.type === 'flowInsert' && cb.onSlotInsert) {
     (data as { onInsert?: (payload: FlowInsertPayload) => void }).onInsert = cb.onSlotInsert;
@@ -479,7 +503,7 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   return { ...node, data };
 }
 
-type LegendFlags = { copyMerge: boolean; error: boolean; reference: boolean };
+type LegendFlags = { condition: boolean; error: boolean; reference: boolean };
 
 // A line swatch matching the edge styles drawn on the canvas.
 function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
@@ -491,10 +515,21 @@ function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
   );
 }
 
-// Explains the edge vocabulary (flow / copy-merge / error / resource use). Only the
-// kinds present in the current diagram are listed.
+// A filled chip swatch for node-borne vocabulary (the gold routing condition), distinct from
+// the line swatches used for edges.
+function LegendChipSwatch({ color }: { color: string }) {
+  return (
+    <span
+      className="inline-block h-3 w-5 shrink-0 rounded-sm align-middle"
+      style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, border: `1px solid ${color}` }}
+    />
+  );
+}
+
+// Explains the diagram vocabulary (data flow / routing condition / error / resource use). Only
+// the kinds present in the current diagram are listed.
 function FlowLegend({ flags }: { flags: LegendFlags }) {
-  if (!(flags.copyMerge || flags.error || flags.reference)) {
+  if (!(flags.condition || flags.error || flags.reference)) {
     return null;
   }
   return (
@@ -504,10 +539,10 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
         <LegendSwatch color="var(--color-primary)" />
         Data flow
       </div>
-      {flags.copyMerge ? (
+      {flags.condition ? (
         <div className="flex items-center gap-2">
-          <LegendSwatch color="var(--color-primary)" dashed />
-          Copy / merge (branch)
+          <LegendChipSwatch color="var(--color-condition)" />
+          Routing condition
         </div>
       ) : null}
       {flags.error ? (
@@ -719,10 +754,10 @@ export function PipelineFlowCanvas({
       [bounds.maxX + margin, bounds.maxY + margin],
     ];
 
-    // Which edge vocabularies appear — drives an adaptive legend (only shows the
-    // kinds actually present, so trivial pipelines stay legend-free).
+    // Which vocabularies appear — drives an adaptive legend (only shows the kinds actually
+    // present, so trivial pipelines stay legend-free).
     const legendFlags = {
-      copyMerge: layout.rfEdges.some((e: Edge) => e.id.startsWith('copy-') || e.id.startsWith('merge-')),
+      condition: layout.rfNodes.some((n: Node) => Boolean((n.data as FlowCardData | undefined)?.caseEditTarget)),
       error: layout.rfEdges.some((e: Edge) => (e.data as { tone?: string } | undefined)?.tone === 'error'),
       reference: layout.rfEdges.some((e: Edge) => e.id.startsWith('ref-')),
     };
@@ -873,7 +908,7 @@ export function PipelineFlowCanvas({
           {simple ? null : <PipelineMiniMap nodes={rfNodes} />}
           {/* Renders only for control-flow markers (flowSplit/flowMerge), which exist only
               on the full canvas — so the compact sidebar (old nested layout) gets nothing. */}
-          <ScopeRegionOverlay hoveredId={hoveredNodeId} nodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
+          <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
           <KeepSelectionInView enabled={!simple} selectedNodeId={selectedNodeId} />
         </ReactFlow>
       </ReactFlowProvider>

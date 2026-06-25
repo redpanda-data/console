@@ -547,11 +547,7 @@ const FieldGroup = ({
         className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
       />
     </CollapsibleTrigger>
-    {/* No height animation: the Dialog animates its own height; animating the panel
-        too makes the two stagger. Open/close instantly. */}
-    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3" transition={{ duration: 0 }}>
-      {children}
-    </CollapsibleContent>
+    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
   </Collapsible>
 );
 
