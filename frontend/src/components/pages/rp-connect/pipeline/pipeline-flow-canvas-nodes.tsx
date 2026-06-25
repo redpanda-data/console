@@ -54,7 +54,6 @@ import {
   FLOW_CARD_WIDTH,
   FLOW_COMPACT_CARD_WIDTH,
   FLOW_SPINE_HANDLE_LEFT,
-  FLOW_SPINE_HANDLE_TOP,
   type FlowInsertPayload,
 } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
@@ -64,12 +63,8 @@ const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h
 // Applied to the card body (never the React Flow node wrapper, whose `transform`
 // drives positioning and would fight a scale/translate enter animation).
 const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
-// Anchor the spine (left/right) handles a fixed distance below the card top —
-// roughly the title row — so cards of differing heights connect along a
-// horizontal line. The top/bottom handles are anchored a fixed distance from the
-// left so vertically-stacked cards of differing widths connect along a straight
-// vertical line (no diagonal connectors).
-const SPINE_HANDLE_TOP = FLOW_SPINE_HANDLE_TOP;
+// The top/bottom handles are anchored a fixed distance from the left so vertically-stacked
+// cards of differing widths connect along a straight vertical line (no diagonal connectors).
 const SPINE_HANDLE_LEFT = FLOW_SPINE_HANDLE_LEFT;
 
 // React Flow drives panning/dragging from native listeners on ancestor elements:
@@ -254,14 +249,12 @@ const NodeHandles = () => (
   <>
     {HANDLE_IDS.map((h) => {
       const horizontal = h.id === 'l' || h.id === 'r';
-      // Pin the handle to a fixed offset and clear React Flow's default centering
-      // transform. Without this, overriding only `left`/`top` leaves the default
-      // `translate(-50%, …)` in place, so the spine handle's coordinate shifts with
-      // the node's size and the connecting line angles between cards of different
-      // widths. `transform: none` makes the offset absolute and identical for all.
-      const style = horizontal
-        ? { top: SPINE_HANDLE_TOP, transform: 'none' }
-        : { left: SPINE_HANDLE_LEFT, transform: 'none' };
+      // Horizontal (left/right) handles use React Flow's DEFAULT vertical centering (no style
+      // override), so a graph edge attaches at the card's vertical CENTRE — arrowheads land in
+      // the middle of the node, not a top/bottom corner, and a same-rank spine reads straight.
+      // Vertical (top/bottom) handles stay pinned to a fixed left offset (transform cleared) so
+      // vertically-stacked cards of differing widths connect on a straight vertical line.
+      const style = horizontal ? undefined : { left: SPINE_HANDLE_LEFT, transform: 'none' };
       return (
         <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
       );
