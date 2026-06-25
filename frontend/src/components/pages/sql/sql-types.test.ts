@@ -9,9 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
+import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
 import { describe, expect, test } from 'vitest';
 
-import { arrayElementPgType, columnKindForPgType, isArrayPgType } from './sql-types';
+import { arrayElementPgType, columnKindForPgType, hintFromError, isArrayPgType } from './sql-types';
 
 describe('columnKindForPgType', () => {
   test.each([
@@ -28,9 +31,10 @@ describe('columnKindForPgType', () => {
     ['JSONB', 'json'],
     ['TEXT', 'str'],
     ['UNKNOWN_TYPE', 'str'],
-    // Composite columns arrive pre-labelled as "json"/"json[]" from the backend.
-    ['json', 'json'],
-    ['json[]', 'json'],
+    // Composite columns arrive pre-labelled as "record"/"record[]" from the
+    // backend and render with the JSON tree viewer.
+    ['record', 'json'],
+    ['record[]', 'json'],
   ] as const)('%s → %s', (pgType, kind) => {
     expect(columnKindForPgType(pgType)).toBe(kind);
   });
@@ -60,5 +64,22 @@ describe('arrayElementPgType', () => {
     expect(arrayElementPgType('TEXT')).toBeNull();
     expect(isArrayPgType('TEXT')).toBe(false);
     expect(isArrayPgType('TEXT[]')).toBe(true);
+  });
+});
+
+describe('hintFromError', () => {
+  test('reads the hint from ErrorInfo metadata', () => {
+    const error = new ConnectError('boom', undefined, undefined, [
+      {
+        desc: ErrorInfoSchema,
+        value: create(ErrorInfoSchema, { reason: 'REASON_INVALID_INPUT', metadata: { hint: 'use (customer).id' } }),
+      },
+    ]);
+    expect(hintFromError(error)).toBe('use (customer).id');
+  });
+
+  test('returns undefined when there is no ErrorInfo hint', () => {
+    expect(hintFromError(new ConnectError('boom'))).toBeUndefined();
+    expect(hintFromError(new Error('plain'))).toBeUndefined();
   });
 });

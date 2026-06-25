@@ -15,7 +15,7 @@ import {
   type CompletionResult,
   startCompletion,
 } from '@codemirror/autocomplete';
-import { PostgreSQL, type SQLNamespace, sql as sqlLanguage } from '@codemirror/lang-sql';
+import { PostgreSQL, type SQLNamespace, schemaCompletionSource, sql as sqlLanguage } from '@codemirror/lang-sql';
 import { HighlightStyle, indentUnit, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { EditorState, type Extension, Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
@@ -121,8 +121,6 @@ function useIsDarkMode(): boolean {
 // muted gutter line numbers. CodeMirror themes are plain CSS, so registry
 // custom properties can be referenced directly and stay live.
 function editorChrome(mode: 'light' | 'dark'): Extension {
-  const gutter = mode === 'dark' ? 'var(--color-grey-600)' : 'var(--color-grey-400)';
-  const gutterActive = mode === 'dark' ? 'var(--color-grey-400)' : 'var(--color-grey-600)';
   return EditorView.theme(
     {
       '&': { backgroundColor: 'transparent', height: '100%', fontSize: '13px' },
@@ -132,58 +130,39 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
         lineHeight: '21px',
       },
       '.cm-content': { padding: '12px 0' },
-      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: gutter },
-      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: gutterActive },
-      '.cm-activeLine': {
-        backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
-      },
+      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
+      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
+      '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
     },
     { dark: mode === 'dark' }
   );
 }
 
-// SQL syntax palette, mapped from the design's `.sql-*` token classes onto the
-// Lezer highlight tags the SQL grammar emits (keywords, built-ins, strings,
-// numbers, comments, operators/punctuation and identifiers).
-function sqlHighlight(mode: 'light' | 'dark'): Extension {
-  const c =
-    mode === 'dark'
-      ? {
-          keyword: 'var(--color-purple-300)',
-          fn: 'var(--color-indigo-300)',
-          str: 'var(--color-green-300)',
-          num: 'var(--color-orange-300)',
-          comment: 'var(--color-grey-400)',
-          punct: 'var(--color-grey-500)',
-          id: 'var(--color-grey-100)',
-        }
-      : {
-          keyword: 'var(--color-purple-700)',
-          fn: 'var(--color-indigo-600)',
-          str: 'var(--color-green-700)',
-          num: 'var(--color-orange-700)',
-          comment: 'var(--color-grey-600)',
-          punct: 'var(--color-grey-500)',
-          id: 'var(--color-grey-900)',
-        };
+// SQL syntax palette mapped onto the Lezer highlight tags the SQL grammar
+// emits, entirely from theme-adaptive semantic tokens so it tracks light/dark
+// without per-mode values.
+function sqlHighlight(): Extension {
   return syntaxHighlighting(
     HighlightStyle.define([
-      { tag: tags.keyword, color: c.keyword, fontWeight: 'bold' },
-      { tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName], color: c.fn },
-      { tag: [tags.string, tags.special(tags.string)], color: c.str },
-      { tag: tags.number, color: c.num },
-      { tag: tags.comment, color: c.comment, fontStyle: 'italic' },
+      { tag: tags.keyword, color: 'var(--color-secondary)', fontWeight: 'bold' },
+      {
+        tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName],
+        color: 'var(--color-primary)',
+      },
+      { tag: [tags.string, tags.special(tags.string)], color: 'var(--color-success)' },
+      { tag: tags.number, color: 'var(--color-warning)' },
+      { tag: tags.comment, color: 'var(--color-muted-foreground)', fontStyle: 'italic' },
       {
         tag: [tags.operator, tags.punctuation, tags.separator, tags.paren, tags.brace, tags.squareBracket],
-        color: c.punct,
+        color: 'var(--color-muted-foreground)',
       },
-      { tag: tags.name, color: c.id },
+      { tag: tags.name, color: 'var(--color-foreground)' },
     ])
   );
 }
 
-const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight('light')];
-const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight('dark')];
+const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight()];
+const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight()];
 
 function tableNamespace(table: TableRef): SQLNamespace {
   return {
@@ -192,12 +171,9 @@ function tableNamespace(table: TableRef): SQLNamespace {
   };
 }
 
-// Builds the lang-sql completion schema from the loaded catalog tree: bare
-// table names → columns. Tables are deliberately NOT nested under their
-// catalog — Redpanda SQL (Oxla) addresses catalog tables with arrow notation
-// (`catalog=>table`), which catalogArrowSource below handles; dot-style
-// nesting would advertise syntax the server rejects. Bare entries still give
-// alias/column resolution (`FROM default_redpanda_catalog=>cars c` → `c.`).
+// Bare table name → columns. Powers alias/column resolution only
+// (schemaColumnSource); tables aren't nested under catalogs since Oxla uses
+// `catalog=>table` arrow notation, handled by catalogArrowSource.
 function buildSchema(catalogs: Catalog[]): SQLNamespace {
   const root: Record<string, SQLNamespace> = {};
   for (const catalog of catalogs) {
@@ -210,6 +186,20 @@ function buildSchema(catalogs: Catalog[]): SQLNamespace {
     }
   }
   return root;
+}
+
+// Schema completion limited to dotted members (`c.` → columns); bare table
+// names are suppressed at the top level so catalogArrowSource owns them.
+function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
+  const source = schemaCompletionSource({ dialect: PostgreSQL, schema: buildSchema(catalogs) });
+  return (context) => {
+    const result = source(context);
+    if (!result || result instanceof Promise) {
+      return null;
+    }
+    const dotted = context.state.sliceDoc(result.from - 1, result.from) === '.';
+    return dotted ? result : null;
+  };
 }
 
 // Matches an identifier followed by `=>` or `.` and a partial table name,
@@ -415,7 +405,9 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
     };
 
     const extensions = useMemo(() => {
-      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, schema: buildSchema(catalogs), upperCaseKeywords: true });
+      // No `schema` here — schemaColumnSource adds it back for dotted
+      // completions only, avoiding bare table names at the top level.
+      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, upperCaseKeywords: true });
       return [
         // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
         Prec.highest(
@@ -441,6 +433,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         ),
         sqlSupport,
         sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
+        sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
         isDark ? DARK_THEME : LIGHT_THEME,
         EditorView.updateListener.of((update) => {
           if (update.selectionSet) {

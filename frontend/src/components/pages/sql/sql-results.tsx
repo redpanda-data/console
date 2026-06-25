@@ -28,7 +28,19 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Braces, CircleX, Clock, Database, Download, GitMerge, Plus, Rows3, Terminal, X } from 'lucide-react';
+import {
+  Braces,
+  CircleX,
+  Clock,
+  Database,
+  Download,
+  GitMerge,
+  Lightbulb,
+  Plus,
+  Rows3,
+  Terminal,
+  X,
+} from 'lucide-react';
 import { createContext, useContext, useMemo, useState } from 'react';
 import DataGrid, { type Column } from 'react-data-grid';
 import { isMacOS } from 'utils/platform';
@@ -476,14 +488,17 @@ export function SqlResults({ run, sqlRole, onAddTable, hasTables = true }: SqlRe
           <AlertDescription>{run.message}</AlertDescription>
         </Alert>
         {run.hint ? (
-          <div className="flex items-center gap-3 text-muted-foreground text-sm">
-            {run.hint}
-            {run.hintAction && sqlRole === 'admin' && onAddTable ? (
-              <Button onClick={onAddTable} size="sm" variant="primary">
-                <Plus size={14} /> Add a topic to SQL
-              </Button>
-            ) : null}
-          </div>
+          <Alert icon={<Lightbulb />} variant="info">
+            <AlertTitle>Hint</AlertTitle>
+            <AlertDescription>
+              {run.hint}
+              {run.hintAction && sqlRole === 'admin' && onAddTable ? (
+                <Button onClick={onAddTable} size="sm" variant="primary">
+                  <Plus size={14} /> Add a topic to SQL
+                </Button>
+              ) : null}
+            </AlertDescription>
+          </Alert>
         ) : null}
       </div>
     );

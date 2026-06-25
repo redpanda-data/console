@@ -50,6 +50,7 @@ import {
   type CellValue,
   type ColumnDef,
   columnKindForPgType,
+  hintFromError,
   isArrayPgType,
   type QueryRun,
   type ResultRow,
@@ -546,7 +547,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           if (latestRunToken.current !== token) {
             return;
           }
-          setRun({ state: 'error', token, title: 'Query failed', message: error.message });
+          setRun({ state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) });
         },
       });
     },
