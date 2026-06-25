@@ -121,8 +121,6 @@ function useIsDarkMode(): boolean {
 // muted gutter line numbers. CodeMirror themes are plain CSS, so registry
 // custom properties can be referenced directly and stay live.
 function editorChrome(mode: 'light' | 'dark'): Extension {
-  const gutter = mode === 'dark' ? 'var(--color-grey-600)' : 'var(--color-grey-400)';
-  const gutterActive = mode === 'dark' ? 'var(--color-grey-400)' : 'var(--color-grey-600)';
   return EditorView.theme(
     {
       '&': { backgroundColor: 'transparent', height: '100%', fontSize: '13px' },
@@ -132,24 +130,18 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
         lineHeight: '21px',
       },
       '.cm-content': { padding: '12px 0' },
-      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: gutter },
-      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: gutterActive },
-      '.cm-activeLine': {
-        backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
-      },
+      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
+      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
+      '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
     },
     { dark: mode === 'dark' }
   );
 }
 
 // SQL syntax palette mapped onto the Lezer highlight tags the SQL grammar
-// emits. Hued tokens use theme-adaptive semantic tokens; only the grey
-// comment/identifier shades vary by mode.
-function sqlHighlight(mode: 'light' | 'dark'): Extension {
-  const grey =
-    mode === 'dark'
-      ? { comment: 'var(--color-grey-400)', id: 'var(--color-grey-100)' }
-      : { comment: 'var(--color-grey-600)', id: 'var(--color-grey-900)' };
+// emits, entirely from theme-adaptive semantic tokens so it tracks light/dark
+// without per-mode values.
+function sqlHighlight(): Extension {
   return syntaxHighlighting(
     HighlightStyle.define([
       { tag: tags.keyword, color: 'var(--color-secondary)', fontWeight: 'bold' },
@@ -159,18 +151,18 @@ function sqlHighlight(mode: 'light' | 'dark'): Extension {
       },
       { tag: [tags.string, tags.special(tags.string)], color: 'var(--color-success)' },
       { tag: tags.number, color: 'var(--color-warning)' },
-      { tag: tags.comment, color: grey.comment, fontStyle: 'italic' },
+      { tag: tags.comment, color: 'var(--color-muted-foreground)', fontStyle: 'italic' },
       {
         tag: [tags.operator, tags.punctuation, tags.separator, tags.paren, tags.brace, tags.squareBracket],
-        color: 'var(--color-grey-500)',
+        color: 'var(--color-muted-foreground)',
       },
-      { tag: tags.name, color: grey.id },
+      { tag: tags.name, color: 'var(--color-foreground)' },
     ])
   );
 }
 
-const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight('light')];
-const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight('dark')];
+const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight()];
+const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight()];
 
 function tableNamespace(table: TableRef): SQLNamespace {
   return {
