@@ -159,6 +159,14 @@ export function columnKindForPgType(pgType: string): ColumnKind {
   return 'str';
 }
 
+// The backend appends an actionable hint after a blank line ("\n\nHint: …");
+// split it off so it can render on its own line instead of inline in the message.
+export function splitQueryError(message: string): { message: string; hint?: string } {
+  const sep = '\n\nHint: ';
+  const i = message.indexOf(sep);
+  return i === -1 ? { message } : { message: message.slice(0, i), hint: message.slice(i + sep.length) };
+}
+
 // Word-boundary anchored so geometric/temporal names that merely contain a
 // numeric token (POINT → INT, INTERVAL → INT) don't get misread as numeric.
 const NUMERIC_TYPE = /\b(?:INT|INTEGER|SMALLINT|BIGINT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/;

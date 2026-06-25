@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { arrayElementPgType, columnKindForPgType, isArrayPgType } from './sql-types';
+import { arrayElementPgType, columnKindForPgType, isArrayPgType, splitQueryError } from './sql-types';
 
 describe('columnKindForPgType', () => {
   test.each([
@@ -61,5 +61,19 @@ describe('arrayElementPgType', () => {
     expect(arrayElementPgType('TEXT')).toBeNull();
     expect(isArrayPgType('TEXT')).toBe(false);
     expect(isArrayPgType('TEXT[]')).toBe(true);
+  });
+});
+
+describe('splitQueryError', () => {
+  test('splits the trailing hint onto its own field', () => {
+    const { message, hint } = splitQueryError("operator does not exist: record -> unknown\n\nHint: use (user).id");
+    expect(message).toBe('operator does not exist: record -> unknown');
+    expect(hint).toBe('use (user).id');
+  });
+
+  test('leaves a hintless message intact', () => {
+    const { message, hint } = splitQueryError('syntax error at or near "SELCT"');
+    expect(message).toBe('syntax error at or near "SELCT"');
+    expect(hint).toBeUndefined();
   });
 });

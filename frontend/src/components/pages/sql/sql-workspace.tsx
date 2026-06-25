@@ -53,6 +53,7 @@ import {
   isArrayPgType,
   type QueryRun,
   type ResultRow,
+  splitQueryError,
   type SqlRole,
   type TableRef,
 } from './sql-types';
@@ -546,7 +547,8 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           if (latestRunToken.current !== token) {
             return;
           }
-          setRun({ state: 'error', token, title: 'Query failed', message: error.message });
+          const { message, hint } = splitQueryError(error.message);
+          setRun({ state: 'error', token, title: 'Query failed', message, hint });
         },
       });
     },
