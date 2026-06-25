@@ -550,6 +550,7 @@ export function VisualEditorPanel({
             onSelectNode={(id, target) => setSelected({ id, target })}
             onSlotInsert={isEditing ? handleSlotInsert : undefined}
             selectedNodeId={selected?.id}
+            selectedTargetKind={selected?.target.kind}
           />
           {isEditing ? (
             <TooltipProvider>

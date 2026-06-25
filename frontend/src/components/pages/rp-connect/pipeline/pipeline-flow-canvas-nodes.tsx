@@ -152,8 +152,20 @@ const LogoTile = ({ name, compact }: { name: string; compact?: boolean }) => (
 
 // The routing semantics of a node, shown as a chip on its card: `if <check>` for a
 // condition, `default` for the catch-all, `on error` for error handlers (catch) —
-// red for any error / dead-letter route.
-const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
+// red for any error / dead-letter route. This is the SINGLE home for a switch case's
+// condition (no duplicate floating edge label); when `onEdit` is supplied the chip is a
+// button that opens the case editor (the rest of the card still selects the component).
+const BranchConditionChip = ({
+  data,
+  className,
+  onEdit,
+  selected,
+}: {
+  data: FlowCardData;
+  className?: string;
+  onEdit?: () => void;
+  selected?: boolean;
+}) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
   }
@@ -169,20 +181,109 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   } else if (data.isDefault) {
     tone = 'muted';
   }
+  const cls = cn(
+    'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
+    tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
+    tone === 'muted' && 'border-amber-500/30 bg-amber-500/5 text-amber-700/80',
+    tone === 'condition' && 'border-amber-500/40 bg-amber-500/10 text-amber-700',
+    onEdit && 'nodrag nopan cursor-pointer transition-colors hover:bg-foreground/5',
+    selected && 'ring-2 ring-primary ring-inset',
+    className
+  );
+  if (onEdit) {
+    return (
+      <button
+        className={cls}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+        title={`${text} — click to edit condition`}
+        type="button"
+      >
+        <span className="truncate">{text}</span>
+      </button>
+    );
+  }
   return (
-    <span
-      className={cn(
-        'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
-        tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
-        tone === 'muted' && 'border-border bg-muted/50 text-muted-foreground',
-        tone === 'condition' && 'border-blue-500/40 bg-blue-500/5 text-blue-600',
-        className
-      )}
-      title={text}
-    >
+    <span className={cls} title={text}>
       <span className="truncate">{text}</span>
     </span>
   );
+};
+
+// Routing conditions get their OWN colour family — AMBER (the flowchart/BPMN convention for a
+// decision/branch) — deliberately distinct from the section accents (input green, processor
+// blue, output purple, resource orange) so routing logic is easy to scan for at a glance.
+// Error/dead-letter routes keep red (that semantic wins); a `default` catch-all is a muted amber.
+const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
+  condition: 'border-amber-500/30 bg-amber-500/10 text-amber-700',
+  muted: 'border-amber-500/20 bg-amber-500/5 text-amber-700/80',
+  error: 'border-destructive/20 bg-destructive/10 text-destructive',
+};
+
+// A switch case's routing condition on its OWN full-width row (more contrast than the inline
+// header chip): a `WHEN <check>` / `DEFAULT` / `ON ERROR` line. It's the click target for
+// editing the case (so editing the condition is distinct from selecting the component card),
+// and gets an inset ring when the condition itself is the current selection.
+const ConditionRow = ({
+  data,
+  onEdit,
+  selected,
+  topBorder,
+}: {
+  data: FlowCardData;
+  onEdit?: () => void;
+  selected?: boolean;
+  /** Place the divider above the row (when the row is the card's LAST element, e.g. a split). */
+  topBorder?: boolean;
+}) => {
+  let tone: 'condition' | 'muted' | 'error' = 'condition';
+  if (data.isErrorPath) {
+    tone = 'error';
+  } else if (data.isDefault && !data.condition) {
+    tone = 'muted';
+  }
+  let eyebrow = 'on error';
+  if (data.condition) {
+    eyebrow = 'when';
+  } else if (data.isDefault) {
+    eyebrow = 'default';
+  }
+  const cls = cn(
+    'flex w-full items-center gap-1.5 px-3 py-1.5 text-left',
+    topBorder ? 'border-t' : 'border-b',
+    CONDITION_ROW_TONE[tone],
+    onEdit && 'nodrag nopan cursor-pointer transition-[filter] hover:brightness-95',
+    selected && 'ring-2 ring-primary ring-inset'
+  );
+  const body = (
+    <>
+      <Split className="size-3.5 shrink-0 opacity-80" />
+      <span className="shrink-0 font-semibold text-[10px] uppercase tracking-wide opacity-70">{eyebrow}</span>
+      {data.condition ? (
+        <span className="min-w-0 flex-1 truncate font-mono text-xs" title={data.condition}>
+          {data.condition}
+        </span>
+      ) : null}
+    </>
+  );
+  if (onEdit) {
+    return (
+      <button
+        className={cls}
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+        title={`${eyebrow}${data.condition ? ` ${data.condition}` : ''} — click to edit condition`}
+        type="button"
+      >
+        {body}
+      </button>
+    );
+  }
+  return <div className={cls}>{body}</div>;
 };
 
 export type FlowCardData = {
@@ -220,8 +321,14 @@ export type FlowCardData = {
   // Lane band: an error/dead-letter lane is tinted red.
   isError?: boolean;
   editTarget?: EditTarget;
-  /** Highlighted because it's the node selected in the inspector. */
+  /** Edit target for this node's switch CASE (its routing condition), distinct from
+      `editTarget` (the component). Drives the clickable condition chip. */
+  caseEditTarget?: EditTarget;
+  /** Highlighted because it's the node (component) selected in the inspector. */
   selected?: boolean;
+  /** The node's CASE condition (not the component) is the current selection — highlight just
+      the condition row, not the whole card. */
+  conditionSelected?: boolean;
   /** Briefly pulse this node (e.g. after an undo/redo touched it). */
   flash?: boolean;
   /** Changes on each flash so the pulse animation replays. */
@@ -236,6 +343,8 @@ export type FlowCardData = {
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
+  /** Open the case editor for this node's routing condition (clicking the chip). */
+  onEditCondition?: () => void;
 };
 
 const HANDLE_IDS = [
@@ -489,8 +598,10 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         cardRing(data)
       )}
     >
-      {/* Tinted title band carries the role colour; the body below stays clean. */}
-      <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
+      {/* Tinted title band carries the role colour; the body below stays clean. A case entry
+          carries its routing condition on a dedicated row below (not the header chip), so the
+          band's bottom divider is dropped — the condition row provides the separation. */}
+      <div className={cn(!data.caseEditTarget && 'border-border/60 border-b')} style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <Text
             as="span"
@@ -500,7 +611,9 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
           >
             {kindLabel}
           </Text>
-          <BranchConditionChip data={data} />
+          {/* Non-case condition info (rare, e.g. an error-lane tint) stays an inline chip; a
+              switch case's condition gets the prominent row below instead. */}
+          {data.caseEditTarget ? null : <BranchConditionChip data={data} onEdit={data.onEditCondition} />}
           <LintBadge errors={data.lintErrors} />
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
@@ -515,6 +628,9 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
           </Text>
         </div>
       </div>
+      {data.caseEditTarget ? (
+        <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} />
+      ) : null}
       {data.labelText ? (
         // When no meta rows follow, the label badge is the card's last row — give it a
         // bottom inset so it doesn't sit flush against the card edge.
@@ -624,7 +740,7 @@ const ContainerHeaderTitle = ({ data, accent }: { data: FlowCardData; accent?: s
       <LogoTile compact={data.compact} name={data.label} />
       <ContainerTitleText accent={accent} data={data} />
       <LabelBadge className="max-w-[35%]" label={data.labelText} />
-      <BranchConditionChip className="max-w-[45%]" data={data} />
+      <BranchConditionChip className="max-w-[45%]" data={data} onEdit={data.onEditCondition} />
     </>
   );
 };
@@ -1097,33 +1213,39 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
-          'flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md',
+          'flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
           cardRing(data)
         )}
-        style={headerTintStyle(accent)}
       >
-        <ControlFlowIconTile accent={accent} Icon={Icon} />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <Text
-            as="span"
-            className="truncate text-[10px] uppercase leading-none tracking-wide"
-            style={{ color: accent }}
-            title={descriptor}
-            variant="captionStrongMedium"
-          >
-            {descriptor}
-          </Text>
-          <Text
-            as="span"
-            className="min-w-0 truncate font-semibold leading-tight"
-            title={data.label}
-            variant="bodyStrongMedium"
-          >
-            {data.label}
-          </Text>
-        </span>
-        {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
-        <LintBadge errors={data.lintErrors} />
+        <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
+          <ControlFlowIconTile accent={accent} Icon={Icon} />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <Text
+              as="span"
+              className="truncate text-[10px] uppercase leading-none tracking-wide"
+              style={{ color: accent }}
+              title={descriptor}
+              variant="captionStrongMedium"
+            >
+              {descriptor}
+            </Text>
+            <Text
+              as="span"
+              className="min-w-0 truncate font-semibold leading-tight"
+              title={data.label}
+              variant="bodyStrongMedium"
+            >
+              {data.label}
+            </Text>
+          </span>
+          {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
+          <LintBadge errors={data.lintErrors} />
+        </div>
+        {/* A switch-case ENTRY shows the case's routing condition on its own row (same pattern as
+            leaf cards) — not the generic switch/catch markers, whose descriptor states their role. */}
+        {data.caseEditTarget ? (
+          <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} topBorder />
+        ) : null}
       </div>
     </div>
   );

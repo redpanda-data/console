@@ -400,9 +400,13 @@ type CanvasCallbacks = {
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
+  /** Select a node + edit target (used to open the switch-case editor from a chip click). */
+  onSelectNode?: (nodeId: string, target: EditTarget) => void;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
+  /** Kind of the selected edit target — `'switchCase'` means the condition, not the component. */
+  selectedTargetKind?: string;
   lintErrorsByNode?: Map<string, string[]>;
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
@@ -413,23 +417,10 @@ type CanvasCallbacks = {
 // Wire interactivity into a layout node's data: collapse toggle, selection
 // highlight, and the add-connector / redpanda setup-hint handlers. Editing now
 // happens in the inspector rail (selection), not via a per-node button.
-export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
-  const data = { ...node.data } as FlowCardData;
-  if (data.collapsible) {
-    data.collapsed = cb.collapsedIds.has(node.id);
-    data.onToggle = () => cb.toggleCollapse(node.id);
-  }
-  if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
-    data.selected = true;
-  }
-  const lintErrors = cb.lintErrorsByNode?.get(node.id);
-  if (lintErrors?.length) {
-    data.lintErrors = lintErrors;
-  }
-  if (cb.flashNodeIds?.has(node.id)) {
-    data.flash = true;
-    data.flashToken = cb.flashToken;
-  }
+// Edit-mode action callbacks (add connector / topic / sasl, edit a switch-case condition, and
+// the nested-insert "+") wired onto a node's data. Split out of `injectNodeData` to keep each
+// function's branching simple.
+function wireNodeActions(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
   }
@@ -439,9 +430,40 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   if (data.missingSasl && cb.onAddSasl) {
     data.onAddSasl = cb.onAddSasl;
   }
+  if (data.caseEditTarget && cb.onSelectNode) {
+    const target = data.caseEditTarget;
+    data.onEditCondition = () => cb.onSelectNode?.(node.id, target);
+  }
   if (node.type === 'flowInsert' && cb.onSlotInsert) {
     (data as { onInsert?: (payload: FlowInsertPayload) => void }).onInsert = cb.onSlotInsert;
   }
+}
+
+export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
+  const data = { ...node.data } as FlowCardData;
+  if (data.collapsible) {
+    data.collapsed = cb.collapsedIds.has(node.id);
+    data.onToggle = () => cb.toggleCollapse(node.id);
+  }
+  if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
+    // Clicking a node's condition chip and clicking its body both report THIS node as selected;
+    // distinguish by the selected target so we ring just the condition row for a case, and the
+    // whole card for the component.
+    if (data.caseEditTarget && cb.selectedTargetKind === 'switchCase') {
+      data.conditionSelected = true;
+    } else {
+      data.selected = true;
+    }
+  }
+  const lintErrors = cb.lintErrorsByNode?.get(node.id);
+  if (lintErrors?.length) {
+    data.lintErrors = lintErrors;
+  }
+  if (cb.flashNodeIds?.has(node.id)) {
+    data.flash = true;
+    data.flashToken = cb.flashToken;
+  }
+  wireNodeActions(data, node, cb);
   // A node that wasn't here last render (e.g. a child revealed by expanding its
   // container) should appear in place — not slide in from the canvas origin. Drop
   // the transform transition so it snaps to its spot, and let the card itself fade
@@ -606,6 +628,8 @@ type PipelineFlowCanvasProps = {
   simple?: boolean;
   /** Currently selected node id (highlighted on the canvas). */
   selectedNodeId?: string;
+  /** Kind of the selected edit target — `'switchCase'` highlights the condition, not the card. */
+  selectedTargetKind?: string;
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
@@ -629,6 +653,7 @@ export function PipelineFlowCanvas({
   hideControls,
   simple,
   selectedNodeId,
+  selectedTargetKind,
   lintErrorsByNode,
   flashNodeIds,
   flashToken,
@@ -672,9 +697,11 @@ export function PipelineFlowCanvas({
       onAddTopic,
       onAddSasl,
       onSlotInsert,
+      onSelectNode,
       collapsedIds,
       toggleCollapse,
       selectedNodeId,
+      selectedTargetKind,
       lintErrorsByNode,
       flashNodeIds,
       flashToken,
@@ -714,6 +741,7 @@ export function PipelineFlowCanvas({
     simple,
     toggleCollapse,
     selectedNodeId,
+    selectedTargetKind,
     lintErrorsByNode,
     flashNodeIds,
     flashToken,
@@ -721,6 +749,7 @@ export function PipelineFlowCanvas({
     onAddTopic,
     onAddSasl,
     onSlotInsert,
+    onSelectNode,
   ]);
 
   // Record the committed node ids so the next render can tell which nodes are new

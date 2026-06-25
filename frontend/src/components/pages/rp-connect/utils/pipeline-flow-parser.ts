@@ -1461,6 +1461,9 @@ const FLOW_LABEL_ROW_H = 30;
 const FLOW_LABEL_ROW_BOTTOM_PAD = 12;
 // The meta block's own vertical padding (its rows are counted at dims.metaRowH each).
 const FLOW_META_BLOCK_PAD = 12;
+// A switch case's routing condition renders on its own full-width row beneath the header
+// (only on case-entry cards — those carrying a `caseEditTarget`).
+const FLOW_CONDITION_ROW_H = 30;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   if (dims.metaRowH === 0) {
@@ -1482,6 +1485,10 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   // sum them individually (rather than as one lumped block) so the measured height
   // tracks the rendered card and adjacent nodes keep their gap.
   let h = dims.leafBaseH;
+  // A case entry shows its routing condition on its own row beneath the header.
+  if (node.caseEditTarget) {
+    h += FLOW_CONDITION_ROW_H;
+  }
   if (node.labelText) {
     // When the label is the card's last row (no meta follows), it carries a bottom
     // inset so the badge doesn't sit flush against the card edge — mirror that here.
@@ -1696,6 +1703,9 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.missingSasl ? { missingSasl: true } : {}),
     ...(node.isCase ? { isCase: true } : {}),
     ...(node.editTarget ? { editTarget: node.editTarget } : {}),
+    // The switch-case edit target travels onto the case's entry card so its condition chip is
+    // clickable (selects the case → SwitchCaseEditor). Distinct from `editTarget` (the component).
+    ...(node.caseEditTarget ? { caseEditTarget: node.caseEditTarget } : {}),
     ...(node.insertSlot ? { insertSlot: node.insertSlot } : {}),
     ...(node.addChildSlot ? { addChildSlot: node.addChildSlot } : {}),
     ...(node.danglingRef ? { danglingRef: true } : {}),
@@ -2356,7 +2366,9 @@ function addGraphSplit(ctx: GraphCtx, node: PipelineFlowNode): string {
     kind: 'split',
     node,
     w: GRAPH_SPLIT_W,
-    h: GRAPH_SPLIT_H,
+    // A control-flow construct that is itself a switch-case ENTRY shows the case's routing
+    // condition on its own row beneath the header (like a leaf card), so reserve the extra row.
+    h: GRAPH_SPLIT_H + (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0),
     childCount: ctx.childrenOf(node.id).length,
   });
   return node.id;
@@ -2407,6 +2419,20 @@ function fanUnwrapsChildren(node: PipelineFlowNode): boolean {
 
 type FanLane = { owner: PipelineFlowNode; bodySteps: PipelineFlowNode[] };
 
+// A switch case's body steps with the case's routing condition + edit target stamped onto the
+// FIRST step, so that step's card renders the condition chip (clickable to edit the case). For
+// an output switch the owner IS the first step, so this is idempotent; for a processor switch
+// the owner is the case wrapper and the first body processor inherits the chip. Returns a
+// shallow clone of the first step (same id → selection/edges/childrenOf still resolve).
+function caseEntrySteps(lane: FanLane): PipelineFlowNode[] {
+  const [first, ...rest] = lane.bodySteps;
+  const o = lane.owner;
+  return [
+    { ...first, condition: o.condition, isDefault: o.isDefault, isErrorPath: o.isErrorPath, caseEditTarget: o.caseEditTarget },
+    ...rest,
+  ];
+}
+
 function fanLaneList(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx): FanLane[] {
   if (node.branch) {
     return [{ owner: node, bodySteps: kids }];
@@ -2434,18 +2460,24 @@ function emitFan(
   // clear the inputs feed a broker. A reconverging processor fan keeps a plain merge dot.
   const merge = sides.in ? (split ? addGraphMerge(ctx, `${node.id}-merge`) : addGraphSplit(ctx, node)) : undefined;
   const lanes = fanLaneList(node, kids, ctx);
+  const isSwitch = node.label === 'switch';
 
   for (const lane of lanes) {
-    const body = emitSequence(lane.bodySteps, ctx);
+    // For switch cases the routing condition lives on the case's ENTRY card as a clickable chip
+    // (single source of truth, editable in place) — not as a floating edge label that duplicates
+    // it and crowds the fan. So push the condition + edit target onto the first body step and
+    // drop the edge label. An empty-bodied case (no card yet) keeps the edge label as a fallback.
+    const carriesChip = isSwitch && lane.bodySteps.length > 0;
+    const body = emitSequence(carriesChip ? caseEntrySteps(lane) : lane.bodySteps, ctx);
     const info = branchEdgeInfo(lane.owner, node, node.label);
     // The "add a step into this body" affordance rides ON the body's terminal edge as an
     // on-line "+" (chain-style lanes only: a branch / switch case / workflow stage).
     const bodySlot = node.branch ? node.insertSlot : lane.owner.insertSlot;
     const appendSlot = (atEnd: boolean): FlowInsertPayload | undefined =>
       bodySlot ? { kind: 'insert', ...bodySlot, index: atEnd ? ctx.childrenOf(lane.owner.id).length : 0 } : undefined;
-    // The routing-condition label rides the fan-out edge and is clickable to select the case
-    // and edit its `check` (works for processor AND output switches).
-    const selectTarget = lane.owner.caseEditTarget;
+    // The case edit target rides the fan-out edge ONLY when the chip can't host it (empty case);
+    // otherwise the entry card's chip owns selection/editing.
+    const selectTarget = carriesChip ? undefined : lane.owner.caseEditTarget;
     const fanoutId = node.branch ? `copy-${node.id}` : `fanout-${lane.owner.id}`;
     if (split) {
       addGraphEdge(ctx, {
@@ -2453,7 +2485,7 @@ function emitFan(
         from: split,
         to: body ? body.entry : (merge ?? split),
         type: info.type,
-        label: info.label,
+        ...(carriesChip ? {} : { label: info.label }),
         ...(selectTarget ? { selectId: lane.owner.id, selectTarget } : {}),
         // Empty body: the "+" to add its first step sits on the split→merge edge.
         ...(body ? {} : { slot: appendSlot(false) }),

@@ -268,10 +268,12 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   }
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button aria-label="More actions" size="icon-sm" variant="ghost">
-          <EllipsisVertical />
-        </Button>
+      {/* Base UI uses `render` (not Radix `asChild`) to project the trigger onto our Button —
+          so the menu trigger is the SAME icon-sm button as its neighbours (aligned, not nested). */}
+      <DropdownMenuTrigger
+        render={<Button aria-label="More actions" className="text-muted-foreground" size="icon-sm" variant="ghost" />}
+      >
+        <EllipsisVertical />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {onOpenInYaml ? (
@@ -370,10 +372,10 @@ const SwitchCaseEditor = ({
             Case condition
           </Text>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-0.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
           {onClose ? (
-            <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
+            <Button aria-label="Close" className="text-muted-foreground" onClick={onClose} size="icon-sm" variant="ghost">
               <X />
             </Button>
           ) : null}
@@ -475,11 +477,12 @@ const InspectorHeader = ({
         {componentName}
       </Text>
     </div>
-    <div className="ml-auto flex shrink-0 items-center gap-0.5">
+    <div className="ml-auto flex shrink-0 items-center gap-1">
       {docsUrl ? (
         <Button
           aria-label={`${componentName} documentation`}
           as="a"
+          className="text-muted-foreground"
           href={docsUrl}
           rel="noopener noreferrer"
           size="icon-sm"
@@ -491,7 +494,7 @@ const InspectorHeader = ({
       ) : null}
       <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
       {onClose ? (
-        <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
+        <Button aria-label="Close" className="text-muted-foreground" onClick={onClose} size="icon-sm" variant="ghost">
           <X />
         </Button>
       ) : null}

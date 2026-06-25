@@ -1046,18 +1046,24 @@ cache_resources:
     expect((bodyEdge?.data as { dashed?: boolean } | undefined)?.dashed).toBeFalsy();
   });
 
-  it('labels switch fan-out edges with their routing condition, styled by branch (error vs normal)', () => {
-    // The condition rides the fan-out edge (pure DAG, labels on edges); the error case is red.
-    expect(data('fanout-output-switch-0')).toMatchObject({ tone: 'error', label: 'errored()' });
-    expect(data('fanout-output-switch-1')).toMatchObject({ tone: 'primary', label: 'default' });
+  it('moves the switch routing condition onto the case node (chip), styling the fan-out edge by branch', () => {
+    // The condition is the single source on the case NODE; the fan-out edge is styled by branch
+    // (error = red) but carries NO duplicate floating label.
+    expect(data('fanout-output-switch-0')).toMatchObject({ tone: 'error' });
+    expect((data('fanout-output-switch-0') as { label?: string }).label).toBeUndefined();
+    expect((data('fanout-output-switch-1') as { label?: string }).label).toBeUndefined();
 
     const nodes = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
     const nodeData = (id: string) => nodes.find((n) => n.id === id)?.data as Record<string, unknown> | undefined;
     expect(nodeData('output-switch-0')).toMatchObject({ condition: 'errored()', isErrorPath: true });
     expect(nodeData('output-switch-1')).toMatchObject({ isDefault: true });
+    // The condition is editable from the node — its chip carries the switchCase edit target.
+    expect((nodeData('output-switch-0') as { caseEditTarget?: { kind?: string } }).caseEditTarget?.kind).toBe(
+      'switchCase'
+    );
   });
 
-  it('makes case conditions editable: fan-out edges carry a switchCase select target (processor AND output)', () => {
+  it('makes case conditions editable from the case NODE (processor AND output switch carry the switchCase target)', () => {
     const yaml = `pipeline:
   processors:
     - switch:
@@ -1070,23 +1076,19 @@ output:
         output: { drop: {} }
       - output: { drop: {} }`;
     const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes);
-    const selectTarget = (id: string) =>
-      (layout.rfEdges.find((e) => e.id === id)?.data as { selectTarget?: unknown }).selectTarget;
-    // Processor switch case: clicking the condition edits the case.
-    expect(selectTarget('fanout-proc-0-case-1')).toEqual({
-      kind: 'switchCase',
-      path: ['pipeline', 'processors', 0, 'switch', 0],
-    });
-    // Output switch cases — previously NOT editable; now the condition selects the case.
-    expect(selectTarget('fanout-output-switch-0')).toEqual({
-      kind: 'switchCase',
-      path: ['output', 'switch', 'cases', 0],
-    });
-    expect(selectTarget('fanout-output-switch-1')).toEqual({
-      kind: 'switchCase',
-      path: ['output', 'switch', 'cases', 1],
-    });
-    // The output card itself still edits its output component.
+    // The case's condition chip lives on its ENTRY node, carrying the switchCase edit target —
+    // clicking it edits the case `check`. (Node ids vary, so match by the target path.)
+    const caseNode = (path: (string | number)[]) =>
+      layout.rfNodes.find((n) => {
+        const t = (n.data as { caseEditTarget?: { kind?: string; path?: (string | number)[] } }).caseEditTarget;
+        return t?.kind === 'switchCase' && JSON.stringify(t.path) === JSON.stringify(path);
+      });
+    // Processor switch case body's first node carries the case target.
+    expect(caseNode(['pipeline', 'processors', 0, 'switch', 0])).toBeDefined();
+    // Output switch cases carry it on their output node.
+    expect(caseNode(['output', 'switch', 'cases', 0])).toBeDefined();
+    expect(caseNode(['output', 'switch', 'cases', 1])).toBeDefined();
+    // The output card itself still edits its output component (a separate target on the same node).
     expect(
       (layout.rfNodes.find((n) => n.id === 'output-switch-0')?.data as { editTarget?: unknown }).editTarget
     ).toEqual({
@@ -1346,15 +1348,17 @@ rate_limit_resources:
 output:
   drop: {}`;
     const layout = computeFlowLayout(parsePipelineFlowTree(fourCases).nodes);
-    // Four fan-out edges (each labelled with its routing condition / default) and four
-    // fan-in edges back to the switch's merge node.
+    // Four fan-out edges and four fan-in edges back to the switch's merge node.
     for (const i of [1, 2, 3, 4]) {
-      const out = layout.rfEdges.find((e) => e.id === `fanout-proc-0-case-${i}`);
-      expect(out).toBeDefined();
-      expect((out?.data as { label?: string }).label).toBeTruthy();
+      expect(layout.rfEdges.some((e) => e.id === `fanout-proc-0-case-${i}`)).toBe(true);
       expect(layout.rfEdges.some((e) => e.id === `fanin-proc-0-case-${i}`)).toBe(true);
     }
     expect(layout.rfNodes.some((n) => n.id === 'proc-0-merge' && n.type === 'flowMerge')).toBe(true);
+    // The routing condition rides each case's entry NODE (a chip), not a floating edge label.
+    const conditions = layout.rfNodes
+      .map((n) => (n.data as { condition?: string }).condition)
+      .filter((c): c is string => Boolean(c));
+    expect(conditions).toEqual(expect.arrayContaining(['a == 1', 'a == 2', 'a == 3']));
   });
 
   it('routes the reference cable as a dashed dependency from the user bottom into the resource top', () => {
