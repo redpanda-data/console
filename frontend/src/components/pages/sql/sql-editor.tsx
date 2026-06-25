@@ -156,7 +156,7 @@ function sqlHighlight(): Extension {
         tag: [tags.operator, tags.punctuation, tags.separator, tags.paren, tags.brace, tags.squareBracket],
         color: 'var(--color-muted-foreground)',
       },
-      { tag: tags.name, color: 'var(--color-foreground)' },
+      { tag: tags.name, color: 'var(--color-strong)' },
     ])
   );
 }
