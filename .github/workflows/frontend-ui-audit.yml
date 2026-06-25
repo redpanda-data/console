@@ -52,7 +52,13 @@ jobs:
         with:
           repository: redpanda-data/ui-registry
           ref: ${{ env.UI_REGISTRY_REF }}
+          # The audit resolves component versions via `git show v<tag>:<path>`,
+          # so it needs full history and all v* tags (fetch-depth: 0).
+          # filter: blob:none makes it a blobless partial clone — commit and tag
+          # metadata is fetched, but file blobs are pulled lazily only when
+          # `git show` touches them, keeping the checkout fast.
           fetch-depth: 0
+          filter: blob:none
           path: ui-registry
           token: ${{ env.ACTIONS_BOT_TOKEN }}
       - name: Setup Bun
