@@ -2279,17 +2279,20 @@ const GRAPH_MERGE_W = 48;
 const GRAPH_MERGE_H = 32;
 const GRAPH_INSERT_W = 150;
 const GRAPH_INSERT_H = 24;
-// Dagre spacing: gap between ranks (horizontal), between nodes in a rank (vertical).
-const GRAPH_RANKSEP = 64;
+// Dagre spacing: gap between ranks (horizontal), between nodes in a rank (vertical). Deliberately
+// roomy (well above the original 64/38) so Dagre has space to route edges AROUND nodes (fewer
+// lines crossing cards), and so on-edge condition labels sit in clear space between ranks rather
+// than crammed against a card or the split.
+const GRAPH_RANKSEP = 120;
 // Generous vertical spacing between stacked branches so routing-condition labels (which sit
 // on the fan-out edges) have room and don't overlap each other or the split.
-const GRAPH_NODESEP = 38;
+const GRAPH_NODESEP = 56;
 const GRAPH_EDGESEP = 16;
 const GRAPH_MARGIN = 24;
 // Resource dependency lane: a horizontal bus just below the flow, with the resource cards
 // in a row beneath it. Cables drop from each user's bottom, along the bus, into the resource.
-const RES_BUS_GAP = 30;
-const RES_ROW_GAP = 26;
+const RES_BUS_GAP = 48;
+const RES_ROW_GAP = 32;
 const RES_BUS_STAGGER = 7;
 // The bottom/top handle's x offset from a card's left edge (matches NodeHandles).
 const HANDLE_X = FLOW_SPINE_HANDLE_LEFT;
@@ -2440,7 +2443,8 @@ function emitFan(
     const bodySlot = node.branch ? node.insertSlot : lane.owner.insertSlot;
     const appendSlot = (atEnd: boolean): FlowInsertPayload | undefined =>
       bodySlot ? { kind: 'insert', ...bodySlot, index: atEnd ? ctx.childrenOf(lane.owner.id).length : 0 } : undefined;
-    // A clickable routing-condition label selects the case to edit its `check`.
+    // The routing-condition label rides the fan-out edge and is clickable to select the case
+    // and edit its `check` (works for processor AND output switches).
     const selectTarget = lane.owner.caseEditTarget;
     const fanoutId = node.branch ? `copy-${node.id}` : `fanout-${lane.owner.id}`;
     if (split) {

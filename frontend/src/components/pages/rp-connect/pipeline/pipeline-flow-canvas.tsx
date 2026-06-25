@@ -301,12 +301,37 @@ function scopeMemberBounds(nodes: Node[], scope: ReadonlySet<string>): ScopeBoun
   return b;
 }
 
+// True if any node OUTSIDE the scope overlaps the (padded) member box — i.e. the region would
+// visually enclose or cut through an unrelated card. The Dagre DAG doesn't keep a construct's
+// members spatially contiguous, so this happens (e.g. a `catch`'s `log` sitting inside a `try`'s
+// span). When it does we skip the box: a misleading container reads worse than none, and the
+// construct's wiring still highlights on selection.
+function boxEnclosesForeignNode(nodes: Node[], scope: ReadonlySet<string>, b: ScopeBounds, pad: number): boolean {
+  const left = b.minX - pad;
+  const right = b.maxX + pad;
+  const top = b.minY - pad;
+  const bottom = b.maxY + pad;
+  for (const n of nodes) {
+    // Members and the construct's own "+ Add …" ghost pills don't count as foreign content.
+    if (scope.has(n.id) || scope.has((n.data as FlowCardData).ownerId ?? ' ') || n.type === 'flowInsert') {
+      continue;
+    }
+    const w = (n.initialWidth ?? n.width ?? 0) as number;
+    const h = (n.initialHeight ?? n.height ?? 0) as number;
+    if (n.position.x < right && n.position.x + w > left && n.position.y < bottom && n.position.y + h > top) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * On demand (hover or selection of a control-flow marker), paints a faint region behind
  * every node in that construct's sub-graph — so you can *see what's inside* a branch /
  * switch / try / for_each without permanent containment boxes. Drawn in flow coordinates
  * via `ViewportPortal` (moves with pan/zoom) and behind the nodes, so it never perturbs
- * the nodes array (hovering stays cheap) or steals pointer events.
+ * the nodes array (hovering stays cheap) or steals pointer events. The box is suppressed when
+ * it would overlap an unrelated card (members not contiguous) — see `boxEnclosesForeignNode`.
  */
 function ScopeRegionOverlay({
   hoveredId,
@@ -332,6 +357,10 @@ function ScopeRegionOverlay({
   if (!bounds) {
     return null;
   }
+  // Skip the box when it would cut through an unrelated card (members aren't contiguous).
+  if (boxEnclosesForeignNode(nodes, scope, bounds, SCOPE_REGION_PAD)) {
+    return null;
+  }
   const accent = constructAccent(construct);
   const label = (construct?.data as FlowCardData | undefined)?.label;
   return (
@@ -342,14 +371,16 @@ function ScopeRegionOverlay({
           transform: `translate(${bounds.minX - SCOPE_REGION_PAD}px, ${bounds.minY - SCOPE_REGION_PAD}px)`,
           width: bounds.maxX - bounds.minX + 2 * SCOPE_REGION_PAD,
           height: bounds.maxY - bounds.minY + 2 * SCOPE_REGION_PAD,
-          borderColor: `color-mix(in srgb, ${accent} 55%, transparent)`,
-          backgroundColor: `color-mix(in srgb, ${accent} 6%, transparent)`,
+          borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${accent} 5%, transparent)`,
           zIndex: 0,
         }}
       >
         {label ? (
+          // Seated inside the top-left padding (not straddling the border) so it never
+          // overlaps a card or label sitting just above the region.
           <span
-            className="absolute top-0 left-3 -translate-y-1/2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide"
+            className="absolute top-1.5 left-2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide"
             style={{
               color: accent,
               backgroundColor: 'var(--color-background)',

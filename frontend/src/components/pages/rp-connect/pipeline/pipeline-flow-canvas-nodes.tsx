@@ -1002,7 +1002,9 @@ const LinkLabel = ({
   onClick?: () => void;
 }) => {
   const className = cn(
-    'nodrag nopan absolute max-w-[170px] truncate rounded border bg-background px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide shadow-sm',
+    // Condition labels are Bloblang code (e.g. `this.fraud.score > 0.9`): rendered in a
+    // readable mono face, NOT uppercased, so they match the card's condition chips.
+    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-[10px] shadow-sm',
     LINK_LABEL_STYLE[tone],
     // A condition label is clickable to edit its case — make that affordance obvious.
     onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
@@ -1180,6 +1182,26 @@ const EdgeInsertButton = ({ x, y, onInsert }: { x: number; y: number; onInsert: 
   </EdgeLabelRenderer>
 );
 
+type FlowGraphEdgeData = {
+  graphType?: string;
+  tone?: LinkTone;
+  dashed?: boolean;
+  label?: string;
+  points?: { x: number; y: number }[];
+  insertIndex?: number;
+  animated?: boolean;
+  dimmed?: boolean;
+  emphasized?: boolean;
+  faint?: boolean;
+  onInsert?: () => void;
+  /** Click the (condition) label to select+edit its case. */
+  onLabelClick?: () => void;
+  /** Where along the edge (0–1) the label sits; defaults to the midpoint. */
+  labelT?: number;
+  /** A faint, decorative "ghost" edge — drawn lighter. */
+  ghost?: boolean;
+};
+
 // The point at fraction `t` (0–1) of the polyline's arc length — so an edge label / "+"
 // sits ON the line (a raw middle waypoint can sit well off a curved edge). t=0.5 = midpoint.
 function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: number; y: number } {
@@ -1202,7 +1224,8 @@ function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: numb
   return points.at(-1) as { x: number; y: number };
 }
 
-// Smoothly route a polyline through waypoints (quadratic segments via midpoints).
+// Smoothly route a polyline through Dagre's node-avoiding waypoints (quadratic segments via
+// midpoints). Following Dagre's own routed points is what keeps lines clear of the cards.
 function smoothGraphPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) {
     return '';
@@ -1218,26 +1241,6 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
   const last = points.at(-1) as { x: number; y: number };
   return `${d} L ${last.x} ${last.y}`;
 }
-
-type FlowGraphEdgeData = {
-  graphType?: string;
-  tone?: LinkTone;
-  dashed?: boolean;
-  label?: string;
-  points?: { x: number; y: number }[];
-  insertIndex?: number;
-  animated?: boolean;
-  dimmed?: boolean;
-  emphasized?: boolean;
-  faint?: boolean;
-  onInsert?: () => void;
-  /** Click the (condition) label to select+edit its case. */
-  onLabelClick?: () => void;
-  /** Where along the edge (0–1) the label sits; defaults to the midpoint. */
-  labelT?: number;
-  /** A faint, decorative "ghost" edge — drawn lighter. */
-  ghost?: boolean;
-};
 
 // Every edge in the Dagre DAG: routed through Dagre's own waypoints (so lines avoid nodes),
 // styled by semantic type — solid primary for flow, animated marching dashes for live data
