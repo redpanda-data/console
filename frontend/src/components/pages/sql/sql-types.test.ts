@@ -28,9 +28,10 @@ describe('columnKindForPgType', () => {
     ['JSONB', 'json'],
     ['TEXT', 'str'],
     ['UNKNOWN_TYPE', 'str'],
-    // Composite columns arrive pre-labelled as "json"/"json[]" from the backend.
-    ['json', 'json'],
-    ['json[]', 'json'],
+    // Composite columns arrive pre-labelled as "record"/"record[]" from the
+    // backend and render with the JSON tree viewer.
+    ['record', 'json'],
+    ['record[]', 'json'],
   ] as const)('%s → %s', (pgType, kind) => {
     expect(columnKindForPgType(pgType)).toBe(kind);
   });

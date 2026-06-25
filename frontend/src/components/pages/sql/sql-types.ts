@@ -133,8 +133,8 @@ export function isArrayPgType(pgType: string): boolean {
 }
 
 // Maps a Postgres type name to a display kind. Composite columns arrive as the
-// literal "json"/"json[]" (the backend parses structure into Column.fields), so
-// they fall through to the JSON branch. Arrays map to their element kind;
+// literal "record"/"record[]" (the backend parses structure into Column.fields)
+// and render with the JSON tree viewer. Arrays map to their element kind;
 // anything unrecognized defaults to a string.
 export function columnKindForPgType(pgType: string): ColumnKind {
   const element = arrayElementPgType(pgType);
@@ -152,7 +152,8 @@ export function columnKindForPgType(pgType: string): ColumnKind {
   if (BOOL_TYPE.test(t)) {
     return 'bool';
   }
-  if (t.includes('JSON')) {
+  // RECORD/RECORD[] are composite columns; JSON kept for any real json scalar.
+  if (t.includes('RECORD') || t.includes('JSON')) {
     return 'json';
   }
   return 'str';
