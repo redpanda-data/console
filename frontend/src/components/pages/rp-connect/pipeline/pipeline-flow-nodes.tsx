@@ -36,8 +36,7 @@ export function getConnectorDocsUrl(section: string, connectorName: string): str
   }
   return `${DOCS_BASE}/${section}s/${connectorName}/`;
 }
-// Left-rail offsets for the flow edges: the main path sits on the outer rail and
-// sub-flows (branch/fan-in) on an inner rail, so the two read as distinct lines.
+// Left-rail offsets: main path on the outer rail, sub-flows (branch/fan-in) on an inner rail.
 const BRANCH_INDENT = 12;
 const MAIN_RAIL_OFFSET = 22;
 
@@ -165,8 +164,7 @@ const TreeGroupNode = ({ data }: { data: TreeNodeData }) => (
   </div>
 );
 
-// Clickable "+ X" button when `onAdd` is wired, else a static "No X" pill —
-// keeps the missing-config signal visible in view mode without looking clickable.
+// Clickable "+ X" button when `onAdd` is wired, else a static "No X" pill (view mode).
 type MissingConfigChipProps = {
   addLabel: string;
   missingLabel: string;
@@ -295,9 +293,8 @@ const TreeLeafNode = ({ data }: { data: TreeNodeData }) => {
   );
 };
 
-// Route an edge out to a vertical rail on the LEFT of the cards, then into the
-// target — so the flow line stays in the gutter and is never hidden behind a card.
-// `offset` controls which rail (main path sits further left than sub-flows).
+// Route an edge to a vertical rail left of the cards, then to the target, so the line stays in the
+// gutter (never behind a card). `offset` picks the rail (main path further left than sub-flows).
 function gutterFlowPath(edge: Pick<EdgeProps, 'sourceX' | 'sourceY' | 'targetX' | 'targetY'>, offset: number): string {
   const { sourceX, sourceY, targetX, targetY } = edge;
   const railX = Math.min(sourceX, targetX) - offset;

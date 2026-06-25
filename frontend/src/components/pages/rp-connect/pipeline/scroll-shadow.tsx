@@ -16,15 +16,14 @@ import type { ReactNode } from 'react';
 type ScrollShadowProps = {
   /** Classes for the scroll container (it fills its flex parent and scrolls). */
   className?: string;
-  /** Classes for the inner content wrapper (padding/spacing live here so the
-      shadows sit flush against the container edges). */
+  /** Classes for the inner content wrapper (padding lives here so shadows stay flush to the edges). */
   contentClassName?: string;
   children: ReactNode;
 };
 
 /**
- * A vertical scroll container with fading top/bottom shadows that appear only when
- * there's more content past that edge — the same affordance used by `DialogBody`.
+ * Vertical scroll container with fading top/bottom shadows that appear only when content
+ * overflows that edge — the same affordance as `DialogBody`.
  */
 export function ScrollShadow({ className, contentClassName, children }: ScrollShadowProps) {
   const { containerRef, topRef, bottomRef, edges } = useScrollShadow<HTMLDivElement>(true);

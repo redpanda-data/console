@@ -38,8 +38,7 @@ type PipelineProblemsPanelProps = {
   onAddSecrets?: () => void;
 };
 
-// A small section heading inside the expanded panel, shown only when more than one
-// kind of issue is present (so a single-kind panel stays uncluttered).
+// Section heading in the expanded panel, shown only when more than one kind of issue is present.
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <Text
     as="div"
@@ -50,8 +49,7 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </Text>
 );
 
-// One lint problem: a clickable row that selects its node, or an inert row when the
-// problem doesn't map to a node (e.g. a top-level config error).
+// One lint problem: clickable row that selects its node, or inert when it maps to no node.
 const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?: () => void }) => {
   const body = (
     <>
@@ -85,8 +83,7 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
   );
 };
 
-// The missing-secrets block: a labelled header with the "Add secrets" action and one
-// row per referenced-but-missing secret.
+// Missing-secrets block: header with the "Add secrets" action, one row per missing secret.
 const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: string[]; onAddSecrets?: () => void }) => (
   <div data-testid="pipeline-problems-secrets">
     <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
@@ -132,10 +129,8 @@ function issuesLabel(problemCount: number, secretCount: number): string {
 }
 
 /**
- * A floating "issues" chip on the Visual canvas, unifying lint problems and missing
- * secrets. Expands into a list: missing secrets (with an add action) and lint problems;
- * clicking a problem selects the offending node. Problems that don't map to a node are
- * listed inert.
+ * Floating "issues" chip on the Visual canvas unifying lint problems and missing secrets.
+ * Expands to a list; clicking a problem selects its node (problems without a node are inert).
  */
 export function PipelineProblemsPanel({
   problems,

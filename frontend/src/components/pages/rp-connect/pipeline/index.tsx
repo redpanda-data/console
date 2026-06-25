@@ -135,9 +135,7 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return;
 }
 
-// Which usage tips to show beneath the editor for the active lane. Read-only YAML
-// (the view-mode config viewer) and the Monitor lane get none — their tips would be
-// stale or irrelevant.
+// Tips to show beneath the editor for the active lane; read-only YAML and Monitor get none.
 function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
   if (isView) {
     return viewLane === 'visual' ? 'visual' : null;
@@ -242,8 +240,7 @@ function usePipelineLint(yamlContent: string, errorLintHints: Record<string, Lin
     enabled,
   });
 
-  // Deduped merge: after a failed save the same problem arrives from both the
-  // error details and the re-lint of the unchanged YAML.
+  // Dedupe: after a failed save the same problem arrives from the error details and the re-lint.
   const lintHints = useMemo(
     () => mergeLintHints(errorLintHints, lintResponse?.lintHints ?? []),
     [errorLintHints, lintResponse]
@@ -487,15 +484,11 @@ function YamlViewPanel({
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
 }) {
-  // Top/bottom shadows from Monaco's scroll position (useScrollShadow needs a native
-  // scroll container; Monaco virtualizes, so onDidScrollChange is the only signal).
+  // Top/bottom shadows from Monaco's scroll position (it virtualizes, so onDidScrollChange is the only signal).
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
-  // Listener disposables from the editor mount, torn down on unmount (effect below). Without
-  // this the sync closures (which capture the editor) keep the editor + listener graph alive
-  // per mount of the view page.
+  // Mount-time listener disposables, torn down on unmount so the editor + listener graph can be GC'd.
   const scrollSyncSubscriptions = useRef<ReturnType<editor.IStandaloneCodeEditor['onDidScrollChange']>[]>([]);
-  // Register the (read-only) viewer as the active editor so node selection from the
-  // sidebar / Visual lane can reveal + select lines here too, just like edit mode.
+  // Register the read-only viewer as the active editor so sidebar/Visual selection can reveal lines here too.
   const setEditorInstance = usePipelineEditorStore((s) => s.setEditorInstance);
   const handleMount = useCallback(
     (instance: editor.IStandaloneCodeEditor) => {
@@ -651,8 +644,7 @@ function EditorPanel({
   );
 }
 
-// A freshly-started pipeline has no real components yet — only section labels and
-// `none` placeholders. Mirrors the old mini-diagram's "empty" check.
+// Empty = only section labels and `none` placeholders, no real components.
 function useIsPipelineEmpty(yamlContent: string): boolean {
   return useMemo(() => {
     const { nodes } = parsePipelineFlowTree(yamlContent);
@@ -684,13 +676,11 @@ function SidebarPanel({
   // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
   const isEmpty = useIsPipelineEmpty(yamlContent);
-  // The refreshed side-lane (structure outline) ships behind the visual-editor flag;
-  // with it off we fall back to the original `PipelineFlowDiagram` mini-diagram.
+  // New structure outline is behind the visual-editor flag; off → fall back to PipelineFlowDiagram.
   const showNewLane = isPipelineDiagramsEnabled && isVisualEditorEnabled;
   const showOldLane = isPipelineDiagramsEnabled && !isVisualEditorEnabled;
 
-  // Two-way sync between the outline and the YAML editor: clicking a node reveals +
-  // selects its lines, and moving the cursor in the editor highlights the node.
+  // Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node.
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
   // Node → YAML line ranges, recomputed as the document changes.
@@ -701,8 +691,7 @@ function SidebarPanel({
       return [];
     }
   }, [yamlContent]);
-  // Keep the latest ranges available to the (long-lived) cursor listener without
-  // re-subscribing on every keystroke.
+  // Latest ranges for the long-lived cursor listener, without re-subscribing per keystroke.
   const nodeRangesRef = useRef(nodeRanges);
   nodeRangesRef.current = nodeRanges;
 
@@ -746,9 +735,7 @@ function SidebarPanel({
     return () => sub.dispose();
   }, [editorInstance]);
 
-  // A pending reveal request from the Visual lane (switching to YAML with a node
-  // selected, or the inspector's "View in YAML"). Honour it once the editor + ranges
-  // are mounted after the lane switch, then clear it so it fires only once.
+  // Pending reveal request from the Visual lane: honour once editor + ranges mount, then clear (fires once).
   const revealNodeId = usePipelineEditorStore((s) => s.revealNodeId);
   const requestRevealNode = usePipelineEditorStore((s) => s.requestRevealNode);
   useEffect(() => {
@@ -764,8 +751,7 @@ function SidebarPanel({
     requestRevealNode(null);
   }, [revealNodeId, editorInstance, nodeRanges, revealNodeInEditor, requestRevealNode]);
   const showTemplateCta = showNewLane && canEdit && Boolean(onBrowseTemplates) && isEmpty;
-  // The old mini-diagram renders its own template entry point internally; the new
-  // lane uses the floating CTA below instead.
+  // Old mini-diagram has its own template entry point; the new lane uses the floating CTA below.
   const oldDiagramHandlers = canEdit
     ? {
         onAddConnector: (type: string) => onAddConnector(type as ConnectComponentType),
@@ -777,8 +763,7 @@ function SidebarPanel({
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
-      {/* Visualizer region (relative) so the template entry point can float pinned
-          at its bottom with an enter/exit animation, like the old mini-diagram. */}
+      {/* Relative so the template entry point can float pinned at the bottom with an enter/exit animation. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto overflow-x-hidden">
           {showNewLane ? (
@@ -864,7 +849,7 @@ function SidebarPanel({
 
 export default function PipelinePage() {
   const { pipelineId } = usePipelineMode();
-  // When the visual editor is enabled, open editing on the Visual lane by default.
+  // With the visual editor enabled, open editing on the Visual lane by default.
   const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isEmbedded();
   // Keyed by pipeline id so each pipeline gets a fresh editor store.
   return (
@@ -981,8 +966,7 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // ⌘S / Ctrl+S saves the pipeline (instead of the browser's save-page dialog) —
-  // works from both the YAML and Visual lanes.
+  // ⌘S / Ctrl+S saves (overriding the browser save-page dialog), from both YAML and Visual lanes.
   useEffect(() => {
     if (mode === 'view') {
       return;
@@ -1100,14 +1084,12 @@ function PipelinePageContent() {
     }
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
-  // The Visual lanes (view and edit) take the full canvas, so the YAML/diagram sidebar is hidden.
+  // Visual lanes take the full canvas, so the YAML/diagram sidebar is hidden.
   const isViewVisualLane = mode === 'view' && activeViewLane === 'visual';
   const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
   const showSidebar = !(isViewVisualLane || isEditVisualLane);
 
-  // Open the YAML lane and reveal a node there: an explicit id (the inspector's
-  // "View in YAML"), else the currently-selected node (switching tabs with a
-  // selection). Routes to the right lane for the current mode.
+  // Open the YAML lane and reveal a node: explicit id, else the selected node. Routes per mode.
   const goToYamlNode = useCallback(
     (nodeId?: string) => {
       const target = nodeId ?? selectedNodeId;
@@ -1124,7 +1106,7 @@ function PipelinePageContent() {
   );
 
   return (
-    // overflow-x-clip guards against stray horizontal overflow (clip, not hidden, to keep overflow-y visible).
+    // overflow-x-clip (not hidden) blocks stray horizontal overflow while keeping overflow-y visible.
     <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
@@ -1153,7 +1135,7 @@ function PipelinePageContent() {
           url={pipeline?.url}
         />
       ) : null}
-      {/* View-mode lanes: Monitor (throughput/logs), YAML (read-only config), Visual (diagram). */}
+      {/* View-mode lanes: Monitor, YAML (read-only), Visual. */}
       {mode === 'view' && pipeline ? (
         <Tabs value={activeViewLane}>
           <TabsList className="w-fit" variant="underline">
@@ -1171,7 +1153,7 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* Edit-mode lanes: YAML editor vs. the (forthcoming) drag-and-drop visual editor. */}
+      {/* Edit-mode lanes: YAML editor vs. visual editor. */}
       {mode !== 'view' && isVisualEditorEnabled ? (
         <Tabs value={activeEditLane}>
           <TabsList className="w-fit" variant="underline">
@@ -1184,7 +1166,7 @@ function PipelinePageContent() {
           </TabsList>
         </Tabs>
       ) : null}
-      {/* Editor area: the bordered frame flexes to fill the column, with a minimal tips strip pinned just beneath it (so it stays visible instead of being pushed below the fold). */}
+      {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
       <div className="flex min-h-[640px] min-w-0 flex-1 flex-col gap-2">
         {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
         <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">

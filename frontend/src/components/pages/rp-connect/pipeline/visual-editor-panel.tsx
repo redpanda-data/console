@@ -91,10 +91,7 @@ type InsertParams = {
 // The routing-condition target for a node carrying a lint problem, so selecting that problem
 // opens the inspector on its condition. Output switch: the node owns it; processor switch: the
 // case wrapper owns it and this node is the rendered entry (the wrapper's first child).
-function caseTargetForNode(
-  node: PipelineFlowNode | undefined,
-  flowNodes: PipelineFlowNode[]
-): EditTarget | undefined {
+function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]): EditTarget | undefined {
   if (node?.caseEditTarget) {
     return node.caseEditTarget;
   }
@@ -599,104 +596,104 @@ export function VisualEditorPanel({
     <div className="flex h-full w-full">
       <div className="relative min-w-0 flex-1">
         <PipelineFlowCanvas
-            configYaml={yamlContent}
-            flashNodeIds={flash.ids}
-            flashToken={flash.token}
-            lintErrorsByNode={lintMessagesByNode}
-            onAddConnector={
-              isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
-            }
-            onAddSasl={isEditing ? onAddSasl : undefined}
-            onAddTopic={isEditing ? onAddTopic : undefined}
-            onClearSelection={() => setSelected(null)}
-            onInsert={isEditing ? (index) => setPendingInsert({ context: 'spine', index }) : undefined}
-            onSelectNode={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
-            onSlotInsert={isEditing ? handleSlotInsert : undefined}
-            selectedNodeId={selected?.id}
-            selectedTargetKind={selected?.target.kind}
+          configYaml={yamlContent}
+          flashNodeIds={flash.ids}
+          flashToken={flash.token}
+          lintErrorsByNode={lintMessagesByNode}
+          onAddConnector={
+            isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
+          }
+          onAddSasl={isEditing ? onAddSasl : undefined}
+          onAddTopic={isEditing ? onAddTopic : undefined}
+          onClearSelection={() => setSelected(null)}
+          onInsert={isEditing ? (index) => setPendingInsert({ context: 'spine', index }) : undefined}
+          onSelectNode={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
+          onSlotInsert={isEditing ? handleSlotInsert : undefined}
+          selectedNodeId={selected?.id}
+          selectedTargetKind={selected?.target.kind}
+        />
+        {isEditing ? (
+          <TooltipProvider>
+            <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
+                      <Undo2 />
+                    </Button>
+                  }
+                />
+                <TooltipContent>
+                  <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
+                      <Redo2 />
+                    </Button>
+                  }
+                />
+                <TooltipContent>
+                  <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+        ) : null}
+        <PipelineProblemsPanel
+          missingSecrets={missingSecrets}
+          onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
+          onSelectProblem={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
+          problems={problems}
+        />
+        {onBrowseTemplates ? (
+          <TemplateGalleryCta
+            className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
+            onBrowseTemplates={onBrowseTemplates}
+            show={isEditing && isPipelineEmpty}
           />
-          {isEditing ? (
-            <TooltipProvider>
-              <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
-                        <Undo2 />
-                      </Button>
-                    }
-                  />
-                  <TooltipContent>
-                    <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
-                        <Redo2 />
-                      </Button>
-                    }
-                  />
-                  <TooltipContent>
-                    <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </TooltipProvider>
-          ) : null}
-          <PipelineProblemsPanel
-            missingSecrets={missingSecrets}
-            onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-            onSelectProblem={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
-            problems={problems}
-          />
-          {onBrowseTemplates ? (
-            <TemplateGalleryCta
-              className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
-              onBrowseTemplates={onBrowseTemplates}
-              show={isEditing && isPipelineEmpty}
-            />
-          ) : null}
-        </div>
+        ) : null}
+      </div>
 
-        {/* Inspector rail (Figma-style): mounted only when a node is selected. We animate
+      {/* Inspector rail (Figma-style): mounted only when a node is selected. We animate
           its WIDTH (the flex slot) rather than a transform, so the canvas — and its
           right-anchored minimap / zoom controls — glide in lockstep instead of snapping
           when the rail finishes closing. The content is pinned to the rail's right edge
           at a fixed width so it doesn't reflow while the width animates. */}
-        <AnimatePresence>
-          {selected ? (
-            <motion.aside
-              animate={{ width: 384, opacity: 1 }}
-              className="relative shrink-0 overflow-hidden border-border border-l bg-background"
-              exit={{ width: 0, opacity: 0 }}
-              initial={{ width: 0, opacity: 0 }}
-              key="node-inspector"
-              transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
-            >
-              {/* Fill the rail's actual width (so the content never leaves a gap), with a
+      <AnimatePresence>
+        {selected ? (
+          <motion.aside
+            animate={{ width: 384, opacity: 1 }}
+            className="relative shrink-0 overflow-hidden border-border border-l bg-background"
+            exit={{ width: 0, opacity: 0 }}
+            initial={{ width: 0, opacity: 0 }}
+            key="node-inspector"
+            transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+          >
+            {/* Fill the rail's actual width (so the content never leaves a gap), with a
                 min-width so it clips rather than reflows while the width animates. */}
-              <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
-                <NodeInspector
-                  caseTarget={selected.caseTarget}
-                  childItems={childItems}
-                  components={components}
-                  onSelectChild={(item) => setSelected({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
-                  lintHints={lintByNode.get(selected.id)}
-                  onApply={onYamlChange}
-                  onClose={() => setSelected(null)}
-                  onCreateResource={isEditing ? handleRequestCreateResource : undefined}
-                  onDelete={isEditing ? setPendingDelete : undefined}
-                  onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
-                  readOnly={!isEditing}
-                  target={selected.target}
-                  yaml={yamlContent}
-                />
-              </div>
-            </motion.aside>
-          ) : null}
-        </AnimatePresence>
+            <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
+              <NodeInspector
+                caseTarget={selected.caseTarget}
+                childItems={childItems}
+                components={components}
+                lintHints={lintByNode.get(selected.id)}
+                onApply={onYamlChange}
+                onClose={() => setSelected(null)}
+                onCreateResource={isEditing ? handleRequestCreateResource : undefined}
+                onDelete={isEditing ? setPendingDelete : undefined}
+                onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+                onSelectChild={(item) => setSelected({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
+                readOnly={!isEditing}
+                target={selected.target}
+                yaml={yamlContent}
+              />
+            </div>
+          </motion.aside>
+        ) : null}
+      </AnimatePresence>
 
       <AddConnectorDialog
         components={componentList}

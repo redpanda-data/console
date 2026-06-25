@@ -66,9 +66,7 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
-// Free-form prose reads poorly squeezed into the narrow key/value column, so the
-// description gets its own block: a quiet label above the text, which flows at a
-// comfortable reading measure and preserves the author's line breaks.
+// Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
   <div className="flex flex-col gap-0.5 text-sm">
     <span className="text-muted-foreground">Description</span>

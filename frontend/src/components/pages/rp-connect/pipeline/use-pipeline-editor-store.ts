@@ -21,7 +21,7 @@ type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | 
 type AddConnectorType = ConnectComponentType | 'resource' | null;
 type ConnectorSection = 'input' | 'output';
 export type ViewLane = 'monitor' | 'configuration' | 'visual';
-// Edit-mode lanes: the YAML editor vs. the (forthcoming) drag-and-drop visual editor.
+// Edit-mode lanes: YAML editor vs. visual editor.
 export type EditLane = 'yaml' | 'visual';
 
 // Canonical config YAML (plus baseline) that all views read/mutate through these actions.
@@ -46,11 +46,9 @@ type UiSlice = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   activeViewLane: ViewLane;
   activeEditLane: EditLane;
-  // The node currently selected in the Visual lane, mirrored here so the YAML lane
-  // can reveal it when the user switches tabs (the lanes don't share a component tree).
+  // Node selected in the Visual lane, mirrored here so the YAML lane can reveal it on tab switch.
   selectedNodeId: string | null;
-  // A one-shot request to reveal + select a node's lines in the Monaco editor. Set when
-  // jumping from the Visual lane to YAML; consumed and cleared by the editor side.
+  // One-shot request to reveal + select a node's lines in Monaco; set on Visual→YAML, cleared by the editor.
   revealNodeId: string | null;
   commandMenuFilter: CommandMenuFilter;
   addConnectorType: AddConnectorType;
@@ -134,7 +132,7 @@ export function PipelineEditorProvider({
   initialEditLane = 'yaml',
 }: {
   children: ReactNode;
-  // Which edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
+  // Edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
   initialEditLane?: EditLane;
 }) {
   const storeRef = useRef<StoreApi<PipelineEditorStore>>(undefined);

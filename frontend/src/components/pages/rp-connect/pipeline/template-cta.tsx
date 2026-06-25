@@ -22,9 +22,8 @@ type TemplateGalleryCtaProps = {
 };
 
 /**
- * The "Start from a template" entry point, floated at the bottom of an (empty)
- * visualizer with a soft enter/exit animation. Used by both the sidebar lane and
- * the full visual editor.
+ * "Start from a template" entry point, floated at the bottom of an empty visualizer with a
+ * soft enter/exit animation. Used by both the sidebar lane and the full visual editor.
  */
 export function TemplateGalleryCta({ show, onBrowseTemplates, className }: TemplateGalleryCtaProps) {
   return (

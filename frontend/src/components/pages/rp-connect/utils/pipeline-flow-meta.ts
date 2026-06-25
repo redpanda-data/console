@@ -9,18 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-// A single key metadata line shown on an expanded pipeline node card.
+// A metadata line shown on an expanded pipeline node card.
 export type NodeMetaEntry = { label: string; value: string };
 
 const MAX_META = 3;
 const MAX_VALUE_LEN = 52;
 
-// `topic`/`topics` are surfaced as dedicated chips on the card, so they're never
-// repeated as a plain meta row.
+// Surfaced as dedicated chips, so never repeated as a plain meta row.
 const TOPIC_FIELDS = new Set(['topic', 'topics']);
 
-// Shorter, friendlier labels for a few verbose config keys so the value has room
-// on the fixed-width card. Keys not listed keep their raw name.
+// Shorter labels for verbose keys so the value fits the fixed-width card.
 const LABEL_OVERRIDES: Record<string, string> = {
   consumer_group: 'group',
   seed_brokers: 'brokers',
@@ -38,9 +36,8 @@ const LABEL_OVERRIDES: Record<string, string> = {
   error_message: 'error',
 };
 
-// Field names that are never useful as an at-a-glance summary — credentials and
-// generic infra knobs — so the fallback never surfaces them for an unmapped
-// component (it would otherwise grab e.g. `api_key` just because it comes first).
+// Credentials and generic infra knobs the fallback must never surface (else it'd
+// grab e.g. `api_key` just because it comes first).
 const NOISE_FIELDS = new Set([
   'api_key',
   'apikey',
@@ -68,12 +65,8 @@ function isScalar(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
-/**
- * The fields most worth surfacing per component, in priority order. `pushField`
- * only emits the fields actually present, so listing a generous superset (across
- * the input/processor/output uses of the same component name) is safe. Topics are
- * deliberately omitted — they render as chips.
- */
+// Fields to surface per component, in priority order. `pushField` only emits ones
+// actually present, so a generous superset is safe. Topics omitted (render as chips).
 const PREFERRED_FIELDS: Record<string, string[]> = {
   // Kafka / Redpanda family
   kafka: ['consumer_group', 'partition', 'key'],
@@ -114,7 +107,7 @@ const PREFERRED_FIELDS: Record<string, string[]> = {
   elasticsearch: ['index', 'urls'],
   opensearch: ['index', 'urls'],
   cassandra: ['query'],
-  // AI / ML — chat, embeddings, image, transcription (the model is the key fact)
+  // AI / ML — the model is the key fact
   openai_chat_completion: ['model'],
   openai_embeddings: ['model'],
   openai_image_generation: ['model'],
@@ -181,8 +174,7 @@ const PREFERRED_FIELDS: Record<string, string[]> = {
   couchbase: ['url', 'bucket', 'default_ttl'],
 };
 
-// When no preferred field matches, prefer scalar fields with these "identifying"
-// names before falling back to whatever scalar comes first.
+// Identifying scalar field names to prefer before falling back to whatever comes first.
 const SALIENT_FIELD_NAMES = [
   'model',
   'url',
@@ -237,9 +229,8 @@ function pushField(meta: NodeMetaEntry[], config: Record<string, unknown>, key: 
   }
 }
 
-// Fallback when no preferred field matched: identifying-named scalars first, then
-// the first couple of remaining scalar/scalar-array fields (skipping booleans and
-// topics, which rarely help identify a node and add noise).
+// Fallback when no preferred field matched: identifying-named scalars first, then the
+// first couple of remaining scalar/scalar-array fields (skipping booleans and topics).
 function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
   const meta: NodeMetaEntry[] = [];
   for (const name of SALIENT_FIELD_NAMES) {
@@ -266,13 +257,11 @@ function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
 }
 
 /**
- * Derive up to a few of the most relevant config values for a component, for
- * display on its node card. Deterministic: same config always yields the same
- * lines. `config` is the component's inner config (the value under its name key);
- * for components like `mapping`/`bloblang` it can be a bare string.
+ * Derive up to a few of the most relevant config values for a node card. Deterministic.
+ * `config` is the component's inner config; for mapping/bloblang it can be a bare string.
  */
 export function summarizeComponent(componentName: string, config: unknown): NodeMetaEntry[] {
-  // Some processors (mapping/bloblang) are configured with a bare string.
+  // mapping/bloblang are configured with a bare string.
   if (typeof config === 'string') {
     return config.trim() ? [{ label: 'expr', value: truncate(config.split('\n')[0]) }] : [];
   }

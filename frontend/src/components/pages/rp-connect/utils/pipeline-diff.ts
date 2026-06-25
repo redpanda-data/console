@@ -14,8 +14,7 @@ import { parseDocument } from 'yaml';
 import { parsePipelineFlowTree } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
-// A signature of each editable node's config, keyed by node id, so two YAML
-// revisions can be compared node-by-node.
+// Signature of each editable node's config, keyed by node id, for node-by-node comparison.
 function nodeConfigSignatures(yaml: string): Map<string, string> {
   const signatures = new Map<string, string>();
   if (!yaml) {
@@ -37,10 +36,8 @@ function nodeConfigSignatures(yaml: string): Map<string, string> {
   return signatures;
 }
 
-/**
- * Ids of nodes that were added or whose config changed going from `prevYaml` to
- * `nextYaml`. Used to briefly highlight the node(s) an undo/redo affected.
- */
+// Ids of nodes added or changed from `prevYaml` to `nextYaml`. Used to briefly highlight
+// the node(s) an undo/redo affected.
 export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
   const prev = nodeConfigSignatures(prevYaml);
   const next = nodeConfigSignatures(nextYaml);

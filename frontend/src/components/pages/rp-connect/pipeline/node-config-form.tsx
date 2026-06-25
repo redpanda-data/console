@@ -73,7 +73,13 @@ const childItemCondColor = (item: InspectorChildItem): string => {
   return 'text-condition';
 };
 
-const ChildItemRow = ({ item, onSelect }: { item: InspectorChildItem; onSelect: (item: InspectorChildItem) => void }) => {
+const ChildItemRow = ({
+  item,
+  onSelect,
+}: {
+  item: InspectorChildItem;
+  onSelect: (item: InspectorChildItem) => void;
+}) => {
   const condText = childItemConditionText(item);
   return (
     <button

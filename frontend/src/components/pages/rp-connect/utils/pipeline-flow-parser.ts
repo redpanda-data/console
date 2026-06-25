@@ -30,9 +30,8 @@ type ParsedYamlConfig = {
   pipeline?: { processors?: Record<string, unknown>[] };
   cache_resources?: unknown[];
   rate_limit_resources?: unknown[];
-  // Inputs/outputs/processors can be declared as named resources and referenced via
-  // `resource:` indirection (valid in Redpanda Cloud too). We render their definitions
-  // in the resource lane and link the references to them.
+  // Inputs/outputs/processors declared as named resources, referenced via `resource:`
+  // indirection. Rendered in the resource lane with reference links drawn to them.
   input_resources?: unknown[];
   output_resources?: unknown[];
   processor_resources?: unknown[];
@@ -58,54 +57,45 @@ export type PipelineFlowNode = {
   collapsible?: boolean;
   missingTopic?: boolean;
   missingSasl?: boolean;
-  // Set only on top-level, visually editable nodes (input/output/top-level
-  // processor/array resource). Drives the visual editor's edit & delete actions;
-  // nested nodes intentionally have none and stay read-only.
+  // Only on top-level editable nodes (input/output/top-level processor/array resource).
+  // Drives edit & delete; nested nodes have none and stay read-only.
   editTarget?: EditTarget;
   // Key config values surfaced on the expanded canvas card (ignored by the mini lane).
   meta?: NodeMetaEntry[];
-  // For group nodes: how the data flows through the children. `sequential` chains
-  // them (a sub-pipeline, e.g. branch/catch processors); `parallel` fans out to all
-  // of them (alternatives/merges, e.g. switch cases, broker inputs). Defaults to
-  // sequential when unset.
+  // Group child data flow: `sequential` chains them (sub-pipeline, e.g. branch/catch);
+  // `parallel` fans out (alternatives, e.g. switch cases, broker inputs). Default sequential.
   childFlow?: 'sequential' | 'parallel';
-  // The routing condition that selects this branch (switch `check`, fallback "on
-  // failure"). Shown as a label on the fan-out edge that enters this node.
+  // Routing condition selecting this branch (switch `check`, fallback "on failure"),
+  // shown as a label on the fan-out edge entering this node.
   condition?: string;
-  // A catch-all / else branch (a switch case with no `check`, drawn explicitly).
+  // Catch-all / else branch (a switch case with no `check`).
   isDefault?: boolean;
-  // An error / dead-letter path (catch handler, `errored()` route, fallback). Drawn
-  // with a distinct (red, dashed) edge style.
+  // Error / dead-letter path (catch handler, `errored()` route, fallback). Drawn red/dashed.
   isErrorPath?: boolean;
-  // Marks a `branch` processor container: data is copied out (request_map), run
-  // through the sub-pipeline, then merged back (result_map). Drives copy/merge edges.
+  // A `branch` processor: data copied out (request_map), run through, merged back
+  // (result_map). Drives copy/merge edges.
   branch?: { request: boolean; result: boolean };
-  // Label of a resource this component references (cache/rate_limit `resource`), used
-  // to draw a dashed reference edge to the matching resource node.
+  // Label of a resource this component references (cache/rate_limit `resource`); draws a
+  // dashed reference edge to the matching resource node.
   resourceRef?: string;
-  // Other string values on the component that MIGHT be resource labels (e.g. a field
-  // named `checkpoint_cache` rather than `resource`, on an input/output/processor). The
-  // post-pass promotes whichever matches a real resource label to `resourceRef`.
+  // String values that MIGHT be resource labels (e.g. a `checkpoint_cache` field, not
+  // `resource`). The post-pass promotes whichever matches a real resource label to `resourceRef`.
   resourceRefCandidates?: string[];
-  // A `switch` case wrapper — a structural sub-node (not an editable component). It
-  // renders as a condition-forward "case" card and, when clicked, selects its
-  // parent switch rather than itself.
+  // A `switch` case wrapper — structural sub-node (not an editable component). Renders as a
+  // condition-forward "case" card; clicking it selects the parent switch.
   isCase?: boolean;
-  // The edit target for THIS branch's routing condition (the switch case object
-  // `{ check, … }`). Set on switch cases (processor AND output). The fan-out edge
-  // renders the condition as a clickable label that selects this target → the
-  // SwitchCaseEditor. Distinct from `editTarget`, which on an output case points at the
-  // case's output component so the output card stays editable.
+  // Edit target for this branch's routing condition (the switch case `{ check, … }`). Set on
+  // switch cases (processor AND output); the fan-out edge renders the condition as a clickable
+  // label selecting this → SwitchCaseEditor. Distinct from `editTarget`, which on an output
+  // case points at the case's output component so the card stays editable.
   caseEditTarget?: EditTarget;
-  // For container nodes that accept new children: the YAML path of the array to
-  // insert into, and the component kind that array holds. Drives the in-container
-  // "+" affordances (add a processor into a switch case, an input into a broker, …).
+  // Container accepting new children: the array's YAML path and the component kind it holds.
+  // Drives in-container "+" (add a processor into a switch case, an input into a broker, …).
   insertSlot?: { containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output' };
-  // For a `switch` node: the path of its `cases`/value array and the section its
-  // cases live in, so we can append a fresh (structural) case skeleton.
+  // For a `switch`: path of its `cases`/value array + section, so we can append a fresh case.
   addChildSlot?: { containerPath: (string | number)[]; section: 'processor' | 'output' };
-  // A component references a resource (`resource:`) whose label has no matching
-  // `*_resources` entry — a dangling link. Drives an error badge + quick-fix.
+  // References a `resource:` whose label has no matching `*_resources` entry — a dangling
+  // link. Drives an error badge + quick-fix.
   danglingRef?: boolean;
   // For a resource node: how many components reference its label (for "Used by N").
   usedByCount?: number;
@@ -116,14 +106,12 @@ type BranchContext = {
   parentId: string;
   idPrefix: string;
   depth: number;
-  // YAML path to the component object this context represents (e.g. the switch
-  // processor at ['pipeline','processors',1]). Used to give nested components a
-  // path-based editTarget so they're editable in the same dialog.
+  // YAML path to this context's component object (e.g. ['pipeline','processors',1]).
+  // Gives nested components a path-based editTarget so they're editable in the same dialog.
   path: (string | number)[];
 };
 
-// A nested component is editable at its YAML path; its schema type follows the
-// section it lives in (processors are 'processor', broker inputs are 'input', …).
+// A nested component's schema type follows the section it lives in.
 const SECTION_COMPONENT_TYPE = {
   input: 'input',
   processor: 'processor',
@@ -149,10 +137,8 @@ type GroupChildSpec = {
   meta?: NodeMetaEntry[];
 };
 
-// A member of a broker-style container can itself be a broker-style container (e.g. a
-// `fallback` that is a switch case's output). Summarize the components such a nested
-// container wraps — with routing-aware phrasing — so the collapsed member leaf reveals
-// where data actually goes instead of showing only the container's name (e.g. "fallback").
+// A container member may itself be a container (e.g. a `fallback` output). Summarize what
+// it wraps, routing-aware, so the collapsed leaf shows where data goes — not just "fallback".
 const NESTED_MEMBER_SUMMARY: Record<string, { label: string; sep: string }> = {
   fallback: { label: 'tries', sep: ' → ' },
   sequence: { label: 'then', sep: ' → ' },
@@ -160,7 +146,7 @@ const NESTED_MEMBER_SUMMARY: Record<string, { label: string; sep: string }> = {
   switch: { label: 'routes', sep: ' | ' },
 };
 
-// The display summary (config preview, or wrapped-member chain) for one container member.
+// Display summary (config preview, or wrapped-member chain) for one container member.
 function memberMeta(section: 'input' | 'output', key: string, value: unknown): NodeMetaEntry[] | undefined {
   const summary = NESTED_MEMBER_SUMMARY[key];
   if (summary) {
@@ -183,9 +169,8 @@ function memberNameAndMeta(section: 'input' | 'output', obj: unknown): { name: s
   return { name: key, meta: memberMeta(section, key, inner) };
 }
 
-// The member specs (name + summary) for a `broker`/`sequence` container, from its raw
-// `inputs`/`outputs` array. `switch`/`fallback` outputs carry routing and go through
-// `parseOutputBranches` instead.
+// Member specs (name + summary) for a `broker`/`sequence`, from its `inputs`/`outputs` array.
+// `switch`/`fallback` outputs carry routing and go through `parseOutputBranches` instead.
 function multiMemberSpecs(section: 'input' | 'output', value: unknown): GroupChildSpec[] | undefined {
   if (!value || typeof value !== 'object') {
     return;
@@ -197,8 +182,8 @@ function multiMemberSpecs(section: 'input' | 'output', value: unknown): GroupChi
   return items.map((item) => memberNameAndMeta(section, item));
 }
 
-// YAML path to the i-th child of a multi-input/output component, so nested
-// broker/switch/fallback/sequence members are individually editable.
+// YAML path to the i-th child of a multi-input/output component, so nested members are
+// individually editable.
 function multiChildPath(section: 'input' | 'output', groupLabel: string, i: number): (string | number)[] {
   if (section === 'input') {
     return ['input', groupLabel, 'inputs', i];
@@ -221,10 +206,10 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
       section: spec.section,
       parentId: spec.sectionId,
       collapsible: true,
-      // A `sequence` input runs its children in order; broker/switch/fallback fan out.
+      // A `sequence` input runs children in order; broker/switch/fallback fan out.
       childFlow: spec.groupLabel === 'sequence' ? 'sequential' : 'parallel',
-      // An output `switch` grows by appending a (structural) case; its cases hold one
-      // output each, so they don't take child inserts (unlike a processor switch).
+      // An output `switch` grows by appending a case; its cases hold one output each, so
+      // they take no child inserts (unlike a processor switch).
       ...(spec.section === 'output' && spec.groupLabel === 'switch'
         ? { addChildSlot: { containerPath: ['output', 'switch', 'cases'], section: 'output' as const } }
         : {}),
@@ -241,8 +226,8 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         isErrorPath: child.isErrorPath,
         meta: child.meta,
         editTarget: pathEditTarget(spec.section, multiChildPath(spec.section, spec.groupLabel, i)),
-        // An output-switch case's routing condition is editable as a switch case (the leaf
-        // itself still edits its output). Other multi-output/input members have no case.
+        // An output-switch case's condition is editable as a switch case (the leaf still
+        // edits its output). Other multi-output/input members have no case.
         ...(spec.section === 'output' && spec.groupLabel === 'switch'
           ? { caseEditTarget: { kind: 'switchCase' as const, path: ['output', 'switch', 'cases', i] } }
           : {}),
@@ -252,11 +237,9 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
 }
 
 // ── Empty container affordances ──────────────────────────────────────────
-// Container components (broker/switch/fallback/sequence) normally expand into a
-// parent group plus a child node per member, and the insert "+" is derived from
-// those children. With an empty array there's no child to derive from, so we emit
-// the group with an explicit slot — otherwise a freshly-added broker would render
-// as a dead-end leaf with no way to add its first member.
+// Containers normally derive their insert "+" from a child's path. With an empty array
+// there's no child, so emit the group with an explicit slot — otherwise a freshly-added
+// broker would be a dead-end leaf with no way to add its first member.
 type ContainerSlot =
   | { insertSlot: NonNullable<PipelineFlowNode['insertSlot']> }
   | { addChildSlot: NonNullable<PipelineFlowNode['addChildSlot']> };
@@ -273,8 +256,7 @@ const EMPTY_INPUT_CONTAINERS: Record<string, ContainerSlot> = {
   sequence: { insertSlot: { containerPath: ['input', 'sequence', 'inputs'], accepts: 'input' } },
 };
 
-// Build the empty-container group for a top-level input/output (broker/switch/…),
-// or null when the component isn't a recognised container.
+// Empty-container group for a top-level input/output, or null if not a recognised container.
 function emptySectionContainerGroup(
   key: string,
   section: 'input' | 'output',
@@ -301,8 +283,8 @@ function emptySectionContainerGroup(
   ];
 }
 
-// Output branches with their routing semantics: switch cases carry a `check`
-// condition (no check ⇒ default), fallback tiers route "on failure" of the prior.
+// Output branches with routing: switch cases carry a `check` (no check ⇒ default);
+// fallback tiers route "on failure" of the prior.
 function parseOutputBranches(outputKey: string, value: unknown): GroupChildSpec[] | undefined {
   if (outputKey === 'switch' && value && typeof value === 'object' && 'cases' in value) {
     const cases = (value as { cases?: Record<string, unknown>[] }).cases;
@@ -441,13 +423,12 @@ const BRANCHING_FIELDS = new Set([
 
 const MAX_BRANCH_DEPTH = 3;
 
-// Processor containers whose value IS a flat processor array — inserting appends a
-// processor to that array. (`switch`/`group_by` are arrays too but of structural
-// case objects, so they're handled separately / left as leaves when empty.)
+// Processor containers whose value IS a flat processor array — inserting appends to it.
+// (`switch`/`group_by` are arrays too but of structural case objects, handled separately.)
 const DIRECT_ARRAY_PROC_CONTAINERS: ReadonlySet<string> = new Set(['try', 'catch', 'for_each']);
 
-// Processor containers that nest their children under a `processors:` field, so an
-// empty one accepts a processor into `<name>.processors`.
+// Processor containers that nest children under a `processors:` field — an empty one
+// accepts a processor into `<name>.processors`.
 const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 'parallel']);
 
 function extractProcessorArray(value: unknown): Record<string, unknown>[] | undefined {
@@ -457,9 +438,8 @@ function extractProcessorArray(value: unknown): Record<string, unknown>[] | unde
   return;
 }
 
-// A reference to a resource is expressed as a string `resource:` field on the
-// component (cache/rate_limit processors). We surface it so the canvas can draw a
-// dashed edge to the matching resource node.
+// A resource reference is a string `resource:` field (cache/rate_limit processors);
+// surfaced so the canvas draws a dashed edge to the matching resource node.
 function extractResourceRef(componentValue: unknown): string | undefined {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
@@ -468,19 +448,17 @@ function extractResourceRef(componentValue: unknown): string | undefined {
   return typeof ref === 'string' && ref !== '' ? ref : undefined;
 }
 
-// A `resource:` indirection component — `input: { resource: foo }`, a `resource`
-// processor/output whose value is the label string — runs a named *_resources entry.
-// Capture that label so the canvas links the reference to its definition.
+// A `resource:` indirection component (e.g. `input: { resource: foo }`) runs a named
+// *_resources entry. Capture that label so the canvas links to its definition.
 function indirectionResourceRef(componentName: string | undefined, componentValue: unknown): string | undefined {
   return componentName === 'resource' && typeof componentValue === 'string' && componentValue !== ''
     ? componentValue
     : undefined;
 }
 
-// A resource reference may live in a field whose name isn't `resource` (e.g. a CDC
-// input's `checkpoint_cache`). Without the component schema here we can't know the
-// field's type, so collect every top-level string value as a candidate; the post-pass
-// promotes the one(s) that match an actual resource label to a real reference.
+// A resource ref may live in a non-`resource` field (e.g. a CDC input's `checkpoint_cache`).
+// Without the schema here we can't know field types, so collect every top-level string as a
+// candidate; the post-pass promotes those matching an actual resource label.
 function extractRefCandidates(componentValue: unknown): string[] | undefined {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
@@ -491,8 +469,7 @@ function extractRefCandidates(componentValue: unknown): string[] | undefined {
   return values.length > 0 ? values : undefined;
 }
 
-// A Bloblang check references the error flag (`errored()`), i.e. this branch handles
-// failed messages — a dead-letter path.
+// A Bloblang check referencing `errored()` — this branch handles failed messages (dead-letter).
 const ERRORED_CHECK_RE = /errored\s*\(/;
 function isErroredCheck(check: unknown): boolean {
   return typeof check === 'string' && ERRORED_CHECK_RE.test(check);
@@ -508,16 +485,14 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     parentId: ctx.parentId,
     resourceRef: extractResourceRef(componentValue) ?? indirectionResourceRef(name, componentValue),
     resourceRefCandidates: extractRefCandidates(componentValue),
-    // Surface key config on nested leaves too (http inside try/branch/switch, etc.),
-    // just like top-level processors.
+    // Surface key config on nested leaves too, like top-level processors.
     ...(meta.length > 0 ? { meta } : {}),
     ...(extractTopics(componentValue) ? { topics: extractTopics(componentValue) } : {}),
     editTarget: pathEditTarget(ctx.section, ctx.path),
   };
 }
 
-// Components whose children are alternatives/parallel branches rather than a
-// sequential sub-pipeline.
+// Components whose children are alternatives/parallel branches, not a sequential sub-pipeline.
 const PARALLEL_GROUP_COMPONENTS: ReadonlySet<string> = new Set(['switch', 'workflow', 'parallel']);
 
 function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
@@ -529,7 +504,7 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
     parentId: ctx.parentId,
     collapsible: true,
     childFlow: PARALLEL_GROUP_COMPONENTS.has(name) ? 'parallel' : 'sequential',
-    // `catch` runs only when an upstream processor errored — a dead-letter handler.
+    // `catch` runs only on upstream error — a dead-letter handler.
     isErrorPath: name === 'catch' ? true : undefined,
     editTarget: pathEditTarget(ctx.section, ctx.path),
   };
@@ -562,8 +537,8 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       isDefault: hasCheck ? undefined : true,
       isErrorPath: isErroredCheck(check) ? true : undefined,
       isCase: true,
-      // The case object is editable for its routing condition (`check`); its processors
-      // are their own nodes. Selecting the case opens the condition editor.
+      // The case object is editable for its `check` condition; its processors are their own
+      // nodes. Selecting the case opens the condition editor.
       editTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
       caseEditTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
       // Explicit so even an empty case (no children to derive from) is fillable.
@@ -628,7 +603,7 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, 
         depth: ctx.depth + 1,
         path: [...ctx.path, pi],
       });
-      // Surface a nested component's `label:` on its node (like top-level processors).
+      // Surface a nested component's `label:` on its node, like top-level processors.
       const labelText = extractLabel(proc);
       if (childNodes.length > 0 && labelText) {
         childNodes[0] = { ...childNodes[0], labelText };
@@ -706,8 +681,8 @@ function parseBranchingKeys(
   if (branchingKeys.length === 0) {
     return [];
   }
-  // Children parent off the group node; the branching keys live inside the named
-  // config, so descend the YAML path into that component name.
+  // Children parent off the group node; branching keys live inside the named config,
+  // so descend the path into that component name.
   const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix, path: [...ctx.path, componentName] };
   return branchingKeys.flatMap((key) => parseBranchingField(key, config[key], childCtx));
 }
@@ -722,15 +697,14 @@ function parseDirectArrayBranching(
   if (componentName === 'switch') {
     const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
     const group = makeGroup(componentName, ctx);
-    // The switch can grow a new (structural) case appended to its value array —
-    // offered even when there are no cases yet.
+    // The switch can grow a new case appended to its value array, even with no cases yet.
     group.addChildSlot = { containerPath: valuePath, section: 'processor' };
     return [group, ...caseNodes];
   }
 
   const procArray = extractProcessorArray(componentValue);
-  // try/catch/for_each hold a flat processor array — keep the group (with an insert
-  // slot) even when empty so the first processor can be added.
+  // try/catch/for_each hold a flat processor array — keep the group (with insert slot)
+  // even when empty so the first processor can be added.
   if (procArray && DIRECT_ARRAY_PROC_CONTAINERS.has(componentName)) {
     const group = makeGroup(componentName, ctx);
     group.insertSlot = { containerPath: valuePath, accepts: 'processor' };
@@ -762,8 +736,8 @@ function parseComponentWithBranching(
   const config = componentValue as Record<string, unknown>;
   const childNodes = parseBranchingKeys(config, ctx, componentName);
   if (childNodes.length === 0) {
-    // An empty branch/while/parallel still accepts a child into its `processors`
-    // array — render it as a fillable group rather than a dead-end leaf.
+    // An empty branch/while/parallel still accepts a child into its `processors` array —
+    // render as a fillable group, not a dead-end leaf.
     if (NESTED_PROC_CONTAINERS.has(componentName)) {
       const group = withBranchMeta(makeGroup(componentName, ctx), componentName, config);
       group.insertSlot = { containerPath: [...ctx.path, componentName, 'processors'], accepts: 'processor' };
@@ -775,9 +749,8 @@ function parseComponentWithBranching(
   return [withBranchMeta(makeGroup(componentName, ctx), componentName, config), ...childNodes];
 }
 
-// A `branch` processor copies a portion of the message out (request_map), runs the
-// sub-pipeline, then merges the result back (result_map). Mark the container so the
-// canvas can draw copy/merge edges instead of a plain sequential chain.
+// A `branch` copies part of the message out (request_map), runs the sub-pipeline, then
+// merges back (result_map). Mark it so the canvas draws copy/merge edges, not a plain chain.
 function withBranchMeta(
   group: PipelineFlowNode,
   componentName: string,
@@ -810,7 +783,7 @@ function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: s
       path: ['pipeline', 'processors', i],
     };
     const nodes = parseComponentWithBranching(name, proc[name], ctx);
-    // The first node is the top-level processor; mark it editable by array index.
+    // The first node is the top-level processor; editable by array index.
     if (nodes.length > 0) {
       nodes[0] = {
         ...nodes[0],
@@ -836,21 +809,20 @@ const RESOURCE_YAML_KEYS = [
   'redpanda',
 ] as const;
 
-// Array resources addressable by the visual editor (cache/rate-limit). Singleton
-// root resources (buffer/metrics/tracer/…) are read-only for now.
+// Array resources the visual editor can address (cache/rate-limit). Singleton root
+// resources (buffer/metrics/tracer/…) are read-only for now.
 const EDITABLE_RESOURCE_KEYS: ReadonlySet<string> = new Set(['cache_resources', 'rate_limit_resources']);
 
-// input/output/processor resources hold a real component, so they're inspectable via a
-// path edit target whose schema follows the matching component type.
+// input/output/processor resources hold a real component, inspectable via a path edit
+// target whose schema follows the matching component type.
 const RESOURCE_KEY_COMPONENT_TYPE: Record<string, 'input' | 'processor' | 'output'> = {
   input_resources: 'input',
   processor_resources: 'processor',
   output_resources: 'output',
 };
 
-// The edit target for the i-th item of a resource array: cache/rate-limit use the
-// dedicated `resource` target; input/output/processor resources use a path target so
-// they reuse the same nested-component editing as everything else.
+// Edit target for the i-th resource-array item: cache/rate-limit use the dedicated
+// `resource` target; input/output/processor resources use a path target (shared editing).
 function resourceItemEditTarget(key: string, index: number): EditTarget | undefined {
   if (EDITABLE_RESOURCE_KEYS.has(key)) {
     return { kind: 'resource', resourceKey: key as ResourceArrayKey, index };
@@ -1035,9 +1007,8 @@ export function parsePipelineFlowTree(
   }
 }
 
-// A single post-parse pass that derives cross-node metadata the per-node parsers
-// can't see in isolation: which containers accept inserts, which resource references
-// dangle, and how many components use each resource.
+// Post-parse pass deriving cross-node metadata the per-node parsers can't see in isolation:
+// which containers accept inserts, which resource refs dangle, and per-resource usage counts.
 function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
   const childrenByParent = new Map<string, PipelineFlowNode[]>();
   for (const node of nodes) {
@@ -1051,10 +1022,8 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
     }
   }
 
-  // Insert slots: a container whose children sit at numeric indices of a YAML array
-  // (broker inputs/outputs, fallback tiers, branch/while/catch processors, switch-case
-  // processors) can accept a new child into that array. Derived from any one child's
-  // path; parse-site slots (empty switch cases) are left untouched.
+  // Insert slots: a container whose children sit at numeric YAML-array indices can accept a
+  // new child into that array. Derived from any one child's path; parse-site slots untouched.
   for (const node of nodes) {
     if (node.kind !== 'group' || node.insertSlot) {
       continue;
@@ -1077,9 +1046,8 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
       resourceLabels.add(node.labelText);
     }
   }
-  // Promote a candidate value to a real reference when it matches a resource label —
-  // catches refs in non-`resource` fields (e.g. a CDC input's `checkpoint_cache`) and on
-  // input/output nodes, which carry no explicit `resource` field.
+  // Promote a candidate matching a resource label to a real reference — catches refs in
+  // non-`resource` fields and on input/output nodes that carry no explicit `resource` field.
   for (const node of nodes) {
     if (!node.resourceRef && node.resourceRefCandidates) {
       node.resourceRef = node.resourceRefCandidates.find((c) => resourceLabels.has(c));
@@ -1104,11 +1072,10 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
 // ============================================================================
 // Shared data-flow model
 // ----------------------------------------------------------------------------
-// Both layouts draw the same flow: the main data path runs input → each
-// top-level processor → output, and every group threads its own children
-// (sequential sub-pipelines chain; parallel branches fan out). Positioning is
-// layout-specific, but the connections come from these helpers so the mini lane
-// and the expanded canvas agree on how data moves through the graph.
+// Both layouts draw the same flow (input → each top-level processor → output, each group
+// threading its children: sequential chains, parallel fans out). Positioning is
+// layout-specific, but connections come from these helpers so the mini lane and the
+// expanded canvas agree on how data moves.
 // ============================================================================
 
 function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {
@@ -1124,8 +1091,8 @@ function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, Pi
   return map;
 }
 
-// Children of a section, found by kind+section so it works whether or not node
-// IDs are prefixed (the mini lane parses with an idPrefix).
+// Children of a section, found by kind+section so it works regardless of ID prefixing
+// (the mini lane parses with an idPrefix).
 function sectionChildren(
   nodes: PipelineFlowNode[],
   map: Map<string | undefined, PipelineFlowNode[]>,
@@ -1153,11 +1120,11 @@ function groupChildConnections(node: PipelineFlowNode, kids: PipelineFlowNode[])
   if (node.section === 'input') {
     return kids.map((kid) => ({ from: kid.id, to: node.id }));
   }
-  // Alternatives / parallel branches: the group fans out to each child.
+  // Parallel: the group fans out to each child.
   if (node.childFlow === 'parallel') {
     return kids.map((kid) => ({ from: node.id, to: kid.id }));
   }
-  // Sequential sub-pipeline: enter the first child, then chain the rest.
+  // Sequential: enter the first child, then chain the rest.
   const connections: FlowConnection[] = [{ from: node.id, to: kids[0].id }];
   for (let i = 0; i < kids.length - 1; i += 1) {
     connections.push({ from: kids[i].id, to: kids[i + 1].id });
@@ -1187,8 +1154,7 @@ const NODE_H_DEFAULT = 28;
 const NODE_H_LEAF = 36;
 const ROW_GAP = 8;
 const SECTION_GAP = 16;
-// Left gutter for the whole tree. The section spine (an edge anchored to the
-// left-0 handles of nodes in this column) sits at ROOT_X, so this also keeps the
+// Left gutter for the whole tree. The section spine sits at ROOT_X, keeping the
 // vertical line off the visualizer's left edge.
 const ROOT_X = 12;
 const ROOT_Y = 4;
@@ -1285,8 +1251,8 @@ function createRfNode(params: RfNodeParams, state: LayoutState): Node {
   };
 }
 
-// Mini-lane edges: the main data path as a primary spine (sectionEdge) plus each
-// group's sub-flow as branch edges (treeEdge). Edges to collapsed-away nodes hide.
+// Mini-lane edges: main path as a primary spine (sectionEdge) plus each group's sub-flow
+// as branch edges (treeEdge). Edges to collapsed-away nodes hide.
 function buildTreeFlowEdges(nodes: PipelineFlowNode[], hiddenIds: Set<string>): Edge[] {
   const edges: Edge[] = [];
   const isHidden = (a: string, b: string) => hiddenIds.has(a) || hiddenIds.has(b);
@@ -1420,19 +1386,16 @@ export function computeTreeLayout(
 // ============================================================================
 // Expanded canvas layout (left → right flow with nested containers)
 // ----------------------------------------------------------------------------
-// The main data path runs left→right: input → each top-level processor → output.
-// A processor that wraps a sub-pipeline (branch/try/catch/for_each/while/retry),
-// runs alternatives/branches (switch/workflow/parallel), or a multi-input broker
-// is rendered as a titled CONTAINER that visually encloses its children — the
-// message enters the container, its inner steps run, then flow continues to the
-// next top-level step. This mirrors how Step Functions / NiFi show nested flows.
-// Container children are real React Flow child nodes (parentId + relative
-// position). Shares node IDs with `computeTreeLayout`.
+// Main path runs left→right (input → each top-level processor → output). A processor
+// wrapping a sub-pipeline (branch/try/catch/…), running alternatives (switch/workflow/
+// parallel), or a multi-input broker renders as a titled CONTAINER enclosing its children
+// — flow enters the container, runs its steps, then continues to the next top-level step
+// (à la Step Functions / NiFi). Container children are real React Flow child nodes
+// (parentId + relative position). Shares node IDs with `computeTreeLayout`.
 // ============================================================================
 
-/** Leaf card width on the full canvas; the node component must match this. A touch
- * wider than the bare minimum so labeled cards (an extra badge row competing for width)
- * and longer meta values don't feel horizontally cramped. */
+/** Leaf card width on the full canvas; the node component must match this. A touch wider
+ * than the minimum so labeled cards and longer meta values aren't horizontally cramped. */
 export const FLOW_CARD_WIDTH = 256;
 /** Leaf card width on the compact (sidebar) canvas. */
 export const FLOW_COMPACT_CARD_WIDTH = 188;
@@ -1444,32 +1407,30 @@ type FlowDims = {
   leafBaseH: number;
   metaRowH: number; // 0 in compact (meta hidden)
   headerH: number;
-  // Height of a collapsed container card. Taller than the header so the spine
-  // (anchored ~SPINE_HANDLE_TOP from the top) lands near its vertical centre and
-  // the connecting arrows look aligned.
+  // Collapsed container card height. Taller than the header so the spine (anchored
+  // ~SPINE_HANDLE_TOP from the top) lands near its centre and arrows look aligned.
   collapsedH: number;
   pad: number;
   stackGap: number;
   colGap: number;
-  // Wider inner inset reserved as a routing gutter on the side a container fans
-  // out (gs) or merges back / fans in (gt), plus the extra vertical spacing
-  // between fanned children, so the lines and arrows aren't cramped.
+  // Routing-gutter inset on the side a container fans out (gs) / merges back / fans in (gt),
+  // plus extra vertical spacing between fanned children, so lines and arrows aren't cramped.
   fanGutter: number;
   fanGap: number;
-  // The compact sidebar lane: a minimal vertical overview (no fan-out / copy /
-  // merge routing — just the spine + nested sub-pipeline chains).
+  // Compact sidebar lane: a minimal vertical overview (no fan-out/copy/merge routing —
+  // just the spine + nested sub-pipeline chains).
   compact: boolean;
 };
 const FULL_DIMS: FlowDims = {
   cardW: FLOW_CARD_WIDTH,
-  // The tinted header band (kind label row + logo/name row + divider). Measured to
-  // match what ComponentCard renders, so stacked siblings don't overlap.
+  // Tinted header band (kind label + logo/name + divider). Measured to match ComponentCard
+  // so stacked siblings don't overlap.
   leafBaseH: 68,
   metaRowH: 22,
   headerH: 48,
   collapsedH: 72,
-  // Inner inset on all sides of a container's body — kept tight so children sit close
-  // under the header and the "+ add" row doesn't float far from the stack.
+  // Inner inset on all sides of a container body — tight so children sit close under the
+  // header and the "+ add" row doesn't float far from the stack.
   pad: 12,
   stackGap: 14,
   colGap: 72,
@@ -1491,8 +1452,7 @@ const COMPACT_DIMS: FlowDims = {
   compact: true,
 };
 
-// Section dividers ("INPUT" / "PROCESSORS" / "OUTPUT" / "RESOURCES") shown in the
-// compact (vertical) lane, like the original mini diagram.
+// Section dividers shown in the compact (vertical) lane, like the original mini diagram.
 const SECTION_TITLES: Record<string, string> = {
   input: 'INPUT',
   processor: 'PROCESSORS',
@@ -1501,30 +1461,28 @@ const SECTION_TITLES: Record<string, string> = {
 };
 const FLOW_SECTION_LABEL_H = 18;
 const FLOW_SECTION_LABEL_GAP = 6;
-// Indent labels so they align with the card's text and sit clear (to the right) of
-// the spine connector, which runs near the card's left edge.
+// Indent labels to align with the card's text and clear the spine connector at the left edge.
 const FLOW_SECTION_LABEL_INDENT = 30;
 
-// Empty-state "Add input/output" cards are taller and more prominent than a regular
-// leaf. The height is 2× the spine-handle offset (SPINE_HANDLE_TOP = 36) so the
-// connecting arrow lands on the card's vertical center rather than near its bottom.
+// Empty-state "Add input/output" cards are taller/more prominent than a leaf. Height is
+// 2× the spine-handle offset (SPINE_HANDLE_TOP = 36) so the arrow lands on its vertical center.
 const FLOW_PLACEHOLDER_LEAF_H = 72;
 // Extra height for the label's own row on a compact-lane card.
 const FLOW_COMPACT_LABEL_ROW_H = 22;
 // A `label:` badge renders on its own padded row beneath the full-card header.
 const FLOW_LABEL_ROW_H = 30;
-// Bottom inset added when the label badge is the card's last row (no meta follows).
+// Bottom inset when the label badge is the card's last row (no meta follows).
 const FLOW_LABEL_ROW_BOTTOM_PAD = 12;
-// The meta block's own vertical padding (its rows are counted at dims.metaRowH each).
+// The meta block's own vertical padding (rows counted at dims.metaRowH each).
 const FLOW_META_BLOCK_PAD = 12;
-// A switch case's routing condition renders on its own full-width row beneath the header
-// (only on case-entry cards — those carrying a `caseEditTarget`).
+// A switch case's routing condition row beneath the header (only on case-entry cards —
+// those carrying a `caseEditTarget`).
 const FLOW_CONDITION_ROW_H = 30;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   if (dims.metaRowH === 0) {
-    // Compact lane hides meta, but a label (e.g. a resource's label) still gets its
-    // own row so it isn't squeezed onto — and truncated against — the name.
+    // Compact lane hides meta, but a label still gets its own row so it isn't squeezed
+    // onto — and truncated against — the name.
     return dims.leafBaseH + (node.labelText ? FLOW_COMPACT_LABEL_ROW_H : 0);
   }
   if (node.label === 'none') {
@@ -1537,17 +1495,15 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
       (node.missingSasl ? 1 : 0),
     FLOW_MAX_META_ROWS
   );
-  // The label badge and the meta block are separately-padded rows below the header;
-  // sum them individually (rather than as one lumped block) so the measured height
-  // tracks the rendered card and adjacent nodes keep their gap.
+  // Label badge and meta block are separately-padded rows below the header; sum them
+  // individually (not as one block) so the measured height tracks the rendered card.
   let h = dims.leafBaseH;
   // A case entry shows its routing condition on its own row beneath the header.
   if (node.caseEditTarget) {
     h += FLOW_CONDITION_ROW_H;
   }
   if (node.labelText) {
-    // When the label is the card's last row (no meta follows), it carries a bottom
-    // inset so the badge doesn't sit flush against the card edge — mirror that here.
+    // When the label is the last row (no meta), it carries a bottom inset; mirror that here.
     h += FLOW_LABEL_ROW_H + (metaRows > 0 ? 0 : FLOW_LABEL_ROW_BOTTOM_PAD);
   }
   if (metaRows > 0) {
@@ -1564,14 +1520,8 @@ type SizedNode = {
   children: SizedNode[];
 };
 
-// Inner spacing of a container, widened on the side(s) that carry routed edges so
-// the fan-out / copy / merge / fan-in lines and labels have room to breathe:
-//   left  — the `gs` source side (entry / copy / fan-out)
-//   right — the `gt` target side (merge-back / fan-in)
-//   gap   — vertical spacing between children
-// A parallel processor container (switch/parallel/workflow): its alternatives
-// reconverge — data flows back out and continues — unlike output fans, which
-// terminate at their sinks.
+// A parallel processor container (switch/parallel/workflow): its alternatives reconverge
+// (data flows back out and continues), unlike output fans which terminate at their sinks.
 function reconverges(node: PipelineFlowNode): boolean {
   return node.childFlow === 'parallel' && node.section === 'processor' && !node.branch;
 }
@@ -1588,22 +1538,21 @@ function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   };
 }
 
-// What an in-container "+" affordance does when clicked: insert a chosen component
-// into a nested array (switch case / branch / broker / fallback), or append a fresh
-// structural case to a switch. Carried on `flowInsert` nodes and handed to the editor.
+// What an in-container "+" does: insert a component into a nested array (switch case /
+// branch / broker / fallback), or append a fresh case to a switch. Carried on `flowInsert`
+// nodes and handed to the editor.
 export type FlowInsertPayload =
   | { kind: 'insert'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
   | { kind: 'addChild'; containerPath: (string | number)[]; section: 'processor' | 'output' };
 
-// Height of the in-container insert affordance row (full canvas only). Kept compact —
-// a quiet "add" action, not a heavy dashed bar.
+// Height of the in-container insert row (full canvas only) — a quiet "add", not a heavy bar.
 const FLOW_INSERT_SLOT_H = 22;
-// The "+" row hugs the foot of the stack with a small lead gap (less than the
-// inter-child gap), so it reads as an action under the children, not a sibling.
+// The "+" row hugs the foot of the stack with a smaller-than-inter-child lead gap, so it
+// reads as an action under the children, not a sibling.
 const FLOW_INSERT_SLOT_GAP = 8;
 
-// The insert affordance a container shows at the foot of its child stack, if any.
-// Skipped in the compact lane (read-only) and while collapsed (children hidden).
+// The insert affordance a container shows at the foot of its child stack, if any. Skipped
+// in the compact lane (read-only) and while collapsed (children hidden).
 function insertAffordanceFor(
   node: PipelineFlowNode,
   collapsed: boolean,
@@ -1623,14 +1572,13 @@ function insertAffordanceFor(
 }
 
 function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
-  // The compact lane draws no fan-out/copy/merge edges, so it needs no routing
-  // gutters — children just nest in by a consistent small inset.
+  // The compact lane draws no fan-out/copy/merge edges, so no routing gutters — children
+  // just nest in by a consistent small inset.
   if (dims.compact) {
     return { left: dims.fanGutter, right: dims.pad, gap: dims.stackGap };
   }
   const sides = fanSides(node);
-  // A branch carries "COPY"/"MERGE" labels in its gutters, which need more room than a
-  // bare fan-out line — widen those gutters so the labels sit clear of the child card.
+  // A branch's "COPY"/"MERGE" gutter labels need more room than a bare fan-out line.
   const gutter = node.branch ? dims.fanGutter + FLOW_BRANCH_LABEL_PAD : dims.fanGutter;
   return {
     left: sides.out ? gutter : dims.pad,
@@ -1639,8 +1587,8 @@ function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number
   };
 }
 
-// Recursively measure a node: leaves get a content-sized card, containers wrap a
-// vertical stack of their children (header + insets + stacked child heights).
+// Recursively measure a node: leaves get a content-sized card; containers wrap a vertical
+// stack of children (header + insets + stacked child heights).
 function measureFlowNode(
   node: PipelineFlowNode,
   childrenOf: (id: string) => PipelineFlowNode[],
@@ -1651,9 +1599,8 @@ function measureFlowNode(
   const kids = node.kind === 'group' && !collapsed ? childrenOf(node.id) : [];
   const affordance = insertAffordanceFor(node, collapsed, dims.compact, kids.length);
   if (kids.length === 0) {
-    // An empty container that still accepts inserts (e.g. a freshly added switch case)
-    // keeps room for its "+" row; otherwise a collapsed group is a standalone card, an
-    // empty group keeps the bare header, and leaves are content-sized.
+    // An empty container that still accepts inserts keeps room for its "+" row; otherwise a
+    // collapsed group is a standalone card, an empty group keeps the bare header, leaves size to content.
     if (node.kind === 'group' && affordance) {
       return { node, w: dims.cardW, h: dims.headerH + FLOW_INSERT_SLOT_H + 2 * dims.pad, collapsed, children: [] };
     }
@@ -1667,8 +1614,7 @@ function measureFlowNode(
   const insets = containerInsets(node, dims);
   const innerW = Math.max(...children.map((c) => c.w));
   let innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * Math.max(0, children.length - 1);
-  // Reserve a row at the foot of the stack for the "+" affordance, tucked just below
-  // the children (a smaller lead gap than between siblings).
+  // Reserve a foot-of-stack row for the "+" affordance, with a smaller-than-sibling lead gap.
   if (affordance) {
     innerH += (children.length > 0 ? FLOW_INSERT_SLOT_GAP : 0) + FLOW_INSERT_SLOT_H;
   }
@@ -1681,8 +1627,8 @@ function measureFlowNode(
   };
 }
 
-// Routing condition shown as a chip on the receiving card (not a floating edge
-// label) so fanned branches stay readable. Hidden in the compact lane.
+// Routing condition shown as a chip on the receiving card (not a floating edge label) so
+// fanned branches stay readable. Hidden in the compact lane.
 function routingData(node: PipelineFlowNode, compact: boolean) {
   if (compact) {
     return {};
@@ -1694,24 +1640,20 @@ function routingData(node: PipelineFlowNode, compact: boolean) {
   };
 }
 
-/**
- * Where the spine/side handles sit below a card's top edge (the connector row).
- * The canvas anchors its left/right handles here; the parser uses it to place
- * container ports level with a child's connector row, so entry/copy/merge edges
- * run as clean horizontal lines.
- */
+/** Where the spine/side handles sit below a card's top edge (the connector row). The canvas
+ * anchors its left/right handles here; the parser places container ports level with a child's
+ * connector row, so entry/copy/merge edges run as clean horizontal lines. */
 export const FLOW_SPINE_HANDLE_TOP = 36;
 
-/** Where the top/bottom handles sit from a card's left edge — the x a vertical
- *  spine/reference cable plugs into. Must match the node component's handle offset. */
+/** Where the top/bottom handles sit from a card's left edge — the x a vertical spine/
+ *  reference cable plugs into. Must match the node component's handle offset. */
 export const FLOW_SPINE_HANDLE_LEFT = 18;
 
-// Vertical anchors for a container's routing ports (relative to the container top).
-// Fanning sides anchor at the children-area centre — a trunk the fan lanes radiate
-// from. A branch's copy anchors level with the FIRST child's connector row and its
-// merge-back with the LAST child's, so those edges are horizontal lines in the
-// child's own row instead of elbowing through the header (and over its icon).
-// Plain sequential containers draw no entry edge, so they need no ports.
+// Vertical anchors for a container's routing ports (relative to the container top). Fanning
+// sides anchor at the children-area centre (a trunk the fan lanes radiate from). A branch's
+// copy anchors at the FIRST child's connector row, its merge-back at the LAST's, so those
+// edges are horizontal lines in the child's row instead of elbowing through the header.
+// Plain sequential containers draw no entry edge, so need no ports.
 function containerPortYs(
   node: PipelineFlowNode,
   children: SizedNode[],
@@ -1760,7 +1702,7 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.isCase ? { isCase: true } : {}),
     ...(node.editTarget ? { editTarget: node.editTarget } : {}),
     // The switch-case edit target travels onto the case's entry card so its condition chip is
-    // clickable (selects the case → SwitchCaseEditor). Distinct from `editTarget` (the component).
+    // clickable (selects the case → SwitchCaseEditor). Distinct from `editTarget` (component).
     ...(node.caseEditTarget ? { caseEditTarget: node.caseEditTarget } : {}),
     ...(node.insertSlot ? { insertSlot: node.insertSlot } : {}),
     ...(node.addChildSlot ? { addChildSlot: node.addChildSlot } : {}),
@@ -1779,9 +1721,9 @@ type EmitContext = {
   compact: boolean;
 };
 
-// Emit a node (and recursively its children) at a position relative to `parentId`
-// (or absolute for top-level steps). Containers stack children and chain
-// sequential sub-pipelines; alternatives/parallel/inputs are shown enclosed only.
+// Emit a node (and its children) at a position relative to `parentId` (absolute for
+// top-level steps). Containers stack children and chain sequential sub-pipelines;
+// alternatives/parallel/inputs are shown enclosed only.
 function emitFlowNode(
   sized: SizedNode,
   parentId: string | undefined,
@@ -1790,8 +1732,8 @@ function emitFlowNode(
   depth = 0
 ): void {
   const { node, w, h, collapsed, children } = sized;
-  // A group is always a container (so a collapsed group keeps its header + toggle,
-  // letting it be expanded again); leaves render as plain cards.
+  // A group is always a container (so a collapsed group keeps its header + toggle to
+  // re-expand); leaves render as plain cards.
   const isContainer = node.kind === 'group';
   const childCount = collapsed ? countDescendants(node.id, ctx.childrenMap) : 0;
 
@@ -1802,9 +1744,9 @@ function emitFlowNode(
     type: isContainer ? 'flowContainer' : 'flowCard',
     position: pos,
     ...(parentId ? { parentId, extent: 'parent' as const } : {}),
-    // Seed dimensions from the layout so consumers that read node size before the DOM
-    // is measured (e.g. the MiniMap) have them; the live measurement still wins. For a
-    // leaf this stays an initial hint only, so the card keeps sizing to its content.
+    // Seed dimensions from the layout so consumers reading node size before the DOM is
+    // measured (e.g. the MiniMap) have them; live measurement still wins. For a leaf this is
+    // only an initial hint, so the card keeps sizing to its content.
     initialWidth: w,
     initialHeight: h,
     // node.style overrides React Flow's pointer-events default so in-card controls stay clickable.
@@ -1829,8 +1771,8 @@ function emitFlowNode(
     emitContainerEdges(node, children, ctx);
   }
 
-  // The in-container "+" row, tucked just below the stack (see measureFlowNode). The
-  // child loop leaves a trailing `insets.gap`; swap it for the smaller lead gap.
+  // The in-container "+" row, tucked just below the stack (see measureFlowNode). The child
+  // loop leaves a trailing `insets.gap`; swap it for the smaller lead gap.
   const affordance = insertAffordanceFor(node, collapsed, ctx.compact, children.length);
   if (isContainer && affordance) {
     const label = affordance.kind === 'addChild' ? 'Add case' : `Add ${affordance.accepts}`;

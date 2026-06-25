@@ -28,9 +28,7 @@ import { componentStatusToString, parseSchema } from '../utils/schema';
 const RECENTS_KEY = 'rpcn-recent-components';
 const MAX_RECENTS = 6;
 
-// Curated "likely next" components per slot kind, so an opened palette leads with
-// sensible defaults before the user types. Names that don't exist in the catalog are
-// silently dropped.
+// Curated "likely next" defaults per slot kind, shown before the user types. Names absent from the catalog are dropped.
 const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
   input: ['kafka_franz', 'redpanda', 'generate', 'http_client', 'file'],
   output: ['kafka_franz', 'redpanda', 'http_client', 'drop', 'stdout'],
@@ -39,8 +37,7 @@ const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
   rate_limit: ['local'],
 };
 
-// Everyday components that should sort ahead of the long tail when browsing — the
-// per-slot suggestions plus a few broadly-common connectors/processors.
+// Everyday components sorted ahead of the long tail when browsing.
 const COMMON_COMPONENTS = new Set([
   ...Object.values(SUGGESTED_BY_TYPE).flat(),
   'kafka',
@@ -59,14 +56,12 @@ const COMMON_COMPONENTS = new Set([
   'archive',
 ]);
 
-// Deprecated/experimental components are real but de-emphasised: sorted below stable
-// ones so they don't crowd the common choices.
+// Deprecated/experimental components are de-emphasised: sorted below stable ones.
 function isDemoted(status: ComponentStatus): boolean {
   return status === ComponentStatus.DEPRECATED || status === ComponentStatus.EXPERIMENTAL;
 }
 
-// Tiebreaker ordering (used after search relevance, and as the primary order when
-// browsing): stable before deprecated/experimental, common before long tail, then name.
+// Tiebreaker order (after relevance, primary when browsing): stable before demoted, common before long tail, then name.
 export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec): number {
   const demoted = (isDemoted(a.status) ? 1 : 0) - (isDemoted(b.status) ? 1 : 0);
   if (demoted !== 0) {
@@ -109,8 +104,7 @@ function pushRecent(entry: RecentEntry): void {
   }
 }
 
-// Lowercased searchable text per component (name + aliases + summary + description +
-// categories), so a single substring test covers intent-based search.
+// Lowercased searchable text (name + aliases + summary + description + categories) for substring matching.
 function searchableText(component: ConnectComponentSpec): string {
   return [
     component.name,
@@ -123,8 +117,7 @@ function searchableText(component: ConnectComponentSpec): string {
     .toLowerCase();
 }
 
-// Rank a query match: exact name > name prefix > name substring > other text. Lower
-// is better; -1 means no match.
+// Rank a match: exact name > prefix > substring > other text. Lower is better; -1 = no match.
 function matchRank(component: ConnectComponentSpec, query: string, text: string): number {
   const name = component.name.toLowerCase();
   if (name === query) {
@@ -149,9 +142,7 @@ function ComponentIcon({ component, className = 'size-5' }: { component: Connect
   return <Waypoints className={`${className} shrink-0 text-muted-foreground`} />;
 }
 
-// Component summaries arrive as one-line AsciiDoc, peppered with link macros
-// (`url[label]`, `xref:page[label]`, `link:url[label]`). Reduce those to their label
-// text and flatten to a single line for use as the preview's lead sentence.
+// Reduce one-line AsciiDoc summaries (link macros, code spans) to plain label text on a single line.
 function cleanText(text: string): string {
   return text
     .replace(/(?:xref|link):[^\s[]*\[([^\]]*)\]/g, '$1')
@@ -161,38 +152,34 @@ function cleanText(text: string): string {
     .trim();
 }
 
-// Descriptions are multi-line AsciiDoc fragments (section titles like `== Performance`,
-// link macros, `*` bullets). Convert the handful of constructs Connect actually uses to
-// Markdown so react-markdown can render structured, readable prose — rather than the raw
-// markup leaking through. Newlines are preserved (unlike cleanText) so titles/paragraphs
-// stay distinct.
+// Convert the AsciiDoc constructs Connect uses (titles, link macros, bullets) to Markdown for react-markdown.
+// Unlike cleanText, newlines are preserved so titles/paragraphs stay distinct.
 export function asciidocToMarkdown(raw: string): string {
   return (
     raw
       .replace(/\r\n/g, '\n')
-      // Internal/explicit-link macros → their label text.
+      // Link macros → label text.
       .replace(/(?:xref|link):[^\s[\]]*\[([^\]]*)\]/g, '$1')
-      // Bare URL macro `https://host/path[label]` → a Markdown link.
+      // Bare URL macro → Markdown link.
       .replace(/(https?:\/\/[^\s[\]]+)\[([^\]]*)\]/g, '[$2]($1)')
-      // Section titles on their own line (`==`/`===`/… Title) → a small Markdown heading.
+      // Section titles (`==`/`===`/… Title) → small heading.
       .replace(/^=+\s+(.{1,60})$/gm, '#### $1')
-      // Strip any leftover heading markers (over-long titles that didn't match above).
+      // Strip leftover markers from over-long titles.
       .replace(/^=+\s+/gm, '')
-      // AsciiDoc unordered list markers → Markdown bullets.
+      // List markers → bullets.
       .replace(/^\*\s+/gm, '- ')
       .replace(/\n{3,}/g, '\n\n')
       .trim()
   );
 }
 
-// A compact section title, matching the inspector's small-label style (e.g. "CATEGORIES").
+// Compact section title matching the inspector's small-label style.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
   <Text className="mt-2 font-semibold text-foreground text-xs uppercase tracking-wide">{children}</Text>
 );
 
-// DS-styled element map so the rendered Markdown matches the inspector's type scale
-// (small headings, relaxed body, inline code, external links). Every heading level
-// collapses to the same compact label — these are short section titles, not a hierarchy.
+// DS-styled element map matching the inspector's type scale. All heading levels collapse to the same
+// compact label — these are short section titles, not a hierarchy.
 const MARKDOWN_COMPONENTS: Components = {
   h1: MarkdownHeading,
   h2: MarkdownHeading,
@@ -220,9 +207,8 @@ function FormattedDescription({ markdown }: { markdown: string }) {
   );
 }
 
-// Long descriptions (a minority, but up to ~6.7k chars) are clamped behind a "Show
-// more" toggle so the preview stays scannable — the full reference is a click away via
-// the docs link. Keyed by component name at the call site so the toggle resets per row.
+// Long descriptions are clamped behind a "Show more" toggle to keep the preview scannable.
+// Keyed by component name at the call site so the toggle resets per row.
 function DescriptionBlock({ markdown, collapsible }: { markdown: string; collapsible: boolean }) {
   const [expanded, setExpanded] = useState(false);
   if (!collapsible) {
@@ -263,8 +249,7 @@ function statusBadge(status: ComponentStatus, name: string) {
   return null;
 }
 
-// Bold the contiguous matched span of the name (when the query hits it) so users see
-// why a result surfaced.
+// Bold the matched span of the name so users see why a result surfaced.
 function HighlightedName({ name, query }: { name: string; query: string }) {
   const idx = query ? name.toLowerCase().indexOf(query) : -1;
   if (idx < 0) {
@@ -310,14 +295,11 @@ function Row({
   );
 }
 
-// Facet tabs (Recent / Suggested / All / per-category) that narrow the browse list
-// without forcing the user through one long scroll.
+// Facet tabs (Recent / Suggested / All / per-category) that narrow the browse list.
 type Tab = { id: string; label: string };
 
-// Right-hand preview for the highlighted/clicked row: fills the dialog width that the
-// list alone leaves empty, and surfaces the full metadata (description, categories,
-// version, docs) that the condensed list rows can only hint at. Insertion is deferred
-// to the footer Add action.
+// Right-hand preview of the highlighted row: full metadata (description, categories, version, docs).
+// Insertion is deferred to the footer Add action.
 function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   if (!component) {
     return (
@@ -330,10 +312,9 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   }
 
   const categories = (component.categories ?? []).map(getCategoryDisplayName).filter(Boolean);
-  // Lead with the concise summary, then the fuller description rendered as Markdown.
   const summary = cleanText(component.summary ?? '');
   const descriptionMd = component.description ? asciidocToMarkdown(component.description) : '';
-  // Skip the description when it's just the summary repeated (some components set both).
+  // Skip the description when it just repeats the summary.
   const showDescription = descriptionMd !== '' && cleanText(component.description ?? '') !== summary;
   const docsUrl = getConnectorDocsUrl(component.type, component.name);
 
@@ -403,11 +384,9 @@ export type ConnectCommandPaletteProps = {
 };
 
 /**
- * Search-first add-node picker laid out as a master/detail panel: a condensed,
- * tab-filtered list on the left, a metadata preview on the right, and a footer that
- * defers insertion until the user commits. Fuzzy matches across name, curated aliases,
- * summary, description and categories; locks to the slot's valid types (with a
- * "Show all" escape hatch); leads with recently-used and suggested-next; keyboard-first.
+ * Search-first add-node picker as a master/detail panel: tab-filtered list, metadata preview, and a footer
+ * that defers insertion until commit. Matches across name, aliases, summary, description and categories;
+ * locks to the slot's valid types; leads with recents and suggestions; keyboard-first.
  */
 export const ConnectCommandPalette = ({
   components,
@@ -428,7 +407,6 @@ export const ConnectCommandPalette = ({
     return [...builtIn, ...(additionalComponents ?? [])];
   }, [components, additionalComponents]);
 
-  // The palette always locks to the slot's valid types.
   const lockedTypes = allowedTypes;
 
   const typeAllowed = useMemo(() => {
@@ -438,8 +416,8 @@ export const ConnectCommandPalette = ({
 
   const inScope = useMemo(() => allComponents.filter((c) => typeAllowed(c.type)), [allComponents, typeAllowed]);
   const byName = useMemo(() => new Map(inScope.map((c) => [c.name, c])), [inScope]);
-  // Keyed by the CommandItem `value` (`type:name`) so the highlighted row resolves to
-  // its spec for the preview pane, even when two types share a name (e.g. kafka in/out).
+  // Keyed by CommandItem `value` (`type:name`) so a highlighted row resolves to its spec
+  // even when two types share a name (e.g. kafka in/out).
   const byKey = useMemo(() => new Map(inScope.map((c) => [`${c.type}:${c.name}`, c])), [inScope]);
   const activeComponent = byKey.get(activeValue);
 
@@ -448,8 +426,7 @@ export const ConnectCommandPalette = ({
     onSelect(component.name, component.type);
   };
 
-  // Clicking (or Enter on) a row only previews it in the detail pane; cmdk also drives
-  // this via hover/arrow navigation through `onValueChange`.
+  // Clicking a row only previews it; cmdk also drives this via hover/arrow nav through `onValueChange`.
   const handlePreview = (component: ConnectComponentSpec) => setActiveValue(`${component.type}:${component.name}`);
 
   const q = query.trim().toLowerCase();
@@ -463,13 +440,13 @@ export const ConnectCommandPalette = ({
       inScope
         .map((component) => ({ component, rank: matchRank(component, q, searchableText(component)) }))
         .filter((r) => r.rank >= 0)
-        // Relevance first; within equal relevance, prominence (stable + common) wins.
+        // Relevance first; ties broken by prominence.
         .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
         .map((r) => r.component)
     );
   }, [inScope, q]);
 
-  // Browsing facets (no query): recents + suggested + everything grouped by category.
+  // Browse facets (no query): recents + suggested + everything grouped by category.
   const recentComponents = useMemo(
     () => recents.map((r) => byName.get(r.name)).filter((c): c is ConnectComponentSpec => Boolean(c)),
     [recents, byName]
@@ -483,10 +460,8 @@ export const ConnectCommandPalette = ({
       .filter((c): c is ConnectComponentSpec => Boolean(c) && !recentNames.has((c as ConnectComponentSpec).name));
   }, [allowedTypes, byName, recentComponents]);
 
-  // All in-scope components grouped by primary category — powers the "All" tab and the
-  // per-category tabs (each tab just reads its matching group).
-  // One group per category, and a component appears under EVERY category it lists (not
-  // just its first) — so e.g. a Parsing+Integration processor is found under both tabs.
+  // In-scope components grouped by category, powering the "All" and per-category tabs. A component
+  // appears under EVERY category it lists (not just the first), so it's found under each relevant tab.
   const grouped = useMemo(() => {
     const groups = new Map<string, ConnectComponentSpec[]>();
     for (const component of inScope) {
@@ -505,8 +480,7 @@ export const ConnectCommandPalette = ({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [inScope]);
 
-  // The "All" tab lists every component once (deduped across the category groups it may
-  // appear in), so browsing the full catalog doesn't repeat multi-category components.
+  // The "All" tab lists every component once, deduped across the category groups it may appear in.
   const allGroups = useMemo(() => {
     const seen = new Set<string>();
     return grouped
@@ -554,11 +528,10 @@ export const ConnectCommandPalette = ({
       const id = currentTab.slice(4);
       return grouped.find((g) => g.id === id)?.components ?? [];
     }
-    return null; // "all" renders the grouped view rather than a flat list.
+    return null; // "all" renders the grouped view, not a flat list.
   }, [currentTab, recentComponents, suggested, grouped]);
 
-  // Enter adds the highlighted component (the fast keyboard path); clicking a row only
-  // previews it, so insertion stays an explicit, reversible action.
+  // Enter adds the highlighted component (fast keyboard path); clicking only previews, keeping insertion explicit.
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.nativeEvent.isComposing && activeComponent) {
       event.preventDefault();
@@ -585,12 +558,10 @@ export const ConnectCommandPalette = ({
             </Text>
           </div>
         ) : (
-          // The scroll lives on the wrapper (not the TabsList) and adds 1px of bottom
-          // room: a scroll container clips to its padding box, which would otherwise cut
-          // off the active underline's 1px overhang and make it look thinner than the DS.
-          <div className="shrink-0 overflow-x-auto pb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Tabs className="w-max min-w-full gap-0" onValueChange={setTab} value={currentTab}>
-              <TabsList className="w-full px-2" variant="underline">
+          // `scrollable` makes the overflowing tab strip drag-scrollable and fades edges with hidden tabs.
+          <div className="min-w-0 shrink-0">
+            <Tabs className="min-w-0 gap-0" onValueChange={setTab} value={currentTab}>
+              <TabsList className="px-2" scrollable variant="underline">
                 {tabs.map((t) => (
                   <TabsTrigger key={t.id} value={t.id} variant="underline">
                     {t.label}

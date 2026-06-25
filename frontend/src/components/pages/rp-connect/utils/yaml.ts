@@ -8,13 +8,13 @@ import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants
 import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 // ============================================================================
-// Shared pure YAML helpers (moved from yaml-parsing.ts)
+// Shared pure YAML helpers
 // ============================================================================
 
-/** Keys that appear as siblings to the actual component name (e.g. `label`). */
+/** Keys that appear as siblings to the component name (e.g. `label`). */
 const RESERVED_COMPONENT_KEYS = new Set(['label']);
 
-/** Extract the component name from an object, skipping reserved metadata keys like `label`. */
+/** Extract the component name from an object, skipping reserved keys like `label`. */
 export const firstKey = (obj: unknown): string | undefined => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     return;
@@ -83,7 +83,7 @@ const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectCo
 };
 
 // Append a cache_resources / rate_limit_resources entry, suffixing its label on
-// collision so two resources never share a label (which would make the link ambiguous).
+// collision so resources never share a label (which would make the link ambiguous).
 const mergeResourceArray = (
   doc: Document.Parsed,
   newConfigObject: Partial<ConnectConfigObject>,
@@ -109,8 +109,7 @@ const mergeResourceArray = (
 const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   if (newConfigObject) {
     for (const [key, value] of Object.entries(newConfigObject)) {
-      // Skip 'redpanda' key if it already exists (for redpanda_common components)
-      // This prevents duplicate top-level redpanda blocks when using multiple redpanda_common components
+      // Avoid duplicate top-level redpanda blocks across multiple redpanda_common components.
       if (key === 'redpanda' && doc.has('redpanda')) {
         continue;
       }
@@ -166,7 +165,7 @@ const detectComponentType = (
     return 'root';
   }
 
-  // Check if this might be a scanner
+  // Single key that isn't a known root section, with an existing input → scanner.
   const keys = Object.keys(newConfigObject);
   if (
     keys.length === 1 &&
@@ -212,9 +211,9 @@ const mergeByComponentType = (
 };
 
 function convertRequiredFieldSentinels(yamlString: string): string {
-  // With inline comment: `  key: __REQUIRED_FIELD__ # comment` → `  # key: comment`
+  // With inline comment: `key: __REQUIRED_FIELD__ # comment` → `# key: comment`
   let result = yamlString.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(.+)$/gm, '$1# $2: $3');
-  // Without comment (fallback): `  key: __REQUIRED_FIELD__` → `  # key: Required`
+  // Without comment: `key: __REQUIRED_FIELD__` → `# key: Required`
   result = result.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*$/gm, '$1# $2: Required');
   return result;
 }
@@ -230,13 +229,12 @@ const addRootSpacing = (yamlString: string): string => {
       processedLines.push(line);
       continue;
     }
-    // Check if this is a root-level key
     const currentIndent = line.length - line.trimStart().length;
     if (currentIndent === 0 && line.includes(':')) {
       const keyMatch = line.match(keyMatchRegex);
       if (keyMatch) {
         const cleanKey = keyMatch[1].trim();
-        // Add spacing before root components (except first)
+        // Blank line before each root component (except the first)
         if (
           previousRootKey !== null &&
           cleanKey !== previousRootKey &&
@@ -326,14 +324,11 @@ function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
       continue;
     }
 
-    // Determine if this is a parent object (has nested children) vs an array or leaf
     const isParentObject = pair.value?.items && fieldSpec.children;
     const isArray = pair.value?.items && !fieldSpec.children;
 
     if (fieldSpec.comment) {
-      // For arrays, add comment to the key (inline with the field name)
-      // For leaf values, add to the value (inline with the value)
-      // For parent objects, skip (they get comments on their children)
+      // Array → comment on key; leaf → comment on value; parent object → skip (children get it).
       if (isArray && pair.key) {
         pair.key.comment = ` ${fieldSpec.comment}`;
       } else if (!isParentObject && pair.value) {
@@ -391,10 +386,8 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
     if (foundPair?.value) {
       currentNode = foundPair.value;
     } else if (Number.isNaN(Number(segment))) {
-      // Not a valid key or array index - stop navigation
-      break;
+      break; // Not a key or array index
     } else {
-      // It's an array index
       currentNode = (currentNode.items as YAMLNode[])[Number(segment)];
     }
   }
@@ -416,8 +409,7 @@ export const configToYaml = (
     let doc: Document.Parsed | Document;
 
     if (typeof (configObject as Document.Parsed).getIn === 'function') {
-      // It's a merged document - regenerate to ensure consistent structure
-      // This fixes navigation issues with nodes added via doc.set()
+      // Merged document: regenerate for consistent structure (fixes navigation for doc.set() nodes).
       const tempYaml = yamlStringify(configObject, yamlConfig);
       doc = parseDocument(tempYaml);
     } else {
@@ -441,8 +433,7 @@ export const configToYaml = (
       })
     );
 
-    // Return empty string - the existing YAML in the editor will be preserved
-    // This prevents JSON output from appearing
+    // Empty string preserves the editor's existing YAML (prevents JSON output appearing).
     return '';
   }
 };
@@ -460,7 +451,6 @@ export const getConnectTemplate = ({
   showAdvancedFields?: boolean;
   existingYaml?: string;
 }) => {
-  // Phase 0: Find the component spec for the selected connectionName and connectionType
   const componentSpec =
     connectionName && connectionType
       ? components.find((comp) => comp.type === connectionType && comp.name === connectionName)
@@ -477,7 +467,6 @@ export const getConnectTemplate = ({
     return;
   }
 
-  // Phase 1: Generate config object for new component
   const result = schemaToConfig(componentSpec, showAdvancedFields);
   if (!result) {
     return;
@@ -485,18 +474,16 @@ export const getConnectTemplate = ({
 
   const { config: newConfigObject, spec } = result;
 
-  // Phase 2 & 3: Merge with existing (if any) and convert to YAML
   if (existingYaml) {
     const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
 
-    // If merge failed (returned undefined), keep existing YAML
+    // On merge or conversion failure, keep existing YAML.
     if (!mergedConfig) {
       return existingYaml;
     }
 
     const yamlResult = configToYaml(mergedConfig, spec);
 
-    // If YAML conversion failed (returned empty), keep existing YAML
     if (!yamlResult) {
       return existingYaml;
     }
@@ -565,10 +552,6 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
 };
 
 // ============================================================================
-// Topic extraction (for connectors display)
-// ============================================================================
-
-// ============================================================================
 // Surgical YAML patching for Redpanda components
 // ============================================================================
 
@@ -610,22 +593,8 @@ export function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['
   return;
 }
 
-/**
- * Surgically patches topic and/or SASL fields in an existing YAML config
- * without regenerating the entire component block.
- *
- * - Topics: sets `topics: [topicName]` or `topic: topicName` depending on which
- *   field already exists in the component config. Defaults to `topics` array.
- * - SASL: for `redpanda_common`, patches `redpanda.sasl` at root level.
- *   For all other components, patches `[section].componentName.sasl`.
- *
- * Returns the patched YAML string, or undefined if parsing fails.
- */
-/**
- * Remove commented-out lines for keys that have just been patched.
- * E.g. if `topics` was patched, strip `# topics: Required - ...` so the
- * user doesn't see both the comment placeholder and the real value.
- */
+// Strip commented-out placeholder lines for just-patched keys, so the user doesn't see
+// both the `# topics: Required ...` comment and the real value.
 function stripCommentedKeys(yaml: string, keys: string[], section: string, componentName: string): string {
   if (keys.length === 0) {
     return yaml;
@@ -635,17 +604,16 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   const keyPattern = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
   const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
 
-  // Find the section start (e.g., `input:`)
+  // Find the section start (e.g. `input:`)
   const sectionRegex = new RegExp(`^${section}:`);
   const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
   if (sectionStart === -1) return yaml;
 
-  // Find the specific component within the section (e.g., `  kafka_franz:`)
+  // Find the component within the section (e.g. `  kafka_franz:`)
   const componentRegex = new RegExp(`^  ${componentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:`);
   let componentStart = -1;
   for (let i = sectionStart + 1; i < lines.length; i++) {
-    // Stop if we hit another top-level key (left the section)
-    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) break;
+    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) break; // left section
     if (componentRegex.test(lines[i])) {
       componentStart = i;
       break;
@@ -653,11 +621,10 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   }
   if (componentStart === -1) return yaml;
 
-  // Component block ends at the next sibling at the same indent level (2-space indent)
+  // Component block ends at the next top-level key or next sibling component (2-space indent).
   let componentEnd = lines.length;
   for (let i = componentStart + 1; i < lines.length; i++) {
     const line = lines[i];
-    // Stop at next top-level key or next sibling component (2-space indent, non-comment, non-empty)
     if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#')) {
       componentEnd = i;
       break;
@@ -696,8 +663,7 @@ export function patchRedpandaConfig(
   const patchedKeys: string[] = [];
 
   if (patch.topicName) {
-    // Inputs use `topics` (string array), outputs use `topic` (singular string) —
-    // matches the actual Redpanda component schemas.
+    // Inputs use `topics` (array), outputs use `topic` (string) — per the Redpanda schemas.
     if (section === 'output') {
       doc.setIn([section, componentName, 'topic'], patch.topicName);
       patchedKeys.push('topic');
@@ -709,7 +675,7 @@ export function patchRedpandaConfig(
 
   if (patch.sasl) {
     if (componentName === 'redpanda_common') {
-      // redpanda_common uses a top-level `redpanda:` block for SASL
+      // redpanda_common keeps SASL in a top-level `redpanda:` block.
       doc.setIn(['redpanda', 'sasl'], patch.sasl);
     } else {
       doc.setIn([section, componentName, 'sasl'], patch.sasl);
@@ -768,7 +734,7 @@ export function extractConnectorTopics(
   }
 
   const topicsNode = doc.getIn([section, componentName, 'topics']);
-  // doc.getIn returns a YAMLSeq node for sequences, not a plain JS array — convert first
+  // doc.getIn returns a YAMLSeq node, not a plain JS array — convert first.
   const topics =
     topicsNode != null && typeof topicsNode === 'object' && 'toJSON' in topicsNode
       ? (topicsNode as { toJSON(): unknown }).toJSON()
@@ -820,8 +786,7 @@ export function applyRedpandaSetup({
   result: RedpandaSetupResultLike;
   components: ConnectComponentSpec[];
 }): string | undefined {
-  // Only try surgical patch if the component already exists (Flow B — hint buttons).
-  // For new components (Flow A — picker), skip to template generation.
+  // Surgical patch only if the component already exists (hint buttons); new components fall through.
   if (componentExistsInYaml(yamlContent, connectionType, connectionName)) {
     const patched = tryPatchRedpandaYaml(yamlContent, connectionType, connectionName, result);
     if (patched) {
@@ -829,7 +794,7 @@ export function applyRedpandaSetup({
     }
   }
 
-  // Generate full template, then patch topic/user onto it
+  // Generate full template, then patch topic/user onto it.
   const base = getConnectTemplate({
     connectionName,
     connectionType,
@@ -933,24 +898,17 @@ export function generateYamlFromWizardData(
 // ============================================================================
 // Visual-editor mutations
 // ----------------------------------------------------------------------------
-// Deterministic, position-aware edits used by the visual editor. Each is a pure
-// (yaml string -> yaml string | null) transform operating on a parsed Document,
-// so comments/formatting survive and the YAML stays the single source of truth.
-// `null` is returned on parse failure so callers can keep the prior content.
-//
-// Only top-level locations are addressable (input, output, top-level
-// processors, cache/rate-limit resources). Nested components are read-only in
-// the visual editor and edited via raw YAML — this is why no generic "path"
-// abstraction is needed.
+// Deterministic, pure (yaml -> yaml | null) transforms over a parsed Document, so
+// comments/formatting survive and YAML stays the single source of truth. `null` on
+// parse failure lets callers keep the prior content.
 // ============================================================================
 
 export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
 
 /**
- * Addresses a visually editable component in the config. The first kinds are
- * top-level conveniences (with tailored prune-on-delete); `path` addresses any
- * component — including ones nested inside branch/switch/try/broker — by its exact
- * YAML location, carrying the component type so the right schema can be loaded.
+ * Addresses a visually editable component. The first kinds are top-level conveniences
+ * (with tailored prune-on-delete); `path` addresses any component (including ones nested
+ * in branch/switch/try/broker) by exact YAML location, carrying its type to load the schema.
  */
 export type EditTarget =
   | { kind: 'input' }
@@ -958,8 +916,7 @@ export type EditTarget =
   | { kind: 'processor'; index: number }
   | { kind: 'resource'; resourceKey: ResourceArrayKey; index: number }
   | { kind: 'path'; path: (string | number)[]; componentType: ConnectComponentType }
-  // A `switch` case object (`{ check, processors|output }`) — edited for its routing
-  // condition; its body components are their own nodes.
+  // A `switch` case object — edited for its routing condition; body components are their own nodes.
   | { kind: 'switchCase'; path: (string | number)[] };
 
 /** The YAML path (for `getIn`/`setIn`) of an edit target's component object. */
@@ -988,8 +945,8 @@ function isEmptyMap(node: unknown): boolean {
   return Array.isArray(items) && items.length === 0;
 }
 
-// After a delete, drop containers that have become empty so the diagram falls
-// back to its placeholder (e.g. removing the last processor removes `pipeline`).
+// After a delete, drop now-empty containers so the diagram falls back to its placeholder
+// (e.g. removing the last processor removes `pipeline`).
 function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
   if (target.kind === 'processor') {
     if (isEmptySeq(doc.getIn(['pipeline', 'processors']))) {
@@ -1001,8 +958,8 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
   } else if (target.kind === 'resource' && isEmptySeq(doc.getIn([target.resourceKey]))) {
     doc.delete(target.resourceKey);
   } else if (target.kind === 'path' || target.kind === 'switchCase') {
-    // Removing a nested component: if its containing array is now empty, drop the
-    // array key too (e.g. an emptied branch's `processors`) so it doesn't linger.
+    // If the nested component's containing array is now empty, drop the array key too
+    // (e.g. an emptied branch's `processors`).
     const last = target.path.at(-1);
     if (typeof last === 'number') {
       const arrayPath = target.path.slice(0, -1);
@@ -1052,11 +1009,9 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
 }
 
 /**
- * Insert a component object into any array in the config at `index` (creating the
- * array as needed). `containerPath` is the YAML path of the target array — e.g.
- * `['pipeline','processors']` (top level), `['pipeline','processors',0,'switch','cases',1,'processors']`
- * (a switch case's processors), or `['input','broker','inputs']`. This is the one
- * primitive behind every visual insertion, nested or not.
+ * Insert a component into any array at `index` (creating the array as needed).
+ * `containerPath` is the target array's YAML path, e.g. `['pipeline','processors']` or
+ * `['input','broker','inputs']`. The one primitive behind every visual insertion.
  */
 export function insertComponentAt(
   yaml: string,
@@ -1071,7 +1026,7 @@ export function insertComponentAt(
       const clamped = Math.max(0, Math.min(index, seq.items.length));
       seq.items.splice(clamped, 0, doc.createNode(componentObject));
     } else {
-      // No array yet (or the container is absent) — create it with this lone item.
+      // No array yet — create it with this lone item.
       doc.setIn(containerPath, [componentObject]);
     }
     return doc.toString();
@@ -1110,9 +1065,8 @@ export function appendResource(
 }
 
 /**
- * Build the bare component object to splice into the config for a freshly chosen
- * connector, e.g. `{ mapping: '...' }` for a processor. Reuses `getConnectTemplate`
- * (generated against empty YAML) so insert output matches templates elsewhere.
+ * Build the bare component object to splice in for a freshly chosen connector, e.g.
+ * `{ mapping: '...' }`. Reuses `getConnectTemplate` so insert output matches templates elsewhere.
  */
 export function buildInsertableComponent(
   connectionName: string,
@@ -1133,8 +1087,7 @@ export function buildInsertableComponent(
       return Array.isArray(procs) ? (procs[0] as Record<string, unknown>) : undefined;
     }
     if (connectionType === 'input' || connectionType === 'output') {
-      // A bare input/output object (e.g. `{ kafka: {...} }`) to splice into a
-      // broker/fallback/switch member array.
+      // Bare input/output object (e.g. `{ kafka: {...} }`) for a broker/fallback/switch member array.
       const obj = parsed[connectionType];
       return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
     }
@@ -1149,10 +1102,9 @@ export function buildInsertableComponent(
 // ============================================================================
 // Resource references (cache/rate_limit) — link by label, no manual sync.
 // ----------------------------------------------------------------------------
-// A `cache`/`rate_limit` processor points at a resource via its `resource:` field,
-// which must equal a `*_resources` entry's `label:`. These helpers let the visual
-// editor offer a typed dropdown, create-and-link in one step, and rename a label
-// while cascading the change to every reference — so labels never drift out of sync.
+// A `cache`/`rate_limit` processor's `resource:` field must equal a `*_resources`
+// entry's `label:`. These helpers offer a typed dropdown, create-and-link, and rename
+// with cascade to every reference — so labels never drift out of sync.
 // ============================================================================
 
 export type ResourceKind = 'cache' | 'rate_limit';
@@ -1224,10 +1176,7 @@ export function createResourceAndReturnLabel(
   }
 }
 
-/**
- * Repoint every `resource:` reference from `oldLabel` to `newLabel` across the whole
- * document. Matches by string value, consistent with the editor's label-based linking.
- */
+/** Repoint every `resource:` reference from `oldLabel` to `newLabel` across the document. */
 export function renameResourceReferences(yaml: string, oldLabel: string, newLabel: string): string | null {
   if (oldLabel === '' || oldLabel === newLabel) {
     return yaml;
@@ -1252,10 +1201,7 @@ export function renameResourceReferences(yaml: string, oldLabel: string, newLabe
   }
 }
 
-/**
- * Rename a resource's `label:` and cascade the change to every `resource:` reference
- * pointing at the old label — so renaming never leaves dangling references.
- */
+/** Rename a resource's `label:` and cascade to every `resource:` reference, avoiding dangling refs. */
 export function renameResourceLabel(
   yaml: string,
   resourceKey: ResourceArrayKey,

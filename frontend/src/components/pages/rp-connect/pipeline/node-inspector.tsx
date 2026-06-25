@@ -21,12 +21,7 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from 'components/redpanda-ui/components/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import {
@@ -124,11 +119,7 @@ type NodeInspectorProps = {
 
 // The lint message (if any) that falls on a switch case's routing `check` line — so the
 // condition field can render its own error state, distinct from a problem in the component body.
-function lintMessageOnCaseCheck(
-  yaml: string,
-  caseTarget: EditTarget,
-  lintHints?: LintHint[]
-): string | undefined {
+function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]): string | undefined {
   if (!lintHints?.length) {
     return;
   }
@@ -319,13 +310,13 @@ export function NodeInspector({
               childItems={childItems}
               componentName={componentName}
               headerSlot={conditionSection}
-              onSelectChild={onSelectChild}
+              key={JSON.stringify(component)}
               // Re-key on the component's current value so that after Apply (the YAML
               // changes) the form re-initializes from the saved config — clearing the
               // dirty state so "Apply changes" disables and the edit is committed.
-              key={JSON.stringify(component)}
               onApply={handleApply}
               onCreateResource={onCreateResource}
+              onSelectChild={onSelectChild}
               resourceLabels={resourceLabels}
               spec={spec}
               value={component}
@@ -473,7 +464,13 @@ const SwitchCaseEditor = ({
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
           {onClose ? (
-            <Button aria-label="Close" className="text-muted-foreground" onClick={onClose} size="icon-sm" variant="ghost">
+            <Button
+              aria-label="Close"
+              className="text-muted-foreground"
+              onClick={onClose}
+              size="icon-sm"
+              variant="ghost"
+            >
               <X />
             </Button>
           ) : null}
@@ -542,8 +539,8 @@ const CaseConditionSection = ({
               <Info className="size-3.5" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              A Bloblang expression evaluated per message — this branch runs when it's true. Leave it empty to make
-              this the default (else) case.
+              A Bloblang expression evaluated per message — this branch runs when it's true. Leave it empty to make this
+              the default (else) case.
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

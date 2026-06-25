@@ -72,8 +72,7 @@ type PipelineFlowDiagramProps = {
   onAddSasl?: (section: string, componentName: string) => void;
   onBrowseTemplates?: () => void;
   hideZoomControls?: boolean;
-  // Visual-editor callbacks. When provided, editable nodes show Edit/Remove
-  // actions and the section spine shows insertion (+) affordances.
+  // Visual-editor callbacks: when set, editable nodes show Edit/Remove and the spine shows insert (+).
   onEditNode?: (target: EditTarget) => void;
   onDeleteNode?: (target: EditTarget) => void;
   onInsert?: (position: 'start' | 'end') => void;
@@ -113,8 +112,7 @@ export function computeTranslateExtent(
     }
   }
 
-  // Lock each axis where content fits — the EXTENT_PADDING buffer would
-  // otherwise let the viewport pan by ~40px with nothing to scroll to.
+  // Lock each axis where content fits, else EXTENT_PADDING lets the viewport pan ~40px with nothing to show.
   const xFits = maxX <= containerWidth;
   const yFits = maxY <= containerHeight;
   const lowX = xFits ? 0 : minX - EXTENT_PADDING;
@@ -160,8 +158,7 @@ export const PipelineFlowDiagram = ({
     });
   }, []);
 
-  // Measure container synchronously before first paint so ReactFlow
-  // initialises with the correct translateExtent (avoids centering flash).
+  // Measure container before first paint so ReactFlow inits with the right translateExtent (no centering flash).
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) {
@@ -208,7 +205,7 @@ export const PipelineFlowDiagram = ({
   const { rfNodes, rfEdges, maxDepth } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
-    // Edit/Remove actions for editable nodes (only when their handlers are wired).
+    // Edit/Remove actions for editable nodes, only when their handlers are wired.
     const editActionsFor = (node: Node): { onEdit?: () => void; onDelete?: () => void } | undefined => {
       const target = (node.data as { editTarget?: EditTarget }).editTarget;
       if (!target) {
@@ -227,11 +224,10 @@ export const PipelineFlowDiagram = ({
         data.onToggle = () => toggleCollapse(node.id);
       } else if (node.type === 'treeLeaf') {
         const isPlaceholder = node.data.label === 'none';
-        // Placeholder nodes: show "+" connector button
         if (isPlaceholder && onAddConnector && (node.data.section === 'input' || node.data.section === 'output')) {
           data.onAddConnector = onAddConnector;
         } else if (!isPlaceholder && (node.data.missingTopic || node.data.missingSasl)) {
-          // Non-placeholder redpanda nodes: inject setup hint callbacks
+          // Non-placeholder redpanda nodes: inject setup hint callbacks.
           if (onAddTopic && node.data.missingTopic) {
             data.onAddTopic = onAddTopic;
           }
@@ -291,8 +287,7 @@ export const PipelineFlowDiagram = ({
     };
   }, [rfNodes, containerSize, maxDepth]);
 
-  // React Flow occasionally settles with a vertical offset when the container
-  // is much taller than the diagram; defaultViewport alone doesn't override it.
+  // React Flow can settle with a vertical offset when the container is much taller; pin it (defaultViewport doesn't).
   useLayoutEffect(() => {
     const rf = rfInstanceRef.current;
     if (rf && rfNodes.length > 0) {
@@ -300,8 +295,7 @@ export const PipelineFlowDiagram = ({
     }
   }, [rfNodes, translateExtent]);
 
-  // At the diagram's top/bottom pan boundary, swallow the wheel event in capture
-  // so the page scrolls instead. Mid-range events fall through to React Flow's pan.
+  // At the top/bottom pan boundary, swallow the wheel in capture so the page scrolls; mid-range falls through to pan.
   useEffect(() => {
     const el = containerRef.current;
     if (!(el && contentOverflows && translateExtent && containerSize)) {

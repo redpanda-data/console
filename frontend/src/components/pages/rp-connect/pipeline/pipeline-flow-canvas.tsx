@@ -36,15 +36,13 @@ import {
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
-// How far past the diagram the canvas may be panned, so a node near the edge can be
-// brought to the middle to inspect it comfortably.
+// How far past the diagram the canvas may be panned, so an edge node can be brought to the middle.
 const PAN_PADDING = 240;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
 
-// Bounding box of the diagram's top-level nodes (children sit inside their parents, so
-// the top-level boxes cover everything; resource cards can sit at negative x, so we
-// measure rather than assume the content starts at the origin).
+// Bounding box of top-level nodes (children sit inside their parents). Measured, not assumed
+// from origin, since resource cards can sit at negative x.
 function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: number; maxY: number } {
   let minX = 0;
   let minY = 0;
@@ -74,9 +72,8 @@ function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: numbe
   }
   return { minX, minY, maxX, maxY };
 }
-// The minimap always shows in the full editor (it's hidden only in the compact
-// side-lane). Fixed width; its height tracks the diagram's aspect (clamped) so the
-// drawing fills the frame — no dead letterbox space the viewport can't reach.
+// Fixed width; height tracks the diagram's aspect (clamped) so the drawing fills the frame
+// with no dead letterbox space the viewport can't reach.
 const MINIMAP_WIDTH = 132;
 const MINIMAP_MIN_INNER_H = 32;
 const MINIMAP_MAX_INNER_H = 168;
@@ -84,19 +81,13 @@ const MINIMAP_PAD = 6;
 // The frame's 1px border (border-box) shrinks the svg's drawing area on each side.
 const MINIMAP_BORDER = 1;
 
-// Tint each minimap blip with its node's role accent; structural marks (section
-// labels) drop out so only the actual components show — a simple, uncluttered overview.
+// Tint each blip with its node's role accent; structural marks (section labels) drop out.
 function miniMapNodeColor(node: Node): string {
   return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
 }
 
-/**
- * A compact overview minimap. Unlike React Flow's built-in `MiniMap` (whose bounds
- * grow to include the live viewport, so they bloat when you pan into the surrounding
- * padding), this draws the **content** at a fixed scale and shows the viewport as a
- * rectangle clipped to the frame. So the canvas can be panned generously past the
- * nodes while the minimap stays tight to the diagram. Click/drag re-centres the view.
- */
+// Compact overview minimap. Its drawn world is exactly the pan-REACHABLE region (see `bounds`),
+// so the viewport rect fills an axis it can't pan and never leaves dead buffer. Click/drag re-centres.
 function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   const transform = useStore((s) => s.transform);
   const paneWidth = useStore((s) => s.width);
@@ -104,27 +95,42 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   const { setCenter } = useReactFlow();
   const draggingRef = useRef(false);
 
-  // The svg fills the frame's content box — i.e. the frame minus its 1px border on
-  // each side — so nothing the svg draws is clipped by the border.
+  // Fill the frame's content box (frame minus its 1px border each side) so nothing is clipped.
   const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
 
-  // The minimap depicts the PAN-ABLE world — the content plus the same buffer the canvas allows
-  // panning into (`translateExtent` = content ± PAN_PADDING) — so the viewport rect touches the
-  // minimap edges exactly when panning is at its limit (no dead buffer the viewport can't reach).
+  const [tx, ty, zoom] = transform;
+
+  // Depict only the pan-REACHABLE world. Per axis: while the viewport is smaller than the
+  // translate extent (content ± PAN_PADDING) the whole extent is reachable by panning, so show
+  // it; once the viewport is larger, that axis is locked and the (fixed) visible window is all
+  // that's ever shown — so we never draw buffer the viewport can't reach (e.g. vertical space
+  // under a single horizontal row of nodes). Locked axes use the live window, not an assumed
+  // centre, since React Flow pins the oversized viewport to an edge.
   const bounds = useMemo(() => {
     const c = contentBounds(nodes);
-    return {
+    const ext = {
       minX: c.minX - PAN_PADDING,
       minY: c.minY - PAN_PADDING,
       maxX: c.maxX + PAN_PADDING,
       maxY: c.maxY + PAN_PADDING,
     };
-  }, [nodes]);
+    const viewLeft = -tx / zoom;
+    const viewTop = -ty / zoom;
+    const vw = paneWidth / zoom;
+    const vh = paneHeight / zoom;
+    const canPanX = vw < ext.maxX - ext.minX;
+    const canPanY = vh < ext.maxY - ext.minY;
+    return {
+      minX: canPanX ? ext.minX : viewLeft,
+      maxX: canPanX ? ext.maxX : viewLeft + vw,
+      minY: canPanY ? ext.minY : viewTop,
+      maxY: canPanY ? ext.maxY : viewTop + vh,
+    };
+  }, [nodes, tx, ty, zoom, paneWidth, paneHeight]);
   const contentW = Math.max(bounds.maxX - bounds.minX, 1);
   const contentH = Math.max(bounds.maxY - bounds.minY, 1);
   const innerW = mapW - 2 * MINIMAP_PAD;
-  // Match the content's aspect so the drawing fills the frame (scale fits both axes
-  // equally → no letterbox); clamp for extreme aspect ratios so the box stays usable.
+  // Match the content's aspect so the drawing fills the frame; clamp extreme ratios to stay usable.
   const innerH = Math.min(Math.max(innerW * (contentH / contentW), MINIMAP_MIN_INNER_H), MINIMAP_MAX_INNER_H);
   const mapH = innerH + 2 * MINIMAP_PAD;
   const scale = Math.min(innerW / contentW, innerH / contentH);
@@ -132,10 +138,8 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   const offsetX = MINIMAP_PAD + (innerW - contentW * scale) / 2 - bounds.minX * scale;
   const offsetY = MINIMAP_PAD + (innerH - contentH * scale) / 2 - bounds.minY * scale;
 
-  const [tx, ty, zoom] = transform;
-  // The viewport in minimap coordinates, clamped to the drawing area (with a 1px inset
-  // for the stroke) so its border is always fully visible even when the view extends
-  // past the content into the surrounding pan padding.
+  // Viewport in minimap coords, clamped to the drawing area (1px stroke inset) so its border
+  // stays visible even when the view extends into the pan padding.
   const inset = 1;
   const left = Math.max((-tx / zoom) * scale + offsetX, inset);
   const top = Math.max((-ty / zoom) * scale + offsetY, inset);
@@ -209,26 +213,20 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   );
 }
 
-// Breathing room (px) to leave between the selected node and the canvas edge when
-// nudging it back into view, and how long to wait for the inspector rail's open
-// animation to settle before measuring.
+// Margin (px) between the revealed node and the canvas edge, and how long to wait for the
+// inspector rail's open animation to settle before measuring.
 const SELECTION_REVEAL_MARGIN = 32;
 const RAIL_SETTLE_MS = 240;
 
-/**
- * Keeps the selected node visible when the inspector rail opens. The rail is a flex
- * sibling that steals ~384px on the right, shrinking the canvas — so a node near the
- * right edge ends up hidden behind it. Once the rail's open animation settles (the
- * pane stops resizing), we nudge the viewport just enough to reveal the node with a
- * little margin, but only if it's actually clipped — nodes already in view stay put.
- *
- * The minimal dx keeps the result inside `translateExtent` (which allows panning a
- * generous margin past the content), so no clamping is needed.
- */
+// Keeps the selected node visible when the inspector rail opens. The rail is a flex sibling
+// that steals ~384px on the right, so a node near the right edge ends up hidden behind it.
+// Once the rail's open animation settles (pane stops resizing), nudge the viewport just enough
+// to reveal the node — only if actually clipped. The minimal dx stays inside `translateExtent`,
+// so no clamping is needed.
 function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: string; enabled: boolean }) {
   const { getNodesBounds, getViewport, setViewport } = useReactFlow();
-  // Re-runs as the canvas resizes during the rail animation; each change resets the
-  // settle timer, so the nudge fires once the pane width finally stops changing.
+  // Re-runs as the canvas resizes during the rail animation; each change resets the settle
+  // timer, so the nudge fires once the pane width finally stops changing.
   const paneWidth = useStore((s) => s.width);
 
   useEffect(() => {
@@ -261,17 +259,15 @@ function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: str
   return null;
 }
 
-// Padding (px) between a construct's member nodes and the region edge. The TOP gets extra
-// room so the region's label sits in a clear band above the first member, never over it.
+// Padding (px) between a construct's members and the region edge. TOP gets extra room so the
+// region's label sits in a clear band above the first member, never over it.
 const SCOPE_REGION_PAD = 16;
 const SCOPE_REGION_TOP_PAD = 34;
-// Extra padding added per level of nesting that sits INSIDE a region, so an outer region stands
-// off from the inner ones it contains (otherwise nested boxes sharing an extreme member would
-// draw flush against each other).
+// Extra padding per nesting level inside a region, so an outer region stands off from the inner
+// ones it contains (else nested boxes sharing an extreme member draw flush).
 const SCOPE_REGION_NEST_STEP = 12;
 
-// The accent colour for a construct's scope region: red for an error/dead-letter
-// construct (catch), else the role accent (processors are blue).
+// Accent colour for a construct's scope region: red for error/dead-letter (catch), else the role accent.
 function constructAccent(node?: Node): string {
   const d = node?.data as FlowCardData | undefined;
   if (d?.isErrorPath) {
@@ -282,8 +278,8 @@ function constructAccent(node?: Node): string {
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
-// The bounding box (flow coords) of every node within `scope` — including the merge dots,
-// which sit outside the parser tree but carry their construct's id as `ownerId`.
+// Bounding box (flow coords) of every node in `scope` — including merge dots, which sit outside
+// the parser tree but carry their construct's id as `ownerId`.
 function scopeMemberBounds(nodes: Node[], scope: ReadonlySet<string>): ScopeBounds | null {
   let b: ScopeBounds | null = null;
   for (const n of nodes) {
@@ -306,18 +302,16 @@ function scopeMemberBounds(nodes: Node[], scope: ReadonlySet<string>): ScopeBoun
   return b;
 }
 
-// True if any node OUTSIDE the scope overlaps the (padded) member box — i.e. the region would
-// visually enclose or cut through an unrelated card. The Dagre DAG doesn't keep a construct's
-// members spatially contiguous, so this happens (e.g. a `catch`'s `log` sitting inside a `try`'s
-// span). When it does we skip the box: a misleading container reads worse than none, and the
-// construct's wiring still highlights on selection.
+// True if any node OUTSIDE the scope overlaps the padded member box — i.e. the region would
+// enclose/cut through an unrelated card. Dagre doesn't keep a construct's members spatially
+// contiguous (e.g. a `catch`'s `log` inside a `try`'s span); callers skip the box when this is true.
 function boxEnclosesForeignNode(nodes: Node[], scope: ReadonlySet<string>, b: ScopeBounds, pad: number): boolean {
   const left = b.minX - pad;
   const right = b.maxX + pad;
   const top = b.minY - pad;
   const bottom = b.maxY + pad;
   for (const n of nodes) {
-    // Members and the construct's own "+ Add …" ghost pills don't count as foreign content.
+    // Members and the construct's own "+ Add" ghost pills aren't foreign content.
     if (scope.has(n.id) || scope.has((n.data as FlowCardData).ownerId ?? ' ') || n.type === 'flowInsert') {
       continue;
     }
@@ -336,14 +330,14 @@ type ScopeRegion = {
   bounds: ScopeBounds;
   accent: string;
   label: string;
-  /** Side / top padding for this region — larger for outer regions so nested ones don't touch. */
+  /** Side / top padding — larger for outer regions so nested ones don't touch. */
   pad: number;
   topPad: number;
 };
 
-// One construct's enclosure box. Always drawn FAINT (a quiet structural hint of nesting); it
-// — and its label — strengthen when the construct, or anything inside it, is the active
-// (selected/hovered) node. Non-interactive and behind the nodes, in flow coordinates.
+// One construct's enclosure box. Drawn FAINT (a quiet nesting hint); it and its label
+// strengthen when the construct, or anything inside it, is the active (selected/hovered) node.
+// Non-interactive, behind the nodes, in flow coordinates.
 function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
   const { bounds, accent, label, pad, topPad } = region;
   return (
@@ -358,7 +352,7 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
         zIndex: 0,
       }}
     >
-      {/* Seated in the reserved top band (never over a member card). Faint until active. */}
+      {/* Seated in the reserved top band, never over a member card. Faint until active. */}
       <span
         className="absolute top-1.5 left-2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
         style={{
@@ -374,14 +368,11 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
   );
 }
 
-/**
- * Faint enclosure boxes around EVERY control-flow construct's sub-graph, shown at all times as
- * a quiet hint of nesting, and emphasized when the construct (or anything inside it) is
- * selected/hovered. Drawn via `ViewportPortal` (flow coordinates, moves with pan/zoom), behind
- * the nodes, non-interactive — so it never perturbs the nodes array (hover stays cheap). A box
- * is skipped when it would enclose an UNRELATED card (members not spatially contiguous), since a
- * misleading container reads worse than none — see `boxEnclosesForeignNode`.
- */
+// Faint enclosure boxes around every control-flow construct's sub-graph, emphasized when the
+// construct (or anything inside it) is selected/hovered. Drawn via `ViewportPortal` (flow coords,
+// moves with pan/zoom), behind the nodes, non-interactive — so it never perturbs the nodes array
+// (hover stays cheap). A box is skipped when it would enclose an unrelated card — see
+// `boxEnclosesForeignNode`.
 function ScopeRegions({
   hoveredId,
   selectedId,
@@ -393,7 +384,7 @@ function ScopeRegions({
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
 }) {
-  // Geometry only depends on the layout, so it's cached across hover/selection changes.
+  // Geometry depends only on the layout, so cache it across hover/selection changes.
   const regions = useMemo<ScopeRegion[]>(() => {
     type Draft = Omit<ScopeRegion, 'pad' | 'topPad'>;
     const drafts: Draft[] = [];
@@ -409,11 +400,16 @@ function ScopeRegions({
       if (!bounds || boxEnclosesForeignNode(rfNodes, scope, bounds, SCOPE_REGION_PAD)) {
         continue;
       }
-      drafts.push({ id: node.id, scope, bounds, accent: constructAccent(node), label: (node.data as FlowCardData).label });
+      drafts.push({
+        id: node.id,
+        scope,
+        bounds,
+        accent: constructAccent(node),
+        label: (node.data as FlowCardData).label,
+      });
     }
-    // How many OTHER regions enclose each (its construct id is in their scope). The most-nested
-    // region keeps the base padding; each region that contains it gets one step more, so an
-    // outer box stands off from the inner boxes instead of drawing flush against them.
+    // How many OTHER regions enclose each (its construct id is in their scope). Most-nested keeps
+    // base padding; each enclosing region gets one step more so outer boxes stand off from inner ones.
     const depthOf = (r: Draft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
     const maxDepth = depths.length > 0 ? Math.max(...depths) : 0;
@@ -427,7 +423,7 @@ function ScopeRegions({
     return null;
   }
   // A region is emphasized when the active node is the construct itself or anywhere in its
-  // sub-graph (incl. a merge dot, matched via its owner id).
+  // sub-graph (incl. a merge dot, matched via owner id).
   const activeId = hoveredId ?? selectedId;
   const activeOwner = activeId
     ? (rfNodes.find((n) => n.id === activeId)?.data as FlowCardData | undefined)?.ownerId
@@ -436,7 +432,8 @@ function ScopeRegions({
     <ViewportPortal>
       {regions.map((region) => {
         const active =
-          activeId !== undefined && (region.scope.has(activeId) || (activeOwner ? region.scope.has(activeOwner) : false));
+          activeId !== undefined &&
+          (region.scope.has(activeId) || (activeOwner ? region.scope.has(activeOwner) : false));
         return <RegionBox active={active} key={region.id} region={region} />;
       })}
     </ViewportPortal>
@@ -462,12 +459,8 @@ type CanvasCallbacks = {
   previousIds: ReadonlySet<string>;
 };
 
-// Wire interactivity into a layout node's data: collapse toggle, selection
-// highlight, and the add-connector / redpanda setup-hint handlers. Editing now
-// happens in the inspector rail (selection), not via a per-node button.
-// Edit-mode action callbacks (add connector / topic / sasl, edit a switch-case condition, and
-// the nested-insert "+") wired onto a node's data. Split out of `injectNodeData` to keep each
-// function's branching simple.
+// Edit-mode action callbacks (add connector / topic / sasl, the nested-insert "+") wired onto a
+// node's data. Split out of `injectNodeData` to keep each function's branching simple.
 function wireNodeActions(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
@@ -494,9 +487,8 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
     data.onToggle = () => cb.toggleCollapse(node.id);
   }
   if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
-    // Clicking a node's condition chip and clicking its body both report THIS node as selected;
-    // distinguish by the selected target so we ring just the condition row for a case, and the
-    // whole card for the component.
+    // Condition-chip and body clicks both report THIS node selected; the target kind picks
+    // whether to ring just the condition row (case) or the whole card (component).
     if (data.caseEditTarget && cb.selectedTargetKind === 'switchCase') {
       data.conditionSelected = true;
     } else {
@@ -512,10 +504,9 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
     data.flashToken = cb.flashToken;
   }
   wireNodeActions(data, node, cb);
-  // A node that wasn't here last render (e.g. a child revealed by expanding its
-  // container) should appear in place — not slide in from the canvas origin. Drop
-  // the transform transition so it snaps to its spot, and let the card itself fade
-  // + grow in (see `appeared`), so it reads as emerging from the expanded section.
+  // A node new this render (e.g. revealed by expanding its container) should appear in place,
+  // not slide from the origin: drop the transform transition so it snaps, and let the card fade
+  // + grow in (see `appeared`).
   if (!cb.previousIds.has(node.id)) {
     data.appeared = true;
     return {
@@ -539,8 +530,7 @@ function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
   );
 }
 
-// A filled chip swatch for node-borne vocabulary (the gold routing condition), distinct from
-// the line swatches used for edges.
+// A filled chip swatch for node-borne vocabulary (the gold routing condition), vs. edge line swatches.
 function LegendChipSwatch({ color }: { color: string }) {
   return (
     <span
@@ -550,8 +540,7 @@ function LegendChipSwatch({ color }: { color: string }) {
   );
 }
 
-// Explains the diagram vocabulary (data flow / routing condition / error / resource use). Only
-// the kinds present in the current diagram are listed.
+// Explains the diagram vocabulary; only the kinds present in the current diagram are listed.
 function FlowLegend({ flags }: { flags: LegendFlags }) {
   if (!(flags.condition || flags.error || flags.reference)) {
     return null;
@@ -597,18 +586,8 @@ type DecorateEdgeOptions = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
 };
 
-/**
- * Per-render edge decoration ("cable management"):
- * - resource-reference edges are always present but faint, rendering full-strength
- *   when one of their endpoints is selected or hovered (hover a cache to see its
- *   resource; select a resource to see everyone using it);
- * - while a node is selected, its edges — including everything inside a selected
- *   container — render full-strength and unrelated edges fade, so the selected
- *   node's complete wiring stands out in a dense graph;
- * - spine edges get their insert (+) handler.
- */
-// Highlighted edges render in `primary`; recolour the arrowhead to match
-// (error edges keep their red markers — those semantics win over the highlight).
+// Highlighted edges render in `primary`; recolour the arrowhead to match. Error edges keep
+// their red markers — those semantics win over the highlight.
 function withHighlightMarker(edge: Edge): Edge {
   const tone = (edge.data as { tone?: string } | undefined)?.tone;
   if (tone === 'error' || typeof edge.markerEnd !== 'object' || !edge.markerEnd) {
@@ -617,15 +596,17 @@ function withHighlightMarker(edge: Edge): Edge {
   return { ...edge, markerEnd: { ...edge.markerEnd, color: 'var(--color-primary)' } };
 }
 
-// Reference edges are context lines (dashed, muted), so they never fully dim —
-// even when an unrelated node is selected they stay at the readable "faint" tier
-// (muted but visible). An active endpoint highlights them; otherwise faint.
+// Reference edges are context lines (dashed, muted), so they never fully dim — they stay at the
+// readable "faint" tier even when an unrelated node is selected. An active endpoint highlights them.
 function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined): Edge {
   const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
   const next = { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
   return touchesActive ? withHighlightMarker(next) : next;
 }
 
+// Per-render edge styling: reference edges stay faint until an endpoint is active; a selection
+// emphasizes its own edges (incl. inside a selected container) and dims the rest; spine edges get
+// their insert (+) handler.
 export function decorateEdges(
   edges: Edge[],
   { selectedScope, hoveredScope, onInsert, onSlotInsert, onSelectNode }: DecorateEdgeOptions
@@ -660,11 +641,9 @@ export function decorateEdges(
   });
 }
 
-/**
- * Resolve what a click on `node` selects: the node itself if it's editable, else
- * its nearest selectable ancestor. Structural sub-nodes (switch cases, workflow
- * stages) have no `editTarget`, so clicking one selects the parent switch/workflow.
- */
+// What a click on `node` selects: the node itself if editable, else its nearest selectable
+// ancestor. Structural sub-nodes (switch cases, workflow stages) have no `editTarget`, so
+// clicking one selects the parent switch/workflow.
 export function selectionTargetForNode(
   node: Node,
   nodes: Node[]
@@ -736,8 +715,8 @@ export function PipelineFlowCanvas({
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
   // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
-  // Node ids committed on the previous render — anything new this render is
-  // "appearing" and skips the reposition transition (so it doesn't fly from origin).
+  // Node ids committed last render; anything new this render "appears" in place and skips the
+  // reposition transition (so it doesn't fly from origin).
   const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
 
@@ -777,9 +756,8 @@ export function PipelineFlowCanvas({
     };
     const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
 
-    // Allow panning a generous margin past the content (measured, since resources can
-    // sit at negative x) so an edge node can be brought to the middle; the compact
-    // sidebar hugs its content. The minimap stays tight to the content regardless.
+    // Allow panning a margin past the content (measured, since resources sit at negative x) so
+    // an edge node can reach the middle; the compact sidebar hugs its content.
     const margin = simple ? 16 : PAN_PADDING;
     const bounds = contentBounds(layout.rfNodes);
     const extent: [[number, number], [number, number]] = [
@@ -787,8 +765,7 @@ export function PipelineFlowCanvas({
       [bounds.maxX + margin, bounds.maxY + margin],
     ];
 
-    // Which vocabularies appear — drives an adaptive legend (only shows the kinds actually
-    // present, so trivial pipelines stay legend-free).
+    // Which vocabularies appear — drives the adaptive legend (trivial pipelines stay legend-free).
     const legendFlags = {
       condition: layout.rfNodes.some((n: Node) => Boolean((n.data as FlowCardData | undefined)?.caseEditTarget)),
       error: layout.rfEdges.some((e: Edge) => (e.data as { tone?: string } | undefined)?.tone === 'error'),
@@ -820,14 +797,13 @@ export function PipelineFlowCanvas({
     onSelectNode,
   ]);
 
-  // Record the committed node ids so the next render can tell which nodes are new
-  // (and should appear in place rather than transition in from the origin).
+  // Record the committed node ids so the next render can tell which nodes are new.
   useEffect(() => {
     previousIdsRef.current = new Set(rfNodes.map((node) => node.id));
   }, [rfNodes]);
 
-  // A node's "scope" — itself plus all descendants — so selecting/hovering a
-  // container keeps its internal wiring (chains, copy/merge, fan edges) lit.
+  // A node's "scope" — itself plus all descendants — so selecting/hovering a container keeps its
+  // internal wiring (chains, copy/merge, fan edges) lit.
   const scopeOf = useCallback(
     (id: string | undefined): ReadonlySet<string> | undefined => {
       if (id === undefined) {
@@ -855,10 +831,9 @@ export function PipelineFlowCanvas({
     [nodes]
   );
 
-  // Hover only restyles edges, in its own (cheap) memo: the node objects above stay
-  // referentially stable, so the DOM under the cursor is never rebuilt mid-hover —
-  // rebuilding it fired mouseleave/mouseenter in a loop, flickering the cursor and
-  // eating clicks (worst on nested nodes, whose boundaries fire extra enter/leave).
+  // Hover only restyles edges, in its own cheap memo, so the node objects stay referentially
+  // stable and the DOM under the cursor isn't rebuilt mid-hover — rebuilding it looped
+  // mouseleave/mouseenter, flickering the cursor and eating clicks (worst on nested nodes).
   const rfEdges = useMemo(
     () =>
       decorateEdges(layoutEdges, {
@@ -880,8 +855,8 @@ export function PipelineFlowCanvas({
   }
 
   return (
-    // Compact lane: the canvas is exactly as tall as its content and top-anchored,
-    // so it never re-centers as the lane resizes — the surrounding lane scrolls.
+    // Compact lane: canvas is exactly as tall as its content and top-anchored, so it never
+    // re-centers as the lane resizes — the surrounding lane scrolls.
     <div className="relative w-full" style={simple ? { height: contentHeight + 16 } : { height: '100%' }}>
       <ReactFlowProvider>
         <ReactFlow
@@ -902,9 +877,8 @@ export function PipelineFlowCanvas({
             simple
               ? undefined
               : (_, node) => {
-                  // Structural sub-nodes (switch cases, workflow stages) have no
-                  // editTarget of their own — clicking one selects the nearest
-                  // selectable ancestor (the parent switch / workflow).
+                  // Structural sub-nodes have no editTarget — clicking selects the nearest
+                  // selectable ancestor (see selectionTargetForNode).
                   const selection = selectionTargetForNode(node, rfNodes);
                   if (selection) {
                     onSelectNode?.(selection.id, selection.target, selection.caseTarget);
@@ -912,17 +886,16 @@ export function PipelineFlowCanvas({
                 }
           }
           onNodeMouseEnter={simple ? undefined : (_, node) => setHoveredNodeId(node.id)}
-          // Only clear when leaving the node we're tracking: crossing into a nested
-          // child fires enter(child) then leave(parent), which must not wipe the
-          // child's hover.
+          // Only clear when leaving the tracked node: crossing into a nested child fires
+          // enter(child) then leave(parent), which must not wipe the child's hover.
           onNodeMouseLeave={
             simple ? undefined : (_, node) => setHoveredNodeId((prev) => (prev === node.id ? undefined : prev))
           }
           onPaneClick={simple ? undefined : () => onClearSelection?.()}
           panOnDrag={!simple}
           panOnScroll={false}
-          // Let the mouse wheel scroll the page rather than zoom/capture the canvas.
-          // Zooming stays available via the Controls buttons and trackpad pinch.
+          // Let the mouse wheel scroll the page rather than zoom the canvas; zoom stays available
+          // via the Controls buttons and trackpad pinch.
           preventScrolling={false}
           proOptions={{ hideAttribution: true }}
           translateExtent={simple ? undefined : translateExtent}
@@ -939,8 +912,8 @@ export function PipelineFlowCanvas({
             />
           )}
           {simple ? null : <PipelineMiniMap nodes={rfNodes} />}
-          {/* Renders only for control-flow markers (flowSplit/flowMerge), which exist only
-              on the full canvas — so the compact sidebar (old nested layout) gets nothing. */}
+          {/* Renders only for control-flow markers (flowSplit/flowMerge), present only on the
+              full canvas — the compact sidebar gets nothing. */}
           <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
           <KeepSelectionInView enabled={!simple} selectedNodeId={selectedNodeId} />
         </ReactFlow>

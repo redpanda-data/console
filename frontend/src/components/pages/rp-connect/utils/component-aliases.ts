@@ -1,7 +1,6 @@
-// Curated search synonyms so terse Benthos/Redpanda Connect component names stay
-// findable by intent. A query term that matches an alias key surfaces every component
-// whose name contains one of the listed fragments — e.g. "queue" finds kafka/nats/redis,
-// "transform" finds mapping/bloblang. Keep entries lowercase and intent-driven.
+// Search synonyms so terse Redpanda Connect component names stay findable by intent.
+// A query matching an alias key surfaces every component whose name contains a listed
+// fragment (e.g. "queue" finds kafka/nats/redis). Keep entries lowercase, intent-driven.
 export const COMPONENT_ALIASES: Record<string, string[]> = {
   queue: ['kafka', 'nats', 'redis', 'amqp', 'sqs', 'pubsub', 'nsq', 'mqtt'],
   stream: ['kafka', 'redpanda', 'kinesis'],
@@ -34,11 +33,8 @@ export const COMPONENT_ALIASES: Record<string, string[]> = {
   json: ['mapping', 'bloblang', 'json'],
 };
 
-/**
- * Extra searchable terms for a component name: every alias key whose fragments the
- * name contains. Lets the search index match "queue" against `kafka_franz` without
- * the user knowing the exact name.
- */
+// Extra searchable terms for a component name: every alias key whose fragments the name
+// contains. Lets the search index match "queue" against `kafka_franz`.
 export function aliasTermsForName(name: string): string[] {
   const lower = name.toLowerCase();
   const terms: string[] = [];

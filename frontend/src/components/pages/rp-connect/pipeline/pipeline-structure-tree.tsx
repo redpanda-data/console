@@ -26,8 +26,7 @@ const SECTION_TITLES: Record<string, string> = {
   resource: 'RESOURCES',
 };
 
-// Indentation per nesting level, capped so even very deep pipelines never push rows
-// off the side — past the cap the label simply truncates instead of overflowing.
+// Per-level indent, capped so deep pipelines truncate instead of pushing rows off the side.
 const INDENT_STEP = 14;
 const INDENT_BASE = 8;
 const MAX_INDENT_DEPTH = 6;
@@ -41,9 +40,8 @@ type NodeMaps = {
   byId: Map<string, PipelineFlowNode>;
 };
 
-// The nearest ancestor (including the node itself) that maps to an editable YAML
-// location — what a click should reveal/select in the editor. Structural sub-nodes
-// (switch cases) have no edit target of their own, so they resolve to their parent.
+// Nearest ancestor (or the node itself) with an editable YAML location — what a click reveals.
+// Structural sub-nodes (switch cases) have no edit target, so they resolve to their parent.
 function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps): string | undefined {
   let current: PipelineFlowNode | undefined = node;
   while (current && !current.editTarget) {
@@ -90,8 +88,7 @@ const NodeRow = ({ node, depth, maps, collapsedIds, toggle, selectedId, onSelect
             'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-sm transition-colors',
             selected ? 'font-medium text-foreground' : 'text-foreground hover:bg-muted/50'
           )}
-          // Selected row carries a faint wash of its role colour (matching the card
-          // title bands) instead of a left accent border.
+          // Selected row gets a faint wash of its role colour instead of a left accent border.
           onClick={() => onSelect(node.id, editableAncestorId(node, maps))}
           style={
             selected
@@ -128,8 +125,7 @@ const NodeRow = ({ node, depth, maps, collapsedIds, toggle, selectedId, onSelect
   );
 };
 
-// Mirrors a node row's indent (+ toggle gutter) so the dashed "Add input/output"
-// affordance lines up with the rows it stands in for.
+// Mirrors a node row's indent + toggle gutter so the dashed "Add" affordance lines up.
 const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section: string) => void }) => (
   <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
     <span aria-hidden className="w-5 shrink-0" />
@@ -148,18 +144,15 @@ type PipelineStructureTreeProps = {
   configYaml: string;
   /** Node id to highlight (e.g. the node under the YAML cursor). */
   selectedNodeId?: string;
-  /** A row was clicked: `highlightId` is the clicked node; `editableId` is the
-      nearest node with a YAML location (what the editor should reveal). */
+  /** Row clicked: `highlightId` is the clicked node; `editableId` is the nearest node to reveal. */
   onSelectNode?: (highlightId: string, editableId?: string) => void;
   /** Edit mode only: add an input/output for an empty section (section name). */
   onAddConnector?: (section: string) => void;
 };
 
 /**
- * A compact, width-bounded structure overview of a pipeline — an indented outline of
- * its inputs, processors, branches, outputs, and resources. Unlike the full canvas it
- * intentionally shows only structure (icon + name), so deep nesting truncates rather
- * than overflowing the narrow side lane. Rows are clickable to drive the editor.
+ * Compact, width-bounded outline of a pipeline (inputs, processors, branches, outputs, resources).
+ * Shows only structure (icon + name) so deep nesting truncates in the narrow lane; rows drive the editor.
  */
 export function PipelineStructureTree({
   configYaml,

@@ -17,8 +17,7 @@ import { editTargetPath } from './yaml';
 
 export type NodeRange = { id: string; start: number; end: number; span: number };
 
-// Each editable node's [startLine, endLine] in the YAML, derived from its edit
-// target's YAML path. Lines are 1-based to match LintHint.line.
+// Each editable node's [startLine, endLine] in the YAML. Lines are 1-based to match LintHint.line.
 export function nodeLineRanges(yaml: string): NodeRange[] {
   const lineCounter = new LineCounter();
   const doc = parseDocument(yaml, { lineCounter });
@@ -31,10 +30,8 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
       return;
     }
     const start = lineCounter.linePos(range[0]).line;
-    // `range[1]` is the end of the node's own content; `range[2]` extends past the
-    // trailing newline into the *next* line, which would over-select by a line. Use
-    // the content end, and if it lands at column 1 (i.e. just past the final
-    // newline) step back to the last line that actually belongs to the node.
+    // range[1] is the node's content end (range[2] over-selects into the next line). If
+    // it lands at column 1 (just past the final newline), step back to the node's last line.
     const endPos = lineCounter.linePos(range[1]);
     const end = endPos.col === 1 && endPos.line > start ? endPos.line - 1 : endPos.line;
     ranges.push({ id, start, end, span: end - start });
@@ -43,12 +40,10 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
     if (node.editTarget) {
       pushRange(node.id, editTargetPath(node.editTarget));
     }
-    // A switch case's range (which includes its routing `check`, sitting outside the component's
-    // own body) is attributed to the RENDERED case-entry node — so a condition error highlights
-    // the case (and shows on its inspector's condition) rather than bubbling up to the whole
-    // switch. For an output switch that entry is the case node itself; for a processor switch the
-    // case wrapper isn't rendered, so it's the wrapper's first child. The case span is smaller
-    // than the switch's, so `enclosingNodeId` prefers it.
+    // A switch case's range (includes its routing `check`) is attributed to the RENDERED
+    // case-entry node so a condition error highlights the case, not the whole switch. Output
+    // switch: the case node itself. Processor switch (no rendered wrapper): the wrapper's first
+    // child. The case span is smaller than the switch's, so `enclosingNodeId` prefers it.
     if (node.caseEditTarget) {
       const entryId = node.editTarget ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
       if (entryId) {
@@ -60,17 +55,9 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
 }
 
 /**
- * Associate line-based lint hints with the visual node they belong to: the most
- * specific (smallest) editable node whose YAML range covers the hint's line. Hints
- * that don't fall inside any node (e.g. top-level keys) are left unmapped — they
- * still appear in the YAML lint list.
- */
-/**
- * Merge save-error lint hints with the live lint query's hints, dropping
- * duplicates. After a failed save the same problem arrives from both sources
- * (the error details and the re-lint of the unchanged YAML) under different
- * keys — without deduping it renders twice on every surface. The error-derived
- * copy wins: it carries the lint name as `lintType`, shown as a heading.
+ * Merge save-error lint hints with the live lint query's hints, dropping duplicates.
+ * After a failed save the same problem arrives from both sources under different keys;
+ * without deduping it renders twice. The error-derived copy wins (carries `lintType`).
  */
 export function mergeLintHints(
   errorHints: Record<string, LintHint>,
@@ -95,7 +82,7 @@ export function mergeLintHints(
   return merged;
 }
 
-// The smallest node range that contains `line` (most specific enclosing node).
+// Smallest node range containing `line` (most specific enclosing node).
 export function enclosingNodeId(line: number, ranges: NodeRange[]): string | undefined {
   let best: NodeRange | undefined;
   for (const range of ranges) {

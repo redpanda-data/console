@@ -22,7 +22,7 @@ export type TipContext = 'yaml' | 'visual';
 
 type Tip = { id: string; content: ReactNode };
 
-// A small monospace key chip, sized to sit unobtrusively inside a line of tip text.
+// Small monospace key chip sized to sit inside a line of tip text.
 const Key = ({ children }: { children: ReactNode }) => (
   <Kbd size="xs" variant="filled">
     {children}
@@ -80,11 +80,8 @@ function tipsFor(
 }
 
 /**
- * A condensed, full-width strip of contextual usage tips shown beneath the editor. It
- * replaces the dismissible "Tip: use / …" banner that used to overlay the YAML editor —
- * keeping hints off the editing surface and showing a richer, context-aware set
- * (different tips for the YAML vs. visual lanes). Static by design: all tips are visible
- * at a glance, separated by dots, with no moving parts to distract.
+ * Full-width strip of contextual usage tips beneath the editor (different sets for YAML vs. visual).
+ * Static by design: all tips visible at once, dot-separated, no moving parts.
  */
 export function EditorTipsBar({
   context,
