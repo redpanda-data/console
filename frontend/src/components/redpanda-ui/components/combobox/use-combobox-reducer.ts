@@ -1,7 +1,6 @@
 import { resolveLabel } from './combobox-utils';
 import type { ComboboxOption } from './index';
 
-// ── State ─────────────────────────────────────────────────────────────
 // Readonly at every level — the reducer MUST return a new object.
 export type ComboboxState = Readonly<{
   open: boolean;
@@ -11,55 +10,30 @@ export type ComboboxState = Readonly<{
   userHasTyped: boolean;
 }>;
 
-// ── Actions (discriminated union) ─────────────────────────────────────
-// Each variant carries only the payload it needs. TypeScript narrows
-// the type inside each switch case, so `action.value` is only available
-// on variants that declare it.
 export type ComboboxAction =
-  // Popover lifecycle
   | { readonly type: 'OPEN' }
   | { readonly type: 'CLOSE' }
   | { readonly type: 'ARROW_OPEN' }
-
-  // User input
   | { readonly type: 'INPUT_CLICK' }
   | { readonly type: 'TYPE'; readonly value: string; readonly firstMatch: string }
-
-  // Selection
   | { readonly type: 'SELECT'; readonly label: string }
   | { readonly type: 'TOGGLE_OFF' }
   | { readonly type: 'CLEAR' }
   | { readonly type: 'CREATE_SUBMIT'; readonly inputValue: string }
-
-  // Keyboard navigation
   | { readonly type: 'NAVIGATE'; readonly nextHighlight: string }
-
-  // Enter key variants (each has distinct state transition)
   | { readonly type: 'ENTER_REVERT'; readonly controlledLabel: string }
   | { readonly type: 'ENTER_CLEAR' }
-
-  // Escape
   | { readonly type: 'ESCAPE_CLEAR' }
-
-  // Blur
   | { readonly type: 'BLUR_CLEAR' }
   | { readonly type: 'BLUR_REVERT'; readonly controlledLabel: string }
-
-  // External sync
   | { readonly type: 'SYNC_CONTROLLED'; readonly controlledLabel: string }
-
-  // cmdk bridge
   | { readonly type: 'SET_ACTIVE_DESCENDANT'; readonly id: string | undefined };
 
-// ── Exhaustive check helper ───────────────────────────────────────────
-// If a new action variant is added to the union but not handled in the
-// switch, TypeScript will error: "Argument of type '...' is not
-// assignable to parameter of type 'never'."
+// Exhaustiveness guard: an unhandled action variant becomes a `never` type error here.
 const assertNever = (action: never): never => {
   throw new Error(`Unhandled combobox action: ${(action as ComboboxAction).type}`);
 };
 
-// ── Reducer (pure function — no React imports, no side effects) ───────
 export const comboboxReducer = (state: ComboboxState, action: ComboboxAction): ComboboxState => {
   switch (action.type) {
     case 'OPEN':
@@ -108,7 +82,6 @@ export const comboboxReducer = (state: ComboboxState, action: ComboboxAction): C
   }
 };
 
-// ── Initial state factory ─────────────────────────────────────────────
 export const createInitialState = (
   options: ReadonlyArray<ComboboxOption>,
   controlledValue: string,

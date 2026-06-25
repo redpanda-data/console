@@ -105,15 +105,18 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                 <EmptyDescription>Assign a role to grant this user permissions on cluster resources.</EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                <Button asChild variant="link">
-                  <a
-                    href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Read the docs →
-                  </a>
-                </Button>
+                <Button
+                  render={
+                    <a
+                      href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Read the docs →
+                    </a>
+                  }
+                  variant="link"
+                />
               </EmptyContent>
             </Empty>
           </TableCell>
@@ -135,15 +138,20 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                 <Trash2Icon className="h-4 w-4 text-muted-foreground" />
               </Button>
             )}
-            <Button asChild size="icon-sm" testId={`view-role-${r.principalName}`} variant="ghost">
-              <Link
-                params={{ roleName: r.principalName }}
-                search={{ host: undefined }}
-                to="/security/roles/$roleName/details"
-              >
-                <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
-              </Link>
-            </Button>
+            <Button
+              render={
+                <Link
+                  params={{ roleName: r.principalName }}
+                  search={{ host: undefined }}
+                  to="/security/roles/$roleName/details"
+                >
+                  <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              }
+              size="icon-sm"
+              testId={`view-role-${r.principalName}`}
+              variant="ghost"
+            />
           </div>
         </TableCell>
       </TableRow>

@@ -70,7 +70,6 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       hideTitle,
       className,
       inline = false,
-      ...motionProps
     },
     ref
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: form-state-machine component with inline vs card render branches, existing-topic detection, advanced-settings toggle, and ToggleGroup switching — extracting further would obscure the rendered tree.
@@ -300,15 +299,14 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
               {selectionMode === 'both' && (
                 <ToggleGroup
                   disabled={isPending}
-                  onValueChange={(value) => {
+                  onValueChange={([value]) => {
                     // Prevent deselection - ToggleGroup emits empty string when trying to deselect
                     if (!value) {
                       return;
                     }
                     handleTopicSelectionTypeChange(value as CreatableSelectionType);
                   }}
-                  type="single"
-                  value={topicSelectionType}
+                  value={[topicSelectionType]}
                   variant="outline"
                 >
                   <ToggleGroupItem id={CreatableSelectionOptions.EXISTING} value={CreatableSelectionOptions.EXISTING}>
@@ -427,7 +425,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     }
 
     return (
-      <Card size="full" {...motionProps} animated className={className} variant="ghost">
+      <Card className={className} size="full" variant="ghost">
         {!hideTitle && (
           <CardHeader className="max-w-2xl">
             <CardTitle>

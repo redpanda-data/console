@@ -121,19 +121,22 @@ export function SecurityTabsNav() {
           <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
             {tabs.map((tab) => (
               <Tooltip key={tab.key}>
-                <TooltipTrigger asChild disabled={!tab.disabledReason}>
-                  <span>
-                    <TabsTrigger
-                      className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[state=active]:text-foreground"
-                      disabled={tab.disabled}
-                      onClick={() => handleTabClick(tab.key)}
-                      value={tab.key}
-                      variant="underline"
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  disabled={!tab.disabledReason}
+                  render={
+                    <span>
+                      <TabsTrigger
+                        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
+                        disabled={tab.disabled}
+                        onClick={() => handleTabClick(tab.key)}
+                        value={tab.key}
+                        variant="underline"
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    </span>
+                  }
+                />
                 {tab.disabledReason && <TooltipContent>{tab.disabledReason}</TooltipContent>}
               </Tooltip>
             ))}

@@ -588,7 +588,6 @@ export const AIAgentCardTab = () => {
           </CardContent>
         </Card>
       </div>
-
       {/* Right Column */}
       <div className="space-y-4 lg:col-span-1">
         {/* Connection Information Card */}
@@ -641,15 +640,17 @@ export const AIAgentCardTab = () => {
                   const icon = getLanguageIcon(language);
                   return (
                     <Sheet key={language}>
-                      <SheetTrigger asChild>
-                        <Button
-                          className="flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
-                          onClick={() => setSelectedLanguage(language)}
-                          variant="outline"
-                        >
-                          {icon === 'terminal' ? <Terminal className="h-8 w-8" /> : <img alt={language} src={icon} />}
-                        </Button>
-                      </SheetTrigger>
+                      <SheetTrigger
+                        render={
+                          <Button
+                            className="flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
+                            onClick={() => setSelectedLanguage(language)}
+                            variant="outline"
+                          >
+                            {icon === 'terminal' ? <Terminal className="h-8 w-8" /> : <img alt={language} src={icon} />}
+                          </Button>
+                        }
+                      />
                       <SheetContent className="w-full overflow-y-auto sm:max-w-6xl" side="right">
                         <SheetHeader>
                           <SheetTitle>{getLanguageLabel(language)} Example</SheetTitle>

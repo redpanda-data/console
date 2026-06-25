@@ -49,12 +49,8 @@ export function ArrayFieldRenderer({
   const compactItemField = itemField ? cloneFieldForCompactRow(itemField) : undefined;
   const useCompactRows = itemField ? !isComplexCollectionField(itemField) : false;
 
-  // If the array is required and currently empty, seed a single blank
-  // item so the user can start typing immediately instead of having to
-  // click "Add <Label>" first. `buf.validate.field.repeated.min_items`
-  // propagates onto the ParsedField as `required: true`, so a single
-  // check is enough. Only runs once per mount-when-empty — subsequent
-  // user-initiated removals are respected.
+  // Seed one blank item when a required array is empty so the user can type immediately.
+  // Runs once per mount-when-empty so later user removals are respected.
   const hasSeededRef = React.useRef(false);
   React.useEffect(() => {
     if (hasSeededRef.current || isDisabled || !field.required || rhfFields.length > 0 || !itemField) {

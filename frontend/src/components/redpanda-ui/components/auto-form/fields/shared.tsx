@@ -11,19 +11,11 @@ import { getFieldUiConfig, NUMERIC_OPTION_PATTERN } from '../helpers';
 import { getAutoFormChoiceTestId, getAutoFormFieldTestId } from '../test-ids';
 import type { AutoFormOptionGroup, AutoFormOptionItem } from '../types';
 
-// ---------------------------------------------------------------------------
-// Label utilities
-// ---------------------------------------------------------------------------
-
 export function getControlLabel(label: AutoFormFieldProps['label'], field: AutoFormFieldProps['field']): string {
   return typeof label === 'string' || typeof label === 'number'
     ? String(label)
     : String(field.fieldConfig?.label ?? field.key);
 }
-
-// ---------------------------------------------------------------------------
-// Test-id utilities
-// ---------------------------------------------------------------------------
 
 export function useFieldTestIds(id: string) {
   const { testIdPrefix } = useAutoFormRuntimeContext();
@@ -46,10 +38,6 @@ export function resolveControlTestId(inputProps: AutoFormFieldProps['inputProps'
     ? ((inputProps as { testId: string }).testId ?? fallback)
     : fallback;
 }
-
-// ---------------------------------------------------------------------------
-// Date utilities
-// ---------------------------------------------------------------------------
 
 export function normalizeDateValue(value: unknown): string {
   if (typeof value === 'string') {
@@ -102,10 +90,6 @@ export function buildTimestampValue(datePart: string, timePart: string): string 
   return `${datePart}T${timePart || '00:00'}`;
 }
 
-// ---------------------------------------------------------------------------
-// Number utilities
-// ---------------------------------------------------------------------------
-
 export function parseNumericProp(value: unknown): number | undefined {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : undefined;
@@ -144,10 +128,6 @@ export function normalizeNumberValue(value: unknown): number | undefined {
   return;
 }
 
-// ---------------------------------------------------------------------------
-// Option utilities
-// ---------------------------------------------------------------------------
-
 export function getGroupedOptions(field: AutoFormFieldProps['field']): AutoFormOptionGroup[] | undefined {
   return getFieldUiConfig(field).optionGroups;
 }
@@ -184,10 +164,6 @@ export function hasNumericOptions(field: AutoFormFieldProps['field']): boolean {
   const options = getFlatOptions(field);
   return options.length > 0 && options.every((option) => NUMERIC_OPTION_PATTERN.test(option.value));
 }
-
-// ---------------------------------------------------------------------------
-// Shared input component
-// ---------------------------------------------------------------------------
 
 export function StringLikeInput({
   error,
@@ -243,11 +219,7 @@ export function StringLikeInput({
   );
 }
 
-/**
- * Extract the registered data-provider id from a field's customData.
- * Accepts both the flat `customData.dataProvider` shape and the proto-derived
- * `customData.ui.dataProvider` shape so authors can use either.
- */
+// Accepts both flat `customData.dataProvider` and proto-derived `customData.ui.dataProvider`.
 export function readDataProviderId(field: AutoFormFieldProps['field'] | undefined): string | undefined {
   const customData = field?.fieldConfig?.customData;
   if (!(customData && typeof customData === 'object')) {

@@ -7,7 +7,6 @@ import type {
   VisibilityState,
 } from '@tanstack/react-table';
 
-// ── State ─────────────────────────────────────────────────────────────
 // Readonly at every level — the reducer MUST return a new object.
 export type DataTableState = Readonly<{
   pagination: PaginationState;
@@ -18,7 +17,6 @@ export type DataTableState = Readonly<{
   expanded: ExpandedState;
 }>;
 
-// ── Actions (discriminated union) ─────────────────────────────────────
 export type DataTableAction =
   | {
       readonly type: 'SET_PAGINATION';
@@ -40,16 +38,13 @@ export type DataTableAction =
   | { readonly type: 'SET_EXPANDED'; readonly updater: ExpandedState | ((prev: ExpandedState) => ExpandedState) }
   | { readonly type: 'RESET'; readonly defaults: Partial<DataTableState> };
 
-// ── Exhaustive check helper ───────────────────────────────────────────
 const assertNever = (action: never): never => {
   throw new Error(`Unhandled data-table action: ${(action as DataTableAction).type}`);
 };
 
-// ── Resolve updater (value or function) ───────────────────────────────
 const resolve = <T>(updater: T | ((prev: T) => T), prev: T): T =>
   typeof updater === 'function' ? (updater as (prev: T) => T)(prev) : updater;
 
-// ── Reducer (pure function — no React imports, no side effects) ───────
 export const dataTableReducer = (state: DataTableState, action: DataTableAction): DataTableState => {
   switch (action.type) {
     case 'SET_PAGINATION':
@@ -71,7 +66,6 @@ export const dataTableReducer = (state: DataTableState, action: DataTableAction)
   }
 };
 
-// ── Initial state factory ─────────────────────────────────────────────
 export type DataTableInitialConfig = {
   defaultPageSize?: number;
   defaultSorting?: SortingState;

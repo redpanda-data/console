@@ -21,20 +21,12 @@ import {
 } from './combobox-utils';
 import { comboboxReducer, createInitialState } from './use-combobox-reducer';
 
-/**
- * Sentinel value to prevent cmdk from auto-selecting the first item.
- * cmdk auto-selects when value is falsy, so this truthy value that
- * matches no real option prevents any highlight on open.
- */
+// Truthy sentinel matching no option; prevents cmdk auto-selecting the first item (it does so when value is falsy).
 const NO_HIGHLIGHT = '__no_highlight__';
 
 const preventDefault = (e: { preventDefault: () => void }) => e.preventDefault();
 
-/**
- * Bridge component rendered inside <Command> to read cmdk's internal
- * selectedItemId via useCommandState (requires Command context).
- * Reports the DOM id of the highlighted item for aria-activedescendant.
- */
+// Reads cmdk's highlighted-item DOM id (useCommandState needs Command context) for aria-activedescendant.
 function ActiveDescendantBridge({ onIdChange }: { onIdChange: (id: string | undefined) => void }) {
   const selectedItemId = useCommandState((state) => state.selectedItemId);
   useEffect(() => {
@@ -64,11 +56,8 @@ export interface ComboboxProps
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  /** @deprecated No longer used. The combobox now uses list-based navigation. Will be removed in next major version. */
-  autocomplete?: boolean;
-  /** If true, the combobox will allow the user to create a new option */
+  /** Allow the user to create a new option. */
   creatable?: boolean;
-  /** Callback function to create a new option */
   onCreateOption?: (value: string) => void;
   /** Noun used in the create prompt (e.g. "option", "context"). @default "option" */
   createLabel?: string;
@@ -81,27 +70,13 @@ export interface ComboboxProps
   onClose?: () => void;
   preventAutoFocusOnOpen?: boolean;
   inputTestId?: string;
-  /**
-   * Called on every keystroke with the current input text. Use to drive an
-   * async/remote search; typically paired with a debounced fetch that
-   * updates `options`.
-   */
+  /** Fires per keystroke with the input text; drive async/remote search from here. */
   onInputValueChange?: (value: string) => void;
-  /**
-   * When true, an inline spinner is rendered inside the popover and the
-   * default "No options found." empty state is suppressed. Useful while
-   * async options are being fetched.
-   */
+  /** Shows an inline spinner and suppresses the empty state while async options load. */
   loading?: boolean;
-  /**
-   * Override the default "No options found." empty state. Ignored when
-   * `loading` is true.
-   */
+  /** Override the "No options found." empty state. Ignored when `loading`. */
   emptyState?: React.ReactNode;
-  /**
-   * Override the rendering of each option row. Defaults to rendering the
-   * option label. The active check icon is still rendered by the component.
-   */
+  /** Override each option row's render. The active check icon is still rendered by the component. */
   renderOption?: (option: ComboboxOption) => React.ReactNode;
 }
 
@@ -141,7 +116,6 @@ export const Combobox = memo(
     const listId = useId();
     const hasStart = start !== null && start !== undefined;
 
-    // Derived values (pure computations)
     const controlledLabel = useMemo(() => resolveLabel(options, controlledValue), [controlledValue, options]);
     const filteredOptions = useMemo(
       () => filterOptions(options, inputValue, controlledLabel),
@@ -156,14 +130,10 @@ export const Combobox = memo(
     );
     const showClearButton = clearable && controlledValue && !disabled;
 
-    // ── Effects (genuine side effects only) ───────────────────────────
-
-    // Sync inputValue when controlled value changes externally
     useEffect(() => {
       dispatch({ type: 'SYNC_CONTROLLED', controlledLabel });
     }, [controlledLabel]);
 
-    // Focus input when popover opens
     useEffect(() => {
       if (!(inputRef.current && open && !preventAutoFocusOnOpen)) {
         return;
@@ -178,7 +148,6 @@ export const Combobox = memo(
       return () => clearTimeout(timer);
     }, [open, preventAutoFocusOnOpen]);
 
-    // Fire onOpen/onClose callbacks (single-concern: only callbacks)
     const prevOpenRef = useRef(open);
     useEffect(() => {
       if (prevOpenRef.current !== open) {
@@ -190,8 +159,6 @@ export const Combobox = memo(
         prevOpenRef.current = open;
       }
     }, [open, onOpen, onClose]);
-
-    // ── Handlers ──────────────────────────────────────────────────────
 
     const handleActiveDescendantChange = useCallback(
       (id: string | undefined) => dispatch({ type: 'SET_ACTIVE_DESCENDANT', id }),
@@ -272,8 +239,6 @@ export const Combobox = memo(
       }
     }, [inputValue, controlledValue, controlledLabel, options, creatable, onChange, userHasTyped]);
 
-    // ── Keyboard handlers (decomposed per key) ────────────────────────
-
     const handleArrowKey = useCallback(
       (event: React.KeyboardEvent, direction: 1 | -1) => {
         event.preventDefault();
@@ -293,16 +258,13 @@ export const Combobox = memo(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: creatable Enter requires open + closed branches
       (event: React.KeyboardEvent) => {
         if (!open) {
-          // In creatable mode, prevent Enter from bubbling to a parent <form>
-          // and triggering submit while the user is committing a new option.
-          // Without this, typing a new value + Enter in a creatable combobox
-          // both commits AND submits the form.
+          // Commit the new option without letting Enter bubble to a parent <form> (would both create AND submit).
           if (creatable && canCreate) {
             event.preventDefault();
             event.stopPropagation();
             handleCreatableSubmit();
           }
-          return; // Otherwise let Enter propagate to form when closed
+          return;
         }
         event.preventDefault();
         event.stopPropagation();
@@ -387,71 +349,57 @@ export const Combobox = memo(
       [handleArrowKey, handleEnterKey, handleEscapeKey, handleArrowRightKey]
     );
 
-    // ── Memoized props ────────────────────────────────────────────────
-
-    const popoverStyle = useMemo(
-      () => ({ width: inputRef.current?.clientWidth }),
-      // Recalculate when open changes (ref width may have changed)
-      // biome-ignore lint/correctness/useExhaustiveDependencies: inputRef.current?.clientWidth is not reactive
-      [open]
-    );
-
-    const preventAutoFocusHandler = useMemo(
-      () => (preventAutoFocusOnOpen ? preventDefault : undefined),
-      [preventAutoFocusOnOpen]
-    );
-
-    // ── Render ────────────────────────────────────────────────────────
-
     return (
       <Popover onOpenChange={handlePopoverOpenChange} open={open} testId={testId}>
-        <PopoverTrigger asChild nativeButton={false}>
-          <Input
-            aria-activedescendant={open ? activeDescendantId : undefined}
-            aria-autocomplete="list"
-            aria-controls={listId}
-            aria-expanded={open}
-            autoComplete="off"
-            autoCorrect="off"
-            className="relative w-full shadow-none"
-            containerClassName={className}
-            disabled={disabled}
-            onBlur={handleBlur}
-            onChange={handleInputChange}
-            onClick={handleInputClick}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            ref={inputRef}
-            role="combobox"
-            spellCheck={false}
-            testId={inputTestId}
-            type="text"
-            value={inputValue}
-          >
-            {hasStart ? <InputStart>{start}</InputStart> : null}
-            <InputEnd>
-              {showClearButton ? (
-                <button
-                  aria-label="Clear selection"
-                  className="pointer-events-auto rounded-sm opacity-50 hover:opacity-100"
-                  onClick={handleClear}
-                  onMouseDown={preventDefault}
-                  tabIndex={-1}
-                  type="button"
-                >
-                  <X size={15} />
-                </button>
-              ) : null}
-              <ChevronsUpDown className="opacity-50" size={15} />
-            </InputEnd>
-          </Input>
-        </PopoverTrigger>
+        <PopoverTrigger
+          nativeButton={false}
+          render={
+            <Input
+              aria-activedescendant={open ? activeDescendantId : undefined}
+              aria-autocomplete="list"
+              aria-controls={listId}
+              aria-expanded={open}
+              autoComplete="off"
+              autoCorrect="off"
+              className="relative w-full shadow-none"
+              containerClassName={className}
+              disabled={disabled}
+              onBlur={handleBlur}
+              onChange={handleInputChange}
+              onClick={handleInputClick}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              ref={inputRef}
+              role="combobox"
+              spellCheck={false}
+              testId={inputTestId}
+              type="text"
+              value={inputValue}
+            >
+              {hasStart ? <InputStart>{start}</InputStart> : null}
+              <InputEnd>
+                {showClearButton ? (
+                  <button
+                    aria-label="Clear selection"
+                    className="pointer-events-auto cursor-pointer rounded-sm opacity-50 hover:opacity-100"
+                    onClick={handleClear}
+                    onMouseDown={preventDefault}
+                    tabIndex={-1}
+                    type="button"
+                  >
+                    <X size={15} />
+                  </button>
+                ) : null}
+                <ChevronsUpDown className="opacity-50" size={15} />
+              </InputEnd>
+            </Input>
+          }
+        />
         <PopoverContent
-          className="p-0"
+          className="w-(--anchor-width) p-0"
           container={container}
+          initialFocus={preventAutoFocusOnOpen ? false : undefined}
           onMouseDown={preventDefault}
-          onOpenAutoFocus={preventAutoFocusHandler}
-          style={popoverStyle}
         >
           <Command
             loop

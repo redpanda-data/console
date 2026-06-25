@@ -1,3 +1,5 @@
+'use client';
+
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Command as CommandPrimitive } from 'cmdk';
 import { ChevronRight, SearchIcon } from 'lucide-react';
@@ -26,7 +28,8 @@ const commandVariants = cva(
     },
     defaultVariants: {
       variant: 'elevated',
-      size: 'md',
+      // Width-less by default so embedded popovers size to their container (like stock shadcn).
+      size: 'full',
     },
   }
 );
@@ -52,15 +55,17 @@ function CommandDialog({
   description = 'Search for a command to run...',
   children,
   showOverlay = true,
+  // shadcn defaults this to false; we keep true to preserve existing rendering.
+  showCloseButton = true,
   container,
-  onOpenAutoFocus,
   className,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, 'children'> &
-  Pick<FixedPositionContentProps, 'showOverlay' | 'container' | 'onOpenAutoFocus'> & {
+  Pick<FixedPositionContentProps, 'showOverlay' | 'container'> & {
     title?: string;
     description?: string;
     className?: string;
+    showCloseButton?: boolean;
     children?: React.ReactNode;
   }) {
   return (
@@ -72,11 +77,12 @@ function CommandDialog({
       <DialogContent
         className={cn('overflow-hidden p-0', container && 'absolute', className)}
         container={container}
-        onOpenAutoFocus={onOpenAutoFocus}
+        showCloseButton={showCloseButton}
         showOverlay={showOverlay}
       >
         <Command
           className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+          size="md"
           variant="dialog"
         >
           {children}
@@ -117,8 +123,19 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
   );
 }
 
-function CommandEmpty({ ...props }: React.ComponentProps<typeof CommandPrimitive.Empty>) {
-  return <CommandPrimitive.Empty className="py-6 text-center text-sm" data-slot="command-empty" {...props} />;
+function CommandEmpty({
+  className,
+  testId,
+  ...props
+}: React.ComponentProps<typeof CommandPrimitive.Empty> & SharedProps) {
+  return (
+    <CommandPrimitive.Empty
+      className={cn('py-6 text-center text-sm', className)}
+      data-slot="command-empty"
+      data-testid={testId}
+      {...props}
+    />
+  );
 }
 
 function CommandGroup({
@@ -180,8 +197,6 @@ function CommandShortcut({ className, children, ...props }: React.ComponentProps
   );
 }
 
-// ── Command Submenu ───────────────────────────────────────────────────
-
 type CommandSubContextType = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -213,21 +228,23 @@ function CommandSubTrigger({ className, children, inset, ...props }: CommandSubT
   const ctx = React.useContext(CommandSubContext);
 
   return (
-    <PopoverAnchor asChild>
-      <CommandPrimitive.Item
-        className={cn(
-          "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-          inset && 'pl-8',
-          className
-        )}
-        data-slot="command-sub-trigger"
-        onSelect={() => ctx?.onOpenChange(true)}
-        {...props}
-      >
-        {children}
-        <ChevronRight className="ml-auto size-4" />
-      </CommandPrimitive.Item>
-    </PopoverAnchor>
+    <PopoverAnchor
+      render={
+        <CommandPrimitive.Item
+          className={cn(
+            "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+            inset && 'pl-8',
+            className
+          )}
+          data-slot="command-sub-trigger"
+          onSelect={() => ctx?.onOpenChange(true)}
+          {...props}
+        >
+          {children}
+          <ChevronRight className="ml-auto size-4" />
+        </CommandPrimitive.Item>
+      }
+    />
   );
 }
 
@@ -238,19 +255,12 @@ type CommandSubContentProps = {
 
 function CommandSubContent({ className, children }: CommandSubContentProps) {
   return (
-    <PopoverContent
-      align="start"
-      className={cn('w-fit p-0', className)}
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      side="right"
-      sideOffset={4}
-    >
+    <PopoverContent align="start" className={cn('w-fit p-0', className)} side="right" sideOffset={4}>
       {children}
     </PopoverContent>
   );
 }
 
-// Simplified interface for backend developers
 interface SimpleCommandProps extends SharedProps {
   placeholder?: string;
   emptyMessage?: string;

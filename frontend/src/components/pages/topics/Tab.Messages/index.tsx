@@ -306,17 +306,19 @@ const AddFilterMenuItem: FC<{
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            aria-disabled
-            className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
-            data-testid={testId}
-            role="menuitem"
-            tabIndex={-1}
-          >
-            {children}
-          </span>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <span
+              aria-disabled
+              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
+              data-testid={testId}
+              role="menuitem"
+              tabIndex={-1}
+            >
+              {children}
+            </span>
+          }
+        />
         <TooltipContent side="right">{disabledReason}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -1169,11 +1171,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       size: 0,
       cell: ({ row: { original } }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="iconButton" size="icon" variant="ghost">
-              <MoreHorizontalIcon />
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button className="iconButton" size="icon" variant="ghost">
+                <MoreHorizontalIcon />
+              </Button>
+            }
+          />
           <DropdownMenuContent>
             <DropdownMenuItem
               onClick={() => {
@@ -1398,20 +1402,22 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
               {currentOffsetOrigin === PartitionOffsetOrigin.Custom && (
                 <TooltipProvider>
                   <Tooltip open={!customStartOffsetValid}>
-                    <TooltipTrigger asChild>
-                      <Input
-                        disabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
-                        maxLength={20}
-                        onChange={(e) => {
-                          setCustomStartOffsetValue(e.target.value);
-                          if (!Number.isNaN(Number(e.target.value))) {
-                            setStartOffset(Number(e.target.value));
-                          }
-                        }}
-                        style={{ width: '7.5em' }}
-                        value={customStartOffsetValue}
-                      />
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                      render={
+                        <Input
+                          disabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
+                          maxLength={20}
+                          onChange={(e) => {
+                            setCustomStartOffsetValue(e.target.value);
+                            if (!Number.isNaN(Number(e.target.value))) {
+                              setStartOffset(Number(e.target.value));
+                            }
+                          }}
+                          style={{ width: '7.5em' }}
+                          value={customStartOffsetValue}
+                        />
+                      }
+                    />
                     <TooltipContent side="right">Offset must be a number</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1450,11 +1456,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             text="Continuous Pagination"
             textSuffix={
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <span style={{ display: 'inline-flex', verticalAlign: 'text-top', cursor: 'pointer' }}>
-                    <InfoIcon size={11} />
-                  </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <span style={{ display: 'inline-flex', verticalAlign: 'text-top', cursor: 'pointer' }}>
+                      <InfoIcon size={11} />
+                    </span>
+                  }
+                />
                 <TooltipContent side="top">
                   {continuousPaginationDisabled
                     ? 'Continuous pagination is only available with Newest or Beginning start offsets'
@@ -1507,11 +1515,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           <div className="flex items-end">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button data-testid="add-topic-filter" variant="outline">
-                  Add filter
-                </Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <Button data-testid="add-topic-filter" variant="outline">
+                    Add filter
+                  </Button>
+                }
+              />
               <DropdownMenuContent>
                 <AddFilterMenuItem
                   disabledReason={partitionFilterDisabledReason}
@@ -1555,11 +1565,13 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
         <div className="flex items-end justify-end gap-3">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button data-testid="message-settings-button" size="icon" variant="outline">
-                <SettingsIcon size="1.5rem" />
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button data-testid="message-settings-button" size="icon" variant="outline">
+                  <SettingsIcon size="1.5rem" />
+                </Button>
+              }
+            />
             <DropdownMenuContent>
               <DropdownMenuItem
                 data-testid="deserialization-settings-menu-item"
@@ -1583,17 +1595,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             {searchPhase === null && (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      aria-label="Repeat current search"
-                      data-testid="refresh-messages-button"
-                      onClick={() => searchFunc('manual')}
-                      size="icon"
-                      variant="outline"
-                    >
-                      <RefreshIcon />
-                    </Button>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        aria-label="Repeat current search"
+                        data-testid="refresh-messages-button"
+                        onClick={() => searchFunc('manual')}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <RefreshIcon />
+                      </Button>
+                    }
+                  />
                   <TooltipContent side="top">Repeat current search</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1601,21 +1615,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             {searchPhase !== null && (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      aria-label="Stop searching"
-                      data-testid="stop-search-button"
-                      onClick={() => {
-                        if (abortControllerRef.current) {
-                          abortControllerRef.current.abort();
-                        }
-                      }}
-                      size="icon"
-                      variant="destructive"
-                    >
-                      <ErrorIcon />
-                    </Button>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        aria-label="Stop searching"
+                        data-testid="stop-search-button"
+                        onClick={() => {
+                          if (abortControllerRef.current) {
+                            abortControllerRef.current.abort();
+                          }
+                        }}
+                        size="icon"
+                        variant="destructive"
+                      >
+                        <ErrorIcon />
+                      </Button>
+                    }
+                  />
                   <TooltipContent side="top">Stop searching</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -1667,7 +1683,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           </div>
         </div>
       </div>
-
       {currentJSFilter ? (
         <JavascriptFilterModal
           currentFilter={currentJSFilter}
@@ -1686,7 +1701,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           }}
         />
       ) : null}
-
       {/* Message Table (or error display) */}
       {fetchError ? (
         <Alert icon={<ErrorIcon />} variant="destructive">

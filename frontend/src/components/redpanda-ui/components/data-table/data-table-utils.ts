@@ -1,6 +1,5 @@
 import type { PaginationState, SortingState } from '@tanstack/react-table';
 
-// ── Pagination mode resolution ────────────────────────────────────────
 export type PaginationMode = {
   enabled: boolean;
   controlledState: PaginationState | undefined;
@@ -20,7 +19,6 @@ export const resolvePaginationMode = (
   return { enabled: true, controlledState: pagination, defaultPageSize: pagination.pageSize };
 };
 
-// ── Sorting mode resolution ───────────────────────────────────────────
 export type SortingMode = {
   enabled: boolean;
   controlledState: SortingState | undefined;
@@ -36,17 +34,9 @@ export const resolveSortingMode = (sorting: false | true | SortingState | undefi
   return { enabled: true, controlledState: sorting };
 };
 
-// ── Empty state derivation ────────────────────────────────────────────
 export type DisplayState = 'loading' | 'empty' | 'data';
 
-/**
- * Determines which UI state the DataTable body should display.
- *
- * When `isLoading` is true but rows already exist (e.g., background refetch
- * with stale data), returns `'data'` — the table shows existing rows rather
- * than replacing them with a spinner. Consumers needing a loading overlay
- * on top of stale data should check `isLoading` separately.
- */
+// When isLoading but rows already exist (background refetch), returns 'data' so stale rows show instead of a spinner.
 export const deriveDisplayState = (rowCount: number, isLoading: boolean): DisplayState => {
   if (isLoading && rowCount === 0) {
     return 'loading';
@@ -57,7 +47,6 @@ export const deriveDisplayState = (rowCount: number, isLoading: boolean): Displa
   return 'data';
 };
 
-// ── Boolean helpers for pagination ────────────────────────────────────
 export const isPaginationState = (
   pagination: false | true | PaginationState | undefined
 ): pagination is PaginationState => typeof pagination === 'object' && pagination !== null && 'pageIndex' in pagination;

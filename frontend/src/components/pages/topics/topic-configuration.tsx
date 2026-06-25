@@ -461,13 +461,12 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
             </InputGroup>
           </div>
           <ToggleGroup
-            onValueChange={(v) => {
+            onValueChange={([v]) => {
               if (v) {
                 setScope(v as 'all' | 'modified');
               }
             }}
-            type="single"
-            value={scope}
+            value={[scope]}
           >
             <ToggleGroupItem value="all">All</ToggleGroupItem>
             <ToggleGroupItem value="modified">
@@ -557,14 +556,16 @@ const ConfigRow: FC<{
         <div className="flex flex-wrap items-center gap-2">
           {entry.documentation ? (
             <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className="cursor-pointer font-mono text-sm underline decoration-dotted underline-offset-4 hover:text-primary"
-                  type="button"
-                >
-                  {entry.name}
-                </button>
-              </PopoverTrigger>
+              <PopoverTrigger
+                render={
+                  <button
+                    className="cursor-pointer font-mono text-sm underline decoration-dotted underline-offset-4 hover:text-primary"
+                    type="button"
+                  >
+                    {entry.name}
+                  </button>
+                }
+              />
               <PopoverContent className="w-80">
                 <div className="flex flex-col gap-2">
                   <p className="font-bold">{entry.name}</p>
@@ -593,7 +594,7 @@ const ConfigRow: FC<{
           valueButton
         ) : (
           <Tooltip>
-            <TooltipTrigger asChild>{valueButton}</TooltipTrigger>
+            <TooltipTrigger render={valueButton} />
             <TooltipContent side="left">{nonEdittableReason}</TooltipContent>
           </Tooltip>
         )}

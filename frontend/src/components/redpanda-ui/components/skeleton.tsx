@@ -51,7 +51,6 @@ function Skeleton({ className, variant, size, width, testId, ...props }: Skeleto
   );
 }
 
-// Compound skeleton components for common patterns
 interface SkeletonGroupProps extends SharedProps {
   children: React.ReactNode;
   direction?: 'horizontal' | 'vertical';
@@ -82,25 +81,40 @@ function SkeletonGroup({ children, direction = 'vertical', spacing = 'md', class
   );
 }
 
-// Pre-built skeleton patterns
-function SkeletonAvatar({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizeMap = {
-    sm: { size: 'sm' as const, width: 'fit' as const },
-    md: { size: 'xl' as const, width: 'fit' as const },
-    lg: { size: 'xl' as const, width: 'fit' as const },
-  };
-
-  return <Skeleton variant="avatar" {...sizeMap[size]} />;
+interface SkeletonAvatarProps extends SharedProps {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-function SkeletonText({ lines = 1, width = 'md' }: { lines?: number; width?: 'sm' | 'md' | 'lg' | 'full' }) {
+const skeletonAvatarSizeMap: Record<
+  NonNullable<SkeletonAvatarProps['size']>,
+  { size: SkeletonProps['size']; width: SkeletonProps['width']; className?: string }
+> = {
+  sm: { size: 'sm', width: 'fit' },
+  md: { size: 'xl', width: 'fit' },
+  lg: { size: 'xl', width: 'fit', className: 'h-16' },
+};
+
+function SkeletonAvatar({ size = 'md', className, testId }: SkeletonAvatarProps) {
+  const { className: sizeClassName, ...variantProps } = skeletonAvatarSizeMap[size];
+
+  return <Skeleton className={cn(sizeClassName, className)} testId={testId} variant="avatar" {...variantProps} />;
+}
+
+interface SkeletonTextProps extends SharedProps {
+  lines?: number;
+  width?: 'sm' | 'md' | 'lg' | 'full';
+  className?: string;
+}
+
+function SkeletonText({ lines = 1, width = 'md', className, testId }: SkeletonTextProps) {
   const skeletonLines = Array.from({ length: lines }, (_, i) => ({
     width: (i === lines - 1 && lines > 1 ? 'md' : width) as 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'fit',
     id: `skeleton-${lines}-${i === lines - 1 && lines > 1 ? 'md' : width}-line-${i}`,
   }));
 
   return (
-    <SkeletonGroup direction="vertical" spacing="sm">
+    <SkeletonGroup className={className} direction="vertical" spacing="sm" testId={testId}>
       {skeletonLines.map((line) => (
         <Skeleton key={line.id} variant="text" width={line.width} />
       ))}
@@ -108,18 +122,4 @@ function SkeletonText({ lines = 1, width = 'md' }: { lines?: number; width?: 'sm
   );
 }
 
-function SkeletonCard() {
-  return (
-    <div className="rounded-lg border bg-card p-4">
-      <SkeletonGroup direction="horizontal">
-        <SkeletonAvatar />
-        <SkeletonGroup className="flex-1" direction="vertical" spacing="sm">
-          <Skeleton variant="heading" width="md" />
-          <SkeletonText lines={2} width="lg" />
-        </SkeletonGroup>
-      </SkeletonGroup>
-    </div>
-  );
-}
-
-export { Skeleton, SkeletonGroup, SkeletonAvatar, SkeletonText, SkeletonCard, skeletonVariants };
+export { Skeleton, SkeletonGroup, SkeletonAvatar, SkeletonText, skeletonVariants };

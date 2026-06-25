@@ -9,43 +9,29 @@ import { Textarea } from './textarea';
 import { cn, type SharedProps } from '../lib/utils';
 
 function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const [hasBlockAlign, setHasBlockAlign] = React.useState(false);
-
-  React.useEffect(() => {
-    if (ref.current) {
-      const blockAddon = ref.current.querySelector('[data-align="block-start"], [data-align="block-end"]');
-      setHasBlockAlign(!!blockAddon);
-    }
-  }, []);
-
   return (
     // biome-ignore lint/a11y/useSemanticElements: part of input group implementation
     <div
       className={cn(
-        'group/input-group !border-input relative flex w-full rounded-md border shadow-xs outline-none transition-[color,box-shadow] dark:bg-input/30',
+        'group/input-group !border-input relative flex w-full items-center rounded-md border shadow-xs outline-none transition-[color,box-shadow] dark:bg-input/30',
         'h-9 min-w-0 has-[>textarea]:h-auto',
 
-        // Conditional alignment
-        hasBlockAlign ? 'h-auto flex-col items-stretch' : 'items-center',
+        // <Input> wraps its control in a container div, so target the descendant input via [&_input]/has-[input].
+        'has-[>[data-align=inline-start]]:[&_input]:pl-2',
+        'has-[>[data-align=inline-end]]:[&_input]:pr-2',
+        'has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:items-stretch has-[>[data-align=block-start]]:[&_input]:pb-3',
+        'has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:items-stretch has-[>[data-align=block-end]]:[&_input]:pt-3',
 
-        // Variants based on alignment.
-        'has-[>[data-align=inline-start]]:[&>input]:pl-2',
-        'has-[>[data-align=inline-end]]:[&>input]:pr-2',
-        'has-[>[data-align=block-start]]:[&>input]:pb-3',
-        'has-[>[data-align=block-end]]:[&>input]:pt-3',
+        // Target element selectors directly: Input/Textarea overwrite data-slot with their own.
+        'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/50',
+        'has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50',
 
-        // Focus state.
-        'has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-[3px] has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50',
-
-        // Error state.
         'has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-destructive/20 dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40',
 
         className
       )}
       data-slot="input-group"
       data-testid={testId}
-      ref={ref}
       role="group"
       {...props}
     />
@@ -60,8 +46,8 @@ const inputGroupAddonVariants = cva(
         'inline-start': 'order-first justify-start pl-3 has-[>button]:ml-[-0.45rem] has-[>kbd]:ml-[-0.35rem]',
         'inline-end': 'order-last justify-end pr-3 has-[>button]:mr-[-0.45rem] has-[>kbd]:mr-[-0.35rem]',
         'block-start':
-          'order-first w-full justify-start px-3 pt-3 group-has-[>input]/input-group:pt-2.5 [.border-b]:pb-3',
-        'block-end': 'order-last w-full justify-start px-3 pb-3 group-has-[>input]/input-group:pb-2.5 [.border-t]:pt-3',
+          'order-first w-full justify-start px-3 pt-3 group-has-[input]/input-group:pt-2.5 [.border-b]:pb-3',
+        'block-end': 'order-last w-full justify-start px-3 pb-3 group-has-[input]/input-group:pb-2.5 [.border-t]:pt-3',
       },
     },
     defaultVariants: {
@@ -77,8 +63,9 @@ function InputGroupAddon({
 }: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
     // biome-ignore lint/a11y/useSemanticElements: part of input group implementation
+    // biome-ignore lint/a11y/useKeyWithClickEvents: click-to-focus convenience matches shadcn (no keyboard handler); interactive controls live inside the addon
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: click-to-focus convenience matches shadcn; interactive controls live inside the addon
     <div
-      aria-label="Input group addon"
       className={cn(inputGroupAddonVariants({ align }), className)}
       data-align={align}
       data-slot="input-group-addon"
@@ -88,17 +75,7 @@ function InputGroupAddon({
         }
         e.currentTarget.parentElement?.querySelector('input')?.focus();
       }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          if ((e.target as HTMLElement).closest('button')) {
-            return;
-          }
-          e.currentTarget.parentElement?.querySelector('input')?.focus();
-        }
-      }}
-      role="button"
-      tabIndex={0}
+      role="group"
       {...props}
     />
   );
@@ -152,35 +129,29 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
 
 function InputGroupInput({ className, testId, ...props }: Omit<React.ComponentProps<'input'>, 'size'> & SharedProps) {
   return (
-    <div className="flex-1">
-      <Input
-        className={cn(
-          'rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent',
-          className
-        )}
-        data-slot="input-group-control"
-        testId={testId}
-        {...props}
-      />
-    </div>
+    <Input
+      className={cn(
+        'rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent',
+        className
+      )}
+      containerClassName="flex-1"
+      testId={testId}
+      {...props}
+    />
   );
 }
 
-const InputGroupTextarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'textarea'> & SharedProps>(
-  ({ className, testId, ...props }, ref) => (
+function InputGroupTextarea({ className, testId, ...props }: React.ComponentProps<'textarea'> & SharedProps) {
+  return (
     <Textarea
       className={cn(
         'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent',
         className
       )}
-      data-slot="input-group-control"
-      ref={ref}
       testId={testId}
       {...props}
     />
-  )
-);
-
-InputGroupTextarea.displayName = 'InputGroupTextarea';
+  );
+}
 
 export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupInput, InputGroupTextarea };

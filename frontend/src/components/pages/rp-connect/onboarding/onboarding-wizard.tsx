@@ -347,13 +347,12 @@ export const ConnectOnboardingWizard = ({
                 {methods.switch({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
-                      components={componentListResponse?.components}
-                      isLoading={isComponentListLoading}
-                      {...stepMotionProps}
                       additionalComponents={additionalComponents}
+                      components={componentListResponse?.components}
                       componentTypeFilter={['input', 'custom']}
                       defaultConnectionName={persistedInputConnectionName}
                       defaultConnectionType="input"
+                      isLoading={isComponentListLoading}
                       key={`input-connector-tiles-${persistedInputConnectionName || 'empty'}`}
                       onValidityChange={handleInputValidityChange}
                       ref={addInputStepRef}
@@ -363,13 +362,12 @@ export const ConnectOnboardingWizard = ({
                   ),
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
-                      components={componentListResponse?.components}
-                      isLoading={isComponentListLoading}
-                      {...stepMotionProps}
                       additionalComponents={additionalComponents}
+                      components={componentListResponse?.components}
                       componentTypeFilter={['output', 'custom']}
                       defaultConnectionName={persistedOutputConnectionName}
                       defaultConnectionType="output"
+                      isLoading={isComponentListLoading}
                       key={`output-connector-tiles-${persistedOutputConnectionName || 'empty'}`}
                       onValidityChange={handleOutputValidityChange}
                       ref={addOutputStepRef}
@@ -400,7 +398,7 @@ export const ConnectOnboardingWizard = ({
                     />
                   ),
                   [WizardStep.CREATE_CONFIG]: () => (
-                    <Card key="create-config-step" size="full" {...stepMotionProps} animated>
+                    <Card key="create-config-step" size="full">
                       <CardContent>
                         <PipelinePage />
                       </CardContent>

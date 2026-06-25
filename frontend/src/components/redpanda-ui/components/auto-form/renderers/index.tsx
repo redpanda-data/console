@@ -102,7 +102,6 @@ export function AutoFormFields({ fields, children }: { fields: ParsedField[]; ch
   const { fieldRegistry } = useAutoForm();
   const { slots, other } = React.useMemo(() => extractSlots(children), [children]);
 
-  // Build slot maps for O(1) lookup
   const beforeSlots = React.useMemo(() => {
     const map = new Map<string, React.ReactNode[]>();
     for (const slot of slots) {
@@ -127,7 +126,6 @@ export function AutoFormFields({ fields, children }: { fields: ParsedField[]; ch
     return map;
   }, [slots]);
 
-  // Slots without before/after render at the top
   const topSlots = slots.filter((s) => !(s.before || s.after)).map((s) => s.content);
 
   return (
