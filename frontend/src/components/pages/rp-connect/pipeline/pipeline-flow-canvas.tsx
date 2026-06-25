@@ -254,6 +254,10 @@ function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: str
 // room so the region's label sits in a clear band above the first member, never over it.
 const SCOPE_REGION_PAD = 16;
 const SCOPE_REGION_TOP_PAD = 34;
+// Extra padding added per level of nesting that sits INSIDE a region, so an outer region stands
+// off from the inner ones it contains (otherwise nested boxes sharing an extreme member would
+// draw flush against each other).
+const SCOPE_REGION_NEST_STEP = 12;
 
 // The accent colour for a construct's scope region: red for an error/dead-letter
 // construct (catch), else the role accent (processors are blue).
@@ -321,20 +325,23 @@ type ScopeRegion = {
   bounds: ScopeBounds;
   accent: string;
   label: string;
+  /** Side / top padding for this region — larger for outer regions so nested ones don't touch. */
+  pad: number;
+  topPad: number;
 };
 
 // One construct's enclosure box. Always drawn FAINT (a quiet structural hint of nesting); it
 // — and its label — strengthen when the construct, or anything inside it, is the active
 // (selected/hovered) node. Non-interactive and behind the nodes, in flow coordinates.
 function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
-  const { bounds, accent, label } = region;
+  const { bounds, accent, label, pad, topPad } = region;
   return (
     <div
       className="pointer-events-none absolute rounded-xl border border-dashed transition-[background-color,border-color] duration-200"
       style={{
-        transform: `translate(${bounds.minX - SCOPE_REGION_PAD}px, ${bounds.minY - SCOPE_REGION_TOP_PAD}px)`,
-        width: bounds.maxX - bounds.minX + 2 * SCOPE_REGION_PAD,
-        height: bounds.maxY - bounds.minY + SCOPE_REGION_TOP_PAD + SCOPE_REGION_PAD,
+        transform: `translate(${bounds.minX - pad}px, ${bounds.minY - topPad}px)`,
+        width: bounds.maxX - bounds.minX + 2 * pad,
+        height: bounds.maxY - bounds.minY + topPad + pad,
         borderColor: `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`,
         backgroundColor: `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`,
         zIndex: 0,
@@ -377,7 +384,8 @@ function ScopeRegions({
 }) {
   // Geometry only depends on the layout, so it's cached across hover/selection changes.
   const regions = useMemo<ScopeRegion[]>(() => {
-    const out: ScopeRegion[] = [];
+    type Draft = Omit<ScopeRegion, 'pad' | 'topPad'>;
+    const drafts: Draft[] = [];
     for (const node of rfNodes) {
       if (node.type !== 'flowSplit') {
         continue;
@@ -390,9 +398,18 @@ function ScopeRegions({
       if (!bounds || boxEnclosesForeignNode(rfNodes, scope, bounds, SCOPE_REGION_PAD)) {
         continue;
       }
-      out.push({ id: node.id, scope, bounds, accent: constructAccent(node), label: (node.data as FlowCardData).label });
+      drafts.push({ id: node.id, scope, bounds, accent: constructAccent(node), label: (node.data as FlowCardData).label });
     }
-    return out;
+    // How many OTHER regions enclose each (its construct id is in their scope). The most-nested
+    // region keeps the base padding; each region that contains it gets one step more, so an
+    // outer box stands off from the inner boxes instead of drawing flush against them.
+    const depthOf = (r: Draft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
+    const depths = drafts.map(depthOf);
+    const maxDepth = depths.length > 0 ? Math.max(...depths) : 0;
+    return drafts.map((r, i) => {
+      const extra = (maxDepth - depths[i]) * SCOPE_REGION_NEST_STEP;
+      return { ...r, pad: SCOPE_REGION_PAD + extra, topPad: SCOPE_REGION_TOP_PAD + extra };
+    });
   }, [rfNodes, scopeOf]);
 
   if (regions.length === 0) {
@@ -421,7 +438,7 @@ type CanvasCallbacks = {
   onAddSasl?: (section: string, componentName: string) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
   /** Select a node + edit target (used to open the switch-case editor from a chip click). */
-  onSelectNode?: (nodeId: string, target: EditTarget) => void;
+  onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
@@ -449,10 +466,6 @@ function wireNodeActions(data: FlowCardData, node: Node, cb: CanvasCallbacks): v
   }
   if (data.missingSasl && cb.onAddSasl) {
     data.onAddSasl = cb.onAddSasl;
-  }
-  if (data.caseEditTarget && cb.onSelectNode) {
-    const target = data.caseEditTarget;
-    data.onEditCondition = () => cb.onSelectNode?.(node.id, target);
   }
   if (data.addAction && cb.onSlotInsert) {
     const payload = data.addAction.payload;
@@ -570,7 +583,7 @@ type DecorateEdgeOptions = {
   /** Nested insert (into a control-flow body) carried on an edge's `slotPayload`. */
   onSlotInsert?: (payload: FlowInsertPayload) => void;
   /** Click a routing-condition label to edit its case (`selectId`/`selectTarget` on the edge). */
-  onSelectNode?: (nodeId: string, target: EditTarget) => void;
+  onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
 };
 
 /**
@@ -641,7 +654,10 @@ export function decorateEdges(
  * its nearest selectable ancestor. Structural sub-nodes (switch cases, workflow
  * stages) have no `editTarget`, so clicking one selects the parent switch/workflow.
  */
-export function selectionTargetForNode(node: Node, nodes: Node[]): { id: string; target: EditTarget } | null {
+export function selectionTargetForNode(
+  node: Node,
+  nodes: Node[]
+): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
   let current: Node | undefined = node;
   while (current && !(current.data as FlowCardData).editTarget) {
     // The block layout positions nodes absolutely (no RF parentId), so walk the logical
@@ -650,7 +666,13 @@ export function selectionTargetForNode(node: Node, nodes: Node[]): { id: string;
     current = ownerId ? nodes.find((n) => n.id === ownerId) : undefined;
   }
   const target = current && (current.data as FlowCardData).editTarget;
-  return current && target ? { id: current.id, target } : null;
+  if (!(current && target)) {
+    return null;
+  }
+  // A case-entry node also carries its routing-condition target so the inspector can edit the
+  // condition (in its own section) alongside the component's config.
+  const caseTarget = (current.data as FlowCardData).caseEditTarget;
+  return caseTarget ? { id: current.id, target, caseTarget } : { id: current.id, target };
 }
 
 type PipelineFlowCanvasProps = {
@@ -671,7 +693,7 @@ type PipelineFlowCanvasProps = {
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
   /** Select a node by id + its edit target (clicking a node). */
-  onSelectNode?: (nodeId: string, target: EditTarget) => void;
+  onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   /** Clear the selection (clicking empty canvas). */
   onClearSelection?: () => void;
   // Edit-mode callbacks. When omitted the canvas is a read-only viewer.
@@ -874,7 +896,7 @@ export function PipelineFlowCanvas({
                   // selectable ancestor (the parent switch / workflow).
                   const selection = selectionTargetForNode(node, rfNodes);
                   if (selection) {
-                    onSelectNode?.(selection.id, selection.target);
+                    onSelectNode?.(selection.id, selection.target, selection.caseTarget);
                   }
                 }
           }

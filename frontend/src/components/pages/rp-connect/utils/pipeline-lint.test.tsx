@@ -64,6 +64,24 @@ describe('mapLintHintsToNodes', () => {
     expect(mapLintHintsToNodes('{{{', [hint(1, 'x')]).size).toBe(0);
     expect(mapLintHintsToNodes('', [hint(1, 'x')]).size).toBe(0);
   });
+
+  it("attaches a lint hint in a switch case's `check` to the CASE node, not the enclosing switch", () => {
+    // Line 6 is the (malformed) routing condition of the first output-switch case.
+    const switchYaml = `pipeline:
+  processors: []
+output:
+  switch:
+    cases:
+      - check: 'this.region == "us'
+        output:
+          drop: {}
+      - output:
+          drop: {}`;
+    const byNode = mapLintHintsToNodes(switchYaml, [hint(6, 'unexpected end of expression')]);
+    // The condition error maps to the case's own node (so the canvas highlights the case, and
+    // its inspector shows the error on the routing condition) — not the whole switch.
+    expect(byNode.has('output-switch-0')).toBe(true);
+  });
 });
 
 describe('nodeLineRanges', () => {

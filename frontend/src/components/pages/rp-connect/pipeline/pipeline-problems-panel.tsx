@@ -25,11 +25,13 @@ export type PipelineProblem = {
   nodeId?: string;
   nodeLabel?: string;
   target?: EditTarget;
+  /** A case-entry node's routing-condition target, so the inspector opens its condition. */
+  caseTarget?: EditTarget;
 };
 
 type PipelineProblemsPanelProps = {
   problems: PipelineProblem[];
-  onSelectProblem: (nodeId: string, target: EditTarget) => void;
+  onSelectProblem: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   /** Secrets referenced by the pipeline that don't exist in the store yet. */
   missingSecrets?: string[];
   /** Open the add-secrets flow (omit to hide the action, e.g. in view mode). */
@@ -202,7 +204,7 @@ export function PipelineProblemsPanel({
               onSelect={
                 problem.nodeId && problem.target
                   ? () => {
-                      onSelectProblem(problem.nodeId as string, problem.target as EditTarget);
+                      onSelectProblem(problem.nodeId as string, problem.target as EditTarget, problem.caseTarget);
                       setOpen(false);
                     }
                   : undefined

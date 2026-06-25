@@ -24,16 +24,11 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
   const doc = parseDocument(yaml, { lineCounter });
   const { nodes } = parsePipelineFlowTree(yaml);
   const ranges: NodeRange[] = [];
-  for (const node of nodes) {
-    if (!node.editTarget) {
-      continue;
-    }
-    const yamlNode = doc.getIn(editTargetPath(node.editTarget), true) as
-      | { range?: [number, number, number] }
-      | undefined;
+  const pushRange = (id: string, path: (string | number)[]) => {
+    const yamlNode = doc.getIn(path, true) as { range?: [number, number, number] } | undefined;
     const range = yamlNode?.range;
     if (!range) {
-      continue;
+      return;
     }
     const start = lineCounter.linePos(range[0]).line;
     // `range[1]` is the end of the node's own content; `range[2]` extends past the
@@ -42,7 +37,24 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
     // newline) step back to the last line that actually belongs to the node.
     const endPos = lineCounter.linePos(range[1]);
     const end = endPos.col === 1 && endPos.line > start ? endPos.line - 1 : endPos.line;
-    ranges.push({ id: node.id, start, end, span: end - start });
+    ranges.push({ id, start, end, span: end - start });
+  };
+  for (const node of nodes) {
+    if (node.editTarget) {
+      pushRange(node.id, editTargetPath(node.editTarget));
+    }
+    // A switch case's range (which includes its routing `check`, sitting outside the component's
+    // own body) is attributed to the RENDERED case-entry node — so a condition error highlights
+    // the case (and shows on its inspector's condition) rather than bubbling up to the whole
+    // switch. For an output switch that entry is the case node itself; for a processor switch the
+    // case wrapper isn't rendered, so it's the wrapper's first child. The case span is smaller
+    // than the switch's, so `enclosingNodeId` prefers it.
+    if (node.caseEditTarget) {
+      const entryId = node.editTarget ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
+      if (entryId) {
+        pushRange(entryId, editTargetPath(node.caseEditTarget));
+      }
+    }
   }
   return ranges;
 }

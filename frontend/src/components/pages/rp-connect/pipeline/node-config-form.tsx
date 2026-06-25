@@ -607,6 +607,9 @@ type NodeConfigFormProps = {
   resourceLabels?: Record<ResourceKind, string[]>;
   /** Create a new resource of a kind and link it to the field being edited. */
   onCreateResource?: (kind: ResourceKind) => void;
+  /** Rendered at the top of the scroll area (e.g. a case's routing-condition section), so it
+      scrolls WITH the form rather than sticking above it. */
+  headerSlot?: React.ReactNode;
 };
 
 export function NodeConfigForm({
@@ -616,6 +619,7 @@ export function NodeConfigForm({
   onApply,
   resourceLabels,
   onCreateResource,
+  headerSlot,
 }: NodeConfigFormProps) {
   const fields = spec.config?.children ?? [];
   const componentValue = value[componentName];
@@ -679,6 +683,8 @@ export function NodeConfigForm({
     <ResourceFieldContext.Provider value={resourceCtx}>
       <div className="flex min-h-0 flex-1 flex-col">
         <ScrollShadow contentClassName="space-y-4 px-4 py-4">
+          {/* Full-bleed to the scroll edges and top, then the normal padded fields follow. */}
+          {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
           <div className="flex flex-col gap-1.5">
             <Label className="font-medium text-sm">label</Label>
             <Controller
@@ -750,16 +756,17 @@ export function NodeConfigForm({
           ) : null}
         </ScrollShadow>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
-          {isDirty ? (
+        {/* The save bar only appears once there are unsaved changes — no idle, empty footer. */}
+        {isDirty ? (
+          <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
             <Button onClick={() => reset()} type="button" variant="ghost">
               Reset
             </Button>
-          ) : null}
-          <Button disabled={!isDirty} onClick={submit} type="button">
-            Apply changes
-          </Button>
-        </div>
+            <Button onClick={submit} type="button">
+              Apply changes
+            </Button>
+          </div>
+        ) : null}
       </div>
     </ResourceFieldContext.Provider>
   );

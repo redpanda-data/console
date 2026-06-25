@@ -21,6 +21,12 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import {
@@ -29,15 +35,17 @@ import {
   Box,
   EllipsisVertical,
   FileCode2,
+  Info,
   type LucideIcon,
   MousePointerClick,
   MousePointerSquareDashed,
   Plus,
+  Split,
   Trash2,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
+import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { NodeConfigForm, type ResourceKind } from './node-config-form';
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
@@ -48,6 +56,7 @@ import {
   buildInsertableComponent,
   countResourceReferences,
   type EditTarget,
+  editTargetPath,
   firstKey,
   getComponentAt,
   listResourceLabels,
@@ -88,6 +97,9 @@ function targetComponentType(target: EditTarget): ConnectComponentType {
 type NodeInspectorProps = {
   /** The selected component, or null when nothing is selected. */
   target: EditTarget | null;
+  /** When the selected node is a switch-case ENTRY, the edit target for the case's routing
+      condition — surfaced as an editable section at the TOP of the panel. */
+  caseTarget?: EditTarget | null;
   /** Canonical pipeline YAML; the component is read from / written back to it. */
   yaml: string;
   /** Component specs, used to drive the schema form. */
@@ -106,6 +118,32 @@ type NodeInspectorProps = {
   onClose?: () => void;
 };
 
+// The lint message (if any) that falls on a switch case's routing `check` line — so the
+// condition field can render its own error state, distinct from a problem in the component body.
+function lintMessageOnCaseCheck(
+  yaml: string,
+  caseTarget: EditTarget,
+  lintHints?: LintHint[]
+): string | undefined {
+  if (!lintHints?.length) {
+    return;
+  }
+  try {
+    const lineCounter = new LineCounter();
+    const doc = parseDocument(yaml, { lineCounter });
+    const checkNode = doc.getIn([...editTargetPath(caseTarget), 'check'], true) as
+      | { range?: [number, number, number] }
+      | undefined;
+    if (!checkNode?.range) {
+      return;
+    }
+    const line = lineCounter.linePos(checkNode.range[0]).line;
+    return lintHints.find((h) => h.line === line)?.hint;
+  } catch {
+    return;
+  }
+}
+
 /**
  * The always-present right rail. Shows the selected node's identity and either a
  * schema-driven form (editable components) or scoped YAML (read-only / unknown
@@ -113,6 +151,7 @@ type NodeInspectorProps = {
  */
 export function NodeInspector({
   target,
+  caseTarget,
   yaml,
   components,
   onApply,
@@ -124,6 +163,14 @@ export function NodeInspector({
   onClose,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
+  // The routing condition for a case-entry node, read from its switch case.
+  const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
+  // A lint problem that lands on the condition's `check` line — so the condition field can show
+  // its own error state (red), not just the banner at the top.
+  const conditionError = useMemo(
+    () => (caseTarget ? lintMessageOnCaseCheck(yaml, caseTarget, lintHints) : undefined),
+    [yaml, caseTarget, lintHints]
+  );
   const componentName = component ? firstKey(component) : undefined;
 
   const spec = useMemo(() => {
@@ -235,13 +282,36 @@ export function NodeInspector({
         <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
       ) : null}
       {(() => {
+        // A case-entry node routes "WHEN <check>" — its condition is edited at the top of the
+        // panel (its own target). For the form editor it scrolls WITH the fields (headerSlot);
+        // the rarer raw/read-only case-entries render it above the editor.
+        const conditionSection =
+          caseTarget && caseObject ? (
+            <CaseConditionSection
+              caseObject={caseObject}
+              error={conditionError}
+              onApply={(next) => {
+                const updated = setComponentAt(yaml, caseTarget, next);
+                if (updated !== null) {
+                  onApply(updated);
+                }
+              }}
+              readOnly={readOnly}
+            />
+          ) : null;
         if (readOnly) {
-          return <ReadOnlyComponent component={component} />;
+          return (
+            <>
+              {conditionSection}
+              <ReadOnlyComponent component={component} />
+            </>
+          );
         }
         if (useForm && spec) {
           return (
             <NodeConfigForm
               componentName={componentName}
+              headerSlot={conditionSection}
               // Re-key on the component's current value so that after Apply (the YAML
               // changes) the form re-initializes from the saved config — clearing the
               // dirty state so "Apply changes" disables and the edit is committed.
@@ -254,7 +324,12 @@ export function NodeInspector({
             />
           );
         }
-        return <RawComponentEditor component={component} onApply={handleApply} />;
+        return (
+          <>
+            {conditionSection}
+            <RawComponentEditor component={component} onApply={handleApply} />
+          </>
+        );
       })()}
     </div>
   );
@@ -325,6 +400,29 @@ const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
   </div>
 );
 
+// Apply a routing-condition `check` to a switch case, preserving key order: a non-empty check
+// is set in place; an empty one is omitted (the default/else case). Rebuilds rather than
+// `delete`-ing, so it stays out of the YAML's way and clean per the linter.
+function caseWithCheck(caseObject: Record<string, unknown>, check: string): Record<string, unknown> {
+  const trimmed = check.trim();
+  const next: Record<string, unknown> = {};
+  let placed = false;
+  for (const [key, value] of Object.entries(caseObject)) {
+    if (key === 'check') {
+      placed = true;
+      if (trimmed !== '') {
+        next.check = trimmed;
+      }
+    } else {
+      next[key] = value;
+    }
+  }
+  if (trimmed !== '' && !placed) {
+    next.check = trimmed;
+  }
+  return next;
+}
+
 // Edits a switch case's routing condition (`check`). An empty condition makes it the
 // default/else case. The case's body (processors / output) are separate nodes on the
 // canvas; this rail only owns the condition.
@@ -348,15 +446,7 @@ const SwitchCaseEditor = ({
   useEffect(() => setCheck(initial), [initial]);
   const dirty = check !== initial;
 
-  const apply = () => {
-    const next: Record<string, unknown> = { ...caseObject };
-    if (check.trim() === '') {
-      delete next.check;
-    } else {
-      next.check = check;
-    }
-    onApply(next);
-  };
+  const apply = () => onApply(caseWithCheck(caseObject, check));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -400,6 +490,84 @@ const SwitchCaseEditor = ({
           </Button>
         )}
       </InspectorFooter>
+    </div>
+  );
+};
+
+// The routing condition of a case-entry node, edited inline at the TOP of that node's
+// inspector panel (gold, matching the on-canvas condition). Writes the case's `check`; an
+// empty value means the default (else) case. Separate Apply from the component form below,
+// since it targets the switch case, not the component.
+const CaseConditionSection = ({
+  caseObject,
+  onApply,
+  readOnly,
+  error,
+}: {
+  caseObject: Record<string, unknown>;
+  onApply: (next: Record<string, unknown>) => void;
+  readOnly?: boolean;
+  /** A lint message on this condition — renders the input in its error state. */
+  error?: string;
+}) => {
+  const initial = typeof caseObject.check === 'string' ? caseObject.check : '';
+  const [check, setCheck] = useState(initial);
+  useEffect(() => setCheck(initial), [initial]);
+  const dirty = check !== initial;
+  const apply = () => onApply(caseWithCheck(caseObject, check));
+  return (
+    <div className="border-condition/30 border-b bg-condition/5 px-4 py-3">
+      <div className="flex items-center gap-1.5 pb-2">
+        <Split className="size-3.5 text-condition" />
+        <Label className="font-semibold text-[11px] text-condition uppercase tracking-wide">Routing condition</Label>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  aria-label="About routing conditions"
+                  className="text-condition/60 transition-colors hover:text-condition"
+                  type="button"
+                />
+              }
+            >
+              <Info className="size-3.5" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              A Bloblang expression evaluated per message — this branch runs when it's true. Leave it empty to make
+              this the default (else) case.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <Input
+        aria-invalid={error ? true : undefined}
+        className="w-full font-mono"
+        disabled={readOnly}
+        onChange={(e) => setCheck(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && dirty) {
+            apply();
+          }
+        }}
+        placeholder='e.g. this.region == "us"'
+        value={check}
+      />
+      {/* The field's own error message, so the problem is shown right where it's fixed (not
+          only in the banner). Hidden once the user starts editing — they're addressing it. */}
+      {error && !dirty ? (
+        <Text className="flex items-center gap-1 pt-1.5 text-destructive" variant="bodySmall">
+          <AlertCircle className="size-3.5 shrink-0" />
+          {error}
+        </Text>
+      ) : null}
+      {!readOnly && dirty ? (
+        <div className="flex justify-end pt-2">
+          <Button onClick={apply} size="sm" type="button" variant="ghost">
+            Update condition
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 };

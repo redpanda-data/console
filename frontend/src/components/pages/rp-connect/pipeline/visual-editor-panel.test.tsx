@@ -184,10 +184,10 @@ describe('VisualEditorPanel', () => {
 
     await user.click(apply);
 
-    // The change is committed (10m now shown) and the form re-initialized, so Apply
-    // is disabled again (nothing pending).
+    // The change is committed (10m now shown) and the form re-initialized, so the save
+    // bar disappears again (nothing pending).
     expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
   });
 
   test('undo reverts an applied change and redo re-applies it', async () => {

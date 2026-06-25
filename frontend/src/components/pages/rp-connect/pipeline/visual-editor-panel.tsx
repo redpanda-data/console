@@ -40,7 +40,7 @@ import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { changedNodeIds } from '../utils/pipeline-diff';
-import { type FlowInsertPayload, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import { type FlowInsertPayload, type PipelineFlowNode, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
   appendResource,
@@ -86,6 +86,24 @@ type InsertParams = {
   target: PendingInsert;
   components: ConnectComponentSpec[];
 };
+
+// The routing-condition target for a node carrying a lint problem, so selecting that problem
+// opens the inspector on its condition. Output switch: the node owns it; processor switch: the
+// case wrapper owns it and this node is the rendered entry (the wrapper's first child).
+function caseTargetForNode(
+  node: PipelineFlowNode | undefined,
+  flowNodes: PipelineFlowNode[]
+): EditTarget | undefined {
+  if (node?.caseEditTarget) {
+    return node.caseEditTarget;
+  }
+  if (!node?.parentId) {
+    return;
+  }
+  const parent = flowNodes.find((n) => n.id === node.parentId);
+  const firstChild = flowNodes.find((n) => n.parentId === node.parentId);
+  return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
+}
 
 // Resolve the chosen connector + insertion target to the next YAML (or null if the
 // component couldn't be generated). Caches and rate limits always append to their
@@ -278,7 +296,7 @@ export function VisualEditorPanel({
   onNavigateToYaml,
 }: VisualEditorPanelProps) {
   const isEditing = mode !== 'view';
-  const [selected, setSelected] = useState<{ id: string; target: EditTarget } | null>(null);
+  const [selected, setSelected] = useState<{ id: string; target: EditTarget; caseTarget?: EditTarget } | null>(null);
   const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
 
   // Mirror the selection into the shared store so switching to the YAML lane can
@@ -341,6 +359,7 @@ export function VisualEditorPanel({
     const list: PipelineProblem[] = [];
     for (const [nodeId, hints] of lintByNode) {
       const node = nodesById.get(nodeId);
+      const caseTarget = caseTargetForNode(node, flowNodes);
       for (const hint of hints) {
         mapped.add(hint);
         list.push({
@@ -350,6 +369,7 @@ export function VisualEditorPanel({
           nodeId,
           nodeLabel: node?.label,
           target: node?.editTarget,
+          caseTarget,
         });
       }
     }
@@ -547,7 +567,7 @@ export function VisualEditorPanel({
             onAddTopic={isEditing ? onAddTopic : undefined}
             onClearSelection={() => setSelected(null)}
             onInsert={isEditing ? (index) => setPendingInsert({ context: 'spine', index }) : undefined}
-            onSelectNode={(id, target) => setSelected({ id, target })}
+            onSelectNode={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
             onSlotInsert={isEditing ? handleSlotInsert : undefined}
             selectedNodeId={selected?.id}
             selectedTargetKind={selected?.target.kind}
@@ -585,7 +605,7 @@ export function VisualEditorPanel({
           <PipelineProblemsPanel
             missingSecrets={missingSecrets}
             onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-            onSelectProblem={(id, target) => setSelected({ id, target })}
+            onSelectProblem={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
             problems={problems}
           />
           {onBrowseTemplates ? (
@@ -616,6 +636,7 @@ export function VisualEditorPanel({
                 min-width so it clips rather than reflows while the width animates. */}
               <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
                 <NodeInspector
+                  caseTarget={selected.caseTarget}
                   components={components}
                   lintHints={lintByNode.get(selected.id)}
                   onApply={onYamlChange}

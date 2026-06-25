@@ -69,10 +69,10 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.getByText('fnv1a_hash')).toBeInTheDocument();
   });
 
-  test('Apply is disabled until something changes', async () => {
+  test('the save bar appears only once something changes', async () => {
     const user = userEvent.setup();
     renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
-    expect(applyButton()).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
 
     await user.type(screen.getByDisplayValue('orig'), 'X');
     expect(applyButton()).toBeEnabled();

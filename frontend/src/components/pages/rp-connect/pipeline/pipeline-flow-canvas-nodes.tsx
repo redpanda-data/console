@@ -230,13 +230,10 @@ const ConditionRow = ({
   data,
   onEdit,
   selected,
-  topBorder,
 }: {
   data: FlowCardData;
   onEdit?: () => void;
   selected?: boolean;
-  /** Place the divider above the row (when the row is the card's LAST element, e.g. a split). */
-  topBorder?: boolean;
 }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
   if (data.isErrorPath) {
@@ -251,8 +248,7 @@ const ConditionRow = ({
     eyebrow = 'default';
   }
   const cls = cn(
-    'flex w-full items-center gap-1.5 px-3 py-1.5 text-left',
-    topBorder ? 'border-t' : 'border-b',
+    'flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left',
     CONDITION_ROW_TONE[tone],
     onEdit && 'nodrag nopan cursor-pointer transition-[filter] hover:brightness-95',
     selected && 'ring-2 ring-primary ring-inset'
@@ -602,10 +598,14 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         cardRing(data)
       )}
     >
-      {/* Tinted title band carries the role colour; the body below stays clean. A case entry
-          carries its routing condition on a dedicated row below (not the header chip), so the
-          band's bottom divider is dropped — the condition row provides the separation. */}
-      <div className={cn(!data.caseEditTarget && 'border-border/60 border-b')} style={headerTintStyle(accent)}>
+      {/* A switch case's routing condition sits at the TOP of the card — it reads as
+          "WHEN <check> → this node" and makes the editable condition the first, most obvious
+          section to click (rather than a strip tucked under the header). */}
+      {data.caseEditTarget ? (
+        <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} />
+      ) : null}
+      {/* Tinted title band carries the role colour; the body below stays clean. */}
+      <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <Text
             as="span"
@@ -632,9 +632,6 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
           </Text>
         </div>
       </div>
-      {data.caseEditTarget ? (
-        <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} />
-      ) : null}
       {data.labelText ? (
         // When no meta rows follow, the label badge is the card's last row — give it a
         // bottom inset so it doesn't sit flush against the card edge.
@@ -1221,6 +1218,11 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           cardRing(data)
         )}
       >
+        {/* A switch-case ENTRY's routing condition sits at the TOP — "WHEN <check> → this
+            construct" — so it's the first, most obvious section to click (same as leaf cards). */}
+        {data.caseEditTarget ? (
+          <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} />
+        ) : null}
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
           <span className="flex min-w-0 flex-1 flex-col">
@@ -1245,11 +1247,6 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
         </div>
-        {/* A switch-case ENTRY shows the case's routing condition on its own row (same pattern as
-            leaf cards) — not the generic switch/catch markers, whose descriptor states their role. */}
-        {data.caseEditTarget ? (
-          <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} topBorder />
-        ) : null}
         {/* "Add case / Add input" lives INSIDE the construct card as a footer row — clearly tied
             to the node — rather than a floating pill below it (edit mode only). */}
         {data.addAction && data.onAddChild ? (
@@ -1465,7 +1462,9 @@ export function FlowGraphEdge({
           onClick={d.onLabelClick}
           tone={tone}
           x={labelX}
-          y={labelY}
+          // When an on-edge "+" shares this midpoint, lift the label clear of it so the two
+          // don't overprint (e.g. a brand-new empty case's "default" over its add "+").
+          y={d?.onInsert ? labelY - 18 : labelY}
         />
       ) : null}
       {d?.onInsert ? <EdgeInsertButton onInsert={d.onInsert} x={insertX} y={insertY} /> : null}
