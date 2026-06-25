@@ -2281,7 +2281,9 @@ const GRAPH_INSERT_W = 150;
 const GRAPH_INSERT_H = 24;
 // Dagre spacing: gap between ranks (horizontal), between nodes in a rank (vertical).
 const GRAPH_RANKSEP = 64;
-const GRAPH_NODESEP = 24;
+// Generous vertical spacing between stacked branches so routing-condition labels (which sit
+// on the fan-out edges) have room and don't overlap each other or the split.
+const GRAPH_NODESEP = 38;
 const GRAPH_EDGESEP = 16;
 const GRAPH_MARGIN = 24;
 // Resource dependency lane: a horizontal bus just below the flow, with the resource cards
@@ -2316,17 +2318,13 @@ type GraphEdgeSpec = {
   selectId?: string;
   selectTarget?: EditTarget;
 };
-// An editing affordance placed AFTER layout, anchored beside a flow node (so it never
-// affects Dagre's ranks). Rendered as a quiet "+" (edit mode only). A `ghost` add sits as
-// a dashed branch off the split/hub (below the existing branches); `fanIn` ghosts (input
-// brokers) sit to the LEFT of the hub and point into it.
+// An editing affordance placed AFTER layout, just below its anchor node (so it never
+// affects Dagre's ranks). Rendered as a dashed "+ Add …" pill (edit mode only).
 type GraphInsertSpec = {
   id: string;
   anchorId: string;
   payload: FlowInsertPayload;
   label: string;
-  ghost?: boolean;
-  fanIn?: boolean;
 };
 
 type GraphSegment = { entry: string; exit: string } | null;
@@ -2360,18 +2358,6 @@ function addGraphEdge(ctx: GraphCtx, edge: GraphEdgeSpec): void {
 function addGraphInsert(ctx: GraphCtx, id: string, anchorId: string, payload: FlowInsertPayload, label: string): void {
   if (ctx.editable) {
     ctx.inserts.push({ id, anchorId, payload, label });
-  }
-}
-function addGraphGhostInsert(
-  ctx: GraphCtx,
-  id: string,
-  anchorId: string,
-  fanIn: boolean,
-  payload: FlowInsertPayload,
-  label: string
-): void {
-  if (ctx.editable) {
-    ctx.inserts.push({ id, anchorId, payload, label, ghost: true, fanIn });
   }
 }
 
@@ -2470,25 +2456,17 @@ function emitFan(
     }
   }
 
-  // Container-level add affordance: a faint dashed "ghost branch" off the split/hub for a
-  // new switch case, broker sink, or input. (A branch's add rides its own body edge.)
+  // Container-level add affordance, anchored to (and placed just below) the control-flow
+  // node itself — a new switch case, broker sink, or input.
   const addAnchor = split ?? merge;
-  if (addAnchor && !node.branch) {
+  if (addAnchor) {
     if (node.addChildSlot) {
-      addGraphGhostInsert(
-        ctx,
-        `${node.id}-addcase`,
-        addAnchor,
-        !split,
-        { kind: 'addChild', ...node.addChildSlot },
-        'Add case'
-      );
+      addGraphInsert(ctx, `${node.id}-addcase`, addAnchor, { kind: 'addChild', ...node.addChildSlot }, 'Add case');
     } else if (node.insertSlot) {
-      addGraphGhostInsert(
+      addGraphInsert(
         ctx,
         `${node.id}-add`,
         addAnchor,
-        !split,
         { kind: 'insert', ...node.insertSlot, index: lanes.length },
         `Add ${node.insertSlot.accepts}`
       );
@@ -2586,13 +2564,16 @@ function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
     return { entry: node.id, exit: node.id };
   }
   const kids = ctx.childrenOf(node.id);
-  const sides = fanSides(node);
-  if (node.branch || sides.out || sides.in) {
-    return emitFan(node, kids, sides, ctx);
-  }
-  if (kids.length === 0) {
-    // An empty sequential container (no children, no fan) — a bare marker with an insert.
+  // A `branch` operates on a copy and merges the result back, but visually it reads
+  // cleanest as a marker → body → continue (the branch node conveys the copy/merge; its
+  // request/result maps are on the card). No separate merge node, no dashed copy/merge
+  // edges — those produced redundant merges-in-a-row and a confusing dashed→solid flip.
+  if (node.branch) {
     return emitSequentialGroup(node, kids, ctx);
+  }
+  const sides = fanSides(node);
+  if (sides.out || sides.in) {
+    return emitFan(node, kids, sides, ctx);
   }
   return emitSequentialGroup(node, kids, ctx);
 }
@@ -2764,8 +2745,9 @@ function placeResourceDependencies(
     bottom = Math.max(bottom, laneY + h);
   }
 
-  // Dependency cables: out of the user's bottom, down to a staggered bus just below the
-  // flow, across to the resource, then down into its top.
+  // Dependency cables: out of the user's bottom, JOG into the clear inter-rank gap nearest
+  // the resource (so the drop never crosses the nodes stacked in the user's column), down
+  // a staggered bus just below the flow, across to the resource, then into its top.
   refs.forEach((ref, i) => {
     const user = boxes.get(ref.userId);
     const rx = resLeft.get(ref.resourceId);
@@ -2775,11 +2757,17 @@ function placeResourceDependencies(
     const startX = user.x - user.w / 2 + HANDLE_X;
     const startY = user.y + user.h / 2;
     const endX = rx + HANDLE_X;
+    // Drop in the rank gap on whichever side faces the resource — gaps between ranks are
+    // node-free, so the vertical run is guaranteed clear of other cards.
+    const toLeft = endX < user.x;
+    const gapX = toLeft ? user.x - user.w / 2 - GRAPH_RANKSEP / 2 : user.x + user.w / 2 + GRAPH_RANKSEP / 2;
     const busY = bounds.maxY + RES_BUS_GAP + (i % 4) * RES_BUS_STAGGER;
     rfEdges.push(
       refEdge(`ref-${ref.userId}-${ref.resourceId}`, ref.userId, ref.resourceId, [
         { x: startX, y: startY },
-        { x: startX, y: busY },
+        { x: startX, y: startY + 14 },
+        { x: gapX, y: startY + 14 },
+        { x: gapX, y: busY },
         { x: endX, y: busY },
         { x: endX, y: laneY },
       ])
@@ -2788,13 +2776,11 @@ function placeResourceDependencies(
   return { right, bottom };
 }
 
-// Place the editing affordances after layout. A `ghost` add sits as a faint dashed branch
-// off the split/hub (below the existing branches, or to the left for an input broker); a
-// plain insert sits just below its anchor.
+// Place the editing affordances after layout: a dashed "+ Add …" pill just below its
+// control-flow node (close, so it clearly belongs to that node).
 function placeGraphInserts(
   ctx: GraphCtx,
   rfNodes: Node[],
-  rfEdges: Edge[],
   boxes: Map<string, NodeBox>
 ): { maxX: number; maxY: number } {
   let maxX = Number.NEGATIVE_INFINITY;
@@ -2804,33 +2790,8 @@ function placeGraphInserts(
     if (!anchor) {
       continue;
     }
-    let cx: number;
-    let cy: number;
-    if (ins.ghost) {
-      // Position below the lowest existing branch, aligned with them — a "next branch" slot.
-      const siblingIds = rfEdges
-        .filter((e) => (ins.fanIn ? e.target === ins.anchorId : e.source === ins.anchorId))
-        .map((e) => (ins.fanIn ? e.source : e.target));
-      const sibs = siblingIds.map((id) => boxes.get(id)).filter((b): b is NodeBox => b !== undefined);
-      const lowest = sibs.length > 0 ? Math.max(...sibs.map((b) => b.y + b.h / 2)) : anchor.y + anchor.h / 2;
-      cx = sibs.length > 0 ? sibs[0].x : anchor.x + (ins.fanIn ? -GRAPH_RANKSEP - FULL_DIMS.cardW : GRAPH_RANKSEP);
-      cy = lowest + 30 + GRAPH_INSERT_H / 2;
-      // A faint dashed ghost branch connecting the split/hub to the add slot.
-      const ghostEdge: Edge = {
-        id: `${ins.id}-ghost`,
-        source: ins.fanIn ? ins.id : ins.anchorId,
-        target: ins.fanIn ? ins.anchorId : ins.id,
-        sourceHandle: 'r',
-        targetHandle: 'l',
-        type: 'flowGraphEdge',
-        zIndex: 4,
-        data: { graphType: 'reference', tone: 'muted', dashed: true, ghost: true },
-      };
-      rfEdges.push(ghostEdge);
-    } else {
-      cx = anchor.x;
-      cy = anchor.y + anchor.h / 2 + 10 + GRAPH_INSERT_H / 2;
-    }
+    const cx = anchor.x;
+    const cy = anchor.y + anchor.h / 2 + 10 + GRAPH_INSERT_H / 2;
     rfNodes.push({
       id: ins.id,
       type: 'flowInsert',
@@ -2841,7 +2802,7 @@ function placeGraphInserts(
       draggable: false,
       zIndex: 8,
       style: { pointerEvents: 'all' },
-      data: { payload: ins.payload, label: ins.label, ghost: ins.ghost },
+      data: { payload: ins.payload, label: ins.label, ghost: true },
     });
     maxX = Math.max(maxX, cx + GRAPH_INSERT_W / 2);
     maxY = Math.max(maxY, cy + GRAPH_INSERT_H / 2);
@@ -2962,6 +2923,9 @@ export function computeGraphLayout(
         ...(ge.insertIndex === undefined ? {} : { insertIndex: ge.insertIndex }),
         ...(ge.slot ? { slotPayload: ge.slot } : {}),
         ...(ge.selectId && ge.selectTarget ? { selectId: ge.selectId, selectTarget: ge.selectTarget } : {}),
+        // Condition labels ride near their TARGET (≈0.7 along the edge) so a fan's labels
+        // spread out by their distinct branches instead of piling up at the split.
+        ...((ge.type === 'conditional' || ge.type === 'error') && ge.label ? { labelT: 0.72 } : {}),
         animated: ge.type === 'flow' || ge.type === 'conditional',
       },
       markerEnd:
@@ -2984,7 +2948,7 @@ export function computeGraphLayout(
   }
 
   // Editing affordances (ghost branches / inserts) then the resource dependency lane.
-  const inserts = placeGraphInserts(ctx, rfNodes, rfEdges, centerById);
+  const inserts = placeGraphInserts(ctx, rfNodes, centerById);
   maxX = Math.max(maxX, inserts.maxX);
   maxY = Math.max(maxY, inserts.maxY);
   const { right, bottom } = placeResourceDependencies(nodes, rfNodes, rfEdges, centerById, { minX, maxX, maxY });

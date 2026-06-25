@@ -901,16 +901,16 @@ describe('computeFlowLayout', () => {
     expect((branch?.position.x ?? 0) < (output?.position.x ?? 0)).toBe(true);
   });
 
-  it('renders a branch as a compact split whose body fans out to a lane and merges back', () => {
+  it('renders a branch as a compact marker with its body flowing inline (no merge node)', () => {
     const branch = byId('proc-1');
     const child = byId('proc-1-processors-p0');
-    // The branch no longer grows to enclose its body: it is a compact split card and its
-    // body processor is an absolutely-positioned lane node to its right (not nested).
+    // The branch is a compact split/marker card; its body processor flows inline to its
+    // right (absolute, not nested). It does NOT get a separate merge node — the branch
+    // node itself conveys the copy/merge, keeping the graph clean.
     expect(branch?.type).toBe('flowSplit');
     expect(child?.parentId).toBeUndefined();
     expect((child?.position.x ?? 0) > (branch?.position.x ?? 0)).toBe(true);
-    // An explicit merge node reconverges the branch body.
-    expect(rfNodes.some((n) => n.id === 'proc-1-merge' && n.type === 'flowMerge')).toBe(true);
+    expect(rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(false);
   });
 
   it('annotates each top-level flow edge with the processor index an insertion there would use', () => {
@@ -983,11 +983,10 @@ output:
 
   it('always shows the full graph — collapse is not applied on the Dagre canvas', () => {
     // Collapse was dropped for the graph canvas: passing collapsedIds has no effect, so a
-    // control-flow construct always renders its split, body, and merge.
+    // control-flow construct always renders its marker and body.
     const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(['proc-1']));
     expect(layout.rfNodes.find((n) => n.id === 'proc-1')?.type).toBe('flowSplit');
     expect(layout.rfNodes.some((n) => n.id === 'proc-1-processors-p0')).toBe(true);
-    expect(layout.rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(true);
   });
 
   it('places array resources in a lane below the flow', () => {
@@ -1036,13 +1035,15 @@ cache_resources:
   const edge = (id: string) => edges().find((e) => e.id === id);
   const data = (id: string) => edge(id)?.data as { tone?: string; dashed?: boolean; label?: string } | undefined;
 
-  it('draws a branch as copy-out (request_map) and merge-back (result_map)', () => {
-    // Dashed primary edges (no text label — the dashed style + merge node convey it).
-    expect(data('copy-proc-1')).toMatchObject({ tone: 'primary', dashed: true });
-    expect(data('merge-proc-1')).toMatchObject({ tone: 'primary', dashed: true });
-    // Copy leaves the split (the branch card); merge returns into the merge node.
-    expect(edge('copy-proc-1')?.source).toBe('proc-1');
-    expect(edge('merge-proc-1')?.target).toBe('proc-1-merge');
+  it('renders a branch inline as a marker → body, with no copy/merge edges or merge node', () => {
+    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    expect(layout.rfNodes.find((n) => n.id === 'proc-1')?.type).toBe('flowSplit');
+    // No dashed copy/merge edges and no separate merge node — the branch flows inline.
+    expect(layout.rfEdges.some((e) => e.id.startsWith('copy-') || e.id.startsWith('merge-'))).toBe(false);
+    expect(layout.rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(false);
+    // Its body flows from the branch marker via a solid flow edge.
+    const bodyEdge = layout.rfEdges.find((e) => e.source === 'proc-1' && e.target === 'proc-1-processors-p0');
+    expect((bodyEdge?.data as { dashed?: boolean } | undefined)?.dashed).toBeFalsy();
   });
 
   it('labels switch fan-out edges with their routing condition, styled by branch (error vs normal)', () => {
@@ -1095,7 +1096,7 @@ output:
     });
   });
 
-  it('renders an input broker as a labeled hub the inputs fan into, with a ghost "Add input"', () => {
+  it('renders an input broker as a labeled hub the inputs fan into, with an "Add input"', () => {
     const yaml = `input:
   broker:
     inputs:
@@ -1108,9 +1109,8 @@ output:
     const hub = layout.rfNodes.find((n) => n.id === 'input-broker');
     expect(hub?.type).toBe('flowSplit');
     expect(layout.rfEdges.some((e) => e.id === 'fanin-input-broker-0' && e.target === 'input-broker')).toBe(true);
-    // "Add input" is a ghost branch (edit mode only) reached by a dashed connector.
+    // "Add input" is an affordance anchored to (just below) the broker hub, edit mode only.
     expect(layout.rfNodes.some((n) => n.id === 'input-broker-add' && n.type === 'flowInsert')).toBe(true);
-    expect(layout.rfEdges.some((e) => (e.data as { ghost?: boolean }).ghost)).toBe(true);
   });
 
   it('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {
@@ -1148,14 +1148,12 @@ output:
     expect(byId('proc-0')?.editTarget).toEqual({ kind: 'processor', index: 0 });
   });
 
-  it('reconverges a branch at a merge node and fans an output switch from a split', () => {
+  it('renders a branch inline and fans an output switch from a split (no terminal merge)', () => {
     const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
     const find = (id: string) => layout.rfNodes.find((n) => n.id === id);
-    // The branch is a compact split with a merge node to its right on the same rail.
+    // The branch is a compact marker with no merge node (it flows inline).
     expect(find('proc-1')?.type).toBe('flowSplit');
-    const branchMerge = find('proc-1-merge');
-    expect(branchMerge?.type).toBe('flowMerge');
-    expect((branchMerge?.position.x ?? 0) > (find('proc-1')?.position.x ?? 0)).toBe(true);
+    expect(find('proc-1-merge')).toBeUndefined();
     // The output switch fans out from a split; its sinks terminate, so it has no merge.
     expect(find('output-switch')?.type).toBe('flowSplit');
     expect(find('output-switch-merge')).toBeUndefined();

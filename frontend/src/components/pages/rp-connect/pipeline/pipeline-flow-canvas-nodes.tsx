@@ -1073,24 +1073,24 @@ const EdgeInsertButton = ({ x, y, onInsert }: { x: number; y: number; onInsert: 
   </EdgeLabelRenderer>
 );
 
-// The point at half the polyline's arc length — so an edge label / "+" sits ON the line
-// (a raw middle waypoint can sit well off a curved edge).
-function polylineMidpoint(points: { x: number; y: number }[]): { x: number; y: number } {
+// The point at fraction `t` (0–1) of the polyline's arc length — so an edge label / "+"
+// sits ON the line (a raw middle waypoint can sit well off a curved edge). t=0.5 = midpoint.
+function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: number; y: number } {
   if (points.length === 0) {
     return { x: 0, y: 0 };
   }
   const segLen = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
   const total = segLen.reduce((a, b) => a + b, 0);
-  let half = total / 2;
+  let dist = total * Math.min(Math.max(t, 0), 1);
   for (let i = 0; i < segLen.length; i += 1) {
-    if (half <= segLen[i]) {
-      const t = segLen[i] === 0 ? 0 : half / segLen[i];
+    if (dist <= segLen[i]) {
+      const f = segLen[i] === 0 ? 0 : dist / segLen[i];
       return {
-        x: points[i].x + (points[i + 1].x - points[i].x) * t,
-        y: points[i].y + (points[i + 1].y - points[i].y) * t,
+        x: points[i].x + (points[i + 1].x - points[i].x) * f,
+        y: points[i].y + (points[i + 1].y - points[i].y) * f,
       };
     }
-    half -= segLen[i];
+    dist -= segLen[i];
   }
   return points.at(-1) as { x: number; y: number };
 }
@@ -1126,7 +1126,9 @@ type FlowGraphEdgeData = {
   onInsert?: () => void;
   /** Click the (condition) label to select+edit its case. */
   onLabelClick?: () => void;
-  /** A faint, decorative "ghost" edge (an add-branch hint) — drawn lighter. */
+  /** Where along the edge (0–1) the label sits; defaults to the midpoint. */
+  labelT?: number;
+  /** A faint, decorative "ghost" edge — drawn lighter. */
   ghost?: boolean;
 };
 
@@ -1145,16 +1147,23 @@ export function FlowGraphEdge({
 }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
   let path: string;
+  // `label*` is where a condition label sits (often near its target); `insert*` is where
+  // an on-edge "+" sits (always the midpoint).
   let labelX: number;
   let labelY: number;
+  let insertX: number;
+  let insertY: number;
   const dagrePts = d?.points;
   if (dagrePts && dagrePts.length >= 2) {
     // Cap Dagre's routed waypoints with the real handle endpoints for a clean attach.
     const pts = [{ x: sourceX, y: sourceY }, ...dagrePts.slice(1, -1), { x: targetX, y: targetY }];
     path = smoothGraphPath(pts);
-    const mid = polylineMidpoint(pts);
-    labelX = mid.x;
-    labelY = mid.y;
+    const labelPos = polylinePointAt(pts, d?.labelT ?? 0.5);
+    const insertPos = polylinePointAt(pts, 0.5);
+    labelX = labelPos.x;
+    labelY = labelPos.y;
+    insertX = insertPos.x;
+    insertY = insertPos.y;
   } else {
     const [p, lx, ly] = getSmoothStepPath({
       sourceX,
@@ -1168,6 +1177,8 @@ export function FlowGraphEdge({
     path = p;
     labelX = lx;
     labelY = ly;
+    insertX = lx;
+    insertY = ly;
   }
   const tone: LinkTone = d?.tone ?? 'muted';
   let stroke = LINK_STROKE[tone];
@@ -1213,7 +1224,7 @@ export function FlowGraphEdge({
           y={labelY}
         />
       ) : null}
-      {d?.onInsert ? <EdgeInsertButton onInsert={d.onInsert} x={labelX} y={labelY} /> : null}
+      {d?.onInsert ? <EdgeInsertButton onInsert={d.onInsert} x={insertX} y={insertY} /> : null}
     </>
   );
 }
