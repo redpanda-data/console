@@ -162,17 +162,7 @@ export function columnKindForPgType(pgType: string): ColumnKind {
   return 'str';
 }
 
-// The backend appends an actionable hint after a blank line ("\n\nHint: …");
-// split it off so it can render on its own line instead of inline in the message.
-export function splitQueryError(message: string): { message: string; hint?: string } {
-  const sep = '\n\nHint: ';
-  const i = message.indexOf(sep);
-  return i === -1 ? { message } : { message: message.slice(0, i), hint: message.slice(i + sep.length) };
-}
-
-// Structured hint from the Connect error's ErrorInfo metadata. Preferred over the
-// message-string fallback in splitQueryError — same text, but read from a typed
-// detail instead of parsed out of prose. undefined when absent.
+// Structured hint from the Connect error's ErrorInfo metadata. undefined when absent.
 export function hintFromError(error: unknown): string | undefined {
   if (error instanceof ConnectError) {
     for (const info of error.findDetails(ErrorInfoSchema)) {

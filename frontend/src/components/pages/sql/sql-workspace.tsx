@@ -55,7 +55,6 @@ import {
   type QueryRun,
   type ResultRow,
   type SqlRole,
-  splitQueryError,
   type TableRef,
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
@@ -548,10 +547,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           if (latestRunToken.current !== token) {
             return;
           }
-          const { message, hint: messageHint } = splitQueryError(error.message);
-          // Prefer the structured ErrorInfo hint; fall back to the message string.
-          const hint = hintFromError(error) ?? messageHint;
-          setRun({ state: 'error', token, title: 'Query failed', message, hint });
+          setRun({ state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) });
         },
       });
     },
