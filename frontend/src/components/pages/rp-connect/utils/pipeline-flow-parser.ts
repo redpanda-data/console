@@ -20,7 +20,7 @@ import type { Edge, Node } from '@xyflow/react';
 import { MarkerType } from '@xyflow/react';
 import { parse as parseYaml } from 'yaml';
 
-import { type NodeMetaEntry, summarizeComponent } from './pipeline-flow-meta';
+import { type NodeMetaEntry, summarizeComponent, truncate } from './pipeline-flow-meta';
 import { type EditTarget, firstKey, parseMultiInputs, parseMultiOutputs, type ResourceArrayKey } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 
@@ -141,7 +141,61 @@ type GroupSpec = {
   sectionId: string;
 };
 
-type GroupChildSpec = { name: string; condition?: string; isDefault?: boolean; isErrorPath?: boolean };
+type GroupChildSpec = {
+  name: string;
+  condition?: string;
+  isDefault?: boolean;
+  isErrorPath?: boolean;
+  meta?: NodeMetaEntry[];
+};
+
+// A member of a broker-style container can itself be a broker-style container (e.g. a
+// `fallback` that is a switch case's output). Summarize the components such a nested
+// container wraps — with routing-aware phrasing — so the collapsed member leaf reveals
+// where data actually goes instead of showing only the container's name (e.g. "fallback").
+const NESTED_MEMBER_SUMMARY: Record<string, { label: string; sep: string }> = {
+  fallback: { label: 'tries', sep: ' → ' },
+  sequence: { label: 'then', sep: ' → ' },
+  broker: { label: 'fans out', sep: ', ' },
+  switch: { label: 'routes', sep: ' | ' },
+};
+
+// The display summary (config preview, or wrapped-member chain) for one container member.
+function memberMeta(section: 'input' | 'output', key: string, value: unknown): NodeMetaEntry[] | undefined {
+  const summary = NESTED_MEMBER_SUMMARY[key];
+  if (summary) {
+    const names = section === 'input' ? parseMultiInputs(key, value) : parseMultiOutputs(key, value);
+    if (names && names.length > 0) {
+      return [{ label: summary.label, value: truncate(names.join(summary.sep)) }];
+    }
+  }
+  const meta = summarizeComponent(key, value);
+  return meta.length > 0 ? meta : undefined;
+}
+
+// Resolve a container member object (e.g. `{ aws_s3: {…} }`) to its display name + summary.
+function memberNameAndMeta(section: 'input' | 'output', obj: unknown): { name: string; meta?: NodeMetaEntry[] } {
+  const key = firstKey(obj);
+  if (!key) {
+    return { name: section };
+  }
+  const inner = obj && typeof obj === 'object' ? (obj as Record<string, unknown>)[key] : undefined;
+  return { name: key, meta: memberMeta(section, key, inner) };
+}
+
+// The member specs (name + summary) for a `broker`/`sequence` container, from its raw
+// `inputs`/`outputs` array. `switch`/`fallback` outputs carry routing and go through
+// `parseOutputBranches` instead.
+function multiMemberSpecs(section: 'input' | 'output', value: unknown): GroupChildSpec[] | undefined {
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+  const items = (value as { inputs?: unknown[]; outputs?: unknown[] })[section === 'input' ? 'inputs' : 'outputs'];
+  if (!Array.isArray(items)) {
+    return;
+  }
+  return items.map((item) => memberNameAndMeta(section, item));
+}
 
 // YAML path to the i-th child of a multi-input/output component, so nested
 // broker/switch/fallback/sequence members are individually editable.
@@ -185,6 +239,7 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         condition: child.condition,
         isDefault: child.isDefault,
         isErrorPath: child.isErrorPath,
+        meta: child.meta,
         editTarget: pathEditTarget(spec.section, multiChildPath(spec.section, spec.groupLabel, i)),
         // An output-switch case's routing condition is editable as a switch case (the leaf
         // itself still edits its output). Other multi-output/input members have no case.
@@ -258,7 +313,7 @@ function parseOutputBranches(outputKey: string, value: unknown): GroupChildSpec[
       const check = c.check;
       const hasCheck = typeof check === 'string' && check !== '';
       return {
-        name: firstKey(c.output) ?? 'output',
+        ...memberNameAndMeta('output', c.output),
         condition: hasCheck ? (check as string) : undefined,
         isDefault: hasCheck ? undefined : true,
         isErrorPath: isErroredCheck(check) ? true : undefined,
@@ -267,7 +322,7 @@ function parseOutputBranches(outputKey: string, value: unknown): GroupChildSpec[
   }
   if (outputKey === 'fallback' && Array.isArray(value)) {
     return value.map((item, i) => ({
-      name: firstKey(item) ?? 'output',
+      ...memberNameAndMeta('output', item),
       condition: i === 0 ? undefined : 'on failure',
       isErrorPath: i === 0 ? undefined : true,
     }));
@@ -335,7 +390,7 @@ function parseInputNodes(
   if (childNames && childNames.length > 0) {
     const groupNodes = buildGroupWithChildren(
       { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
-      childNames.map((name) => ({ name }))
+      multiMemberSpecs('input', inputObj[inputKey]) ?? childNames.map((name) => ({ name }))
     );
     groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' }, labelText: extractLabel(inputObj) };
     return groupNodes;
@@ -855,7 +910,8 @@ function parseOutputNodes(
   const childNames = parseMultiOutputs(outputKey, outputObj[outputKey]);
   if (childNames && childNames.length > 0) {
     const branches = parseOutputBranches(outputKey, outputObj[outputKey]);
-    const children = branches ?? childNames.map((name) => ({ name }));
+    const children =
+      branches ?? multiMemberSpecs('output', outputObj[outputKey]) ?? childNames.map((name) => ({ name }));
     const groupNodes = buildGroupWithChildren(
       { groupId: `output-${outputKey}`, groupLabel: outputKey, section: 'output', sectionId },
       children
@@ -2367,12 +2423,18 @@ function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode): string {
 }
 // A fan construct's in-card add affordance: "Add case" for a switch, "Add <input/output>" for a
 // broker/sequence/parallel. Computed at parse time (edit mode), rendered as a footer in the card.
-function splitAddAction(node: PipelineFlowNode, childCount: number): { payload: FlowInsertPayload; label: string } | undefined {
+function splitAddAction(
+  node: PipelineFlowNode,
+  childCount: number
+): { payload: FlowInsertPayload; label: string } | undefined {
   if (node.addChildSlot) {
     return { payload: { kind: 'addChild', ...node.addChildSlot }, label: 'Add case' };
   }
   if (node.insertSlot) {
-    return { payload: { kind: 'insert', ...node.insertSlot, index: childCount }, label: `Add ${node.insertSlot.accepts}` };
+    return {
+      payload: { kind: 'insert', ...node.insertSlot, index: childCount },
+      label: `Add ${node.insertSlot.accepts}`,
+    };
   }
   return;
 }
@@ -2451,7 +2513,13 @@ function caseEntrySteps(lane: FanLane): PipelineFlowNode[] {
   const [first, ...rest] = lane.bodySteps;
   const o = lane.owner;
   return [
-    { ...first, condition: o.condition, isDefault: o.isDefault, isErrorPath: o.isErrorPath, caseEditTarget: o.caseEditTarget },
+    {
+      ...first,
+      condition: o.condition,
+      isDefault: o.isDefault,
+      isErrorPath: o.isErrorPath,
+      caseEditTarget: o.caseEditTarget,
+    },
     ...rest,
   ];
 }

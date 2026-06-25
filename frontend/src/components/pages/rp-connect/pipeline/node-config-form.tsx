@@ -25,7 +25,7 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { ChevronDown, Plus } from 'lucide-react';
+import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { createContext, useContext } from 'react';
 import { type Control, Controller, type FieldPath, useForm } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
@@ -33,6 +33,96 @@ import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 import { ScrollShadow } from './scroll-shadow';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import { checkRequired } from '../utils/schema';
+import type { EditTarget } from '../utils/yaml';
+
+// A direct child (case / step) of a control-flow component, shown in the inspector as a
+// clickable row so you can jump from the high-level construct to the actual node's full config.
+export type InspectorChildItem = {
+  id: string;
+  target: EditTarget;
+  caseTarget?: EditTarget;
+  name: string;
+  condition?: string;
+  isDefault?: boolean;
+  isErrorPath?: boolean;
+  lintCount?: number;
+};
+
+const childItemConditionText = (item: InspectorChildItem): string | undefined => {
+  if (item.condition) {
+    return `if ${item.condition}`;
+  }
+  if (item.isDefault) {
+    return 'default';
+  }
+  if (item.isErrorPath) {
+    return 'on error';
+  }
+  return;
+};
+
+// One clickable child row: its routing condition (gold/red/muted) over the component name, a
+// lint count if any, and a chevron. Selecting it navigates the inspector to that node.
+const childItemCondColor = (item: InspectorChildItem): string => {
+  if (item.isErrorPath) {
+    return 'text-destructive';
+  }
+  if (item.isDefault) {
+    return 'text-muted-foreground';
+  }
+  return 'text-condition';
+};
+
+const ChildItemRow = ({ item, onSelect }: { item: InspectorChildItem; onSelect: (item: InspectorChildItem) => void }) => {
+  const condText = childItemConditionText(item);
+  return (
+    <button
+      className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
+      onClick={() => onSelect(item)}
+      type="button"
+    >
+      <span className="flex min-w-0 flex-1 flex-col">
+        {condText ? (
+          <span className={cn('truncate font-medium font-mono text-[10px]', childItemCondColor(item))} title={condText}>
+            {condText}
+          </span>
+        ) : null}
+        <span className="truncate font-medium text-sm" title={item.name}>
+          {item.name}
+        </span>
+      </span>
+      {item.lintCount ? (
+        <span className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-[10px] text-destructive">
+          <AlertCircle className="size-3" />
+          {item.lintCount}
+        </span>
+      ) : null}
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+    </button>
+  );
+};
+
+const ChildItemsList = ({
+  items,
+  onSelect,
+  label,
+}: {
+  items: InspectorChildItem[];
+  onSelect: (item: InspectorChildItem) => void;
+  label: string;
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <Label className="font-medium text-sm">{label}</Label>
+    <div className="flex flex-col gap-1.5">
+      {items.map((item) => (
+        <ChildItemRow item={item} key={item.id} onSelect={onSelect} />
+      ))}
+    </div>
+    <Text className="text-muted-foreground" variant="bodySmall">
+      Select one to open its full configuration.
+    </Text>
+  </div>
+);
 
 export type ResourceKind = 'cache' | 'rate_limit';
 
@@ -610,6 +700,10 @@ type NodeConfigFormProps = {
   /** Rendered at the top of the scroll area (e.g. a case's routing-condition section), so it
       scrolls WITH the form rather than sticking above it. */
   headerSlot?: React.ReactNode;
+  /** A control-flow component's direct children (cases / steps), shown as a clickable list so
+      the user can jump from this high-level node to a child's full config. */
+  childItems?: InspectorChildItem[];
+  onSelectChild?: (item: InspectorChildItem) => void;
 };
 
 export function NodeConfigForm({
@@ -620,7 +714,10 @@ export function NodeConfigForm({
   resourceLabels,
   onCreateResource,
   headerSlot,
+  childItems,
+  onSelectChild,
 }: NodeConfigFormProps) {
+  const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
   const fields = spec.config?.children ?? [];
   const componentValue = value[componentName];
   // A list-valued component (switch/try/catch/for_each): its value is an array of
@@ -700,7 +797,14 @@ export function NodeConfigForm({
             />
           </div>
 
-          {isListValued ? (
+          {isListValued && hasChildList ? (
+            <ChildItemsList
+              items={childItems as InspectorChildItem[]}
+              label="Cases"
+              onSelect={onSelectChild as (item: InspectorChildItem) => void}
+            />
+          ) : null}
+          {isListValued && !hasChildList ? (
             <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
               <Text className="text-muted-foreground" variant="bodySmall">
                 This component's items (cases / processors) are edited on the canvas — select one to edit it.
@@ -726,7 +830,14 @@ export function NodeConfigForm({
             </FieldGroup>
           ) : null}
 
-          {!isListValued && componentFields.length > 0 ? (
+          {!isListValued && componentFields.length > 0 && hasChildList ? (
+            <ChildItemsList
+              items={childItems as InspectorChildItem[]}
+              label="Steps"
+              onSelect={onSelectChild as (item: InspectorChildItem) => void}
+            />
+          ) : null}
+          {!isListValued && componentFields.length > 0 && !hasChildList ? (
             <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
               <Text className="text-muted-foreground" variant="bodySmall">
                 {componentFields.map((f) => f.name).join(', ')}{' '}

@@ -108,7 +108,18 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   // each side — so nothing the svg draws is clipped by the border.
   const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
 
-  const bounds = useMemo(() => contentBounds(nodes), [nodes]);
+  // The minimap depicts the PAN-ABLE world — the content plus the same buffer the canvas allows
+  // panning into (`translateExtent` = content ± PAN_PADDING) — so the viewport rect touches the
+  // minimap edges exactly when panning is at its limit (no dead buffer the viewport can't reach).
+  const bounds = useMemo(() => {
+    const c = contentBounds(nodes);
+    return {
+      minX: c.minX - PAN_PADDING,
+      minY: c.minY - PAN_PADDING,
+      maxX: c.maxX + PAN_PADDING,
+      maxY: c.maxY + PAN_PADDING,
+    };
+  }, [nodes]);
   const contentW = Math.max(bounds.maxX - bounds.minX, 1);
   const contentH = Math.max(bounds.maxY - bounds.minY, 1);
   const innerW = mapW - 2 * MINIMAP_PAD;

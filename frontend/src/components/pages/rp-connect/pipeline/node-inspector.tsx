@@ -47,7 +47,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
-import { NodeConfigForm, type ResourceKind } from './node-config-form';
+import { type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
@@ -116,6 +116,10 @@ type NodeInspectorProps = {
   onOpenInYaml?: () => void;
   /** Close the inspector (deselect). Shown as an X in the header. */
   onClose?: () => void;
+  /** A control-flow node's direct children (cases / steps), shown as a clickable list. */
+  childItems?: InspectorChildItem[];
+  /** Navigate the inspector to a child node. */
+  onSelectChild?: (item: InspectorChildItem) => void;
 };
 
 // The lint message (if any) that falls on a switch case's routing `check` line — so the
@@ -161,6 +165,8 @@ export function NodeInspector({
   lintHints,
   onOpenInYaml,
   onClose,
+  childItems,
+  onSelectChild,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   // The routing condition for a case-entry node, read from its switch case.
@@ -310,8 +316,10 @@ export function NodeInspector({
         if (useForm && spec) {
           return (
             <NodeConfigForm
+              childItems={childItems}
               componentName={componentName}
               headerSlot={conditionSection}
+              onSelectChild={onSelectChild}
               // Re-key on the component's current value so that after Apply (the YAML
               // changes) the form re-initializes from the saved config — clearing the
               // dirty state so "Apply changes" disables and the edit is committed.

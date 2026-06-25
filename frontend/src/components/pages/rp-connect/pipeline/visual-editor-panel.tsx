@@ -31,6 +31,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { isMacOS } from 'utils/platform';
 
+import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector } from './node-inspector';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
@@ -103,6 +104,41 @@ function caseTargetForNode(
   const parent = flowNodes.find((n) => n.id === node.parentId);
   const firstChild = flowNodes.find((n) => n.parentId === node.parentId);
   return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
+}
+
+// The direct children (cases / steps) of a control-flow node, as clickable inspector items.
+// Each maps to the RENDERED child node: an editable child IS the entry (output switch leaf);
+// otherwise the case wrapper's first child is (processor switch). Returns [] for leaf nodes.
+function buildChildItems(
+  selectedId: string,
+  flowNodes: PipelineFlowNode[],
+  lintByNode: Map<string, LintHint[]>
+): InspectorChildItem[] {
+  const items: InspectorChildItem[] = [];
+  for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
+    // A structural switch-case wrapper (editTarget is the `switchCase` itself, not a real
+    // component) isn't navigable as a component — its rendered entry is the first step of its
+    // body, so we navigate there (full config) and NAME the row by that node (the type the
+    // branch starts with), not "case N". An output-switch case is itself a leaf component.
+    const isCaseWrapper = child.editTarget?.kind === 'switchCase';
+    const entry = isCaseWrapper ? (flowNodes.find((n) => n.parentId === child.id) ?? child) : child;
+    if (!entry?.editTarget) {
+      continue;
+    }
+    const wrapperLint = child.id === entry.id ? 0 : (lintByNode.get(child.id)?.length ?? 0);
+    const lintCount = (lintByNode.get(entry.id)?.length ?? 0) + wrapperLint;
+    items.push({
+      id: entry.id,
+      target: entry.editTarget,
+      caseTarget: child.caseEditTarget ?? entry.caseEditTarget,
+      name: entry.label,
+      condition: child.condition ?? entry.condition,
+      isDefault: child.isDefault ?? entry.isDefault,
+      isErrorPath: child.isErrorPath ?? entry.isErrorPath,
+      lintCount: lintCount || undefined,
+    });
+  }
+  return items;
 }
 
 // Resolve the chosen connector + insertion target to the next YAML (or null if the
@@ -346,6 +382,13 @@ export function VisualEditorPanel({
     }
     return messages;
   }, [lintByNode]);
+
+  // The selected control-flow node's children, shown as a clickable list in its inspector so
+  // the high-level construct links straight to each child's full config.
+  const childItems = useMemo<InspectorChildItem[]>(
+    () => (selected ? buildChildItems(selected.id, flowNodes, lintByNode) : []),
+    [selected, flowNodes, lintByNode]
+  );
 
   // A flat problems list for the floating overview: hints that map to a node are
   // clickable (select the node); the rest are listed inert.
@@ -637,7 +680,9 @@ export function VisualEditorPanel({
               <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
                 <NodeInspector
                   caseTarget={selected.caseTarget}
+                  childItems={childItems}
                   components={components}
+                  onSelectChild={(item) => setSelected({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
                   lintHints={lintByNode.get(selected.id)}
                   onApply={onYamlChange}
                   onClose={() => setSelected(null)}

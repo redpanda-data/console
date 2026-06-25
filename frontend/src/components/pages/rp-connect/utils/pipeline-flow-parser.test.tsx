@@ -280,6 +280,37 @@ output:
     });
   });
 
+  it('summarizes the wrapped members of a nested broker-style output member', () => {
+    const yaml = `
+output:
+  switch:
+    cases:
+      - check: this.region == "us"
+        output:
+          aws_s3:
+            bucket: my-bucket
+      - output:
+          fallback:
+            - gcp_pubsub:
+                project: my-project
+            - redpanda:
+                topic: orders-fallback
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const outputNodes = nodes.filter((n) => n.section === 'output');
+    // A plain member keeps its own config summary.
+    expect(outputNodes.find((n) => n.id === 'output-switch-0')).toMatchObject({
+      label: 'aws_s3',
+      meta: [{ label: 'bucket', value: 'my-bucket' }],
+    });
+    // A member that is itself a broker-style container reveals the components it routes to,
+    // instead of collapsing to just "fallback".
+    expect(outputNodes.find((n) => n.id === 'output-switch-1')).toMatchObject({
+      label: 'fallback',
+      meta: [{ label: 'tries', value: 'gcp_pubsub → redpanda' }],
+    });
+  });
+
   it('only produces section, group, and leaf node kinds', () => {
     const yaml = 'input:\n  kafka: {}\noutput:\n  http: {}';
     const { nodes } = parsePipelineFlowTree(yaml);

@@ -59,7 +59,7 @@ const NOISE_FIELDS = new Set([
   'client_secret',
 ]);
 
-function truncate(value: string, max = MAX_VALUE_LEN): string {
+export function truncate(value: string, max = MAX_VALUE_LEN): string {
   const trimmed = value.replace(/\s+/g, ' ').trim();
   return trimmed.length > max ? `${trimmed.slice(0, max - 1)}…` : trimmed;
 }
