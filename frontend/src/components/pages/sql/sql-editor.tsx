@@ -142,42 +142,29 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
   );
 }
 
-// SQL syntax palette, mapped from the design's `.sql-*` token classes onto the
-// Lezer highlight tags the SQL grammar emits (keywords, built-ins, strings,
-// numbers, comments, operators/punctuation and identifiers).
+// SQL syntax palette mapped onto the Lezer highlight tags the SQL grammar
+// emits. Hued tokens use theme-adaptive semantic tokens; only the grey
+// comment/identifier shades vary by mode.
 function sqlHighlight(mode: 'light' | 'dark'): Extension {
-  const c =
+  const grey =
     mode === 'dark'
-      ? {
-          keyword: 'var(--color-purple-300)',
-          fn: 'var(--color-indigo-300)',
-          str: 'var(--color-green-300)',
-          num: 'var(--color-orange-300)',
-          comment: 'var(--color-grey-400)',
-          punct: 'var(--color-grey-500)',
-          id: 'var(--color-grey-100)',
-        }
-      : {
-          keyword: 'var(--color-purple-700)',
-          fn: 'var(--color-indigo-600)',
-          str: 'var(--color-green-700)',
-          num: 'var(--color-orange-700)',
-          comment: 'var(--color-grey-600)',
-          punct: 'var(--color-grey-500)',
-          id: 'var(--color-grey-900)',
-        };
+      ? { comment: 'var(--color-grey-400)', id: 'var(--color-grey-100)' }
+      : { comment: 'var(--color-grey-600)', id: 'var(--color-grey-900)' };
   return syntaxHighlighting(
     HighlightStyle.define([
-      { tag: tags.keyword, color: c.keyword, fontWeight: 'bold' },
-      { tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName], color: c.fn },
-      { tag: [tags.string, tags.special(tags.string)], color: c.str },
-      { tag: tags.number, color: c.num },
-      { tag: tags.comment, color: c.comment, fontStyle: 'italic' },
+      { tag: tags.keyword, color: 'var(--color-secondary)', fontWeight: 'bold' },
+      {
+        tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName],
+        color: 'var(--color-primary)',
+      },
+      { tag: [tags.string, tags.special(tags.string)], color: 'var(--color-success)' },
+      { tag: tags.number, color: 'var(--color-warning)' },
+      { tag: tags.comment, color: grey.comment, fontStyle: 'italic' },
       {
         tag: [tags.operator, tags.punctuation, tags.separator, tags.paren, tags.brace, tags.squareBracket],
-        color: c.punct,
+        color: 'var(--color-grey-500)',
       },
-      { tag: tags.name, color: c.id },
+      { tag: tags.name, color: grey.id },
     ])
   );
 }
