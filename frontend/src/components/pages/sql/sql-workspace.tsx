@@ -36,6 +36,7 @@ import {
   useTopicIcebergQuery,
 } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { toast } from 'sonner';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
@@ -607,6 +608,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement }), {
         onSuccess: async () => {
           await invalidateSqlCatalog();
+          toast.success(`Table ${tableName} created`);
           closeWizard();
         },
         onError: (error) => setWizardError(error.message),
