@@ -9,6 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { ConnectError } from '@connectrpc/connect';
+import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
+
 // Shared types for the SQL workspace, so the leaf components (catalog tree,
 // editor, results) and the data layer in sql-workspace agree on shape without
 // importing from each other.
@@ -165,6 +168,20 @@ export function splitQueryError(message: string): { message: string; hint?: stri
   const sep = '\n\nHint: ';
   const i = message.indexOf(sep);
   return i === -1 ? { message } : { message: message.slice(0, i), hint: message.slice(i + sep.length) };
+}
+
+// Structured hint from the Connect error's ErrorInfo metadata. Preferred over the
+// message-string fallback in splitQueryError — same text, but read from a typed
+// detail instead of parsed out of prose. undefined when absent.
+export function hintFromError(error: unknown): string | undefined {
+  if (error instanceof ConnectError) {
+    for (const info of error.findDetails(ErrorInfoSchema)) {
+      if (info.metadata.hint) {
+        return info.metadata.hint;
+      }
+    }
+  }
+  return;
 }
 
 // Word-boundary anchored so geometric/temporal names that merely contain a

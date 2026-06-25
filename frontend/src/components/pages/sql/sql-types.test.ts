@@ -9,9 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
+import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
 import { describe, expect, test } from 'vitest';
 
-import { arrayElementPgType, columnKindForPgType, isArrayPgType, splitQueryError } from './sql-types';
+import { arrayElementPgType, columnKindForPgType, hintFromError, isArrayPgType, splitQueryError } from './sql-types';
 
 describe('columnKindForPgType', () => {
   test.each([
@@ -75,5 +78,22 @@ describe('splitQueryError', () => {
     const { message, hint } = splitQueryError('syntax error at or near "SELCT"');
     expect(message).toBe('syntax error at or near "SELCT"');
     expect(hint).toBeUndefined();
+  });
+});
+
+describe('hintFromError', () => {
+  test('reads the hint from ErrorInfo metadata', () => {
+    const error = new ConnectError('boom', undefined, undefined, [
+      {
+        desc: ErrorInfoSchema,
+        value: create(ErrorInfoSchema, { reason: 'REASON_INVALID_INPUT', metadata: { hint: 'use (customer).id' } }),
+      },
+    ]);
+    expect(hintFromError(error)).toBe('use (customer).id');
+  });
+
+  test('returns undefined when there is no ErrorInfo hint', () => {
+    expect(hintFromError(new ConnectError('boom'))).toBeUndefined();
+    expect(hintFromError(new Error('plain'))).toBeUndefined();
   });
 });

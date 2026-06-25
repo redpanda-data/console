@@ -50,6 +50,7 @@ import {
   type CellValue,
   type ColumnDef,
   columnKindForPgType,
+  hintFromError,
   isArrayPgType,
   type QueryRun,
   type ResultRow,
@@ -547,7 +548,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           if (latestRunToken.current !== token) {
             return;
           }
-          const { message, hint } = splitQueryError(error.message);
+          const { message, hint: messageHint } = splitQueryError(error.message);
+          // Prefer the structured ErrorInfo hint; fall back to the message string.
+          const hint = hintFromError(error) ?? messageHint;
           setRun({ state: 'error', token, title: 'Query failed', message, hint });
         },
       });
