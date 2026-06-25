@@ -24,7 +24,27 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, Box, ChevronDown, ChevronRight, GitMerge, PlusIcon } from 'lucide-react';
+import {
+  AlertCircle,
+  Box,
+  ChevronDown,
+  ChevronRight,
+  GitBranch,
+  GitFork,
+  GitMerge,
+  Layers,
+  type LucideIcon,
+  Network,
+  PlusIcon,
+  Repeat,
+  RotateCw,
+  Rows3,
+  ShieldAlert,
+  ShieldCheck,
+  Shuffle,
+  Split,
+  Workflow,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 
@@ -1007,25 +1027,107 @@ const LinkLabel = ({
   );
 };
 
-// The collapse/expand chevron shared by the split card and the (compact) container.
+// Control-flow processors (branch/switch/try/for_each/…) have no connector logo and no
+// config "meta" — they route the message through a sub-pipeline. Each gets a recognizable
+// glyph and a one-line descriptor (how many cases / steps / stages it holds, or its routing
+// role) so the marker reads as a deliberate router rather than an empty card.
+type ControlFlowPresentation = { Icon: LucideIcon; descriptor: string };
+
+function plural(n: number, noun: string): string {
+  const many = noun.endsWith('h') ? `${noun}es` : `${noun}s`;
+  return `${n} ${n === 1 ? noun : many}`;
+}
+
+// Per-construct glyph + descriptor recipe: `noun` is counted (e.g. "3 cases"), `prefix`
+// precedes the count, and `zero` is the fallback when there's no count (or no `noun`).
+type ControlFlowSpec = { icon: LucideIcon; noun?: string; prefix?: string; zero: string };
+const CONTROL_FLOW_SPECS: Record<string, ControlFlowSpec> = {
+  switch: { icon: Split, noun: 'case', zero: 'router' },
+  branch: { icon: GitBranch, noun: 'step', prefix: 'enrich · ', zero: 'enrich' },
+  try: { icon: ShieldCheck, noun: 'step', zero: 'guarded' },
+  catch: { icon: ShieldAlert, zero: 'on error' },
+  for_each: { icon: Repeat, noun: 'step', prefix: 'per item · ', zero: 'per item' },
+  while: { icon: RotateCw, noun: 'step', prefix: 'loop · ', zero: 'loop' },
+  retry: { icon: RotateCw, noun: 'step', prefix: 'retry · ', zero: 'retry' },
+  group_by: { icon: Layers, noun: 'step', zero: 'grouped' },
+  parallel: { icon: Rows3, noun: 'branch', zero: 'parallel' },
+  workflow: { icon: Workflow, noun: 'stage', zero: 'workflow' },
+  fallback: { icon: Shuffle, noun: 'tier', zero: 'fallback' },
+};
+
+function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
+  const count = data.childCount ?? 0;
+  // A broker/sequence counts its sinks or sources, depending on the section.
+  if (data.label === 'broker' || data.label === 'sequence') {
+    const noun = data.section === 'output' ? 'output' : 'input';
+    return { Icon: Network, descriptor: count ? plural(count, noun) : 'broker' };
+  }
+  const spec = CONTROL_FLOW_SPECS[data.label];
+  if (!spec) {
+    return { Icon: GitFork, descriptor: count ? plural(count, 'step') : 'routes' };
+  }
+  if (!(spec.noun && count)) {
+    return { Icon: spec.icon, descriptor: spec.zero };
+  }
+  return { Icon: spec.icon, descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}` };
+}
+
+// A filled accent tile holding the control-flow glyph — deliberately distinct from the
+// white connector `LogoTile` so a router/scope marker never reads as a data card.
+const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => (
+  <span
+    className="flex size-7 shrink-0 items-center justify-center rounded-md border"
+    style={{
+      borderColor: `color-mix(in srgb, ${accent} 40%, transparent)`,
+      backgroundColor: `color-mix(in srgb, ${accent} 14%, var(--color-card))`,
+      color: accent,
+    }}
+  >
+    <Icon className="size-4" />
+  </span>
+);
+
 // A control-flow processor (switch / branch / try / parallel / for_each / …) as a COMPACT
 // card. It never grows to wrap children — in the Dagre graph its branches fan out as
-// labelled edges and reconverge at a merge node. The card is the fan-out / scope marker.
+// labelled edges and reconverge at a merge node. The card is the fan-out / scope marker:
+// a glyph + the construct name + a descriptor of what it contains (N cases / N steps).
 const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
-  const accent = SECTION_ACCENT[data.section ?? ''];
+  const isError = Boolean(data.isErrorPath);
+  const accent = isError ? 'var(--color-destructive)' : (SECTION_ACCENT[data.section ?? ''] ?? 'var(--color-primary)');
+  const { Icon, descriptor } = controlFlowPresentation(data);
   return (
     <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
       <NodeHandles />
       {data.flash ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
-          'flex cursor-pointer items-center gap-2 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md',
+          'flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md',
           cardRing(data)
         )}
         style={headerTintStyle(accent)}
       >
-        <ContainerHeaderTitle accent={accent} data={data} />
+        <ControlFlowIconTile accent={accent} Icon={Icon} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <Text
+            as="span"
+            className="truncate text-[10px] uppercase leading-none tracking-wide"
+            style={{ color: accent }}
+            title={descriptor}
+            variant="captionStrongMedium"
+          >
+            {descriptor}
+          </Text>
+          <Text
+            as="span"
+            className="min-w-0 truncate font-semibold leading-tight"
+            title={data.label}
+            variant="bodyStrongMedium"
+          >
+            {data.label}
+          </Text>
+        </span>
+        {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
         <LintBadge errors={data.lintErrors} />
       </div>
     </div>
@@ -1034,7 +1136,9 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
 
 // The join point where a fan's branches reconverge and flow continues: a small circular
 // node carrying the primary colour. Fan-in edges plug into its left, flow leaves its right.
-const FlowMergeNode = ({ data }: { data: FlowCardData }) => {
+// A filled primary-tint disc (not a hollow ring) so it reads clearly as a deliberate "join"
+// rather than a stray dot on a busy canvas.
+const FlowMergeNode = () => {
   const handle = { top: 16, transform: 'none' } as const;
   return (
     <div className="relative flex h-8 items-center justify-center" style={{ width: 48 }}>
@@ -1048,9 +1152,12 @@ const FlowMergeNode = ({ data }: { data: FlowCardData }) => {
         type="target"
       />
       <span
-        className="flex size-8 items-center justify-center rounded-full border-2 bg-background shadow-sm"
-        style={{ borderColor: 'var(--color-primary)' }}
-        title={data.label ?? 'merge'}
+        className="flex size-8 items-center justify-center rounded-full border-2 shadow-sm"
+        style={{
+          borderColor: 'var(--color-primary)',
+          backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, var(--color-background))',
+        }}
+        title="Join — branches reconverge here"
       >
         <GitMerge className="size-4 text-primary" />
       </span>

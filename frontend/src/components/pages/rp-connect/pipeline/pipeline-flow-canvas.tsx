@@ -19,6 +19,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   useStore,
+  ViewportPortal,
 } from '@xyflow/react';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -249,6 +250,120 @@ function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: str
   return null;
 }
 
+// Padding (px) left between the construct's member nodes and the highlight region edge.
+const SCOPE_REGION_PAD = 16;
+
+// The accent colour for a construct's scope region: red for an error/dead-letter
+// construct (catch), else the role accent (processors are blue).
+function constructAccent(node?: Node): string {
+  const d = node?.data as FlowCardData | undefined;
+  if (d?.isErrorPath) {
+    return 'var(--color-destructive)';
+  }
+  return sectionAccent(d?.section) ?? 'var(--color-primary)';
+}
+
+// The construct a hover/selection should reveal: a control-flow marker is itself; a merge
+// dot points back to its owner construct; anything else (a data card) encloses nothing.
+function constructIdForActive(active?: Node): string | undefined {
+  if (active?.type === 'flowSplit') {
+    return active.id;
+  }
+  if (active?.type === 'flowMerge') {
+    return (active.data as FlowCardData).ownerId;
+  }
+  return;
+}
+
+type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
+
+// The bounding box (flow coords) of every node within `scope` — including the merge dots,
+// which sit outside the parser tree but carry their construct's id as `ownerId`.
+function scopeMemberBounds(nodes: Node[], scope: ReadonlySet<string>): ScopeBounds | null {
+  let b: ScopeBounds | null = null;
+  for (const n of nodes) {
+    if (!(scope.has(n.id) || scope.has((n.data as FlowCardData).ownerId ?? ' '))) {
+      continue;
+    }
+    const w = (n.initialWidth ?? n.width ?? 0) as number;
+    const h = (n.initialHeight ?? n.height ?? 0) as number;
+    const right = n.position.x + w;
+    const bottom = n.position.y + h;
+    b = b
+      ? {
+          minX: Math.min(b.minX, n.position.x),
+          minY: Math.min(b.minY, n.position.y),
+          maxX: Math.max(b.maxX, right),
+          maxY: Math.max(b.maxY, bottom),
+        }
+      : { minX: n.position.x, minY: n.position.y, maxX: right, maxY: bottom };
+  }
+  return b;
+}
+
+/**
+ * On demand (hover or selection of a control-flow marker), paints a faint region behind
+ * every node in that construct's sub-graph — so you can *see what's inside* a branch /
+ * switch / try / for_each without permanent containment boxes. Drawn in flow coordinates
+ * via `ViewportPortal` (moves with pan/zoom) and behind the nodes, so it never perturbs
+ * the nodes array (hovering stays cheap) or steals pointer events.
+ */
+function ScopeRegionOverlay({
+  hoveredId,
+  selectedId,
+  nodes,
+  scopeOf,
+}: {
+  hoveredId?: string;
+  selectedId?: string;
+  nodes: Node[];
+  scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
+}) {
+  // Hover wins over selection so exploring transiently reveals each construct's scope.
+  const activeId = hoveredId ?? selectedId;
+  const construct = activeId ? nodes.find((n) => n.id === activeId) : undefined;
+  const constructId = constructIdForActive(construct);
+  const scope = scopeOf(constructId);
+  // Only worth a region when the construct actually encloses a sub-pipeline (≥1 child).
+  if (!(constructId && scope) || scope.size < 2) {
+    return null;
+  }
+  const bounds = scopeMemberBounds(nodes, scope);
+  if (!bounds) {
+    return null;
+  }
+  const accent = constructAccent(construct);
+  const label = (construct?.data as FlowCardData | undefined)?.label;
+  return (
+    <ViewportPortal>
+      <div
+        className="pointer-events-none absolute rounded-xl border border-dashed"
+        style={{
+          transform: `translate(${bounds.minX - SCOPE_REGION_PAD}px, ${bounds.minY - SCOPE_REGION_PAD}px)`,
+          width: bounds.maxX - bounds.minX + 2 * SCOPE_REGION_PAD,
+          height: bounds.maxY - bounds.minY + 2 * SCOPE_REGION_PAD,
+          borderColor: `color-mix(in srgb, ${accent} 55%, transparent)`,
+          backgroundColor: `color-mix(in srgb, ${accent} 6%, transparent)`,
+          zIndex: 0,
+        }}
+      >
+        {label ? (
+          <span
+            className="absolute top-0 left-3 -translate-y-1/2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide"
+            style={{
+              color: accent,
+              backgroundColor: 'var(--color-background)',
+              border: `1px solid color-mix(in srgb, ${accent} 40%, transparent)`,
+            }}
+          >
+            {label}
+          </span>
+        ) : null}
+      </div>
+    </ViewportPortal>
+  );
+}
+
 type CanvasCallbacks = {
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
@@ -331,6 +446,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
   }
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-border bg-background/90 px-3 py-2 text-muted-foreground text-xs shadow-sm backdrop-blur-sm">
+      <div className="font-semibold text-[10px] text-muted-foreground/70 uppercase tracking-wide">Legend</div>
       <div className="flex items-center gap-2">
         <LegendSwatch color="var(--color-primary)" />
         Data flow
@@ -695,6 +811,9 @@ export function PipelineFlowCanvas({
             />
           )}
           {simple ? null : <PipelineMiniMap nodes={rfNodes} />}
+          {/* Renders only for control-flow markers (flowSplit/flowMerge), which exist only
+              on the full canvas — so the compact sidebar (old nested layout) gets nothing. */}
+          <ScopeRegionOverlay hoveredId={hoveredNodeId} nodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
           <KeepSelectionInView enabled={!simple} selectedNodeId={selectedNodeId} />
         </ReactFlow>
       </ReactFlowProvider>

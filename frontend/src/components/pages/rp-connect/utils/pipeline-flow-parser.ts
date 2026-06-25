@@ -2302,6 +2302,9 @@ type GraphNodeSpec = {
   node?: PipelineFlowNode;
   w: number;
   h: number;
+  /** For split (control-flow) markers: how many direct children (cases / steps / stages)
+      the construct contains, surfaced on the card as a descriptor. */
+  childCount?: number;
 };
 type GraphEdgeSpec = {
   id: string;
@@ -2345,7 +2348,14 @@ function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode): string {
   return node.id;
 }
 function addGraphSplit(ctx: GraphCtx, node: PipelineFlowNode): string {
-  ctx.gnodes.push({ id: node.id, kind: 'split', node, w: GRAPH_SPLIT_W, h: GRAPH_SPLIT_H });
+  ctx.gnodes.push({
+    id: node.id,
+    kind: 'split',
+    node,
+    w: GRAPH_SPLIT_W,
+    h: GRAPH_SPLIT_H,
+    childCount: ctx.childrenOf(node.id).length,
+  });
   return node.id;
 }
 function addGraphMerge(ctx: GraphCtx, id: string): string {
@@ -2892,7 +2902,10 @@ export function computeGraphLayout(
       initialHeight: gn.h,
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-      data: { ...makeFlowNodeData(node, false, 0, false, 0), ...(node.parentId ? { ownerId: node.parentId } : {}) },
+      data: {
+        ...makeFlowNodeData(node, false, gn.childCount ?? 0, false, 0),
+        ...(node.parentId ? { ownerId: node.parentId } : {}),
+      },
     });
   }
 

@@ -14,6 +14,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 
+// The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
+const JOIN_TITLE_RE = /branches reconverge/i;
+
 // React Flow needs ResizeObserver + measurable container dimensions to mount its nodes
 // in jsdom (it guards rendering on a measured size).
 class ResizeObserverMock {
@@ -84,8 +87,13 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     // try + catch are paired; the catch marker renders as an error path.
     expect(screen.getByText('catch')).toBeInTheDocument();
 
-    // Branches reconverge at explicit merge nodes (branch + switch + try/catch).
-    expect(screen.getAllByTitle('merge').length).toBeGreaterThan(0);
+    // Each control-flow marker carries a descriptor of what it encloses (so it reads as a
+    // router, not an empty card): the switch counts its 3 cases; catch labels its error role.
+    expect(screen.getByText('3 cases')).toBeInTheDocument();
+    expect(screen.getByText('on error')).toBeInTheDocument();
+
+    // Branches reconverge at explicit join nodes (branch + switch + try/catch).
+    expect(screen.getAllByTitle(JOIN_TITLE_RE).length).toBeGreaterThan(0);
     // (Edge labels — the case conditions — render via React Flow's EdgeLabelRenderer,
     // which jsdom doesn't lay out; those are asserted in the parser unit test instead.)
   });
