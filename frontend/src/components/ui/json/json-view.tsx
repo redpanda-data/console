@@ -60,12 +60,12 @@ type JSONNodeProps = {
 const JSONNode = memo(({ data, name, depth = 0, initialExpandDepth, isError = false }: JSONNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(depth < initialExpandDepth);
   const [typeStyleMap] = useState<Record<string, string>>({
-    number: 'text-blue-600',
-    boolean: 'text-amber-600',
-    null: 'text-purple-600',
+    number: 'text-informative',
+    boolean: 'text-warning',
+    null: 'text-informative',
     undefined: 'text-gray-600',
-    string: 'text-green-600 group-hover:text-green-500',
-    error: 'text-red-600 group-hover:text-red-500',
+    string: 'text-success group-hover:text-success',
+    error: 'text-error group-hover:text-error',
     default: 'text-gray-700',
   });
   const dataType = getDataType(data);

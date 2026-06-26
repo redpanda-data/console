@@ -394,7 +394,7 @@ export const KnowledgeBaseDetailsPage = () => {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="max-w-md text-center">
-          <Text className="text-red-600">
+          <Text className="text-error">
             {knowledgeBaseError
               ? `Failed to load knowledge base: ${String(knowledgeBaseError)}`
               : 'Knowledge base not found'}

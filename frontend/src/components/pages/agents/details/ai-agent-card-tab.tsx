@@ -472,20 +472,20 @@ export const AIAgentCardTab = () => {
                               <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                   <Label htmlFor={`skill-id-${index}`}>
-                                    Skill ID <span className="text-red-500">*</span>
+                                    Skill ID <span className="text-error">*</span>
                                   </Label>
                                   <SkillField field="id" index={index} onUpdate={updateSkill} skill={skill} />
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor={`skill-name-${index}`}>
-                                    Skill Name <span className="text-red-500">*</span>
+                                    Skill Name <span className="text-error">*</span>
                                   </Label>
                                   <SkillField field="name" index={index} onUpdate={updateSkill} skill={skill} />
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor={`skill-description-${index}`}>
-                                  Description <span className="text-red-500">*</span>
+                                  Description <span className="text-error">*</span>
                                 </Label>
                                 <SkillField field="description" index={index} onUpdate={updateSkill} skill={skill} />
                               </div>
@@ -611,14 +611,12 @@ export const AIAgentCardTab = () => {
               )}
             </div>
 
-            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+            <div className="rounded-md border border-outline-informative bg-background-informative-subtle p-3">
               <div className="flex gap-2">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                <AlertCircle className="h-4 w-4 flex-shrink-0 text-informative" />
                 <div className="flex-1 space-y-1">
-                  <Text className="font-semibold text-blue-900 text-sm dark:text-blue-100">
-                    Authentication Required
-                  </Text>
-                  <Text className="text-blue-800 text-sm dark:text-blue-200">
+                  <Text className="font-semibold text-informative text-sm">Authentication Required</Text>
+                  <Text className="text-informative text-sm">
                     This agent requires a Redpanda Cloud M2M token for authentication.{' '}
                     <a className="underline" href="/organization-iam?tab=service-accounts">
                       Create an M2M token

@@ -168,7 +168,7 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
       <PopoverTrigger
         render={
           <Button aria-label="Show partition error details" size="icon-sm" type="button" variant="ghost">
-            <AlertTriangle className="text-orange-500" />
+            <AlertTriangle className="text-warning" />
           </Button>
         }
       />

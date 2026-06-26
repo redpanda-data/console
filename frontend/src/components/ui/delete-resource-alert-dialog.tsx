@@ -164,7 +164,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     }
 
     return (
-      <DropdownMenuItem className="text-red-600 focus:text-red-600">
+      <DropdownMenuItem className="text-error focus:text-error">
         {isDeleting ? (
           <div className="flex items-center gap-4">
             <Loader2 className="h-4 w-4 animate-spin" /> Deleting
@@ -206,7 +206,7 @@ export const DeleteResourceMenuItem: React.FC<{
   testId?: string;
 }> = ({ isDeleting, onSelect, testId }) => (
   <DropdownMenuItem
-    className="text-red-600 focus:text-red-600"
+    className="text-error focus:text-error"
     data-testid={testId}
     // Base UI's Menu.Item exposes `onClick`, not Radix's `onSelect`. The
     // dialog is a controlled sibling that outlives this menu, so letting the

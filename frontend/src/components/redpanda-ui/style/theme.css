@@ -105,6 +105,7 @@
   --color-red-700: #be1b0e;
   --color-red-800: #a21107;
   --color-red-900: #901704;
+  --color-red-950: #4a1106;
 
   /* Orange Scale */
   --color-orange-50: #fef0e7;
@@ -117,6 +118,7 @@
   --color-orange-700: #f77923;
   --color-orange-800: #da5d08;
   --color-orange-900: #be5107;
+  --color-orange-950: #52260a;
 
   /* Yellow Scale */
   --color-yellow-50: #fefbe8;
@@ -379,15 +381,15 @@
   --color-warning: var(--color-orange-800);
   --color-warning-foreground: var(--color-grey-white);
   --color-warning-subtle: var(--color-orange-alpha-100);
-  --color-info: var(--color-blue-800);
-  --color-info-foreground: var(--color-grey-white);
-  --color-info-subtle: var(--color-blue-alpha-100);
-  --color-neutral: var(--color-grey-600);
-  --color-neutral-foreground: var(--color-grey-50);
-
-  /* Informative (alias for info) */
   --color-informative: var(--color-blue-800);
   --color-informative-foreground: var(--color-grey-white);
+  --color-informative-subtle: var(--color-blue-alpha-100);
+  /* `info` duplicates `informative`, kept so existing `*-info` utilities (text-info, …) don't regress. Aliased via var() so dark-mode overrides of `informative` carry through automatically. */
+  --color-info: var(--color-informative);
+  --color-info-foreground: var(--color-informative-foreground);
+  --color-info-subtle: var(--color-informative-subtle);
+  --color-neutral: var(--color-grey-600);
+  --color-neutral-foreground: var(--color-grey-50);
 
   /* Border, Input, Ring */
   --color-border: var(--color-grey-200);
@@ -743,9 +745,9 @@
   /* Background - Semantic (Dark Mode) */
   --color-background-success-subtle: var(--color-green-900);
   --color-background-success-strong: var(--color-green-500);
-  --color-background-warning-subtle: var(--color-orange-900);
+  --color-background-warning-subtle: var(--color-orange-950);
   --color-background-warning-strong: var(--color-orange-500);
-  --color-background-error-subtle: var(--color-red-900);
+  --color-background-error-subtle: var(--color-red-950);
   --color-background-error-strong: var(--color-red-500);
   --color-background-informative-subtle: var(--color-blue-900);
   --color-background-informative-strong: var(--color-blue-500);
@@ -810,15 +812,11 @@
   --color-warning: var(--color-orange-200);
   --color-warning-foreground: var(--color-grey-900);
   --color-warning-subtle: var(--color-orange-50);
-  --color-info: var(--color-blue-500);
-  --color-info-foreground: var(--color-blue-900);
-  --color-info-subtle: var(--color-blue-alpha-200);
+  --color-informative: var(--color-blue-500);
+  --color-informative-foreground: var(--color-blue-900);
+  --color-informative-subtle: var(--color-blue-alpha-200);
   --color-neutral: var(--color-grey-500);
   --color-neutral-foreground: var(--color-grey-50);
-
-  /* Informative */
-  --color-informative: var(--color-blue-400);
-  --color-informative-foreground: var(--color-blue-900);
 
   /* Border, Input, Ring */
   --color-border-subtle: var(--color-grey-800);

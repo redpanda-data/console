@@ -285,7 +285,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
         </TableCell>
         <TableCell className="font-mono">{row.resourceName}</TableCell>
         <TableCell>{row.operation}</TableCell>
-        <TableCell className={row.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
+        <TableCell className={row.permissionType === 'Allow' ? 'text-success' : 'text-error'}>
           {row.permissionType}
         </TableCell>
         <TableCell className="text-muted-foreground">{row.host}</TableCell>
@@ -367,7 +367,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
                   <TableCell className="text-muted-foreground">{r.label}</TableCell>
                   <TableCell className="font-mono">{r.name}</TableCell>
                   <TableCell>All</TableCell>
-                  <TableCell className="text-green-600">Allow</TableCell>
+                  <TableCell className="text-success">Allow</TableCell>
                 </TableRow>
               ))}
             </TableBody>

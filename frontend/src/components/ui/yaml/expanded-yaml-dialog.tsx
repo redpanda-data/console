@@ -100,7 +100,7 @@ const ExpandedYamlDialogContent: React.FC<ExpandedYamlDialogContentProps> = ({
 
           {(configError || Object.keys(lintHints).length > 0) && (
             <div className="flex-shrink-0 space-y-2">
-              {configError && <div className="text-red-600 text-sm">{configError.message}</div>}
+              {configError && <div className="text-error text-sm">{configError.message}</div>}
 
               {Object.keys(lintHints).length > 0 && <LintHintList lintHints={lintHints} />}
             </div>

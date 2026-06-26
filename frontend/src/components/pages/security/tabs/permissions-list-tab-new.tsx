@@ -99,7 +99,7 @@ const AclTableRow: FC<{
     </TableCell>
     <TableCell className="font-mono">{resourceName}</TableCell>
     <TableCell>{operation}</TableCell>
-    <TableCell className={permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>{permissionType}</TableCell>
+    <TableCell className={permissionType === 'Allow' ? 'text-success' : 'text-error'}>{permissionType}</TableCell>
     <TableCell className="text-muted-foreground">{host}</TableCell>
     <TableCell align="right">
       {editHref && (

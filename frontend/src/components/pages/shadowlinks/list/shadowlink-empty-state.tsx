@@ -150,7 +150,7 @@ type ShadowLinkLoadErrorStateProps = {
 
 export const ShadowLinkLoadErrorState = ({ errorMessage }: ShadowLinkLoadErrorStateProps) => (
   <div className="flex h-64 items-center justify-center">
-    <div className="flex items-center gap-2 text-red-600">
+    <div className="flex items-center gap-2 text-error">
       <AlertCircle className="h-6 w-6" />
       <Text>Error loading shadow link: {errorMessage}</Text>
     </div>
