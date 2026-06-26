@@ -81,9 +81,7 @@ const BadgeGroup = React.forwardRef<HTMLDivElement, BadgeGroupProps>(
           (renderOverflowContent ? (
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex cursor-pointer">{overflowBadge}</span>
-                </TooltipTrigger>
+                <TooltipTrigger render={<span className="inline-flex cursor-pointer">{overflowBadge}</span>} />
                 <TooltipContent>{renderOverflowContent(overflowChildren)}</TooltipContent>
               </Tooltip>
             </TooltipProvider>

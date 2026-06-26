@@ -166,11 +166,13 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
             ))}
             {scopes.length > 2 && (
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="cursor-help">
-                    <Badge variant="primary-inverted">+{scopes.length - 2} more</Badge>
-                  </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <span className="cursor-help">
+                      <Badge variant="primary-inverted">+{scopes.length - 2} more</Badge>
+                    </span>
+                  }
+                />
                 <TooltipContent>
                   <List className="my-0">
                     {scopes.slice(2).map((scope) => {

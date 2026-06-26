@@ -55,9 +55,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
                 <Fragment key={`${index}-${item.linkTo}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
-                    <BreadcrumbLink asChild>
-                      <Link to={item.linkTo}>{item.title}</Link>
-                    </BreadcrumbLink>
+                    <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
                   </BreadcrumbItem>
                 </Fragment>
               ))}
@@ -109,19 +107,22 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
   return (
     <div>
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
-
       {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
           studio, which carries its own title bar and toolbar). */}
       {!hideTitleRow && (
         <div className="flex items-center justify-between pt-6">
           <div className="flex flex-col gap-1">
             {backLink && (
-              <RegistryButton asChild className="-ml-2 w-fit text-muted-foreground" variant="ghost">
-                <Link to={backLink.linkTo}>
-                  <ChevronLeft className="h-4 w-4" />
-                  {backLink.title}
-                </Link>
-              </RegistryButton>
+              <RegistryButton
+                className="-ml-2 w-fit text-muted-foreground"
+                render={
+                  <Link to={backLink.linkTo}>
+                    <ChevronLeft className="h-4 w-4" />
+                    {backLink.title}
+                  </Link>
+                }
+                variant="ghost"
+              />
             )}
             <div className="flex items-center">
               {pageTitle ? (

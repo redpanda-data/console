@@ -59,7 +59,7 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
-      {buttonEl && <DialogTrigger asChild>{buttonEl}</DialogTrigger>}
+      {buttonEl && <DialogTrigger render={buttonEl} />}
       <DialogContent variant="destructive">
         <DialogHeader>
           <DialogTitle>Delete user {userName}</DialogTitle>

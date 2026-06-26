@@ -68,7 +68,7 @@ export function MarkdownEditorTabs({
 }) {
   return (
     <Tabs value={mode} onValueChange={(v) => onModeChange(v as MarkdownEditorMode)} className={className}>
-      <TabsList transition={{ duration: 0 }}>
+      <TabsList>
         <TabsTrigger value="editor" className="gap-1.5">
           Editor
           <Badge variant="outline" className="px-1 py-0 text-[10px] font-normal">
@@ -155,7 +155,7 @@ export function MarkdownEditor({
   return (
     <div className={cn("markdown-editor-wrapper", className)}>
       <Tabs value={activeMode} onValueChange={(v) => handleModeChange(v as MarkdownEditorMode)}>
-        <TabsList className="mb-2" transition={{ duration: 0 }}>
+        <TabsList className="mb-2">
           <TabsTrigger value="editor" className="gap-1.5">
             Editor
             <Badge variant="outline" className="px-1 py-0 text-[10px] font-normal">

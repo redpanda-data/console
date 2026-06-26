@@ -169,23 +169,25 @@ const ResourceTypeSelection = ({
       {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
         <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                className={
-                  rule.resourceType === resourceType
-                    ? 'bg-gray-900 text-white shadow-sm hover:bg-gray-800'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }
-                data-testid={`rt-${resourceType}-button-${ruleIndex}`}
-                disabled={disabled}
-                key={`rt-${resourceType}-button-${ruleIndex}`}
-                onClick={() => handleResourceTypeChange(rule.id, resourceType)}
-                size="sm"
-                variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
-              >
-                {name}
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  className={
+                    rule.resourceType === resourceType
+                      ? 'bg-gray-900 text-white shadow-sm hover:bg-gray-800'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }
+                  data-testid={`rt-${resourceType}-button-${ruleIndex}`}
+                  disabled={disabled}
+                  key={`rt-${resourceType}-button-${ruleIndex}`}
+                  onClick={() => handleResourceTypeChange(rule.id, resourceType)}
+                  size="sm"
+                  variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
+                >
+                  {name}
+                </Button>
+              }
+            />
             <TooltipContent hidden={!disabled}>
               <p className="max-w-xs">{tooltipText}</p>
             </TooltipContent>
@@ -540,9 +542,7 @@ const AclRules = ({
                     </Select>
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                        </TooltipTrigger>
+                        <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
                         <TooltipContent>
                           <p className="max-w-xs">{getPermissionDescription(operation, rule.resourceType)}</p>
                         </TooltipContent>
@@ -609,9 +609,7 @@ const SharedConfiguration = ({
                 </Label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                    </TooltipTrigger>
+                    <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
                     <TooltipContent className="max-w-xs">
                       <div>
                         <p>
@@ -688,9 +686,7 @@ const SharedConfiguration = ({
               </Label>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                  </TooltipTrigger>
+                  <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
                   <TooltipContent className="max-w-xs">
                     <p>
                       The IP address or hostname from which the user is allowed or denied access. Use * to allow from

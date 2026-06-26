@@ -1,0 +1,105 @@
+---
+name: "Frontend UI Audit"
+# Audits PRs that touch frontend code against the redpanda-ui registry:
+# - outdated / locally-modified components vs the latest registry release
+# - off-token palette colours (red-500, indigo-300, …) instead of semantic tokens
+# - ad-hoc utility classes (text-[11px], bg-[#0f1626], …)
+#
+# Posts a sticky PR comment with the findings, fails the job if any are found.
+# Runs the script directly from redpanda-data/ui-registry; no copy in this repo.
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/**'
+      - '.github/workflows/frontend-ui-audit.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CI: true
+  UI_REGISTRY_REF: main
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+jobs:
+  audit:
+    name: Audit registry usage
+    timeout-minutes: 5
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Checkout console
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          path: console
+      # ui-registry is private, and the job's GITHUB_TOKEN is scoped to console
+      # only. Fetch the org-wide actions bot token from AWS Secrets Manager to
+      # check it out — same pattern as fork-pr-dispatch.yml / cloudv2.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+      - name: Get actions bot token
+        uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/actions_bot_token
+          parse-json-secrets: true
+      - name: Checkout ui-registry
+        uses: actions/checkout@v5
+        with:
+          repository: redpanda-data/ui-registry
+          ref: ${{ env.UI_REGISTRY_REF }}
+          # The audit resolves component versions via `git show v<tag>:<path>`,
+          # so it needs full history and all v* tags (fetch-depth: 0).
+          # filter: blob:none makes it a blobless partial clone — commit and tag
+          # metadata is fetched, but file blobs are pulled lazily only when
+          # `git show` touches them, keeping the checkout fast.
+          fetch-depth: 0
+          filter: blob:none
+          path: ui-registry
+          token: ${{ env.ACTIONS_BOT_TOKEN }}
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Build registry manifest
+        # audit-changes reads packages/registry/registry.json, a gitignored
+        # build artifact — generate it before running the audit.
+        working-directory: ui-registry
+        run: |
+          bun install --frozen-lockfile
+          bun run registry:build
+      - name: Run audit (markdown report + exit code)
+        id: audit
+        run: |
+          set +e
+          bun ui-registry/packages/lookout/scripts/audit-changes.ts \
+            --app console/frontend \
+            --diff origin/${{ github.event.pull_request.base.ref }} \
+            --format markdown \
+            --fail-on any \
+            > /tmp/audit-body.md
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+      - name: Post or update sticky PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          marker='<!-- ui-audit-frontend -->'
+          { echo "$marker"; cat /tmp/audit-body.md; } > /tmp/body.md
+          existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --paginate --jq "[.[] | select(.body | startswith(\"$marker\"))][0].id // empty")
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/$existing" \
+              --field body=@/tmp/body.md > /dev/null
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --field body=@/tmp/body.md > /dev/null
+          fi
+      - name: Fail job if findings
+        if: steps.audit.outputs.exit_code != '0'
+        run: |
+          echo "::error::UI audit found drift or off-token usage — see PR comment above."
+          exit ${{ steps.audit.outputs.exit_code }}

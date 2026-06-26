@@ -25,6 +25,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
+import { useIsDarkMode } from '../hooks/use-is-dark-mode';
 import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -99,6 +100,7 @@ function FederatedAppContent() {
   // (not branching the tree) keeps the <Outlet> mounted across fullscreen↔normal
   // navigation, so the embedded router doesn't reset to its default route.
   const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
+  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
 
   return (
     <div id="mainLayout">
@@ -122,7 +124,7 @@ function FederatedAppContent() {
 
       {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
           surface Console's toasts; mirror __root.tsx's AppContent. */}
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors theme={toasterTheme} />
     </div>
   );
 }

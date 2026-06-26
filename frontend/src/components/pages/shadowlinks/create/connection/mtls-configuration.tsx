@@ -259,47 +259,33 @@ function DisclosureRow({
 }: DisclosureRowProps) {
   return (
     <Collapsible onOpenChange={onOpenChange} open={open} testId={testId}>
-      <CollapsibleTrigger asChild>
-        <button
-          className="-mx-2 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-muted/50"
-          data-testid={triggerTestId}
-          type="button"
-        >
-          <ChevronRight
-            className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
-          />
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">{label}</span>
-              {configured && !open && (
-                <Badge size="sm" variant="success-inverted">
-                  Configured
-                </Badge>
-              )}
+      <CollapsibleTrigger
+        render={
+          <button
+            className="-mx-2 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-muted/50"
+            data-testid={triggerTestId}
+            type="button"
+          >
+            <ChevronRight
+              className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">{label}</span>
+                {configured && !open && (
+                  <Badge size="sm" variant="success-inverted">
+                    Configured
+                  </Badge>
+                )}
+              </div>
+              <Text className="mt-0.5 text-xs" variant="muted">
+                {description}
+              </Text>
             </div>
-            <Text className="mt-0.5 text-xs" variant="muted">
-              {description}
-            </Text>
-          </div>
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent
-        animate={{
-          opacity: 1,
-          height: 'auto',
-          overflow: 'hidden',
-          transition: { duration: 0.05, ease: 'easeOut' },
-        }}
-        className="mt-2 ml-6 rounded-md border bg-muted/30 p-4"
-        exit={{
-          opacity: 0,
-          height: 0,
-          overflow: 'hidden',
-          transition: { duration: 0.05, ease: 'easeIn' },
-        }}
-      >
-        {children}
-      </CollapsibleContent>
+          </button>
+        }
+      />
+      <CollapsibleContent className="mt-2 ml-6 rounded-md border bg-muted/30 p-4">{children}</CollapsibleContent>
     </Collapsible>
   );
 }

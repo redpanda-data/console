@@ -37,6 +37,7 @@ import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import type { JSX } from 'react';
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { appGlobal } from './state/app-global';

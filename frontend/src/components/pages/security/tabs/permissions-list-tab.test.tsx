@@ -209,10 +209,10 @@ describe('Permissions List - delete dropdown for different principal types', () 
 
     // SCRAM user should have all delete options available and enabled
     const deleteUserAndAcls = screen.getByText('Delete (User and ACLs)');
-    expect(deleteUserAndAcls.getAttribute('data-disabled')).toBe('false');
+    expect(deleteUserAndAcls).not.toHaveAttribute('data-disabled');
 
     const deleteUserOnly = screen.getByText('Delete (User only)');
-    expect(deleteUserOnly.getAttribute('data-disabled')).toBe('false');
+    expect(deleteUserOnly).not.toHaveAttribute('data-disabled');
 
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
   });

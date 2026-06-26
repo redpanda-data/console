@@ -73,7 +73,6 @@ export const LoadingAnimation = React.forwardRef<HTMLDivElement, LoadingAnimatio
       className
     );
 
-    // Clone children and pass progress prop to them if it's an SVG animation
     const childrenWithProgress = React.Children.map(children, (child) => {
       if (React.isValidElement(child) && progress !== undefined) {
         // biome-ignore lint/suspicious/noExplicitAny: part of animation implementation

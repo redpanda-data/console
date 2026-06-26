@@ -1,7 +1,8 @@
+import { mergeProps } from '@base-ui/react/merge-props';
+import { useRender } from '@base-ui/react/use-render';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
-import React from 'react';
+import type React from 'react';
 
-import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 function Breadcrumb({ testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
@@ -12,7 +13,7 @@ function BreadcrumbList({ className, testId, ...props }: React.ComponentProps<'o
   return (
     <ol
       className={cn(
-        'flex flex-wrap items-center gap-1.5 break-words text-muted-foreground text-sm sm:gap-2.5',
+        'wrap-break-word flex flex-wrap items-center gap-1.5 text-muted-foreground text-sm sm:gap-2.5',
         className
       )}
       data-slot="breadcrumb-list"
@@ -33,25 +34,19 @@ function BreadcrumbItem({ className, testId, ...props }: React.ComponentProps<'l
   );
 }
 
-function BreadcrumbLink({
-  asChild,
-  className,
-  testId,
-  ...props
-}: React.ComponentProps<'a'> & {
-  asChild?: boolean;
-  testId?: string;
-}) {
-  const Comp = asChild ? Slot : 'a';
-
-  return (
-    <Comp
-      className={cn('cursor-pointer transition-colors hover:text-foreground', className)}
-      data-slot="breadcrumb-link"
-      data-testid={testId}
-      {...props}
-    />
-  );
+function BreadcrumbLink({ className, render, testId, ...props }: useRender.ComponentProps<'a'> & SharedProps) {
+  return useRender({
+    defaultTagName: 'a',
+    props: mergeProps<'a'>(
+      {
+        className: cn('cursor-pointer transition-colors hover:text-foreground', className),
+        'data-testid': testId,
+      } as React.ComponentProps<'a'>,
+      props
+    ),
+    render,
+    state: { slot: 'breadcrumb-link' },
+  });
 }
 
 function BreadcrumbPage({ className, testId, ...props }: React.ComponentProps<'span'> & SharedProps) {
@@ -74,7 +69,7 @@ function BreadcrumbSeparator({ children, className, testId, ...props }: React.Co
   return (
     <li
       aria-hidden="true"
-      className={cn('[&>svg]:size-3.5', className)}
+      className={cn('rtl:rotate-180 [&>svg]:size-3.5', className)}
       data-slot="breadcrumb-separator"
       data-testid={testId}
       role="presentation"

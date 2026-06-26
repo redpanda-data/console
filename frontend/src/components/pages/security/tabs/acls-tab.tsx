@@ -213,17 +213,19 @@ const AclsTabContent: FC = () => {
 
                   return (
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-label={`Delete ACL for ${record.principalName}`}
-                          className="deleteButton"
-                          onClick={() => {}}
-                          size="icon-sm"
-                          variant="destructive-ghost"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            aria-label={`Delete ACL for ${record.principalName}`}
+                            className="deleteButton"
+                            onClick={() => {}}
+                            size="icon-sm"
+                            variant="destructive-ghost"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
                       <DropdownMenuContent>
                         <DropdownMenuItem
                           disabled={!(userExists && featureDeleteUser)}

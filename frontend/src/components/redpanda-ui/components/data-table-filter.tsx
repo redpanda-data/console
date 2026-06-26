@@ -25,8 +25,6 @@ import type { FilterModel, FilterOperatorMap, FiltersState, FilterType } from '.
 import { getOperatorsForType } from '../lib/filter-utils';
 import { cn } from '../lib/utils';
 
-// ── Types ──────────────────────────────────────────────────────────────
-
 export type DataTableFilterVariant =
   | 'neutral'
   | 'neutral-inverted'
@@ -59,8 +57,6 @@ export type FilterColumnConfig = {
   | { type: 'option'; options?: FilterOption[]; mode?: 'single' | 'multiple' }
   | { type: 'multiOption'; options?: FilterOption[] }
 );
-
-// ── Helpers ─────────────────────────────────────────────────────────────
 
 type MatchingOption = {
   columnId: string;
@@ -117,8 +113,6 @@ function RadioIndicator({ checked }: { checked: boolean }) {
   );
 }
 
-// ── DataTableFilter (root) ─────────────────────────────────────────────
-
 type DataTableFilterProps<TData> = {
   columns: FilterColumnConfig[];
   filters: FiltersState;
@@ -160,8 +154,6 @@ export function DataTableFilter<TData>({
   );
 }
 DataTableFilter.displayName = 'DataTableFilter';
-
-// ── MatchingOptionItem ─────────────────────────────────────────────────
 
 function MatchingOptionItem({
   match,
@@ -214,8 +206,6 @@ function MatchingOptionItem({
   );
 }
 
-// ── FilterSelector ─────────────────────────────────────────────────────
-
 type FilterSelectorProps<TData> = {
   columns: FilterColumnConfig[];
   filters: FiltersState;
@@ -247,7 +237,6 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
     }
   }, [open]);
 
-  // Hierarchical search: match option values across all columns
   const matchingOptions = useMemo(() => {
     if (!search || activeColumnId) {
       return [];
@@ -257,19 +246,21 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            'h-7',
-            hasFilters ? 'w-fit px-2!' : undefined,
-            variant ? badgeVariants({ variant }) : undefined
-          )}
-          variant="ghost"
-        >
-          <FilterIcon className="size-4" />
-          {hasFilters ? null : <span>Filter</span>}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            className={cn(
+              'h-7',
+              hasFilters ? 'w-fit px-2!' : undefined,
+              variant ? badgeVariants({ variant }) : undefined
+            )}
+            variant="ghost"
+          >
+            <FilterIcon className="size-4" />
+            {hasFilters ? null : <span>Filter</span>}
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-fit p-0" side="bottom">
         <Command loop>
           <CommandInput onValueChange={setSearch} placeholder="Search..." value={search} />
@@ -343,8 +334,6 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
 }) as <TData>(props: FilterSelectorProps<TData>) => React.ReactElement;
 (FilterSelector as { displayName?: string }).displayName = 'FilterSelector';
 
-// ── FilterKeySubmenu ────────────────────────────────────────────────────
-
 function FilterKeySubmenu<TData>({
   filterColumn,
   selectedValues,
@@ -381,8 +370,6 @@ function FilterKeySubmenu<TData>({
       return null;
   }
 }
-
-// ── ActiveFilter (segmented pill) ──────────────────────────────────────
 
 type ActiveFilterProps<TData> = {
   filter: FilterModel;
@@ -424,8 +411,6 @@ function ActiveFilter<TData>({
 }
 ActiveFilter.displayName = 'ActiveFilter';
 
-// ── FilterSubject ──────────────────────────────────────────────────────
-
 function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
   return (
     <span className="flex select-none items-center gap-1 whitespace-nowrap px-2 font-medium opacity-75">
@@ -435,8 +420,6 @@ function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
   );
 }
 FilterSubject.displayName = 'FilterSubject';
-
-// ── FilterOperator ─────────────────────────────────────────────────────
 
 type FilterOperatorProps = {
   filter: FilterModel;
@@ -453,14 +436,16 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
-          variant="ghost"
-        >
-          <span className="opacity-80">{filter.operator}</span>
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+            variant="ghost"
+          >
+            <span className="opacity-80">{filter.operator}</span>
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-fit p-0">
         <Command loop>
           <CommandList className="max-h-fit">
@@ -486,8 +471,6 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
 }
 FilterOperator.displayName = 'FilterOperator';
 
-// ── FilterValue ────────────────────────────────────────────────────────
-
 type FilterValueProps<TData> = {
   filter: FilterModel;
   filterColumn: FilterColumnConfig;
@@ -503,14 +486,16 @@ const FilterValue = memo(function FilterValueImpl<TData>({
 }: FilterValueProps<TData>) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
-          variant="ghost"
-        >
-          <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+            variant="ghost"
+          >
+            <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-fit p-0" side="bottom">
         <FilterValueController actions={actions} filter={filter} filterColumn={filterColumn} table={table} />
       </PopoverContent>
@@ -518,8 +503,6 @@ const FilterValue = memo(function FilterValueImpl<TData>({
   );
 }) as <TData>(props: FilterValueProps<TData>) => React.ReactElement;
 (FilterValue as { displayName?: string }).displayName = 'FilterValue';
-
-// ── FilterValueDisplay ─────────────────────────────────────────────────
 
 function FilterValueDisplay({ filter, filterColumn }: { filter: FilterModel; filterColumn: FilterColumnConfig }) {
   if (filter.values.length === 0) {
@@ -582,8 +565,6 @@ function OptionValueDisplay({
   );
 }
 
-// ── FilterValueController ──────────────────────────────────────────────
-
 function FilterValueController<TData>({
   filter,
   filterColumn,
@@ -620,8 +601,6 @@ function FilterValueController<TData>({
       return null;
   }
 }
-
-// ── TextValueController ────────────────────────────────────────────────
 
 function TextValueController({
   columnId,
@@ -660,8 +639,6 @@ function TextValueController({
     </div>
   );
 }
-
-// ── OptionValueController ──────────────────────────────────────────────
 
 type OptionItemProps = {
   option: FilterOption & { selected: boolean; count?: number };
@@ -762,8 +739,6 @@ function OptionValueController<TData>({
     </Command>
   );
 }
-
-// ── FilterActions ──────────────────────────────────────────────────────
 
 const FilterActions = memo(function FilterActionsImpl({
   hasFilters,

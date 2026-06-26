@@ -32,7 +32,7 @@ import {
   StepStatus,
 } from '@redpanda-data/ui';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 import { ActiveReassignments } from './components/active-reassignments';
 import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';

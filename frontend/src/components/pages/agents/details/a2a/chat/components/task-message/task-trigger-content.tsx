@@ -33,6 +33,6 @@ export const TaskTriggerContent = ({ title, taskState }: TaskTriggerContentProps
   <div className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">
     <p className="flex-1 font-mono text-sm">{title}</p>
     {taskState ? <TaskState state={taskState} /> : null}
-    <ChevronDownIcon className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+    <ChevronDownIcon className="size-4 transition-transform group-data-[panel-open]:rotate-180" />
   </div>
 );

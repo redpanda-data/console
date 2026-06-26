@@ -24,3 +24,41 @@
 .sql-results-grid .sql-results-row-alt {
   --rdg-background-color: var(--color-background-subtle);
 }
+
+/* Frozen row-number gutter must stay opaque. rdg's row-hover tint
+   (--color-accent-subtle) is semi-transparent, so without this the first data
+   column's text — scrolled horizontally underneath the frozen column — bleeds
+   through the hovered row's gutter and overlaps the row number. Paint the
+   gutter with the row's opaque base (card, or zebra-subtle on alt rows). */
+.sql-results-grid .sql-results-rownum {
+  background-color: var(--rdg-background-color);
+}
+
+/* Cross-platform scrollbars. Native Linux scrollbars render opaque/black
+   over the grid; make them thin with a transparent track and a subtle thumb
+   so they blend in instead. rdg scrolls on its own root element. */
+.rdg.sql-results-grid {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.rdg.sql-results-grid::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.rdg.sql-results-grid::-webkit-scrollbar-track,
+.rdg.sql-results-grid::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.rdg.sql-results-grid::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.rdg.sql-results-grid::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-muted-foreground);
+}

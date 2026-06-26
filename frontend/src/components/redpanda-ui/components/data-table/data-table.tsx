@@ -33,7 +33,6 @@ import { createInitialState, type DataTableInitialConfig, dataTableReducer } fro
 import { deriveDisplayState, resolvePaginationMode, resolveSortingMode } from './data-table-utils';
 import { DataTablePagination } from './index';
 
-// ── ClassNames slots ──────────────────────────────────────────────────
 export type DataTableClassNames = {
   root?: string;
   table?: string;
@@ -49,7 +48,6 @@ export type DataTableClassNames = {
   toolbar?: string;
 };
 
-// ── Props (discriminated unions for pagination & sorting) ──────────────
 type PaginationConfig =
   | {
       pagination?: true | PaginationState;
@@ -80,37 +78,29 @@ type DataTableBaseProps<TData> = {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
 
-  // Loading/empty
   isLoading?: boolean;
   loadingText?: string;
   emptyText?: string;
   emptyAction?: React.ReactNode;
 
-  // Expandable rows
   subComponent?: (props: { row: Row<TData> }) => React.ReactNode;
   getRowCanExpand?: (row: Row<TData>) => boolean;
   expandRowByClick?: boolean;
 
-  // Selection
   selectable?: boolean;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
 
-  // Appearance
   size?: 'sm' | 'md' | 'lg';
   variant?: 'standard' | 'simple' | 'bordered' | 'card';
 
-  // Toolbar slot
   toolbar?: React.ReactNode | ((table: TanstackTable<TData>) => React.ReactNode);
 
-  // Row interaction
   onRow?: (row: Row<TData>) => void;
   rowClassName?: (row: Row<TData>) => string;
 
-  // Style slots
   classNames?: DataTableClassNames;
 
-  // Advanced passthrough
   tableOptions?: Partial<TableOptions<TData>>;
 
   className?: string;
@@ -119,7 +109,6 @@ type DataTableBaseProps<TData> = {
 
 export type DataTableProps<TData> = DataTableBaseProps<TData> & PaginationConfig & SortingConfig;
 
-// ── Selection column factory ──────────────────────────────────────────
 const createSelectColumn = <TData,>(): ColumnDef<TData, unknown> => ({
   id: 'select',
   header: ({ table }) => (
@@ -142,7 +131,6 @@ const createSelectColumn = <TData,>(): ColumnDef<TData, unknown> => ({
   enableHiding: false,
 });
 
-// ── Component ─────────────────────────────────────────────────────────
 export function DataTable<TData>({
   data,
   columns,
@@ -165,9 +153,7 @@ export function DataTable<TData>({
   tableOptions: tableOptionsProp,
   className,
   testId,
-  // Discriminated union props — destructured explicitly to preserve type safety.
-  // TypeScript can't narrow inside the function body for intersected unions, but
-  // destructuring here ensures refactors that rename props produce compile errors.
+  // Destructure discriminated-union props explicitly: TS can't narrow intersected unions in the body, so this keeps renames compile-checked.
   pagination: paginationProp,
   onPaginationChange: onPaginationChangeProp,
   defaultPageSize: defaultPageSizeProp,
@@ -176,11 +162,9 @@ export function DataTable<TData>({
   sorting: sortingProp,
   onSortingChange: onSortingChangeProp,
 }: DataTableProps<TData>) {
-  // Resolve modes (pure, no memo needed — cheap)
   const paginationMode = resolvePaginationMode(paginationProp, defaultPageSizeProp);
   const sortingMode = resolveSortingMode(sortingProp);
 
-  // Internal state via reducer
   const initialConfig: DataTableInitialConfig = {
     defaultPageSize: paginationMode.defaultPageSize,
     defaultSorting: sortingMode.controlledState ?? [],
@@ -188,12 +172,11 @@ export function DataTable<TData>({
 
   const [state, dispatch] = React.useReducer(dataTableReducer, initialConfig, createInitialState);
 
-  // Resolve effective state per feature (controlled vs uncontrolled)
+  // Controlled state wins over internal reducer state when provided.
   const effectivePagination = paginationMode.controlledState ?? state.pagination;
   const effectiveSorting = sortingMode.controlledState ?? state.sorting;
   const effectiveRowSelection = rowSelectionProp ?? state.rowSelection;
 
-  // Stable onChange handlers
   const handlePaginationChange: OnChangeFn<PaginationState> = React.useCallback(
     (updater) => {
       if (onPaginationChangeProp) {
@@ -242,13 +225,11 @@ export function DataTable<TData>({
     []
   );
 
-  // Build columns with optional select column
   const allColumns = React.useMemo(
     () => (selectable ? [createSelectColumn<TData>(), ...columns] : columns),
     [selectable, columns]
   );
 
-  // Build table options
   const options = React.useMemo<TableOptions<TData>>(() => {
     const base: TableOptions<TData> = {
       data,
@@ -316,7 +297,6 @@ export function DataTable<TData>({
   const displayState = deriveDisplayState(rows.length, isLoading);
   const totalColumns = table.getVisibleFlatColumns().length;
 
-  // Render toolbar
   const toolbarContent = typeof toolbar === 'function' ? toolbar(table) : toolbar;
 
   return (

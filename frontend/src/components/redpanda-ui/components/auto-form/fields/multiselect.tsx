@@ -66,13 +66,9 @@ export const multiselectFieldDefinition: FieldTypeDefinition = {
   component: MultiSelectFieldComponent,
 };
 
-// ── Data-provider-backed multi-select ─────────────────────────────────
-// Matches `repeated string` whose item carries a `data_provider`
-// annotation, e.g. OpenAPI `include_methods` / `exclude_methods`. The
-// previous behavior rendered a list of single dropdowns with an "Add"
-// button — one row per method. A multi-select collapses that to a single
-// control that holds every picked method as a chip.
-
+// Matches `repeated string` whose item carries a `data_provider` annotation
+// (e.g. OpenAPI include_methods/exclude_methods), collapsing per-row dropdowns
+// into a single chip-based multi-select.
 function DataProviderMultiSelectComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
   const { errorId } = useFieldContext();
@@ -83,8 +79,6 @@ function DataProviderMultiSelectComponent({ error, field, id, inputProps }: Auto
   const { options: providerOptions = [], isLoading } = provider ? provider() : { options: [] };
 
   const options = providerOptions.map((option) => {
-    // `label` is typed as ReactNode on MultiSelectOptionItem, so we can
-    // render icon + text + description inline instead of stringifying.
     const labelNode = (
       <span className="flex items-center gap-2">
         {option.icon ? (
@@ -124,8 +118,7 @@ function DataProviderMultiSelectComponent({ error, field, id, inputProps }: Auto
 
 export const dataProviderMultiselectFieldDefinition: FieldTypeDefinition = {
   name: 'dataProviderMultiSelect',
-  // Higher than the default `multiselect` (20) so an annotated item wins
-  // over the legacy "array-of-select-enum" branch even when both match.
+  // Higher than default `multiselect` (20) so an annotated item wins over the legacy branch.
   priority: 120,
   match: (field) => {
     if (field.type !== 'array') {

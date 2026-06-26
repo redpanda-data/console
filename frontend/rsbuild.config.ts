@@ -35,7 +35,7 @@ export default defineConfig({
         opts.plugins.unshift([
           'babel-plugin-react-compiler',
           {
-            target: '18',
+            target: '19',
             compilationMode: 'annotation',
             panicThreshold: 'critical_errors',
             // In annotation mode, this still gates which files CAN be opted in.
@@ -164,9 +164,24 @@ export default defineConfig({
 
       // Stub `date-fns-tz` v2 imports from `@redpanda-data/ui` — see
       // `src/utils/vendor/date-fns-tz-shim.ts` for context.
+      //
+      // react-onclickoutside (transitive via `@redpanda-data/ui`'s react-datepicker)
+      // statically imports `findDOMNode`, which React 19 removed — this breaks the
+      // bundle's ESM linking. Console renders no datepicker, so redirect it to an
+      // identity-HOC shim. See `src/shims/react-onclickoutside-shim.ts`.
+      //
+      // `@module-federation/bridge-react` auto-installs a webpack-plugin that aliases
+      // `react-router-dom$` to its own router shim. Because Console declares no direct
+      // react-router-dom dependency, that plugin falls back to its v6 shim (only
+      // exports BrowserRouter/RouterProvider) and breaks `@redpanda-data/ui`, which
+      // imports NavLink/Link from the real react-router-dom@7. Console does not federate
+      // routing (it uses @tanstack/react-router), so point react-router-dom back at the
+      // real package — the plugin spreads the user alias last, so this override wins.
       Object.assign(config.resolve.alias as Record<string, string>, {
         'date-fns-tz$': path.resolve(__dirname, 'src/utils/vendor/date-fns-tz-shim.ts'),
         'date-fns-tz/zonedTimeToUtc$': path.resolve(__dirname, 'src/utils/vendor/zonedTimeToUtc.ts'),
+        'react-onclickoutside': path.resolve(__dirname, 'src/shims/react-onclickoutside-shim.ts'),
+        'react-router-dom$': path.resolve(__dirname, 'node_modules/react-router-dom'),
       });
 
       config.output.publicPath = 'auto';

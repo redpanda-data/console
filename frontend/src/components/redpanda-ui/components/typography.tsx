@@ -6,8 +6,7 @@ import React, { forwardRef } from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
-// Heading variants using cva
-// Based on Figma design system: Inter Display, font-medium (500), 100% line-height, -0.01em tracking
+// Figma: Inter Display, font-medium (500), 100% line-height, -0.01em tracking.
 const headingVariants = cva('font-display font-medium leading-none tracking-heading', {
   variants: {
     level: {
@@ -110,7 +109,6 @@ export const textVariants = cva('font-sans', {
   },
 });
 
-// Main Heading Component
 interface HeadingProps
   extends React.HTMLAttributes<HTMLHeadingElement>,
     VariantProps<typeof headingVariants>,
@@ -136,16 +134,12 @@ export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>((componentPr
   );
 });
 
-// Text Component
 interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<typeof textVariants>, SharedProps {
   children: React.ReactNode;
   as?: 'p' | 'div' | 'span' | 'small';
 }
 
-// Defaults to <div> so Text can safely wrap block-level children (lists, inputs, etc.)
-// without emitting React `validateDOMNesting` warnings. Consumers that need paragraph
-// semantics can opt in via `as="p"`.
-// Uses forwardRef so Text can serve as a Slot/asChild child (e.g. TooltipTrigger asChild).
+// Defaults to <div> so block-level children don't trip `validateDOMNesting` (use `as="p"` for a paragraph). forwardRef enables render-prop use.
 export const Text = forwardRef<HTMLElement, TextProps>((componentProps, ref) => {
   const { variant, align, as = 'div', className, children, testId, ...props } = componentProps;
 
@@ -161,7 +155,6 @@ export const Text = forwardRef<HTMLElement, TextProps>((componentProps, ref) => 
   );
 });
 
-// Blockquote Component
 interface BlockquoteProps extends React.HTMLAttributes<HTMLQuoteElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -174,7 +167,6 @@ export const Blockquote = forwardRef<HTMLQuoteElement, BlockquoteProps>(
   )
 );
 
-// List Component
 interface ListProps extends React.HTMLAttributes<HTMLUListElement | HTMLOListElement>, SharedProps {
   children: React.ReactNode;
   ordered?: boolean;
@@ -197,7 +189,6 @@ export const List = forwardRef<HTMLUListElement | HTMLOListElement, ListProps>((
   );
 });
 
-// List Item Component
 interface ListItemProps extends React.HTMLAttributes<HTMLLIElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -208,7 +199,7 @@ export const ListItem = forwardRef<HTMLLIElement, ListItemProps>(({ className, c
   </li>
 ));
 
-// Optional List Item Text component to emulate prose p-in-li behavior
+// Emulates prose p-in-li behavior.
 interface ListItemTextProps extends React.HTMLAttributes<HTMLParagraphElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -221,7 +212,6 @@ export const ListItemText = forwardRef<HTMLParagraphElement, ListItemTextProps>(
   )
 );
 
-// Inline Code Component
 interface InlineCodeProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -237,19 +227,16 @@ export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className,
   </code>
 ));
 
-// Base props shared by both link types
 type BaseLinkProps = SharedProps & {
   children: React.ReactNode;
   className?: string;
 };
 
-// Discriminated union for link types
-// TanStack Router variant uses explicit props because ComponentProps<typeof TanStackLink>
-// ties params to a specific route literal, which breaks when `to` is a plain string.
+// TanStack Router variant uses explicit props because ComponentProps<typeof TanStackLink> ties params to a route literal, which breaks when `to` is a plain string.
 type LinkProps =
   | (BaseLinkProps &
       React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-        as?: never; // Default to anchor - don't allow 'as' when using anchor
+        as?: never;
         href: string;
       })
   | (BaseLinkProps & {
@@ -263,17 +250,15 @@ type LinkProps =
       [key: string]: unknown;
     });
 
-// Link styles matching Figma: primary color, dotted underline with offset
+// Figma link style: primary color, dotted underline with offset.
 const linkStyles =
   'font-medium text-primary decoration-dotted underline underline-offset-[3px] hover:text-primary/80 transition-colors';
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, ref) => {
-  // Re-assert the discriminated union: forwardRef's PropsWithoutRef collapses the
-  // index-signature branch, widening className/children to `unknown`.
+  // Re-assert the union: forwardRef's PropsWithoutRef collapses the index-signature branch, widening className/children to `unknown`.
   const { className, children, testId, ...props } = componentProps as LinkProps;
 
   if ('as' in props && props.as === TanStackLink) {
-    // Render as TanStack Router Link when explicitly specified
     const { as: _, ...routerProps } = props;
     return (
       <TanStackLink className={cn(linkStyles, className)} data-testid={testId} ref={ref} {...routerProps}>
@@ -281,7 +266,6 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, re
       </TanStackLink>
     );
   }
-  // Render as anchor tag (default)
 
   return (
     <a className={cn(linkStyles, className)} data-testid={testId} ref={ref} {...props}>
@@ -290,7 +274,6 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, re
   );
 });
 
-// Preformatted Code Block Component
 interface PreProps extends React.HTMLAttributes<HTMLPreElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -306,14 +289,12 @@ export const Pre = forwardRef<HTMLPreElement, PreProps>(({ className, children, 
   </pre>
 ));
 
-// Horizontal Rule Component
 interface HrProps extends React.HTMLAttributes<HTMLHRElement>, SharedProps {}
 
 export const Hr = forwardRef<HTMLHRElement, HrProps>(({ className, testId, ...props }, ref) => (
   <hr className={cn('my-10', className)} data-testid={testId} ref={ref} {...props} />
 ));
 
-// Description List Components
 interface DlProps extends React.HTMLAttributes<HTMLDListElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -344,7 +325,6 @@ export const Dd = forwardRef<HTMLElement, DdProps>(({ className, children, testI
   </dd>
 ));
 
-// Details/Summary Components
 interface DetailsProps extends React.DetailsHTMLAttributes<HTMLDetailsElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -372,7 +352,6 @@ export const Summary = forwardRef<HTMLElement, SummaryProps>(({ className, child
   </summary>
 ));
 
-// Marked/Highlight Component
 interface MarkProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -383,7 +362,6 @@ export const Mark = forwardRef<HTMLElement, MarkProps>(({ className, children, t
   </mark>
 ));
 
-// Small text Component
 interface SmallProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
@@ -394,8 +372,7 @@ export const Small = forwardRef<HTMLElement, SmallProps>(({ className, children,
   </small>
 ));
 
-// Set displayName on every forwardRef component so they show their real name in React
-// DevTools, error boundaries, and component stacks instead of an anonymous "ForwardRef".
+// displayName on each forwardRef so DevTools/stacks show the real name instead of "ForwardRef".
 Heading.displayName = 'Heading';
 Text.displayName = 'Text';
 Blockquote.displayName = 'Blockquote';

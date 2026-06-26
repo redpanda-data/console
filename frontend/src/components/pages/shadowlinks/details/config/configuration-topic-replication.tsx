@@ -117,7 +117,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
         return (
           <Card key={categoryKey} size="full" testId={`category-${categoryKey}-card`}>
             <CardContent className="p-0">
-              <Accordion collapsible defaultValue={categoryKey} type="single">
+              <Accordion defaultValue={[categoryKey]}>
                 <AccordionItem value={categoryKey}>
                   <AccordionTrigger className="py-4" data-testid={`category-${categoryKey}-trigger`}>
                     <Heading level={3}>{category}</Heading>

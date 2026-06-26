@@ -33,6 +33,7 @@ import {
   useInvalidateSqlCatalog,
   useListCatalogsQuery,
   useListTablesQuery,
+  useTopicIcebergQuery,
 } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ import {
   type CellValue,
   type ColumnDef,
   columnKindForPgType,
+  hintFromError,
   isArrayPgType,
   type QueryRun,
   type ResultRow,
@@ -405,9 +407,17 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     }));
   }, [catalogsData]);
 
+  // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
+  // signal (`redpanda.iceberg.mode`), independent of any lag metric. A topic that
+  // is tiered but hasn't started translating yet emits no lag series, so the badge
+  // must key off the config, not metric presence (else a not-yet-synced bridge
+  // query — every row served from the topic — would look like a plain query).
+  const { isIceberg: bridgeTopicTiered } = useTopicIcebergQuery(bridgeTopic ?? '', {
+    enabled: Boolean(bridgeTopic),
+  });
   // Bridge-query lag for the queried topic, read from the ObservabilityService
-  // (per-topic named queries) — decoupled from ExecuteQuery. A non-Iceberg topic
-  // has no pending-lag series, so `bridge` resolves to undefined and nothing shows.
+  // (per-topic named queries) — decoupled from ExecuteQuery. Drives only the lag
+  // timeline; the badge itself comes from `bridgeTopicTiered` above.
   const bridgeTxLag = useExecuteInstantQuery(
     {
       queryName: 'iceberg_topic_translation_lag',
@@ -429,18 +439,18 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     { enabled: Boolean(bridgeTopic) }
   );
   const bridge = useMemo<BridgeInfo | undefined>(() => {
-    if (!bridgeTopic) {
+    // Bridge-ness is the topic being Iceberg-tiered — not whether lag has shown up.
+    // Lag defaults to 0 when its series is absent (e.g. translation hasn't started),
+    // which the timeline reads as "fully caught up" and hides; the badge still shows.
+    if (!(bridgeTopic && bridgeTopicTiered)) {
       return;
     }
     const tx = bridgeTxLag.data?.results?.[0]?.value?.value;
     const commit = bridgeCommitLag.data?.results?.[0]?.value?.value;
-    if (tx === undefined && commit === undefined) {
-      return;
-    }
     const translationLag = tx ?? 0;
     const commitLag = commit ?? 0;
     return { topic: bridgeTopic, translationLag, commitLag, totalLag: translationLag + commitLag };
-  }, [bridgeTopic, bridgeTxLag.data, bridgeCommitLag.data]);
+  }, [bridgeTopic, bridgeTopicTiered, bridgeTxLag.data, bridgeCommitLag.data]);
 
   // Redpanda-catalog tables, fetched up front so both the add-topic wizard and
   // editor autocomplete (and the bridge indicator below) can resolve table refs.
@@ -537,7 +547,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           if (latestRunToken.current !== token) {
             return;
           }
-          setRun({ state: 'error', token, title: 'Query failed', message: error.message });
+          setRun({ state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) });
         },
       });
     },
@@ -667,7 +677,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
               topics={wizardTopics}
             />
           ) : (
-            <ResizablePanelGroup className="min-w-0 flex-1" direction="vertical">
+            <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
               <ResizablePanel
                 className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
                 defaultSize={42}

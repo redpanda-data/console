@@ -99,7 +99,7 @@ function CodeTabs({
   testId,
   ...props
 }: CodeTabsProps) {
-  // Normalize the input - convert codes to items format if needed
+  // Accept either `items` or the simpler `codes` shape; normalize to items.
   const normalizedItems = React.useMemo<CodeTabItem[]>(() => {
     if (items) {
       return items;
@@ -151,7 +151,6 @@ function CodeTabs({
     loadHighlightedCode();
   }, [theme, lang, themes.light, themes.dark, normalizedItems]);
 
-  // Find the original code content for the copy button
   const selectedItem = normalizedItems.find((item) => item.id === selectedCode);
 
   return (
@@ -160,9 +159,9 @@ function CodeTabs({
       data-slot="install-tabs"
       data-testid={testId}
       {...props}
-      onValueChange={(val) => {
+      onValueChange={(val, eventDetails) => {
         setSelectedCode(val);
-        onValueChange?.(val);
+        onValueChange?.(val, eventDetails);
       }}
       value={selectedCode}
     >
@@ -174,7 +173,7 @@ function CodeTabs({
         <div className="flex h-full gap-x-1 overflow-x-auto [scrollbar-width:none] sm:gap-x-2 [&::-webkit-scrollbar]:hidden">
           {highlightedItems?.map((item) => (
             <TabsTrigger
-              className="shrink-0 px-2 text-muted-foreground text-xs data-[state=active]:text-selected sm:px-3"
+              className="shrink-0 px-2 text-muted-foreground text-xs data-[active]:text-selected sm:px-3"
               key={item.id}
               value={item.id}
             >

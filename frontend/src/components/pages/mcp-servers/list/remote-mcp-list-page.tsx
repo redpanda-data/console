@@ -197,11 +197,13 @@ export const createColumns = (
       const truncatedUrl = url.length > 40 ? `${url.slice(0, 37)}...` : url;
       return (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Text className="cursor-help font-mono text-muted-foreground" variant="small">
-              {truncatedUrl}
-            </Text>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <Text className="cursor-help font-mono text-muted-foreground" variant="small">
+                {truncatedUrl}
+              </Text>
+            }
+          />
           <TooltipContent>
             <Text>{url}</Text>
           </TooltipContent>
@@ -264,7 +266,11 @@ export const updatePageTitle = () => {
   });
 };
 
-const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef> }) => {
+const RemoteMCPListPageContent = ({
+  deleteHandlerRef,
+}: {
+  deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef | null>;
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);

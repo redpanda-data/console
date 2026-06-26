@@ -9,7 +9,7 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { toast } from 'sonner';
 
 const UNDERSCORE_REGEX = /_/g;
