@@ -897,16 +897,9 @@ function PipelinePageContent() {
   // in the normal in-flow column. The legacy form (rendered on the same routes when the flag/embed is
   // off) never mounts this component, so it keeps console chrome.
   const isFullscreenPage = mode !== 'create';
-  const setFullscreenPageActive = useFullscreenPageStore((s) => s.setActive);
-  // Strip console chrome (breadcrumb/title/footer) while the fullscreen editor is mounted. Layout
-  // effect so the layout re-renders before paint — no chrome flash on navigation in.
-  useLayoutEffect(() => {
-    setFullscreenPageActive(isFullscreenPage);
-    return () => setFullscreenPageActive(false);
-  }, [isFullscreenPage, setFullscreenPageActive]);
   // Boxed (default): normal document flow with a clamped panel height — comfortable on small screens
-  // (the page scrolls) and capped on large ones. Full: a pinned, edge-to-edge fixed overlay (true
-  // full-screen). Only the view/edit editor page (not create) participates.
+  // (the page scrolls) and capped on large ones, with the page footer below. Full: a pinned,
+  // edge-to-edge fixed overlay (true full-screen). Only the view/edit editor page (not create) participates.
   const { mode: layoutMode, toggleMode: toggleLayoutMode } = usePageWidthMode({
     storageKey: 'rpcn-pipeline-editor-mode',
     defaultMode: 'boxed',
@@ -915,6 +908,14 @@ function PipelinePageContent() {
   const pinned = isFullscreenPage && !boxed; // full mode → fixed overlay
   const flowing = isFullscreenPage && boxed; // boxed mode → in-flow, scrollable
   const pinRef = useFullscreenPin(pinned);
+  // Only full mode takes over as a fixed overlay; tell the layout to strip console chrome (incl. the
+  // footer) THEN, so the footer doesn't float over the pinned page. Boxed stays in normal document
+  // flow with the footer below. Layout effect so the layout re-renders before paint (no flash).
+  const setFullscreenPageActive = useFullscreenPageStore((s) => s.setActive);
+  useLayoutEffect(() => {
+    setFullscreenPageActive(pinned);
+    return () => setFullscreenPageActive(false);
+  }, [pinned, setFullscreenPageActive]);
   const fullscreenToggle = isFullscreenPage ? (
     <FullscreenToggle mode={layoutMode} onToggle={toggleLayoutMode} />
   ) : null;
