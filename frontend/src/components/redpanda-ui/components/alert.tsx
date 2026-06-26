@@ -5,23 +5,17 @@ import React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 const alertVariants = cva(
-  'relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-lg border px-4 py-3 text-sm has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current',
+  // Body text is neutral high-contrast; the tone lives in the surface, border, and icon.
+  // NOTE: the dark-mode palette is provisional and not yet contrast-tested.
+  'relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-lg border px-4 py-3 text-grey-900 text-sm has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 *:data-[slot=alert-description]:text-grey-900 dark:text-grey-50 dark:*:data-[slot=alert-description]:text-grey-50 [&>svg]:size-4 [&>svg]:translate-y-0.5',
   {
+    // `!border-*` overrides the global `*` border-color set in the base layer.
     variants: {
       variant: {
-        info: 'bg-card text-card-foreground',
-        destructive:
-          '!border-destructive/20 bg-destructive/10 text-destructive *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current',
-        // `warning` is a neutral informational alert built from shadcn base
-        // tokens only (bg-card + the shared border), matching shadcn's `default`
-        // variant. It carries no custom color token, so it is inherently
-        // dark-safe. The old value was a light-only raw-blue palette that glared
-        // as a near-white blob in dark mode. Meaning is conveyed by the caller's
-        // icon/content; for a colored status use `destructive` or the Badge
-        // variants rather than tinting the Alert surface.
-        warning: 'bg-card text-card-foreground',
-        success:
-          '!border-green-200 dark:!border-green-800/40 bg-green-50 text-green-800 *:data-[slot=alert-description]:text-green-800 dark:bg-green-950/30 dark:text-green-300 dark:*:data-[slot=alert-description]:text-green-300 [&>svg]:text-current',
+        info: '!border-outline-informative bg-background-informative-subtle [&>svg]:text-informative',
+        success: '!border-outline-success bg-background-success-subtle [&>svg]:text-success',
+        warning: '!border-outline-warning bg-background-warning-subtle [&>svg]:text-warning',
+        destructive: '!border-outline-error bg-background-error-subtle [&>svg]:text-destructive',
       },
     },
     defaultVariants: {

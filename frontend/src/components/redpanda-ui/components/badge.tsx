@@ -6,7 +6,7 @@ import type React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 const badgeVariants = cva(
-  'group/badge inline-flex max-w-full shrink-0 items-center justify-center overflow-hidden truncate text-ellipsis whitespace-nowrap rounded-md border font-medium transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none',
+  'group/badge inline-flex max-w-full shrink-0 items-center justify-center overflow-hidden truncate text-ellipsis whitespace-nowrap rounded-full border font-medium transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none',
   {
     variants: {
       variant: {
@@ -21,9 +21,9 @@ const badgeVariants = cva(
 
         info: 'border-transparent bg-surface-informative text-inverse [a&]:hover:bg-surface-informative-hover',
         'info-inverted':
-          'border-transparent bg-background-informative-subtle text-info [a&]:hover:bg-background-informative-subtle-hover',
+          'border-transparent bg-background-informative-subtle text-informative [a&]:hover:bg-background-informative-subtle-hover',
         'info-outline':
-          'border-outline-informative bg-transparent text-info [a&]:hover:bg-background-informative-subtle',
+          'border-outline-informative bg-transparent text-informative [a&]:hover:bg-background-informative-subtle',
 
         accent: 'border-transparent bg-brand text-inverse [a&]:hover:bg-surface-brand-hover',
         'accent-inverted': 'border-transparent bg-background-brand-subtle text-brand [a&]:hover:bg-brand-alpha-default',
@@ -81,17 +81,93 @@ const badgeVariants = cva(
   }
 );
 
+/**
+ * Recommended semantic color axis. Pair with {@link BadgeEmphasis} via the
+ * `tone` and `variant` props: `<Badge tone="success" variant="subtle" />`.
+ */
+export type BadgeTone = 'neutral' | 'primary' | 'accent' | 'info' | 'success' | 'warning' | 'destructive';
+
+/** Recommended emphasis axis. `subtle` is the soft-fill style (formerly `*-inverted`). */
+export type BadgeEmphasis = 'solid' | 'subtle' | 'outline';
+
+/**
+ * @deprecated Use the two-axis `tone` + `variant` (solid|subtle|outline) API instead.
+ * The flat semantic strings (e.g. `success-inverted`, `primary-outline`) are retained for
+ * back-compat and render identically, but will be removed in a future major version.
+ * Migration: `variant="success-inverted"` → `tone="success" variant="subtle"`.
+ */
 export type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
 export type BadgeSize = VariantProps<typeof badgeVariants>['size'];
+
+const EMPHASIS_VALUES = new Set<BadgeEmphasis>(['solid', 'subtle', 'outline']);
+
+const isEmphasis = (value: unknown): value is BadgeEmphasis => EMPHASIS_VALUES.has(value as BadgeEmphasis);
+
+/** Map a (tone, emphasis) pair to the underlying flat `badgeVariants` key. */
+function toneToVariant(tone: BadgeTone, emphasis: BadgeEmphasis): BadgeVariant {
+  if (emphasis === 'solid') {
+    return tone;
+  }
+  return `${tone}-${emphasis === 'subtle' ? 'inverted' : 'outline'}` as BadgeVariant;
+}
+
+/**
+ * Resolve the two-axis API (and disabled state) down to a single flat
+ * `badgeVariants` key, preserving back-compat for deprecated flat strings.
+ */
+function resolveBadgeVariant(tone: BadgeTone | undefined, variant: BadgeEmphasis | BadgeVariant, disabled: boolean) {
+  if (disabled) {
+    if (variant === 'subtle') {
+      return 'disabled-inverted';
+    }
+    if (variant === 'outline') {
+      return 'disabled-outline';
+    }
+    return 'disabled';
+  }
+  // Two-axis path: an explicit tone means `variant` is read as an emphasis (default solid).
+  if (tone) {
+    return toneToVariant(tone, isEmphasis(variant) ? variant : 'solid');
+  }
+  // Emphasis shorthand without a tone falls back to the neutral tone.
+  if (variant === 'solid') {
+    return 'neutral';
+  }
+  if (variant === 'subtle') {
+    return 'neutral-inverted';
+  }
+  // Anything else is a (deprecated) flat variant string — including the generic `outline`.
+  return variant as BadgeVariant;
+}
 
 export type BadgeProps = useRender.ComponentProps<'span'> &
   SharedProps & {
     icon?: React.ReactNode;
-    variant?: BadgeVariant;
+    /** Semantic color. Recommended; pair with `variant` for emphasis. */
+    tone?: BadgeTone;
+    /**
+     * Emphasis (`solid` | `subtle` | `outline`) when `tone` is set. Deprecated flat
+     * strings (e.g. `success-inverted`) are still accepted — see {@link BadgeVariant}.
+     */
+    variant?: BadgeEmphasis | BadgeVariant;
     size?: BadgeSize;
+    /** Renders the disabled appearance regardless of `tone`. */
+    disabled?: boolean;
   };
 
-function Badge({ className, variant = 'neutral', size, testId, icon, children, render, ...props }: BadgeProps) {
+function Badge({
+  className,
+  tone,
+  variant = 'solid',
+  size,
+  testId,
+  icon,
+  children,
+  render,
+  disabled = false,
+  ...props
+}: BadgeProps) {
+  const resolvedVariant = resolveBadgeVariant(tone, variant, disabled);
   // A custom `render` element owns its children (no `icon` composition); the default span composes `icon` + children.
   let content: React.ReactNode = children;
   if (!render) {
@@ -117,12 +193,13 @@ function Badge({ className, variant = 'neutral', size, testId, icon, children, r
     render,
     state: {
       slot: 'badge',
-      variant,
+      variant: resolvedVariant,
     },
     props: mergeProps<'span'>(
       {
-        className: cn(badgeVariants({ variant, size }), className),
+        className: cn(badgeVariants({ variant: resolvedVariant, size }), className),
         'data-testid': testId,
+        'aria-disabled': disabled || undefined,
         children: content,
       } as React.ComponentPropsWithRef<'span'>,
       props

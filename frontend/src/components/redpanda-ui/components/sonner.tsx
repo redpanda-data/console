@@ -25,7 +25,7 @@ const Toaster = ({ testId, ...props }: ToasterProps & SharedProps) => {
       data-testid={testId}
       icons={{
         success: <CheckCircle className="h-4 w-4 text-success" />,
-        info: <Info className="h-4 w-4 text-info" />,
+        info: <Info className="h-4 w-4 text-informative" />,
         warning: <AlertTriangle className="h-4 w-4 text-warning" />,
         error: <XCircle className="h-4 w-4 text-destructive" />,
         loading: <Loader className="h-4 w-4 animate-spin text-muted-foreground" />,
