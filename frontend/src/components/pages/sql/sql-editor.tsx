@@ -130,12 +130,10 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
         lineHeight: '21px',
       },
       '.cm-content': { padding: '12px 0' },
-      // CodeMirror's default selection layer is a washed-out grey; point it at
-      // the registry's selection token (the focused selector is needed to beat
-      // the base theme's higher-specificity focused rule).
-      '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-        backgroundColor: 'var(--color-selection)',
-      },
+      // A global `[data-sidebar] *::selection` rule recolours selected text
+      // white; keep each token's own colour through the selection instead. This
+      // theme is unlayered, so it wins over the registry's @layer base rules.
+      '.cm-content ::selection': { color: 'inherit' },
       '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
       '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
       '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
