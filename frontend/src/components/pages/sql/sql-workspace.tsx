@@ -680,13 +680,13 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
             <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
               <ResizablePanel
                 className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
-                defaultSize={42}
-                minSize={15}
+                defaultSize="42%"
+                minSize="15%"
               >
                 <SqlEditor catalogs={completionCatalogs} initialQuery={INITIAL_QUERY} onRun={doRun} ref={editorRef} />
               </ResizablePanel>
               <ResizableHandle withHandle />
-              <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize={20}>
+              <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
                 <SqlResults
                   hasTables={hasTables}
                   onAddTable={openWizard}
