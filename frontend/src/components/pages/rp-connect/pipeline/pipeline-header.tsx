@@ -198,10 +198,12 @@ export function PipelineViewHeader({
   pipeline,
   onBack,
   onViewDetails,
+  fullscreenToggle,
 }: {
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
+  fullscreenToggle?: ReactNode;
 }) {
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
@@ -253,8 +255,9 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <Separator className="mx-1 h-6" orientation="vertical" />
+          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
+          {fullscreenToggle}
         </div>
       </div>
       <div className="flex flex-col gap-2">
@@ -280,6 +283,7 @@ export function PipelineEditHeader({
   onEditSettings,
   isSaving,
   hasUnsavedChanges,
+  fullscreenToggle,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   mode: 'edit' | 'create';
@@ -289,6 +293,7 @@ export function PipelineEditHeader({
   onEditSettings: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
+  fullscreenToggle?: ReactNode;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
@@ -332,6 +337,7 @@ export function PipelineEditHeader({
               Save
               {isSaving ? <Spinner /> : null}
             </Button>
+            {fullscreenToggle}
           </div>
         </div>
       </div>

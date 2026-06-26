@@ -41,8 +41,9 @@ import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
+import { type OverlayMode, useFullscreenOverlay } from 'hooks/use-fullscreen-overlay';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
-import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
+import { KeyRound, LayoutGrid, Maximize2, Minimize2, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -60,7 +61,7 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
@@ -74,6 +75,7 @@ import {
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
+import { useFullscreenPageStore } from 'state/fullscreen-page-store';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -561,30 +563,32 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
     (isServerless()
       ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
       : isFeatureFlagEnabled('enableDataplaneObservability'));
+  const useNewLogs = isFeatureFlagEnabled('enableNewPipelineLogs');
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    // Bounded flex column: the log explorer scrolls its own table internally (filter + pagination
+    // stay pinned), so we don't scroll the whole panel. The legacy LogsTab has no internal scroll,
+    // so that path keeps the panel-level scroll.
+    <div className={cn('flex h-full min-h-0 flex-col p-6', !useNewLogs && 'overflow-auto')}>
       {showThroughput ? (
-        <>
+        <div className="shrink-0">
           <PipelineThroughputCard pipelineId={pipeline.id} />
           <Separator className="my-8" variant="subtle" />
-        </>
+        </div>
       ) : null}
-      <section className="flex min-h-0 flex-col gap-4">
-        {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-          // Title renders inline in the explorer's control row to line up with the table.
-          <LogExplorer
-            enableLiveView={pipeline.state === Pipeline_State.RUNNING}
-            pipeline={pipeline}
-            serverless={isServerless()}
-            title="Logs"
-          />
-        ) : (
-          <>
-            <Heading level={3}>Logs</Heading>
-            <LogsTab pipeline={pipeline} />
-          </>
-        )}
-      </section>
+      {useNewLogs ? (
+        // Title renders inline in the explorer's control row to line up with the table.
+        <LogExplorer
+          enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+          pipeline={pipeline}
+          serverless={isServerless()}
+          title="Logs"
+        />
+      ) : (
+        <section className="flex flex-col gap-4">
+          <Heading level={3}>Logs</Heading>
+          <LogsTab pipeline={pipeline} />
+        </section>
+      )}
     </div>
   );
 }
@@ -847,6 +851,22 @@ function SidebarPanel({
   );
 }
 
+// Boxed/full toggle for the editor's own header, mirroring the SQL studio control.
+function FullscreenToggle({ mode, onToggle }: { mode: OverlayMode; onToggle: () => void }) {
+  const boxed = mode === 'boxed';
+  return (
+    <Button
+      aria-label={boxed ? 'Enter fullscreen' : 'Exit fullscreen'}
+      onClick={onToggle}
+      size="icon-sm"
+      title={boxed ? 'Fullscreen' : 'Exit fullscreen'}
+      variant="secondary-ghost"
+    >
+      {boxed ? <Maximize2 /> : <Minimize2 />}
+    </Button>
+  );
+}
+
 export default function PipelinePage() {
   const { pipelineId } = usePipelineMode();
   // With the visual editor enabled, open editing on the Visual lane by default.
@@ -870,6 +890,29 @@ function PipelinePageContent() {
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
   const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isEmbedded();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
+
+  // This page only mounts for the embedded, diagrams-enabled view/edit tiers (the route gates on
+  // `enablePipelineDiagrams && isEmbedded()`), so being here already means the new editor. View/edit
+  // render fullscreen — a pinned overlay with a boxed/full toggle, like the SQL studio; create stays
+  // in the normal in-flow column. The legacy form (rendered on the same routes when the flag/embed is
+  // off) never mounts this component, so it keeps console chrome.
+  const isFullscreenPage = mode !== 'create';
+  const setFullscreenPageActive = useFullscreenPageStore((s) => s.setActive);
+  // Strip console chrome (breadcrumb/title/footer) while the fullscreen editor is mounted. Layout
+  // effect so the layout re-renders before paint — no chrome flash on navigation in.
+  useLayoutEffect(() => {
+    setFullscreenPageActive(isFullscreenPage);
+    return () => setFullscreenPageActive(false);
+  }, [isFullscreenPage, setFullscreenPageActive]);
+  const {
+    mode: layoutMode,
+    toggleMode: toggleLayoutMode,
+    attachOverlay,
+  } = useFullscreenOverlay({ storageKey: 'rpcn-pipeline-editor-mode', defaultMode: 'boxed' });
+  const boxed = layoutMode === 'boxed';
+  const fullscreenToggle = isFullscreenPage ? (
+    <FullscreenToggle mode={layoutMode} onToggle={toggleLayoutMode} />
+  ) : null;
 
   // Actions are stable, so read them once via getState; values use selectors.
   const editorStore = usePipelineEditorStoreApi();
@@ -1107,69 +1150,100 @@ function PipelinePageContent() {
 
   return (
     // overflow-x-clip (not hidden) blocks stray horizontal overflow while keeping overflow-y visible.
-    <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
-      {mode === 'view' && pipeline ? (
-        <PipelineViewHeader
-          onBack={handleCancel}
-          onViewDetails={() => setIsViewConfigDialogOpen(true)}
-          pipeline={pipeline}
-        />
-      ) : null}
-      {mode === 'view' && !pipeline ? (
-        <div className="flex items-center gap-2">
-          <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          <Skeleton variant="text" width="md" />
-        </div>
-      ) : null}
-      {mode !== 'view' ? (
-        <PipelineEditHeader
-          form={form}
-          hasUnsavedChanges={hasUnsavedChanges}
-          isSaving={isSaving}
-          mode={mode as 'create' | 'edit'}
-          onBack={handleCancel}
-          onEditSettings={() => setIsConfigDialogOpen(true)}
-          onSave={handleSave}
-          url={pipeline?.url}
-        />
-      ) : null}
-      {/* View-mode lanes: Monitor, YAML (read-only), Visual. */}
-      {mode === 'view' && pipeline ? (
-        <Tabs value={activeViewLane}>
-          <TabsList className="w-fit" variant="underline">
-            <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
-              Monitor
-            </TabsTrigger>
-            <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
-              YAML
-            </TabsTrigger>
-            {isVisualEditorEnabled ? (
-              <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
+    <div
+      className={cn(
+        'flex min-w-0 flex-col overflow-x-clip',
+        isFullscreenPage ? 'h-full' : 'min-h-[calc(100dvh-10rem)] gap-4'
+      )}
+      ref={isFullscreenPage ? attachOverlay : undefined}
+    >
+      {/* Header chrome sits outside the boxed/full body card, mirroring the SQL studio header. */}
+      <div className={cn('flex shrink-0 flex-col gap-4', isFullscreenPage && 'px-4 pt-4')}>
+        {mode === 'view' && pipeline ? (
+          <PipelineViewHeader
+            fullscreenToggle={fullscreenToggle}
+            onBack={handleCancel}
+            onViewDetails={() => setIsViewConfigDialogOpen(true)}
+            pipeline={pipeline}
+          />
+        ) : null}
+        {mode === 'view' && !pipeline ? (
+          <div className="flex items-center gap-2">
+            <Button
+              aria-label="Go back"
+              className="-ml-3.5 shrink-0"
+              onClick={handleCancel}
+              size="icon"
+              variant="ghost"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+            </Button>
+            <Skeleton variant="text" width="md" />
+            <div className="ml-auto flex items-center">{fullscreenToggle}</div>
+          </div>
+        ) : null}
+        {mode !== 'view' ? (
+          <PipelineEditHeader
+            form={form}
+            fullscreenToggle={fullscreenToggle}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isSaving={isSaving}
+            mode={mode as 'create' | 'edit'}
+            onBack={handleCancel}
+            onEditSettings={() => setIsConfigDialogOpen(true)}
+            onSave={handleSave}
+            url={pipeline?.url}
+          />
+        ) : null}
+        {/* View-mode lanes: Monitor, YAML (read-only), Visual. */}
+        {mode === 'view' && pipeline ? (
+          <Tabs value={activeViewLane}>
+            <TabsList className="w-fit" variant="underline">
+              <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
+                Monitor
+              </TabsTrigger>
+              <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
+                YAML
+              </TabsTrigger>
+              {isVisualEditorEnabled ? (
+                <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
+                  Visual
+                </TabsTrigger>
+              ) : null}
+            </TabsList>
+          </Tabs>
+        ) : null}
+        {/* Edit-mode lanes: YAML editor vs. visual editor. */}
+        {mode !== 'view' && isVisualEditorEnabled ? (
+          <Tabs value={activeEditLane}>
+            <TabsList className="w-fit" variant="underline">
+              <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
+                YAML
+              </TabsTrigger>
+              <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
                 Visual
               </TabsTrigger>
-            ) : null}
-          </TabsList>
-        </Tabs>
-      ) : null}
-      {/* Edit-mode lanes: YAML editor vs. visual editor. */}
-      {mode !== 'view' && isVisualEditorEnabled ? (
-        <Tabs value={activeEditLane}>
-          <TabsList className="w-fit" variant="underline">
-            <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
-              YAML
-            </TabsTrigger>
-            <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
-              Visual
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      ) : null}
+            </TabsList>
+          </Tabs>
+        ) : null}
+      </div>
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
-      <div className="flex min-h-[640px] min-w-0 flex-1 flex-col gap-2">
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 flex-col gap-2',
+          isFullscreenPage ? 'min-h-0' : 'min-h-[640px]',
+          isFullscreenPage && boxed && 'px-4 pb-4'
+        )}
+      >
         {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
+        <div
+          // Square (not rounded) so the top edge is flush with the underline tabs above it. Full mode
+          // is edge-to-edge with only a top divider; boxed/create keeps a full border.
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-border! transition-[border-color] duration-300',
+            isFullscreenPage && !boxed ? 'border-t border-r-0 border-b-0 border-l-0' : 'border'
+          )}
+        >
           {showSidebar ? (
             <SidebarPanel
               isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
