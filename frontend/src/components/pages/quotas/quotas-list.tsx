@@ -259,7 +259,7 @@ const QuotasList = () => {
   if (isLoading) {
     return (
       <PageContent>
-        <Skeleton className="h-[400px] w-full" />
+        <Skeleton className="h-100 w-full" />
       </PageContent>
     );
   }
