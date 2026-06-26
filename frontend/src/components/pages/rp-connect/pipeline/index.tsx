@@ -41,7 +41,7 @@ import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { type OverlayMode, useFullscreenOverlay } from 'hooks/use-fullscreen-overlay';
+import { type OverlayMode, useFullscreenPin, usePageWidthMode } from 'hooks/use-fullscreen-overlay';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
 import { KeyRound, LayoutGrid, Maximize2, Minimize2, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
@@ -904,12 +904,17 @@ function PipelinePageContent() {
     setFullscreenPageActive(isFullscreenPage);
     return () => setFullscreenPageActive(false);
   }, [isFullscreenPage, setFullscreenPageActive]);
-  const {
-    mode: layoutMode,
-    toggleMode: toggleLayoutMode,
-    attachOverlay,
-  } = useFullscreenOverlay({ storageKey: 'rpcn-pipeline-editor-mode', defaultMode: 'boxed' });
+  // Boxed (default): normal document flow with a clamped panel height — comfortable on small screens
+  // (the page scrolls) and capped on large ones. Full: a pinned, edge-to-edge fixed overlay (true
+  // full-screen). Only the view/edit editor page (not create) participates.
+  const { mode: layoutMode, toggleMode: toggleLayoutMode } = usePageWidthMode({
+    storageKey: 'rpcn-pipeline-editor-mode',
+    defaultMode: 'boxed',
+  });
   const boxed = layoutMode === 'boxed';
+  const pinned = isFullscreenPage && !boxed; // full mode → fixed overlay
+  const flowing = isFullscreenPage && boxed; // boxed mode → in-flow, scrollable
+  const pinRef = useFullscreenPin(pinned);
   const fullscreenToggle = isFullscreenPage ? (
     <FullscreenToggle mode={layoutMode} onToggle={toggleLayoutMode} />
   ) : null;
@@ -1150,14 +1155,18 @@ function PipelinePageContent() {
 
   return (
     // overflow-x-clip (not hidden) blocks stray horizontal overflow while keeping overflow-y visible.
+    // Boxed: in-flow centered max-width column (page scrolls when the clamped panel is taller than the
+    // viewport). Full: pinRef pins this as a fixed edge-to-edge overlay. Create: plain in-flow page.
     <div
       className={cn(
         'flex min-w-0 flex-col overflow-x-clip',
-        isFullscreenPage ? 'h-full' : 'min-h-[calc(100dvh-10rem)] gap-4'
+        !isFullscreenPage && 'min-h-[calc(100dvh-10rem)] gap-4',
+        flowing && 'mx-auto w-full max-w-[1500px]',
+        pinned && 'h-full'
       )}
-      ref={isFullscreenPage ? attachOverlay : undefined}
+      ref={pinRef}
     >
-      {/* Header chrome sits outside the boxed/full body card, mirroring the SQL studio header. */}
+      {/* Header chrome sits above the panel; padded so it isn't flush to the column edge. */}
       <div className={cn('flex shrink-0 flex-col gap-4', isFullscreenPage && 'px-4 pt-4')}>
         {mode === 'view' && pipeline ? (
           <PipelineViewHeader
@@ -1227,22 +1236,27 @@ function PipelinePageContent() {
           </Tabs>
         ) : null}
       </div>
-      {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
+      {/* Panel area; the tips strip is pinned just beneath so it stays visible. */}
       <div
         className={cn(
-          'flex min-w-0 flex-1 flex-col gap-2',
-          isFullscreenPage ? 'min-h-0' : 'min-h-[640px]',
-          isFullscreenPage && boxed && 'px-4 pb-4'
+          'flex min-w-0 flex-col gap-2',
+          !isFullscreenPage && 'min-h-[640px] flex-1',
+          pinned && 'min-h-0 flex-1',
+          flowing && 'px-4 pb-4'
         )}
       >
         {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
         <div
-          // Square (not rounded) so the top edge is flush with the underline tabs above it. Full mode
-          // is edge-to-edge with only a top divider; boxed/create keeps a full border.
+          // Square (not rounded) so the top edge is flush with the underline tabs above it. Full (pinned)
+          // is edge-to-edge with only a top divider and fills the overlay; boxed/create keep a full border.
+          // Boxed uses a clamped height — a comfortable floor on small screens (the page scrolls past it)
+          // and a cap on large ones so it isn't stretched; pinned/create fill their column via flex-1.
           className={cn(
-            'flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-none border-border! transition-[border-color] duration-300',
-            isFullscreenPage && !boxed ? 'border-t border-r-0 border-b-0 border-l-0' : 'border'
+            'flex min-h-0 min-w-0 overflow-hidden rounded-none border-border!',
+            !flowing && 'flex-1',
+            pinned ? 'border-t border-r-0 border-b-0 border-l-0' : 'border'
           )}
+          style={flowing ? { height: 'clamp(600px, calc(100dvh - 220px), 900px)' } : undefined}
         >
           {showSidebar ? (
             <SidebarPanel

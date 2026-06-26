@@ -10,7 +10,7 @@
  */
 
 import { isEmbedded } from 'config';
-import { useCallback, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * A workspace-style page layout mode. 'boxed' caps the page to the standard
@@ -212,6 +212,16 @@ function setupOverlayLayout(
       if (active) {
         unlockAll();
       }
+      // Drop the inline fixed-positioning we applied so the element returns to normal
+      // flow. Harmless on unmount (SQL); required when a consumer toggles the pin off
+      // (RPCN full → boxed) and keeps the element mounted.
+      el.style.position = '';
+      el.style.top = '';
+      el.style.left = '';
+      el.style.right = '';
+      el.style.bottom = '';
+      el.style.height = '';
+      el.style.transition = '';
     },
   };
 }
@@ -298,4 +308,58 @@ export function useFullscreenOverlay({
   }, []);
 
   return { attachOverlay, mode, toggleMode };
+}
+
+/**
+ * Lighter sibling of {@link useFullscreenOverlay}: tracks the same persisted boxed/full
+ * mode but does NOT itself touch layout. Pair it with {@link useFullscreenPin} so the page
+ * lives in normal document flow when boxed (it can grow and page-scroll) and pins as a
+ * fixed overlay only when full — e.g. the RPCN pipeline editor, where boxed gives a
+ * comfortable scrollable panel and full goes edge-to-edge.
+ */
+export function usePageWidthMode({
+  storageKey,
+  defaultMode = 'boxed',
+}: {
+  storageKey: string;
+  defaultMode?: OverlayMode;
+}): { mode: OverlayMode; toggleMode: () => void } {
+  const [mode, setMode] = useState<OverlayMode>(() => readMode(storageKey, defaultMode));
+
+  const toggleMode = useCallback(() => {
+    setMode((prev) => {
+      const next: OverlayMode = prev === 'boxed' ? 'full' : 'boxed';
+      try {
+        localStorage.setItem(storageKey, next);
+      } catch {
+        // ignore storage failures (private mode / quota)
+      }
+      return next;
+    });
+  }, [storageKey]);
+
+  return { mode, toggleMode };
+}
+
+/**
+ * Pins the attached element as the fixed full-screen overlay (edge-to-edge, in the region
+ * right of the sidebar) while `enabled`. When disabled the element stays in normal document
+ * flow, so the page can grow and scroll. Attach the returned ref to the page root and drive
+ * `enabled` from the boxed/full mode. The overlay's geometry/scroll-lock and the cloud-ui
+ * `data-page-expanded` width hint are set up while pinned and fully torn down when not.
+ */
+export function useFullscreenPin(enabled: boolean): RefObject<HTMLDivElement | null> {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!(enabled && el)) {
+      return;
+    }
+    const handle = setupOverlayLayout(el, () => 'full', DEFAULT_MAX_WIDTH);
+    return () => {
+      handle.teardown();
+      setPageExpanded(false);
+    };
+  }, [enabled]);
+  return ref;
 }
