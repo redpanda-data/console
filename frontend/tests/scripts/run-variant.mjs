@@ -1,12 +1,64 @@
 import { discoverVariants, getVariant } from './discover-variants.mjs';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import net from 'node:net';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const testsDir = resolve(__dirname, '..');
+
+// Find a free TCP port in a NON-ephemeral range. Binding to :0 returns an
+// ephemeral port (macOS 49152–65535), which the OS may hand to an outbound
+// connection in the gap before Docker binds it (→ "address already in use").
+// Probing a fixed range below that window avoids the race. `taken` excludes
+// ports already chosen this run so we don't hand out duplicates.
+function getFreePort(taken = new Set(), min = 20_000, max = 45_000) {
+  return new Promise((resolveP, rejectP) => {
+    let attempts = 0;
+    const tryPort = () => {
+      if (attempts++ > 100) {
+        rejectP(new Error('Could not find a free port'));
+        return;
+      }
+      const port = min + Math.floor(Math.random() * (max - min));
+      if (taken.has(port)) {
+        tryPort();
+        return;
+      }
+      const srv = net.createServer();
+      srv.unref();
+      srv.once('error', () => tryPort());
+      srv.listen(port, '127.0.0.1', () => {
+        srv.close(() => {
+          taken.add(port);
+          resolveP(port);
+        });
+      });
+    };
+    tryPort();
+  });
+}
+
+// Allocate a fresh free host port for every service the variant exposes, so
+// local runs never collide with whatever is already on the default ports (e.g.
+// a dev Console on :3000). CI keeps the fixed variant.json ports — separate
+// runners, no collisions — unless E2E_DYNAMIC_PORTS=1 is set.
+async function resolveDynamicPorts(variant) {
+  const staticPorts = variant.config.ports ?? {};
+  const useDynamic =
+    process.env.E2E_DYNAMIC_PORTS === '1' || (!process.env.CI && process.env.E2E_DYNAMIC_PORTS !== '0');
+  if (!useDynamic) {
+    return null;
+  }
+  const dynamic = {};
+  const taken = new Set();
+  for (const key of Object.keys(staticPorts)) {
+    dynamic[key] = await getFreePort(taken);
+  }
+  return dynamic;
+}
 
 function printUsage() {
   console.log('Usage: bun run e2e-test:variant <variant-name> [playwright-options]');
@@ -44,6 +96,20 @@ async function runVariant(variantName, playwrightArgs = []) {
   console.log(`Config: ${configPath}`);
   console.log('');
 
+  // Pick free host ports up front (before Playwright loads its config, so the
+  // config's baseURL can read REACT_APP_ORIGIN). global-setup merges
+  // E2E_PORTS_OVERRIDE over variant.json for the container port mappings.
+  const dynamicPorts = await resolveDynamicPorts(variant);
+  const portEnv = {};
+  if (dynamicPorts) {
+    portEnv.E2E_PORTS_OVERRIDE = JSON.stringify(dynamicPorts);
+    if (dynamicPorts.backend && !process.env.REACT_APP_ORIGIN) {
+      portEnv.REACT_APP_ORIGIN = `http://localhost:${dynamicPorts.backend}`;
+    }
+    console.log(`Using dynamic host ports: ${JSON.stringify(dynamicPorts)}`);
+    console.log('');
+  }
+
   const args = ['playwright', 'test', '--config', configPath, ...playwrightArgs];
 
   const child = spawn('npx', args, {
@@ -53,6 +119,7 @@ async function runVariant(variantName, playwrightArgs = []) {
       ...process.env,
       // Force IPv4 for testcontainers wait strategies (localhost resolves to ::1 on macOS, causing hangs)
       TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
+      ...portEnv,
     },
   });
 
