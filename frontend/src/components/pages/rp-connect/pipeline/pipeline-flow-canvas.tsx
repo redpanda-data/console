@@ -77,18 +77,28 @@ function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: numbe
 const MINIMAP_WIDTH = 132;
 const MINIMAP_MIN_INNER_H = 32;
 const MINIMAP_MAX_INNER_H = 168;
-const MINIMAP_PAD = 6;
+// Small inset between the drawing and the frame, so the viewport rect's border stays visible at
+// the pan limits rather than sitting hard against the edge.
+const MINIMAP_PAD = 2;
 // The frame's 1px border (border-box) shrinks the svg's drawing area on each side.
 const MINIMAP_BORDER = 1;
+
+const clampValue = (value: number, lo: number, hi: number): number => Math.min(Math.max(value, lo), hi);
 
 // Tint each blip with its node's role accent; structural marks (section labels) drop out.
 function miniMapNodeColor(node: Node): string {
   return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
 }
 
-// Compact overview minimap. Its drawn world is exactly the pan-REACHABLE region (see `bounds`),
+// Compact overview minimap. Its drawn world is exactly the pan-REACHABLE region (see `world`),
 // so the viewport rect fills an axis it can't pan and never leaves dead buffer. Click/drag re-centres.
-function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
+function PipelineMiniMap({
+  nodes,
+  translateExtent,
+}: {
+  nodes: Node[];
+  translateExtent: [[number, number], [number, number]];
+}) {
   const transform = useStore((s) => s.transform);
   const paneWidth = useStore((s) => s.width);
   const paneHeight = useStore((s) => s.height);
@@ -99,59 +109,65 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
   const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
 
   const [tx, ty, zoom] = transform;
+  const viewLeft = -tx / zoom;
+  const viewTop = -ty / zoom;
+  const vw = paneWidth / zoom;
+  const vh = paneHeight / zoom;
 
-  // Depict only the pan-REACHABLE world. Per axis: while the viewport is smaller than the
-  // translate extent (content ± PAN_PADDING) the whole extent is reachable by panning, so show
-  // it; once the viewport is larger, that axis is locked and the (fixed) visible window is all
-  // that's ever shown — so we never draw buffer the viewport can't reach (e.g. vertical space
-  // under a single horizontal row of nodes). Locked axes use the live window, not an assumed
-  // centre, since React Flow pins the oversized viewport to an edge.
-  const bounds = useMemo(() => {
-    const c = contentBounds(nodes);
-    const ext = {
-      minX: c.minX - PAN_PADDING,
-      minY: c.minY - PAN_PADDING,
-      maxX: c.maxX + PAN_PADDING,
-      maxY: c.maxY + PAN_PADDING,
-    };
-    const viewLeft = -tx / zoom;
-    const viewTop = -ty / zoom;
-    const vw = paneWidth / zoom;
-    const vh = paneHeight / zoom;
-    const canPanX = vw < ext.maxX - ext.minX;
-    const canPanY = vh < ext.maxY - ext.minY;
-    return {
-      minX: canPanX ? ext.minX : viewLeft,
-      maxX: canPanX ? ext.maxX : viewLeft + vw,
-      minY: canPanY ? ext.minY : viewTop,
-      maxY: canPanY ? ext.maxY : viewTop + vh,
-    };
-  }, [nodes, tx, ty, zoom, paneWidth, paneHeight]);
-  const contentW = Math.max(bounds.maxX - bounds.minX, 1);
-  const contentH = Math.max(bounds.maxY - bounds.minY, 1);
+  // The exact area canvas drag can reach — the SAME `translateExtent` passed to <ReactFlow> — so
+  // the minimap never disagrees with the canvas about what's reachable.
+  const ext = useMemo(
+    () => ({
+      minX: translateExtent[0][0],
+      minY: translateExtent[0][1],
+      maxX: translateExtent[1][0],
+      maxY: translateExtent[1][1],
+    }),
+    [translateExtent]
+  );
+
+  // Draw only the pan-REACHABLE world. Per axis: while the viewport is smaller than the extent the
+  // whole extent is reachable by panning, so show it; otherwise that axis is locked, so show the
+  // fixed visible window — never buffer the viewport can't reach. Locked axes use the live window
+  // (React Flow pins an oversized viewport to an edge, not an assumed centre).
+  const canPanX = vw < ext.maxX - ext.minX;
+  const canPanY = vh < ext.maxY - ext.minY;
+  const world = {
+    minX: canPanX ? ext.minX : viewLeft,
+    maxX: canPanX ? ext.maxX : viewLeft + vw,
+    minY: canPanY ? ext.minY : viewTop,
+    maxY: canPanY ? ext.maxY : viewTop + vh,
+  };
+  const worldW = Math.max(world.maxX - world.minX, 1);
+  const worldH = Math.max(world.maxY - world.minY, 1);
+
+  // The world fills the drawing area (frame minus the small MINIMAP_PAD inset) so the viewport rect
+  // sits all but flush against the edges at the pan limits. Frame height tracks the world's aspect
+  // (clamped to stay usable); each axis is then scaled to fill exactly — a single uniform scale
+  // would letterbox once the clamp forces a frame aspect different from the world's, leaving dead
+  // bands the viewport can't reach. When the aspects match (the common case) the two scales are
+  // equal, so there's no distortion.
   const innerW = mapW - 2 * MINIMAP_PAD;
-  // Match the content's aspect so the drawing fills the frame; clamp extreme ratios to stay usable.
-  const innerH = Math.min(Math.max(innerW * (contentH / contentW), MINIMAP_MIN_INNER_H), MINIMAP_MAX_INNER_H);
+  const innerH = clampValue(innerW * (worldH / worldW), MINIMAP_MIN_INNER_H, MINIMAP_MAX_INNER_H);
   const mapH = innerH + 2 * MINIMAP_PAD;
-  const scale = Math.min(innerW / contentW, innerH / contentH);
-  // Centre the content within the frame.
-  const offsetX = MINIMAP_PAD + (innerW - contentW * scale) / 2 - bounds.minX * scale;
-  const offsetY = MINIMAP_PAD + (innerH - contentH * scale) / 2 - bounds.minY * scale;
+  const scaleX = innerW / worldW;
+  const scaleY = innerH / worldH;
+  const offsetX = MINIMAP_PAD - world.minX * scaleX;
+  const offsetY = MINIMAP_PAD - world.minY * scaleY;
 
-  // Viewport in minimap coords, clamped to the drawing area (1px stroke inset) so its border
-  // stays visible even when the view extends into the pan padding.
-  const inset = 1;
-  const left = Math.max((-tx / zoom) * scale + offsetX, inset);
-  const top = Math.max((-ty / zoom) * scale + offsetY, inset);
-  const right = Math.min((-tx / zoom + paneWidth / zoom) * scale + offsetX, mapW - inset);
-  const bottom = Math.min((-ty / zoom + paneHeight / zoom) * scale + offsetY, mapH - inset);
-  const view = { x: left, y: top, w: Math.max(right - left, 0), h: Math.max(bottom - top, 0) };
+  // The world always contains the viewport, so the rect sits within the padded drawing area with
+  // no clamping; on a locked axis it fills that axis edge-to-edge.
+  const view = { x: viewLeft * scaleX + offsetX, y: viewTop * scaleY + offsetY, w: vw * scaleX, h: vh * scaleY };
 
   const panToEvent = (e: ReactPointerEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const fx = (e.clientX - rect.left - offsetX) / scale;
-    const fy = (e.clientY - rect.top - offsetY) / scale;
-    setCenter(fx, fy, { zoom, duration: 0 });
+    const fx = (e.clientX - rect.left - offsetX) / scaleX;
+    const fy = (e.clientY - rect.top - offsetY) / scaleY;
+    // Clamp the target centre so click-to-pan obeys the same extent as drag; lock to the extent
+    // centre on an axis too small to pan.
+    const cx = canPanX ? clampValue(fx, ext.minX + vw / 2, ext.maxX - vw / 2) : (ext.minX + ext.maxX) / 2;
+    const cy = canPanY ? clampValue(fy, ext.minY + vh / 2, ext.maxY - vh / 2) : (ext.minY + ext.maxY) / 2;
+    setCenter(cx, cy, { zoom, duration: 0 });
   };
 
   return (
@@ -184,8 +200,8 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
           if (node.parentId || color === 'transparent') {
             return null;
           }
-          const w = ((node.initialWidth ?? node.width ?? 0) as number) * scale;
-          const h = ((node.initialHeight ?? node.height ?? 0) as number) * scale;
+          const w = ((node.initialWidth ?? node.width ?? 0) as number) * scaleX;
+          const h = ((node.initialHeight ?? node.height ?? 0) as number) * scaleY;
           return (
             <rect
               height={Math.max(h, 2)}
@@ -193,8 +209,8 @@ function PipelineMiniMap({ nodes }: { nodes: Node[] }) {
               rx={1.5}
               style={{ fill: color, opacity: 0.85 }}
               width={Math.max(w, 2)}
-              x={node.position.x * scale + offsetX}
-              y={node.position.y * scale + offsetY}
+              x={node.position.x * scaleX + offsetX}
+              y={node.position.y * scaleY + offsetY}
             />
           );
         })}
@@ -911,7 +927,7 @@ export function PipelineFlowCanvas({
               showInteractive={false}
             />
           )}
-          {simple ? null : <PipelineMiniMap nodes={rfNodes} />}
+          {simple ? null : <PipelineMiniMap nodes={rfNodes} translateExtent={translateExtent} />}
           {/* Renders only for control-flow markers (flowSplit/flowMerge), present only on the
               full canvas — the compact sidebar gets nothing. */}
           <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
