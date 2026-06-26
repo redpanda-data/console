@@ -638,7 +638,7 @@ const PipelineListPageContent = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-red-600">
+      <div className="flex items-center justify-center gap-2 py-8 text-error">
         <AlertCircle className="h-4 w-4" />
         Error loading pipelines: {error.message}
       </div>

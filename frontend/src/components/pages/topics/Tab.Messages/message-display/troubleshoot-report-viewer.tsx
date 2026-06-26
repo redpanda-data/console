@@ -47,7 +47,7 @@ export const TroubleshootReportViewer = (props: { payload: Payload }) => {
               {report.map((e) => (
                 <Fragment key={e.serdeName}>
                   <div className="w-full px-5 py-2 pl-8 font-bold capitalize">{e.serdeName}</div>
-                  <div className="w-full bg-red-100 px-5 py-2 font-mono">{e.message}</div>
+                  <div className="w-full bg-background-error-subtle px-5 py-2 font-mono">{e.message}</div>
                 </Fragment>
               ))}
             </div>

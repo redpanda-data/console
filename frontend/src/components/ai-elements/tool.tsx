@@ -173,14 +173,14 @@ export const ToolHeader = ({
           </Text>
           {getStatusBadge(state)}
           {durationMs !== undefined && (state === 'output-available' || state === 'output-error') && (
-            <Text as="span" className="text-muted-foreground/50 text-[0.75rem]">
+            <Text as="span" className="text-muted-foreground/50 text-xs">
               {formatDuration(durationMs)}
             </Text>
           )}
         </div>
         <div className="flex items-center gap-2">
           {toolCallId && (
-            <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
+            <Text as="span" className="text-muted-foreground/50 text-xs font-mono">
               {toolCallId}
             </Text>
           )}

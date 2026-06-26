@@ -372,9 +372,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             </Badge>
           </div>
           {!expanded && (
-            <div className="min-w-0 truncate font-mono text-[11px] text-muted-foreground">
-              {formatted.split('\n')[0]}
-            </div>
+            <div className="min-w-0 truncate font-mono text-muted-foreground text-xs">{formatted.split('\n')[0]}</div>
           )}
           <CollapsibleContent>
             <SimpleCodeBlock
@@ -630,7 +628,7 @@ function FeatureFlagsTab() {
                       </Badge>
                     )}
                   </div>
-                  <Text className="text-[11px] text-muted-foreground">
+                  <Text className="text-muted-foreground text-xs">
                     default: <InlineCode>{String(defaultValue)}</InlineCode> · effective:{' '}
                     <InlineCode>{String(effectiveValue)}</InlineCode>
                   </Text>

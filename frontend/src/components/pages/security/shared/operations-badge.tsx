@@ -31,7 +31,7 @@ type PermissionBadgeProps = {
 };
 
 const PermissionBadge = ({ isAllow, children, testId }: PermissionBadgeProps) => {
-  const colorClasses = isAllow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  const colorClasses = isAllow ? 'bg-background-success-subtle text-success' : 'bg-background-error-subtle text-error';
 
   return (
     <span

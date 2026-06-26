@@ -1017,9 +1017,17 @@ export default async function globalSetup(config = {}) {
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
   const needsConnect = config?.metadata?.needsConnect ?? false;
 
-  // Load ports from variant's config/variant.json
+  // Load ports from variant's config/variant.json, then apply any dynamic
+  // host-port overrides chosen by run-variant.mjs (E2E_PORTS_OVERRIDE) so local
+  // runs avoid collisions with whatever is on the default ports.
   const variantConfig = loadVariantConfig(variantName);
-  const ports = variantConfig.ports;
+  let portsOverride = {};
+  try {
+    portsOverride = JSON.parse(process.env.E2E_PORTS_OVERRIDE ?? '{}');
+  } catch {
+    portsOverride = {};
+  }
+  const ports = { ...variantConfig.ports, ...portsOverride };
 
   console.log('\n\n========================================');
   console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`);

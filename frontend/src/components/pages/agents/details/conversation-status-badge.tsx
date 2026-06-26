@@ -15,21 +15,24 @@ import { TranscriptStatus } from 'protogen/redpanda/api/dataplane/v1alpha3/trans
 export const ConversationStatusBadge = ({ status }: { status: TranscriptStatus }) => {
   if (status === TranscriptStatus.COMPLETED) {
     return (
-      <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600" variant="outline">
+      <Badge className="border-outline-success/30 bg-background-success-strong/10 text-success" variant="outline">
         Completed
       </Badge>
     );
   }
   if (status === TranscriptStatus.ERROR) {
     return (
-      <Badge className="border-red-500/30 bg-red-500/10 text-red-600" variant="outline">
+      <Badge className="border-outline-error/30 bg-background-error-strong/10 text-error" variant="outline">
         Error
       </Badge>
     );
   }
   if (status === TranscriptStatus.RUNNING) {
     return (
-      <Badge className="border-blue-500/30 bg-blue-500/10 text-blue-600" variant="outline">
+      <Badge
+        className="border-outline-informative/30 bg-background-informative-strong/10 text-informative"
+        variant="outline"
+      >
         Running
       </Badge>
     );

@@ -540,8 +540,8 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
   );
 };
 
-const iconAllowed = <span className="text-green-600">✓</span>;
-const iconForbidden = <span className="text-red-600">✗</span>;
+const iconAllowed = <span className="text-success">✓</span>;
+const iconForbidden = <span className="text-error">✗</span>;
 const iconClosedEye = (
   <span className="ml-1 inline-block opacity-50">
     <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />

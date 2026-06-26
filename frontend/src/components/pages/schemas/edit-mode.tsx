@@ -265,7 +265,7 @@ function EditSchemaMode({
                   <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
                   {option.warning && (
-                    <div className="mt-2 flex items-start gap-2 text-amber-700 text-sm">
+                    <div className="mt-2 flex items-start gap-2 text-sm text-warning">
                       <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                       <span>{option.warning}</span>
                     </div>

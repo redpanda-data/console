@@ -456,7 +456,7 @@ const AclPermissionRow = ({ acl }: { acl: FlatAclEntry }) => (
     </TableCell>
     <TableCell className="font-mono">{acl.resourceName}</TableCell>
     <TableCell>{acl.operation}</TableCell>
-    <TableCell className={acl.permissionType === 'Allow' ? 'text-green-600' : 'text-red-600'}>
+    <TableCell className={acl.permissionType === 'Allow' ? 'text-success' : 'text-error'}>
       {acl.permissionType}
     </TableCell>
     <TableCell className="text-muted-foreground">{acl.host}</TableCell>
