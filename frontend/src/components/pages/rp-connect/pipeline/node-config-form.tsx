@@ -61,7 +61,7 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   return;
 };
 
-// One clickable child row: its routing condition (gold/red/muted) over the component name, a
+// One clickable child row: its routing condition (brand/red/muted) over the component name, a
 // lint count if any, and a chevron. Selecting it navigates the inspector to that node.
 const childItemCondColor = (item: InspectorChildItem): string => {
   if (item.isErrorPath) {
@@ -70,7 +70,7 @@ const childItemCondColor = (item: InspectorChildItem): string => {
   if (item.isDefault) {
     return 'text-muted-foreground';
   }
-  return 'text-condition';
+  return 'text-brand';
 };
 
 const ChildItemRow = ({

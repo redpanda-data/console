@@ -500,7 +500,7 @@ const SwitchCaseEditor = ({
 };
 
 // The routing condition of a case-entry node, edited inline at the TOP of that node's
-// inspector panel (gold, matching the on-canvas condition). Writes the case's `check`; an
+// inspector panel (brand accent, matching the on-canvas condition). Writes the case's `check`; an
 // empty value means the default (else) case. Separate Apply from the component form below,
 // since it targets the switch case, not the component.
 const CaseConditionSection = ({
@@ -521,17 +521,17 @@ const CaseConditionSection = ({
   const dirty = check !== initial;
   const apply = () => onApply(caseWithCheck(caseObject, check));
   return (
-    <div className="border-condition/30 border-b bg-condition/5 px-4 py-3">
+    <div className="border-brand/30 border-b bg-brand/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
-        <Split className="size-3.5 text-condition" />
-        <Label className="font-semibold text-[11px] text-condition uppercase tracking-wide">Routing condition</Label>
+        <Split className="size-3.5 text-brand" />
+        <Label className="font-semibold text-[11px] text-brand uppercase tracking-wide">Routing condition</Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger
               render={
                 <button
                   aria-label="About routing conditions"
-                  className="text-condition/60 transition-colors hover:text-condition"
+                  className="text-brand/60 transition-colors hover:text-brand"
                   type="button"
                 />
               }

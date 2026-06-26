@@ -175,8 +175,8 @@ const BranchConditionChip = ({
   const cls = cn(
     'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
-    tone === 'muted' && 'border-condition/30 bg-condition/5 text-condition/80',
-    tone === 'condition' && 'border-condition/40 bg-condition/10 text-condition',
+    tone === 'muted' && 'border-brand/30 bg-brand/5 text-brand/80',
+    tone === 'condition' && 'border-brand/40 bg-brand/10 text-brand',
     onEdit && 'nodrag nopan cursor-pointer transition-colors hover:bg-foreground/5',
     selected && 'ring-2 ring-primary ring-inset',
     className
@@ -203,27 +203,19 @@ const BranchConditionChip = ({
   );
 };
 
-// Routing conditions get their own colour family — AMBER (the flowchart/BPMN decision convention)
-// — distinct from the section accents so routing logic is easy to scan. Error/dead-letter routes
-// keep red (that semantic wins); a `default` catch-all is a muted amber.
+// Routing conditions get the Redpanda brand accent — distinct from the section accents so routing
+// logic is easy to scan. Error/dead-letter routes keep red (that semantic wins); a `default`
+// catch-all is a muted brand tone.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
-  condition: 'border-condition/30 bg-condition/10 text-condition',
-  muted: 'border-condition/20 bg-condition/5 text-condition/80',
+  condition: 'border-brand/30 bg-brand/10 text-brand',
+  muted: 'border-brand/20 bg-brand/5 text-brand/80',
   error: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
 // A switch case's routing condition on its own full-width row (more contrast than the inline
 // header chip): a `WHEN <check>` / `DEFAULT` / `ON ERROR` line. The click target for editing the
 // case (distinct from selecting the component card); inset ring when the condition is selected.
-const ConditionRow = ({
-  data,
-  onEdit,
-  selected,
-}: {
-  data: FlowCardData;
-  onEdit?: () => void;
-  selected?: boolean;
-}) => {
+const ConditionRow = ({ data, onEdit, selected }: { data: FlowCardData; onEdit?: () => void; selected?: boolean }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
   if (data.isErrorPath) {
     tone = 'error';

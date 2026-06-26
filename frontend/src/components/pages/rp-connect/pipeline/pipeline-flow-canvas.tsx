@@ -546,7 +546,7 @@ function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
   );
 }
 
-// A filled chip swatch for node-borne vocabulary (the gold routing condition), vs. edge line swatches.
+// A filled chip swatch for node-borne vocabulary (the brand-accented routing condition), vs. edge line swatches.
 function LegendChipSwatch({ color }: { color: string }) {
   return (
     <span
@@ -570,7 +570,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
       </div>
       {flags.condition ? (
         <div className="flex items-center gap-2">
-          <LegendChipSwatch color="var(--color-condition)" />
+          <LegendChipSwatch color="var(--color-brand)" />
           Routing condition
         </div>
       ) : null}
