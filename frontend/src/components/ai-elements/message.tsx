@@ -106,7 +106,7 @@ export const MessageTimestamp = ({
       className={cn(
         "mt-2 text-xs",
         from === "user"
-          ? "text-informative dark:text-informative"
+          ? "text-informative"
           : "text-slate-500 dark:text-slate-400",
         className
       )}

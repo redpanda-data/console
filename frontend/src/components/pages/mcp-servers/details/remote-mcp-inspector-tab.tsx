@@ -604,11 +604,11 @@ export const RemoteMCPInspectorTab = () => {
                         <div className="space-y-2">
                           {Object.entries(validationErrors).map(([field, error]) => (
                             <div
-                              className="rounded-md border border-outline-error bg-background-error-subtle p-3 dark:border-outline-error dark:bg-background-error-subtle/20"
+                              className="rounded-md border border-outline-error bg-background-error-subtle p-3"
                               key={field}
                             >
                               <div className="flex items-start">
-                                <Text className="text-error dark:text-error" variant="small">
+                                <Text className="text-error" variant="small">
                                   <Text as="span" className="font-medium">
                                     {field}:
                                   </Text>{' '}

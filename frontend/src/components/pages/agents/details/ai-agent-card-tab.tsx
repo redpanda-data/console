@@ -611,14 +611,12 @@ export const AIAgentCardTab = () => {
               )}
             </div>
 
-            <div className="rounded-md border border-outline-informative bg-background-informative-subtle p-3 dark:border-outline-informative dark:bg-background-informative-subtle/30">
+            <div className="rounded-md border border-outline-informative bg-background-informative-subtle p-3">
               <div className="flex gap-2">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 text-informative dark:text-informative" />
+                <AlertCircle className="h-4 w-4 flex-shrink-0 text-informative" />
                 <div className="flex-1 space-y-1">
-                  <Text className="font-semibold text-informative text-sm dark:text-informative">
-                    Authentication Required
-                  </Text>
-                  <Text className="text-informative text-sm dark:text-informative">
+                  <Text className="font-semibold text-informative text-sm">Authentication Required</Text>
+                  <Text className="text-informative text-sm">
                     This agent requires a Redpanda Cloud M2M token for authentication.{' '}
                     <a className="underline" href="/organization-iam?tab=service-accounts">
                       Create an M2M token

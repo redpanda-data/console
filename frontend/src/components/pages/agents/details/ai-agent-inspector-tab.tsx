@@ -191,8 +191,8 @@ export const AIAgentInspectorTab = () => {
 
                 if (cardError) {
                   return (
-                    <div className="rounded-md border border-outline-error bg-background-error-subtle p-4 dark:border-outline-error dark:bg-background-error-subtle/30">
-                      <Text className="text-error dark:text-error">{cardError}</Text>
+                    <div className="rounded-md border border-outline-error bg-background-error-subtle p-4">
+                      <Text className="text-error">{cardError}</Text>
                     </div>
                   );
                 }
