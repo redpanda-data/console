@@ -93,11 +93,13 @@ const renderSortIcon = (sorted: false | 'asc' | 'desc') => {
 const InfoTooltip = ({ children }: { children: React.ReactNode }) => (
   <TooltipProvider>
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex cursor-help text-muted-foreground">
-          <InfoIcon className="size-3.5" />
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <span className="inline-flex cursor-help text-muted-foreground">
+            <InfoIcon className="size-3.5" />
+          </span>
+        }
+      />
       <TooltipContent>{children}</TooltipContent>
     </Tooltip>
   </TooltipProvider>
@@ -130,13 +132,15 @@ const NOT_CONFIGURED_LABEL = 'No limit configured';
 const NotConfigured = () => (
   <TooltipProvider>
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="cursor-help text-muted-foreground">
-          {/* The em-dash is decorative; screen readers announce the sr-only label instead. */}
-          <span aria-hidden="true">—</span>
-          <span className="sr-only">{NOT_CONFIGURED_LABEL}</span>
-        </span>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <span className="cursor-help text-muted-foreground">
+            {/* The em-dash is decorative; screen readers announce the sr-only label instead. */}
+            <span aria-hidden="true">—</span>
+            <span className="sr-only">{NOT_CONFIGURED_LABEL}</span>
+          </span>
+        }
+      />
       <TooltipContent>{NOT_CONFIGURED_LABEL}</TooltipContent>
     </Tooltip>
   </TooltipProvider>
