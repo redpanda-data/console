@@ -40,10 +40,10 @@ export const RemoteMCPToolButton = ({
 }: RemoteMCPToolButtonProps) => {
   const getButtonClassName = () => {
     if (hasLintIssues) {
-      return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30';
+      return 'border-outline-error bg-background-error-subtle dark:border-outline-error dark:bg-background-error-subtle/30';
     }
     if (isSelected) {
-      return 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30';
+      return 'border-outline-informative bg-background-informative-subtle dark:border-outline-informative dark:bg-background-informative-subtle/30';
     }
     return 'border-border bg-card hover:bg-gray-50 dark:hover:bg-secondary';
   };
@@ -71,7 +71,7 @@ export const RemoteMCPToolButton = ({
           </Text>
           {Boolean(hasLintIssues) && (
             <span title="Has linting issues">
-              <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-error dark:text-error" />
             </span>
           )}
         </div>

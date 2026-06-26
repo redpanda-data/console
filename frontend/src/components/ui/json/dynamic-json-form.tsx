@@ -522,7 +522,7 @@ export const DynamicJSONForm = ({
                 <div className="mb-1 flex items-center gap-2">
                   <Text className="text-sm" variant="label">
                     {key}
-                    {propSchema.required?.includes(key) && <span className="ml-1 text-red-500">*</span>}
+                    {propSchema.required?.includes(key) && <span className="ml-1 text-error">*</span>}
                   </Text>
                   <Badge className="px-1 py-0 text-xs" variant="outline">
                     {(subSchema as JSONSchemaType).type || 'unknown'}
@@ -604,7 +604,7 @@ export const DynamicJSONForm = ({
                                     {(subSchema as JSONSchemaType).type || 'unknown'}
                                   </Badge>
                                   {propSchema.items?.required?.includes(key) && (
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-error">*</span>
                                   )}
                                 </div>
                                 {renderFormFields(

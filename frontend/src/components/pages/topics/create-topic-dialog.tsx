@@ -608,8 +608,8 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
           {isSuccess ? (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10">
-                <CheckCircleIcon className="h-7 w-7 text-green-500" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background-success-strong/10">
+                <CheckCircleIcon className="h-7 w-7 text-success" />
               </div>
               <div className="flex flex-col gap-1">
                 <p className="font-semibold text-base">Topic created</p>

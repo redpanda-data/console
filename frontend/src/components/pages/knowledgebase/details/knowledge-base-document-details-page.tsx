@@ -44,7 +44,7 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
                 Topic
               </Text>
               <a
-                className="text-blue-500 hover:text-blue-600 hover:underline"
+                className="text-informative hover:text-informative hover:underline"
                 href={`/clusters/${config.clusterId}/topics/${encodeURIComponent(topic ?? '')}`}
               >
                 {topic}

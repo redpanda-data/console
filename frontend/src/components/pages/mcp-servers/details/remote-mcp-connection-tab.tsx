@@ -94,12 +94,14 @@ export const RemoteMCPConnectionTab = () => {
                 <div className="w-full">
                   <DynamicCodeBlock code={mcpServerData?.mcpServer?.url || ''} lang="text" />
                 </div>
-                <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+                <div className="rounded-md border border-outline-informative bg-background-informative-subtle p-3 dark:border-outline-informative dark:bg-background-informative-subtle/30">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-informative dark:text-informative" />
                     <div className="space-y-2 text-sm">
-                      <Text className="font-medium text-blue-800 dark:text-blue-200">Authentication Required</Text>
-                      <Text className="text-blue-700 dark:text-blue-300">
+                      <Text className="font-medium text-informative dark:text-informative">
+                        Authentication Required
+                      </Text>
+                      <Text className="text-informative dark:text-informative">
                         This server requires a Redpanda Cloud M2M token for authentication.
                         <Link className="ml-1" href="/organization-iam?tab=service-accounts">
                           Create an M2M token here.

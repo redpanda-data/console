@@ -384,7 +384,7 @@ export const SecretsStoreListPage = () => {
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-red-600">
+                      <div className="flex items-center justify-center gap-2 text-error">
                         <AlertCircle className="h-4 w-4" />
                         Error loading secrets: {String(error)}
                       </div>

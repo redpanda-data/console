@@ -146,7 +146,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
                   const formattedValue = typeof value === 'number' ? formatWithUnit(value, data.metadata?.unit) : value;
                   return (
                     <div className="flex w-full items-center gap-3">
-                      <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: indicatorColor }} />
+                      <div className="h-2.5 w-2.5 shrink-0 rounded-xs" style={{ backgroundColor: indicatorColor }} />
                       <span className="text-muted-foreground">{name}</span>
                       <span className="ml-auto font-medium font-mono tabular-nums">{formattedValue}</span>
                     </div>

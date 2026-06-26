@@ -65,7 +65,7 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
           <div key={index}>
             <Card size="sm" variant="ghost">
               <CardContent space="sm">
-                <Text className="font-medium font-mono text-blue-600 text-sm">
+                <Text className="font-medium font-mono text-informative text-sm">
                   {topic}{' '}
                   <Text as="span" className="text-gray-500 text-xs">
                     (regex pattern)

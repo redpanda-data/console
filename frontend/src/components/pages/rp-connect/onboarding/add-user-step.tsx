@@ -541,7 +541,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                           <Text variant="small">
                             Edit the user's{' '}
                             <TanStackRouterLink
-                              className="text-blue-800"
+                              className="text-informative"
                               params={{ userName: existingUserSelected.name }}
                               rel="noopener noreferrer"
                               target="_blank"
