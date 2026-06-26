@@ -130,10 +130,16 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
         lineHeight: '21px',
       },
       '.cm-content': { padding: '12px 0' },
-      // A global `[data-sidebar] *::selection` rule recolours selected text
-      // white; keep each token's own colour through the selection instead. This
-      // theme is unlayered, so it wins over the registry's @layer base rules.
-      '.cm-content ::selection': { color: 'inherit' },
+      // Selection: a global `[data-sidebar] *::selection` rule recolours the
+      // text white on a washed background — unreadable. Theme both to the
+      // registry's selection pair. The base theme's focused-selection rule is
+      // high-specificity, so match its full path; this theme loads after the
+      // base theme, so equal specificity wins on order alone. The text colour
+      // is unlayered, so it beats the @layer base `::selection` rule.
+      '& .cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
+        backgroundColor: 'var(--color-selection)',
+      },
+      '.cm-content ::selection': { color: 'var(--color-selection-foreground)' },
       '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
       '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
       '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
