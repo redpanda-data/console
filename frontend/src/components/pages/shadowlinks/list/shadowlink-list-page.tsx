@@ -30,6 +30,7 @@ import {
   ShadowLinkEmptyStateCloud,
   ShadowLinkErrorState,
   ShadowLinkFeatureDisabledState,
+  ShadowLinkNoPermissionState,
   ShadowLinkUnavailableState,
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
@@ -122,7 +123,12 @@ export const ShadowLinkListPage = () => {
 
   // Show toast on error (except for feature-disabled or unavailable admin API errors)
   useEffect(() => {
-    if (error && error.code !== Code.FailedPrecondition && error.code !== Code.Unavailable) {
+    if (
+      error &&
+      error.code !== Code.FailedPrecondition &&
+      error.code !== Code.Unavailable &&
+      error.code !== Code.PermissionDenied
+    ) {
       toast.error('Failed to load shadowlinks', {
         description: error.message,
       });
@@ -146,6 +152,15 @@ export const ShadowLinkListPage = () => {
     return (
       <div className="my-2 flex justify-center gap-2">
         <ShadowLinkUnavailableState />
+      </div>
+    );
+  }
+
+  // No permission state
+  if (error?.code === Code.PermissionDenied) {
+    return (
+      <div className="my-2 flex justify-center gap-2">
+        <ShadowLinkNoPermissionState />
       </div>
     );
   }
