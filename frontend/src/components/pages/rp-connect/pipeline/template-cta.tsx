@@ -12,6 +12,7 @@
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import type { ReactNode } from 'react';
 
 type TemplateGalleryCtaProps = {
   /** Whether the entry point should be visible (animates in/out on change). */
@@ -19,13 +20,15 @@ type TemplateGalleryCtaProps = {
   onBrowseTemplates: () => void;
   /** Positioning for the floating wrapper. Defaults to a full-width bottom bar. */
   className?: string;
+  /** An optional secondary line under the button (e.g. a ⌘K hint on the full editor). */
+  hint?: ReactNode;
 };
 
 /**
  * "Start from a template" entry point, floated at the bottom of an empty visualizer with a
  * soft enter/exit animation. Used by both the sidebar lane and the full visual editor.
  */
-export function TemplateGalleryCta({ show, onBrowseTemplates, className }: TemplateGalleryCtaProps) {
+export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }: TemplateGalleryCtaProps) {
   return (
     <AnimatePresence>
       {show ? (
@@ -55,6 +58,11 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className }: Templ
               className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-brand"
             />
           </button>
+          {hint ? (
+            <p className="pointer-events-none mt-2 flex items-center justify-center gap-1.5 text-center text-muted-foreground text-xs">
+              {hint}
+            </p>
+          ) : null}
         </motion.div>
       ) : null}
     </AnimatePresence>

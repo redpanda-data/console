@@ -51,6 +51,26 @@ describe('parsePipelineFlowTree', () => {
     expect(nodes[5]).toMatchObject({ id: 'output-placeholder', kind: 'leaf', label: 'none' });
   });
 
+  it('makes component-shaped singleton resources (buffer/metrics/tracer) editable via a path target', () => {
+    const { nodes } = parsePipelineFlowTree('buffer:\n  memory:\n    limit: 1000');
+    const buffer = nodes.find((n) => n.id === 'resource-buffer');
+    expect(buffer).toMatchObject({
+      kind: 'leaf',
+      label: 'buffer',
+      section: 'resource',
+      editTarget: { kind: 'path', path: ['buffer'], componentType: 'buffer' },
+    });
+    // The impl surfaces as meta so the card isn't an inert, blank box.
+    expect(buffer?.meta?.length).toBeGreaterThan(0);
+  });
+
+  it('keeps non-component config blocks (logger) display-only', () => {
+    const { nodes } = parsePipelineFlowTree('logger:\n  level: INFO');
+    const logger = nodes.find((n) => n.id === 'resource-logger');
+    expect(logger).toMatchObject({ kind: 'leaf', label: 'logger', section: 'resource' });
+    expect(logger?.editTarget).toBeUndefined();
+  });
+
   it('emits section and leaf nodes for simple input with output placeholder', () => {
     const yaml = 'input:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]';
     const { nodes } = parsePipelineFlowTree(yaml);

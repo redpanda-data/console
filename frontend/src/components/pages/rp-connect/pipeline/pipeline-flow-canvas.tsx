@@ -22,7 +22,16 @@ import {
   ViewportPortal,
 } from '@xyflow/react';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
+import {
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
@@ -31,6 +40,7 @@ import {
   computeFlowLayout,
   type FlowInsertPayload,
   type FlowOrientation,
+  type PipelineFlowNode,
   parsePipelineFlowTree,
 } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
@@ -239,15 +249,244 @@ const RAIL_SETTLE_MS = 240;
 // Once the rail's open animation settles (pane stops resizing), nudge the viewport just enough
 // to reveal the node — only if actually clipped. The minimal dx stays inside `translateExtent`,
 // so no clamping is needed.
-function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: string; enabled: boolean }) {
+// Parse the YAML into the flow tree, keeping the last successfully-parsed nodes. While the YAML
+// is transiently invalid — mid-edit, a bad paste, switching to the Visual lane on a half-written
+// config — the parser yields no nodes; blanking the canvas there loses the user's place and reads
+// as broken. So we hold the last-good graph and flag it stale (the Step Functions / Kestra
+// "freeze last-good + banner" pattern). Extracted from the component to keep it under the
+// cognitive-complexity budget.
+function useResilientParse(
+  yaml: string,
+  simple: boolean | undefined
+): { nodes: PipelineFlowNode[]; error?: string; showingStale: boolean } {
+  const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
+  const lastGoodNodesRef = useRef<PipelineFlowNode[]>(parsed.nodes);
+  if (!parsed.error) {
+    lastGoodNodesRef.current = parsed.nodes;
+  }
+  const showingStale =
+    Boolean(parsed.error) && parsed.nodes.length === 0 && lastGoodNodesRef.current.length > 0 && !simple;
+  return { nodes: showingStale ? lastGoodNodesRef.current : parsed.nodes, error: parsed.error, showingStale };
+}
+
+// Selecting a control-flow construct focuses its branch: nodes OUTSIDE its scope fade back, so the
+// construct's members read clearly even where the dashed region box is suppressed (Dagre can
+// scatter members so a box would enclose a foreign card — see boxEnclosesForeignNode). Complements
+// the edge-scope dimming. Module-level (and driven by selection, which already rebuilds the nodes
+// array) so it stays off the cheap-hover path and out of PipelineFlowCanvas's complexity budget.
+function focusDimNodes(
+  rfNodes: Node[],
+  selectedNodeId: string | undefined,
+  scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined
+): Node[] {
+  const selectedNode = selectedNodeId ? rfNodes.find((n) => n.id === selectedNodeId) : undefined;
+  const focus = selectedNode?.type === 'flowSplit' ? scopeOf(selectedNodeId) : undefined;
+  if (!focus) {
+    return rfNodes;
+  }
+  return rfNodes.map((node) => {
+    const inScope = focus.has(node.id) || focus.has((node.data as FlowCardData).ownerId ?? ' ');
+    return inScope
+      ? node
+      : {
+          ...node,
+          style: { ...(node.style as Record<string, unknown>), opacity: 0.3, transition: 'opacity 200ms ease' },
+        };
+  });
+}
+
+// The graph fades back while it's showing the stale (last-good) layout, cueing that it's not live.
+const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
+
+// Non-destructive banner shown while the canvas is rendering the last-good graph for invalid YAML
+// (see useResilientParse). A status region so it's announced; sits above the dimmed graph.
+function StaleParseBanner({ show }: { show: boolean }) {
+  if (!show) {
+    return null;
+  }
+  return (
+    <output className="absolute top-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-1.5 text-foreground text-sm shadow-sm backdrop-blur-sm">
+      <TriangleAlert className="size-4 shrink-0 text-warning" />
+      <span>Can&apos;t parse the latest YAML — showing the last valid layout.</span>
+    </output>
+  );
+}
+
+// The zoom tool's armed state: a magnifier-`+` (zoom in) or `-` (zoom out) cursor, or off.
+type ZoomMode = 'in' | 'out' | null;
+const ZOOM_STEP = 1.5;
+
+// The native magnifier cursor for the armed zoom tool.
+function cursorForMode(mode: ZoomMode): string {
+  if (mode === 'in') {
+    return 'zoom-in';
+  }
+  if (mode === 'out') {
+    return 'zoom-out';
+  }
+  return '';
+}
+
+// Paint the magnifier cursor while the zoom tool is armed. Set imperatively (inline) on the flow
+// container AND its pane: React Flow styles the pane cursor itself, so a Tailwind class loses to it,
+// but an inline style on the pane reliably wins — and the container style covers nodes by inheritance.
+function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) {
+      return;
+    }
+    const cursor = cursorForMode(mode);
+    const panes = Array.from(root.querySelectorAll<HTMLElement>('.react-flow__pane'));
+    root.style.cursor = cursor;
+    for (const pane of panes) {
+      pane.style.cursor = cursor;
+    }
+    return () => {
+      root.style.cursor = '';
+      for (const pane of panes) {
+        pane.style.cursor = '';
+      }
+    };
+  }, [mode, ref]);
+}
+
+// Free-pan is on for the full canvas, but suppressed while the zoom tool is armed — otherwise a
+// pan-drag ends in a click the zoom tool would act on, jumping the view.
+const canPanCanvas = (simple: boolean | undefined, mode: ZoomMode): boolean => !simple && mode === null;
+
+// The zoom tool is SPRING-LOADED: held Z → zoom-in, held Shift (+Z) → zoom-out, nothing held → off.
+function heldZoomMode(zDown: boolean, shift: boolean): ZoomMode {
+  if (!zDown) {
+    return null;
+  }
+  return shift ? 'out' : 'in';
+}
+
+const isTypingTarget = (target: EventTarget | null): boolean =>
+  Boolean((target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor'));
+
+// Photoshop/Figma-style zoom TOOL, HOLD to activate: while Z is held the cursor is a magnifier and
+// a click zooms toward the pointer (Shift+Z = zoom out); releasing returns to normal pan/select.
+// Pan is suppressed only while held (canPanCanvas), so panning and zooming never conflict. The
+// wheel is left to the page; the Controls buttons and pinch also zoom. Ignored while typing.
+function ZoomTool({ mode, setMode, enabled }: { mode: ZoomMode; setMode: (next: ZoomMode) => void; enabled: boolean }) {
+  const { screenToFlowPosition, getZoom, setCenter } = useReactFlow();
+
+  // Track the physical key-hold state and derive the mode — keydown/keyup, plus blur so a release
+  // missed while the window was unfocused can't leave the tool stuck on.
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    let zDown = false;
+    let shiftHeld = false;
+    const sync = () => setMode(heldZoomMode(zDown, shiftHeld));
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        shiftHeld = true;
+        sync();
+        return;
+      }
+      if (e.code !== 'KeyZ' || e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) {
+        return;
+      }
+      e.preventDefault();
+      zDown = true;
+      shiftHeld = e.shiftKey;
+      sync();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        shiftHeld = false;
+      } else if (e.code === 'KeyZ') {
+        zDown = false;
+      } else {
+        return;
+      }
+      sync();
+    };
+    const reset = () => {
+      zDown = false;
+      shiftHeld = false;
+      sync();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', reset);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', reset);
+    };
+  }, [enabled, setMode]);
+
+  useEffect(() => {
+    if (!(enabled && mode)) {
+      return;
+    }
+    const onClick = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement | null)?.closest('.react-flow__pane, .react-flow__node')) {
+        return;
+      }
+      // Take the click before React Flow's select/deselect runs, and zoom toward the pointer.
+      e.preventDefault();
+      e.stopPropagation();
+      const point = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      const next = clampValue(getZoom() * (mode === 'in' ? ZOOM_STEP : 1 / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM);
+      setCenter(point.x, point.y, { zoom: next, duration: 200 });
+    };
+    window.addEventListener('click', onClick, true);
+    return () => window.removeEventListener('click', onClick, true);
+  }, [enabled, mode, screenToFlowPosition, getZoom, setCenter]);
+
+  return null;
+}
+
+// Recenters the viewport on a node when asked (command-palette "go to"). Keyed by a token so
+// re-picking the same node pans again. Lives inside the ReactFlowProvider for useReactFlow.
+function FocusNode({ nodeId, token, enabled }: { nodeId?: string; token?: number; enabled: boolean }) {
+  const { getNodesBounds, setCenter, getZoom } = useReactFlow();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: token is the intentional re-trigger so re-picking the same node pans again.
+  useEffect(() => {
+    if (!(enabled && nodeId)) {
+      return;
+    }
+    const bounds = getNodesBounds([nodeId]);
+    if (!bounds || bounds.width === 0) {
+      return;
+    }
+    // Keep the current zoom (clamped to a readable band) so jumping doesn't lurch the scale.
+    const zoom = Math.min(Math.max(getZoom(), 0.8), 1);
+    setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: 300, zoom });
+  }, [nodeId, token, enabled, getNodesBounds, setCenter, getZoom]);
+  return null;
+}
+
+function KeepSelectionInView({
+  selectedNodeId,
+  enabled,
+  focusToken,
+}: {
+  selectedNodeId?: string;
+  enabled: boolean;
+  focusToken?: number;
+}) {
   const { getNodesBounds, getViewport, setViewport } = useReactFlow();
   // Re-runs as the canvas resizes during the rail animation; each change resets the settle
   // timer, so the nudge fires once the pane width finally stops changing.
   const paneWidth = useStore((s) => s.width);
+  // A palette "go to" centers the node via FocusNode; skip this nudge for that cycle so the two
+  // don't issue competing pans.
+  const lastFocusToken = useRef(focusToken);
 
   useEffect(() => {
     // Disabled in the static (sidebar) overview, and a no-op until something is selected.
     if (!(enabled && selectedNodeId)) {
+      return;
+    }
+    if (focusToken !== lastFocusToken.current) {
+      lastFocusToken.current = focusToken;
       return;
     }
     const timer = setTimeout(() => {
@@ -270,7 +509,7 @@ function KeepSelectionInView({ selectedNodeId, enabled }: { selectedNodeId?: str
       }
     }, RAIL_SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [enabled, selectedNodeId, paneWidth, getNodesBounds, getViewport, setViewport]);
+  }, [enabled, selectedNodeId, paneWidth, focusToken, getNodesBounds, getViewport, setViewport]);
 
   return null;
 }
@@ -698,6 +937,10 @@ type PipelineFlowCanvasProps = {
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
+  /** Node id to recenter the viewport on (e.g. picked from the command palette); the token
+      re-triggers the pan even when the same node is chosen twice. */
+  focusNodeId?: string;
+  focusToken?: number;
   /** Select a node by id + its edit target (clicking a node). */
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   /** Clear the selection (clicking empty canvas). */
@@ -720,6 +963,8 @@ export function PipelineFlowCanvas({
   lintErrorsByNode,
   flashNodeIds,
   flashToken,
+  focusNodeId,
+  focusToken,
   onSelectNode,
   onClearSelection,
   onInsert,
@@ -731,12 +976,44 @@ export function PipelineFlowCanvas({
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
   // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
+  // The armed zoom tool (Z / Shift+Z) — drives the magnifier cursor and click-to-zoom.
+  const [zoomMode, setZoomMode] = useState<ZoomMode>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useZoomCursor(zoomMode, wrapperRef);
   // Node ids committed last render; anything new this render "appears" in place and skips the
   // reposition transition (so it doesn't fly from origin).
   const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
+  const { nodes, error, showingStale } = useResilientParse(debouncedYaml, simple);
 
-  const { nodes, error } = useMemo(() => parsePipelineFlowTree(debouncedYaml), [debouncedYaml]);
+  // A node's "scope" — itself plus all descendants — so selecting/hovering a container keeps its
+  // internal wiring (chains, copy/merge, fan edges) lit and focuses its branch.
+  const scopeOf = useCallback(
+    (id: string | undefined): ReadonlySet<string> | undefined => {
+      if (id === undefined) {
+        return;
+      }
+      const childrenByParent = new Map<string | undefined, string[]>();
+      for (const node of nodes) {
+        const siblings = childrenByParent.get(node.parentId);
+        if (siblings) {
+          siblings.push(node.id);
+        } else {
+          childrenByParent.set(node.parentId, [node.id]);
+        }
+      }
+      const scope = new Set([id]);
+      const queue = [id];
+      while (queue.length > 0) {
+        for (const child of childrenByParent.get(queue.pop() as string) ?? []) {
+          scope.add(child);
+          queue.push(child);
+        }
+      }
+      return scope;
+    },
+    [nodes]
+  );
 
   const toggleCollapse = useCallback((nodeId: string) => {
     setCollapsedIds((prev) => {
@@ -770,7 +1047,14 @@ export function PipelineFlowCanvas({
       flashToken,
       previousIds: previousIdsRef.current,
     };
-    const injectedNodes = layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks));
+    // Inject per-node selection/lint/flash data, then fade nodes outside a selected construct's
+    // scope (focusDimNodes). Both are selection-driven, so this memo (which excludes hover) stays
+    // off the cheap-hover path.
+    const injectedNodes = focusDimNodes(
+      layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks)),
+      selectedNodeId,
+      scopeOf
+    );
 
     // Allow panning a margin past the content (measured, since resources sit at negative x) so
     // an edge node can reach the middle; the compact sidebar hugs its content.
@@ -811,41 +1095,13 @@ export function PipelineFlowCanvas({
     onAddSasl,
     onSlotInsert,
     onSelectNode,
+    scopeOf,
   ]);
 
   // Record the committed node ids so the next render can tell which nodes are new.
   useEffect(() => {
     previousIdsRef.current = new Set(rfNodes.map((node) => node.id));
   }, [rfNodes]);
-
-  // A node's "scope" — itself plus all descendants — so selecting/hovering a container keeps its
-  // internal wiring (chains, copy/merge, fan edges) lit.
-  const scopeOf = useCallback(
-    (id: string | undefined): ReadonlySet<string> | undefined => {
-      if (id === undefined) {
-        return;
-      }
-      const childrenByParent = new Map<string | undefined, string[]>();
-      for (const node of nodes) {
-        const siblings = childrenByParent.get(node.parentId);
-        if (siblings) {
-          siblings.push(node.id);
-        } else {
-          childrenByParent.set(node.parentId, [node.id]);
-        }
-      }
-      const scope = new Set([id]);
-      const queue = [id];
-      while (queue.length > 0) {
-        for (const child of childrenByParent.get(queue.pop() as string) ?? []) {
-          scope.add(child);
-          queue.push(child);
-        }
-      }
-      return scope;
-    },
-    [nodes]
-  );
 
   // Hover only restyles edges, in its own cheap memo, so the node objects stay referentially
   // stable and the DOM under the cursor isn't rebuilt mid-hover — rebuilding it looped
@@ -873,9 +1129,15 @@ export function PipelineFlowCanvas({
   return (
     // Compact lane: canvas is exactly as tall as its content and top-anchored, so it never
     // re-centers as the lane resizes — the surrounding lane scrolls.
-    <div className="relative w-full" style={simple ? { height: contentHeight + 16 } : { height: '100%' }}>
+    <div
+      className="relative w-full"
+      ref={wrapperRef}
+      style={simple ? { height: contentHeight + 16 } : { height: '100%' }}
+    >
+      <StaleParseBanner show={showingStale} />
       <ReactFlowProvider>
         <ReactFlow
+          className={staleFlowClass(showingStale)}
           defaultViewport={simple ? { x: 8, y: 8, zoom: 1 } : undefined}
           edges={rfEdges}
           edgeTypes={flowEdgeTypes}
@@ -908,10 +1170,10 @@ export function PipelineFlowCanvas({
             simple ? undefined : (_, node) => setHoveredNodeId((prev) => (prev === node.id ? undefined : prev))
           }
           onPaneClick={simple ? undefined : () => onClearSelection?.()}
-          panOnDrag={!simple}
+          panOnDrag={canPanCanvas(simple, zoomMode)}
           panOnScroll={false}
-          // Let the mouse wheel scroll the page rather than zoom the canvas; zoom stays available
-          // via the Controls buttons and trackpad pinch.
+          // The wheel scrolls the embedded page (the canvas is full-height); zoom is on the Z / Shift+Z
+          // keys (see ZoomHotkeys), the Controls buttons, and trackpad pinch.
           preventScrolling={false}
           proOptions={{ hideAttribution: true }}
           translateExtent={simple ? undefined : translateExtent}
@@ -931,7 +1193,9 @@ export function PipelineFlowCanvas({
           {/* Renders only for control-flow markers (flowSplit/flowMerge), present only on the
               full canvas — the compact sidebar gets nothing. */}
           <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
-          <KeepSelectionInView enabled={!simple} selectedNodeId={selectedNodeId} />
+          <KeepSelectionInView enabled={!simple} focusToken={focusToken} selectedNodeId={selectedNodeId} />
+          <FocusNode enabled={!simple} nodeId={focusNodeId} token={focusToken} />
+          <ZoomTool enabled={!simple} mode={zoomMode} setMode={setZoomMode} />
         </ReactFlow>
       </ReactFlowProvider>
       {simple ? null : <FlowLegend flags={legend} />}

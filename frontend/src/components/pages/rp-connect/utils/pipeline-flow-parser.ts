@@ -809,8 +809,9 @@ const RESOURCE_YAML_KEYS = [
   'redpanda',
 ] as const;
 
-// Array resources the visual editor can address (cache/rate-limit). Singleton root
-// resources (buffer/metrics/tracer/…) are read-only for now.
+// Array resources addressed by the dedicated `resource` target (cache/rate-limit). Other
+// resources are editable too, but via path targets: input/output/processor resource arrays
+// (RESOURCE_KEY_COMPONENT_TYPE) and component-shaped singletons (SINGLETON_RESOURCE_COMPONENT_TYPE).
 const EDITABLE_RESOURCE_KEYS: ReadonlySet<string> = new Set(['cache_resources', 'rate_limit_resources']);
 
 // input/output/processor resources hold a real component, inspectable via a path edit
@@ -819,6 +820,15 @@ const RESOURCE_KEY_COMPONENT_TYPE: Record<string, 'input' | 'processor' | 'outpu
   input_resources: 'input',
   processor_resources: 'processor',
   output_resources: 'output',
+};
+
+// Singleton root resources that ARE components (each wraps one impl, e.g. `buffer: { memory: … }`)
+// become editable via a path target carrying their component type. The remaining root blocks
+// (`logger`, `redpanda`) are plain config, not components, so they stay display-only.
+const SINGLETON_RESOURCE_COMPONENT_TYPE: Record<string, 'buffer' | 'metrics' | 'tracer'> = {
+  buffer: 'buffer',
+  metrics: 'metrics',
+  tracer: 'tracer',
 };
 
 // Edit target for the i-th resource-array item: cache/rate-limit use the dedicated
@@ -863,7 +873,20 @@ function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): Pipeli
     if (Array.isArray(value)) {
       nodes.push(...parseArrayResource(value, key, sectionId));
     } else {
-      nodes.push({ id: `resource-${key}`, kind: 'leaf', label: key, section: 'resource', parentId: sectionId });
+      // A component-shaped singleton (buffer/metrics/tracer) gets an edit target + impl meta so it
+      // isn't an inert card; plain config blocks (logger/redpanda) remain display-only.
+      const componentType = SINGLETON_RESOURCE_COMPONENT_TYPE[key];
+      const valueObj = value as Record<string, unknown>;
+      const implName = componentType ? firstKey(valueObj) : undefined;
+      nodes.push({
+        id: `resource-${key}`,
+        kind: 'leaf',
+        label: key,
+        section: 'resource',
+        parentId: sectionId,
+        editTarget: componentType ? { kind: 'path', path: [key], componentType } : undefined,
+        meta: implName ? summarizeComponent(implName, valueObj[implName]) : undefined,
+      });
     }
   }
   return nodes;

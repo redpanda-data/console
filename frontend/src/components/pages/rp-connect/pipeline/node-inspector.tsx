@@ -69,6 +69,9 @@ const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
   processor: 'Processor',
   cache: 'Cache',
   rate_limit: 'Rate limit',
+  buffer: 'Buffer',
+  metrics: 'Metrics',
+  tracer: 'Tracer',
 };
 
 function targetComponentType(target: EditTarget): ConnectComponentType {
@@ -450,15 +453,15 @@ const SwitchCaseEditor = ({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-          <Box className="size-3.5" />
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+          <Split className="size-3.5" />
         </span>
         <div className="flex min-w-0 flex-col">
           <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
             Switch
           </Text>
           <Text as="span" className="font-semibold" variant="bodyStrongMedium">
-            Case condition
+            Routing condition
           </Text>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -479,8 +482,14 @@ const SwitchCaseEditor = ({
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-4">
         <Label className="font-medium text-sm">Condition (check)</Label>
         <Input
+          className="font-mono"
           disabled={readOnly}
           onChange={(e) => setCheck(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && dirty) {
+              apply();
+            }
+          }}
           placeholder='e.g. this.region == "us"'
           value={check}
         />
@@ -523,15 +532,17 @@ const CaseConditionSection = ({
   return (
     <div className="border-brand/30 border-b bg-brand/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
-        <Split className="size-3.5 text-brand" />
-        <Label className="font-semibold text-[11px] text-brand uppercase tracking-wide">Routing condition</Label>
+        <Split className="size-3.5 shrink-0 text-brand" />
+        <Label className="font-semibold text-[11px] text-brand uppercase leading-none tracking-wide">
+          Routing condition
+        </Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger
               render={
                 <button
                   aria-label="About routing conditions"
-                  className="text-brand/60 transition-colors hover:text-brand"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-brand/50 transition-colors hover:text-brand"
                   type="button"
                 />
               }

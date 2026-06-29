@@ -36,7 +36,22 @@ function tipsFor(
   if (context === 'visual') {
     const tips: Tip[] = [
       { id: 'select', content: <>Click a node to {readOnly ? 'inspect' : 'edit'} it</> },
-      { id: 'pan', content: <>Drag to pan, scroll or pinch to zoom</> },
+      {
+        id: 'zoom',
+        content: (
+          <>
+            Drag to pan, hold <Key>Z</Key> / <Key>⇧Z</Key> and click to zoom
+          </>
+        ),
+      },
+      {
+        id: 'palette',
+        content: (
+          <>
+            <Key>/</Key> to search nodes and actions
+          </>
+        ),
+      },
     ];
     if (!readOnly) {
       tips.push({

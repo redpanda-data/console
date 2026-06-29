@@ -24,7 +24,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import { Redo2, Undo2 } from 'lucide-react';
+import { Redo2, TriangleAlert, Undo2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -33,6 +33,7 @@ import { isMacOS } from 'utils/platform';
 
 import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector } from './node-inspector';
+import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { TemplateGalleryCta } from './template-cta';
@@ -46,6 +47,7 @@ import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
   appendResource,
   buildInsertableComponent,
+  countResourceReferences,
   createResourceAndReturnLabel,
   type EditTarget,
   firstKey,
@@ -208,11 +210,16 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
 
 // Classify a canvas keydown, ignoring presses inside a text field or the Monaco
 // YAML editor (which have their own undo / editing semantics).
-type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete';
+type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
 function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   if ((e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
     return null;
+  }
+  // `/` opens the command palette (the GitHub/Slack "focus search" convention). ⌘K is taken by the
+  // outer app-shell search, so the canvas uses its own non-conflicting key.
+  if (e.key === '/') {
+    return 'palette';
   }
   if (e.key === 'Escape') {
     return 'deselect';
@@ -331,6 +338,9 @@ export function VisualEditorPanel({
   const isEditing = mode !== 'view';
   const [selected, setSelected] = useState<{ id: string; target: EditTarget; caseTarget?: EditTarget } | null>(null);
   const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
+  const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
 
   // Mirror the selection into the shared store so switching to the YAML lane can
   // reveal the same node (the lanes are separate component trees).
@@ -462,6 +472,17 @@ export function VisualEditorPanel({
     return comp ? firstKey(comp) : undefined;
   }, [pendingDelete, yamlContent]);
 
+  // Deleting a resource that other nodes still reference (by label) leaves those references
+  // dangling — warn before confirming, so a shared cache/rate-limit isn't silently broken.
+  const pendingDeleteRefCount = useMemo(() => {
+    if (pendingDelete?.kind !== 'resource') {
+      return 0;
+    }
+    const comp = getComponentAt(yamlContent, pendingDelete);
+    const label = comp && typeof comp.label === 'string' ? comp.label : undefined;
+    return label ? countResourceReferences(yamlContent, label) : 0;
+  }, [pendingDelete, yamlContent]);
+
   const confirmDeleteNode = useCallback(() => {
     if (pendingDelete) {
       const next = removeComponentAt(yamlContent, pendingDelete);
@@ -477,6 +498,10 @@ export function VisualEditorPanel({
   // the selected node — all ignored while typing in a field or the YAML editor.
   useEffect(() => {
     const handlers: Record<CanvasKeyAction, (e: KeyboardEvent) => void> = {
+      palette: (e) => {
+        e.preventDefault();
+        setIsPaletteOpen(true);
+      },
       deselect: () => setSelected(null),
       delete: (e) => {
         if (isEditing && selected) {
@@ -563,6 +588,16 @@ export function VisualEditorPanel({
     [selected]
   );
 
+  // Command-palette "go to": select the node and recenter the canvas on it. Only nodes with an
+  // edit target are listed, so the target is always present.
+  const handleJumpToNode = useCallback((node: PipelineFlowNode) => {
+    if (!node.editTarget) {
+      return;
+    }
+    setSelected({ id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget });
+    setFocus((f) => ({ id: node.id, token: f.token + 1 }));
+  }, []);
+
   // The slot dictates which component types the picker offers: a nested slot accepts
   // exactly its kind; an output-switch case accepts outputs; a resource link accepts its
   // resource kind; the top-level spine also offers cache/rate-limit resources.
@@ -599,6 +634,8 @@ export function VisualEditorPanel({
           configYaml={yamlContent}
           flashNodeIds={flash.ids}
           flashToken={flash.token}
+          focusNodeId={focus.id || undefined}
+          focusToken={focus.token}
           lintErrorsByNode={lintMessagesByNode}
           onAddConnector={
             isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
@@ -651,6 +688,15 @@ export function VisualEditorPanel({
         {onBrowseTemplates ? (
           <TemplateGalleryCta
             className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
+            hint={
+              <>
+                or press{' '}
+                <Kbd size="xs" variant="filled">
+                  /
+                </Kbd>{' '}
+                to search nodes &amp; actions
+              </>
+            }
             onBrowseTemplates={onBrowseTemplates}
             show={isEditing && isPipelineEmpty}
           />
@@ -716,6 +762,18 @@ export function VisualEditorPanel({
         onUpdateEditorContent={handleRenameSecretReferences}
       />
 
+      <CanvasCommandPalette
+        canRedo={canRedo}
+        canUndo={canUndo}
+        nodes={flowNodes}
+        onJumpToNode={handleJumpToNode}
+        onOpenChange={setIsPaletteOpen}
+        onRedo={isEditing ? redo : undefined}
+        onUndo={isEditing ? undo : undefined}
+        onViewSelectedInYaml={selected && onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+        open={isPaletteOpen}
+      />
+
       <AlertDialog onOpenChange={(open) => (open ? undefined : setPendingDelete(null))} open={pendingDelete !== null}>
         <AlertDialogContent>
           <AlertDialogHeader className="text-left">
@@ -730,6 +788,19 @@ export function VisualEditorPanel({
                 <>This removes the node from the pipeline. You can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.</>
               )}
             </AlertDialogDescription>
+            {pendingDeleteRefCount > 0 ? (
+              <div className="mt-1 flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-sm">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
+                <span>
+                  This resource is still referenced by{' '}
+                  <span className="font-semibold">
+                    {pendingDeleteRefCount} {pendingDeleteRefCount === 1 ? 'node' : 'nodes'}
+                  </span>
+                  . Removing it leaves {pendingDeleteRefCount === 1 ? 'that reference' : 'those references'} pointing at
+                  a missing resource.
+                </span>
+              </div>
+            ) : null}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
