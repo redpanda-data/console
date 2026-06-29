@@ -36,9 +36,6 @@ import {
 import { Link } from '@tanstack/react-router';
 import type { Row } from '@tanstack/react-table';
 import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
-import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Button as UiButton } from 'components/redpanda-ui/components/button';
-import { RefreshCwIcon, TriangleAlertIcon } from 'lucide-react';
 import React, { type FC, type ReactNode } from 'react';
 
 import ClusterHealthOverview from './cluster-health-overview';
@@ -135,14 +132,6 @@ class Overview extends PageComponent {
         ? NOT_AVAILABLE
         : `${brokersOnline} of ${brokersExpected}`;
 
-    // "Unhealthy" is the catch-all status whenever Console can't get a healthy
-    // reading from the cluster. The frontend can't tell *why* on its own — an
-    // unreachable/down cluster and an authorization failure both surface here — so
-    // we avoid asserting a cause and instead show the backend's status reason,
-    // which is the only signal that carries the actual explanation.
-    const isClusterUnhealthy = clusterStatus.className === 'status-red';
-    const clusterStatusReason = overview.kafka?.status?.statusReason;
-
     return (
       <Box>
         <NullFallbackBoundary>
@@ -150,22 +139,6 @@ class Overview extends PageComponent {
         </NullFallbackBoundary>
 
         <PageContent className="overviewGrid">
-          {isClusterUnhealthy && (
-            <Alert className="mb-4" icon={<TriangleAlertIcon />} variant="destructive">
-              <AlertTitle>Cluster metrics unavailable</AlertTitle>
-              <AlertDescription>
-                <p>
-                  Console couldn't get a healthy reading from this cluster. This can mean the cluster is unreachable, or
-                  that your account lacks permission to view it.
-                </p>
-                {clusterStatusReason ? <p className="font-medium">Reported reason: {clusterStatusReason}</p> : null}
-                <UiButton className="mt-1" onClick={() => this.refreshData(true)} size="sm" variant="secondary">
-                  <RefreshCwIcon /> Retry
-                </UiButton>
-              </AlertDescription>
-            </Alert>
-          )}
-
           <Section my={4} py={5}>
             <Flex>
               <Statistic
