@@ -14,11 +14,7 @@ interface FieldContextValue {
 
 const FieldContext = createContext<FieldContextValue>({ invalid: false, errorId: undefined });
 
-/**
- * Access field-level validation state from child components.
- * Returns `{ invalid, errorId }` — use `invalid` for `aria-invalid` and
- * `errorId` for `aria-describedby` on form controls.
- */
+/** Field-level validation state for child controls: `invalid` for aria-invalid, `errorId` for aria-describedby. */
 export function useFieldContext() {
   return useContext(FieldContext);
 }
@@ -136,6 +132,8 @@ function FieldLabel({
         'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4',
         'has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 dark:has-data-[state=checked]:bg-primary/10',
+        // Checkbox re-injects data-state; Base UI radio emits data-checked — match both so radio cards keep the selected highlight.
+        'has-data-[checked]:border-primary has-data-[checked]:bg-primary/5 dark:has-data-[checked]:bg-primary/10',
         className
       )}
       data-slot="field-label"
@@ -164,8 +162,7 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-// Rendered as <div> instead of <p> so consumers can nest block-level components
-// (Text, Alert, Input, etc.) without triggering React's validateDOMNesting warnings.
+// Rendered as <div> (not <p>) so block-level children don't trip validateDOMNesting.
 function FieldDescription({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
   return (
     <div
@@ -228,14 +225,16 @@ function FieldError({
       return null;
     }
 
-    if (errors?.length === 1) {
-      return errors[0]?.message;
+    const uniqueErrors = [...new Map(errors.map((error) => [error?.message, error])).values()];
+
+    if (uniqueErrors.length === 1) {
+      return uniqueErrors[0]?.message;
     }
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
         {/* biome-ignore lint/suspicious/noArrayIndexKey: error messages are stable and order is maintained */}
-        {errors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
+        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
       </ul>
     );
   }, [children, errors]);

@@ -93,22 +93,22 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                     value={password}
                   />
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label="Refresh"
-                        onClick={() => setPassword(generatePassword(30, generateWithSpecialChars))}
-                        size="icon"
-                        variant="ghost"
-                      >
-                        <RotateCwIcon size={16} />
-                      </Button>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          aria-label="Refresh"
+                          onClick={() => setPassword(generatePassword(30, generateWithSpecialChars))}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <RotateCwIcon size={16} />
+                        </Button>
+                      }
+                    />
                     <TooltipContent side="top">Generate new random password</TooltipContent>
                   </Tooltip>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <CopyButton content={password} size="icon" variant="ghost" />
-                    </TooltipTrigger>
+                    <TooltipTrigger render={<CopyButton content={password} size="icon" variant="ghost" />} />
                     <TooltipContent side="top">Copy password</TooltipContent>
                   </Tooltip>
                 </div>

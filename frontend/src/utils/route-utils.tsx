@@ -16,7 +16,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Database } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
 import {

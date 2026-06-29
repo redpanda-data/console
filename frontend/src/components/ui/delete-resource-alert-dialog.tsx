@@ -88,12 +88,11 @@ const DialogBody: React.FC<{
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
-      <AlertDialogCancel asChild>
-        <Button variant="secondary-ghost">Cancel</Button>
-      </AlertDialogCancel>
-      <AlertDialogAction asChild disabled={!isDeleteConfirmed || isDeleting} onClick={handleDelete}>
-        <Button data-testid={confirmButtonTestId} variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>
-      </AlertDialogAction>
+      <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
+      <AlertDialogAction
+        disabled={!isDeleteConfirmed || isDeleting}
+        onClick={handleDelete}
+        render={<Button data-testid={confirmButtonTestId} variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>} />
     </AlertDialogFooter>
   </AlertDialogContent>
 );
@@ -165,7 +164,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     }
 
     return (
-      <DropdownMenuItem className="text-red-600 focus:text-red-600" onSelect={(e) => e.preventDefault()}>
+      <DropdownMenuItem className="text-error focus:text-error">
         {isDeleting ? (
           <div className="flex items-center gap-4">
             <Loader2 className="h-4 w-4 animate-spin" /> Deleting
@@ -181,7 +180,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
 
   return (
     <AlertDialog onOpenChange={handleOpenChange}>
-      <AlertDialogTrigger asChild>{renderTrigger()}</AlertDialogTrigger>
+      <AlertDialogTrigger nativeButton={triggerVariant === 'button'} render={renderTrigger()} />
       <DialogBody
         children={children}
         confirmButtonTestId={confirmButtonTestId}
@@ -207,12 +206,12 @@ export const DeleteResourceMenuItem: React.FC<{
   testId?: string;
 }> = ({ isDeleting, onSelect, testId }) => (
   <DropdownMenuItem
-    className="text-red-600 focus:text-red-600"
+    className="text-error focus:text-error"
     data-testid={testId}
-    onSelect={(event) => {
-      event.preventDefault();
-      onSelect();
-    }}
+    // Base UI's Menu.Item exposes `onClick`, not Radix's `onSelect`. The
+    // dialog is a controlled sibling that outlives this menu, so letting the
+    // menu close on click is fine.
+    onClick={() => onSelect()}
   >
     {isDeleting ? (
       <div className="flex items-center gap-4">

@@ -145,18 +145,20 @@ export const TaskStatusUpdateBlock = ({
   return (
     <Collapsible defaultOpen={isErrorState}>
       <Artifact className="mb-4">
-        <CollapsibleTrigger asChild>
-          <ArtifactHeader className="cursor-pointer hover:bg-muted/50">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ArtifactTitle>TaskStatusUpdate</ArtifactTitle>
-                {stateTransition}
+        <CollapsibleTrigger
+          render={
+            <ArtifactHeader className="cursor-pointer hover:bg-muted/50">
+              <div className="flex w-full items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ArtifactTitle>TaskStatusUpdate</ArtifactTitle>
+                  {stateTransition}
+                </div>
+                <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
               </div>
-              <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-            </div>
-          </ArtifactHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent transition={{ duration: 0 }}>
+            </ArtifactHeader>
+          }
+        />
+        <CollapsibleContent>
           <ArtifactContent>
             <Response>{text}</Response>
           </ArtifactContent>

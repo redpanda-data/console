@@ -15,7 +15,7 @@ import {
   type CompletionResult,
   startCompletion,
 } from '@codemirror/autocomplete';
-import { PostgreSQL, type SQLNamespace, sql as sqlLanguage } from '@codemirror/lang-sql';
+import { PostgreSQL, type SQLNamespace, schemaCompletionSource, sql as sqlLanguage } from '@codemirror/lang-sql';
 import { HighlightStyle, indentUnit, syntaxHighlighting, syntaxTree } from '@codemirror/language';
 import { EditorState, type Extension, Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
@@ -42,8 +42,7 @@ import { z } from 'zod';
 
 import type { Catalog, TableRef } from './sql-types';
 
-// Imperative handle exposed to the workspace so the catalog tree can open a
-// query in a new editor tab (mirrors the prototype's editorRef).
+// Lets the workspace open a query in a new editor tab.
 export type SqlEditorHandle = {
   /** Open `sql` in a new tab named `name` (or "Query N") and focus it. */
   setQuery: (sql: string, name?: string) => void;
@@ -98,10 +97,7 @@ type Tab = { id: number; name: string; sql: string };
 const DEFAULT_QUERY =
   'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
 
-// Tracks the registry `.dark` class on the document root so the editor (whose
-// highlight palette is built from theme-invariant color scales, not Tailwind
-// classes) switches theme in lockstep with the rest of the surface. Uses
-// useSyncExternalStore — no effect — per project style.
+// Re-render the editor when the registry `.dark` class toggles.
 function subscribeToColorMode(onStoreChange: () => void): () => void {
   const observer = new MutationObserver(onStoreChange);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -116,13 +112,8 @@ function useIsDarkMode(): boolean {
   return useSyncExternalStore(subscribeToColorMode, getIsDarkSnapshot, () => false);
 }
 
-// Editor chrome tuned to match the SQL Studio surface: transparent editor and
-// gutter so the surrounding `bg-background` container shows through, with
-// muted gutter line numbers. CodeMirror themes are plain CSS, so registry
-// custom properties can be referenced directly and stay live.
+// Transparent editor/gutter so the `bg-background` surface shows through.
 function editorChrome(mode: 'light' | 'dark'): Extension {
-  const gutter = mode === 'dark' ? 'var(--color-grey-600)' : 'var(--color-grey-400)';
-  const gutterActive = mode === 'dark' ? 'var(--color-grey-400)' : 'var(--color-grey-600)';
   return EditorView.theme(
     {
       '&': { backgroundColor: 'transparent', height: '100%', fontSize: '13px' },
@@ -132,58 +123,44 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
         lineHeight: '21px',
       },
       '.cm-content': { padding: '12px 0' },
-      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: gutter },
-      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: gutterActive },
-      '.cm-activeLine': {
-        backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+      // A global `::selection` rule otherwise whitens selected text; theme the
+      // selection pair instead. Full focused path matches the base rule's
+      // specificity so this (later) theme wins.
+      '& .cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
+        backgroundColor: 'var(--color-selection)',
       },
+      '.cm-content ::selection': { color: 'var(--color-selection-foreground)' },
+      '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
+      '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
+      '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
     },
     { dark: mode === 'dark' }
   );
 }
 
-// SQL syntax palette, mapped from the design's `.sql-*` token classes onto the
-// Lezer highlight tags the SQL grammar emits (keywords, built-ins, strings,
-// numbers, comments, operators/punctuation and identifiers).
-function sqlHighlight(mode: 'light' | 'dark'): Extension {
-  const c =
-    mode === 'dark'
-      ? {
-          keyword: 'var(--color-purple-300)',
-          fn: 'var(--color-indigo-300)',
-          str: 'var(--color-green-300)',
-          num: 'var(--color-orange-300)',
-          comment: 'var(--color-grey-400)',
-          punct: 'var(--color-grey-500)',
-          id: 'var(--color-grey-100)',
-        }
-      : {
-          keyword: 'var(--color-purple-700)',
-          fn: 'var(--color-indigo-600)',
-          str: 'var(--color-green-700)',
-          num: 'var(--color-orange-700)',
-          comment: 'var(--color-grey-600)',
-          punct: 'var(--color-grey-500)',
-          id: 'var(--color-grey-900)',
-        };
+// SQL syntax palette from semantic tokens, so it tracks light/dark.
+function sqlHighlight(): Extension {
   return syntaxHighlighting(
     HighlightStyle.define([
-      { tag: tags.keyword, color: c.keyword, fontWeight: 'bold' },
-      { tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName], color: c.fn },
-      { tag: [tags.string, tags.special(tags.string)], color: c.str },
-      { tag: tags.number, color: c.num },
-      { tag: tags.comment, color: c.comment, fontStyle: 'italic' },
+      { tag: tags.keyword, color: 'var(--color-secondary)', fontWeight: 'bold' },
+      {
+        tag: [tags.standard(tags.name), tags.function(tags.variableName), tags.typeName],
+        color: 'var(--color-primary)',
+      },
+      { tag: [tags.string, tags.special(tags.string)], color: 'var(--color-success)' },
+      { tag: tags.number, color: 'var(--color-warning)' },
+      { tag: tags.comment, color: 'var(--color-muted-foreground)', fontStyle: 'italic' },
       {
         tag: [tags.operator, tags.punctuation, tags.separator, tags.paren, tags.brace, tags.squareBracket],
-        color: c.punct,
+        color: 'var(--color-muted-foreground)',
       },
-      { tag: tags.name, color: c.id },
+      { tag: tags.name, color: 'var(--color-strong)' },
     ])
   );
 }
 
-const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight('light')];
-const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight('dark')];
+const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight()];
+const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight()];
 
 function tableNamespace(table: TableRef): SQLNamespace {
   return {
@@ -192,12 +169,9 @@ function tableNamespace(table: TableRef): SQLNamespace {
   };
 }
 
-// Builds the lang-sql completion schema from the loaded catalog tree: bare
-// table names → columns. Tables are deliberately NOT nested under their
-// catalog — Redpanda SQL (Oxla) addresses catalog tables with arrow notation
-// (`catalog=>table`), which catalogArrowSource below handles; dot-style
-// nesting would advertise syntax the server rejects. Bare entries still give
-// alias/column resolution (`FROM default_redpanda_catalog=>cars c` → `c.`).
+// Bare table name → columns. Powers alias/column resolution only
+// (schemaColumnSource); tables aren't nested under catalogs since Oxla uses
+// `catalog=>table` arrow notation, handled by catalogArrowSource.
 function buildSchema(catalogs: Catalog[]): SQLNamespace {
   const root: Record<string, SQLNamespace> = {};
   for (const catalog of catalogs) {
@@ -210,6 +184,20 @@ function buildSchema(catalogs: Catalog[]): SQLNamespace {
     }
   }
   return root;
+}
+
+// Schema completion limited to dotted members (`c.` → columns); bare table
+// names are suppressed at the top level so catalogArrowSource owns them.
+function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
+  const source = schemaCompletionSource({ dialect: PostgreSQL, schema: buildSchema(catalogs) });
+  return (context) => {
+    const result = source(context);
+    if (!result || result instanceof Promise) {
+      return null;
+    }
+    const dotted = context.state.sliceDoc(result.from - 1, result.from) === '.';
+    return dotted ? result : null;
+  };
 }
 
 // Matches an identifier followed by `=>` or `.` and a partial table name,
@@ -274,12 +262,9 @@ function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: 
   };
 }
 
-// Completion source for Redpanda SQL's catalog arrow notation. The generic
-// schema completion can't model `catalog=>table`, so this source:
-// - offers catalog names (boosted right after FROM/JOIN); applying one
-//   inserts `catalog=>` and immediately reopens completion for its tables
-// - offers the catalog's tables after `catalog=>` — and after a typed
-//   `catalog.`, rewriting the dot to `=>` so users land on valid syntax
+// Completion for Oxla's `catalog=>table` notation (which the generic schema
+// completion can't model): catalog names after FROM/JOIN, then the catalog's
+// tables, rewriting a typed `catalog.` to `=>`.
 function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CodeMirror completion context handling is branchy by API shape.
   return (context) => {
@@ -313,9 +298,8 @@ function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) =
   };
 }
 
-// Reformats the whole document through sql-formatter (dynamically imported to
-// keep it out of the initial bundle; postgresql is the closest dialect to
-// Oxla) as a single transaction, so undo restores the pre-format text.
+// Reformat via sql-formatter (lazy-loaded; postgresql ≈ Oxla) in one
+// transaction so undo restores the original.
 async function formatDocument(view: EditorView): Promise<void> {
   const { format } = await import('sql-formatter');
   const current = view.state.doc.toString();
@@ -401,9 +385,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
       runText(active.sql);
     };
 
-    // The Cmd/Ctrl+Enter keymap is part of the extensions array (rebuilt only on
-    // catalog/theme changes), so it reads fresh render state through this ref
-    // without an effect hook.
+    // Keeps the keymap's run callback current without rebuilding the extensions.
     runRef.current = doRun;
 
     const runSelection = () => {
@@ -415,7 +397,8 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
     };
 
     const extensions = useMemo(() => {
-      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, schema: buildSchema(catalogs), upperCaseKeywords: true });
+      // No `schema` here — schemaColumnSource adds it back for dotted members only.
+      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, upperCaseKeywords: true });
       return [
         // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
         Prec.highest(
@@ -441,15 +424,14 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         ),
         sqlSupport,
         sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
+        sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
         isDark ? DARK_THEME : LIGHT_THEME,
         EditorView.updateListener.of((update) => {
           if (update.selectionSet) {
             setHasSel(!update.state.selection.main.empty);
           }
-          // Auto-open the catalog helper the moment the caller finishes typing
-          // `FROM `/`JOIN ` (a typed space), so `catalog=>` is suggested without
-          // a manual Ctrl+Space. Guarded to typing events to avoid re-triggering
-          // on programmatic edits (formatting, tab seeding).
+          // Auto-open the catalog helper right after a typed `FROM `/`JOIN `
+          // (typing events only, so formatting/seeding don't re-trigger it).
           if (update.docChanged && update.transactions.some((tr) => tr.isUserEvent('input.type'))) {
             const pos = update.state.selection.main.head;
             const lineText = update.state.doc.lineAt(pos);
@@ -524,11 +506,13 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
           </Tabs>
           <div className="flex shrink-0 items-center gap-1.5 border-b pr-2">
             <Popover onOpenChange={setHistOpen} open={histOpen}>
-              <PopoverTrigger asChild>
-                <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
-                  <History /> History
-                </Button>
-              </PopoverTrigger>
+              <PopoverTrigger
+                render={
+                  <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
+                    <History /> History
+                  </Button>
+                }
+              />
               <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto p-1">
                 <Text className="px-2 py-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
                   Recent queries · this browser
@@ -578,7 +562,6 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             </Button>
           </div>
         </div>
-
         <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
           <CodeMirror
             basicSetup={{ foldGutter: false }}

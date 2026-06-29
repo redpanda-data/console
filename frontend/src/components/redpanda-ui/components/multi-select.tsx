@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of multi select implementation */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: part of multi select implementation */
 'use client';
 
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
@@ -17,7 +19,6 @@ import {
 import { TagsValue } from './tags';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 import { useControllableState } from '../lib/use-controllable-state';
-import { narrowOpenChange, renderWithDataState } from '../lib/base-ui-compat';
 import { cn, type PortalContentProps, type PortalRootProps, type SharedProps } from '../lib/utils';
 
 export type MultiSelectOptionItem = {
@@ -66,7 +67,7 @@ type MultiSelectProps = Omit<React.ComponentPropsWithoutRef<typeof PopoverPrimit
     onSelect?: (value: string, item: MultiSelectOptionItem) => void;
     onDeselect?: (value: string, item: MultiSelectOptionItem) => void;
     defaultValue?: string[];
-    onOpenChange?: (open: boolean) => void;
+    onOpenChange?: (open: boolean, eventDetails: PopoverPrimitive.Root.ChangeEventDetails) => void;
     onSearch?: (keyword: string | undefined) => void;
     filter?: boolean | ((keyword: string, current: string) => boolean);
     disabled?: boolean;
@@ -111,8 +112,15 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   const [open, setOpen] = useControllableState({
     prop: openProp,
     defaultProp: defaultOpen ?? false,
-    onChange: onOpenChange,
   });
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean, eventDetails: PopoverPrimitive.Root.ChangeEventDetails) => {
+      setOpen(nextOpen);
+      onOpenChange?.(nextOpen, eventDetails);
+    },
+    [setOpen, onOpenChange]
+  );
 
   const handleSelect = React.useCallback(
     (selectedValue: string, item: MultiSelectOptionItem) => {
@@ -161,7 +169,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
   return (
     <MultiSelectContext.Provider value={contextValue}>
-      <PopoverPrimitive.Root {...popoverProps} onOpenChange={narrowOpenChange(setOpen)} open={open} />
+      <PopoverPrimitive.Root {...popoverProps} onOpenChange={handleOpenChange} open={open} />
     </MultiSelectContext.Provider>
   );
 };
@@ -252,13 +260,11 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
 
             const content = item?.label || itemValue;
 
-            // For React nodes, don't truncate - show full content
             const child =
               maxItemLength && typeof content === 'string' && content.length > maxItemLength
                 ? `${content.slice(0, maxItemLength)}...`
                 : content;
 
-            // Determine if we should show a tooltip - only for truncated strings
             const shouldShowTooltip = maxItemLength && typeof content === 'string' && content.length > maxItemLength;
 
             const el = (
@@ -280,9 +286,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
             if (shouldShowTooltip) {
               return (
                 <Tooltip key={itemValue}>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">{el}</span>
-                  </TooltipTrigger>
+                  <TooltipTrigger render={<span className="inline-flex">{el}</span>} />
                   <TooltipContent align="start" className="z-[51]" side="bottom">
                     {content}
                   </TooltipContent>
@@ -323,15 +327,10 @@ MultiSelectList.displayName = 'MultiSelectList';
 
 interface MultiSelectContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Popup>, SharedProps {
   container?: Element;
-  /**
-   * @deprecated Base UI does not expose a Radix-style `onOpenAutoFocus` callback. Accepted for
-   * API parity; the event is ignored.
-   */
-  onOpenAutoFocus?: (event: Event) => void;
 }
 
 const MultiSelectContent = React.forwardRef<React.ComponentRef<typeof PopoverPrimitive.Popup>, MultiSelectContentProps>(
-  ({ className, children, container, testId, onOpenAutoFocus: _onOpenAutoFocus, ...props }, ref) => {
+  ({ className, children, container, testId, ...props }, ref) => {
     const context = useMultiSelect();
 
     const fragmentRef = React.useRef<DocumentFragment | null>(null);
@@ -353,9 +352,7 @@ const MultiSelectContent = React.forwardRef<React.ComponentRef<typeof PopoverPri
       [ref]
     );
 
-    // Focus the search input (or popup) with `preventScroll`, otherwise Base UI's
-    // FloatingFocusManager focuses the first tabbable element without it — which
-    // scrolls the page when the popup flips above the trigger.
+    // Focus with `preventScroll`; Base UI's default focus scrolls the page when the popup flips above the trigger.
     const initialFocus = React.useCallback((openType: string) => {
       const popup = popupRef.current;
       if (!popup) {
@@ -387,13 +384,12 @@ const MultiSelectContent = React.forwardRef<React.ComponentRef<typeof PopoverPri
         >
           <PopoverPrimitive.Popup
             className={cn(
-              'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1 data-[state=closed]:animate-out data-[state=open]:animate-in',
+              'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1 data-[closed]:animate-out data-[open]:animate-in',
               className
             )}
             data-testid={testId}
             initialFocus={initialFocus}
             ref={setPopupRef}
-            render={renderWithDataState('div')}
             {...props}
           >
             <Command
@@ -573,11 +569,10 @@ function renderMultiSelectOptions(list: MultiSelectOption[]) {
   });
 }
 
-// Simplified API for backend developers
 type SimpleMultiSelectProps = PortalRootProps &
   SharedProps &
   Pick<React.AriaAttributes, 'aria-describedby' | 'aria-invalid'> &
-  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
+  Pick<PortalContentProps, 'container'> & {
     id?: string;
     options: MultiSelectOption[] | string[];
     value?: string[];
@@ -613,7 +608,6 @@ function SimpleMultiSelect({
   searchable = true,
   width = 'md',
   container,
-  onOpenAutoFocus,
   open,
   defaultOpen,
   onOpenChange,
@@ -621,7 +615,6 @@ function SimpleMultiSelect({
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
 }: SimpleMultiSelectProps) {
-  // Convert simple string array to option objects
   const normalizedOptions: MultiSelectOption[] = React.useMemo(
     () =>
       options.map((option) => {
@@ -653,11 +646,7 @@ function SimpleMultiSelect({
       >
         <MultiSelectValue maxDisplay={maxDisplay} placeholder={placeholder} testId={testId} />
       </MultiSelectTrigger>
-      <MultiSelectContent
-        container={container}
-        onOpenAutoFocus={onOpenAutoFocus}
-        testId={testId ? `${testId}-content` : undefined}
-      >
+      <MultiSelectContent container={container} testId={testId ? `${testId}-content` : undefined}>
         {searchable ? (
           <MultiSelectSearch placeholder="Search..." testId={testId ? `${testId}-search` : undefined} />
         ) : null}

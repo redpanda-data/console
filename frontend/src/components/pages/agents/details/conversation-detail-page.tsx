@@ -160,7 +160,7 @@ const ToolCallItem = ({
       {isError ? (
         <XCircle className="size-3.5 shrink-0 text-destructive" />
       ) : (
-        <CheckCircle className={`size-3.5 shrink-0 ${isSuccess ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+        <CheckCircle className={`size-3.5 shrink-0 ${isSuccess ? 'text-success' : 'text-muted-foreground'}`} />
       )}
       <span className="min-w-0 flex-1 truncate font-mono text-xs">{tool.name}</span>
       <div className="flex w-28 items-center gap-2">
@@ -448,9 +448,9 @@ const ChatView = ({ systemPrompt, turns }: { systemPrompt: string; turns: Transc
                       <span
                         className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs ${
                           tool.status === TranscriptToolCallStatus.COMPLETED
-                            ? 'bg-emerald-500/10 text-emerald-700'
+                            ? 'bg-background-success-strong/10 text-success'
                             : tool.status === TranscriptToolCallStatus.ERROR
-                              ? 'bg-red-500/10 text-red-700'
+                              ? 'bg-background-error-strong/10 text-error'
                               : 'bg-muted text-muted-foreground'
                         }`}
                         key={tool.toolCallId || `tool-${toolIndex}`}

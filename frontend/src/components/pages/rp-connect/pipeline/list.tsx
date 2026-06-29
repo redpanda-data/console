@@ -267,12 +267,14 @@ const ActionsCell = memo(
     return (
       <div className="flex min-w-[68px] justify-end" data-actions-column>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="size-8" size="icon" variant="secondary-ghost">
-              <MoreHorizontal />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button className="size-8" size="icon" variant="secondary-ghost">
+                <MoreHorizontal />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            }
+          />
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() =>
@@ -636,7 +638,7 @@ const PipelineListPageContent = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-red-600">
+      <div className="flex items-center justify-center gap-2 py-8 text-error">
         <AlertCircle className="h-4 w-4" />
         Error loading pipelines: {error.message}
       </div>

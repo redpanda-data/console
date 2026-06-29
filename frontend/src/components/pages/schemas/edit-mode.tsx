@@ -265,7 +265,7 @@ function EditSchemaMode({
                   <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
                   {option.warning && (
-                    <div className="mt-2 flex items-start gap-2 text-amber-700 text-sm">
+                    <div className="mt-2 flex items-start gap-2 text-sm text-warning">
                       <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                       <span>{option.warning}</span>
                     </div>
@@ -277,16 +277,18 @@ function EditSchemaMode({
 
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="edit-mode-save-btn"
-                  disabled={api.userData?.canManageSchemaRegistry === false}
-                  onClick={onSave}
-                  variant="primary"
-                >
-                  Save
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    data-testid="edit-mode-save-btn"
+                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    onClick={onSave}
+                    variant="primary"
+                  >
+                    Save
+                  </Button>
+                }
+              />
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
@@ -297,7 +299,6 @@ function EditSchemaMode({
           </div>
         </div>
       </div>
-
       {subjectName && schema && (
         <div className="flex-1">
           <Text className="whitespace-pre-wrap break-words font-bold text-lg" data-testid="edit-mode-subject-name">

@@ -1,85 +1,30 @@
 'use client';
 
 import { PreviewCard as HoverCardPrimitive } from '@base-ui/react/preview-card';
-import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
-import React from 'react';
 
-import { asChildToRender, narrowOpenChange, renderWithDataState, useMirroredOpen } from '../lib/base-ui-compat';
-import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-type HoverCardContextType = {
-  isOpen: boolean;
-};
+type HoverCardProps = HoverCardPrimitive.Root.Props & SharedProps;
 
-const HoverCardContext = React.createContext<HoverCardContextType | undefined>(undefined);
-
-const useHoverCard = (): HoverCardContextType => {
-  const context = React.useContext(HoverCardContext);
-  if (!context) {
-    throw new Error('useHoverCard must be used within a HoverCard');
-  }
-  return context;
-};
-
-type Side = 'top' | 'bottom' | 'left' | 'right';
-type Align = 'start' | 'center' | 'end';
-
-const getInitialPosition = (side: Side) => {
-  switch (side) {
-    case 'top':
-      return { y: 15 };
-    case 'bottom':
-      return { y: -15 };
-    case 'left':
-      return { x: 15 };
-    case 'right':
-      return { x: -15 };
-    default:
-      return {};
-  }
-};
-
-type HoverCardProps = Omit<React.ComponentProps<typeof HoverCardPrimitive.Root>, 'onOpenChange' | 'children'> &
-  SharedProps & {
-    onOpenChange?: (open: boolean) => void;
-    children?: React.ReactNode;
-  };
-
-function HoverCard({ children, testId, onOpenChange, ...props }: HoverCardProps) {
-  const { isOpen, handleOpenChange } = useMirroredOpen(props?.open, props?.defaultOpen, onOpenChange);
-
+function HoverCard({ children, testId, ...props }: HoverCardProps) {
   return (
-    <HoverCardContext.Provider value={{ isOpen }}>
-      <HoverCardPrimitive.Root
-        data-slot="hover-card"
-        data-testid={testId}
-        {...props}
-        onOpenChange={narrowOpenChange(handleOpenChange)}
-      >
-        {children}
-      </HoverCardPrimitive.Root>
-    </HoverCardContext.Provider>
+    <HoverCardPrimitive.Root data-slot="hover-card" data-testid={testId} {...props}>
+      {children}
+    </HoverCardPrimitive.Root>
   );
 }
 
-type HoverCardTriggerProps = React.ComponentProps<typeof HoverCardPrimitive.Trigger> &
-  SharedProps & {
-    asChild?: boolean;
-  };
+type HoverCardTriggerProps = HoverCardPrimitive.Trigger.Props & SharedProps;
 
 function HoverCardTrigger({ testId, ...props }: HoverCardTriggerProps) {
-  return <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" data-testid={testId} {...asChildToRender(props)} />;
+  return <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" data-testid={testId} {...props} />;
 }
 
-type HoverCardContentProps = React.ComponentProps<typeof HoverCardPrimitive.Popup> &
-  HTMLMotionProps<'div'> &
+type HoverCardContentProps = HoverCardPrimitive.Popup.Props &
   SharedProps &
-  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
-    transition?: Transition;
-    side?: Side;
-    align?: Align;
-    sideOffset?: number;
-    alignOffset?: number;
+  Pick<HoverCardPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset'> & {
+    /** Container element for inline rendering (no portal to body) */
+    container?: HTMLElement;
   };
 
 function HoverCardContent({
@@ -87,49 +32,34 @@ function HoverCardContent({
   align = 'center',
   side = 'bottom',
   sideOffset = 4,
-  alignOffset,
-  transition = { type: 'spring', stiffness: 300, damping: 25 },
+  alignOffset = 4,
   children,
   testId,
   container,
-  onOpenAutoFocus: _onOpenAutoFocus,
   ...props
 }: HoverCardContentProps) {
-  const { isOpen } = useHoverCard();
-  const initialPosition = getInitialPosition(side);
-
   return (
-    <AnimatePresence>
-      {isOpen ? (
-        <HoverCardPrimitive.Portal container={container} data-slot="hover-card-portal" keepMounted>
-          <HoverCardPrimitive.Positioner
-            align={align}
-            alignOffset={alignOffset}
-            className="z-50"
-            side={side}
-            sideOffset={sideOffset}
-          >
-            <HoverCardPrimitive.Popup render={renderWithDataState('div')} {...props}>
-              <motion.div
-                animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-                className={cn(
-                  'w-64 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
-                  className
-                )}
-                data-slot="hover-card-content"
-                data-testid={testId}
-                exit={{ opacity: 0, scale: 0.5, ...initialPosition }}
-                initial={{ opacity: 0, scale: 0.5, ...initialPosition }}
-                key="hover-card-content"
-                transition={transition}
-              >
-                {children}
-              </motion.div>
-            </HoverCardPrimitive.Popup>
-          </HoverCardPrimitive.Positioner>
-        </HoverCardPrimitive.Portal>
-      ) : null}
-    </AnimatePresence>
+    <HoverCardPrimitive.Portal container={container} data-slot="hover-card-portal">
+      <HoverCardPrimitive.Positioner
+        align={align}
+        alignOffset={alignOffset}
+        className="isolate z-50"
+        side={side}
+        sideOffset={sideOffset}
+      >
+        <HoverCardPrimitive.Popup
+          className={cn(
+            'w-64 origin-(--transform-origin) rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none transition-[opacity,transform] duration-150 data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+            className
+          )}
+          data-slot="hover-card-content"
+          data-testid={testId}
+          {...props}
+        >
+          {children}
+        </HoverCardPrimitive.Popup>
+      </HoverCardPrimitive.Positioner>
+    </HoverCardPrimitive.Portal>
   );
 }
 
@@ -137,8 +67,6 @@ export {
   HoverCard,
   HoverCardTrigger,
   HoverCardContent,
-  useHoverCard,
-  type HoverCardContextType,
   type HoverCardProps,
   type HoverCardTriggerProps,
   type HoverCardContentProps,

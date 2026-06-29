@@ -608,8 +608,8 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
           {isSuccess ? (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10">
-                <CheckCircleIcon className="h-7 w-7 text-green-500" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background-success-strong/10">
+                <CheckCircleIcon className="h-7 w-7 text-success" />
               </div>
               <div className="flex flex-col gap-1">
                 <p className="font-semibold text-base">Topic created</p>
@@ -620,16 +620,18 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
                   <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Topic name</p>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <CopyButton
-                          className="max-w-[320px]"
-                          content={result.topicName ?? ''}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <span className="truncate font-mono">{result.topicName}</span>
-                        </CopyButton>
-                      </TooltipTrigger>
+                      <TooltipTrigger
+                        render={
+                          <CopyButton
+                            className="max-w-[320px]"
+                            content={result.topicName ?? ''}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <span className="truncate font-mono">{result.topicName}</span>
+                          </CopyButton>
+                        }
+                      />
                       {(result.topicName?.length ?? 0) > 40 && <TooltipContent>{result.topicName}</TooltipContent>}
                     </Tooltip>
                   </TooltipProvider>
@@ -659,15 +661,18 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               <Button data-testid="create-topic-success__close-button" onClick={handleClose} variant="outline">
                 Close
               </Button>
-              <Button asChild data-testid="create-topic-success__go-to-topic-button">
-                <Link
-                  params={{ topicName: encodeURIComponent(result?.topicName ?? '') }}
-                  search={{} as never}
-                  to="/topics/$topicName"
-                >
-                  Go to topic
-                </Link>
-              </Button>
+              <Button
+                data-testid="create-topic-success__go-to-topic-button"
+                render={
+                  <Link
+                    params={{ topicName: encodeURIComponent(result?.topicName ?? '') }}
+                    search={{} as never}
+                    to="/topics/$topicName"
+                  >
+                    Go to topic
+                  </Link>
+                }
+              />
             </>
           ) : (
             <>

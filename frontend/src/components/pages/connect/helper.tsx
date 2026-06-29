@@ -33,7 +33,7 @@ import {
   VStack,
 } from '@redpanda-data/ui';
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
-import { type CSSProperties, useRef, useState } from 'react';
+import { type CSSProperties, type JSX, useRef, useState } from 'react';
 
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';

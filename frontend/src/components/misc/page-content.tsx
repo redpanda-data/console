@@ -1,5 +1,5 @@
 import { Stack } from '@redpanda-data/ui';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 
 import { animProps } from '../../utils/animation-props';

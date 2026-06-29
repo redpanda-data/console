@@ -247,15 +247,18 @@ export const RolesTabNew: FC = () => {
                   <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
                     Create role
                   </Button>
-                  <Button asChild variant="link">
-                    <a
-                      href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      Read the docs →
-                    </a>
-                  </Button>
+                  <Button
+                    render={
+                      <a
+                        href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Read the docs →
+                      </a>
+                    }
+                    variant="link"
+                  />
                 </div>
               </EmptyContent>
             )}
@@ -287,15 +290,17 @@ export const RolesTabNew: FC = () => {
         <ListLayoutFilters
           actions={
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="create-role-button"
-                  disabled={createRoleDisabled}
-                  onClick={() => setCreateDialogOpen(true)}
-                >
-                  Create role
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    data-testid="create-role-button"
+                    disabled={createRoleDisabled}
+                    onClick={() => setCreateDialogOpen(true)}
+                  >
+                    Create role
+                  </Button>
+                }
+              />
               {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
             </Tooltip>
           }
@@ -328,7 +333,6 @@ export const RolesTabNew: FC = () => {
           <DataTablePagination table={table} />
         </ListLayoutPagination>
       </ListLayout>
-
       <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
     </>
   );
@@ -355,13 +359,20 @@ const RoleActions = ({
         roleName={roleName}
       />
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button asChild data-testid={`role-actions-button-${roleName}`} size="icon-sm" variant="ghost">
-            <button type="button">
-              <MoreHorizontalIcon className="h-4 w-4" />
-            </button>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              data-testid={`role-actions-button-${roleName}`}
+              render={
+                <button type="button">
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </button>
+              }
+              size="icon-sm"
+              variant="ghost"
+            />
+          }
+        />
         <DropdownMenuContent>
           <DropdownMenuItem
             data-testid={`delete-role-button-${roleName}`}

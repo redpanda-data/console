@@ -36,6 +36,11 @@ const DEFAULT_LABEL: Record<StatusBadgeVariant, string> = {
   stopping: 'Stopping',
 };
 
+// StatusBadge keeps its historical faint secondary-tinted chrome. The `secondary`
+// color family is no longer a recommended Badge tone, so these styles are applied
+// directly here rather than via the deprecated `variant="secondary-inverted"`.
+const STATUS_BADGE_CHROME = 'border-transparent bg-secondary/10 text-secondary [a&]:hover:bg-secondary/20';
+
 const badgeSizeStyles = cva('rounded-full', {
   variants: {
     size: {
@@ -77,12 +82,13 @@ function StatusBadge({
 
   return (
     <Badge
-      className={cn(badgeSizeStyles({ size }), className)}
+      className={cn(badgeSizeStyles({ size }), STATUS_BADGE_CHROME, className)}
       data-slot="status-badge"
       data-testid={testId}
       icon={icon}
       size={size}
-      variant="secondary-inverted"
+      tone="neutral"
+      variant="subtle"
       {...props}
     >
       {label}

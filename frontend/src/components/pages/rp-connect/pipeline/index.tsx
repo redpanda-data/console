@@ -599,8 +599,8 @@ function EditorPanel({
   isLintPending: boolean;
 }) {
   return (
-    <ResizablePanelGroup direction="vertical">
-      <ResizablePanel defaultSize={70} minSize={30}>
+    <ResizablePanelGroup orientation="vertical">
+      <ResizablePanel defaultSize="70%" minSize="30%">
         <div className="relative h-full">
           {isServerlessInitializing ? (
             <EditorSkeleton />
@@ -636,7 +636,7 @@ function EditorPanel({
         </div>
       </ResizablePanel>
       <ResizableHandle withHandle />
-      <ResizablePanel collapsible defaultSize={30}>
+      <ResizablePanel collapsible defaultSize="30%">
         <div className="h-full overflow-auto p-4">
           <div className="mb-3 flex items-center gap-2">
             <Heading className="text-muted-foreground" level={5}>

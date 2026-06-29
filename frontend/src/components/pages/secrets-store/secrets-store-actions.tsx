@@ -53,17 +53,19 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
   return (
     <div data-actions-column>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className="h-8 w-8 data-[state=open]:bg-muted"
-            data-testid="secret-actions-menu-trigger"
-            size="icon"
-            variant="ghost"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              className="h-8 w-8 data-[popup-open]:bg-muted"
+              data-testid="secret-actions-menu-trigger"
+              size="icon"
+              variant="ghost"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          }
+        />
         <DropdownMenuContent align="end" className="w-[200px]">
           <CopyButton
             className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"

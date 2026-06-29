@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState } from 'react';
+import React, { type JSX, useState } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -88,11 +88,13 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
       titleText
     ) : (
       <Popover>
-        <PopoverTrigger asChild>
-          <div>
-            <LockIcon size={16} /> {titleText}
-          </div>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <div>
+              <LockIcon size={16} /> {titleText}
+            </div>
+          }
+        />
         <PopoverContent>{`You're missing the required permission '${requiredPermission}' to view this tab`}</PopoverContent>
       </Popover>
     ));
@@ -100,7 +102,7 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
   if (mode === 'trigger') {
     return (
       <TabsTrigger
-        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[state=active]:text-foreground"
+        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
         disabled={isDisabled}
         value={id}
         variant="underline"
@@ -120,9 +122,7 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
 const mkDocuTip = (text: string, icon?: JSX.Element) => (
   <TooltipProvider>
     <Tooltip>
-      <TooltipTrigger asChild>
-        <span>{icon ?? null}Documentation</span>
-      </TooltipTrigger>
+      <TooltipTrigger render={<span>{icon ?? null}Documentation</span>} />
       <TooltipContent side="left">{text}</TooltipContent>
     </Tooltip>
   </TooltipProvider>
@@ -233,11 +233,13 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       ) {
         return (
           <Popover>
-            <PopoverTrigger asChild>
-              <div>
-                <LockIcon size={16} /> ACL
-              </div>
-            </PopoverTrigger>
+            <PopoverTrigger
+              render={
+                <div>
+                  <LockIcon size={16} /> ACL
+                </div>
+              }
+            />
             <PopoverContent>You need the cluster-permission &apos;viewAcl&apos; to view this tab</PopoverContent>
           </Popover>
         );
@@ -285,11 +287,13 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
             {!!leaderLessPartitionIds && (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <ErrorIcon color={colors.brandError} size={18} />
-                    </div>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <div>
+                        <ErrorIcon color={colors.brandError} size={18} />
+                      </div>
+                    }
+                  />
                   <TooltipContent side="top">
                     {`This topic has ${leaderLessPartitionIds.length} ${leaderLessPartitionIds.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
                   </TooltipContent>
@@ -299,11 +303,13 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
             {!!underReplicatedPartitionIds && (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <WarningIcon color={colors.brandWarning} size={18} />
-                    </div>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <div>
+                        <WarningIcon color={colors.brandWarning} size={18} />
+                      </div>
+                    }
+                  />
                   <TooltipContent side="top">
                     {`This topic has ${underReplicatedPartitionIds.length} ${underReplicatedPartitionIds.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
                   </TooltipContent>

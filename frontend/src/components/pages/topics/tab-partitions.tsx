@@ -165,11 +165,13 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button aria-label="Show partition error details" size="icon-sm" type="button" variant="ghost">
-          <AlertTriangle className="text-orange-500" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button aria-label="Show partition error details" size="icon-sm" type="button" variant="ghost">
+            <AlertTriangle className="text-warning" />
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="max-w-[500px]" side="right">
         <p className="mb-2 font-medium">Partition Error</p>
         <div className="flex flex-col gap-2 whitespace-pre-wrap text-sm">

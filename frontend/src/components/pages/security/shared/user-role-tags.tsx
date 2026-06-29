@@ -12,6 +12,7 @@
 import { useQuery } from '@connectrpc/connect-query';
 import { useNavigate } from '@tanstack/react-router';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
+import type { JSX } from 'react';
 
 import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { rolesApi } from '../../../../state/backend-api';

@@ -55,14 +55,14 @@ describe('SqlEditor', () => {
 
   test('renders the first query tab as the active tab', () => {
     renderEditor();
-    expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('editor')).toHaveTextContent('SELECT 1;');
   });
 
   test('adds a tab and switches back to the first', () => {
     renderEditor();
     fireEvent.click(screen.getByRole('button', { name: 'New query' }));
-    expect(screen.getByRole('tab', { name: QUERY_2_TAB })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: QUERY_2_TAB })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('editor')).toHaveTextContent('');
 
     fireEvent.click(screen.getByRole('tab', { name: QUERY_1_TAB }));
@@ -74,7 +74,7 @@ describe('SqlEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New query' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close Query 2' }));
     expect(screen.queryByRole('tab', { name: QUERY_2_TAB })).not.toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('aria-selected', 'true');
   });
 
   test('clicking the close button does not activate the closed tab', () => {
@@ -82,7 +82,7 @@ describe('SqlEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New query' }));
     fireEvent.click(screen.getByRole('tab', { name: QUERY_1_TAB }));
     fireEvent.click(screen.getByRole('button', { name: 'Close Query 2' }));
-    expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('aria-selected', 'true');
   });
 
   test('run sends the active tab SQL and records history', async () => {

@@ -14,7 +14,7 @@ import {
   AnimatePresence as AnimatePresenceRaw,
   motion,
   type Transition,
-} from 'framer-motion';
+} from 'motion/react';
 import React, { type CSSProperties, type FC } from 'react';
 
 import { alwaysChanging } from './utils';

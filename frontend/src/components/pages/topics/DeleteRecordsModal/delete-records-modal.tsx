@@ -39,7 +39,7 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
-import { useEffect, useState } from 'react';
+import { type JSX, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { api, useApiStoreHook } from '../../../../state/backend-api';

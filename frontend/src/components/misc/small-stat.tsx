@@ -1,4 +1,5 @@
 import { Flex, Text } from '@redpanda-data/ui';
+import type { JSX } from 'react';
 
 export function SmallStat(p: { title: JSX.Element | string; children: JSX.Element | number | string }) {
   return (

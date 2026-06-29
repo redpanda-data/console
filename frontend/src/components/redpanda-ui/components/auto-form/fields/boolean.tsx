@@ -10,10 +10,7 @@ import { CONSENT_FIELD_PATTERN, UNSET_SELECT_VALUE } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
 
-// ---------------------------------------------------------------------------
-// BooleanFieldComponent — tri-state select (true / false / unset)
-// ---------------------------------------------------------------------------
-
+// Tri-state select (true / false / unset).
 function renderBooleanSelectedValue(value: unknown) {
   if (value === UNSET_SELECT_VALUE || value === undefined || value === null || value === '') {
     return 'Not set';
@@ -61,10 +58,6 @@ function BooleanFieldComponent({ error, field, id, inputProps, label }: AutoForm
   );
 }
 
-// ---------------------------------------------------------------------------
-// CheckboxFieldComponent
-// ---------------------------------------------------------------------------
-
 function CheckboxFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
 
@@ -82,10 +75,6 @@ function CheckboxFieldComponent({ error, field, id, inputProps, label }: AutoFor
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// SwitchFieldComponent
-// ---------------------------------------------------------------------------
 
 function SwitchFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -105,10 +94,7 @@ function SwitchFieldComponent({ error, field, id, inputProps, label }: AutoFormF
   );
 }
 
-// ---------------------------------------------------------------------------
-// ToggleFieldComponent — not registered by default (available as override)
-// ---------------------------------------------------------------------------
-
+// Not registered by default; available as an override.
 function ToggleFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
 

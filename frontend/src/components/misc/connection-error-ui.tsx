@@ -53,8 +53,8 @@ export const ConnectionErrorUI: FC<ConnectionErrorUIProps> = ({ error, onRetry }
     <div className="flex min-h-screen items-center justify-center bg-neutral-100">
       <div className="mx-4 w-full max-w-md rounded-lg bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <AlertIcon className="h-6 w-6 text-red-600" />
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-background-error-subtle">
+            <AlertIcon className="h-6 w-6 text-error" />
           </div>
           <Heading className="mb-2 text-neutral-900" level={3}>
             {title}

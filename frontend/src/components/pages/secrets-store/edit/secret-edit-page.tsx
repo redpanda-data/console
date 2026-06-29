@@ -135,7 +135,7 @@ export const SecretEditPage = () => {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-12 w-12 text-red-600" />
+          <AlertCircle className="h-12 w-12 text-error" />
           <Text className="text-center">Secret not found or could not be loaded.</Text>
           <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
             Go Back to Secrets

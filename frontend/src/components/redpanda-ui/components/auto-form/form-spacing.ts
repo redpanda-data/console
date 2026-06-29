@@ -1,3 +1,7 @@
+/**
+ * Single source of truth for AutoForm's vertical rhythm. Token names kept
+ * generic so the module ports cleanly to shadcn upstream.
+ */
 export const formSpacing = {
   /** Top-level form children: sections, root fields, submit slot. */
   form: 'space-y-8',

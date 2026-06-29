@@ -33,9 +33,7 @@ export function DeleteRecordsMenuItem(
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span>{button}</span>
-          </TooltipTrigger>
+          <TooltipTrigger render={<span>{button}</span>} />
           <TooltipContent side="top">{errorText}</TooltipContent>
         </Tooltip>
       </TooltipProvider>

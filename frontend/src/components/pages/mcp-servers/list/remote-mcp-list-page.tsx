@@ -87,18 +87,18 @@ const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MC
     [MCPServer_State.RUNNING]: {
       text: 'Running',
       icon: Check,
-      iconColor: 'text-green-600',
+      iconColor: 'text-success',
     },
     [MCPServer_State.STARTING]: {
       text: 'Starting',
       icon: Loader2,
-      iconColor: 'text-blue-600',
+      iconColor: 'text-informative',
       animate: true,
     },
     [MCPServer_State.STOPPING]: {
       text: 'Stopping',
       icon: Loader2,
-      iconColor: 'text-orange-600',
+      iconColor: 'text-warning',
       animate: true,
     },
     [MCPServer_State.STOPPED]: {
@@ -109,7 +109,7 @@ const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MC
     [MCPServer_State.ERROR]: {
       text: 'Error',
       icon: AlertCircle,
-      iconColor: 'text-red-600',
+      iconColor: 'text-error',
     },
     [MCPServer_State.UNSPECIFIED]: {
       text: 'Unknown',
@@ -121,7 +121,7 @@ const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MC
   const statusProps = statusPropsMap[state] || {
     text: 'Unknown',
     icon: AlertCircle,
-    iconColor: 'text-red-600',
+    iconColor: 'text-error',
   };
 
   const IconComponent = statusProps.icon;
@@ -197,11 +197,13 @@ export const createColumns = (
       const truncatedUrl = url.length > 40 ? `${url.slice(0, 37)}...` : url;
       return (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Text className="cursor-help font-mono text-muted-foreground" variant="small">
-              {truncatedUrl}
-            </Text>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <Text className="cursor-help font-mono text-muted-foreground" variant="small">
+                {truncatedUrl}
+              </Text>
+            }
+          />
           <TooltipContent>
             <Text>{url}</Text>
           </TooltipContent>
@@ -264,7 +266,11 @@ export const updatePageTitle = () => {
   });
 };
 
-const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef> }) => {
+const RemoteMCPListPageContent = ({
+  deleteHandlerRef,
+}: {
+  deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef | null>;
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -412,7 +418,7 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-red-600">
+                      <div className="flex items-center justify-center gap-2 text-error">
                         <AlertCircle className="h-4 w-4" />
                         Error loading MCP servers: {error.message}
                       </div>

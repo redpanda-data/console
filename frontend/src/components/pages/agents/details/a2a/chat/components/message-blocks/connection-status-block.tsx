@@ -50,7 +50,7 @@ export const ConnectionStatusBlock = ({ status, attempt, maxAttempts, timestamp 
           <LoaderCircleIcon className="size-3.5 animate-spin" />
         </AlertTitle>
         <AlertDescription>
-          <Text className="text-blue-600 text-xs" variant="body">
+          <Text className="text-informative text-xs" variant="body">
             The agent task is still running. Trying to re-establish the event stream.
           </Text>
         </AlertDescription>

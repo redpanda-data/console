@@ -12,6 +12,7 @@
 import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import type { ColumnDef } from '@tanstack/react-table';
 import { EyeOffIcon, InfoIcon } from 'components/icons';
+import type { JSX } from 'react';
 
 import styles from './ConfigList.module.scss';
 import colors from '../../colors';

@@ -198,12 +198,14 @@ const AttributeFilterPopover: FC<{
 
   return (
     <Popover onOpenChange={setIsOpen} open={isOpen}>
-      <PopoverTrigger asChild>
-        <Button className="h-8 gap-1.5" size="sm" variant="outline">
-          <Plus className="h-3.5 w-3.5" />
-          Attribute
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button className="h-8 gap-1.5" size="sm" variant="outline">
+            <Plus className="h-3.5 w-3.5" />
+            Attribute
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-80">
         <div className="flex flex-col gap-3">
           <Text className="font-medium" variant="small">

@@ -65,11 +65,13 @@ export const TopicsStep = () => {
         <CardHeader>
           <CardTitle>Shadow topics</CardTitle>
           <CardAction>
-            <CollapsibleTrigger asChild>
-              <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
+            <CollapsibleTrigger
+              render={
+                <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              }
+            />
           </CardAction>
         </CardHeader>
         <CardContent>

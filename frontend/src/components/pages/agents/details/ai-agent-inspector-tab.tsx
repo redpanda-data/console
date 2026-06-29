@@ -165,17 +165,15 @@ export const AIAgentInspectorTab = () => {
       agent={agent}
       headerActions={
         <Dialog>
-          <DialogTrigger asChild>
-            <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
-              <FileJson className="h-4 w-4" />
-              View Agent Card
-            </Button>
-          </DialogTrigger>
-          <DialogContent
-            className="max-h-[85vh] w-[70vw] max-w-[1200px]"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            size="full"
-          >
+          <DialogTrigger
+            render={
+              <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
+                <FileJson className="h-4 w-4" />
+                View Agent Card
+              </Button>
+            }
+          />
+          <DialogContent className="max-h-[85vh] w-[70vw] max-w-[1200px]" initialFocus={false} size="full">
             <DialogHeader>
               <DialogTitle>Agent Card</DialogTitle>
               {Boolean(cardUrl) && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}
@@ -193,8 +191,8 @@ export const AIAgentInspectorTab = () => {
 
                 if (cardError) {
                   return (
-                    <div className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
-                      <Text className="text-red-800 dark:text-red-200">{cardError}</Text>
+                    <div className="rounded-md border border-outline-error bg-background-error-subtle p-4">
+                      <Text className="text-error">{cardError}</Text>
                     </div>
                   );
                 }

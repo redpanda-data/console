@@ -31,6 +31,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
+import { useIsDarkMode } from '../hooks/use-is-dark-mode';
 import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -90,6 +91,7 @@ function AppContent() {
   const matches = useMatches();
   const { pathname } = useLocation();
   const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
+  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
 
   if (isFullscreen) {
     return (
@@ -101,7 +103,7 @@ function AppContent() {
             <Outlet />
           </ErrorDisplay>
           <ErrorModalsRenderer />
-          <Toaster position="top-right" richColors />
+          <Toaster position="top-right" richColors theme={toasterTheme} />
         </TooltipProvider>
       </div>
     );
@@ -130,7 +132,7 @@ function AppContent() {
         <ErrorModalsRenderer />
 
         {/* Toaster for notifications */}
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" richColors theme={toasterTheme} />
       </TooltipProvider>
     </div>
   );

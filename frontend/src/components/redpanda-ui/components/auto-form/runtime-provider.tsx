@@ -64,12 +64,8 @@ type AutoFormRuntimeProviderProps<T extends Record<string, unknown>> = {
   ) => void | Promise<void>;
 };
 
-// ---------------------------------------------------------------------------
-// AutoFormPayloadController — leaf component that owns payload/JSON state.
-// Uses useDeferredValue so expensive payload computation (SchemaProvider
-// validation, proto conversion, payloadBuilder) doesn't block typing on large forms.
-// ---------------------------------------------------------------------------
-
+// useDeferredValue so expensive payload computation (validation, proto conversion,
+// payloadBuilder) doesn't block typing on large forms.
 function AutoFormPayloadController<T extends Record<string, unknown>>({
   watchedValues,
   methods,
@@ -283,11 +279,6 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
   );
 }
 
-// ---------------------------------------------------------------------------
-// AutoFormRuntimeProvider — provides the AutoFormContext with live form values.
-// Payload computation is delegated to the AutoFormPayloadController child.
-// ---------------------------------------------------------------------------
-
 export function AutoFormRuntimeProvider<T extends Record<string, unknown>>({
   children: _children,
   uiComponents,
@@ -311,8 +302,7 @@ export function AutoFormRuntimeProvider<T extends Record<string, unknown>>({
   const prevValuesRef = React.useRef<Record<string, unknown>>(watchedValues);
 
   React.useEffect(() => {
-    // Note: only fires for root-level field keys. Nested changes (e.g. address.city)
-    // fire as onFieldChange("address", ...) when the parent object reference changes.
+    // Only fires for root-level keys; nested changes surface as onFieldChange("address", ...) when the parent ref changes.
     if (!onFieldChange) return;
     const prev = prevValuesRef.current;
     for (const key of Object.keys(watchedValues)) {

@@ -19,10 +19,13 @@ function ToggleGroupFieldComponent({ error, field, id, inputProps, label }: Auto
       aria-describedby={error ? errorId : undefined}
       aria-invalid={Boolean(error)}
       aria-label={getControlLabel(label, field)}
-      onValueChange={(nextValue) => inputProps.onValueChange(numericOptions ? Number(nextValue) : nextValue)}
+      // Multi-select not supported yet — use multiselect field type instead
+      onValueChange={(nextValue) => {
+        const next = nextValue[0] ?? '';
+        inputProps.onValueChange(numericOptions ? Number(next) : next);
+      }}
       testId={testIds.control}
-      type="single" // Multi-select not supported yet — use multiselect field type instead
-      value={value}
+      value={value ? [value] : []}
       variant="outline"
     >
       {options.map((option) => (

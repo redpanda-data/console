@@ -11,12 +11,10 @@ type AutoFormSlotProps = {
 };
 
 function AutoFormSlot({ children }: AutoFormSlotProps) {
-  // AutoFormSlot is a marker component — its props are read by AutoFormFields
-  // to determine placement. It never renders itself directly.
+  // Marker component: AutoFormFields reads its props for placement; it never renders standalone.
   return <>{children}</>;
 }
 
-// Sentinel to identify AutoFormSlot elements in children
 AutoFormSlot.displayName = 'AutoFormSlot';
 
 export { AutoFormSlot, type AutoFormSlotProps };

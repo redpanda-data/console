@@ -77,13 +77,19 @@ const PermissionsListActions = ({
         userName={entry.name}
       />
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button asChild size="icon-sm" variant="destructive-ghost">
-            <button type="button">
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              render={
+                <button type="button">
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              }
+              size="icon-sm"
+              variant="destructive-ghost"
+            />
+          }
+        />
         <DropdownMenuContent>
           {entry.principalType !== 'Group' && (
             <>
@@ -215,14 +221,12 @@ const PermissionsListTabOriginal: FC = () => {
         incorporates roles that may assign additional permissions to a principal. This gives you a complete picture of
         what each principal can do within your cluster.
       </div>
-
       <SearchField
         placeholderText="Filter by name"
         searchText={searchQuery}
         setSearchText={setSearchQuery}
         width="300px"
       />
-
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
         <div className="my-4">
@@ -286,11 +290,13 @@ const PermissionsListTabOriginal: FC = () => {
             emptyAction={(() => (
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={() => appGlobal.historyPush('/security/users/create')} variant="outline">
-                      Create user
-                    </Button>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <Button onClick={() => appGlobal.historyPush('/security/users/create')} variant="outline">
+                        Create user
+                      </Button>
+                    }
+                  />
                   {createTooltip && <TooltipContent>{createTooltip}</TooltipContent>}
                 </Tooltip>
               </TooltipProvider>

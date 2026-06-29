@@ -98,7 +98,7 @@ describe('CatalogTree', () => {
   });
 
   test('expanding a table lists its columns with type labels', async () => {
-    // Types arrive lower-cased from the backend; composite columns as "json"
+    // Types arrive lower-cased from the backend; composite columns as "record"
     // with their nested fields parsed server-side.
     vi.mocked(useDescribeTableQuery).mockReturnValue({
       data: {
@@ -106,7 +106,7 @@ describe('CatalogTree', () => {
           { name: 'id', type: 'bigint' },
           { name: 'payload', type: 'jsonb' },
           { name: 'tags', type: 'text[]' },
-          { name: 'customer', type: 'json', fields: [{ name: 'street', type: 'text' }] },
+          { name: 'customer', type: 'record', fields: [{ name: 'street', type: 'text' }] },
         ],
       },
       isLoading: false,
@@ -119,7 +119,7 @@ describe('CatalogTree', () => {
     expect(screen.getByText('jsonb')).toBeInTheDocument();
     expect(screen.getByText('text[]')).toBeInTheDocument();
 
-    // Composite column shows "json" and expands into its nested fields.
+    // Composite column shows "record" and expands into its nested fields.
     const customerRow = screen.getByRole('button', { name: CUSTOMER_RE });
     expect(customerRow).toBeInTheDocument();
     expect(screen.queryByText('street')).not.toBeInTheDocument();

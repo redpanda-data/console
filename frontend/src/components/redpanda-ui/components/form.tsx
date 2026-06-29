@@ -1,5 +1,7 @@
 'use client';
 
+import { mergeProps } from '@base-ui/react/merge-props';
+import { useRender } from '@base-ui/react/use-render';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 import {
@@ -15,12 +17,10 @@ import {
 
 import { Label } from './label';
 import { Heading, Text } from './typography';
-import { Slot } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 const Form = FormProvider;
 
-// Form layout variants for different use cases
 const formVariants = cva('', {
   variants: {
     layout: {
@@ -45,7 +45,6 @@ const formVariants = cva('', {
   },
 });
 
-// Form item variants for consistent spacing and layouts
 const formItemVariants = cva('', {
   variants: {
     layout: {
@@ -68,7 +67,6 @@ const formItemVariants = cva('', {
   },
 });
 
-// Form section variants for grouping related fields
 const formSectionVariants = cva('', {
   variants: {
     variant: {
@@ -140,30 +138,27 @@ const FormItemContext = React.createContext<FormItemContextValue>({} as FormItem
 
 interface FormItemProps extends React.ComponentProps<'div'>, VariantProps<typeof formItemVariants>, SharedProps {}
 
-const FormItem = React.forwardRef<HTMLDivElement, FormItemProps>(
-  ({ className, layout, spacing, testId, ...props }, ref) => {
-    const id = React.useId();
+function FormItem({ className, layout, spacing, testId, ...props }: FormItemProps) {
+  const id = React.useId();
 
-    return (
-      <FormItemContext.Provider value={{ id }}>
-        <div
-          className={cn(formItemVariants({ layout, spacing }), className)}
-          data-slot="form-item"
-          data-testid={testId}
-          ref={ref}
-          {...props}
-        />
-      </FormItemContext.Provider>
-    );
-  }
-);
+  return (
+    <FormItemContext.Provider value={{ id }}>
+      <div
+        className={cn(formItemVariants({ layout, spacing }), className)}
+        data-slot="form-item"
+        data-testid={testId}
+        {...props}
+      />
+    </FormItemContext.Provider>
+  );
+}
 
-FormItem.displayName = 'FormItem';
-
-const FormLabel = React.forwardRef<
-  React.ElementRef<typeof Label>,
-  React.ComponentPropsWithoutRef<'label'> & { required?: boolean }
->(({ className, required, children, ...props }, ref) => {
+function FormLabel({
+  className,
+  required,
+  children,
+  ...props
+}: React.ComponentProps<'label'> & { required?: boolean }) {
   const { error, formItemId } = useFormField();
 
   return (
@@ -172,56 +167,52 @@ const FormLabel = React.forwardRef<
       data-error={!!error}
       data-slot="form-label"
       htmlFor={formItemId}
-      ref={ref}
       {...props}
     >
       {children}
-      {required ? <span className="ml-1 text-destructive">*</span> : null}
+      {required ? (
+        <span aria-hidden="true" className="ml-1 text-destructive">
+          *
+        </span>
+      ) : null}
     </Label>
   );
-});
+}
 
-FormLabel.displayName = 'FormLabel';
-
-const FormControl = React.forwardRef<HTMLElement, React.ComponentProps<typeof Slot>>((props, ref) => {
+// Composes the field's ARIA + id props onto a single control (via `render` prop or child element).
+function FormControl({ render, children, ...props }: useRender.ComponentProps<'div'>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+  const element = render ?? (React.isValidElement(children) ? children : <div>{children}</div>);
+
+  return useRender({
+    render: element,
+    props: mergeProps<'div'>(
+      {
+        'aria-describedby': error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`,
+        'aria-invalid': !!error,
+        'data-slot': 'form-control',
+        id: formItemId,
+      } as useRender.ElementProps<'div'>,
+      props
+    ),
+  });
+}
+
+// Rendered as <div> (not <p>) so block-level children don't trip validateDOMNesting.
+function FormDescription({ className, ...props }: React.ComponentProps<'div'>) {
+  const { formDescriptionId } = useFormField();
 
   return (
-    <Slot
-      aria-describedby={error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`}
-      aria-invalid={!!error}
-      data-slot="form-control"
-      id={formItemId}
-      ref={ref}
+    <div
+      className={cn('text-muted-foreground text-xs', className)}
+      data-slot="form-description"
+      id={formDescriptionId}
       {...props}
     />
   );
-});
+}
 
-FormControl.displayName = 'FormControl';
-
-// Rendered as <div> instead of <p> so consumers can nest block-level components
-// (Text, Alert, Input, etc.) without triggering React's validateDOMNesting warnings.
-const FormDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
-  ({ className, ...props }, ref) => {
-    const { formDescriptionId } = useFormField();
-
-    return (
-      <div
-        className={cn('text-muted-foreground text-xs', className)}
-        data-slot="form-description"
-        id={formDescriptionId}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
-
-FormDescription.displayName = 'FormDescription';
-
-// Rendered as <div> instead of <p> for the same reason as FormDescription above.
-const FormMessage = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(({ className, ...props }, ref) => {
+function FormMessage({ className, ...props }: React.ComponentProps<'div'>) {
   const { error, formMessageId } = useFormField();
   const body = error ? String(error?.message ?? '') : props.children;
 
@@ -230,52 +221,47 @@ const FormMessage = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>
   }
 
   return (
-    <div
-      className={cn('text-destructive text-sm', className)}
-      data-slot="form-message"
-      id={formMessageId}
-      ref={ref}
-      {...props}
-    >
+    <div className={cn('text-destructive text-sm', className)} data-slot="form-message" id={formMessageId} {...props}>
       {body}
     </div>
   );
-});
-
-FormMessage.displayName = 'FormMessage';
-
-// New components for better form organization
+}
 
 interface FormContainerProps extends React.ComponentProps<'form'>, VariantProps<typeof formVariants> {
   testId?: string;
 }
 
-const FormContainer = React.forwardRef<HTMLFormElement, FormContainerProps>(
-  ({ className, layout, width, testId, ...props }, ref) => (
+function FormContainer({ className, layout, width, testId, ...props }: FormContainerProps) {
+  return (
     <form
       className={cn(formVariants({ layout, width }), className)}
       data-slot="form-container"
       data-testid={testId}
-      ref={ref}
       {...props}
     />
-  )
-);
-
-FormContainer.displayName = 'FormContainer';
+  );
+}
 
 interface FormSectionProps extends React.ComponentProps<'div'>, VariantProps<typeof formSectionVariants>, SharedProps {
   title?: string;
   description?: string;
 }
 
-const FormSection = React.forwardRef<HTMLDivElement, FormSectionProps>(
-  ({ className, variant, spacing, title, description, children, testId, ...props }, ref) => (
+function FormSection({
+  className,
+  variant,
+  spacing,
+  title,
+  description,
+  children,
+  testId,
+  ...props
+}: FormSectionProps) {
+  return (
     <div
       className={cn(formSectionVariants({ variant, spacing }), className)}
       data-slot="form-section"
       data-testid={testId}
-      ref={ref}
       {...props}
     >
       {title || description ? (
@@ -290,12 +276,9 @@ const FormSection = React.forwardRef<HTMLDivElement, FormSectionProps>(
       ) : null}
       {children}
     </div>
-  )
-);
+  );
+}
 
-FormSection.displayName = 'FormSection';
-
-// Simplified field component that combines common patterns
 interface SimpleFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -318,12 +301,9 @@ function SimpleFormField<
   layout,
   descriptionPosition = 'bottom',
   children,
-  ...props
+  ref,
+  ...fieldProps
 }: SimpleFormFieldProps<TFieldValues, TName> & { ref?: React.Ref<HTMLDivElement> }) {
-  const { ref, ...fieldProps } = props as SimpleFormFieldProps<TFieldValues, TName> & {
-    ref?: React.Ref<HTMLDivElement>;
-  };
-
   return (
     <FormField
       {...fieldProps}

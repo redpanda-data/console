@@ -95,7 +95,7 @@ describe('LogExplorer', () => {
   test('live toggle is disabled when enableLiveView is false', () => {
     renderExplorer({ enableLiveView: false });
     const liveSwitch = screen.getByTestId('log-live-toggle');
-    expect(liveSwitch).toBeDisabled();
+    expect(liveSwitch).toHaveAttribute('aria-disabled', 'true');
   });
 
   test('live toggle has tooltip trigger with info icon', () => {

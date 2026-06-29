@@ -1,10 +1,15 @@
 import { cva } from 'class-variance-authority';
-import { type ClassValue, clsx } from 'clsx';
+import { type ClassValue, cn as cnfast } from 'cnfast';
 import React from 'react';
-import { twMerge } from 'tailwind-merge';
 
+/**
+ * Merge class names via cnfast — an optimized adaptation of clsx +
+ * tailwind-merge with byte-identical output. Keeps the original
+ * `(...inputs: ClassValue[])` signature, so every consumer call site is
+ * unaffected.
+ */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return cnfast(...inputs);
 }
 
 export function wrapStringChild(

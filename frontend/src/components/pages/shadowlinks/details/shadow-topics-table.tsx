@@ -125,9 +125,10 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           <div className="flex items-center gap-2">
             Max offset lag
             <Tooltip>
-              <TooltipTrigger asChild data-testid="max-offset-lag-info-icon">
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
+              <TooltipTrigger
+                data-testid="max-offset-lag-info-icon"
+                render={<Info className="h-4 w-4 text-muted-foreground" />}
+              />
               <TooltipContent>
                 <p>Maximum offset difference between source and replica topic partitions</p>
               </TooltipContent>

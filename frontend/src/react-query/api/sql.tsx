@@ -31,8 +31,6 @@ import {
   listTables,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql-SQLService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 type SqlQueryOptions = {
   enabled?: boolean;
@@ -94,10 +92,8 @@ export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOption
   return { ...result, isIceberg: Boolean(mode && mode !== 'disabled') };
 };
 
-export const useExecuteQueryMutation = () =>
-  useMutation(executeQuery, {
-    onError: (error) => toast.error(formatToastErrorMessageGRPC({ error, action: 'execute', entity: 'SQL query' })),
-  });
+// Errors surface inline (run panel / wizard), so no toast on failure.
+export const useExecuteQueryMutation = () => useMutation(executeQuery);
 
 // Returns a function that refreshes the catalog/table listings, e.g. after a
 // CREATE TABLE so the new table shows up in the tree.

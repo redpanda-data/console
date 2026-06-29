@@ -5,7 +5,7 @@ import { useFieldContext } from './field';
 import { cn, type SharedProps } from '../lib/utils';
 
 const textareaVariants = cva(
-  '!border-input flex w-full rounded-md border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40',
+  '!border-input focus-visible:!border-ring aria-invalid:!border-destructive flex w-full rounded-md border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40',
   {
     variants: {
       size: {
@@ -30,23 +30,18 @@ const textareaVariants = cva(
 
 interface TextareaProps extends React.ComponentProps<'textarea'>, VariantProps<typeof textareaVariants>, SharedProps {}
 
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, size, resize, testId, ...props }, ref) => {
-    const fieldCtx = useFieldContext();
-    return (
-      <textarea
-        {...props}
-        aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
-        aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
-        className={cn(textareaVariants({ size, resize }), className)}
-        data-slot="textarea"
-        data-testid={testId}
-        ref={ref}
-      />
-    );
-  }
-);
-
-Textarea.displayName = 'Textarea';
+function Textarea({ className, size, resize, testId, ...props }: TextareaProps) {
+  const fieldCtx = useFieldContext();
+  return (
+    <textarea
+      {...props}
+      aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
+      aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
+      className={cn(textareaVariants({ size, resize }), className)}
+      data-slot="textarea"
+      {...(testId !== undefined && { 'data-testid': testId })}
+    />
+  );
+}
 
 export { Textarea, textareaVariants };

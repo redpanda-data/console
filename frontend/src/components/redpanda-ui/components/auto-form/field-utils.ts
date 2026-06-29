@@ -1,11 +1,7 @@
 import type { ParsedField } from '../../lib/form-types';
 
-// Common protocol / tech acronyms the default title-casing would
-// otherwise emit as mixed-case ("Api Key", "Tls", "Aws Region", etc.).
-// The replacement is the canonical form the industry uses — gRPC is
-// intentionally lower-case `g`, everything else is fully upper.
-// Matched as whole words (case-insensitive) after the initial
-// camelCase/snake_case split in `beautifyLabel`.
+// Canonical casing for acronyms title-casing would otherwise mangle ("Api"
+// → "API"). gRPC is intentionally lower-case `g`. Matched as whole words.
 const ACRONYMS: Record<string, string> = {
   api: 'API',
   aws: 'AWS',
