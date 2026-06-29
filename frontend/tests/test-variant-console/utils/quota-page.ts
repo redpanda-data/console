@@ -68,11 +68,11 @@ export class QuotaPage {
    * Pagination methods
    */
   getNextPageButton() {
-    return this.page.locator('button[aria-label="Next Page"]');
+    return this.page.getByRole('button', { name: 'Go to next page' });
   }
 
   getPreviousPageButton() {
-    return this.page.locator('button[aria-label="Previous Page"]');
+    return this.page.getByRole('button', { name: 'Go to previous page' });
   }
 
   async clickNextPage() {
