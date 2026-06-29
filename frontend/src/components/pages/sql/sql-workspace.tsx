@@ -17,24 +17,16 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { isEmbedded } from 'config';
-import { Database, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Database, Maximize2, Minimize2 } from 'lucide-react';
 import {
-  CatalogType,
   ExecuteQueryRequestSchema,
   type Column as SqlColumn,
   type Row as SqlRow,
   type Value as SqlValue,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type Ref, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
-import {
-  useExecuteQueryMutation,
-  useGetSqlIdentityQuery,
-  useInvalidateSqlCatalog,
-  useListCatalogsQuery,
-  useListTablesQuery,
-  useTopicIcebergQuery,
-} from 'react-query/api/sql';
+import { useExecuteQueryMutation, useInvalidateSqlCatalog, useTopicIcebergQuery } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
@@ -58,6 +50,7 @@ import {
   type TableRef,
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
+import { useSqlCatalogs } from './use-sql-catalogs';
 
 // Start with a blank editor — the results pane prompts the caller to run a
 // query (or create a table from a topic when the catalog is empty) instead of
@@ -297,6 +290,141 @@ function setupOverlayLayout(
   };
 }
 
+type SqlEditorViewProps = {
+  catalogs: Catalog[];
+  completionCatalogs: Catalog[];
+  isLoading: boolean;
+  sqlRole: SqlRole;
+  /** SQL the editor seeds its first tab with on mount. */
+  editorSeed: string;
+  editorRef: Ref<SqlEditorHandle>;
+  run: QueryRun;
+  bridge: BridgeInfo | undefined;
+  hasTables: boolean;
+  wizardOpen: boolean;
+  wizardError: string | undefined;
+  isCreating: boolean;
+  wizardTopics: WizardTopic[];
+  onQueryTable: (catalog: Catalog, table: TableRef) => void;
+  openWizard: () => void;
+  closeWizard: () => void;
+  onCreateTable: (args: { topic: string; tableName: string }) => void;
+  doRun: (sql: string) => void;
+};
+
+// The catalog tree + editor/results (or the add-topic wizard). Split out from
+// SqlWorkspace so the two top-level views (landing vs editor) stay flat there.
+function SqlEditorView({
+  catalogs,
+  completionCatalogs,
+  isLoading,
+  sqlRole,
+  editorSeed,
+  editorRef,
+  run,
+  bridge,
+  hasTables,
+  wizardOpen,
+  wizardError,
+  isCreating,
+  wizardTopics,
+  onQueryTable,
+  openWizard,
+  closeWizard,
+  onCreateTable,
+  doRun,
+}: SqlEditorViewProps) {
+  return (
+    <>
+      <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">
+        <CatalogTree
+          catalogs={catalogs}
+          isLoading={isLoading}
+          onAddTable={openWizard}
+          onQueryTable={onQueryTable}
+          sqlRole={sqlRole}
+        />
+      </div>
+      <div className="flex min-h-0 min-w-0 flex-1">
+        {wizardOpen ? (
+          <SqlWizard
+            error={wizardError}
+            isCreating={isCreating}
+            onClose={closeWizard}
+            onCreate={onCreateTable}
+            topics={wizardTopics}
+          />
+        ) : (
+          <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
+            <ResizablePanel
+              className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
+              defaultSize="42%"
+              minSize="15%"
+            >
+              <SqlEditor catalogs={completionCatalogs} initialQuery={editorSeed} onRun={doRun} ref={editorRef} />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
+              <SqlResults
+                hasTables={hasTables}
+                onAddTable={openWizard}
+                run={run.state === 'success' ? { ...run, bridge } : run}
+                sqlRole={sqlRole}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
+      </div>
+    </>
+  );
+}
+
+// The studio header row: a back affordance to the SQL overview, the title, the
+// role badge and the fullscreen toggle. Split out so its conditionals stay off
+// SqlWorkspace's complexity budget.
+function StudioHeader({
+  mode,
+  toggleMode,
+  onBack,
+  sqlRole,
+}: {
+  mode: StudioMode;
+  toggleMode: () => void;
+  onBack: () => void;
+  sqlRole: SqlRole;
+}) {
+  return (
+    <div className={cn('flex h-[52px] shrink-0 items-center gap-2 px-1', mode === 'full' ? 'px-4' : 'mt-3')}>
+      <Button
+        aria-label="Back to SQL overview"
+        onClick={onBack}
+        size="icon-sm"
+        title="Back to overview"
+        variant="secondary-ghost"
+      >
+        <ArrowLeft />
+      </Button>
+      <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
+        <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Query</span>
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        <Badge size="sm" variant="simple">
+          {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
+        </Badge>
+        <Button
+          aria-label={mode === 'boxed' ? 'Enter fullscreen' : 'Exit fullscreen'}
+          onClick={toggleMode}
+          size="icon-sm"
+          title={mode === 'boxed' ? 'Fullscreen' : 'Exit fullscreen'}
+          variant="secondary-ghost"
+        >
+          {mode === 'boxed' ? <Maximize2 /> : <Minimize2 />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export type SqlWorkspaceProps = {
   /**
    * Effective role of the caller. When omitted it's derived from the
@@ -304,6 +432,14 @@ export type SqlWorkspaceProps = {
    * pass it explicitly to override the lookup in tests/storybook.
    */
   sqlRole?: SqlRole;
+  /** SQL to seed the editor's first tab with on mount (from a landing CTA). */
+  seedQuery?: string;
+  /** Run `seedQuery` once on mount — set when entering from a "run" CTA. */
+  autoRun?: boolean;
+  /** Open the add-topic wizard on mount — set when entering from "Add a topic". */
+  openWizardOnMount?: boolean;
+  /** Return to the standalone SQL overview/landing. */
+  onBack: () => void;
 };
 
 // Studio layout mode + the callback ref that wires it to the imperative overlay.
@@ -359,7 +495,13 @@ function useStudioMode(): {
   return { attachOverlay, mode, toggleMode };
 }
 
-export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
+export function SqlWorkspace({
+  sqlRole: sqlRoleProp,
+  seedQuery = INITIAL_QUERY,
+  autoRun = false,
+  openWizardOnMount = false,
+  onBack,
+}: SqlWorkspaceProps) {
   const navigate = useNavigate();
   // The route guard skips the redirect while endpoint compatibility is still
   // loading; once it resolves, bounce clusters that genuinely lack SQLService.
@@ -385,27 +527,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const latestRunToken = useRef(0);
   const { mode, toggleMode, attachOverlay } = useStudioMode();
 
-  const { data: catalogsData, isLoading } = useListCatalogsQuery();
+  const { isLoading, sqlRole, catalogs, completionCatalogs, hasTables, redpandaTablesData } =
+    useSqlCatalogs(sqlRoleProp);
   const executeQuery = useExecuteQueryMutation();
-
-  // Caller's effective role: an explicit prop wins (tests/storybook), otherwise
-  // derive it from the SQL identity — admin unlocks write/DDL affordances like
-  // the "Add a topic" button. Falls back to viewer until the lookup resolves.
-  const { data: identity } = useGetSqlIdentityQuery();
-  const sqlRole: SqlRole = sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
-
-  // Map proto catalogs to the tree view model. Tables/columns are filled in by
-  // the catalog-tree agent via ListTables/DescribeTable.
-  const catalogs = useMemo<Catalog[]>(() => {
-    // MVP surfaces only the Redpanda catalog; Iceberg catalog support lands later.
-    const list = (catalogsData?.catalogs ?? []).filter((c) => c.type === CatalogType.REDPANDA);
-    return list.map((c) => ({
-      name: c.name,
-      displayLabel: c.type === CatalogType.REDPANDA ? 'Redpanda Catalog' : c.name,
-      engine: c.type === CatalogType.REDPANDA ? 'redpanda' : 'iceberg',
-      namespaces: c.namespace ? [{ id: `${c.name}.${c.namespace}`, name: c.namespace, tables: [] }] : [],
-    }));
-  }, [catalogsData]);
 
   // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
   // signal (`redpanda.iceberg.mode`), independent of any lag metric. A topic that
@@ -452,50 +576,10 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     return { topic: bridgeTopic, translationLag, commitLag, totalLag: translationLag + commitLag };
   }, [bridgeTopic, bridgeTopicTiered, bridgeTxLag.data, bridgeCommitLag.data]);
 
-  // Redpanda-catalog tables, fetched up front so both the add-topic wizard and
-  // editor autocomplete (and the bridge indicator below) can resolve table refs.
-  const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
-  const { data: redpandaTablesData } = useListTablesQuery({ catalog: redpandaCatalogName });
-  const hasTables = (redpandaTablesData?.tables?.length ?? 0) > 0;
-
-  // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
-  // autocomplete can resolve table references — the bare catalog list seeds
-  // namespaces with empty `tables`.
-  const completionCatalogs = useMemo<Catalog[]>(
-    () =>
-      catalogs.map((catalog) => {
-        if (catalog.name !== redpandaCatalogName) {
-          return catalog;
-        }
-        const tablesByNamespace = new Map<string, TableRef[]>();
-        for (const t of redpandaTablesData?.tables ?? []) {
-          const list = tablesByNamespace.get(t.catalogNamespace) ?? [];
-          list.push({
-            id: `${catalog.name}.${t.catalogNamespace}.${t.name}`,
-            name: t.name,
-            namespaceName: t.catalogNamespace,
-            catalogName: catalog.name,
-            topicName: t.topic,
-          });
-          tablesByNamespace.set(t.catalogNamespace, list);
-        }
-        const namespaces = catalog.namespaces.map((ns) => ({
-          ...ns,
-          tables: tablesByNamespace.get(ns.name) ?? ns.tables,
-        }));
-        for (const [name, tables] of tablesByNamespace) {
-          if (!namespaces.some((ns) => ns.name === name)) {
-            namespaces.push({ id: `${catalog.name}.${name}`, name, tables });
-          }
-        }
-        return { ...catalog, namespaces };
-      }),
-    [catalogs, redpandaCatalogName, redpandaTablesData]
-  );
-
   const doRun = useCallback(
     (sql: string) => {
-      const token = (latestRunToken.current += 1);
+      latestRunToken.current += 1;
+      const token = latestRunToken.current;
       const kw = firstKeyword(sql);
       // Block writes/DDL/DCL on the first keyword; read-shaped statements
       // (SELECT/WITH/EXPLAIN/SHOW/…) pass and the server rejects what it can't run.
@@ -563,7 +647,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   }, []);
 
   // ---- Add-topic wizard ----
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(openWizardOnMount);
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
   const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
   const invalidateSqlCatalog = useInvalidateSqlCatalog();
@@ -599,6 +683,17 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     setWizardError(undefined);
   }, []);
 
+  // Run the seed query once when the studio opens from a landing "run" CTA. The
+  // studio mounts fresh on each entry, so this fires exactly once per entry;
+  // the ref guards against re-running if doRun's identity changes mid-mount.
+  const didAutoRun = useRef(false);
+  useEffect(() => {
+    if (!didAutoRun.current && autoRun && seedQuery) {
+      didAutoRun.current = true;
+      doRun(seedQuery);
+    }
+  }, [autoRun, seedQuery, doRun]);
+
   const onCreateTable = useCallback(
     ({ topic, tableName }: { topic: string; tableName: string }) => {
       setWizardError(undefined);
@@ -626,25 +721,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
       ref={attachOverlay}
     >
-      <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', mode === 'full' ? 'px-4' : 'mt-3')}>
-        <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
-          <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" variant="simple">
-            {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
-          </Badge>
-          <Button
-            aria-label={mode === 'boxed' ? 'Enter fullscreen' : 'Exit fullscreen'}
-            onClick={toggleMode}
-            size="icon-sm"
-            title={mode === 'boxed' ? 'Fullscreen' : 'Exit fullscreen'}
-            variant="secondary-ghost"
-          >
-            {mode === 'boxed' ? <Maximize2 /> : <Minimize2 />}
-          </Button>
-        </div>
-      </div>
+      <StudioHeader mode={mode} onBack={onBack} sqlRole={sqlRole} toggleMode={toggleMode} />
 
       <div
         className={cn(
@@ -658,45 +735,26 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
             : 'rounded-none border border-x-transparent border-b-transparent shadow-none'
         )}
       >
-        <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">
-          <CatalogTree
-            catalogs={catalogs}
-            isLoading={isLoading}
-            onAddTable={openWizard}
-            onQueryTable={onQueryTable}
-            sqlRole={sqlRole}
-          />
-        </div>
-        <div className="flex min-h-0 min-w-0 flex-1">
-          {wizardOpen ? (
-            <SqlWizard
-              error={wizardError}
-              isCreating={executeQuery.isPending}
-              onClose={closeWizard}
-              onCreate={onCreateTable}
-              topics={wizardTopics}
-            />
-          ) : (
-            <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
-              <ResizablePanel
-                className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
-                defaultSize="42%"
-                minSize="15%"
-              >
-                <SqlEditor catalogs={completionCatalogs} initialQuery={INITIAL_QUERY} onRun={doRun} ref={editorRef} />
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
-                <SqlResults
-                  hasTables={hasTables}
-                  onAddTable={openWizard}
-                  run={run.state === 'success' ? { ...run, bridge } : run}
-                  sqlRole={sqlRole}
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          )}
-        </div>
+        <SqlEditorView
+          bridge={bridge}
+          catalogs={catalogs}
+          closeWizard={closeWizard}
+          completionCatalogs={completionCatalogs}
+          doRun={doRun}
+          editorRef={editorRef}
+          editorSeed={seedQuery}
+          hasTables={hasTables}
+          isCreating={executeQuery.isPending}
+          isLoading={isLoading}
+          onCreateTable={onCreateTable}
+          onQueryTable={onQueryTable}
+          openWizard={openWizard}
+          run={run}
+          sqlRole={sqlRole}
+          wizardError={wizardError}
+          wizardOpen={wizardOpen}
+          wizardTopics={wizardTopics}
+        />
       </div>
     </div>
   );
