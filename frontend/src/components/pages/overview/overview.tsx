@@ -52,6 +52,10 @@ import { OverviewLicenseNotification } from '../../license/overview-license-noti
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
 import { Statistic } from '../../misc/statistic';
 
+// Shared placeholder for any metric that isn't available (cluster unreachable,
+// brokers not loaded, or backend simply didn't report a value).
+const NOT_AVAILABLE = 'N/A';
+
 class Overview extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Overview';
@@ -97,7 +101,11 @@ class Overview extends PageComponent {
       return { displayText: 'Unhealthy', className: 'status-red' };
     })();
 
-    const brokerSize = brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : '...';
+    // On an unreachable cluster the brokers request fails and `api.brokers` stays
+    // null forever, so there is no storage to report — fall back to the same N/A
+    // placeholder as every other stat rather than a "..." that never resolves.
+    const brokerSize =
+      api.brokers && brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : NOT_AVAILABLE;
 
     const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
       if (!record.isController) {
@@ -115,7 +123,14 @@ class Overview extends PageComponent {
       );
     };
 
-    const version = overview.redpanda?.version ?? overview.kafka?.version;
+    const version = overview.redpanda?.version ?? overview.kafka?.version ?? NOT_AVAILABLE;
+
+    const brokersOnline = overview.kafka?.brokersOnline;
+    const brokersExpected = overview.kafka?.brokersExpected;
+    const brokersOnlineText =
+      brokersOnline === undefined || brokersExpected === undefined
+        ? NOT_AVAILABLE
+        : `${brokersOnline} of ${brokersExpected}`;
 
     return (
       <Box>
@@ -133,12 +148,9 @@ class Overview extends PageComponent {
               />
               <Statistic title="Cluster Storage Size" value={brokerSize} />
               <Statistic title="Cluster Version" value={version} />
-              <Statistic
-                title="Brokers Online"
-                value={`${overview.kafka?.brokersOnline} of ${overview.kafka?.brokersExpected}`}
-              />
-              <Statistic title="Topics" value={overview.kafka?.topicsCount} />
-              <Statistic title="Replicas" value={overview.kafka?.replicasCount} />
+              <Statistic title="Brokers Online" value={brokersOnlineText} />
+              <Statistic title="Topics" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
+              <Statistic title="Replicas" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
             </Flex>
           </Section>
 
@@ -303,13 +315,20 @@ function ClusterDetails() {
   const brokers = api.brokers;
   const licenses = api.licenses;
 
-  if (!(overview && brokers)) {
+  // Only the cluster overview gates the skeleton. `brokers` can stay null on an
+  // unreachable cluster (the request fails and never resolves), so waiting for it
+  // would spin this panel forever — render what we have and mark the rest N/A.
+  if (!overview) {
     return <Skeleton height={4} mt={5} noOfLines={13} speed={0} />;
   }
 
-  const totalStorageBytes = brokers.sum((x) => x.totalLogDirSizeBytes ?? 0);
-  const totalPrimaryStorageBytes = brokers.sum((x) => x.totalPrimaryLogDirSizeBytes ?? 0);
+  const hasBrokers = brokers != null;
+  const brokerList = brokers ?? [];
+  const totalStorageBytes = brokerList.sum((x) => x.totalLogDirSizeBytes ?? 0);
+  const totalPrimaryStorageBytes = brokerList.sum((x) => x.totalPrimaryLogDirSizeBytes ?? 0);
   const totalReplicatedStorageBytes = totalStorageBytes - totalPrimaryStorageBytes;
+  // Without broker data, a "0 B" total would be wrong — report N/A instead.
+  const storageOrNA = (bytes: number) => (hasBrokers ? prettyBytesOrNA(bytes) : NOT_AVAILABLE);
 
   const serviceAccounts = overview.redpanda?.userCount ?? 'Admin API not configured';
 
@@ -364,11 +383,11 @@ function ClusterDetails() {
       </DetailsBlock>
 
       <DetailsBlock title="Storage">
-        <Details content={[[prettyBytesOrNA(totalStorageBytes)]]} title="Total Bytes" />
+        <Details content={[[storageOrNA(totalStorageBytes)]]} title="Total Bytes" />
 
-        <Details content={[[prettyBytesOrNA(totalPrimaryStorageBytes)]]} title="Primary" />
+        <Details content={[[storageOrNA(totalPrimaryStorageBytes)]]} title="Primary" />
 
-        <Details content={[[prettyBytesOrNA(totalReplicatedStorageBytes)]]} title="Replicated" />
+        <Details content={[[storageOrNA(totalReplicatedStorageBytes)]]} title="Replicated" />
       </DetailsBlock>
 
       <DetailsBlock title="Security">
