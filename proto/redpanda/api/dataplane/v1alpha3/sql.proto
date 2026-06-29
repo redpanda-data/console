@@ -137,6 +137,26 @@ service SQLService {
       api: API_REDPANDA_SQL
     };
   }
+
+  // GetSqlConnectionInfo returns the connection endpoint clients use to reach
+  // Redpanda SQL: the advertised host and port.
+  rpc GetSqlConnectionInfo(GetSqlConnectionInfoRequest) returns (GetSqlConnectionInfoResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/connection-info"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get SQL connection info"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetSqlConnectionInfoResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
 }
 
 // Catalog backing-storage type. Sourced from `system.catalogs.type`.
@@ -318,4 +338,14 @@ message GetSqlIdentityResponse {
   // engine, i.e. may perform write/DDL actions. Sourced from
   // `pg_roles.rolsuper`.
   bool is_admin = 2;
+}
+
+message GetSqlConnectionInfoRequest {}
+
+message GetSqlConnectionInfoResponse {
+  // Advertised host clients use to reach the SQL endpoint. Empty when no
+  // endpoint is configured.
+  string host = 1;
+  // Port for the SQL endpoint, derived from the configured connection URL.
+  uint32 port = 2;
 }
