@@ -47,16 +47,20 @@ const (
 	// SQLServiceGetSqlIdentityProcedure is the fully-qualified name of the SQLService's GetSqlIdentity
 	// RPC.
 	SQLServiceGetSqlIdentityProcedure = "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlIdentity"
+	// SQLServiceGetSqlConnectionInfoProcedure is the fully-qualified name of the SQLService's
+	// GetSqlConnectionInfo RPC.
+	SQLServiceGetSqlConnectionInfoProcedure = "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlConnectionInfo"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	sQLServiceServiceDescriptor              = v1alpha3.File_redpanda_api_dataplane_v1alpha3_sql_proto.Services().ByName("SQLService")
-	sQLServiceListCatalogsMethodDescriptor   = sQLServiceServiceDescriptor.Methods().ByName("ListCatalogs")
-	sQLServiceListTablesMethodDescriptor     = sQLServiceServiceDescriptor.Methods().ByName("ListTables")
-	sQLServiceDescribeTableMethodDescriptor  = sQLServiceServiceDescriptor.Methods().ByName("DescribeTable")
-	sQLServiceExecuteQueryMethodDescriptor   = sQLServiceServiceDescriptor.Methods().ByName("ExecuteQuery")
-	sQLServiceGetSqlIdentityMethodDescriptor = sQLServiceServiceDescriptor.Methods().ByName("GetSqlIdentity")
+	sQLServiceServiceDescriptor                    = v1alpha3.File_redpanda_api_dataplane_v1alpha3_sql_proto.Services().ByName("SQLService")
+	sQLServiceListCatalogsMethodDescriptor         = sQLServiceServiceDescriptor.Methods().ByName("ListCatalogs")
+	sQLServiceListTablesMethodDescriptor           = sQLServiceServiceDescriptor.Methods().ByName("ListTables")
+	sQLServiceDescribeTableMethodDescriptor        = sQLServiceServiceDescriptor.Methods().ByName("DescribeTable")
+	sQLServiceExecuteQueryMethodDescriptor         = sQLServiceServiceDescriptor.Methods().ByName("ExecuteQuery")
+	sQLServiceGetSqlIdentityMethodDescriptor       = sQLServiceServiceDescriptor.Methods().ByName("GetSqlIdentity")
+	sQLServiceGetSqlConnectionInfoMethodDescriptor = sQLServiceServiceDescriptor.Methods().ByName("GetSqlConnectionInfo")
 )
 
 // SQLServiceClient is a client for the redpanda.api.dataplane.v1alpha3.SQLService service.
@@ -81,6 +85,9 @@ type SQLServiceClient interface {
 	// the UI; the engine remains the source of truth and enforces privileges on
 	// execution regardless.
 	GetSqlIdentity(context.Context, *connect.Request[v1alpha3.GetSqlIdentityRequest]) (*connect.Response[v1alpha3.GetSqlIdentityResponse], error)
+	// GetSqlConnectionInfo returns the connection endpoint clients use to reach
+	// Redpanda SQL: the advertised host and port.
+	GetSqlConnectionInfo(context.Context, *connect.Request[v1alpha3.GetSqlConnectionInfoRequest]) (*connect.Response[v1alpha3.GetSqlConnectionInfoResponse], error)
 }
 
 // NewSQLServiceClient constructs a client for the redpanda.api.dataplane.v1alpha3.SQLService
@@ -123,16 +130,23 @@ func NewSQLServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sQLServiceGetSqlIdentityMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getSqlConnectionInfo: connect.NewClient[v1alpha3.GetSqlConnectionInfoRequest, v1alpha3.GetSqlConnectionInfoResponse](
+			httpClient,
+			baseURL+SQLServiceGetSqlConnectionInfoProcedure,
+			connect.WithSchema(sQLServiceGetSqlConnectionInfoMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // sQLServiceClient implements SQLServiceClient.
 type sQLServiceClient struct {
-	listCatalogs   *connect.Client[v1alpha3.ListCatalogsRequest, v1alpha3.ListCatalogsResponse]
-	listTables     *connect.Client[v1alpha3.ListTablesRequest, v1alpha3.ListTablesResponse]
-	describeTable  *connect.Client[v1alpha3.DescribeTableRequest, v1alpha3.DescribeTableResponse]
-	executeQuery   *connect.Client[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
-	getSqlIdentity *connect.Client[v1alpha3.GetSqlIdentityRequest, v1alpha3.GetSqlIdentityResponse]
+	listCatalogs         *connect.Client[v1alpha3.ListCatalogsRequest, v1alpha3.ListCatalogsResponse]
+	listTables           *connect.Client[v1alpha3.ListTablesRequest, v1alpha3.ListTablesResponse]
+	describeTable        *connect.Client[v1alpha3.DescribeTableRequest, v1alpha3.DescribeTableResponse]
+	executeQuery         *connect.Client[v1alpha3.ExecuteQueryRequest, v1alpha3.ExecuteQueryResponse]
+	getSqlIdentity       *connect.Client[v1alpha3.GetSqlIdentityRequest, v1alpha3.GetSqlIdentityResponse]
+	getSqlConnectionInfo *connect.Client[v1alpha3.GetSqlConnectionInfoRequest, v1alpha3.GetSqlConnectionInfoResponse]
 }
 
 // ListCatalogs calls redpanda.api.dataplane.v1alpha3.SQLService.ListCatalogs.
@@ -160,6 +174,11 @@ func (c *sQLServiceClient) GetSqlIdentity(ctx context.Context, req *connect.Requ
 	return c.getSqlIdentity.CallUnary(ctx, req)
 }
 
+// GetSqlConnectionInfo calls redpanda.api.dataplane.v1alpha3.SQLService.GetSqlConnectionInfo.
+func (c *sQLServiceClient) GetSqlConnectionInfo(ctx context.Context, req *connect.Request[v1alpha3.GetSqlConnectionInfoRequest]) (*connect.Response[v1alpha3.GetSqlConnectionInfoResponse], error) {
+	return c.getSqlConnectionInfo.CallUnary(ctx, req)
+}
+
 // SQLServiceHandler is an implementation of the redpanda.api.dataplane.v1alpha3.SQLService service.
 type SQLServiceHandler interface {
 	// ListCatalogs lists all catalogs visible to the caller.
@@ -182,6 +201,9 @@ type SQLServiceHandler interface {
 	// the UI; the engine remains the source of truth and enforces privileges on
 	// execution regardless.
 	GetSqlIdentity(context.Context, *connect.Request[v1alpha3.GetSqlIdentityRequest]) (*connect.Response[v1alpha3.GetSqlIdentityResponse], error)
+	// GetSqlConnectionInfo returns the connection endpoint clients use to reach
+	// Redpanda SQL: the advertised host and port.
+	GetSqlConnectionInfo(context.Context, *connect.Request[v1alpha3.GetSqlConnectionInfoRequest]) (*connect.Response[v1alpha3.GetSqlConnectionInfoResponse], error)
 }
 
 // NewSQLServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -220,6 +242,12 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sQLServiceGetSqlIdentityMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	sQLServiceGetSqlConnectionInfoHandler := connect.NewUnaryHandler(
+		SQLServiceGetSqlConnectionInfoProcedure,
+		svc.GetSqlConnectionInfo,
+		connect.WithSchema(sQLServiceGetSqlConnectionInfoMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.dataplane.v1alpha3.SQLService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SQLServiceListCatalogsProcedure:
@@ -232,6 +260,8 @@ func NewSQLServiceHandler(svc SQLServiceHandler, opts ...connect.HandlerOption) 
 			sQLServiceExecuteQueryHandler.ServeHTTP(w, r)
 		case SQLServiceGetSqlIdentityProcedure:
 			sQLServiceGetSqlIdentityHandler.ServeHTTP(w, r)
+		case SQLServiceGetSqlConnectionInfoProcedure:
+			sQLServiceGetSqlConnectionInfoHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -259,4 +289,8 @@ func (UnimplementedSQLServiceHandler) ExecuteQuery(context.Context, *connect.Req
 
 func (UnimplementedSQLServiceHandler) GetSqlIdentity(context.Context, *connect.Request[v1alpha3.GetSqlIdentityRequest]) (*connect.Response[v1alpha3.GetSqlIdentityResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.SQLService.GetSqlIdentity is not implemented"))
+}
+
+func (UnimplementedSQLServiceHandler) GetSqlConnectionInfo(context.Context, *connect.Request[v1alpha3.GetSqlConnectionInfoRequest]) (*connect.Response[v1alpha3.GetSqlConnectionInfoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.dataplane.v1alpha3.SQLService.GetSqlConnectionInfo is not implemented"))
 }
