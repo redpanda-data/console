@@ -10,7 +10,7 @@
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { SqlWorkspace } from 'components/pages/sql/sql-workspace';
+import { SqlPage } from 'components/pages/sql/sql-page';
 import { Database } from 'lucide-react';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 
@@ -31,5 +31,5 @@ export const Route = createFileRoute('/sql')({
       throw redirect({ to: '/', replace: true });
     }
   },
-  component: SqlWorkspace,
+  component: SqlPage,
 });
