@@ -37,47 +37,32 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
-import { ArrowDown, ArrowUp, ChevronsUpDown, InfoIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronsUpDown, InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { useListQuotas } from '../../../hooks/use-list-quotas';
 import {
-  Quota_EntityType,
-  type Quota_Value,
-  Quota_ValueType,
-} from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
+  clampPageIndex,
+  getRate,
+  isQuotaConfigured,
+  mapEntityTypeToDisplay,
+  type QuotaEntityDisplay,
+  searchToSorting,
+  sortingToSearch,
+} from './quotas-list-utils';
+import { useListQuotas } from '../../../hooks/use-list-quotas';
+import { Quota_EntityType, Quota_ValueType } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 
 const DEFAULT_PAGE_SIZE = 50;
 
 type QuotaRow = {
-  entityType: 'client-id' | 'user' | 'ip' | 'unknown';
+  entityType: QuotaEntityDisplay;
   entityName?: string | undefined;
   producerRate?: number;
   consumerRate?: number;
   controllerMutationRate?: number;
 };
-
-/**
- * Maps protobuf EntityType enum to display string
- */
-const mapEntityTypeToDisplay = (entityType: Quota_EntityType): 'client-id' | 'user' | 'ip' | 'unknown' => {
-  switch (entityType) {
-    case Quota_EntityType.CLIENT_ID:
-    case Quota_EntityType.CLIENT_ID_PREFIX:
-      return 'client-id';
-    case Quota_EntityType.USER:
-      return 'user';
-    case Quota_EntityType.IP:
-      return 'ip';
-    default:
-      return 'unknown';
-  }
-};
-
-const getRate = (values: Quota_Value[], valueType: Quota_ValueType) =>
-  values.find((v) => v.valueType === valueType)?.value;
 
 const renderSortIcon = (sorted: false | 'asc' | 'desc') => {
   if (sorted === 'desc') {
@@ -91,18 +76,16 @@ const renderSortIcon = (sorted: false | 'asc' | 'desc') => {
 
 /** Info icon that reveals a tooltip on hover, used next to column titles. */
 const InfoTooltip = ({ children }: { children: React.ReactNode }) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span className="inline-flex cursor-help text-muted-foreground">
-            <InfoIcon className="size-3.5" />
-          </span>
-        }
-      />
-      <TooltipContent>{children}</TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger
+      render={
+        <span className="inline-flex cursor-help text-muted-foreground">
+          <InfoIcon className="size-3.5" />
+        </span>
+      }
+    />
+    <TooltipContent>{children}</TooltipContent>
+  </Tooltip>
 );
 
 /** Sortable column header matching the look of DataTableColumnHeader, with an optional info tooltip. */
@@ -130,24 +113,22 @@ function SortableHeader({
 const NOT_CONFIGURED_LABEL = 'No limit configured';
 
 const NotConfigured = () => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span className="cursor-help text-muted-foreground">
-            {/* The em-dash is decorative; screen readers announce the sr-only label instead. */}
-            <span aria-hidden="true">—</span>
-            <span className="sr-only">{NOT_CONFIGURED_LABEL}</span>
-          </span>
-        }
-      />
-      <TooltipContent>{NOT_CONFIGURED_LABEL}</TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger
+      render={
+        <span className="cursor-help text-muted-foreground">
+          {/* The em-dash is decorative; screen readers announce the sr-only label instead. */}
+          <span aria-hidden="true">—</span>
+          <span className="sr-only">{NOT_CONFIGURED_LABEL}</span>
+        </span>
+      }
+    />
+    <TooltipContent>{NOT_CONFIGURED_LABEL}</TooltipContent>
+  </Tooltip>
 );
 
-const formatBytes = (value?: number) => (value ? prettyBytes(value) : <NotConfigured />);
-const formatRate = (value?: number) => (value ? prettyNumber(value) : <NotConfigured />);
+const formatBytes = (value?: number) => (isQuotaConfigured(value) ? prettyBytes(value) : <NotConfigured />);
+const formatRate = (value?: number) => (isQuotaConfigured(value) ? prettyNumber(value) : <NotConfigured />);
 
 const columns: ColumnDef<QuotaRow>[] = [
   {
@@ -214,14 +195,15 @@ const QuotasList = () => {
     });
   }, [data]);
 
+  const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
   const pagination: PaginationState = {
-    pageIndex: search.page ?? 0,
-    pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+    // Clamp the requested page to what the data actually supports, so a stale or
+    // bookmarked out-of-range `?page=` can't render a false empty state.
+    pageIndex: clampPageIndex(search.page ?? 0, quotasData.length, pageSize),
+    pageSize,
   };
 
-  const sorting: SortingState = search.sortField
-    ? [{ id: search.sortField, desc: search.sortDirection === 'desc' }]
-    : [];
+  const sorting: SortingState = searchToSorting(search.sortField, search.sortDirection);
 
   const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
@@ -233,13 +215,8 @@ const QuotasList = () => {
 
   const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
-    const first = next.at(0);
     navigate({
-      search: (prev) => ({
-        ...prev,
-        sortField: first ? (first.id as typeof search.sortField) : undefined,
-        sortDirection: first ? (first.desc ? 'desc' : 'asc') : undefined,
-      }),
+      search: (prev) => ({ ...prev, ...sortingToSearch(next) }),
       replace: true,
     });
   };
@@ -292,7 +269,7 @@ const QuotasList = () => {
 
     return (
       <PageContent>
-        <Alert variant="destructive">
+        <Alert icon={<TriangleAlertIcon />} variant="destructive">
           <AlertDescription>
             <Text>{error.message || 'Failed to load quotas'}</Text>
           </AlertDescription>
@@ -304,42 +281,47 @@ const QuotasList = () => {
   const rows = table.getRowModel().rows;
 
   return (
-    <PageContent>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {rows.length ? (
-            rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+    // Single TooltipProvider hoisted to the page root so the per-cell tooltips
+    // (column-header info icons, "no limit configured" em-dashes) share one
+    // provider instead of mounting one per instance.
+    <TooltipProvider>
+      <PageContent>
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell className="h-24 text-center text-muted-foreground" colSpan={columns.length}>
-                No quotas configured.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {rows.length ? (
+              rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell className="h-24 text-center text-muted-foreground" colSpan={columns.length}>
+                  No quotas configured.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
 
-      <ListLayoutPagination>
-        <DataTablePagination table={table} />
-      </ListLayoutPagination>
-    </PageContent>
+        <ListLayoutPagination>
+          <DataTablePagination table={table} />
+        </ListLayoutPagination>
+      </PageContent>
+    </TooltipProvider>
   );
 };
 
