@@ -266,7 +266,7 @@ function TablesOverview({
                   <span className="grid size-5 shrink-0 place-items-center rounded-sm bg-action-primary/10 text-action-primary">
                     <Database size={12} />
                   </span>
-                  <span className="font-mono font-semibold text-strong text-xs">{catalog.displayLabel}</span>
+                  <span className="font-semibold text-sm">{catalog.displayLabel}</span>
                   <span className="ml-auto text-muted-foreground text-xs">
                     {tables.length} {tables.length === 1 ? 'table' : 'tables'}
                   </span>
@@ -278,7 +278,7 @@ function TablesOverview({
                     const sql = previewSql(table.catalogName, table.name);
                     return (
                       <button
-                        className="flex w-full items-center gap-3 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-selected-hover"
+                        className="flex w-full cursor-pointer items-center gap-3 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
                         key={table.id}
                         onClick={() => onRunQuery(sql)}
                         type="button"
@@ -331,7 +331,7 @@ function SuggestedQueries({ catalogs, onRunQuery }: { catalogs: Catalog[]; onRun
       <div>
         {suggestions.map((suggestion) => (
           <button
-            className="group flex w-full items-center gap-3 border-border-subtle border-t px-4 py-3 text-left transition-colors first:border-t-0 hover:bg-selected-hover"
+            className="group flex w-full cursor-pointer items-center gap-3 border-border-subtle border-t px-4 py-3 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
             key={suggestion.label}
             onClick={() => onRunQuery(suggestion.sql)}
             type="button"
@@ -363,7 +363,7 @@ function RecentQueries({ onRunQuery }: { onRunQuery: (sql: string) => void }) {
       <div>
         {recent.map((entry) => (
           <button
-            className="flex w-full items-center gap-2.5 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-selected-hover"
+            className="flex w-full cursor-pointer items-center gap-2.5 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
             key={`${entry.at}-${entry.sql}`}
             onClick={() => onRunQuery(entry.sql)}
             type="button"
@@ -389,7 +389,7 @@ function DocsCard() {
       <div>
         {DOC_LINKS.map((doc) => (
           <a
-            className="group flex items-center gap-3 border-border-subtle border-t px-4 py-3 transition-colors first:border-t-0 hover:bg-selected-hover"
+            className="group flex items-center gap-3 border-border-subtle border-t px-4 py-3 transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
             href={doc.href}
             key={doc.label}
             rel="noreferrer"
@@ -477,9 +477,9 @@ export function SqlLanding({
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
       {/* hero */}
       <div className="border-border border-b bg-card">
-        <div className="mx-auto w-full max-w-[1180px] px-8 pt-10 pb-9">
+        <div className="mx-auto w-full max-w-[1500px] px-12 pt-10 pb-9">
           <div className="max-w-[720px]">
-            <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-action-primary/10 px-2.5 py-1 font-semibold text-[11px] text-action-primary uppercase tracking-wider">
+            <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-action-primary/10 px-2.5 py-1 font-semibold text-action-primary text-xs uppercase tracking-wider">
               <Database size={13} /> SQL
             </div>
             <Heading className="mb-3 font-semibold text-3xl text-strong leading-tight tracking-heading" level={1}>
@@ -504,7 +504,7 @@ export function SqlLanding({
               )}
             </div>
             <div className="mt-5 flex items-center gap-2 text-muted-foreground text-sm">
-              <span className="size-2 shrink-0 rounded-full bg-green-500" />
+              <span className="size-2 shrink-0 rounded-full bg-success" />
               Connected
               {clusterName ? (
                 <>
@@ -519,7 +519,7 @@ export function SqlLanding({
       </div>
 
       {/* body */}
-      <div className="mx-auto w-full max-w-[1180px] px-8 pb-14">
+      <div className="mx-auto w-full max-w-[1500px] px-12 pb-14">
         {isEmpty ? (
           <>
             <OnboardingSteps />
