@@ -133,13 +133,6 @@ vi.mock('components/ui/yaml/yaml-editor', async () => {
 });
 
 // 5. Mock complex sub-components that are irrelevant to our tests
-vi.mock('./pipeline-flow-diagram', async () => {
-  const React = await import('react');
-  return {
-    PipelineFlowDiagram: (props: { configYaml: string }) =>
-      React.createElement('div', { 'data-testid': 'flow-diagram', 'data-configyaml': props.configYaml }),
-  };
-});
 // The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
 vi.mock('./pipeline-flow-canvas', async () => {
   const React = await import('react');
@@ -621,15 +614,16 @@ describe('PipelinePage', () => {
     });
   });
 
-  it('falls back to the original flow diagram side-lane when the visual editor flag is off', async () => {
-    // Diagrams on, but the refreshed visual-editor lane off → the old mini-diagram.
+  it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {
+    // Diagrams on, visual-editor lane off → the sidebar still uses the structure outline
+    // (the old mini flow diagram was removed), and the full Visual canvas stays hidden.
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
     mockIsEmbedded.mockReturnValue(true);
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    await waitFor(() => expect(screen.getByTestId('flow-diagram')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('tree')).toBeInTheDocument());
     expect(screen.queryByTestId('flow-canvas')).not.toBeInTheDocument();
   });
 

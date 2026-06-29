@@ -18,7 +18,6 @@ import { Fragment, useMemo } from 'react';
 
 import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api, useApiStoreHook } from '../../state/backend-api';
-import { useFullscreenPageStore } from '../../state/fullscreen-page-store';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
@@ -74,10 +73,7 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
   // they never want the title+actions row — only the breadcrumb. Robust to which
   // layout branch renders the header (standalone vs embedded misdetection).
   const matches = useMatches();
-  // Static metadata covers always-fullscreen routes; the runtime store covers pages
-  // whose fullscreen-ness is conditional (e.g. the embedded RPCN editor).
-  const fullscreenPageActive = useFullscreenPageStore((s) => s.active);
-  const isFullscreenRoute = matches.some((m) => m.staticData.fullscreen) || fullscreenPageActive;
+  const isFullscreenRoute = matches.some((m) => m.staticData.fullscreen);
   const hideTitleRow = breadcrumbOnly || isFullscreenRoute;
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();

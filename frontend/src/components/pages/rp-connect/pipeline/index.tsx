@@ -41,9 +41,8 @@ import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { type OverlayMode, useFullscreenPin, usePageWidthMode } from 'hooks/use-fullscreen-overlay';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
-import { KeyRound, LayoutGrid, Maximize2, Minimize2, Plus, User, Zap } from 'lucide-react';
+import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -61,7 +60,7 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
 import {
   useGetPipelineServiceConfigSchemaQuery,
@@ -75,7 +74,6 @@ import {
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
-import { useFullscreenPageStore } from 'state/fullscreen-page-store';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -85,7 +83,6 @@ import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
-import { PipelineFlowDiagram } from './pipeline-flow-diagram';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
@@ -563,32 +560,30 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
     (isServerless()
       ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
       : isFeatureFlagEnabled('enableDataplaneObservability'));
-  const useNewLogs = isFeatureFlagEnabled('enableNewPipelineLogs');
   return (
-    // Bounded flex column: the log explorer scrolls its own table internally (filter + pagination
-    // stay pinned), so we don't scroll the whole panel. The legacy LogsTab has no internal scroll,
-    // so that path keeps the panel-level scroll.
-    <div className={cn('flex h-full min-h-0 flex-col p-6', !useNewLogs && 'overflow-auto')}>
+    <div className="flex h-full flex-col overflow-auto p-6">
       {showThroughput ? (
-        <div className="shrink-0">
+        <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
           <Separator className="my-8" variant="subtle" />
-        </div>
+        </>
       ) : null}
-      {useNewLogs ? (
-        // Title renders inline in the explorer's control row to line up with the table.
-        <LogExplorer
-          enableLiveView={pipeline.state === Pipeline_State.RUNNING}
-          pipeline={pipeline}
-          serverless={isServerless()}
-          title="Logs"
-        />
-      ) : (
-        <section className="flex flex-col gap-4">
-          <Heading level={3}>Logs</Heading>
-          <LogsTab pipeline={pipeline} />
-        </section>
-      )}
+      <section className="flex min-h-0 flex-col gap-4">
+        {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+          // Title renders inline in the explorer's control row to line up with the table.
+          <LogExplorer
+            enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+            pipeline={pipeline}
+            serverless={isServerless()}
+            title="Logs"
+          />
+        ) : (
+          <>
+            <Heading level={3}>Logs</Heading>
+            <LogsTab pipeline={pipeline} />
+          </>
+        )}
+      </section>
     </div>
   );
 }
@@ -660,29 +655,22 @@ function SidebarPanel({
   mode,
   yamlContent,
   isPipelineDiagramsEnabled,
-  isVisualEditorEnabled,
   onAddConnector,
-  onAddTopic,
-  onAddSasl,
   onBrowseTemplates,
   onOpenCommandMenu,
 }: {
   mode: string;
   yamlContent: string;
   isPipelineDiagramsEnabled: boolean;
-  isVisualEditorEnabled: boolean;
   onAddConnector: (type: ConnectComponentType | 'resource') => void;
-  onAddTopic: (section: string, componentName: string) => void;
-  onAddSasl: (section: string, componentName: string) => void;
   onBrowseTemplates?: () => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
 }) {
   // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
   const isEmpty = useIsPipelineEmpty(yamlContent);
-  // New structure outline is behind the visual-editor flag; off → fall back to PipelineFlowDiagram.
-  const showNewLane = isPipelineDiagramsEnabled && isVisualEditorEnabled;
-  const showOldLane = isPipelineDiagramsEnabled && !isVisualEditorEnabled;
+  // The structure outline is the single sidebar visualizer, shown whenever diagrams are enabled.
+  const showStructureTree = isPipelineDiagramsEnabled;
 
   // Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node.
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
@@ -754,23 +742,14 @@ function SidebarPanel({
     revealNodeInEditor(revealNodeId);
     requestRevealNode(null);
   }, [revealNodeId, editorInstance, nodeRanges, revealNodeInEditor, requestRevealNode]);
-  const showTemplateCta = showNewLane && canEdit && Boolean(onBrowseTemplates) && isEmpty;
-  // Old mini-diagram has its own template entry point; the new lane uses the floating CTA below.
-  const oldDiagramHandlers = canEdit
-    ? {
-        onAddConnector: (type: string) => onAddConnector(type as ConnectComponentType),
-        onAddSasl,
-        onAddTopic,
-        onBrowseTemplates,
-      }
-    : {};
+  const showTemplateCta = showStructureTree && canEdit && Boolean(onBrowseTemplates) && isEmpty;
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
       {/* Relative so the template entry point can float pinned at the bottom with an enter/exit animation. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto overflow-x-hidden">
-          {showNewLane ? (
+          {showStructureTree ? (
             <PipelineStructureTree
               configYaml={yamlContent}
               onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
@@ -778,11 +757,8 @@ function SidebarPanel({
               selectedNodeId={activeNodeId}
             />
           ) : null}
-          {showOldLane ? (
-            <PipelineFlowDiagram configYaml={yamlContent} hideZoomControls {...oldDiagramHandlers} />
-          ) : null}
         </div>
-        {showNewLane && onBrowseTemplates ? (
+        {showStructureTree && onBrowseTemplates ? (
           <TemplateGalleryCta onBrowseTemplates={onBrowseTemplates} show={showTemplateCta} />
         ) : null}
       </div>
@@ -851,22 +827,6 @@ function SidebarPanel({
   );
 }
 
-// Boxed/full toggle for the editor's own header, mirroring the SQL studio control.
-function FullscreenToggle({ mode, onToggle }: { mode: OverlayMode; onToggle: () => void }) {
-  const boxed = mode === 'boxed';
-  return (
-    <Button
-      aria-label={boxed ? 'Enter fullscreen' : 'Exit fullscreen'}
-      onClick={onToggle}
-      size="icon-sm"
-      title={boxed ? 'Fullscreen' : 'Exit fullscreen'}
-      variant="secondary-ghost"
-    >
-      {boxed ? <Maximize2 /> : <Minimize2 />}
-    </Button>
-  );
-}
-
 export default function PipelinePage() {
   const { pipelineId } = usePipelineMode();
   // With the visual editor enabled, open editing on the Visual lane by default.
@@ -890,35 +850,6 @@ function PipelinePageContent() {
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
   const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isEmbedded();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
-
-  // This page only mounts for the embedded, diagrams-enabled view/edit tiers (the route gates on
-  // `enablePipelineDiagrams && isEmbedded()`), so being here already means the new editor. View/edit
-  // render fullscreen — a pinned overlay with a boxed/full toggle, like the SQL studio; create stays
-  // in the normal in-flow column. The legacy form (rendered on the same routes when the flag/embed is
-  // off) never mounts this component, so it keeps console chrome.
-  const isFullscreenPage = mode !== 'create';
-  // Boxed (default): normal document flow with a clamped panel height — comfortable on small screens
-  // (the page scrolls) and capped on large ones, with the page footer below. Full: a pinned,
-  // edge-to-edge fixed overlay (true full-screen). Only the view/edit editor page (not create) participates.
-  const { mode: layoutMode, toggleMode: toggleLayoutMode } = usePageWidthMode({
-    storageKey: 'rpcn-pipeline-editor-mode',
-    defaultMode: 'boxed',
-  });
-  const boxed = layoutMode === 'boxed';
-  const pinned = isFullscreenPage && !boxed; // full mode → fixed overlay
-  const flowing = isFullscreenPage && boxed; // boxed mode → in-flow, scrollable
-  const pinRef = useFullscreenPin(pinned);
-  // Only full mode takes over as a fixed overlay; tell the layout to strip console chrome (incl. the
-  // footer) THEN, so the footer doesn't float over the pinned page. Boxed stays in normal document
-  // flow with the footer below. Layout effect so the layout re-renders before paint (no flash).
-  const setFullscreenPageActive = useFullscreenPageStore((s) => s.setActive);
-  useLayoutEffect(() => {
-    setFullscreenPageActive(pinned);
-    return () => setFullscreenPageActive(false);
-  }, [pinned, setFullscreenPageActive]);
-  const fullscreenToggle = isFullscreenPage ? (
-    <FullscreenToggle mode={layoutMode} onToggle={toggleLayoutMode} />
-  ) : null;
 
   // Actions are stable, so read them once via getState; values use selectors.
   const editorStore = usePipelineEditorStoreApi();
@@ -1156,117 +1087,74 @@ function PipelinePageContent() {
 
   return (
     // overflow-x-clip (not hidden) blocks stray horizontal overflow while keeping overflow-y visible.
-    // Boxed: in-flow centered max-width column (page scrolls when the clamped panel is taller than the
-    // viewport). Full: pinRef pins this as a fixed edge-to-edge overlay. Create: plain in-flow page.
-    <div
-      className={cn(
-        'flex min-w-0 flex-col overflow-x-clip',
-        !isFullscreenPage && 'min-h-[calc(100dvh-10rem)] gap-4',
-        flowing && 'mx-auto w-full max-w-[1500px]',
-        pinned && 'h-full'
-      )}
-      ref={pinRef}
-    >
-      {/* Header chrome sits above the panel; padded so it isn't flush to the column edge. */}
-      <div className={cn('flex shrink-0 flex-col gap-4', isFullscreenPage && 'px-4 pt-4')}>
-        {mode === 'view' && pipeline ? (
-          <PipelineViewHeader
-            fullscreenToggle={fullscreenToggle}
-            onBack={handleCancel}
-            onViewDetails={() => setIsViewConfigDialogOpen(true)}
-            pipeline={pipeline}
-          />
-        ) : null}
-        {mode === 'view' && !pipeline ? (
-          <div className="flex items-center gap-2">
-            <Button
-              aria-label="Go back"
-              className="-ml-3.5 shrink-0"
-              onClick={handleCancel}
-              size="icon"
-              variant="ghost"
-            >
-              <ArrowLeftIcon className="h-5 w-5" />
-            </Button>
-            <Skeleton variant="text" width="md" />
-            <div className="ml-auto flex items-center">{fullscreenToggle}</div>
-          </div>
-        ) : null}
-        {mode !== 'view' ? (
-          <PipelineEditHeader
-            form={form}
-            fullscreenToggle={fullscreenToggle}
-            hasUnsavedChanges={hasUnsavedChanges}
-            isSaving={isSaving}
-            mode={mode as 'create' | 'edit'}
-            onBack={handleCancel}
-            onEditSettings={() => setIsConfigDialogOpen(true)}
-            onSave={handleSave}
-            url={pipeline?.url}
-          />
-        ) : null}
-        {/* View-mode lanes: Monitor, YAML (read-only), Visual. */}
-        {mode === 'view' && pipeline ? (
-          <Tabs value={activeViewLane}>
-            <TabsList className="w-fit" variant="underline">
-              <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
-                Monitor
-              </TabsTrigger>
-              <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
-                YAML
-              </TabsTrigger>
-              {isVisualEditorEnabled ? (
-                <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
-                  Visual
-                </TabsTrigger>
-              ) : null}
-            </TabsList>
-          </Tabs>
-        ) : null}
-        {/* Edit-mode lanes: YAML editor vs. visual editor. */}
-        {mode !== 'view' && isVisualEditorEnabled ? (
-          <Tabs value={activeEditLane}>
-            <TabsList className="w-fit" variant="underline">
-              <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
-                YAML
-              </TabsTrigger>
-              <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
+    <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
+      {mode === 'view' && pipeline ? (
+        <PipelineViewHeader
+          onBack={handleCancel}
+          onViewDetails={() => setIsViewConfigDialogOpen(true)}
+          pipeline={pipeline}
+        />
+      ) : null}
+      {mode === 'view' && !pipeline ? (
+        <div className="flex items-center gap-2">
+          <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Button>
+          <Skeleton variant="text" width="md" />
+        </div>
+      ) : null}
+      {mode !== 'view' ? (
+        <PipelineEditHeader
+          form={form}
+          hasUnsavedChanges={hasUnsavedChanges}
+          isSaving={isSaving}
+          mode={mode as 'create' | 'edit'}
+          onBack={handleCancel}
+          onEditSettings={() => setIsConfigDialogOpen(true)}
+          onSave={handleSave}
+          url={pipeline?.url}
+        />
+      ) : null}
+      {/* View-mode lanes: Monitor, YAML (read-only), Visual. */}
+      {mode === 'view' && pipeline ? (
+        <Tabs value={activeViewLane}>
+          <TabsList className="w-fit" variant="underline">
+            <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
+              Monitor
+            </TabsTrigger>
+            <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
+              YAML
+            </TabsTrigger>
+            {isVisualEditorEnabled ? (
+              <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
                 Visual
               </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        ) : null}
-      </div>
-      {/* Panel area; the tips strip is pinned just beneath so it stays visible. */}
-      <div
-        className={cn(
-          'flex min-w-0 flex-col gap-2',
-          !isFullscreenPage && 'min-h-[640px] flex-1',
-          pinned && 'min-h-0 flex-1',
-          flowing && 'px-4 pb-4'
-        )}
-      >
+            ) : null}
+          </TabsList>
+        </Tabs>
+      ) : null}
+      {/* Edit-mode lanes: YAML editor vs. visual editor. */}
+      {mode !== 'view' && isVisualEditorEnabled ? (
+        <Tabs value={activeEditLane}>
+          <TabsList className="w-fit" variant="underline">
+            <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
+              YAML
+            </TabsTrigger>
+            <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
+              Visual
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      ) : null}
+      {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
+      <div className="flex min-h-[640px] min-w-0 flex-1 flex-col gap-2">
         {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
-        <div
-          // Square (not rounded) so the top edge is flush with the underline tabs above it. Full (pinned)
-          // is edge-to-edge with only a top divider and fills the overlay; boxed/create keep a full border.
-          // Boxed uses a clamped height — a comfortable floor on small screens (the page scrolls past it)
-          // and a cap on large ones so it isn't stretched; pinned/create fill their column via flex-1.
-          className={cn(
-            'flex min-h-0 min-w-0 overflow-hidden rounded-none border-border!',
-            !flowing && 'flex-1',
-            pinned ? 'border-t border-r-0 border-b-0 border-l-0' : 'border'
-          )}
-          style={flowing ? { height: 'clamp(600px, calc(100dvh - 220px), 900px)' } : undefined}
-        >
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
           {showSidebar ? (
             <SidebarPanel
               isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
-              isVisualEditorEnabled={isVisualEditorEnabled}
               mode={mode}
               onAddConnector={(type) => setAddConnectorType(type)}
-              onAddSasl={handleAddSasl}
-              onAddTopic={handleAddTopic}
               onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
               onOpenCommandMenu={handleCommandMenuOpen}
               yamlContent={yamlContent}

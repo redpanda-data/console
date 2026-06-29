@@ -563,6 +563,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
   }
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-border bg-background/90 px-3 py-2 text-muted-foreground text-xs shadow-sm backdrop-blur-sm">
+      <div className="font-semibold text-[10px] text-muted-foreground/70 uppercase tracking-wide">Legend</div>
       <div className="flex items-center gap-2">
         <LegendSwatch color="var(--color-primary)" />
         Data flow

@@ -32,7 +32,6 @@ import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
-import { useFullscreenPageStore } from '../state/fullscreen-page-store';
 import { IsDev } from '../utils/env';
 import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
@@ -92,10 +91,7 @@ function EmbeddedLayout() {
 function AppContent() {
   const matches = useMatches();
   const { pathname } = useLocation();
-  // Static route metadata covers always-fullscreen routes (e.g. SQL); the runtime
-  // store covers pages whose fullscreen-ness is conditional (e.g. the embedded RPCN editor).
-  const fullscreenPageActive = useFullscreenPageStore((s) => s.active);
-  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname) || fullscreenPageActive;
+  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
 
   if (isFullscreen) {

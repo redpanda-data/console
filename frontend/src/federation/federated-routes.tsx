@@ -26,7 +26,6 @@ import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
-import { useFullscreenPageStore } from '../state/fullscreen-page-store';
 import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -100,11 +99,7 @@ function FederatedAppContent() {
   // the way in. Single return with stable element positions: toggling props/classes
   // (not branching the tree) keeps the <Outlet> mounted across fullscreen↔normal
   // navigation, so the embedded router doesn't reset to its default route.
-  // Static route metadata covers always-fullscreen routes (SQL); the runtime store covers pages
-  // toggled full-screen at runtime (the RPCN editor's full mode), which strip chrome + footer so the
-  // pinned overlay doesn't collide with a floating footer. Boxed mode leaves it false → footer below.
-  const fullscreenPageActive = useFullscreenPageStore((s) => s.active);
-  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname) || fullscreenPageActive;
+  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
 
   return (
