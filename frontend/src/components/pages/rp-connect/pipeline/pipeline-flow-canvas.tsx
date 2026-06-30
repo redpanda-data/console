@@ -17,6 +17,7 @@ import {
   type Node,
   ReactFlow,
   ReactFlowProvider,
+  useNodesInitialized,
   useReactFlow,
   useStore,
   ViewportPortal,
@@ -443,6 +444,26 @@ function ZoomTool({ mode, setMode, enabled }: { mode: ZoomMode; setMode: (next: 
   return null;
 }
 
+// Fit the whole diagram into view once the nodes have been MEASURED. React Flow's `fitView` prop
+// fits on first paint — before custom nodes report their size — so the initial fit is wrong and the
+// canvas lands zoomed into the top-left. Waiting for `useNodesInitialized` fits accurately. Fires
+// once per mount (so returning to the lane re-centers, but editing mid-session doesn't yank the view).
+function FitOnInit({ enabled }: { enabled: boolean }) {
+  const initialized = useNodesInitialized();
+  const paneWidth = useStore((s) => s.width);
+  const { fitView } = useReactFlow();
+  const fittedRef = useRef(false);
+  useEffect(() => {
+    // Wait for both the nodes to be measured AND the pane to have real dimensions — fitting into a
+    // 0×0 pane (mid lane-mount / rail animation) is what left it zoomed into the corner.
+    if (enabled && initialized && paneWidth > 0 && !fittedRef.current) {
+      fittedRef.current = true;
+      fitView({ padding: 0.2, maxZoom: 1 });
+    }
+  }, [enabled, initialized, paneWidth, fitView]);
+  return null;
+}
+
 // Recenters the viewport on a node when asked (command-palette "go to"). Keyed by a token so
 // re-picking the same node pans again. Lives inside the ReactFlowProvider for useReactFlow.
 function FocusNode({ nodeId, token, enabled }: { nodeId?: string; token?: number; enabled: boolean }) {
@@ -708,6 +729,7 @@ type CanvasCallbacks = {
   /** Kind of the selected edit target — `'switchCase'` means the condition, not the component. */
   selectedTargetKind?: string;
   lintErrorsByNode?: Map<string, string[]>;
+  draftNodeIds?: ReadonlySet<string>;
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
   /** Node ids present on the previous render — anything new is "appearing". */
@@ -753,6 +775,9 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   const lintErrors = cb.lintErrorsByNode?.get(node.id);
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
+  }
+  if (cb.draftNodeIds?.has(node.id)) {
+    data.hasDraft = true;
   }
   if (cb.flashNodeIds?.has(node.id)) {
     data.flash = true;
@@ -934,6 +959,8 @@ type PipelineFlowCanvasProps = {
   selectedTargetKind?: string;
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
+  /** Nodes with an unapplied inspector draft — flagged on the canvas. */
+  draftNodeIds?: ReadonlySet<string>;
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
@@ -961,6 +988,7 @@ export function PipelineFlowCanvas({
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
+  draftNodeIds,
   flashNodeIds,
   flashToken,
   focusNodeId,
@@ -1043,6 +1071,7 @@ export function PipelineFlowCanvas({
       selectedNodeId,
       selectedTargetKind,
       lintErrorsByNode,
+      draftNodeIds,
       flashNodeIds,
       flashToken,
       previousIds: previousIdsRef.current,
@@ -1088,6 +1117,7 @@ export function PipelineFlowCanvas({
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,
+    draftNodeIds,
     flashNodeIds,
     flashToken,
     onAddConnector,
@@ -1142,8 +1172,6 @@ export function PipelineFlowCanvas({
           edges={rfEdges}
           edgeTypes={flowEdgeTypes}
           elementsSelectable={false}
-          fitView={!simple}
-          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
           maxZoom={simple ? 1 : MAX_ZOOM}
           minZoom={simple ? 1 : MIN_ZOOM}
           nodes={rfNodes}
@@ -1193,6 +1221,7 @@ export function PipelineFlowCanvas({
           {/* Renders only for control-flow markers (flowSplit/flowMerge), present only on the
               full canvas — the compact sidebar gets nothing. */}
           <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
+          <FitOnInit enabled={!simple} />
           <KeepSelectionInView enabled={!simple} focusToken={focusToken} selectedNodeId={selectedNodeId} />
           <FocusNode enabled={!simple} nodeId={focusNodeId} token={focusToken} />
           <ZoomTool enabled={!simple} mode={zoomMode} setMode={setZoomMode} />

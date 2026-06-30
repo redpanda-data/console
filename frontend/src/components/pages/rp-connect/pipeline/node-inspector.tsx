@@ -42,7 +42,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
-import { type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
+import { type FormValues, type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
@@ -118,6 +118,9 @@ type NodeInspectorProps = {
   childItems?: InspectorChildItem[];
   /** Navigate the inspector to a child node. */
   onSelectChild?: (item: InspectorChildItem) => void;
+  /** Unapplied schema-form draft to restore for this node, and a reporter to preserve it. */
+  draftValues?: FormValues;
+  onDraftChange?: (values: FormValues | null) => void;
 };
 
 // The lint message (if any) that falls on a switch case's routing `check` line — so the
@@ -161,6 +164,8 @@ export function NodeInspector({
   onClose,
   childItems,
   onSelectChild,
+  draftValues,
+  onDraftChange,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   // The routing condition for a case-entry node, read from its switch case.
@@ -312,6 +317,7 @@ export function NodeInspector({
             <NodeConfigForm
               childItems={childItems}
               componentName={componentName}
+              draftValues={draftValues}
               headerSlot={conditionSection}
               key={JSON.stringify(component)}
               // Re-key on the component's current value so that after Apply (the YAML
@@ -319,6 +325,7 @@ export function NodeInspector({
               // dirty state so "Apply changes" disables and the edit is committed.
               onApply={handleApply}
               onCreateResource={onCreateResource}
+              onDraftChange={onDraftChange}
               onSelectChild={onSelectChild}
               resourceLabels={resourceLabels}
               spec={spec}
@@ -735,8 +742,10 @@ const RawComponentEditor = ({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 p-4">
-        <div className="h-full overflow-hidden rounded-md border border-border">
+      {/* Flex column so the editor shrinks to leave room for the error row — otherwise an
+          `h-full` editor pushes the error message down onto the footer. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
           <YamlEditor
             onChange={(v) => {
               setDraft(v || '');
@@ -748,7 +757,7 @@ const RawComponentEditor = ({
           />
         </div>
         {error ? (
-          <Text className="mt-2 text-destructive" variant="bodySmall">
+          <Text className="shrink-0 text-destructive" variant="bodySmall">
             {error}
           </Text>
         ) : null}

@@ -56,6 +56,16 @@ type UiSlice = {
   isViewConfigDialogOpen: boolean;
   isDeleteAlertOpen: boolean;
   isTemplateDialogOpen: boolean;
+  // Visual-edit undo/redo history (YAML snapshots). Lives in the store — not VisualEditorPanel —
+  // so it survives lane switches. `editBaseline` is the last document state the history has seen.
+  editUndoStack: string[];
+  editRedoStack: string[];
+  editBaseline: string | null;
+  // Record a (non-undo/redo) document change; no-ops when it matches the baseline.
+  recordEdit: (next: string) => void;
+  // Commit the stacks + baseline after an undo/redo step.
+  commitEditHistory: (next: { undo: string[]; redo: string[]; baseline: string }) => void;
+  resetEditHistory: () => void;
   setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
   setActiveViewLane: (activeViewLane: ViewLane) => void;
   setActiveEditLane: (activeEditLane: EditLane) => void;
@@ -86,8 +96,23 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
     return true;
   },
   hydrateFromServer: (pipelineId, configYaml) =>
-    set({ hydratedPipelineId: pipelineId, yamlContent: configYaml, initialYaml: configYaml }),
-  resolveInitialYaml: (yaml) => set((state) => ({ yamlContent: yaml, initialYaml: state.initialYaml ?? yaml })),
+    // Reset the edit history so the server load isn't recorded as an undoable step.
+    set({
+      hydratedPipelineId: pipelineId,
+      yamlContent: configYaml,
+      initialYaml: configYaml,
+      editUndoStack: [],
+      editRedoStack: [],
+      editBaseline: null,
+    }),
+  resolveInitialYaml: (yaml) =>
+    set((state) =>
+      // First resolution establishes the document baseline — reset the edit history so the initial
+      // template load isn't an undoable step. Subsequent calls only update the content.
+      state.initialYaml === null
+        ? { yamlContent: yaml, initialYaml: yaml, editUndoStack: [], editRedoStack: [], editBaseline: null }
+        : { yamlContent: yaml }
+    ),
   setAllowNavigation: (allowNavigation) => set({ allowNavigation }),
 });
 
@@ -103,6 +128,25 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   isViewConfigDialogOpen: false,
   isDeleteAlertOpen: false,
   isTemplateDialogOpen: false,
+  editUndoStack: [],
+  editRedoStack: [],
+  editBaseline: null,
+  recordEdit: (next) =>
+    set((s) => {
+      if (s.editBaseline === null) {
+        // First document the history sees becomes the baseline (no undo step).
+        return { editBaseline: next };
+      }
+      if (next === s.editBaseline) {
+        return {};
+      }
+      // A real change (a visual edit, or an external YAML edit seen on lane return): push the old
+      // baseline as an undo step and clear the redo branch.
+      return { editUndoStack: [...s.editUndoStack, s.editBaseline], editRedoStack: [], editBaseline: next };
+    }),
+  commitEditHistory: ({ undo, redo, baseline }) =>
+    set({ editUndoStack: undo, editRedoStack: redo, editBaseline: baseline }),
+  resetEditHistory: () => set({ editUndoStack: [], editRedoStack: [], editBaseline: null }),
   setEditorInstance: (editorInstance) => set({ editorInstance }),
   setActiveViewLane: (activeViewLane) => set({ activeViewLane }),
   setActiveEditLane: (activeEditLane) => set({ activeEditLane }),

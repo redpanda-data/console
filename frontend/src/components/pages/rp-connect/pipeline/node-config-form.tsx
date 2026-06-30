@@ -26,8 +26,8 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useContext } from 'react';
-import { type Control, Controller, type FieldPath, useForm } from 'react-hook-form';
+import { createContext, useContext, useEffect, useRef } from 'react';
+import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ScrollShadow } from './scroll-shadow';
@@ -383,7 +383,7 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
   return { scalars, arrays };
 }
 
-type FormValues = {
+export type FormValues = {
   label: string;
   raw: string;
   fields: Record<string, string | boolean>;
@@ -710,6 +710,12 @@ type NodeConfigFormProps = {
       the user can jump from this high-level node to a child's full config. */
   childItems?: InspectorChildItem[];
   onSelectChild?: (item: InspectorChildItem) => void;
+  /** A previously-stashed unapplied draft to restore into the form (so edits aren't lost when the
+      user navigates away without applying). */
+  draftValues?: FormValues;
+  /** Reports the working draft up as it changes — the values while dirty, null when clean/applied —
+      so the parent can preserve it per node and flag the node as having unapplied changes. */
+  onDraftChange?: (values: FormValues | null) => void;
 };
 
 export function NodeConfigForm({
@@ -722,6 +728,8 @@ export function NodeConfigForm({
   headerSlot,
   childItems,
   onSelectChild,
+  draftValues,
+  onDraftChange,
 }: NodeConfigFormProps) {
   const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
   const fields = spec.config?.children ?? [];
@@ -754,7 +762,7 @@ export function NodeConfigForm({
   const showRaw = rawKeys.length > 0;
   const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
 
-  const { control, handleSubmit, formState, reset } = useForm<FormValues>({
+  const { control, handleSubmit, formState, reset, getValues } = useForm<FormValues>({
     defaultValues: {
       label: typeof value.label === 'string' ? value.label : '',
       raw: showRaw ? yamlStringify(rawObject) : '',
@@ -771,9 +779,31 @@ export function NodeConfigForm({
   // Read dirtyFields/isDirty during render so react-hook-form subscribes to (and
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
   const { dirtyFields, isDirty } = formState;
-  const submit = handleSubmit((data) =>
-    onApply(buildComponentEntry({ componentName, value, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }))
-  );
+
+  // Restore a stashed unapplied draft once when this node's form mounts (the inspector re-keys the
+  // form per node). `keepDefaultValues` so dirty-tracking still compares against the SAVED config —
+  // the form shows the draft AND stays dirty, so "Apply changes" remains available.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (!restoredRef.current && draftValues) {
+      restoredRef.current = true;
+      reset(draftValues, { keepDefaultValues: true });
+    }
+  }, [draftValues, reset]);
+
+  // Report the working draft up as the form changes, so navigating away preserves it: the current
+  // values while dirty, null once clean/applied. `useWatch` re-runs this on each edit.
+  const watched = useWatch({ control });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; we read the full values via getValues().
+  useEffect(() => {
+    onDraftChange?.(isDirty ? getValues() : null);
+  }, [watched, isDirty, getValues, onDraftChange]);
+  const submit = handleSubmit((data) => {
+    // Clear the stashed draft BEFORE applying: the apply re-keys the form, and the fresh mount must
+    // not re-restore the (now-saved) draft and read it back as dirty.
+    onDraftChange?.(null);
+    onApply(buildComponentEntry({ componentName, value, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }));
+  });
 
   const resourceCtx: ResourceFieldContextValue = {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },

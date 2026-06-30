@@ -31,7 +31,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { isMacOS } from 'utils/platform';
 
-import type { InspectorChildItem } from './node-config-form';
+import type { FormValues, InspectorChildItem } from './node-config-form';
 import { NodeInspector } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
@@ -240,60 +240,47 @@ function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-// Undo/redo for visual edits: the YAML lane has Monaco's native undo, but visual
-// mutations write YAML directly. This records each YAML change (from the canvas or
-// elsewhere) into a history so the visual editor gets ⌘Z / ⌘⇧Z too.
+// Undo/redo for visual edits: the YAML lane has Monaco's native undo, but visual mutations write
+// YAML directly, so this keeps a history of YAML snapshots for ⌘Z / ⌘⇧Z. The history lives in the
+// store (not local state) so it SURVIVES switching to the YAML lane and back; `recordEdit` no-ops
+// on an unchanged round-trip, and records an external (Monaco) edit as one step when seen on return.
 function useEditHistory(
   yaml: string,
   onChange: (next: string) => void,
   onNavigate?: (from: string, to: string) => void
 ) {
-  const [past, setPast] = useState<string[]>([]);
-  const [future, setFuture] = useState<string[]>([]);
-  const navigatingRef = useRef(false);
-  const currentRef = useRef(yaml);
+  const undoStack = usePipelineEditorStore((s) => s.editUndoStack);
+  const redoStack = usePipelineEditorStore((s) => s.editRedoStack);
+  const baseline = usePipelineEditorStore((s) => s.editBaseline);
+  const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
+  const commitEditHistory = usePipelineEditorStore((s) => s.commitEditHistory);
 
+  // Observe every document state; recordEdit pushes an undo step only on a real change.
   useEffect(() => {
-    if (yaml === currentRef.current) {
-      return;
-    }
-    if (navigatingRef.current) {
-      // This change came from undo/redo — don't record it as a new step.
-      navigatingRef.current = false;
-    } else {
-      setPast((p) => [...p, currentRef.current]);
-      setFuture([]);
-    }
-    currentRef.current = yaml;
-  }, [yaml]);
+    recordEdit(yaml);
+  }, [yaml, recordEdit]);
 
   const undo = useCallback(() => {
-    if (past.length === 0) {
+    if (undoStack.length === 0 || baseline === null) {
       return;
     }
-    const current = currentRef.current;
-    const target = past.at(-1) as string;
-    navigatingRef.current = true;
-    setPast((p) => p.slice(0, -1));
-    setFuture((f) => [current, ...f]);
+    const target = undoStack.at(-1) as string;
+    commitEditHistory({ undo: undoStack.slice(0, -1), redo: [baseline, ...redoStack], baseline: target });
     onChange(target);
-    onNavigate?.(current, target);
-  }, [past, onChange, onNavigate]);
+    onNavigate?.(baseline, target);
+  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate]);
 
   const redo = useCallback(() => {
-    if (future.length === 0) {
+    if (redoStack.length === 0 || baseline === null) {
       return;
     }
-    const current = currentRef.current;
-    const target = future[0];
-    navigatingRef.current = true;
-    setFuture((f) => f.slice(1));
-    setPast((p) => [...p, current]);
+    const target = redoStack[0];
+    commitEditHistory({ undo: [...undoStack, baseline], redo: redoStack.slice(1), baseline: target });
     onChange(target);
-    onNavigate?.(current, target);
-  }, [future, onChange, onNavigate]);
+    onNavigate?.(baseline, target);
+  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate]);
 
-  return { undo, redo, canUndo: past.length > 0, canRedo: future.length > 0 };
+  return { undo, redo, canUndo: undoStack.length > 0, canRedo: redoStack.length > 0 };
 }
 
 type VisualEditorPanelProps = {
@@ -341,6 +328,31 @@ export function VisualEditorPanel({
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
   const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
+
+  // Unapplied inspector edits, preserved per node so switching away and back doesn't lose them.
+  // The actual draft values live in a ref (cheap, no re-render per keystroke); the id SET is state
+  // so the canvas can flag those nodes. We don't auto-save — the draft is restored on return.
+  const draftsRef = useRef<Map<string, FormValues>>(new Map());
+  const [draftNodeIds, setDraftNodeIds] = useState<ReadonlySet<string>>(new Set());
+  const handleDraftChange = useCallback((nodeId: string, values: FormValues | null) => {
+    const drafts = draftsRef.current;
+    const had = drafts.has(nodeId);
+    if (values) {
+      drafts.set(nodeId, values);
+      if (!had) {
+        setDraftNodeIds((prev) => new Set(prev).add(nodeId));
+      }
+    } else {
+      drafts.delete(nodeId);
+      if (had) {
+        setDraftNodeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(nodeId);
+          return next;
+        });
+      }
+    }
+  }, []);
 
   // Mirror the selection into the shared store so switching to the YAML lane can
   // reveal the same node (the lanes are separate component trees).
@@ -490,9 +502,13 @@ export function VisualEditorPanel({
         onYamlChange(next);
       }
     }
+    // Drop any unapplied draft for the node being removed so it doesn't linger / mis-flag.
+    if (selected) {
+      handleDraftChange(selected.id, null);
+    }
     setSelected(null);
     setPendingDelete(null);
-  }, [pendingDelete, yamlContent, onYamlChange]);
+  }, [pendingDelete, yamlContent, onYamlChange, selected, handleDraftChange]);
 
   // Canvas keyboard: ⌘Z/⌘⇧Z undo/redo, Escape deselects, Delete/Backspace removes
   // the selected node — all ignored while typing in a field or the YAML editor.
@@ -632,6 +648,7 @@ export function VisualEditorPanel({
       <div className="relative min-w-0 flex-1">
         <PipelineFlowCanvas
           configYaml={yamlContent}
+          draftNodeIds={draftNodeIds}
           flashNodeIds={flash.ids}
           flashToken={flash.token}
           focusNodeId={focus.id || undefined}
@@ -725,11 +742,13 @@ export function VisualEditorPanel({
                 caseTarget={selected.caseTarget}
                 childItems={childItems}
                 components={components}
+                draftValues={draftsRef.current.get(selected.id)}
                 lintHints={lintByNode.get(selected.id)}
                 onApply={onYamlChange}
                 onClose={() => setSelected(null)}
                 onCreateResource={isEditing ? handleRequestCreateResource : undefined}
                 onDelete={isEditing ? setPendingDelete : undefined}
+                onDraftChange={isEditing ? (values) => handleDraftChange(selected.id, values) : undefined}
                 onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
                 onSelectChild={(item) => setSelected({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
                 readOnly={!isEditing}
