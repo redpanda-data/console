@@ -1008,11 +1008,6 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
   }
 }
 
-/**
- * Insert a component into any array at `index` (creating the array as needed).
- * `containerPath` is the target array's YAML path, e.g. `['pipeline','processors']` or
- * `['input','broker','inputs']`. The one primitive behind every visual insertion.
- */
 // Number of items in the YAML sequence at `path` (0 if absent / not a sequence). Used to locate a
 // just-inserted item (e.g. an append lands at length-1) so the editor can select it.
 export function seqLengthAt(yaml: string, path: (string | number)[]): number {
@@ -1024,6 +1019,11 @@ export function seqLengthAt(yaml: string, path: (string | number)[]): number {
   }
 }
 
+/**
+ * Insert a component into any array at `index` (creating the array as needed).
+ * `containerPath` is the target array's YAML path, e.g. `['pipeline','processors']` or
+ * `['input','broker','inputs']`. The one primitive behind every visual insertion.
+ */
 export function insertComponentAt(
   yaml: string,
   containerPath: (string | number)[],
@@ -1044,15 +1044,6 @@ export function insertComponentAt(
   } catch {
     return null;
   }
-}
-
-/** Insert a processor object into `pipeline.processors` at `index`. Thin wrapper over `insertComponentAt`. */
-export function insertProcessorAt(
-  yaml: string,
-  index: number,
-  processorObject: Record<string, unknown>
-): string | null {
-  return insertComponentAt(yaml, ['pipeline', 'processors'], index, processorObject);
 }
 
 /** Append a resource object to a resource array (creating the array as needed). */
@@ -1207,26 +1198,6 @@ export function renameResourceReferences(yaml: string, oldLabel: string, newLabe
       },
     });
     return doc.toString();
-  } catch {
-    return null;
-  }
-}
-
-/** Rename a resource's `label:` and cascade to every `resource:` reference, avoiding dangling refs. */
-export function renameResourceLabel(
-  yaml: string,
-  resourceKey: ResourceArrayKey,
-  index: number,
-  newLabel: string
-): string | null {
-  try {
-    const doc = parseDocument(yaml);
-    const oldLabel = doc.getIn([resourceKey, index, 'label']);
-    doc.setIn([resourceKey, index, 'label'], newLabel);
-    const withLabel = doc.toString();
-    return typeof oldLabel === 'string'
-      ? (renameResourceReferences(withLabel, oldLabel, newLabel) ?? withLabel)
-      : withLabel;
   } catch {
     return null;
   }

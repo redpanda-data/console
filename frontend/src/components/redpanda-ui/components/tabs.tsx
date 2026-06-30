@@ -2,7 +2,7 @@
 
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -81,85 +81,11 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
   },
 });
 
-// Drag past this many px counts as a scroll (and cancels the trailing tab-activating click).
-const TAB_SCROLL_DRAG_THRESHOLD = 4;
-
-// Tracks hidden content left/right of the scroller, to fade only edges with more to reveal.
-function useTabScrollEdges(ref: React.RefObject<HTMLDivElement | null>) {
-  const [edges, setEdges] = React.useState({ left: false, right: false });
-  const update = React.useCallback(() => {
-    const el = ref.current;
-    if (!el) {
-      return;
-    }
-    const max = el.scrollWidth - el.clientWidth;
-    setEdges({ left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 });
-  }, [ref]);
-  React.useEffect(() => {
-    const el = ref.current;
-    if (!el) {
-      return;
-    }
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    if (el.firstElementChild) {
-      observer.observe(el.firstElementChild);
-    }
-    return () => observer.disconnect();
-  }, [ref, update]);
-  return { edges, update };
-}
-
-// Click-and-drag horizontal scrolling for trackpad-less pointers; a real drag swallows the
-// trailing click so releasing on a tab doesn't activate it.
-function useTabDragScroll(ref: React.RefObject<HTMLDivElement | null>) {
-  const drag = React.useRef<{ x: number; left: number } | null>(null);
-  const dragged = React.useRef(false);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    if (!el || e.button !== 0) {
-      return;
-    }
-    drag.current = { x: e.clientX, left: el.scrollLeft };
-    dragged.current = false;
-  };
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    const start = drag.current;
-    if (!(el && start)) {
-      return;
-    }
-    const dx = e.clientX - start.x;
-    if (Math.abs(dx) > TAB_SCROLL_DRAG_THRESHOLD) {
-      dragged.current = true;
-      if (typeof el.setPointerCapture === 'function' && !el.hasPointerCapture(e.pointerId)) {
-        el.setPointerCapture(e.pointerId);
-      }
-    }
-    el.scrollLeft = start.left - dx;
-  };
-  const onPointerEnd = () => {
-    drag.current = null;
-  };
-  const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (dragged.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      dragged.current = false;
-    }
-  };
-  return { onPointerDown, onPointerMove, onPointerEnd, onClickCapture };
-}
-
 type TabsListProps = TabsPrimitive.List.Props &
   VariantProps<typeof tabsListVariants> &
   SharedProps & {
     activeClassName?: string;
     columns?: number;
-    // Make an overflowing horizontal tab strip drag-scrollable, with edge-fade affordances.
-    scrollable?: boolean;
   };
 
 function TabsList({
@@ -170,24 +96,13 @@ function TabsList({
   layout,
   gap,
   columns,
-  scrollable,
   testId,
   style,
   ...props
 }: TabsListProps) {
-  const scrollerRef = React.useRef<HTMLDivElement | null>(null);
-  const { edges, update } = useTabScrollEdges(scrollerRef);
-  const drag = useTabDragScroll(scrollerRef);
-
-  const list = (
+  return (
     <TabsPrimitive.List
-      className={cn(
-        'relative',
-        tabsListVariants({ variant, layout, gap }),
-        // Size to content so it can overflow; min-w-full keeps the underline spanning the frame.
-        scrollable && 'w-max min-w-full',
-        className
-      )}
+      className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
       data-slot="tabs-list"
       data-testid={testId}
       style={
@@ -208,45 +123,6 @@ function TabsList({
       />
       {children}
     </TabsPrimitive.List>
-  );
-
-  if (!scrollable) {
-    return list;
-  }
-
-  return (
-    <div className="relative min-w-0" data-slot="tabs-list-scroll-area">
-      {/* pb-px so the scroll clip doesn't cut the active underline's overhang. */}
-      <div
-        className="cursor-grab overflow-x-auto overscroll-x-contain pb-px [scrollbar-width:none] active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
-        onClickCapture={drag.onClickCapture}
-        onPointerDown={drag.onPointerDown}
-        onPointerLeave={drag.onPointerEnd}
-        onPointerMove={drag.onPointerMove}
-        onPointerUp={drag.onPointerEnd}
-        onScroll={update}
-        ref={scrollerRef}
-      >
-        {list}
-      </div>
-      {/* Above the triggers so the fade covers the tab text, not just the underline. */}
-      <span
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-background to-transparent transition-opacity duration-200',
-          edges.left ? 'opacity-100' : 'opacity-0'
-        )}
-        data-slot="tabs-list-fade-left"
-      />
-      <span
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-background to-transparent transition-opacity duration-200',
-          edges.right ? 'opacity-100' : 'opacity-0'
-        )}
-        data-slot="tabs-list-fade-right"
-      />
-    </div>
   );
 }
 

@@ -60,7 +60,7 @@ export type PipelineFlowNode = {
   // Only on top-level editable nodes (input/output/top-level processor/array resource).
   // Drives edit & delete; nested nodes have none and stay read-only.
   editTarget?: EditTarget;
-  // Key config values surfaced on the expanded canvas card (ignored by the mini lane).
+  // Key config values surfaced on the canvas card.
   meta?: NodeMetaEntry[];
   // Group child data flow: `sequential` chains them (sub-pipeline, e.g. branch/catch);
   // `parallel` fans out (alternatives, e.g. switch cases, broker inputs). Default sequential.
@@ -72,22 +72,18 @@ export type PipelineFlowNode = {
   isDefault?: boolean;
   // Error / dead-letter path (catch handler, `errored()` route, fallback). Drawn red/dashed.
   isErrorPath?: boolean;
-  // A `branch` processor: data copied out (request_map), run through, merged back
-  // (result_map). Drives copy/merge edges.
+  // A `branch` processor: request_map copy-out / result_map merge-back. Drives copy/merge edges.
   branch?: { request: boolean; result: boolean };
   // Label of a resource this component references (cache/rate_limit `resource`); draws a
   // dashed reference edge to the matching resource node.
   resourceRef?: string;
-  // String values that MIGHT be resource labels (e.g. a `checkpoint_cache` field, not
-  // `resource`). The post-pass promotes whichever matches a real resource label to `resourceRef`.
+  // String values that MIGHT be resource labels (non-`resource` fields). The post-pass promotes
+  // whichever matches a real resource label to `resourceRef`.
   resourceRefCandidates?: string[];
-  // A `switch` case wrapper — structural sub-node (not an editable component). Renders as a
-  // condition-forward "case" card; clicking it selects the parent switch.
+  // A `switch` case wrapper — structural sub-node (not editable); selecting it picks the parent.
   isCase?: boolean;
-  // Edit target for this branch's routing condition (the switch case `{ check, … }`). Set on
-  // switch cases (processor AND output); the fan-out edge renders the condition as a clickable
-  // label selecting this → SwitchCaseEditor. Distinct from `editTarget`, which on an output
-  // case points at the case's output component so the card stays editable.
+  // Edit target for the case's routing condition (`{ check, … }`); see the chip-clickability note
+  // where this is forwarded to the entry card.
   caseEditTarget?: EditTarget;
   // Container accepting new children: the array's YAML path and the component kind it holds.
   // Drives in-container "+" (add a processor into a switch case, an input into a broker, …).
@@ -962,11 +958,11 @@ function buildProcessorSection(nodes: PipelineFlowNode[], config: ParsedYamlConf
 }
 
 function buildResourceSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
-  const resourceNodes = parseResourceNodes(config, 'section-resources');
+  const sectionId = 'section-resources';
+  const resourceNodes = parseResourceNodes(config, sectionId);
   if (resourceNodes.length === 0) {
     return;
   }
-  const sectionId = 'section-resources';
   nodes.push({ id: sectionId, kind: 'section', label: 'resources', section: 'resource' });
   nodes.push(...resourceNodes);
 }
@@ -983,11 +979,6 @@ function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig)
 
 export type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
 
-export type ParsePipelineFlowTreeOptions = {
-  /** Prefix all node/edge IDs to avoid collisions when multiple diagrams are mounted. */
-  idPrefix?: string;
-};
-
 const EMPTY_CONFIG_NODES: PipelineFlowNode[] = [
   { id: 'section-input', kind: 'section', label: 'input', section: 'input' },
   { id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: 'section-input' },
@@ -995,22 +986,9 @@ const EMPTY_CONFIG_NODES: PipelineFlowNode[] = [
   { id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: 'section-output' },
 ];
 
-function prefixNodeIds(nodes: PipelineFlowNode[], prefix: string): PipelineFlowNode[] {
-  return nodes.map((n) => ({
-    ...n,
-    id: `${prefix}${n.id}`,
-    parentId: n.parentId ? `${prefix}${n.parentId}` : undefined,
-  }));
-}
-
-export function parsePipelineFlowTree(
-  configYaml: string,
-  options?: ParsePipelineFlowTreeOptions
-): ParsePipelineFlowTreeResult {
-  const prefix = options?.idPrefix ? `${options.idPrefix}-` : '';
-
+export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTreeResult {
   if (!configYaml) {
-    return { nodes: prefix ? prefixNodeIds(EMPTY_CONFIG_NODES, prefix) : EMPTY_CONFIG_NODES };
+    return { nodes: EMPTY_CONFIG_NODES };
   }
 
   try {
@@ -1024,7 +1002,7 @@ export function parsePipelineFlowTree(
 
     annotateFlowMeta(nodes);
 
-    return { nodes: prefix ? prefixNodeIds(nodes, prefix) : nodes };
+    return { nodes };
   } catch (err) {
     return { nodes: [], error: err instanceof Error ? err.message : 'Invalid YAML' };
   }
@@ -1095,10 +1073,9 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
 // ============================================================================
 // Shared data-flow model
 // ----------------------------------------------------------------------------
-// Both layouts draw the same flow (input → each top-level processor → output, each group
-// threading its children: sequential chains, parallel fans out). Positioning is
-// layout-specific, but connections come from these helpers so the mini lane and the
-// expanded canvas agree on how data moves.
+// The canvas draws the flow (input → each top-level processor → output, each group
+// threading its children: sequential chains, parallel fans out). Connections come from
+// these helpers, separate from layout-specific positioning.
 // ============================================================================
 
 function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {
@@ -1114,8 +1091,7 @@ function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, Pi
   return map;
 }
 
-// Children of a section, found by kind+section so it works regardless of ID prefixing
-// (the mini lane parses with an idPrefix).
+// Children of a section, found by kind + section.
 function sectionChildren(
   nodes: PipelineFlowNode[],
   map: Map<string | undefined, PipelineFlowNode[]>,
@@ -1135,18 +1111,6 @@ export function mainFlowSequence(nodes: PipelineFlowNode[]): PipelineFlowNode[] 
   ];
 }
 
-function countDescendants(nodeId: string, childrenMap: Map<string | undefined, PipelineFlowNode[]>): number {
-  const children = childrenMap.get(nodeId);
-  if (!children) {
-    return 0;
-  }
-  let count = children.length;
-  for (const child of children) {
-    count += countDescendants(child.id, childrenMap);
-  }
-  return count;
-}
-
 // ============================================================================
 // Expanded canvas layout (left → right flow with nested containers)
 // ----------------------------------------------------------------------------
@@ -1161,15 +1125,12 @@ function countDescendants(nodeId: string, childrenMap: Map<string | undefined, P
 /** Leaf card width on the full canvas; the node component must match this. A touch wider
  * than the minimum so labeled cards and longer meta values aren't horizontally cramped. */
 export const FLOW_CARD_WIDTH = 256;
-/** Leaf card width on the compact (sidebar) canvas. */
-export const FLOW_COMPACT_CARD_WIDTH = 188;
 const FLOW_MAX_META_ROWS = 4;
 
-// Spacing/sizing differs between the full Visual lane and the compact sidebar.
 type FlowDims = {
   cardW: number;
   leafBaseH: number;
-  metaRowH: number; // 0 in compact (meta hidden)
+  metaRowH: number;
   headerH: number;
   // Collapsed container card height. Taller than the header so the spine (anchored
   // ~SPINE_HANDLE_TOP from the top) lands near its centre and arrows look aligned.
@@ -1181,9 +1142,6 @@ type FlowDims = {
   // plus extra vertical spacing between fanned children, so lines and arrows aren't cramped.
   fanGutter: number;
   fanGap: number;
-  // Compact sidebar lane: a minimal vertical overview (no fan-out/copy/merge routing —
-  // just the spine + nested sub-pipeline chains).
-  compact: boolean;
 };
 const FULL_DIMS: FlowDims = {
   cardW: FLOW_CARD_WIDTH,
@@ -1200,39 +1158,11 @@ const FULL_DIMS: FlowDims = {
   colGap: 72,
   fanGutter: 48,
   fanGap: 20,
-  compact: false,
 };
-const COMPACT_DIMS: FlowDims = {
-  cardW: FLOW_COMPACT_CARD_WIDTH,
-  leafBaseH: 32,
-  metaRowH: 0,
-  headerH: 32,
-  collapsedH: 32,
-  pad: 8,
-  stackGap: 10,
-  colGap: 26,
-  fanGutter: 18,
-  fanGap: 12,
-  compact: true,
-};
-
-// Section dividers shown in the compact (vertical) lane, like the original mini diagram.
-const SECTION_TITLES: Record<string, string> = {
-  input: 'INPUT',
-  processor: 'PROCESSORS',
-  output: 'OUTPUT',
-  resource: 'RESOURCES',
-};
-const FLOW_SECTION_LABEL_H = 18;
-const FLOW_SECTION_LABEL_GAP = 6;
-// Indent labels to align with the card's text and clear the spine connector at the left edge.
-const FLOW_SECTION_LABEL_INDENT = 30;
 
 // Empty-state "Add input/output" cards are taller/more prominent than a leaf. Height is
 // 2× the spine-handle offset (SPINE_HANDLE_TOP = 36) so the arrow lands on its vertical center.
 const FLOW_PLACEHOLDER_LEAF_H = 72;
-// Extra height for the label's own row on a compact-lane card.
-const FLOW_COMPACT_LABEL_ROW_H = 22;
 // A `label:` badge renders on its own padded row beneath the full-card header.
 const FLOW_LABEL_ROW_H = 30;
 // Bottom inset when the label badge is the card's last row (no meta follows).
@@ -1244,11 +1174,6 @@ const FLOW_META_BLOCK_PAD = 12;
 const FLOW_CONDITION_ROW_H = 30;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
-  if (dims.metaRowH === 0) {
-    // Compact lane hides meta, but a label still gets its own row so it isn't squeezed
-    // onto — and truncated against — the name.
-    return dims.leafBaseH + (node.labelText ? FLOW_COMPACT_LABEL_ROW_H : 0);
-  }
   if (node.label === 'none') {
     return FLOW_PLACEHOLDER_LEAF_H;
   }
@@ -1276,22 +1201,11 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   return h;
 }
 
-type SizedNode = {
-  node: PipelineFlowNode;
-  w: number;
-  h: number;
-  collapsed: boolean;
-  children: SizedNode[];
-};
-
 // A parallel processor container (switch/parallel/workflow): its alternatives reconverge
 // (data flows back out and continues), unlike output fans which terminate at their sinks.
 function reconverges(node: PipelineFlowNode): boolean {
   return node.childFlow === 'parallel' && node.section === 'processor' && !node.branch;
 }
-
-// Extra gutter width a branch reserves for its "COPY"/"MERGE" labels.
-const FLOW_BRANCH_LABEL_PAD = 22;
 
 // Which sides of a container carry routed edges: `out` is the `gs` source side
 // (entry / copy / fan-out), `in` is the `gt` target side (merge-back / fan-in).
@@ -1309,94 +1223,9 @@ export type FlowInsertPayload =
   | { kind: 'insert'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
   | { kind: 'addChild'; containerPath: (string | number)[]; section: 'processor' | 'output' };
 
-// Height of the in-container insert row (full canvas only) — a quiet "add", not a heavy bar.
-const FLOW_INSERT_SLOT_H = 22;
-// The "+" row hugs the foot of the stack with a smaller-than-inter-child lead gap, so it
-// reads as an action under the children, not a sibling.
-const FLOW_INSERT_SLOT_GAP = 8;
-
-// The insert affordance a container shows at the foot of its child stack, if any. Skipped
-// in the compact lane (read-only) and while collapsed (children hidden).
-function insertAffordanceFor(
-  node: PipelineFlowNode,
-  collapsed: boolean,
-  compact: boolean,
-  childCount: number
-): FlowInsertPayload | null {
-  if (compact || collapsed) {
-    return null;
-  }
-  if (node.insertSlot) {
-    return { kind: 'insert', ...node.insertSlot, index: childCount };
-  }
-  if (node.addChildSlot) {
-    return { kind: 'addChild', ...node.addChildSlot };
-  }
-  return null;
-}
-
-function containerInsets(node: PipelineFlowNode, dims: FlowDims): { left: number; right: number; gap: number } {
-  // The compact lane draws no fan-out/copy/merge edges, so no routing gutters — children
-  // just nest in by a consistent small inset.
-  if (dims.compact) {
-    return { left: dims.fanGutter, right: dims.pad, gap: dims.stackGap };
-  }
-  const sides = fanSides(node);
-  // A branch's "COPY"/"MERGE" gutter labels need more room than a bare fan-out line.
-  const gutter = node.branch ? dims.fanGutter + FLOW_BRANCH_LABEL_PAD : dims.fanGutter;
-  return {
-    left: sides.out ? gutter : dims.pad,
-    right: sides.in ? gutter : dims.pad,
-    gap: sides.out || sides.in ? dims.fanGap : dims.stackGap,
-  };
-}
-
-// Recursively measure a node: leaves get a content-sized card; containers wrap a vertical
-// stack of children (header + insets + stacked child heights).
-function measureFlowNode(
-  node: PipelineFlowNode,
-  childrenOf: (id: string) => PipelineFlowNode[],
-  collapsedIds: ReadonlySet<string>,
-  dims: FlowDims
-): SizedNode {
-  const collapsed = collapsedIds.has(node.id);
-  const kids = node.kind === 'group' && !collapsed ? childrenOf(node.id) : [];
-  const affordance = insertAffordanceFor(node, collapsed, dims.compact, kids.length);
-  if (kids.length === 0) {
-    // An empty container that still accepts inserts keeps room for its "+" row; otherwise a
-    // collapsed group is a standalone card, an empty group keeps the bare header, leaves size to content.
-    if (node.kind === 'group' && affordance) {
-      return { node, w: dims.cardW, h: dims.headerH + FLOW_INSERT_SLOT_H + 2 * dims.pad, collapsed, children: [] };
-    }
-    let h = leafCardHeight(node, dims);
-    if (node.kind === 'group') {
-      h = collapsed ? dims.collapsedH : dims.headerH;
-    }
-    return { node, w: dims.cardW, h, collapsed, children: [] };
-  }
-  const children = kids.map((kid) => measureFlowNode(kid, childrenOf, collapsedIds, dims));
-  const insets = containerInsets(node, dims);
-  const innerW = Math.max(...children.map((c) => c.w));
-  let innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * Math.max(0, children.length - 1);
-  // Reserve a foot-of-stack row for the "+" affordance, with a smaller-than-sibling lead gap.
-  if (affordance) {
-    innerH += (children.length > 0 ? FLOW_INSERT_SLOT_GAP : 0) + FLOW_INSERT_SLOT_H;
-  }
-  return {
-    node,
-    w: innerW + insets.left + insets.right,
-    h: dims.headerH + innerH + 2 * dims.pad,
-    children,
-    collapsed,
-  };
-}
-
 // Routing condition shown as a chip on the receiving card (not a floating edge label) so
-// fanned branches stay readable. Hidden in the compact lane.
-function routingData(node: PipelineFlowNode, compact: boolean) {
-  if (compact) {
-    return {};
-  }
+// fanned branches stay readable.
+function routingData(node: PipelineFlowNode) {
   return {
     ...(node.condition ? { condition: node.condition } : {}),
     ...(node.isDefault ? { isDefault: true } : {}),
@@ -1404,59 +1233,16 @@ function routingData(node: PipelineFlowNode, compact: boolean) {
   };
 }
 
-/** Where the spine/side handles sit below a card's top edge (the connector row). The canvas
- * anchors its left/right handles here; the parser places container ports level with a child's
- * connector row, so entry/copy/merge edges run as clean horizontal lines. */
-export const FLOW_SPINE_HANDLE_TOP = 36;
-
 /** Where the top/bottom handles sit from a card's left edge — the x a vertical spine/
  *  reference cable plugs into. Must match the node component's handle offset. */
 export const FLOW_SPINE_HANDLE_LEFT = 18;
 
-// Vertical anchors for a container's routing ports (relative to the container top). Fanning
-// sides anchor at the children-area centre (a trunk the fan lanes radiate from). A branch's
-// copy anchors at the FIRST child's connector row, its merge-back at the LAST's, so those
-// edges are horizontal lines in the child's row instead of elbowing through the header.
-// Plain sequential containers draw no entry edge, so need no ports.
-function containerPortYs(
-  node: PipelineFlowNode,
-  children: SizedNode[],
-  h: number,
-  dims: FlowDims
-): { portOutY?: number; portInY?: number } {
-  if (node.kind !== 'group' || children.length === 0) {
-    return {};
-  }
-  const center = (dims.headerH + h) / 2;
-
-  if (node.branch) {
-    const gap = containerInsets(node, dims).gap;
-    let lastChildTop = dims.headerH + dims.pad;
-    for (const child of children.slice(0, -1)) {
-      lastChildTop += child.h + gap;
-    }
-    return {
-      portOutY: dims.headerH + dims.pad + FLOW_SPINE_HANDLE_TOP,
-      portInY: lastChildTop + FLOW_SPINE_HANDLE_TOP,
-    };
-  }
-  if (node.section === 'input') {
-    return { portInY: center };
-  }
-  if (node.childFlow === 'parallel') {
-    // Reconverging processor fans also collect their branches on the right.
-    return { portOutY: center, ...(reconverges(node) ? { portInY: center } : {}) };
-  }
-  return {};
-}
-
-function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, compact: boolean, depth = 0) {
+function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, depth = 0) {
   return {
     label: node.label,
     collapsible: node.collapsible ?? false,
     collapsed,
     depth,
-    ...(compact ? { compact: true } : {}),
     ...(node.section ? { section: node.section } : {}),
     ...(node.labelText ? { labelText: node.labelText } : {}),
     ...(node.topics ? { topics: node.topics } : {}),
@@ -1473,576 +1259,17 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.danglingRef ? { danglingRef: true } : {}),
     ...(typeof node.usedByCount === 'number' ? { usedByCount: node.usedByCount } : {}),
     ...(childCount > 0 ? { childCount } : {}),
-    ...routingData(node, compact),
+    ...routingData(node),
   };
-}
-
-type EmitContext = {
-  rfNodes: Node[];
-  rfEdges: Edge[];
-  childrenMap: Map<string | undefined, PipelineFlowNode[]>;
-  dims: FlowDims;
-  compact: boolean;
-};
-
-// Emit a node (and its children) at a position relative to `parentId` (absolute for
-// top-level steps). Containers stack children and chain sequential sub-pipelines;
-// alternatives/parallel/inputs are shown enclosed only.
-function emitFlowNode(
-  sized: SizedNode,
-  parentId: string | undefined,
-  pos: { x: number; y: number },
-  ctx: EmitContext,
-  depth = 0
-): void {
-  const { node, w, h, collapsed, children } = sized;
-  // A group is always a container (so a collapsed group keeps its header + toggle to
-  // re-expand); leaves render as plain cards.
-  const isContainer = node.kind === 'group';
-  const childCount = collapsed ? countDescendants(node.id, ctx.childrenMap) : 0;
-
-  const ports = containerPortYs(node, children, h, ctx.dims);
-
-  ctx.rfNodes.push({
-    id: node.id,
-    type: isContainer ? 'flowContainer' : 'flowCard',
-    position: pos,
-    ...(parentId ? { parentId, extent: 'parent' as const } : {}),
-    // Seed dimensions from the layout so consumers reading node size before the DOM is
-    // measured (e.g. the MiniMap) have them; live measurement still wins. For a leaf this is
-    // only an initial hint, so the card keeps sizing to its content.
-    initialWidth: w,
-    initialHeight: h,
-    // node.style overrides React Flow's pointer-events default so in-card controls stay clickable.
-    style: isContainer
-      ? { width: w, height: h, pointerEvents: 'all', transition: 'transform 200ms ease' }
-      : { pointerEvents: 'all', transition: 'transform 200ms ease' },
-    data: {
-      ...makeFlowNodeData(node, collapsed, childCount, ctx.compact, depth),
-      ...(ports.portOutY === undefined ? {} : { portOutY: ports.portOutY }),
-      ...(ports.portInY === undefined ? {} : { portInY: ports.portInY }),
-    },
-  });
-
-  const insets = containerInsets(node, ctx.dims);
-  let childY = ctx.dims.headerH + ctx.dims.pad;
-  for (const child of children) {
-    emitFlowNode(child, node.id, { x: insets.left, y: childY }, ctx, depth + 1);
-    childY += child.h + insets.gap;
-  }
-
-  if (isContainer && children.length > 0) {
-    emitContainerEdges(node, children, ctx);
-  }
-
-  // The in-container "+" row, tucked just below the stack (see measureFlowNode). The child
-  // loop leaves a trailing `insets.gap`; swap it for the smaller lead gap.
-  const affordance = insertAffordanceFor(node, collapsed, ctx.compact, children.length);
-  if (isContainer && affordance) {
-    const label = affordance.kind === 'addChild' ? 'Add case' : `Add ${affordance.accepts}`;
-    const insertY = children.length > 0 ? childY - insets.gap + FLOW_INSERT_SLOT_GAP : childY;
-    ctx.rfNodes.push({
-      id: `${node.id}-insert`,
-      type: 'flowInsert',
-      parentId: node.id,
-      extent: 'parent',
-      position: { x: insets.left, y: insertY },
-      initialWidth: w - insets.left - insets.right,
-      initialHeight: FLOW_INSERT_SLOT_H,
-      selectable: false,
-      draggable: false,
-      style: { pointerEvents: 'all' },
-      data: { payload: affordance, label },
-    });
-  }
-}
-
-type LinkTone = 'primary' | 'muted' | 'error';
-
-const LINK_TONE_COLOR: Record<LinkTone, string> = {
-  primary: 'var(--color-primary)',
-  muted: 'var(--color-border)',
-  error: 'var(--color-destructive)',
-};
-
-function linkEdge(params: {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle: string;
-  targetHandle: string;
-  tone: LinkTone;
-  label?: string;
-  // Nudge the label off the line (px); used to lift copy/merge labels above their
-  // (horizontal) edge so they don't sit on it.
-  labelOffsetY?: number;
-  dashed?: boolean;
-  // Distinct vertical lane (px offset from the container edge) so sibling fan-out /
-  // fan-in edges don't overlap on a shared bend. From the source for fan-out, from
-  // the target for fan-in.
-  laneFromSource?: number;
-  laneFromTarget?: number;
-  // Which end meets a container boundary — drawn as a small port socket there.
-  portDot?: 'source' | 'target';
-  // Orthogonal cable route (reference edges): drop → channel beside the column →
-  // down the channel → along the bus below the flow → into the resource.
-  route?: { channelX: number; busY: number };
-}): Edge {
-  return {
-    id: params.id,
-    source: params.source,
-    target: params.target,
-    sourceHandle: params.sourceHandle,
-    targetHandle: params.targetHandle,
-    type: 'flowLink',
-    data: {
-      label: params.label,
-      labelOffsetY: params.labelOffsetY,
-      tone: params.tone,
-      dashed: params.dashed ?? false,
-      laneFromSource: params.laneFromSource,
-      laneFromTarget: params.laneFromTarget,
-      portDot: params.portDot,
-      route: params.route,
-    },
-    // An edge terminating at a container port (merge / fan-in) ends in the port
-    // socket, not an arrowhead — several fan-in lines into one port would otherwise
-    // stack arrowheads at the socket. Fan-out / entry / references keep the arrow.
-    markerEnd:
-      params.portDot === 'target'
-        ? undefined
-        : { type: MarkerType.ArrowClosed, width: 10, height: 10, color: LINK_TONE_COLOR[params.tone] },
-  };
-}
-
-// Each fanned sibling gets its own vertical lane inside the routing gutter, capped
-// so the lanes stay clear of the children (and of the container edge).
-function laneOffset(index: number, count: number, dims: FlowDims): number {
-  const usable = dims.fanGutter - 14;
-  const step = count > 1 ? Math.min(12, usable / count) : 0;
-  return 14 + index * step;
-}
-
-// Crossing-free fan lanes ("nested parentheses"): cases split by whether their
-// connector row sits above or below the centre port. Within each half the case
-// farthest from the port hugs the container edge and nearer cases nest deeper —
-// the staircase look above the port, mirrored below it. The two halves' runs
-// never share a y-range, so they safely reuse the same lane offsets.
-function fanLanes(node: PipelineFlowNode, children: SizedNode[], dims: FlowDims): number[] {
-  const insets = containerInsets(node, dims);
-  const innerH = children.reduce((sum, c) => sum + c.h, 0) + insets.gap * (children.length - 1);
-  const centerY = (dims.headerH + (dims.headerH + innerH + 2 * dims.pad)) / 2;
-
-  let top = dims.headerH + dims.pad;
-  const rows = children.map((child) => {
-    const rowY = top + FLOW_SPINE_HANDLE_TOP;
-    top += child.h + insets.gap;
-    return rowY;
-  });
-
-  const above = rows.map((y, i) => ({ y, i })).filter((row) => row.y < centerY);
-  const below = rows.map((y, i) => ({ y, i })).filter((row) => row.y >= centerY);
-  above.sort((a, b) => a.y - b.y); // farthest above first
-  below.sort((a, b) => b.y - a.y); // farthest below first
-
-  const lanes = new Array<number>(children.length);
-  for (const [rank, row] of above.entries()) {
-    lanes[row.i] = laneOffset(rank, above.length, dims);
-  }
-  for (const [rank, row] of below.entries()) {
-    lanes[row.i] = laneOffset(rank, below.length, dims);
-  }
-  return lanes;
-}
-
-// Fan-out to each alternative — and, for reconverging processor fans, fan-in back
-// from each branch to the container's right port (output fans terminate at their
-// sinks, so they draw no fan-in). The routing condition is rendered as a chip on
-// each receiving card, so the edges stay clean unlabeled lines (red dashed for
-// error branches); each branch routes down its own lane so siblings never overlap.
-function emitParallelFanEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
-  const lanes = fanLanes(node, children, ctx.dims);
-  for (const [i, child] of children.entries()) {
-    ctx.rfEdges.push(
-      linkEdge({
-        id: `fanout-${child.node.id}`,
-        source: node.id,
-        target: child.node.id,
-        sourceHandle: 'gs',
-        targetHandle: 'l',
-        tone: child.node.isErrorPath ? 'error' : 'primary',
-        dashed: child.node.isErrorPath,
-        laneFromSource: lanes[i],
-        portDot: 'source',
-      })
-    );
-  }
-  if (!reconverges(node)) {
-    return;
-  }
-  for (const [i, child] of children.entries()) {
-    ctx.rfEdges.push(
-      linkEdge({
-        id: `fanin-${child.node.id}`,
-        source: child.node.id,
-        target: node.id,
-        sourceHandle: 'r',
-        targetHandle: 'gt',
-        tone: child.node.isErrorPath ? 'error' : 'primary',
-        dashed: child.node.isErrorPath,
-        laneFromTarget: lanes[i],
-        portDot: 'target',
-      })
-    );
-  }
-}
-
-function chainChildren(children: SizedNode[], ctx: EmitContext): void {
-  for (let i = 0; i < children.length - 1; i += 1) {
-    ctx.rfEdges.push(
-      linkEdge({
-        id: `chain-${children[i].node.id}-${children[i + 1].node.id}`,
-        source: children[i].node.id,
-        target: children[i + 1].node.id,
-        sourceHandle: 'b',
-        targetHandle: 't',
-        tone: 'muted',
-      })
-    );
-  }
-}
-
-// Edges that show how data threads through a container's children:
-//   branch   → copy out (request_map) ⇒ sub-pipeline ⇒ merge back (result_map)
-//   input    → child sources fan in (merge) to the broker/sequence
-//   parallel → fan out to each alternative, labeled with its routing condition
-//   sequential → enter the first child, then chain in order
-function emitContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
-  // Compact lane: a minimal vertical overview — no copy/merge/fan-out/fan-in
-  // routing (and no right-side arrows). Sub-pipelines that run in order keep a
-  // simple nested vertical chain; alternatives/sources just nest inside the box.
-  if (ctx.compact) {
-    if (node.childFlow !== 'parallel' && node.section !== 'input') {
-      chainChildren(children, ctx);
-    }
-    return;
-  }
-  emitFullContainerEdges(node, children, ctx);
-}
-
-function emitFullContainerEdges(node: PipelineFlowNode, children: SizedNode[], ctx: EmitContext): void {
-  const first = children[0].node.id;
-  const last = children.at(-1)?.node.id ?? first;
-  const label = (text: string) => (ctx.compact ? undefined : text);
-
-  if (node.branch) {
-    ctx.rfEdges.push(
-      linkEdge({
-        id: `copy-${node.id}`,
-        source: node.id,
-        target: first,
-        sourceHandle: 'gs',
-        targetHandle: 'l',
-        tone: 'primary',
-        dashed: true,
-        label: label('copy'),
-        labelOffsetY: -18,
-        portDot: 'source',
-      })
-    );
-    chainChildren(children, ctx);
-    ctx.rfEdges.push(
-      linkEdge({
-        id: `merge-${node.id}`,
-        source: last,
-        target: node.id,
-        sourceHandle: 'r',
-        targetHandle: 'gt',
-        tone: 'primary',
-        dashed: true,
-        label: label('merge'),
-        labelOffsetY: -18,
-        portDot: 'target',
-      })
-    );
-    return;
-  }
-
-  if (node.section === 'input') {
-    const lanes = fanLanes(node, children, ctx.dims);
-    for (const [i, child] of children.entries()) {
-      ctx.rfEdges.push(
-        linkEdge({
-          id: `fanin-${child.node.id}`,
-          source: child.node.id,
-          target: node.id,
-          sourceHandle: 'r',
-          targetHandle: 'gt',
-          tone: 'primary',
-          laneFromTarget: lanes[i],
-          portDot: 'target',
-        })
-      );
-    }
-    return;
-  }
-
-  if (node.childFlow === 'parallel') {
-    emitParallelFanEdges(node, children, ctx);
-    return;
-  }
-
-  // Sequential sub-pipeline: containment already shows flow entering (the spine
-  // arrives at the box itself), so no separate entry edge — with the narrow
-  // sequential inset it renders as an unreadable stub. The semantics live on the
-  // card instead (e.g. catch's "on error" chip); chain edges show internal order.
-  chainChildren(children, ctx);
-}
-
-// The minimum positive x a routing channel may sit at, so the left-most column's
-// left channel never lands at (or past) the canvas edge.
-const MIN_CHANNEL_X = 8;
-// Spacing between resource cards in the lane — tighter than a flow colGap so a
-// cluster of resources (common when a container is collapsed) doesn't spread far.
-const RESOURCE_GAP = 28;
-// Horizontal offset between cables leaving the same source, so they drop as distinct
-// parallel lines rather than overlapping on one.
-const REFERENCE_DROP_STAGGER = 12;
-
-// The visible node a reference cable attaches to: the referencing node itself, or —
-// when it's hidden inside a collapsed container — its nearest visible ancestor, so the
-// resource stays connected to whatever is actually on screen.
-function visibleAnchor(
-  nodeId: string,
-  placedIds: Set<string>,
-  parentById: Map<string, string | undefined>
-): string | undefined {
-  let current: string | undefined = nodeId;
-  while (current !== undefined && !placedIds.has(current)) {
-    current = parentById.get(current);
-  }
-  return current;
-}
-
-// One resource-reference cable: the visible node it attaches to and the x of the
-// clear vertical channel it drops through to reach the resource lane.
-type ReferenceCable = { id: string; sourceId: string; targetId: string; channelX: number };
-
-/**
- * Compute every reference cable's geometry up front, so resources can be placed
- * exactly where their cable lands (a straight drop, no horizontal bus run):
- *   - a TOP-LEVEL source drops straight down at its own x — the space below a
- *     column is always clear (columns sit side-by-side), so no detour is needed;
- *   - a NESTED source drops through the clear gap just outside its column, on the
- *     side nearer the node, so it never crosses the cards stacked inside the column.
- * Returns the cables plus, per resource, the x to place it at (channel − handle).
- */
-type Box = { id: string; left: number; top: number; right: number; bottom: number };
-
-function computeReferenceCables(
-  nodes: PipelineFlowNode[],
-  ctx: EmitContext,
-  columns: { id: string; left: number; right: number }[]
-): {
-  cables: ReferenceCable[];
-  desiredResourceLeft: Map<string, number>;
-  desiredResourceTop: Map<string, number>;
-} {
-  // Absolute bounding box of every placed node (positions are relative to the parent
-  // container), used both to find a node's drop x and to test whether the space
-  // straight below it is clear.
-  const rel = new Map(
-    ctx.rfNodes.map((n) => [
-      n.id,
-      {
-        x: n.position.x,
-        y: n.position.y,
-        parentId: n.parentId,
-        w: (n.initialWidth as number | undefined) ?? ctx.dims.cardW,
-        h: (n.initialHeight as number | undefined) ?? 0,
-      },
-    ])
-  );
-  const box = (id: string): Box | undefined => {
-    let cur = rel.get(id);
-    if (!cur) {
-      return;
-    }
-    const { w, h } = cur;
-    let left = 0;
-    let top = 0;
-    while (cur) {
-      left += cur.x;
-      top += cur.y;
-      cur = cur.parentId ? rel.get(cur.parentId) : undefined;
-    }
-    return { id, left, top, right: left + w, bottom: top + h };
-  };
-  const boxes = [...rel.keys()].map((id) => box(id)).filter((b): b is Box => b !== undefined);
-
-  const placedIds = new Set(rel.keys());
-  const parentById = new Map(nodes.map((n) => [n.id, n.parentId]));
-  // Every node maps to the left/right edges and bottom of its top-level column, so a
-  // resource can be parked just below the column that actually uses it (rather than
-  // below the tallest column in the whole flow).
-  const columnLeftById = new Map<string, number>();
-  const columnRightById = new Map<string, number>();
-  const columnBottomById = new Map<string, number>();
-  for (const column of columns) {
-    const columnBottom = box(column.id)?.bottom ?? 0;
-    const queue = [column.id];
-    while (queue.length > 0) {
-      const id = queue.pop() as string;
-      columnLeftById.set(id, column.left);
-      columnRightById.set(id, column.right);
-      columnBottomById.set(id, columnBottom);
-      for (const child of ctx.childrenMap.get(id) ?? []) {
-        queue.push(child.id);
-      }
-    }
-  }
-  const resourceByLabel = new Map<string, string>();
-  for (const node of nodes) {
-    if (node.section === 'resource' && node.labelText) {
-      resourceByLabel.set(node.labelText, node.id);
-    }
-  }
-
-  // A straight drop at x below the source is clear unless another card sits below the
-  // source's bottom and spans x (cards in the same column stacked under it).
-  const dropClear = (sourceId: string, x: number): boolean => {
-    const src = box(sourceId);
-    if (!src) {
-      return true;
-    }
-    return !boxes.some((b) => b.id !== sourceId && b.top >= src.bottom - 1 && b.left - 4 <= x && x <= b.right + 4);
-  };
-
-  const inset = ctx.dims.colGap / 2;
-  const cables: ReferenceCable[] = [];
-  const desiredResourceLeft = new Map<string, number>();
-  // The deepest column bottom among a resource's users — the lane row it must clear so
-  // every cable reaching it drops straight down past its source column's cards.
-  const desiredResourceTop = new Map<string, number>();
-  const channelUse = new Map<string, number>();
-  // How many cables already leave a given source, so several cables out of the same
-  // node run as parallel drops instead of stacking on one line.
-  const sourceUse = new Map<string, number>();
-  const seen = new Set<string>();
-
-  for (const node of nodes) {
-    const targetId = node.resourceRef ? resourceByLabel.get(node.resourceRef) : undefined;
-    if (!targetId) {
-      continue;
-    }
-    const sourceId = visibleAnchor(node.id, placedIds, parentById);
-    if (sourceId === undefined) {
-      continue;
-    }
-    const id = `ref-${sourceId}-${targetId}`;
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-
-    const order = sourceUse.get(sourceId) ?? 0;
-    sourceUse.set(sourceId, order + 1);
-    const handleX = (box(sourceId)?.left ?? 0) + FLOW_SPINE_HANDLE_LEFT;
-    let channelX: number;
-    if (dropClear(sourceId, handleX + order * REFERENCE_DROP_STAGGER)) {
-      // Clear straight down — drop at the node's own x (offset per sibling cable so
-      // several cables out of one node don't share a single line).
-      channelX = handleX + order * REFERENCE_DROP_STAGGER;
-    } else {
-      const colLeft = columnLeftById.get(sourceId) ?? handleX;
-      const colRight = columnRightById.get(sourceId) ?? handleX;
-      const leftCh = colLeft - inset;
-      const rightCh = colRight + inset;
-      // Exit toward whichever side is nearer the node (shorter jog), staggering
-      // cables that share a side so their drops don't overlap.
-      const side: 'left' | 'right' = handleX - leftCh <= rightCh - handleX ? 'left' : 'right';
-      const uses = channelUse.get(`${colLeft}-${side}`) ?? 0;
-      channelUse.set(`${colLeft}-${side}`, uses + 1);
-      channelX = Math.max(MIN_CHANNEL_X, side === 'left' ? leftCh - uses * 12 : rightCh + uses * 12);
-    }
-    cables.push({ id, sourceId, targetId, channelX });
-    // Place the resource under the cable's channel so the drop lands straight; if a
-    // resource has several users, its first cable sets the position (others bus in).
-    if (!desiredResourceLeft.has(targetId)) {
-      desiredResourceLeft.set(targetId, channelX - FLOW_SPINE_HANDLE_LEFT);
-    }
-    // Lay the resource just below its referencing column. A resource used by several
-    // columns sinks below the deepest one so all of its cables clear their cards.
-    const columnBottom = columnBottomById.get(sourceId) ?? 0;
-    desiredResourceTop.set(targetId, Math.max(desiredResourceTop.get(targetId) ?? 0, columnBottom));
-  }
-  return { cables, desiredResourceLeft, desiredResourceTop };
-}
-
-// Dashed cables from a component to the resource it references (cache/rate_limit
-// `resource:`). Each drops out of the node's bottom, down its channel into its own
-// bus lane below the flow, then into the resource's top — connecting to the exact
-// node without ever crossing the cards around or below it. With the resource placed
-// at the channel x (see computeReferenceCables) the bus run is usually zero, so the
-// cable is a straight drop (top-level) or a single clean jog (nested).
-function pushReferenceEdges(ctx: EmitContext, cables: ReferenceCable[], laneY: Map<string, number>): void {
-  // Each cable runs along a bus just above its target resource's row, staggered per
-  // cable so cables sharing a row don't collapse onto a single line.
-  cables.forEach((cable, i) => {
-    const busY = Math.max(12, (laneY.get(cable.targetId) ?? 0) - 12 - i * 8);
-    // No label — the legend documents the dashed muted line as "uses resource".
-    ctx.rfEdges.push(
-      linkEdge({
-        id: cable.id,
-        source: cable.sourceId,
-        target: cable.targetId,
-        sourceHandle: 'b',
-        targetHandle: 't',
-        tone: 'muted',
-        dashed: true,
-        route: { channelX: cable.channelX, busY },
-      })
-    );
-  });
-}
-
-export type FlowOrientation = 'horizontal' | 'vertical';
-
-// Main-path edges between consecutive top-level steps; each carries the processor
-// index an insertion at that gap would use (count of processors at or before it).
-function buildSpineEdges(mainSequence: PipelineFlowNode[], isVertical: boolean): Edge[] {
-  const edges: Edge[] = [];
-  let processorsSeen = 0;
-  for (let i = 0; i < mainSequence.length - 1; i += 1) {
-    if (mainSequence[i].section === 'processor') {
-      processorsSeen += 1;
-    }
-    edges.push({
-      id: `spine-${mainSequence[i].id}-${mainSequence[i + 1].id}`,
-      source: mainSequence[i].id,
-      target: mainSequence[i + 1].id,
-      sourceHandle: isVertical ? 'b' : 'r',
-      targetHandle: isVertical ? 't' : 'l',
-      type: 'flowSpine',
-      data: { insertIndex: processorsSeen },
-      markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--color-primary)' },
-    });
-  }
-  return edges;
 }
 
 // ============================================================================
 // Graph layout (Dagre) — full horizontal canvas
 // ----------------------------------------------------------------------------
-// The pipeline is rendered as one left-to-right DAG. Control flow is FULLY
-// flattened: a switch/branch/try/parallel becomes a compact "split" node whose
-// branches fan out as labelled edges and reconverge at an explicit "merge" node —
-// no nested boxes, no bands. We build a flat semantic graph (nodes + typed edges)
-// from the parser tree, hand it to Dagre for automatic rank assignment AND edge
-// routing, then map Dagre's output to absolutely-positioned React Flow nodes/edges.
-// Editing affordances (insert/add-case) and the resource lane are placed after
-// layout so they never perturb the flow ranks. The compact sidebar keeps the older
-// nested layout below.
+// One left-to-right DAG with control flow fully flattened: each switch/branch/try/parallel becomes
+// a "split" node whose branches fan out as labelled edges and reconverge at a "merge" node. A flat
+// semantic graph goes to Dagre for ranks + edge routing, then maps to React Flow nodes/edges.
+// Editing affordances and the resource lane are placed after layout so they don't perturb ranks.
 // ============================================================================
 
 const GRAPH_SPLIT_W = FLOW_CARD_WIDTH;
@@ -2069,6 +1296,9 @@ const GRAPH_MARGIN = 24;
 const RES_BUS_GAP = 48;
 const RES_ROW_GAP = 32;
 const RES_BUS_STAGGER = 7;
+// Spacing between resource cards in the lane — tighter than a flow colGap so a
+// cluster of resources (common when a container is collapsed) doesn't spread far.
+const RESOURCE_GAP = 28;
 // The bottom/top handle's x offset from a card's left edge (matches NodeHandles).
 const HANDLE_X = FLOW_SPINE_HANDLE_LEFT;
 
@@ -2305,11 +1535,6 @@ function emitFan(
       });
     }
   }
-
-  // The container-level add affordance (a new switch case / broker input/output) is NOT a
-  // floating pill below the construct anymore — it renders as a footer button INSIDE the
-  // construct's card (see `splitAddAction` in computeGraphLayout), so it reads as part of the
-  // node. (Sequential constructs keep their on-edge "+" for appending a step.)
 
   const entry = split ?? merge ?? node.id;
   const exit = merge ?? split ?? node.id;
@@ -2576,7 +1801,7 @@ function placeResourceDependencies(
       initialHeight: h,
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-      data: makeFlowNodeData(resource, false, 0, false, 0),
+      data: makeFlowNodeData(resource, false, 0, 0),
     });
     cursor = x + FULL_DIMS.cardW + RESOURCE_GAP;
     right = Math.max(right, x + FULL_DIMS.cardW);
@@ -2720,11 +1945,9 @@ export function computeGraphLayout(
   for (const gn of ctx.gnodes) {
     g.setNode(gn.id, { width: gn.w, height: gn.h });
   }
-  // SOURCE-align the layout: a fanned case should sit just right of its split (where its condition
-  // reads), not be packed against the merge. Dagre's rankers all place a node next to its
-  // SUCCESSORS (so short branches get pulled right to the merge). We instead pin each node to its
-  // forward longest-path rank (distance from the input) by setting every edge's `minlen` to the
-  // rank gap — a short branch's edge to the merge then gets a large minlen, holding its node left.
+  // SOURCE-align the layout: pin each node to its forward longest-path rank (distance from input)
+  // via per-edge `minlen`, so fanned cases sit just right of their split instead of being pulled
+  // right to the merge the way Dagre's successor-based rankers would place them.
   const ranks = forwardRanks(ctx.gnodes, ctx.gedges);
   for (const ge of ctx.gedges) {
     const minlen = Math.max(1, (ranks.get(ge.to) ?? 0) - (ranks.get(ge.from) ?? 0));
@@ -2775,7 +1998,7 @@ export function computeGraphLayout(
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
       data: {
-        ...makeFlowNodeData(node, false, gn.childCount ?? 0, false, 0),
+        ...makeFlowNodeData(node, false, gn.childCount ?? 0, 0),
         ...(node.parentId ? { ownerId: node.parentId } : {}),
         ...(gn.footerAdd ? { addAction: gn.footerAdd } : {}),
       },
@@ -2844,246 +2067,4 @@ export function computeGraphLayout(
   maxY = Math.max(maxY, inserts.maxY);
   const { right, bottom } = placeResourceDependencies(nodes, rfNodes, rfEdges, centerById, { minX, maxX, maxY });
   return { rfNodes, rfEdges, width: Math.max(right, maxX) - minX, height: Math.max(bottom, maxY) };
-}
-
-export function computeFlowLayout(
-  nodes: PipelineFlowNode[],
-  collapsedIds: ReadonlySet<string> = new Set(),
-  orientation: FlowOrientation = 'horizontal',
-  compact = false,
-  editable = false
-): { rfNodes: Node[]; rfEdges: Edge[]; width: number; height: number } {
-  // Full horizontal canvas uses the Dagre-laid-out DAG; the compact sidebar keeps the
-  // older nested-vertical layout below.
-  if (orientation === 'horizontal' && !compact) {
-    return computeGraphLayout(nodes, editable);
-  }
-  const childrenMap = buildChildrenMap(nodes);
-  const childrenOf = (id: string) => childrenMap.get(id) ?? [];
-  const isVertical = orientation === 'vertical';
-  const dims = compact ? COMPACT_DIMS : FULL_DIMS;
-
-  const mainSequence = mainFlowSequence(nodes);
-  const sized = mainSequence.map((node) => measureFlowNode(node, childrenOf, collapsedIds, dims));
-
-  const ctx: EmitContext = { rfNodes: [], rfEdges: [], childrenMap, dims, compact };
-
-  const { mainExtent, maxCross, columns } = placeTopLevelSteps(sized, isVertical, ctx);
-  ctx.rfEdges.push(...buildSpineEdges(mainSequence, isVertical));
-  // The resource lane sits past the main flow along the cross axis: below the row
-  // in horizontal layout (maxCross), after the column in vertical layout (mainExtent).
-  // In horizontal layout this is only the fallback for unreferenced resources — a
-  // referenced resource rises to just below its own column (desiredResourceTop).
-  const laneStart = (isVertical ? mainExtent : maxCross) + laneGap(dims);
-
-  // Resource-reference cables (cache/rate_limit → resource). Skipped in the compact
-  // lane to keep it clean. Geometry is computed first so each resource can be placed
-  // directly under its cable's drop, making the cable a straight (or single-jog) line.
-  const { cables, desiredResourceLeft } =
-    isVertical || compact
-      ? {
-          cables: [] as ReferenceCable[],
-          desiredResourceLeft: new Map<string, number>(),
-        }
-      : computeReferenceCables(nodes, ctx, columns);
-
-  const { resources, resourceRight, resourceBottom, laneY } = placeResourceLane({
-    nodes,
-    childrenMap,
-    isVertical,
-    laneStart,
-    maxCross,
-    ctx,
-    desiredResourceLeft,
-    columns,
-  });
-
-  if (!compact) {
-    pushReferenceEdges(ctx, cables, laneY);
-  }
-
-  return {
-    rfNodes: ctx.rfNodes,
-    rfEdges: ctx.rfEdges,
-    ...flowDimensions({ isVertical, mainExtent, maxCross, laneStart, resources, resourceRight, resourceBottom, dims }),
-  };
-}
-
-// Lay the top-level steps along the main axis (left→right or top→bottom), each
-// aligned to the cross-axis start so the spine reads as one line.
-function placeTopLevelSteps(
-  sized: SizedNode[],
-  isVertical: boolean,
-  ctx: EmitContext
-): { mainExtent: number; maxCross: number; columns: { id: string; left: number; right: number; bottom: number }[] } {
-  let cursor = 0;
-  let maxCross = 0;
-  let prevSection: PipelineFlowNode['section'];
-  // Each column starts at y=0, so its `bottom` is just its height — used to park a
-  // resource right below the tallest column its x-span overlaps (close, but clear).
-  const columns: { id: string; left: number; right: number; bottom: number }[] = [];
-  // Steps are separated by the main-axis gap (colGap) in both orientations; the
-  // tighter stackGap is reserved for children inside a container.
-  const gap = ctx.dims.colGap;
-  for (const step of sized) {
-    const section = step.node.section;
-    // In the compact (vertical) lane, divide sections with a small label.
-    if (isVertical && section && section !== prevSection) {
-      ctx.rfNodes.push({
-        id: `section-label-${section}`,
-        type: 'flowSectionLabel',
-        position: { x: FLOW_SECTION_LABEL_INDENT, y: cursor },
-        selectable: false,
-        draggable: false,
-        data: { label: SECTION_TITLES[section] ?? '' },
-      });
-      cursor += FLOW_SECTION_LABEL_H + FLOW_SECTION_LABEL_GAP;
-    }
-    prevSection = section;
-    emitFlowNode(step, undefined, isVertical ? { x: 0, y: cursor } : { x: cursor, y: 0 }, ctx);
-    if (!isVertical) {
-      columns.push({ id: step.node.id, left: cursor, right: cursor + step.w, bottom: step.h });
-    }
-    cursor += (isVertical ? step.h : step.w) + gap;
-    maxCross = Math.max(maxCross, isVertical ? step.w : step.h);
-  }
-  return { mainExtent: cursor - gap, maxCross, columns };
-}
-
-// In horizontal layout, place each resource at the x its cable drops into (computed in
-// computeReferenceCables) so the cable lands straight; unreferenced resources fall back
-// to left-to-right order. A single left→right sweep de-overlaps the cards, so no two
-// ever collide regardless of the per-card y they end up at.
-function resourceLaneX(
-  resources: PipelineFlowNode[],
-  desiredLeft: Map<string, number>,
-  ctx: EmitContext
-): Map<string, number> {
-  const step = ctx.dims.cardW + RESOURCE_GAP;
-  const ordered = resources
-    .map((resource, i) => ({ id: resource.id, x: desiredLeft.get(resource.id) ?? i * step }))
-    .sort((a, b) => a.x - b.x);
-  const out = new Map<string, number>();
-  let prevRight = Number.NEGATIVE_INFINITY;
-  for (const d of ordered) {
-    const x = Math.max(d.x, prevRight);
-    out.set(d.id, x);
-    prevRight = x + step;
-  }
-  return out;
-}
-
-// The cross-axis gap between a column's bottom (or the main row) and the lane row
-// beneath it, so resource cards clearly sit below the flow rather than touching it.
-function laneGap(dims: FlowDims): number {
-  return 2 * dims.stackGap + 24;
-}
-
-function pushResourceNode(resource: PipelineFlowNode, x: number, y: number, ctx: EmitContext): number {
-  const height = leafCardHeight(resource, ctx.dims);
-  ctx.rfNodes.push({
-    id: resource.id,
-    type: 'flowCard',
-    position: { x, y },
-    initialWidth: ctx.dims.cardW,
-    initialHeight: height,
-    style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-    data: makeFlowNodeData(resource, false, 0, ctx.compact),
-  });
-  return height;
-}
-
-// Resources lane after the flow (referenced by label, so no flow edges). In horizontal
-// layout each resource drops to just below the tallest column its x-span overlaps — so a
-// resource used by a short, isolated column sits right under that column rather than
-// being dragged down beside the flow's deepest container, while a resource over a tall
-// column still clears it (no overlap). Vertical (compact) layout keeps a simple stack.
-function placeResourceLane({
-  nodes,
-  childrenMap,
-  isVertical,
-  laneStart,
-  maxCross,
-  ctx,
-  desiredResourceLeft,
-  columns,
-}: {
-  nodes: PipelineFlowNode[];
-  childrenMap: Map<string | undefined, PipelineFlowNode[]>;
-  isVertical: boolean;
-  laneStart: number;
-  maxCross: number;
-  ctx: EmitContext;
-  desiredResourceLeft: Map<string, number>;
-  columns: { id: string; left: number; right: number; bottom: number }[];
-}): { resources: PipelineFlowNode[]; resourceRight: number; resourceBottom: number; laneY: Map<string, number> } {
-  const resources = sectionChildren(nodes, childrenMap, 'resource');
-  const laneY = new Map<string, number>();
-  let resourceRight = 0;
-  let resourceBottom = 0;
-
-  if (isVertical) {
-    let stackY = laneStart;
-    for (const resource of resources) {
-      laneY.set(resource.id, stackY);
-      const height = pushResourceNode(resource, 0, stackY, ctx);
-      resourceRight = Math.max(resourceRight, ctx.dims.cardW);
-      resourceBottom = Math.max(resourceBottom, stackY + height);
-      stackY += height + ctx.dims.stackGap;
-    }
-    return { resources, resourceRight, resourceBottom, laneY };
-  }
-
-  const cardW = ctx.dims.cardW;
-  const gap = laneGap(ctx.dims);
-  const floor = columns.length > 0 ? Math.min(...columns.map((c) => c.bottom)) : maxCross;
-  // The deepest column whose x-span the card overlaps; nothing overlapping ⇒ the floor.
-  const dropBelow = (x: number) => {
-    const hits = columns.filter((c) => x < c.right && x + cardW > c.left);
-    return (hits.length > 0 ? Math.max(...hits.map((c) => c.bottom)) : floor) + gap;
-  };
-  const finalX = resourceLaneX(resources, desiredResourceLeft, ctx);
-  for (const resource of resources) {
-    const x = finalX.get(resource.id) ?? 0;
-    const y = dropBelow(x);
-    laneY.set(resource.id, y);
-    const height = pushResourceNode(resource, x, y, ctx);
-    resourceRight = Math.max(resourceRight, x + cardW);
-    resourceBottom = Math.max(resourceBottom, y + height);
-  }
-  return { resources, resourceRight, resourceBottom, laneY };
-}
-
-function flowDimensions({
-  isVertical,
-  mainExtent,
-  maxCross,
-  laneStart,
-  resources,
-  resourceRight,
-  resourceBottom,
-  dims,
-}: {
-  isVertical: boolean;
-  mainExtent: number;
-  maxCross: number;
-  laneStart: number;
-  resources: PipelineFlowNode[];
-  resourceRight: number;
-  resourceBottom: number;
-  dims: FlowDims;
-}): { width: number; height: number } {
-  if (isVertical) {
-    const resourcesExtent = resources.reduce((sum, r) => sum + leafCardHeight(r, dims) + dims.stackGap, 0);
-    return {
-      width: Math.max(maxCross, dims.cardW),
-      height: resources.length > 0 ? laneStart + resourcesExtent : Math.max(mainExtent, dims.leafBaseH),
-    };
-  }
-  // Resources sit on per-column rows, so the tallest is the deepest card bottom — not
-  // necessarily the first resource at a single shared laneStart.
-  return {
-    width: Math.max(mainExtent, resourceRight, dims.cardW),
-    height: resources.length > 0 ? Math.max(resourceBottom, maxCross) : Math.max(maxCross, dims.leafBaseH),
-  };
 }

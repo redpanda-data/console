@@ -15,7 +15,7 @@ export type NodeMetaEntry = { label: string; value: string };
 const MAX_META = 3;
 const MAX_VALUE_LEN = 52;
 
-// Surfaced as dedicated chips, so never repeated as a plain meta row.
+// Rendered as dedicated chips, never as a plain meta row.
 const TOPIC_FIELDS = new Set(['topic', 'topics']);
 
 // Shorter labels for verbose keys so the value fits the fixed-width card.
@@ -36,8 +36,7 @@ const LABEL_OVERRIDES: Record<string, string> = {
   error_message: 'error',
 };
 
-// Credentials and generic infra knobs the fallback must never surface (else it'd
-// grab e.g. `api_key` just because it comes first).
+// Credentials and generic infra knobs the fallback must never surface.
 const NOISE_FIELDS = new Set([
   'api_key',
   'apikey',
@@ -65,8 +64,8 @@ function isScalar(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
-// Fields to surface per component, in priority order. `pushField` only emits ones
-// actually present, so a generous superset is safe. Topics omitted (render as chips).
+// Fields to surface per component, in priority order (a generous superset — `pushField` emits
+// only those present). Topics omitted (render as chips).
 const PREFERRED_FIELDS: Record<string, string[]> = {
   // Kafka / Redpanda family
   kafka: ['consumer_group', 'partition', 'key'],
@@ -222,15 +221,16 @@ function pushField(meta: NodeMetaEntry[], config: Record<string, unknown>, key: 
   const label = LABEL_OVERRIDES[key] ?? key;
   if (isScalar(value)) {
     meta.push({ label, value: truncate(String(value)) });
-  } else if (Array.isArray(value) && value.length > 0 && value.every((item) => isScalar(item))) {
-    meta.push({ label, value: truncate(value.join(', ')) });
   } else if (Array.isArray(value) && value.length > 0) {
-    meta.push({ label, value: `${value.length} item${value.length === 1 ? '' : 's'}` });
+    const display = value.every((item) => isScalar(item))
+      ? truncate(value.join(', '))
+      : `${value.length} item${value.length === 1 ? '' : 's'}`;
+    meta.push({ label, value: display });
   }
 }
 
-// Fallback when no preferred field matched: identifying-named scalars first, then the
-// first couple of remaining scalar/scalar-array fields (skipping booleans and topics).
+// Fallback when no preferred field matched: salient-named scalars first, then the first couple of
+// remaining scalar/scalar-array fields (skipping booleans, noise, and topics).
 function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
   const meta: NodeMetaEntry[] = [];
   for (const name of SALIENT_FIELD_NAMES) {

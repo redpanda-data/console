@@ -15,9 +15,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { decorateEdges, injectNodeData, selectionTargetForNode } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
-  { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowSpine', data: { insertIndex: 1 } },
-  { id: 'fanout-c', source: 'b', target: 'c', type: 'flowLink', data: { tone: 'primary' } },
-  { id: 'ref-a-resource-0', source: 'a', target: 'resource-0', type: 'flowLink', data: { tone: 'muted' } },
+  { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowGraphEdge', data: { insertIndex: 1 } },
+  { id: 'fanout-c', source: 'b', target: 'c', type: 'flowGraphEdge', data: { tone: 'primary' } },
+  { id: 'ref-a-resource-0', source: 'a', target: 'resource-0', type: 'flowGraphEdge', data: { tone: 'muted' } },
 ];
 
 const refData = (decorated: Edge[]) =>
@@ -77,7 +77,7 @@ describe('decorateEdges', () => {
   it('wires the insert handler onto spine edges with their processor index', () => {
     const onInsert = vi.fn();
     const decorated = decorateEdges(edges, { onInsert });
-    const spineData = decorated.find((e) => e.type === 'flowSpine')?.data as { onInsert?: () => void };
+    const spineData = decorated.find((e) => e.type === 'flowGraphEdge')?.data as { onInsert?: () => void };
     spineData.onInsert?.();
     expect(onInsert).toHaveBeenCalledWith(1);
   });

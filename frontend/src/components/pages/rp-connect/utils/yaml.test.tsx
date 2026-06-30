@@ -16,13 +16,11 @@ import {
   getComponentAt,
   getConnectTemplate,
   insertComponentAt,
-  insertProcessorAt,
   listResourceLabels,
   mergeConnectConfigs,
   parseConfigComponents,
   patchRedpandaConfig,
   removeComponentAt,
-  renameResourceLabel,
   setComponentAt,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
@@ -1649,28 +1647,6 @@ output:
     });
   });
 
-  describe('insertProcessorAt', () => {
-    test('inserts at the given index', () => {
-      const next = insertProcessorAt(pipelineYaml, 1, { mapping: 'root = inserted' });
-      expect(next).not.toBeNull();
-      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
-      expect(parsed.pipeline.processors).toHaveLength(3);
-      expect(parsed.pipeline.processors[1]).toEqual({ mapping: 'root = inserted' });
-    });
-
-    test('creates the processors array when missing', () => {
-      const next = insertProcessorAt('input:\n  generate: {}\noutput:\n  drop: {}', 0, { mapping: 'root = x' });
-      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
-      expect(parsed.pipeline.processors).toEqual([{ mapping: 'root = x' }]);
-    });
-
-    test('clamps an out-of-range index to append', () => {
-      const next = insertProcessorAt(pipelineYaml, 99, { mapping: 'root = last' });
-      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
-      expect(parsed.pipeline.processors.at(-1)).toEqual({ mapping: 'root = last' });
-    });
-  });
-
   describe('appendResource', () => {
     test('appends to a new cache_resources array', () => {
       const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
@@ -1760,31 +1736,6 @@ rate_limit_resources:
       expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
       expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
       expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
-    });
-
-    test('renameResourceLabel cascades to every reference (incl. nested), leaving others intact', () => {
-      const next = renameResourceLabel(withResources, 'cache_resources', 0, 'dedupe_v2');
-      expect(next).not.toBeNull();
-      const parsed = parseYaml(next as string) as {
-        pipeline: {
-          processors: { cache?: { resource: string }; branch?: { processors: { cache: { resource: string } }[] } }[];
-        };
-        cache_resources: { label: string }[];
-        rate_limit_resources: { local: unknown }[];
-      };
-      expect(parsed.cache_resources[0].label).toBe('dedupe_v2');
-      // Top-level + nested cache references both follow the rename.
-      expect(parsed.pipeline.processors[0].cache?.resource).toBe('dedupe_v2');
-      expect(parsed.pipeline.processors[1].branch?.processors[0].cache.resource).toBe('dedupe_v2');
-      // The unrelated rate_limit reference is untouched.
-      const yamlStr = next as string;
-      expect(yamlStr).toContain('resource: limiter');
-    });
-
-    test('renameResourceLabel leaves references alone when nothing matches the old label', () => {
-      const next = renameResourceLabel(withResources, 'cache_resources', 0, 'dedupe') as string;
-      // No-op rename (same label) keeps references valid.
-      expect(listResourceLabels(next, 'cache')).toEqual(['dedupe']);
     });
 
     test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { summarizeComponent } from './pipeline-flow-meta';
-import { computeFlowLayout, mainFlowSequence, parsePipelineFlowTree } from './pipeline-flow-parser';
+import { computeGraphLayout, mainFlowSequence, parsePipelineFlowTree } from './pipeline-flow-parser';
 
 describe('parsePipelineFlowTree', () => {
   it('returns placeholder input/output sections with placeholder leaves for empty string', () => {
@@ -496,7 +496,7 @@ input:
     const leaf = nodes.find((n) => n.kind === 'leaf' && n.section === 'input' && n.label !== 'none');
     expect(leaf?.topics).toEqual(['orders', 'events']);
     // …and the topics reach the laid-out card data, where they render as chips.
-    const card = computeFlowLayout(nodes).rfNodes.find((n) => n.id === leaf?.id);
+    const card = computeGraphLayout(nodes).rfNodes.find((n) => n.id === leaf?.id);
     expect((card?.data as { topics?: string[] }).topics).toEqual(['orders', 'events']);
   });
 
@@ -550,27 +550,6 @@ output:
     const outputNodes = nodes.filter((n) => n.section === 'output' && n.kind !== 'section');
     expect(outputNodes).toHaveLength(1);
     expect(outputNodes[0].label).toBe('broker');
-  });
-
-  it('prefixes all node IDs when idPrefix is provided', () => {
-    const yaml = 'input:\n  kafka: {}\noutput:\n  http: {}';
-    const { nodes } = parsePipelineFlowTree(yaml, { idPrefix: 'inst1' });
-
-    // All IDs should be prefixed
-    for (const node of nodes) {
-      expect(node.id).toMatch(/^inst1-/);
-      if (node.parentId) {
-        expect(node.parentId).toMatch(/^inst1-/);
-      }
-    }
-
-    // Two instances produce non-overlapping IDs
-    const { nodes: nodes2 } = parsePipelineFlowTree(yaml, { idPrefix: 'inst2' });
-    const ids1 = new Set(nodes.map((n) => n.id));
-    const ids2 = new Set(nodes2.map((n) => n.id));
-    for (const id of ids2) {
-      expect(ids1.has(id)).toBe(false);
-    }
   });
 
   it('parses full pipeline with all sections', () => {
@@ -683,9 +662,9 @@ pipeline:
 output:
   drop: {}`;
 
-describe('computeFlowLayout', () => {
+describe('computeGraphLayout', () => {
   const { nodes } = parsePipelineFlowTree(BRANCHING_PIPELINE);
-  const { rfNodes, rfEdges } = computeFlowLayout(nodes);
+  const { rfNodes, rfEdges } = computeGraphLayout(nodes);
   const byId = (id: string) => rfNodes.find((n) => n.id === id);
 
   it('lays the input → processors → output spine left-to-right on the main row', () => {
@@ -733,7 +712,7 @@ describe('computeFlowLayout', () => {
 output:
   drop: {}`;
     const parsed = parsePipelineFlowTree(yaml);
-    const laid = computeFlowLayout(parsed.nodes).rfNodes;
+    const laid = computeGraphLayout(parsed.nodes).rfNodes;
     const labelOf = (n: (typeof laid)[number]) => (n.data as { label?: string }).label;
     const mappingXs = laid.filter((n) => labelOf(n) === 'mapping').map((n) => n.position.x);
     const logX = laid.find((n) => labelOf(n) === 'log')?.position.x ?? 0;
@@ -768,62 +747,15 @@ output:
             http: { url: http://x }
 output:
   drop: {}`;
-    const laidOut = computeFlowLayout(parsePipelineFlowTree(labelled).nodes).rfNodes;
+    const laidOut = computeGraphLayout(parsePipelineFlowTree(labelled).nodes).rfNodes;
     const nodeData = (id: string) => laidOut.find((n) => n.id === id)?.data as { labelText?: string } | undefined;
     expect(nodeData('proc-0')?.labelText).toBe('top_branch'); // container
     expect(nodeData('proc-0-processors-p0')?.labelText).toBe('enrich_http'); // nested leaf
   });
 
-  it('adds INPUT/PROCESSORS/OUTPUT section labels in the compact vertical lane only', () => {
-    const verticalLabels = computeFlowLayout(
-      parsePipelineFlowTree(BRANCHING_PIPELINE).nodes,
-      new Set(),
-      'vertical',
-      true
-    )
-      .rfNodes.filter((n) => n.type === 'flowSectionLabel')
-      .map((n) => (n.data as { label?: string }).label);
-    expect(verticalLabels).toEqual(['INPUT', 'PROCESSORS', 'OUTPUT']);
-
-    // The full horizontal canvas relies on per-card kind badges, not section labels.
-    const horizontal = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes);
-    expect(horizontal.rfNodes.some((n) => n.type === 'flowSectionLabel')).toBe(false);
-  });
-
-  it('stacks compact cards vertically on a straight axis in compact vertical mode', () => {
-    const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(), 'vertical', true);
-    const input = layout.rfNodes.find((n) => n.id === 'input-0');
-    const output = layout.rfNodes.find((n) => n.id === 'output-0');
-    // Compact rendering is flagged on the node data…
-    expect(input?.data.compact).toBe(true);
-    // …and top-level steps share the same x (vertical stack → straight connectors).
-    expect(input?.position.x).toBe(0);
-    expect(output?.position.x).toBe(0);
-    // Vertically ordered: input above output.
-    expect((input?.position.y ?? 0) < (output?.position.y ?? 0)).toBe(true);
-  });
-
-  it('gives a labeled compact card its own row for the label (reserves the extra height)', () => {
-    const compactHeight = (yaml: string) =>
-      computeFlowLayout(parsePipelineFlowTree(yaml).nodes, new Set(), 'vertical', true).height;
-    const withLabel = compactHeight('input:\n  kafka_franz:\n    topics: [t]\n  label: my_in');
-    const without = compactHeight('input:\n  kafka_franz:\n    topics: [t]');
-    // The label sits on its own row beneath the name rather than being truncated
-    // against it — so the compact card is exactly one row taller.
-    expect(withLabel).toBe(without + 22);
-  });
-
-  it('always shows the full graph — collapse is not applied on the Dagre canvas', () => {
-    // Collapse was dropped for the graph canvas: passing collapsedIds has no effect, so a
-    // control-flow construct always renders its marker and body.
-    const layout = computeFlowLayout(parsePipelineFlowTree(BRANCHING_PIPELINE).nodes, new Set(['proc-1']));
-    expect(layout.rfNodes.find((n) => n.id === 'proc-1')?.type).toBe('flowSplit');
-    expect(layout.rfNodes.some((n) => n.id === 'proc-1-processors-p0')).toBe(true);
-  });
-
   it('places array resources in a lane below the flow', () => {
     const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(withCache).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(withCache).nodes);
     const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
     expect(resource?.parentId).toBeUndefined();
     expect((resource?.position.y ?? 0) > 0).toBe(true);
@@ -831,7 +763,7 @@ output:
 
   it('keeps the resource lane near the main row in horizontal layout (cross-axis, not main-axis, offset)', () => {
     const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(withCache).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(withCache).nodes);
     const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
     // The lane must drop by the cross-axis (height) extent, not the much larger
     // main-axis (width) extent — otherwise fitView zooms the whole graph out of view.
@@ -863,12 +795,12 @@ cache_resources:
   - label: dedupe_cache
     redis: { url: x }`;
 
-  const edges = () => computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfEdges;
+  const edges = () => computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfEdges;
   const edge = (id: string) => edges().find((e) => e.id === id);
   const data = (id: string) => edge(id)?.data as { tone?: string; dashed?: boolean; label?: string } | undefined;
 
   it('renders a branch inline as a marker → body, with no copy/merge edges or merge node', () => {
-    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
     expect(layout.rfNodes.find((n) => n.id === 'proc-1')?.type).toBe('flowSplit');
     // No dashed copy/merge edges and no separate merge node — the branch flows inline.
     expect(layout.rfEdges.some((e) => e.id.startsWith('copy-') || e.id.startsWith('merge-'))).toBe(false);
@@ -885,7 +817,7 @@ cache_resources:
     expect((data('fanout-output-switch-0') as { label?: string }).label).toBeUndefined();
     expect((data('fanout-output-switch-1') as { label?: string }).label).toBeUndefined();
 
-    const nodes = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
+    const nodes = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
     const nodeData = (id: string) => nodes.find((n) => n.id === id)?.data as Record<string, unknown> | undefined;
     expect(nodeData('output-switch-0')).toMatchObject({ condition: 'errored()', isErrorPath: true });
     expect(nodeData('output-switch-1')).toMatchObject({ isDefault: true });
@@ -907,7 +839,7 @@ output:
       - check: errored()
         output: { drop: {} }
       - output: { drop: {} }`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
     // The case's condition chip lives on its ENTRY node, carrying the switchCase edit target —
     // clicking it edits the case `check`. (Node ids vary, so match by the target path.)
     const caseNode = (path: (string | number)[]) =>
@@ -938,7 +870,7 @@ output:
       - kafka_franz: { topics: [t] }
 output:
   drop: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes, new Set(), 'horizontal', false, true);
+    const layout = computeGraphLayout(parsePipelineFlowTree(yaml).nodes, true);
     // The broker is a labeled hub node (not a generic merge dot); inputs fan into it.
     const hub = layout.rfNodes.find((n) => n.id === 'input-broker');
     expect(hub?.type).toBe('flowSplit');
@@ -950,7 +882,7 @@ output:
   });
 
   it('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {
-    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
     // proc-2 = try, proc-3 = catch; they fuse into a success/error structure at a merge.
     expect(layout.rfNodes.find((n) => n.id === 'proc-3')?.data.isErrorPath).toBe(true);
     const onError = layout.rfEdges.find((e) => e.id === 'error-proc-2-proc-3');
@@ -985,7 +917,7 @@ output:
   });
 
   it('renders a branch inline and fans an output switch from a split (no terminal merge)', () => {
-    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
     const find = (id: string) => layout.rfNodes.find((n) => n.id === id);
     // The branch is a compact marker with no merge node (it flows inline).
     expect(find('proc-1')?.type).toBe('flowSplit');
@@ -1013,7 +945,7 @@ output:
 cache_resources:
   - label: cdc_checkpoint
     memory: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(yaml).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
     const refEdge = layout.rfEdges.find((e) => e.id.startsWith('ref-') && e.source === 'input-0');
     expect(refEdge?.target).toBe('resource-cache_resources-0');
   });
@@ -1063,7 +995,7 @@ output_resources:
     expect(nodes.find((n) => n.id === 'proc-0')?.resourceRef).toBe('my_proc');
     expect(nodes.find((n) => n.id === 'output-0')?.resourceRef).toBe('my_output');
 
-    const layout = computeFlowLayout(nodes);
+    const layout = computeGraphLayout(nodes);
     const refFromInput = layout.rfEdges.find((e) => e.id.startsWith('ref-') && e.source === 'input-0');
     expect(refFromInput?.target).toBe('resource-input_resources-0');
   });
@@ -1110,7 +1042,7 @@ output:
       - check: errored()
         output: { redpanda: { topic: dlq } }
       - output: { drop: {} }`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(withProcessorSwitch).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(withProcessorSwitch).nodes);
     // Each processor case fans out AND back in to the merge — the data continues onward.
     expect(layout.rfEdges.filter((e) => e.id.startsWith('fanin-proc-0-case-'))).toHaveLength(2);
     expect(layout.rfNodes.some((n) => n.id === 'proc-0-merge' && n.type === 'flowMerge')).toBe(true);
@@ -1132,7 +1064,7 @@ rate_limit_resources:
 cache_resources:
   - label: c
     memcached: { addresses: ['m:11211'] }`;
-    const refEdges = computeFlowLayout(parsePipelineFlowTree(twoResources).nodes).rfEdges.filter((e) =>
+    const refEdges = computeGraphLayout(parsePipelineFlowTree(twoResources).nodes).rfEdges.filter((e) =>
       e.id.startsWith('ref-')
     );
     // One dashed/muted reference edge per resource, to distinct targets.
@@ -1159,7 +1091,7 @@ cache_resources:
 rate_limit_resources:
   - label: lim
     local: { count: 1, interval: 1s }`;
-    const refEdges = computeFlowLayout(parsePipelineFlowTree(shared).nodes).rfEdges.filter((e) =>
+    const refEdges = computeGraphLayout(parsePipelineFlowTree(shared).nodes).rfEdges.filter((e) =>
       e.id.startsWith('ref-')
     );
     expect(refEdges).toHaveLength(2);
@@ -1181,7 +1113,7 @@ rate_limit_resources:
         - processors: [{ mapping: 'root = this' }]
 output:
   drop: {}`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(fourCases).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(fourCases).nodes);
     // Four fan-out edges and four fan-in edges back to the switch's merge node.
     for (const i of [1, 2, 3, 4]) {
       expect(layout.rfEdges.some((e) => e.id === `fanout-proc-0-case-${i}`)).toBe(true);
@@ -1208,7 +1140,7 @@ output:
   it('places a referenced resource below its user, near its x', () => {
     // Resources are dependencies laid out below the flow, near their user's x (not a far
     // bottom-left row, and not out to the right in the flow).
-    const layout = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
     const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
     const user = layout.rfNodes.find((n) => n.id === 'proc-0');
     expect(resource).toBeDefined();
@@ -1228,7 +1160,7 @@ output:
 cache_resources:
   - label: dedupe_cache
     redis: { url: x }`;
-    const layout = computeFlowLayout(parsePipelineFlowTree(nested).nodes);
+    const layout = computeGraphLayout(parsePipelineFlowTree(nested).nodes);
     // The cable attaches to the actual nested cache that uses the resource (not the branch).
     expect(layout.rfEdges.find((e) => e.id.startsWith('ref-'))?.source).toBe('proc-0-processors-p0');
   });
@@ -1360,17 +1292,6 @@ cache_resources:
     const resource = nodes.find((n) => n.section === 'resource' && n.labelText === 'dedupe');
     expect(resource?.usedByCount).toBe(2);
   });
-
-  it('keeps the compact lane minimal: no reference, fan-out, or branch copy/merge edges', () => {
-    const compact = computeFlowLayout(parsePipelineFlowTree(ENRICHMENT).nodes, new Set(), 'vertical', true).rfEdges;
-    // The minimal sidebar overview draws only the spine + nested sequential chains.
-    expect(compact.some((e) => e.id.startsWith('ref-'))).toBe(false);
-    expect(compact.some((e) => e.id.startsWith('fanout-'))).toBe(false);
-    expect(compact.some((e) => e.id.startsWith('copy-') || e.id.startsWith('merge-'))).toBe(false);
-    expect(compact.some((e) => e.id.startsWith('fanin-'))).toBe(false);
-    // Only the vertical spine connecting top-level steps remains.
-    expect(compact.some((e) => e.type === 'flowSpine')).toBe(true);
-  });
 });
 
 describe('data-flow model', () => {
@@ -1385,19 +1306,6 @@ output:
   drop: {}`;
     const seq = mainFlowSequence(parsePipelineFlowTree(yaml).nodes).map((n) => n.id);
     expect(seq).toEqual(['input-0', 'proc-0', 'proc-1', 'output-0']);
-  });
-
-  it('resolves the main sequence even when node IDs are prefixed (mini lane)', () => {
-    const yaml = `input:
-  kafka: {}
-pipeline:
-  processors:
-    - log: {}
-output:
-  drop: {}`;
-    const { nodes } = parsePipelineFlowTree(yaml, { idPrefix: 'm1' });
-    const seq = mainFlowSequence(nodes).map((n) => n.id);
-    expect(seq).toEqual(['m1-input-0', 'm1-proc-0', 'm1-output-0']);
   });
 });
 

@@ -668,6 +668,25 @@ export function VisualEditorPanel({
     [commitPending]
   );
 
+  // Stable canvas callbacks — inline arrows here would change identity every render and
+  // defeat the canvas's Dagre-layout memo (which keys on these props).
+  const handleCanvasSelectNode = useCallback(
+    (id: string, target: EditTarget, caseTarget?: EditTarget) => selectNode({ id, target, caseTarget }),
+    [selectNode]
+  );
+  const handleClearSelection = useCallback(() => selectNode(null), [selectNode]);
+  const handleSpineInsert = useCallback(
+    (index: number) => {
+      commitPending();
+      setPendingInsert({ context: 'spine', index });
+    },
+    [commitPending]
+  );
+  const handleAddConnectorSection = useCallback(
+    (section: string) => onAddConnector?.(section as ConnectComponentType),
+    [onAddConnector]
+  );
+
   // "Create new resource" from a node's resource field: open the picker filtered to the
   // resource kind (memory/redis/memcached, …); the pick is created and linked together.
   const handleRequestCreateResource = useCallback(
@@ -731,21 +750,12 @@ export function VisualEditorPanel({
           focusNodeId={focus.id || undefined}
           focusToken={focus.token}
           lintErrorsByNode={lintMessagesByNode}
-          onAddConnector={
-            isEditing && onAddConnector ? (section) => onAddConnector(section as ConnectComponentType) : undefined
-          }
+          onAddConnector={isEditing && onAddConnector ? handleAddConnectorSection : undefined}
           onAddSasl={isEditing ? onAddSasl : undefined}
           onAddTopic={isEditing ? onAddTopic : undefined}
-          onClearSelection={() => selectNode(null)}
-          onInsert={
-            isEditing
-              ? (index) => {
-                  commitPending();
-                  setPendingInsert({ context: 'spine', index });
-                }
-              : undefined
-          }
-          onSelectNode={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
+          onClearSelection={handleClearSelection}
+          onInsert={isEditing ? handleSpineInsert : undefined}
+          onSelectNode={handleCanvasSelectNode}
           onSlotInsert={isEditing ? handleSlotInsert : undefined}
           selectedNodeId={selected?.id}
           selectedTargetKind={selected?.target.kind}

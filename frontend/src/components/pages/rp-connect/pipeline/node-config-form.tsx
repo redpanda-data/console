@@ -32,7 +32,10 @@ import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 import { ScrollShadow } from './scroll-shadow';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import { checkRequired } from '../utils/schema';
-import type { EditTarget } from '../utils/yaml';
+import type { EditTarget, ResourceKind } from '../utils/yaml';
+
+// Re-exported for node-inspector, which imports ResourceKind from here.
+export type { ResourceKind } from '../utils/yaml';
 
 // A direct child (case / step) of a control-flow component, shown in the inspector as a
 // clickable row so you can jump from the high-level construct to the actual node's full config.
@@ -60,8 +63,7 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   return;
 };
 
-// One clickable child row: its routing condition (brand/red/muted) over the component name, a
-// lint count if any, and a chevron. Selecting it navigates the inspector to that node.
+// Routing-condition text color: red for error paths, muted for default, brand otherwise.
 const childItemCondColor = (item: InspectorChildItem): string => {
   if (item.isErrorPath) {
     return 'text-destructive';
@@ -72,6 +74,8 @@ const childItemCondColor = (item: InspectorChildItem): string => {
   return 'text-brand';
 };
 
+// One clickable child row: its routing condition over the component name, a lint count if
+// any, and a chevron. Selecting it navigates the inspector to that node.
 const ChildItemRow = ({
   item,
   onSelect,
@@ -128,8 +132,6 @@ const ChildItemsList = ({
     </Text>
   </div>
 );
-
-export type ResourceKind = 'cache' | 'rate_limit';
 
 // Resource-link context: the existing labels to offer and a create-and-link action.
 // Provided by the inspector (which owns the full YAML) and consumed by resource-ref
@@ -217,7 +219,7 @@ function hasOptions(spec: RawFieldSpec): boolean {
 // A reference to a cache/rate_limit resource: a scalar string whose field type names
 // the resource kind (not an inline component). Rendered as a label dropdown so the
 // link can't be mistyped, and stored/assembled like any other scalar string.
-export function isResourceRefField(spec: RawFieldSpec): boolean {
+function isResourceRefField(spec: RawFieldSpec): boolean {
   return (
     Boolean(spec.name) &&
     spec.kind === 'scalar' &&
@@ -444,10 +446,8 @@ function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: 
   }
 }
 
-// Assemble the component entry. Start from the existing config so anything we don't
-// render — and anything the user didn't touch — round-trips byte-for-byte (no
-// silent re-coercion of values like `count: 1000$`). Then overlay only the fields
-// the user actually changed: the raw-YAML section, and each edited scalar/array.
+// Assemble the component entry: start from the existing config (so unrendered and untouched
+// fields round-trip byte-for-byte) and overlay only the fields the user actually changed.
 function buildComponentEntry({
   componentName,
   value,
@@ -772,9 +772,7 @@ export function NodeConfigForm({
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
   const { dirtyFields, isDirty } = formState;
 
-  // No per-node Apply button: edits auto-commit when you leave the node (or save the pipeline).
-  // We REPORT the assembled config as it changes (null when clean) and the inspector commits it at
-  // the right time — see onConfigChange. `useWatch` re-runs the reporter on each edit.
+  // Re-report the assembled config (null when clean) on every edit — see onConfigChange.
   const watched = useWatch({ control });
   // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; the config is rebuilt from the latest values/props read in the body.
   useEffect(() => {

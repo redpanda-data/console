@@ -99,6 +99,8 @@ const mockEditorInstance = {
     contentChangeListeners.push(cb);
     return { dispose: vi.fn() };
   }),
+  // Cursor → structure-tree highlight sync subscribes to this.
+  onDidChangeCursorPosition: vi.fn(() => ({ dispose: vi.fn() })),
   executeEdits: vi.fn(),
   focus: vi.fn(),
   // Scroll API used by the read-only viewer's vertical overflow shadows.
@@ -599,7 +601,7 @@ describe('PipelinePage', () => {
     expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
   });
 
-  it('hydrates the sidebar flow canvas with pipeline configYaml in view mode', async () => {
+  it('hydrates the sidebar structure tree from the pipeline config in view mode', async () => {
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation(
       (flag: string) => flag === 'enablePipelineDiagrams' || flag === 'enableRpcnVisualEditor'
@@ -608,10 +610,11 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    await waitFor(() => {
-      const diagram = screen.getByTestId('flow-canvas');
-      expect(diagram.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
-    });
+    // The sidebar is the structure-tree outline (the old mini flow diagram was removed), hydrated
+    // from the config — its input/output components appear as tree rows once the pipeline loads.
+    await waitFor(() => expect(screen.getByText('stdin')).toBeInTheDocument());
+    expect(screen.getByText('stdout')).toBeInTheDocument();
+    expect(screen.getByRole('tree')).toBeInTheDocument();
   });
 
   it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {

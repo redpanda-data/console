@@ -73,9 +73,7 @@ function searchValue(node: PipelineFlowNode): string {
 
 /**
  * The canvas command palette (opened with `/`): fuzzy-search to jump to any node, plus the global
- * actions (view in YAML, undo/redo). Modeled on n8n's command bar and Step Functions' state search
- * — fast keyboard navigation for non-trivial pipelines where scanning the canvas is slow. (⌘K is
- * reserved by the outer app-shell search; adding steps + templates have their own canvas entry points.)
+ * actions (view in YAML, undo/redo). Opens on `/` because ⌘K is reserved by the app-shell search.
  */
 export function CanvasCommandPalette({
   open,

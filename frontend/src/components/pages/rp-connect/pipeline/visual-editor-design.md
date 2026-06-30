@@ -38,12 +38,16 @@ processor); AWS Step Functions Workflow Studio (nested Parallel/Map canvases).
 The dedicated, full-canvas visual editor has shipped (behind the flag):
 
 - **Dedicated left→right canvas** (`pipeline-flow-canvas.tsx`) — its own React Flow
-  surface with background dots, pan/zoom and Controls. It does **not** reuse the
-  mini sidebar diagram. Layout is `computeFlowLayout` (deterministic): the data
-  flow (input → top-level processors → output) runs left→right as a spine of large
-  cards; a processor containing a sub-pipeline (branch/catch/switch) threads its
-  inner steps downward beneath it; resources sit in a lane below. Edges route
-  through the actual nodes via smooth-step paths and per-node handles.
+  surface with background dots, pan/zoom, Controls, a minimap, an armed zoom tool,
+  and fit-on-init (`FitOnInit` calls `fitView` once nodes are measured). It is the
+  only visualization — there is no separate mini sidebar diagram. Layout is a single
+  deterministic engine, `computeGraphLayout` (Dagre) in `utils/pipeline-flow-parser.ts`:
+  the parsed tree is flattened into one left→right DAG and laid out with
+  `rankdir: 'LR'` and the `network-simplex` ranker. Control flow is fully flattened —
+  each switch/branch/try/parallel becomes a **split** marker node (`flowSplit`) whose
+  branches fan out as labelled edges and reconverge at a **merge** node (`flowMerge`).
+  Dagre routes every edge around the cards; its waypoints are carried on each edge as
+  `points` (via `graphEdgePoints`) and rendered by the single `flowGraphEdge` edge type.
 - **Larger node cards** (`pipeline-flow-canvas-nodes.tsx`) showing a kind badge,
   connector logo + name, and the most important config values (`meta`, from
   `pipeline-flow-meta.ts`), with hover Edit/Remove/Docs and a `+` insertion
@@ -68,8 +72,9 @@ The dedicated, full-canvas visual editor has shipped (behind the flag):
   nested objects/arrays and for components whose schema we don't have
   (`node-inspector.tsx` chooses form vs. raw, in the right rail).
 - All edits remain deterministic YAML mutations (`utils/yaml.ts`):
-  `getComponentAt`, `setComponentAt`, `removeComponentAt`, `insertProcessorAt`,
-  `appendResource`, `buildInsertableComponent`, keyed by an `EditTarget`.
+  `getComponentAt`, `setComponentAt`, `removeComponentAt`, `insertComponentAt`,
+  `appendResource`, `buildInsertableComponent`, `renameResourceReferences`, keyed by
+  an `EditTarget`.
 
 ### Flow semantics (data-flow accuracy)
 
@@ -94,130 +99,88 @@ Functions Choice/Parallel/Catch, n8n copy-fan-out, Apache Hop copy-vs-error hops
 - **Resource references**: a muted dashed **`uses`** edge from a component to the
   resource it references (cache/rate_limit `resource:`), matched by resource label.
 
-Mechanics: containers expose two internal handles — `gs` (header source, emits
-entry/copy/fan-out) and `gt` (header target, receives merge-back/fan-in). All
-non-spine edges share one configurable edge type (`flowLink`) whose stroke colour,
-dash and optional label come from edge `data` (`tone` ∈ primary|muted|error,
-`dashed`, `label`). Condition labels and reference edges are **suppressed in the
-compact sidebar** to keep it clean.
+Mechanics: there are no enclosing container boxes. Each control-flow construct
+is emitted as a flattened sub-graph (`buildPipelineGraph` → `emitGraphStep`/
+`emitFan`/`emitSequentialGroup`/`emitTryCatch`): a `flowSplit` marker fans out one
+labelled edge per branch, the branch bodies are laid out as their own ranks, and a
+`flowMerge` node (or, for an input broker, a labelled hub) joins the branches that
+reconverge. Every edge is the single `flowGraphEdge` type; its `data` carries
+`graphType`, `tone` (∈ primary|muted|error from `GRAPH_EDGE_TONE`), `dashed`,
+optional `label`, and the Dagre-routed `points`. The label `t`-position
+(`labelT`) seats condition labels in the clear rank gap between split and target.
 
 Supporting polish:
 
-- **Resources sit under the node that uses them.** In horizontal layout each
-  resource's x is aligned to the (absolute) x of its referencing component, then a
-  left→right sweep de-overlaps the lane — so a `uses` edge is a short drop, not a
-  full-canvas traversal (`resourceLaneX`/`absoluteX`).
-- **Section colour accents.** A card/container's role (input green, processor blue,
+- **Section colour accents.** A card/marker's role (input green, processor blue,
   output purple, resource orange — `SECTION_ACCENT`) reads from a **tinted title band**
-  (`headerTintStyle`, a faint wash of the role colour over the card behind the kind
-  label / logo / name) plus the colour-matched kind label, with the body left clean.
-  No left bar or full colour border, so the role cue never competes with the selection
-  (primary) / error (destructive) rings. The connector logo sits in an elevated tile
-  (`LogoTile`) on the band.
-- **Adaptive edge legend.** The full canvas shows a small bottom-left legend that
-  lists only the edge kinds actually present (flow / copy-merge / error / uses).
-- **Roomy container routing.** A container reserves a wider routing gutter
-  (`fanGutter`) on the side it fans out (`gs`) and/or merges/fans in (`gt`), plus
-  extra vertical spacing between fanned children (`fanGap`) — see `containerInsets`
-  — so switch/branch/broker edges aren't crammed against the box edge. Each fanned
-  sibling routes down its **own vertical lane** in that gutter (`laneOffset` →
-  per-edge `centerX` in `FlowLinkEdge`) so parallel branches never overlap on a
-  shared trunk. The fanning port (`gs`/`gt`) is **anchored at the vertical centre of
-  the children area** (`portY`, computed from the container height, passed to
-  `ContainerHandles`) so branches radiate level with the children — copy/merge come
-  out horizontal and switch branches diverge immediately rather than running
-  parallel down a gutter. Lanes nest **like parentheses around the centre port**
-  (`fanLanes`): cases above the port keep the staircase (outermost hugs the
-  border, nearer cases nest deeper) and cases below mirror it; the halves never
-  share a y-range so they reuse lane offsets — provably crossing-free, on both
-  the fan-out and fan-in sides. A resource whose referencing node is collapsed
-  away also **aligns under the visible ancestor** (`resourceLaneX` walks up to
-  the collapsed box), matching the edge re-anchoring.
-- **No on-edge text labels.** Routing conditions are chips on cards and the edge
-  vocabulary lives in the legend; the only edge labels are the short branch
-  `copy`/`merge`, lifted above their (horizontal) lines via `labelOffsetY`.
-- **Switch cases render condition-forward.** A `switch` case is a structural
-  wrapper (`isCase`, no `editTarget`) — it renders as a "CASE N" eyebrow above its
-  routing condition on a full-width mono line (`CaseTitle`), not as a generic
-  "PROCESSOR + cube" card with a cramped condition chip. Clicking a case (or any
-  structural sub-node like a workflow stage) selects its nearest selectable
-  ancestor — the parent switch — via `selectionTargetForNode` walking up `parentId`.
-- **Cable management on dense graphs** (`decorateEdges` in the canvas):
-  resource-reference (`uses`) edges idle at a readable faint level
-  (muted-foreground @ ~60%), and dim to ~25% only when an unrelated node is
-  selected (like every other edge). Selection/hover scope includes a
-  container's **whole subtree**, so selecting a branch keeps its internal
-  chains/copy/merge lit while unrelated edges fade.
-- **The highlight family is brand orange-red.** The selection ring, the selected
-  node's connected lines, their arrowheads, and port sockets all render in the
-  Redpanda `brand` colour (`strokeFor`/`withHighlightMarker`) so the highlight
-  stands apart from the blue data-flow lines — error edges keep their red.
-- **Processor fans reconverge.** A parallel *processor* container
-  (switch/parallel/workflow) draws fan-in edges from each alternative back to
-  its right port — data flows back out and continues to the next step — with
-  the same per-branch lanes, tones, and port sockets as the fan-out. *Output*
-  fans (broker/switch/fallback outputs) terminate at their sinks and draw none.
-- **Geometry-first reference cables (straight when possible, never crossing).**
-  `computeReferenceCables` runs *before* the resource lane is placed and, for each
-  `uses` edge, computes the x of the clear vertical channel it will drop through:
-  if the space straight below the source is clear (`dropClear` tests every node's
-  bounding box) it drops at the **node's own x**; otherwise it slips into the gap
-  **just outside its column** on the side nearer the node (staggered when shared).
-  Each resource is then placed **directly under its cable's channel** (`resourceLaneX`
-  consumes `desiredResourceLeft`), so the cable lands as a **straight vertical drop**
-  with the horizontal bus run collapsed to zero — only resources displaced by the
-  de-overlap sweep (tight `RESOURCE_GAP`) need a short bus jog. Several cables out of
-  the **same** node are offset (`REFERENCE_DROP_STAGGER`) so they leave it as distinct
-  parallel lines rather than stacking on one. The actual edge (`pushReferenceEdges` →
-  `referenceRoutePath`, `sourceHandle: 'b'` → `targetHandle: 't'`) routes drop →
-  channel → its own `busY` lane → resource top.
-- **Fan-in / merge terminate in the port socket, not an arrowhead.** Any edge
-  whose container end is a port (`portDot: 'target'` — fan-in, branch merge) omits
-  its arrowhead: several fan-in lines into one port would otherwise stack
-  arrowheads on the socket. Fan-out / entry / reference edges keep their arrow.
-- **Expand/collapse appearance.** Nodes carry a `transform 200ms` transition so
-  they glide when neighbours shift. A node that's *new this render* (a child
-  revealed by expanding its container) would otherwise slide in from the canvas
-  origin, so the canvas tracks the previous render's node ids (`previousIds`):
-  appearing nodes drop the transform transition (snap to their spot) and the card
-  body plays a `fade-in zoom-in-95` enter — applied to the card, never the React
-  Flow node wrapper whose `transform` drives positioning — so they grow in place
-  from the expanded section.
-- **Reference anchoring + collapse re-anchoring.** A `uses` cable attaches to the
-  **actual referencing node** (`visibleAnchor`) so it points at the exact component
-  using the resource. When that node is hidden inside a collapsed container it
-  re-anchors to its **nearest visible ancestor**, so resources never dangle while
-  collapsed. (Routing geometry above keeps even a deeply-nested attachment clear of
-  other cards.)
-- **Container ports sit level with the child rows.** `containerPortYs` anchors a
-  branch's `gs` (copy) at the **first child's connector row** and its `gt` (merge)
-  at the **last child's row** — those edges are clean horizontal lines in the
-  child's own row, never elbowing through the header or its icon. Fanning
-  containers (switch/parallel/broker) keep a children-area **centre trunk** that
-  the lanes radiate from. `FLOW_SPINE_HANDLE_TOP` is the single source of truth
-  for the connector-row offset (canvas imports it).
-- **No entry edges on sequential containers.** Containment already shows the flow
-  (the spine arrives at the box itself) and the narrow sequential inset would
-  render an entry edge as an unreadable stub. The semantics live on the card:
-  `catch` shows a red **"on error"** chip (joining the `if <check>` / `default`
-  chip vocabulary); chain edges show internal order.
-- **Port sockets.** Entry/copy/merge/fan-out/fan-in edges draw a small circle at
-  the exact point they meet the container boundary (`portDot` on the edge data,
-  rendered by `FlowLinkEdge` at the true endpoint) — NiFi-style ports, so the
-  lines visibly plug into containers instead of trailing off their borders.
-- **Conditions as chips, not floating labels.** A branch's routing condition is a
-  chip on the receiving card (`if <check>` / `default`, red for error routes) via
-  `BranchConditionChip`, so fan-out edges stay clean unlabeled lines. All of this is derived purely from
-`parsePipelineFlowTree` (new node fields: `condition`, `isDefault`, `isErrorPath`,
-`branch`, `resourceRef`) — still 100% deterministic from YAML.
+  (`headerTintStyle`, a faint wash of the role colour behind the kind label / logo /
+  name) plus the colour-matched kind label, with the body left clean. No left bar or
+  full colour border, so the role cue never competes with the selection (primary) /
+  error (destructive) rings. The connector logo sits in an elevated tile (`LogoTile`)
+  on the band; control-flow split markers use a filled accent glyph tile instead.
+- **Split / merge markers do the routing, not boxes.** Control flow is flattened:
+  `FlowSplitNode` is the fan-out / scope marker (glyph + name + descriptor, e.g.
+  "3 cases"), and `FlowMergeNode` is the small join disc where reconverging branches
+  meet. There are no enclosing container cards and no `gs`/`gt` ports — the fan lanes
+  are real Dagre ranks, and Dagre's roomy `ranksep`/`nodesep` (`GRAPH_*` constants)
+  keep the labelled fan edges clear of the cards.
+- **Source-aligned ranks.** Dagre's successor-based ranker would pull a fanned case
+  rightward toward the merge; instead `forwardRanks` computes each node's longest-path
+  distance from the input and the layout pins it there via per-edge `minlen`, so cases
+  sit just right of their split.
+- **Switch cases render condition-forward.** A switch case's routing condition is
+  stamped onto its first body step (`caseEntrySteps`), which renders it as a
+  prominent `ConditionRow` (`WHEN <check>` / `DEFAULT` / `ON ERROR`) above the card —
+  clickable to edit the case (`caseEditTarget` → SwitchCaseEditor). An empty-bodied
+  case has no card, so it keeps the condition as an on-edge `LinkLabel` fallback whose
+  click selects the case (`selectId`/`selectTarget`). Selecting any structural sub-node
+  resolves to its nearest selectable ancestor via the node's `ownerId` (parser `parentId`).
+- **Conditions as labels / chips, not duplicated.** Fan-out edges for a switch/fallback
+  carry their `check` as an on-edge label only when no entry card can host it; otherwise
+  the condition lives on the card (`ConditionRow` / `BranchConditionChip`: `if <check>` /
+  `default` / `on error`, red for error routes). Derived purely from `parsePipelineFlowTree`
+  node fields (`condition`, `isDefault`, `isErrorPath`, `branch`, `resourceRef`) — still
+  100% deterministic from YAML.
+- **Cable management on dense graphs.** Resource-reference (`uses`) edges idle at a
+  readable faint level (muted-foreground), and dim to ~25% when an unrelated node is
+  selected — like every edge. Selection/hover scope includes a construct's whole subtree,
+  so selecting a branch keeps its internal chain/copy/merge lit while unrelated edges fade.
+- **The highlight family is brand colour.** A selected/hovered edge jumps to the
+  highlight stroke and a heavier weight (`strokeFor`/`linkStyle` in
+  `pipeline-flow-canvas-nodes.tsx`) so it stands apart from the idle data-flow lines —
+  error edges keep their red regardless.
+- **Processor fans reconverge; output fans terminate.** A parallel *processor* construct
+  (switch/parallel/workflow) draws fan-in (`fanin-…`) edges from each alternative into a
+  `flowMerge` disc — data flows back out and continues. An input broker reconverges at a
+  labelled hub instead of a plain disc. *Output* fans (broker/switch/fallback outputs)
+  terminate at their sinks and draw no merge.
+- **Merge / fan-in edges omit the arrowhead.** Edges into a join (`fanin-…` / `merge-…`,
+  and `loopback`) drop their `markerEnd` — the merge disc / broker hub already conveys
+  "flow converges here", and several arrowheads stacked on one point would read as a blob.
+  Fan-out / flow / copy / error edges keep their arrow.
+- **Appear animation.** Nodes carry a `transform 200ms` transition so they glide when
+  neighbours shift. A node new this render (e.g. revealed by expanding) plays a
+  `fade-in zoom-in-95` enter on the card body (`APPEAR_ANIM`) — never the React Flow node
+  wrapper whose `transform` drives positioning — so it grows in place.
+- **Resource dependency lane.** Resources are shared dependencies, not flow steps, so
+  they're laid out AFTER Dagre (`placeResourceDependencies`) in a row just below the flow,
+  each near its user's x with a left→right de-overlap sweep (tight `RESOURCE_GAP`). Each
+  `uses` cable drops out of the user's BOTTOM handle (`sourceHandle: 'b'`), jogs into the
+  node-free inter-rank gap nearest the resource, runs along a staggered bus below the flow
+  (`RES_BUS_*`), then into the resource's TOP (`targetHandle: 't'`) — a muted dashed
+  `reference` edge that never crosses a card.
+- **Ghost insert affordances.** In edit mode, "+ Add …" pills are placed AFTER layout
+  (`placeGraphInserts`, anchored just below their control-flow marker) so they never
+  perturb Dagre's ranks; a fan construct's "Add case / Add input" renders as a footer
+  row inside the split card (`footerAdd`), and on-edge "+" buttons (`onInsert`/`slot`)
+  insert into a body chain.
 
 ### Template gallery entry point
 
 When the pipeline is empty (only section labels / `none` placeholders) and editing,
 a floating **"Start from a template"** card (`template-cta.tsx`, `motion/react`
-enter/exit animation) appears pinned to the bottom — in the **sidebar visualizer**
-(full-width) and on the **full visual editor** (centered). It opens the
-`TemplateGalleryDialog` and animates away once the pipeline gets real content.
+enter/exit animation) appears pinned to the bottom (centered) on the visual editor.
+It opens the `TemplateGalleryDialog` and animates away once the pipeline gets real content.
 
 ### Flow completeness (problems, secrets, keyboard, saving)
 
@@ -281,33 +244,13 @@ enter/exit animation) appears pinned to the bottom — in the **sidebar visualiz
   nested component configs, unknown keys) still round-trip via a scoped raw-YAML
   fallback.
 
-Shared node IDs: both the canvas and the mini sidebar diagram derive from the same
-`parsePipelineFlowTree` output, so node IDs line up across views.
+The visual editor is **full-canvas only** — there is no mini sidebar diagram. All
+node IDs come from `parsePipelineFlowTree`, and the single `computeGraphLayout`
+(Dagre) engine positions them.
 
-**Mini sidebar lane**: gated behind `enableRpcnVisualEditor` (with
-`enablePipelineDiagrams` as the outer gate). When the visual-editor flag is **on**
-it renders the refreshed `PipelineFlowCanvas`; when **off** it falls back to the
-original `PipelineFlowDiagram` mini-diagram (master behavior). The new lane renders
-the **same `PipelineFlowCanvas`** as the Visual tab but in a `simple` +
-`orientation="vertical"` mode — a compact, static overview:
-- `simple`: no background dots, no zoom, no free pan, no controls — locked at
-  zoom 1, **top-aligned**, with vertical scroll only for tall pipelines.
-- `compact`: smaller one-row cards (no kind badge / metadata), tighter spacing
-  (`COMPACT_DIMS` in `computeFlowLayout`).
-- Straight connectors: the top/bottom handles are anchored at a fixed left offset
-  (`SPINE_HANDLE_LEFT`), so vertically-stacked cards of differing widths connect on
-  a straight vertical line rather than center-to-center diagonals.
-- Section dividers (`INPUT`/`PROCESSORS`/`OUTPUT`) are indented
-  (`FLOW_SECTION_LABEL_INDENT`) so the spine runs clear to their left.
-
-The old indented-tree layout (`computeTreeLayout` / `PipelineFlowDiagram`) is no
-longer used by the page (kept for now, still tested).
-
-Not yet built (deferred): the cross-view **morph animation** (nodes gliding
-between the mini lane and the canvas) and the matching arrow-flow polish of the
-mini lane; full recursive form editing of deeply nested fields (nested still uses
-the raw-YAML fallback); multi-input/output array editing; reorder. See §10.
-§4 records why we used **edit targets** instead of generic paths.
+Not yet built (deferred): full recursive form editing of deeply nested fields
+(nested still uses the raw-YAML fallback); multi-input/output array editing; reorder.
+See §10. §4 records why we used **edit targets** instead of generic paths.
 
 This document captures the analysis, design, and requirements for the Redpanda
 Connect (RPCN) **Visual editor** — the third lane on the pipeline page.
@@ -316,9 +259,8 @@ Connect (RPCN) **Visual editor** — the third lane on the pipeline page.
 
 ## 1. Goals
 
-1. A **Visual** representation of a pipeline that is richer and better laid out
-   than the minimal sidebar diagram (`PipelineFlowDiagram`), usable as the primary
-   way to read and edit a pipeline.
+1. A **Visual** representation of a pipeline that is rich and well laid out, usable
+   as the primary way to read and edit a pipeline.
 2. In **view mode**: a large, read-only diagram with the most important meta per
    node and a way to open a read-only config view per node.
 3. In **edit mode**: the same diagram plus inline, contextual editing affordances:
@@ -352,8 +294,8 @@ Connect (RPCN) **Visual editor** — the third lane on the pipeline page.
 ```
 
 - The diagram is derived from YAML via `parsePipelineFlowTree` →
-  `computeTreeLayout` (both already exist and are pure). The visual editor reuses
-  this pipeline; it does **not** fork the model.
+  `computeGraphLayout` (both are pure). The visual editor reuses this pipeline; it
+  does **not** fork the model.
 - Every user action in the Visual lane produces a **YAML mutation** (a pure
   `string → string` transform), which is written back via the editor store's
   `setYamlContent`. The diagram then re-renders deterministically.
@@ -368,10 +310,10 @@ Connect (RPCN) **Visual editor** — the third lane on the pipeline page.
 | Concern | Existing asset | Location |
 |---|---|---|
 | Parse YAML → tree of nodes | `parsePipelineFlowTree`, `PipelineFlowNode` | `utils/pipeline-flow-parser.ts` |
-| Deterministic layout (x/y, edges, collapse) | `computeTreeLayout`, `MAX_NESTING_DEPTH` | `utils/pipeline-flow-parser.ts` |
+| Deterministic layout (x/y, edges, routing) | `computeGraphLayout` (Dagre), `MAX_BRANCH_DEPTH` | `utils/pipeline-flow-parser.ts` |
 | Node rendering (section/group/leaf) | `pipelineNodeTypes`, `TreeLeafNode`, `TreeGroupNode`, `TreeSectionNode` | `pipeline-flow-nodes.tsx` |
 | Edge rendering | `pipelineEdgeTypes` (`TreeEdge`, `SectionEdge`) | `pipeline-flow-nodes.tsx` |
-| React Flow container, zoom, extent, scroll | `PipelineFlowDiagram` | `pipeline-flow-diagram.tsx` |
+| React Flow surface (zoom, minimap, fit) + nodes/edges | `PipelineFlowCanvas`, `flowNodeTypes`, `flowEdgeTypes` | `pipeline-flow-canvas.tsx`, `pipeline-flow-canvas-nodes.tsx` |
 | Component logos | `ConnectorLogo` | `onboarding/connector-logo.tsx` |
 | Docs links per connector | `getConnectorDocsUrl` | `pipeline-flow-nodes.tsx` |
 | Connector picker (search + categories) | `AddConnectorDialog`, `ConnectTiles` | `onboarding/add-connector-dialog.tsx`, `onboarding/connect-tiles.tsx` |
@@ -439,8 +381,8 @@ variant without disturbing the existing cases.
 
 ### 5.1 View mode (read-only Visual lane)
 
-- Large diagram filling the lane (reuse `PipelineFlowDiagram`'s container, with
-  zoom controls visible — not `hideZoomControls`).
+- Large diagram filling the lane (`PipelineFlowCanvas`'s React Flow surface, with
+  zoom controls and minimap visible).
 - Each node shows the **most important meta** for its kind (see §5.4).
 - Each node has a way to open a **read-only config view** for that section (a
   dialog or side panel showing that component's YAML/fields). Reuse the read-only
@@ -566,9 +508,10 @@ New files under `pipeline/` (names indicative):
 - `visual-editor-panel.tsx` — the interactive Visual lane (replaces the current
   `VisualEditorPanel` placeholder). Composes the diagram + insertion layer +
   toolbar. Read-only when `mode === 'view'`, interactive when editing.
-- `visual-editor-flow.tsx` — wraps/extends `PipelineFlowDiagram` to inject
-  insertion-point nodes/edges and per-node edit/remove callbacks. Keep the parser
-  + layout as-is; add an overlay of `+` affordances driven by node `path`s.
+- `pipeline-flow-canvas.tsx` / `pipeline-flow-canvas-nodes.tsx` — the React Flow
+  surface and its node/edge components, with insertion-point nodes/edges and per-node
+  select/edit/remove callbacks. Keep the parser + layout (`computeGraphLayout`) as-is;
+  the `+` affordances are placed after layout and driven by node `editTarget`s.
 - `node-inspector.tsx` — the persistent right-rail config editor (form vs. raw YAML).
 - `node-meta.ts` — the summary extractor (§5.4): `getNodeSummary(spec, config)`.
 - `insertion-points.ts` — derives valid insertion slots (`{ containerPath, index,
@@ -613,8 +556,8 @@ Changes to existing files:
 - Integration tests (`index.test.tsx` style): clicking a `+` opens the contextual
   menu; selecting a connector inserts it at the right index; Edit opens the dialog;
   saving the dialog updates the YAML lane; remove deletes the node.
-- The existing tests already assert the Visual lane shows the placeholder and
-  hides the sidebar diagram — update those as the panel is built.
+- Integration tests cover the full-canvas Visual lane (`pipeline-flow-canvas.test.tsx`,
+  `pipeline-flow-canvas.render.test.tsx`, `visual-editor-panel.test.tsx`).
 
 ---
 

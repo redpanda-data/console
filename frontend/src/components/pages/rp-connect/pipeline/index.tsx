@@ -1085,10 +1085,13 @@ function PipelinePageContent() {
       if (mode === 'view') {
         setActiveViewLane('configuration');
       } else {
+        // Commit the selected node's in-progress edit before unmounting the Visual lane,
+        // otherwise the lane switch discards it (no commit-on-unmount).
+        editorStore.getState().pendingEditCommit?.();
         setActiveEditLane('yaml');
       }
     },
-    [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane]
+    [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane, editorStore]
   );
 
   return (

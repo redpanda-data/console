@@ -45,8 +45,8 @@
   }
 }
 
-/* Marching dashes along the RPCN visual editor's data-flow spine, conveying the
-   direction data moves. The prefers-reduced-motion guard above disables it. */
+/* Marching dashes along the RPCN visual editor's data-flow spine. The prefers-reduced-motion
+   guard above disables it. */
 @keyframes pipeline-flow-dash {
   to {
     stroke-dashoffset: -20;

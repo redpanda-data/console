@@ -208,9 +208,7 @@ export function NodeInspector({
       commitRef.current = null;
     };
   }, [commit, commitRef]);
-  // The inspector instance is reused across node switches, so clear the pending drafts when the
-  // selected node changes — the new node starts clean until its editors report (the panel has
-  // already committed the previous node's drafts before switching).
+  // Clear pending drafts when the selected node changes — the inspector instance is reused.
   // biome-ignore lint/correctness/useExhaustiveDependencies: target/caseTarget are change triggers; the body only resets refs.
   useEffect(() => {
     componentDraftRef.current = null;
@@ -348,10 +346,8 @@ export function NodeInspector({
               childItems={childItems}
               componentName={componentName}
               headerSlot={conditionSection}
+              // Re-key on the saved value so external changes (undo/redo, YAML lane) re-init the form.
               key={JSON.stringify(component)}
-              // Re-key on the component's saved value so an EXTERNAL change (undo/redo, YAML lane)
-              // re-initializes the form. The user's own edits don't change the saved value until
-              // they're committed on leave/save, so editing doesn't remount mid-stream.
               onConfigChange={(next) => {
                 componentDraftRef.current = next;
               }}
@@ -479,6 +475,22 @@ function caseWithCheck(caseObject: Record<string, unknown>, check: string): Reco
   return next;
 }
 
+// Shared draft state for a case's `check` field: tracks the edited value, re-syncs when the
+// saved case changes, and reports the edited case up as a draft (null when clean) — no Apply button.
+function useCaseCheckDraft(
+  caseObject: Record<string, unknown>,
+  onConfigChange?: (next: Record<string, unknown> | null) => void
+) {
+  const initial = typeof caseObject.check === 'string' ? caseObject.check : '';
+  const [check, setCheck] = useState(initial);
+  useEffect(() => setCheck(initial), [initial]);
+  const dirty = check !== initial;
+  useEffect(() => {
+    onConfigChange?.(dirty ? caseWithCheck(caseObject, check) : null);
+  }, [check, dirty, caseObject, onConfigChange]);
+  return { check, setCheck, dirty };
+}
+
 // Edits a switch case's routing condition (`check`). An empty condition makes it the
 // default/else case. The case's body (processors / output) are separate nodes on the
 // canvas; this rail only owns the condition.
@@ -497,15 +509,7 @@ const SwitchCaseEditor = ({
   onClose?: () => void;
   readOnly?: boolean;
 }) => {
-  const initial = typeof caseObject.check === 'string' ? caseObject.check : '';
-  const [check, setCheck] = useState(initial);
-  useEffect(() => setCheck(initial), [initial]);
-  const dirty = check !== initial;
-
-  // Report the edited case up as a draft (committed on leave / save) — no Apply button.
-  useEffect(() => {
-    onConfigChange?.(dirty ? caseWithCheck(caseObject, check) : null);
-  }, [check, dirty, caseObject, onConfigChange]);
+  const { check, setCheck } = useCaseCheckDraft(caseObject, onConfigChange);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -569,13 +573,7 @@ const CaseConditionSection = ({
   /** A lint message on this condition — renders the input in its error state. */
   error?: string;
 }) => {
-  const initial = typeof caseObject.check === 'string' ? caseObject.check : '';
-  const [check, setCheck] = useState(initial);
-  useEffect(() => setCheck(initial), [initial]);
-  const dirty = check !== initial;
-  useEffect(() => {
-    onConfigChange?.(dirty ? caseWithCheck(caseObject, check) : null);
-  }, [check, dirty, caseObject, onConfigChange]);
+  const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
   return (
     <div className="border-brand/30 border-b bg-brand/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
