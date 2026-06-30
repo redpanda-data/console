@@ -39,10 +39,10 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
-import { type FormValues, type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
+import { type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
@@ -118,9 +118,10 @@ type NodeInspectorProps = {
   childItems?: InspectorChildItem[];
   /** Navigate the inspector to a child node. */
   onSelectChild?: (item: InspectorChildItem) => void;
-  /** Unapplied schema-form draft to restore for this node, and a reporter to preserve it. */
-  draftValues?: FormValues;
-  onDraftChange?: (values: FormValues | null) => void;
+  /** Populated by the inspector with a pure `(yaml) => yaml` that commits ALL pending edits for the
+      selected node (component + routing condition, threaded so they don't clobber). The panel calls
+      it before leaving the node and on pipeline save — there is no per-node Apply button. */
+  commitRef?: MutableRefObject<((yaml: string) => string) | null>;
 };
 
 // The lint message (if any) that falls on a switch case's routing `check` line — so the
@@ -164,12 +165,57 @@ export function NodeInspector({
   onClose,
   childItems,
   onSelectChild,
-  draftValues,
-  onDraftChange,
+  commitRef,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   // The routing condition for a case-entry node, read from its switch case.
   const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
+
+  // Pending edits, reported by the active editors as they change (null when clean). Refs (not
+  // state) so per-keystroke reporting doesn't re-render the inspector. `component` is what the form
+  // / raw / switch-case editor edits (applied at `target`); `condition` is the routing-condition
+  // section (applied at `caseTarget`).
+  const componentDraftRef = useRef<Record<string, unknown> | null>(null);
+  const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
+  // The resource's original label, captured for the rename cascade when committing a resource edit.
+  const resourceLabel0 =
+    target?.kind === 'resource' && component && typeof component.label === 'string' ? component.label : undefined;
+
+  // Commit ALL pending edits for this node into `yaml`, returning the next YAML. Condition first
+  // (it replaces the whole case, preserving the body), then the component (written into that case),
+  // so a node with both edits commits atomically without one clobbering the other.
+  const commit = useCallback(
+    (input: string): string => {
+      let next = input;
+      const cond = conditionDraftRef.current;
+      if (cond && caseTarget) {
+        next = setComponentAt(next, caseTarget, cond) ?? next;
+      }
+      const comp = componentDraftRef.current;
+      if (comp && target) {
+        next = applyComponentDraft(next, target, comp, resourceLabel0);
+      }
+      return next;
+    },
+    [target, caseTarget, resourceLabel0]
+  );
+  useEffect(() => {
+    if (!commitRef) {
+      return;
+    }
+    commitRef.current = commit;
+    return () => {
+      commitRef.current = null;
+    };
+  }, [commit, commitRef]);
+  // The inspector instance is reused across node switches, so clear the pending drafts when the
+  // selected node changes — the new node starts clean until its editors report (the panel has
+  // already committed the previous node's drafts before switching).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: target/caseTarget are change triggers; the body only resets refs.
+  useEffect(() => {
+    componentDraftRef.current = null;
+    conditionDraftRef.current = null;
+  }, [target, caseTarget]);
   // A lint problem that lands on the condition's `check` line — so the condition field can show
   // its own error state (red), not just the banner at the top.
   const conditionError = useMemo(
@@ -190,18 +236,16 @@ export function NodeInspector({
     return <InspectorEmptyState readOnly={readOnly} />;
   }
 
-  // A switch case is edited for its routing condition only (its body is its own nodes).
+  // A switch case is edited for its routing condition only (its body is its own nodes). The edit
+  // is reported as a draft (applied at `target`) and auto-committed on leave / save.
   if (target.kind === 'switchCase') {
     return (
       <SwitchCaseEditor
         caseObject={component}
-        onApply={(next) => {
-          const updated = setComponentAt(yaml, target, next);
-          if (updated !== null) {
-            onApply(updated);
-          }
-        }}
         onClose={onClose}
+        onConfigChange={(next) => {
+          componentDraftRef.current = next;
+        }}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
         onOpenInYaml={onOpenInYaml}
         readOnly={readOnly}
@@ -220,21 +264,6 @@ export function NodeInspector({
   // A resource's own label, and how many components reference it (shown as "Used by N").
   const resourceLabel = target.kind === 'resource' && typeof component.label === 'string' ? component.label : undefined;
   const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel) : 0;
-
-  const handleApply = (next: Record<string, unknown>) => {
-    let updated = setComponentAt(yaml, target, next);
-    // Renaming a resource's label cascades to every component that references it, so the
-    // link is never silently broken.
-    if (updated !== null && target.kind === 'resource' && resourceLabel) {
-      const nextLabel = typeof next.label === 'string' ? next.label : undefined;
-      if (nextLabel && nextLabel !== resourceLabel) {
-        updated = renameResourceReferences(updated, resourceLabel, nextLabel) ?? updated;
-      }
-    }
-    if (updated !== null) {
-      onApply(updated);
-    }
-  };
 
   // Resource labels for the `resource:` dropdowns in this component's form.
   const resourceLabels: Record<ResourceKind, string[]> = {
@@ -295,12 +324,13 @@ export function NodeInspector({
             <CaseConditionSection
               caseObject={caseObject}
               error={conditionError}
-              onApply={(next) => {
-                const updated = setComponentAt(yaml, caseTarget, next);
-                if (updated !== null) {
-                  onApply(updated);
-                }
-              }}
+              onConfigChange={
+                readOnly
+                  ? undefined
+                  : (next) => {
+                      conditionDraftRef.current = next;
+                    }
+              }
               readOnly={readOnly}
             />
           ) : null;
@@ -317,15 +347,15 @@ export function NodeInspector({
             <NodeConfigForm
               childItems={childItems}
               componentName={componentName}
-              draftValues={draftValues}
               headerSlot={conditionSection}
               key={JSON.stringify(component)}
-              // Re-key on the component's current value so that after Apply (the YAML
-              // changes) the form re-initializes from the saved config — clearing the
-              // dirty state so "Apply changes" disables and the edit is committed.
-              onApply={handleApply}
+              // Re-key on the component's saved value so an EXTERNAL change (undo/redo, YAML lane)
+              // re-initializes the form. The user's own edits don't change the saved value until
+              // they're committed on leave/save, so editing doesn't remount mid-stream.
+              onConfigChange={(next) => {
+                componentDraftRef.current = next;
+              }}
               onCreateResource={onCreateResource}
-              onDraftChange={onDraftChange}
               onSelectChild={onSelectChild}
               resourceLabels={resourceLabels}
               spec={spec}
@@ -336,7 +366,13 @@ export function NodeInspector({
         return (
           <>
             {conditionSection}
-            <RawComponentEditor component={component} onApply={handleApply} />
+            <RawComponentEditor
+              component={component}
+              key={JSON.stringify(component)}
+              onConfigChange={(next) => {
+                componentDraftRef.current = next;
+              }}
+            />
           </>
         );
       })()}
@@ -378,17 +414,6 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   );
 };
 
-// The inspector's bottom action bar: the component's own actions (Reset / Apply),
-// right-aligned. Secondary actions live in the header's 3-dot menu, not here.
-const InspectorFooter = ({ children }: { children?: React.ReactNode }) => {
-  if (!children) {
-    return null;
-  }
-  return (
-    <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">{children}</div>
-  );
-};
-
 // Lint problems for the selected node, shown in context above its config.
 const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
   <div className="shrink-0 border-destructive/30 border-b bg-destructive/5 px-4 py-3">
@@ -408,6 +433,28 @@ const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
     </ul>
   </div>
 );
+
+// Write a component-config draft at `target`, cascading a resource label rename to every component
+// that references it (so the link is never silently broken). Extracted from the inspector's commit
+// to keep that callback under the complexity budget.
+function applyComponentDraft(
+  yaml: string,
+  target: EditTarget,
+  config: Record<string, unknown>,
+  originalLabel?: string
+): string {
+  const applied = setComponentAt(yaml, target, config);
+  if (applied === null) {
+    return yaml;
+  }
+  if (target.kind === 'resource' && originalLabel) {
+    const nextLabel = typeof config.label === 'string' ? config.label : undefined;
+    if (nextLabel && nextLabel !== originalLabel) {
+      return renameResourceReferences(applied, originalLabel, nextLabel) ?? applied;
+    }
+  }
+  return applied;
+}
 
 // Apply a routing-condition `check` to a switch case, preserving key order: a non-empty check
 // is set in place; an empty one is omitted (the default/else case). Rebuilds rather than
@@ -437,14 +484,14 @@ function caseWithCheck(caseObject: Record<string, unknown>, check: string): Reco
 // canvas; this rail only owns the condition.
 const SwitchCaseEditor = ({
   caseObject,
-  onApply,
+  onConfigChange,
   onDelete,
   onOpenInYaml,
   onClose,
   readOnly,
 }: {
   caseObject: Record<string, unknown>;
-  onApply: (next: Record<string, unknown>) => void;
+  onConfigChange?: (next: Record<string, unknown> | null) => void;
   onDelete?: () => void;
   onOpenInYaml?: () => void;
   onClose?: () => void;
@@ -455,7 +502,10 @@ const SwitchCaseEditor = ({
   useEffect(() => setCheck(initial), [initial]);
   const dirty = check !== initial;
 
-  const apply = () => onApply(caseWithCheck(caseObject, check));
+  // Report the edited case up as a draft (committed on leave / save) — no Apply button.
+  useEffect(() => {
+    onConfigChange?.(dirty ? caseWithCheck(caseObject, check) : null);
+  }, [check, dirty, caseObject, onConfigChange]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -492,11 +542,6 @@ const SwitchCaseEditor = ({
           className="font-mono"
           disabled={readOnly}
           onChange={(e) => setCheck(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && dirty) {
-              apply();
-            }
-          }}
           placeholder='e.g. this.region == "us"'
           value={check}
         />
@@ -504,29 +549,22 @@ const SwitchCaseEditor = ({
           A Bloblang expression. Messages route to this case when it's true. Leave empty for the default (else) case.
         </Text>
       </div>
-      <InspectorFooter>
-        {readOnly ? null : (
-          <Button disabled={!dirty} onClick={apply} type="button">
-            Apply changes
-          </Button>
-        )}
-      </InspectorFooter>
     </div>
   );
 };
 
 // The routing condition of a case-entry node, edited inline at the TOP of that node's
 // inspector panel (brand accent, matching the on-canvas condition). Writes the case's `check`; an
-// empty value means the default (else) case. Separate Apply from the component form below,
-// since it targets the switch case, not the component.
+// empty value means the default (else) case. Reported as a draft and auto-committed with the rest
+// of the node's edits on leave / save — no separate Apply.
 const CaseConditionSection = ({
   caseObject,
-  onApply,
+  onConfigChange,
   readOnly,
   error,
 }: {
   caseObject: Record<string, unknown>;
-  onApply: (next: Record<string, unknown>) => void;
+  onConfigChange?: (next: Record<string, unknown> | null) => void;
   readOnly?: boolean;
   /** A lint message on this condition — renders the input in its error state. */
   error?: string;
@@ -535,7 +573,9 @@ const CaseConditionSection = ({
   const [check, setCheck] = useState(initial);
   useEffect(() => setCheck(initial), [initial]);
   const dirty = check !== initial;
-  const apply = () => onApply(caseWithCheck(caseObject, check));
+  useEffect(() => {
+    onConfigChange?.(dirty ? caseWithCheck(caseObject, check) : null);
+  }, [check, dirty, caseObject, onConfigChange]);
   return (
     <div className="border-brand/30 border-b bg-brand/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
@@ -568,11 +608,6 @@ const CaseConditionSection = ({
         className="w-full font-mono"
         disabled={readOnly}
         onChange={(e) => setCheck(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && dirty) {
-            apply();
-          }
-        }}
         placeholder='e.g. this.region == "us"'
         value={check}
       />
@@ -583,13 +618,6 @@ const CaseConditionSection = ({
           <AlertCircle className="size-3.5 shrink-0" />
           {error}
         </Text>
-      ) : null}
-      {!readOnly && dirty ? (
-        <div className="flex justify-end pt-2">
-          <Button onClick={apply} size="sm" type="button" variant="ghost">
-            Update condition
-          </Button>
-        </div>
       ) : null}
     </div>
   );
@@ -710,10 +738,10 @@ const ReadOnlyComponent = ({ component }: { component: Record<string, unknown> }
 // the component as scoped, editable YAML.
 const RawComponentEditor = ({
   component,
-  onApply,
+  onConfigChange,
 }: {
   component: Record<string, unknown>;
-  onApply: (next: Record<string, unknown>) => void;
+  onConfigChange?: (next: Record<string, unknown> | null) => void;
 }) => {
   const initial = useMemo(() => yamlStringify(component), [component]);
   const [draft, setDraft] = useState(initial);
@@ -721,36 +749,41 @@ const RawComponentEditor = ({
 
   useEffect(() => {
     setDraft(initial);
-    setError(null);
   }, [initial]);
 
-  const apply = () => {
+  // Parse the draft live: a valid mapping is reported as the node's pending config (auto-committed
+  // on leave / save); a clean draft or a parse error reports nothing (so invalid YAML is never
+  // committed — the inline error tells the user why nothing was applied).
+  useEffect(() => {
+    if (draft === initial) {
+      setError(null);
+      onConfigChange?.(null);
+      return;
+    }
     let parsed: unknown;
     try {
       parsed = parseYaml(draft);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid YAML');
+      onConfigChange?.(null);
       return;
     }
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       setError('Configuration must be a YAML mapping.');
+      onConfigChange?.(null);
       return;
     }
     setError(null);
-    onApply(parsed as Record<string, unknown>);
-  };
+    onConfigChange?.(parsed as Record<string, unknown>);
+  }, [draft, initial, onConfigChange]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* Flex column so the editor shrinks to leave room for the error row — otherwise an
-          `h-full` editor pushes the error message down onto the footer. */}
+      {/* Flex column so the editor shrinks to leave room for the error row below it. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
           <YamlEditor
-            onChange={(v) => {
-              setDraft(v || '');
-              setError(null);
-            }}
+            onChange={(v) => setDraft(v || '')}
             options={{ minimap: { enabled: false } }}
             transparentBackground
             value={draft}
@@ -762,11 +795,6 @@ const RawComponentEditor = ({
           </Text>
         ) : null}
       </div>
-      <InspectorFooter>
-        <Button disabled={draft === initial} onClick={apply} type="button">
-          Apply changes
-        </Button>
-      </InspectorFooter>
     </div>
   );
 };

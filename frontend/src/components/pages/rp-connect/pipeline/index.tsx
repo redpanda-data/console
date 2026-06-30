@@ -250,7 +250,7 @@ function usePipelineLint(yamlContent: string, errorLintHints: Record<string, Lin
 
 function usePipelineSave({
   form,
-  yamlContent,
+  editorStore,
   mode,
   pipelineId,
   pipeline,
@@ -258,7 +258,8 @@ function usePipelineSave({
   onBeforeSaveNavigate,
 }: {
   form: UseFormReturn<PipelineFormValues>;
-  yamlContent: string;
+  /** The editor store — read fresh at save time (after flushing pending visual edits). */
+  editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
   mode: string;
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
@@ -290,6 +291,11 @@ function usePipelineSave({
       toast.error(typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.');
       return;
     }
+
+    // Commit the Visual lane's currently-selected node (it auto-applies on leave, but here the user
+    // may save while still editing it), then read the freshest YAML from the store.
+    editorStore.getState().pendingEditCommit?.();
+    const yamlContent = editorStore.getState().yamlContent;
 
     const { name, description, computeUnits, tags: formTags } = form.getValues();
     const userTags = buildUserTags(formTags);
@@ -345,7 +351,7 @@ function usePipelineSave({
     }
   }, [
     form,
-    yamlContent,
+    editorStore,
     mode,
     pipelineId,
     createMutation,
@@ -924,7 +930,7 @@ function PipelinePageContent() {
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
     usePipelineSave({
       form,
-      yamlContent,
+      editorStore,
       mode,
       pipelineId,
       pipeline,

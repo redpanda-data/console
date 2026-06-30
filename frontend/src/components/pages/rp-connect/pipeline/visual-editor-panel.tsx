@@ -31,7 +31,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { isMacOS } from 'utils/platform';
 
-import type { FormValues, InspectorChildItem } from './node-config-form';
+import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
@@ -329,30 +329,42 @@ export function VisualEditorPanel({
   // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
   const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
 
-  // Unapplied inspector edits, preserved per node so switching away and back doesn't lose them.
-  // The actual draft values live in a ref (cheap, no re-render per keystroke); the id SET is state
-  // so the canvas can flag those nodes. We don't auto-save — the draft is restored on return.
-  const draftsRef = useRef<Map<string, FormValues>>(new Map());
-  const [draftNodeIds, setDraftNodeIds] = useState<ReadonlySet<string>>(new Set());
-  const handleDraftChange = useCallback((nodeId: string, values: FormValues | null) => {
-    const drafts = draftsRef.current;
-    const had = drafts.has(nodeId);
-    if (values) {
-      drafts.set(nodeId, values);
-      if (!had) {
-        setDraftNodeIds((prev) => new Set(prev).add(nodeId));
-      }
-    } else {
-      drafts.delete(nodeId);
-      if (had) {
-        setDraftNodeIds((prev) => {
-          const next = new Set(prev);
-          next.delete(nodeId);
-          return next;
-        });
-      }
+  // Inspector edits auto-commit on leave / save (no per-node Apply). The inspector populates
+  // `commitRef` with a pure `(yaml) => yaml` that applies the selected node's pending edits; we
+  // call it BEFORE any selection change and on pipeline save, so leaving a node commits its edits.
+  const commitRef = useRef<((yaml: string) => string) | null>(null);
+  const yamlRef = useRef(yamlContent);
+  yamlRef.current = yamlContent;
+  const commitPending = useCallback(() => {
+    const commit = commitRef.current;
+    if (!commit) {
+      return;
     }
-  }, []);
+    // One-shot: clear the hook before applying so the SAME pending edit can't be committed twice
+    // (e.g. the rail's exit animation keeps the inspector briefly mounted after a deselect — a
+    // follow-up selection must not re-apply the just-committed draft). The inspector re-registers
+    // its commit on its next render.
+    commitRef.current = null;
+    const next = commit(yamlRef.current);
+    if (next !== yamlRef.current) {
+      onYamlChange(next);
+    }
+  }, [onYamlChange]);
+  // Select a different node (or none), committing the current node's pending edits first.
+  const selectNode = useCallback(
+    (next: { id: string; target: EditTarget; caseTarget?: EditTarget } | null) => {
+      commitPending();
+      setSelected(next);
+    },
+    [commitPending]
+  );
+
+  // Expose the flush so the page's pipeline Save commits the still-selected node before saving.
+  const setPendingEditCommit = usePipelineEditorStore((s) => s.setPendingEditCommit);
+  useEffect(() => {
+    setPendingEditCommit(commitPending);
+    return () => setPendingEditCommit(null);
+  }, [commitPending, setPendingEditCommit]);
 
   // Mirror the selection into the shared store so switching to the YAML lane can
   // reveal the same node (the lanes are separate component trees).
@@ -502,13 +514,11 @@ export function VisualEditorPanel({
         onYamlChange(next);
       }
     }
-    // Drop any unapplied draft for the node being removed so it doesn't linger / mis-flag.
-    if (selected) {
-      handleDraftChange(selected.id, null);
-    }
+    // Deleting discards any pending edit for the node (don't commit it), so clear the commit hook.
+    commitRef.current = null;
     setSelected(null);
     setPendingDelete(null);
-  }, [pendingDelete, yamlContent, onYamlChange, selected, handleDraftChange]);
+  }, [pendingDelete, yamlContent, onYamlChange]);
 
   // Canvas keyboard: ⌘Z/⌘⇧Z undo/redo, Escape deselects, Delete/Backspace removes
   // the selected node — all ignored while typing in a field or the YAML editor.
@@ -518,7 +528,7 @@ export function VisualEditorPanel({
         e.preventDefault();
         setIsPaletteOpen(true);
       },
-      deselect: () => setSelected(null),
+      deselect: () => selectNode(null),
       delete: (e) => {
         if (isEditing && selected) {
           e.preventDefault();
@@ -546,7 +556,7 @@ export function VisualEditorPanel({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEditing, undo, redo, selected]);
+  }, [isEditing, undo, redo, selected, selectNode]);
 
   const handleInsertSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -606,13 +616,16 @@ export function VisualEditorPanel({
 
   // Command-palette "go to": select the node and recenter the canvas on it. Only nodes with an
   // edit target are listed, so the target is always present.
-  const handleJumpToNode = useCallback((node: PipelineFlowNode) => {
-    if (!node.editTarget) {
-      return;
-    }
-    setSelected({ id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget });
-    setFocus((f) => ({ id: node.id, token: f.token + 1 }));
-  }, []);
+  const handleJumpToNode = useCallback(
+    (node: PipelineFlowNode) => {
+      if (!node.editTarget) {
+        return;
+      }
+      selectNode({ id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget });
+      setFocus((f) => ({ id: node.id, token: f.token + 1 }));
+    },
+    [selectNode]
+  );
 
   // The slot dictates which component types the picker offers: a nested slot accepts
   // exactly its kind; an output-switch case accepts outputs; a resource link accepts its
@@ -648,7 +661,6 @@ export function VisualEditorPanel({
       <div className="relative min-w-0 flex-1">
         <PipelineFlowCanvas
           configYaml={yamlContent}
-          draftNodeIds={draftNodeIds}
           flashNodeIds={flash.ids}
           flashToken={flash.token}
           focusNodeId={focus.id || undefined}
@@ -659,9 +671,9 @@ export function VisualEditorPanel({
           }
           onAddSasl={isEditing ? onAddSasl : undefined}
           onAddTopic={isEditing ? onAddTopic : undefined}
-          onClearSelection={() => setSelected(null)}
+          onClearSelection={() => selectNode(null)}
           onInsert={isEditing ? (index) => setPendingInsert({ context: 'spine', index }) : undefined}
-          onSelectNode={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
+          onSelectNode={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
           onSlotInsert={isEditing ? handleSlotInsert : undefined}
           selectedNodeId={selected?.id}
           selectedTargetKind={selected?.target.kind}
@@ -699,7 +711,7 @@ export function VisualEditorPanel({
         <PipelineProblemsPanel
           missingSecrets={missingSecrets}
           onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-          onSelectProblem={(id, target, caseTarget) => setSelected({ id, target, caseTarget })}
+          onSelectProblem={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
           problems={problems}
         />
         {onBrowseTemplates ? (
@@ -741,16 +753,15 @@ export function VisualEditorPanel({
               <NodeInspector
                 caseTarget={selected.caseTarget}
                 childItems={childItems}
+                commitRef={isEditing ? commitRef : undefined}
                 components={components}
-                draftValues={draftsRef.current.get(selected.id)}
                 lintHints={lintByNode.get(selected.id)}
                 onApply={onYamlChange}
-                onClose={() => setSelected(null)}
+                onClose={() => selectNode(null)}
                 onCreateResource={isEditing ? handleRequestCreateResource : undefined}
                 onDelete={isEditing ? setPendingDelete : undefined}
-                onDraftChange={isEditing ? (values) => handleDraftChange(selected.id, values) : undefined}
                 onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
-                onSelectChild={(item) => setSelected({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
+                onSelectChild={(item) => selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
                 readOnly={!isEditing}
                 target={selected.target}
                 yaml={yamlContent}

@@ -35,7 +35,6 @@ import {
   Layers,
   type LucideIcon,
   Network,
-  PencilLine,
   PlusIcon,
   Repeat,
   RotateCw,
@@ -314,8 +313,6 @@ export type FlowCardData = {
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
-  /** Has an unapplied inspector edit (the user changed config but didn't Apply). */
-  hasDraft?: boolean;
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
   onAddConnector?: (section: string) => void;
@@ -521,17 +518,12 @@ const CompactCard = ({ data }: { data: FlowCardData }) => (
 const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
 // An error ring for nodes with lint problems (takes precedence over selection).
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
-// An amber ring flagging a node with unapplied inspector edits (when it's not the selected node).
-const DRAFT_RING = 'ring-2 ring-warning ring-offset-1 ring-offset-background';
 
 function cardRing(data: FlowCardData): string {
   if (data.lintErrors?.length) {
     return ERROR_RING;
   }
-  if (data.selected) {
-    return SELECTED_RING;
-  }
-  return data.hasDraft ? DRAFT_RING : '';
+  return data.selected ? SELECTED_RING : '';
 }
 
 // A brief double-pulse ring drawn after an undo/redo touched a node. Uses the `brand`
@@ -557,17 +549,6 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     >
       <AlertCircle className="size-3" />
       {errors.length}
-    </span>
-  ) : null;
-
-// Flags a node whose inspector has edits the user hasn't applied yet (preserved, not auto-saved).
-const DraftBadge = ({ show }: { show?: boolean }) =>
-  show ? (
-    <span
-      className="inline-flex shrink-0 items-center rounded border border-warning/40 bg-warning-subtle p-0.5 text-warning"
-      title="Unapplied changes — reopen this node to apply or discard them"
-    >
-      <PencilLine className="size-3" />
     </span>
   ) : null;
 
@@ -612,7 +593,6 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
               switch case's condition gets the prominent row above instead. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} onEdit={data.onEditCondition} />}
           <LintBadge errors={data.lintErrors} />
-          <DraftBadge show={data.hasDraft} />
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
           <LogoTile name={data.label} />
@@ -774,7 +754,6 @@ const FlowContainerNode = ({ data }: { data: FlowCardData }) => {
         >
           <ContainerHeaderTitle accent={accent} data={data} />
           <LintBadge errors={data.lintErrors} />
-          <DraftBadge show={data.hasDraft} />
           {/* Separate control so the toggle doesn't also select the node; 28px hit area for easy targeting. */}
           {data.collapsible ? (
             <button
@@ -1221,7 +1200,6 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           </span>
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
-          <DraftBadge show={data.hasDraft} />
         </div>
         {/* "Add case / Add input" lives INSIDE the construct card as a footer row (clearly tied to
             the node) rather than a floating pill below it. Edit mode only. */}

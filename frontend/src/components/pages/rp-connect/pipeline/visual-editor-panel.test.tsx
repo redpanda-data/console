@@ -14,11 +14,16 @@ vi.mock('./pipeline-flow-canvas', () => ({
   PipelineFlowCanvas: (props: {
     configYaml: string;
     onSelectNode?: (id: string, t: unknown) => void;
+    onClearSelection?: () => void;
     onInsert?: (index: number) => void;
   }) => (
     <div data-configyaml={props.configYaml} data-testid="flow-canvas">
       <button onClick={() => props.onSelectNode?.('input-0', { kind: 'input' })} type="button">
         select-input
+      </button>
+      {/* Deselecting (clicking the empty canvas) — now also commits the selected node's edits. */}
+      <button onClick={() => props.onClearSelection?.()} type="button">
+        deselect
       </button>
       <button onClick={() => props.onSelectNode?.('proc-0', { kind: 'processor', index: 0 })} type="button">
         select-proc0
@@ -111,7 +116,7 @@ describe('VisualEditorPanel', () => {
     expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
   });
 
-  test('selecting a node shows its config in the inspector and applying writes it back', async () => {
+  test('selecting a node shows its config, and leaving the node auto-commits the edit', async () => {
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel();
 
@@ -122,7 +127,8 @@ describe('VisualEditorPanel', () => {
 
     await user.clear(editor);
     await user.type(editor, 'generate:\n  mapping: root = 1');
-    await user.click(screen.getByRole('button', { name: 'Apply changes' }));
+    // No Apply button — leaving the node (deselect) commits the edit.
+    await user.click(screen.getByRole('button', { name: 'deselect' }));
 
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     expect(onYamlChange.mock.calls[0][0]).toContain('root = 1');
@@ -155,58 +161,44 @@ describe('VisualEditorPanel', () => {
     expect(onYamlChange.mock.calls[0][0]).toContain('cache_resources');
   });
 
-  test('applying a schema-form change commits it to the YAML and resets the inspector', async () => {
+  // Stateful host so a committed edit flows back into the panel (re-keying the form).
+  function CacheHarness() {
+    const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
+    return (
+      <PipelineEditorProvider>
+        <VisualEditorPanel
+          componentList={{} as ComponentList}
+          components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+          mode="edit"
+          onYamlChange={setYaml}
+          yamlContent={yaml}
+        />
+      </PipelineEditorProvider>
+    );
+  }
+
+  test('a schema-form change auto-commits when the node is left', async () => {
     const user = userEvent.setup();
-    // Stateful host so the applied YAML flows back into the panel (re-keying the form).
-    function Harness() {
-      const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
-      return (
-        <PipelineEditorProvider>
-          <VisualEditorPanel
-            componentList={{} as ComponentList}
-            components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
-            mode="edit"
-            onYamlChange={setYaml}
-            yamlContent={yaml}
-          />
-        </PipelineEditorProvider>
-      );
-    }
-    render(<Harness />);
+    render(<CacheHarness />);
 
     await user.click(screen.getByText('select-cache-resource'));
     const ttl = await screen.findByDisplayValue('5m');
-
     await user.clear(ttl);
     await user.type(ttl, '10m');
-    const apply = screen.getByRole('button', { name: 'Apply changes' });
-    expect(apply).toBeEnabled();
+    // No Apply button — leaving the node commits the edit.
+    await user.click(screen.getByRole('button', { name: 'deselect' }));
 
-    await user.click(apply);
-
-    // The change is committed (10m now shown) and the form re-initialized, so the save
-    // bar disappears again (nothing pending).
+    // Reselecting reads from the YAML: the committed value is now 10m.
+    await user.click(screen.getByText('select-cache-resource'));
     expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
   });
 
-  test('undo reverts an applied change and redo re-applies it', async () => {
+  test('undo reverts an auto-committed change and redo re-applies it', async () => {
     const user = userEvent.setup();
-    function Harness() {
-      const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
-      return (
-        <PipelineEditorProvider>
-          <VisualEditorPanel
-            componentList={{} as ComponentList}
-            components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
-            mode="edit"
-            onYamlChange={setYaml}
-            yamlContent={yaml}
-          />
-        </PipelineEditorProvider>
-      );
-    }
-    render(<Harness />);
+    render(<CacheHarness />);
+    // The canvas mock reflects the live YAML on its container — assert against that (rather than
+    // reselecting the inspector, which accumulates exiting rails under jsdom's AnimatePresence).
+    const yamlOnCanvas = () => screen.getByTestId('flow-canvas').getAttribute('data-configyaml') ?? '';
 
     // Nothing to undo yet.
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
@@ -215,15 +207,17 @@ describe('VisualEditorPanel', () => {
     const ttl = await screen.findByDisplayValue('5m');
     await user.clear(ttl);
     await user.type(ttl, '10m');
-    await user.click(screen.getByRole('button', { name: 'Apply changes' }));
-    expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'deselect' }));
+    expect(yamlOnCanvas()).toContain('10m');
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
 
     // Undo restores the previous value; redo re-applies the edit.
     await user.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(await screen.findByDisplayValue('5m')).toBeInTheDocument();
+    expect(yamlOnCanvas()).toContain('5m');
+    expect(yamlOnCanvas()).not.toContain('10m');
 
     await user.click(screen.getByRole('button', { name: 'Redo' }));
-    expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
+    expect(yamlOnCanvas()).toContain('10m');
   });
 
   test('surfaces a lint problem for the selected node in the inspector', async () => {

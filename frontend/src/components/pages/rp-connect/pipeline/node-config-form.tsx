@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -26,7 +25,7 @@ import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useContext, useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -697,8 +696,6 @@ type NodeConfigFormProps = {
   componentName: string;
   /** The full component entry, e.g. `{ label, kafka: {...} }`. */
   value: Record<string, unknown>;
-  /** Apply the edited config back to the YAML. */
-  onApply: (next: Record<string, unknown>) => void;
   /** Existing resource labels offered by `resource:` dropdowns. */
   resourceLabels?: Record<ResourceKind, string[]>;
   /** Create a new resource of a kind and link it to the field being edited. */
@@ -710,26 +707,21 @@ type NodeConfigFormProps = {
       the user can jump from this high-level node to a child's full config. */
   childItems?: InspectorChildItem[];
   onSelectChild?: (item: InspectorChildItem) => void;
-  /** A previously-stashed unapplied draft to restore into the form (so edits aren't lost when the
-      user navigates away without applying). */
-  draftValues?: FormValues;
-  /** Reports the working draft up as it changes — the values while dirty, null when clean/applied —
-      so the parent can preserve it per node and flag the node as having unapplied changes. */
-  onDraftChange?: (values: FormValues | null) => void;
+  /** Reports the assembled component config as the form changes (null when clean), so the inspector
+      can auto-commit it on node-leave / pipeline-save — there is no per-node Apply button. */
+  onConfigChange?: (config: Record<string, unknown> | null) => void;
 };
 
 export function NodeConfigForm({
   spec,
   componentName,
   value,
-  onApply,
   resourceLabels,
   onCreateResource,
   headerSlot,
   childItems,
   onSelectChild,
-  draftValues,
-  onDraftChange,
+  onConfigChange,
 }: NodeConfigFormProps) {
   const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
   const fields = spec.config?.children ?? [];
@@ -762,7 +754,7 @@ export function NodeConfigForm({
   const showRaw = rawKeys.length > 0;
   const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
 
-  const { control, handleSubmit, formState, reset, getValues } = useForm<FormValues>({
+  const { control, formState, getValues } = useForm<FormValues>({
     defaultValues: {
       label: typeof value.label === 'string' ? value.label : '',
       raw: showRaw ? yamlStringify(rawObject) : '',
@@ -780,30 +772,27 @@ export function NodeConfigForm({
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
   const { dirtyFields, isDirty } = formState;
 
-  // Restore a stashed unapplied draft once when this node's form mounts (the inspector re-keys the
-  // form per node). `keepDefaultValues` so dirty-tracking still compares against the SAVED config —
-  // the form shows the draft AND stays dirty, so "Apply changes" remains available.
-  const restoredRef = useRef(false);
-  useEffect(() => {
-    if (!restoredRef.current && draftValues) {
-      restoredRef.current = true;
-      reset(draftValues, { keepDefaultValues: true });
-    }
-  }, [draftValues, reset]);
-
-  // Report the working draft up as the form changes, so navigating away preserves it: the current
-  // values while dirty, null once clean/applied. `useWatch` re-runs this on each edit.
+  // No per-node Apply button: edits auto-commit when you leave the node (or save the pipeline).
+  // We REPORT the assembled config as it changes (null when clean) and the inspector commits it at
+  // the right time — see onConfigChange. `useWatch` re-runs the reporter on each edit.
   const watched = useWatch({ control });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; we read the full values via getValues().
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; the config is rebuilt from the latest values/props read in the body.
   useEffect(() => {
-    onDraftChange?.(isDirty ? getValues() : null);
-  }, [watched, isDirty, getValues, onDraftChange]);
-  const submit = handleSubmit((data) => {
-    // Clear the stashed draft BEFORE applying: the apply re-keys the form, and the fresh mount must
-    // not re-restore the (now-saved) draft and read it back as dirty.
-    onDraftChange?.(null);
-    onApply(buildComponentEntry({ componentName, value, inner, leaves, rawKeys, showRaw, data, dirty: dirtyFields }));
-  });
+    onConfigChange?.(
+      isDirty
+        ? buildComponentEntry({
+            componentName,
+            value,
+            inner,
+            leaves,
+            rawKeys,
+            showRaw,
+            data: getValues(),
+            dirty: dirtyFields,
+          })
+        : null
+    );
+  }, [watched, isDirty, getValues, onConfigChange]);
 
   const resourceCtx: ResourceFieldContextValue = {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
@@ -902,18 +891,6 @@ export function NodeConfigForm({
             </FieldGroup>
           ) : null}
         </ScrollShadow>
-
-        {/* The save bar only appears once there are unsaved changes — no idle, empty footer. */}
-        {isDirty ? (
-          <div className="flex shrink-0 items-center justify-end gap-2 border-border border-t px-4 py-3">
-            <Button onClick={() => reset()} type="button" variant="ghost">
-              Reset
-            </Button>
-            <Button onClick={submit} type="button">
-              Apply changes
-            </Button>
-          </div>
-        ) : null}
       </div>
     </ResourceFieldContext.Provider>
   );

@@ -66,6 +66,10 @@ type UiSlice = {
   // Commit the stacks + baseline after an undo/redo step.
   commitEditHistory: (next: { undo: string[]; redo: string[]; baseline: string }) => void;
   resetEditHistory: () => void;
+  // Flush the visual editor's currently-selected node's pending edits to the YAML — registered by
+  // the Visual lane, called by the page's Save so an in-progress node edit is included.
+  pendingEditCommit: (() => void) | null;
+  setPendingEditCommit: (fn: (() => void) | null) => void;
   setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
   setActiveViewLane: (activeViewLane: ViewLane) => void;
   setActiveEditLane: (activeEditLane: EditLane) => void;
@@ -147,6 +151,8 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   commitEditHistory: ({ undo, redo, baseline }) =>
     set({ editUndoStack: undo, editRedoStack: redo, editBaseline: baseline }),
   resetEditHistory: () => set({ editUndoStack: [], editRedoStack: [], editBaseline: null }),
+  pendingEditCommit: null,
+  setPendingEditCommit: (pendingEditCommit) => set({ pendingEditCommit }),
   setEditorInstance: (editorInstance) => set({ editorInstance }),
   setActiveViewLane: (activeViewLane) => set({ activeViewLane }),
   setActiveEditLane: (activeEditLane) => set({ activeEditLane }),

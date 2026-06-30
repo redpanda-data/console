@@ -19,12 +19,19 @@ import { mockKafkaOutput } from '../utils/__fixtures__/component-schemas';
 
 const spec = mockKafkaOutput as unknown as ConnectComponentSpec;
 
-function renderForm(value: Record<string, unknown>, onApply = vi.fn()) {
-  render(<NodeConfigForm componentName="kafka" onApply={onApply} spec={spec} value={value} />);
-  return onApply;
+// The form has no Apply button: it REPORTS the assembled config via onConfigChange as it changes
+// (null when clean), and the inspector auto-commits it on leave / save. Tests assert the latest
+// reported config rather than clicking Apply.
+function renderForm(value: Record<string, unknown>, onConfigChange = vi.fn()) {
+  render(<NodeConfigForm componentName="kafka" onConfigChange={onConfigChange} spec={spec} value={value} />);
+  return onConfigChange;
 }
 
-const applyButton = () => screen.getByRole('button', { name: 'Apply changes' });
+// The most recent config reported by the form (undefined if never called, null when clean).
+function lastReported(onConfigChange: ReturnType<typeof vi.fn>): unknown {
+  return onConfigChange.mock.calls.at(-1)?.[0];
+}
+
 const NESTED_COMPONENT_HINT = /processors is a nested component/i;
 
 describe('NodeConfigForm — full schema', () => {
@@ -69,26 +76,25 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.getByText('fnv1a_hash')).toBeInTheDocument();
   });
 
-  test('the save bar appears only once something changes', async () => {
+  test('reports a config only once something changes', async () => {
     const user = userEvent.setup();
-    renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
-    expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
+    const onConfigChange = renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
+    // Clean on mount → reports null (nothing to commit).
+    expect(lastReported(onConfigChange)).toBeNull();
 
     await user.type(screen.getByDisplayValue('orig'), 'X');
-    expect(applyButton()).toBeEnabled();
+    expect(lastReported(onConfigChange)).not.toBeNull();
   });
 
-  test('writes a changed scalar and keeps the YAML minimal (no empty optionals)', async () => {
+  test('reports a changed scalar and keeps the YAML minimal (no empty optionals)', async () => {
     const user = userEvent.setup();
-    const onApply = renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
+    const onConfigChange = renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
 
     const topic = screen.getByDisplayValue('orig');
     await user.clear(topic);
     await user.type(topic, 'new-topic');
-    await user.click(applyButton());
 
-    expect(onApply).toHaveBeenCalledTimes(1);
-    const next = onApply.mock.calls[0][0] as { kafka: Record<string, unknown> };
+    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
     expect(next.kafka.topic).toBe('new-topic');
     expect(next.kafka.addresses).toEqual(['a:9092']);
     // Untouched optional fields are not written out.
@@ -96,10 +102,10 @@ describe('NodeConfigForm — full schema', () => {
     expect(next.kafka).not.toHaveProperty('partitioner');
   });
 
-  test('preserves complex/untouched settings when applying an unrelated edit', async () => {
+  test('preserves complex/untouched settings when reporting an unrelated edit', async () => {
     const user = userEvent.setup();
     // `metadata` is not in the schema; `count: 1000$` is a malformed int — both must survive.
-    const onApply = renderForm({
+    const onConfigChange = renderForm({
       kafka: {
         topic: 'orig',
         addresses: ['a:9092'],
@@ -109,9 +115,8 @@ describe('NodeConfigForm — full schema', () => {
     });
 
     await user.type(screen.getByDisplayValue('orig'), '-2');
-    await user.click(applyButton());
 
-    const next = onApply.mock.calls[0][0] as { kafka: { metadata: unknown; batching: { count: unknown } } };
+    const next = lastReported(onConfigChange) as { kafka: { metadata: unknown; batching: { count: unknown } } };
     expect(next.kafka.metadata).toEqual({ include_patterns: ['.*'] });
     // Malformed value is preserved exactly — not parseInt-ed to 1000.
     expect(next.kafka.batching.count).toBe('1000$');
@@ -134,7 +139,7 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.queryByText('Not a valid integer')).not.toBeInTheDocument();
   });
 
-  test('does not render nested-component fields; surfaces a hint and preserves them on apply', async () => {
+  test('does not render nested-component fields; surfaces a hint and preserves them on edit', async () => {
     const user = userEvent.setup();
     // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.
     const branchSpec = {
@@ -145,11 +150,11 @@ describe('NodeConfigForm — full schema', () => {
         ],
       },
     } as unknown as ConnectComponentSpec;
-    const onApply = vi.fn();
+    const onConfigChange = vi.fn();
     render(
       <NodeConfigForm
         componentName="branch"
-        onApply={onApply}
+        onConfigChange={onConfigChange}
         spec={branchSpec}
         value={{ branch: { request_map: 'root = this', processors: [{ http: { url: 'http://x' } }] } }}
       />
@@ -160,9 +165,8 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.getByText(NESTED_COMPONENT_HINT)).toBeInTheDocument();
 
     await user.type(screen.getByDisplayValue('root = this'), '!');
-    await user.click(applyButton());
 
-    const next = onApply.mock.calls[0][0] as { branch: Record<string, unknown> };
+    const next = lastReported(onConfigChange) as { branch: Record<string, unknown> };
     // The sub-pipeline survives untouched; the scalar edit is written.
     expect(next.branch.processors).toEqual([{ http: { url: 'http://x' } }]);
     expect(next.branch.request_map).toBe('root = this!');
@@ -170,14 +174,13 @@ describe('NodeConfigForm — full schema', () => {
 
   test('round-trips a scalar array edited as one-per-line text', async () => {
     const user = userEvent.setup();
-    const onApply = renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
 
     const addresses = screen.getByPlaceholderText('One value per line');
     await user.clear(addresses);
     await user.type(addresses, 'b:9092\nc:9092');
-    await user.click(applyButton());
 
-    const next = onApply.mock.calls[0][0] as { kafka: Record<string, unknown> };
+    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
     expect(next.kafka.addresses).toEqual(['b:9092', 'c:9092']);
   });
 });
@@ -208,18 +211,17 @@ describe('NodeConfigForm — list-valued components (switch/try/…)', () => {
 
   test('editing the label preserves the array of cases (no data loss)', async () => {
     const user = userEvent.setup();
-    const onApply = vi.fn();
+    const onConfigChange = vi.fn();
     const value = switchValue();
-    render(<NodeConfigForm componentName="switch" onApply={onApply} spec={switchSpec} value={value} />);
+    render(<NodeConfigForm componentName="switch" onConfigChange={onConfigChange} spec={switchSpec} value={value} />);
 
     await user.type(screen.getByPlaceholderText('Optional identifier for this component'), 'router');
-    await user.click(screen.getByRole('button', { name: 'Apply changes' }));
 
-    expect(onApply).toHaveBeenCalledWith({ label: 'router', switch: value.switch });
+    expect(lastReported(onConfigChange)).toEqual({ label: 'router', switch: value.switch });
   });
 
   test('hides the (misleading) per-case fields and shows a canvas hint instead', () => {
-    render(<NodeConfigForm componentName="switch" onApply={vi.fn()} spec={switchSpec} value={switchValue()} />);
+    render(<NodeConfigForm componentName="switch" spec={switchSpec} value={switchValue()} />);
     // The case-level `check` field must not appear on the container.
     expect(screen.queryByText('check')).toBeNull();
     expect(screen.getByText(/edited on the canvas/i)).toBeInTheDocument();
