@@ -19,6 +19,7 @@ import GroupDetails from '../../components/pages/consumers/group-details';
 const searchSchema = z.object({
   q: fallback(z.string().optional(), undefined),
   withLag: fallback(z.coerce.boolean().optional(), false),
+  tab: fallback(z.enum(['topics', 'acl']).optional(), 'topics'),
 });
 
 export type GroupSearchParams = z.infer<typeof searchSchema>;
