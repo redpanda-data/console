@@ -119,10 +119,11 @@ const NodeRow = ({
               {node.labelText}
             </span>
           ) : null}
+          {/* Error takes precedence over the unsaved dot, so a node never shows both. */}
           {hasError ? (
             <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" title="Has errors" />
           ) : null}
-          {unsaved ? (
+          {unsaved && !hasError ? (
             <span aria-hidden className="size-2 shrink-0 rounded-full bg-amber-500" title="Unsaved changes" />
           ) : null}
         </button>
