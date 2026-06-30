@@ -1013,6 +1013,17 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
  * `containerPath` is the target array's YAML path, e.g. `['pipeline','processors']` or
  * `['input','broker','inputs']`. The one primitive behind every visual insertion.
  */
+// Number of items in the YAML sequence at `path` (0 if absent / not a sequence). Used to locate a
+// just-inserted item (e.g. an append lands at length-1) so the editor can select it.
+export function seqLengthAt(yaml: string, path: (string | number)[]): number {
+  try {
+    const seq = parseDocument(yaml).getIn(path);
+    return isSeq(seq) ? seq.items.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function insertComponentAt(
   yaml: string,
   containerPath: (string | number)[],

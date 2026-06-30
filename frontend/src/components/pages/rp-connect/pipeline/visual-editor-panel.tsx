@@ -56,6 +56,7 @@ import {
   type ResourceArrayKey,
   type ResourceKind,
   removeComponentAt,
+  seqLengthAt,
   setComponentAt,
 } from '../utils/yaml';
 
@@ -76,8 +77,9 @@ const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
 type PendingInsert =
   | { context: 'spine'; index: number }
   | { context: 'slot'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
-  // Output-switch "add case": pick an output, then wrap it as a new `{ check, output }` case.
-  | { context: 'switchCaseOutput'; containerPath: (string | number)[] }
+  // Switch "add case": pick the case's first step, then wrap it as a new case — `{ check, output }`
+  // for an output switch or `{ check, processors: [step] }` for a processor switch.
+  | { context: 'switchCase'; containerPath: (string | number)[]; section: 'processor' | 'output' }
   // "Create new resource" from a node's resource field: pick the cache/rate_limit impl,
   // create the resource, and link it to `target`'s `resource:` field.
   | { context: 'resourceForNode'; kind: ResourceKind; target: EditTarget };
@@ -140,24 +142,64 @@ function buildChildItems(
   return items;
 }
 
+// The next YAML plus the edit target of the node that was just added, so the caller can select it.
+type InsertResult = { yaml: string; selectTarget?: EditTarget };
+
+// Structural equality of two edit targets — to find the parsed node for a just-inserted target.
+// Path/switchCase targets are identified by their YAML path; the rest by their discriminant fields.
+function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): boolean {
+  if (a?.kind !== b.kind) {
+    return false;
+  }
+  if (a.kind === 'processor' && b.kind === 'processor') {
+    return a.index === b.index;
+  }
+  if (a.kind === 'resource' && b.kind === 'resource') {
+    return a.resourceKey === b.resourceKey && a.index === b.index;
+  }
+  if ((a.kind === 'path' || a.kind === 'switchCase') && (b.kind === 'path' || b.kind === 'switchCase')) {
+    return JSON.stringify(a.path) === JSON.stringify(b.path);
+  }
+  return true; // input / output — singletons, kind match is enough
+}
+
 // Resolve the chosen connector + insertion target to the next YAML (or null if the
 // component couldn't be generated). Caches and rate limits always append to their
 // top-level resource arrays (they're referenced, not nested); every other component
 // splices into the target container array.
-function buildInsertedYaml({ yaml, connectionName, connectionType, target, components }: InsertParams): string | null {
-  // Output-switch case: wrap the chosen output in a `{ check, output }` case (default
-  // condition; edited afterwards) appended to the switch's cases.
-  if (target.context === 'switchCaseOutput') {
-    if (connectionType !== 'output') {
+function buildInsertedYaml({
+  yaml,
+  connectionName,
+  connectionType,
+  target,
+  components,
+}: InsertParams): InsertResult | null {
+  // Switch case: wrap the chosen step in a new case (default condition; edited afterwards) appended
+  // to the switch's cases — `{ check, output }` for an output switch, `{ check, processors: [step] }`
+  // for a processor switch. Select the step inside the new case (its config is what the user fills in).
+  if (target.context === 'switchCase') {
+    if (connectionType !== target.section) {
       return null;
     }
-    const output = buildInsertableComponent(connectionName, 'output', components);
-    return output
-      ? insertComponentAt(yaml, target.containerPath, Number.MAX_SAFE_INTEGER, { check: '', output })
-      : null;
+    const step = buildInsertableComponent(connectionName, target.section, components);
+    if (!step) {
+      return null;
+    }
+    const wrapped = target.section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
+    const next = insertComponentAt(yaml, target.containerPath, Number.MAX_SAFE_INTEGER, wrapped);
+    if (next === null) {
+      return null;
+    }
+    const caseIndex = seqLengthAt(next, target.containerPath) - 1;
+    const stepPath =
+      target.section === 'output'
+        ? [...target.containerPath, caseIndex, 'output']
+        : [...target.containerPath, caseIndex, 'processors', 0];
+    return { yaml: next, selectTarget: { kind: 'path', path: stepPath, componentType: target.section } };
   }
   // Create the chosen cache/rate_limit resource and link it to the node's `resource:`
-  // field in one commit — so the new resource is never left unlinked.
+  // field in one commit — so the new resource is never left unlinked. (No re-select: the
+  // currently-selected node stays — it just got the link.)
   if (target.context === 'resourceForNode') {
     if (connectionType !== target.kind) {
       return null;
@@ -171,14 +213,20 @@ function buildInsertedYaml({ yaml, connectionName, connectionType, target, compo
     const inner = name ? comp?.[name] : undefined;
     if (comp && name && inner && typeof inner === 'object' && !Array.isArray(inner)) {
       (inner as Record<string, unknown>).resource = created.label;
-      return setComponentAt(created.yaml, target.target, comp) ?? created.yaml;
+      return { yaml: setComponentAt(created.yaml, target.target, comp) ?? created.yaml };
     }
-    return created.yaml;
+    return { yaml: created.yaml };
   }
   if (connectionType === 'cache' || connectionType === 'rate_limit') {
     const resource = buildInsertableComponent(connectionName, connectionType, components);
     const resourceKey: ResourceArrayKey = connectionType === 'cache' ? 'cache_resources' : 'rate_limit_resources';
-    return resource ? appendResource(yaml, resourceKey, resource) : null;
+    if (!resource) {
+      return null;
+    }
+    const next = appendResource(yaml, resourceKey, resource);
+    return next === null
+      ? null
+      : { yaml: next, selectTarget: { kind: 'resource', resourceKey, index: seqLengthAt(next, [resourceKey]) - 1 } };
   }
   if (connectionType === 'processor' || connectionType === 'input' || connectionType === 'output') {
     const component = buildInsertableComponent(connectionName, connectionType, components);
@@ -188,7 +236,17 @@ function buildInsertedYaml({ yaml, connectionName, connectionType, target, compo
     // The target here is a spine or slot insert — both carry an index, and the spine
     // targets the top-level processors array.
     const containerPath = target.context === 'slot' ? target.containerPath : ['pipeline', 'processors'];
-    return insertComponentAt(yaml, containerPath, target.index, component);
+    const next = insertComponentAt(yaml, containerPath, target.index, component);
+    if (next === null) {
+      return null;
+    }
+    // insertComponentAt clamps the index to the array length; mirror that to locate the new node.
+    const insertedIndex = Math.min(target.index, seqLengthAt(next, containerPath) - 1);
+    const selectTarget: EditTarget =
+      target.context === 'slot'
+        ? { kind: 'path', path: [...containerPath, insertedIndex], componentType: target.accepts }
+        : { kind: 'processor', index: insertedIndex };
+    return { yaml: next, selectTarget };
   }
   return null;
 }
@@ -565,32 +623,39 @@ export function VisualEditorPanel({
       if (target === null) {
         return;
       }
-      const next = buildInsertedYaml({ yaml: yamlContent, connectionName, connectionType, target, components });
-      if (next !== null) {
-        onYamlChange(next);
+      const result = buildInsertedYaml({ yaml: yamlContent, connectionName, connectionType, target, components });
+      if (result === null) {
+        return;
+      }
+      onYamlChange(result.yaml);
+      // Auto-select the node we just added (open its inspector), so the user can configure it right
+      // away instead of hunting for it. Found by matching the new node's edit target in the reparse.
+      if (result.selectTarget) {
+        const added = parsePipelineFlowTree(result.yaml).nodes.find(
+          (n) => result.selectTarget && editTargetsEqual(n.editTarget, result.selectTarget)
+        );
+        if (added?.editTarget) {
+          setSelected({ id: added.id, target: added.editTarget, caseTarget: added.caseEditTarget });
+        }
       }
     },
     [pendingInsert, components, yamlContent, onYamlChange]
   );
 
-  // The in-container "+" affordances: open the picker filtered to the slot's type, or
-  // — for a switch — append a fresh structural case directly (no component to pick).
+  // The in-container "+" affordances: open the picker filtered to the slot's type. "Add case" on a
+  // switch opens it too (pick the case's first step, then it's wrapped as a case) — rather than
+  // dropping an empty case the user then has to find and fill. Commit any pending inspector edit
+  // first: the insert builds on the current YAML, and we'll select the new node (dropping the old
+  // selection), so the in-progress edit must be flushed now rather than lost.
   const handleSlotInsert = useCallback(
     (payload: FlowInsertPayload) => {
+      commitPending();
       if (payload.kind === 'addChild') {
-        // A processor switch grows an empty case (its condition + processors are edited
-        // after); an output switch needs an output picked first, then wrapped in a case.
-        if (payload.section === 'output') {
-          setPendingInsert({ context: 'switchCaseOutput', containerPath: payload.containerPath });
-          return;
-        }
-        const next = insertComponentAt(yamlContent, payload.containerPath, Number.MAX_SAFE_INTEGER, {
-          check: '',
-          processors: [],
+        setPendingInsert({
+          context: 'switchCase',
+          containerPath: payload.containerPath,
+          section: payload.section,
         });
-        if (next !== null) {
-          onYamlChange(next);
-        }
         return;
       }
       setPendingInsert({
@@ -600,7 +665,7 @@ export function VisualEditorPanel({
         index: payload.index,
       });
     },
-    [yamlContent, onYamlChange]
+    [commitPending]
   );
 
   // "Create new resource" from a node's resource field: open the picker filtered to the
@@ -633,21 +698,21 @@ export function VisualEditorPanel({
   let insertTypes: ConnectComponentType[] = INSERTABLE_TYPES;
   if (pendingInsert?.context === 'slot') {
     insertTypes = [pendingInsert.accepts];
-  } else if (pendingInsert?.context === 'switchCaseOutput') {
-    insertTypes = ['output'];
+  } else if (pendingInsert?.context === 'switchCase') {
+    insertTypes = [pendingInsert.section];
   } else if (pendingInsert?.context === 'resourceForNode') {
     insertTypes = [pendingInsert.kind];
   }
 
-  // The picker's title/placeholder adapt to what's being added — a nested slot (or an
-  // output-switch case) names its exact kind, so an output added inside a switch reads
-  // "Insert an output", not the generic "Insert a step".
+  // The picker's title/placeholder adapt to what's being added — a nested slot (or a switch case)
+  // names its exact kind, so an output added inside a switch reads "Insert an output", not the
+  // generic "Insert a step".
   const isResourceInsert = pendingInsert?.context === 'resourceForNode';
   const slotKind =
     pendingInsert?.context === 'slot'
       ? pendingInsert.accepts
-      : pendingInsert?.context === 'switchCaseOutput'
-        ? 'output'
+      : pendingInsert?.context === 'switchCase'
+        ? pendingInsert.section
         : undefined;
   let insertTitle = 'Insert a step';
   if (isResourceInsert) {
@@ -672,7 +737,14 @@ export function VisualEditorPanel({
           onAddSasl={isEditing ? onAddSasl : undefined}
           onAddTopic={isEditing ? onAddTopic : undefined}
           onClearSelection={() => selectNode(null)}
-          onInsert={isEditing ? (index) => setPendingInsert({ context: 'spine', index }) : undefined}
+          onInsert={
+            isEditing
+              ? (index) => {
+                  commitPending();
+                  setPendingInsert({ context: 'spine', index });
+                }
+              : undefined
+          }
           onSelectNode={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
           onSlotInsert={isEditing ? handleSlotInsert : undefined}
           selectedNodeId={selected?.id}

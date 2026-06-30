@@ -161,6 +161,35 @@ describe('VisualEditorPanel', () => {
     expect(onYamlChange.mock.calls[0][0]).toContain('cache_resources');
   });
 
+  test('auto-selects the newly added node so its inspector opens', async () => {
+    const user = userEvent.setup();
+    // Stateful host so the inserted YAML flows back and the new node can be found + selected.
+    function Harness() {
+      const [yaml, setYaml] = useState(sampleYaml);
+      return (
+        <PipelineEditorProvider>
+          <VisualEditorPanel
+            componentList={{} as ComponentList}
+            components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+            mode="edit"
+            onYamlChange={setYaml}
+            yamlContent={yaml}
+          />
+        </PipelineEditorProvider>
+      );
+    }
+    render(<Harness />);
+
+    // Nothing selected yet — no inspector.
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('insert-end'));
+    await user.click(await screen.findByTestId('select-cache'));
+
+    // The new resource is selected automatically → its inspector opens.
+    expect(await screen.findByRole('button', { name: 'Close' })).toBeInTheDocument();
+  });
+
   // Stateful host so a committed edit flows back into the panel (re-keying the form).
   function CacheHarness() {
     const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');

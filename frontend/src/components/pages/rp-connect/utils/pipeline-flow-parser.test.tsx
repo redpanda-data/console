@@ -715,6 +715,36 @@ describe('computeFlowLayout', () => {
     expect(rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(false);
   });
 
+  it('source-aligns fanned cases: a short case hugs the split, not the merge', () => {
+    // A switch with a 1-step case and a 3-step case. The short case must sit near the split (left),
+    // not be packed against the merge alongside the long case's last step.
+    const yaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.x == 1'
+          processors:
+            - log:
+                message: short
+        - check: 'this.x == 2'
+          processors:
+            - mapping: 'root.a = 1'
+            - mapping: 'root.b = 2'
+            - mapping: 'root.c = 3'
+output:
+  drop: {}`;
+    const parsed = parsePipelineFlowTree(yaml);
+    const laid = computeFlowLayout(parsed.nodes).rfNodes;
+    const labelOf = (n: (typeof laid)[number]) => (n.data as { label?: string }).label;
+    const mappingXs = laid.filter((n) => labelOf(n) === 'mapping').map((n) => n.position.x);
+    const logX = laid.find((n) => labelOf(n) === 'log')?.position.x ?? 0;
+    const minMapX = Math.min(...mappingXs);
+    const maxMapX = Math.max(...mappingXs);
+    // The long case spans several ranks; the short (log) case starts in its LEFT half (by the
+    // split), not at the far right next to the merge.
+    expect(maxMapX).toBeGreaterThan(minMapX);
+    expect(logX - minMapX).toBeLessThan((maxMapX - minMapX) / 2);
+  });
+
   it('annotates each top-level flow edge with the processor index an insertion there would use', () => {
     const spineIndices = rfEdges
       .map((e) => (e.data as { insertIndex?: number } | undefined)?.insertIndex)

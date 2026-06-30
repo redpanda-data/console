@@ -2658,6 +2658,43 @@ const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
   reference: 'muted',
 };
 
+// Forward longest-path rank for each graph node: distance (in edges) from the nearest source. A
+// node's rank is one past its LATEST-arriving predecessor, so nodes hug their predecessors (the
+// split) on the left rather than their successors (the merge) on the right. Memoised; the cycle
+// guard is defensive (the flow graph is a DAG — loops render as chained bodies, no loopback edge).
+function forwardRanks(gnodes: GraphNodeSpec[], gedges: GraphEdgeSpec[]): Map<string, number> {
+  const predecessors = new Map<string, string[]>();
+  for (const edge of gedges) {
+    const list = predecessors.get(edge.to);
+    if (list) {
+      list.push(edge.from);
+    } else {
+      predecessors.set(edge.to, [edge.from]);
+    }
+  }
+  const rank = new Map<string, number>();
+  const inProgress = new Set<string>();
+  const rankOf = (id: string): number => {
+    const cached = rank.get(id);
+    if (cached !== undefined) {
+      return cached;
+    }
+    if (inProgress.has(id)) {
+      return 0;
+    }
+    inProgress.add(id);
+    const preds = predecessors.get(id) ?? [];
+    const value = preds.length === 0 ? 0 : Math.max(...preds.map((p) => rankOf(p) + 1));
+    inProgress.delete(id);
+    rank.set(id, value);
+    return value;
+  };
+  for (const gn of gnodes) {
+    rankOf(gn.id);
+  }
+  return rank;
+}
+
 export function computeGraphLayout(
   nodes: PipelineFlowNode[],
   editable = false
@@ -2683,8 +2720,15 @@ export function computeGraphLayout(
   for (const gn of ctx.gnodes) {
     g.setNode(gn.id, { width: gn.w, height: gn.h });
   }
+  // SOURCE-align the layout: a fanned case should sit just right of its split (where its condition
+  // reads), not be packed against the merge. Dagre's rankers all place a node next to its
+  // SUCCESSORS (so short branches get pulled right to the merge). We instead pin each node to its
+  // forward longest-path rank (distance from the input) by setting every edge's `minlen` to the
+  // rank gap — a short branch's edge to the merge then gets a large minlen, holding its node left.
+  const ranks = forwardRanks(ctx.gnodes, ctx.gedges);
   for (const ge of ctx.gedges) {
-    g.setEdge(ge.from, ge.to, {}, ge.id);
+    const minlen = Math.max(1, (ranks.get(ge.to) ?? 0) - (ranks.get(ge.from) ?? 0));
+    g.setEdge(ge.from, ge.to, { minlen }, ge.id);
   }
   dagreLayout(g);
 
