@@ -64,6 +64,14 @@ import { InlineCode, Text as UiText } from '../../redpanda-ui/components/typogra
 
 const ALL_SENTINEL = '__all__';
 
+const STRATEGY_LABELS: Record<EditOptions, string> = {
+  startOffset: 'Earliest',
+  endOffset: 'Latest',
+  shiftBy: 'Shift By',
+  time: 'Specific Time',
+  otherGroup: 'Other Consumer Group',
+};
+
 /** Inline text with an explanatory tooltip on hover (replaces the legacy InfoText). */
 const InfoTooltip = ({ text, children }: { text: string; children: ReactNode }) => (
   <TooltipProvider>
@@ -214,7 +222,7 @@ export class EditOffsetsModal extends Component<{
               value={this.state.selectedTopic ?? ALL_SENTINEL}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>{(v) => (v === ALL_SENTINEL ? 'All Topics' : (v as string))}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_SENTINEL}>All Topics</SelectItem>
@@ -235,7 +243,7 @@ export class EditOffsetsModal extends Component<{
                 value={this.state.selectedPartition === null ? ALL_SENTINEL : String(this.state.selectedPartition)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue>{(v) => (v === ALL_SENTINEL ? 'All Partitions' : (v as string))}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_SENTINEL}>All Partitions</SelectItem>
@@ -257,7 +265,7 @@ export class EditOffsetsModal extends Component<{
               value={this.state.selectedOption}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue>{(v) => STRATEGY_LABELS[v as EditOptions]}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="startOffset">Earliest</SelectItem>
