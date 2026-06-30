@@ -57,15 +57,29 @@ type RowProps = {
   collapsedIds: Set<string>;
   toggle: (id: string) => void;
   selectedId?: string;
+  errorNodeIds?: ReadonlySet<string>;
+  unsavedNodeIds?: ReadonlySet<string>;
   onSelect: (highlightId: string, editableId?: string) => void;
 };
 
-const NodeRow = ({ node, depth, maps, collapsedIds, toggle, selectedId, onSelect }: RowProps) => {
+const NodeRow = ({
+  node,
+  depth,
+  maps,
+  collapsedIds,
+  toggle,
+  selectedId,
+  errorNodeIds,
+  unsavedNodeIds,
+  onSelect,
+}: RowProps) => {
   const children = maps.childrenOf(node.id);
   const hasChildren = children.length > 0;
   const collapsed = collapsedIds.has(node.id);
   const accent = sectionAccent(node.section);
   const selected = selectedId === node.id;
+  const hasError = errorNodeIds?.has(node.id);
+  const unsaved = unsavedNodeIds?.has(node.id);
 
   return (
     <>
@@ -105,6 +119,12 @@ const NodeRow = ({ node, depth, maps, collapsedIds, toggle, selectedId, onSelect
               {node.labelText}
             </span>
           ) : null}
+          {hasError ? (
+            <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" title="Has errors" />
+          ) : null}
+          {unsaved ? (
+            <span aria-hidden className="size-2 shrink-0 rounded-full bg-amber-500" title="Unsaved changes" />
+          ) : null}
         </button>
       </div>
       {hasChildren && !collapsed
@@ -112,12 +132,14 @@ const NodeRow = ({ node, depth, maps, collapsedIds, toggle, selectedId, onSelect
             <NodeRow
               collapsedIds={collapsedIds}
               depth={depth + 1}
+              errorNodeIds={errorNodeIds}
               key={child.id}
               maps={maps}
               node={child}
               onSelect={onSelect}
               selectedId={selectedId}
               toggle={toggle}
+              unsavedNodeIds={unsavedNodeIds}
             />
           ))
         : null}
@@ -144,6 +166,10 @@ type PipelineStructureTreeProps = {
   configYaml: string;
   /** Node id to highlight (e.g. the node under the YAML cursor). */
   selectedNodeId?: string;
+  /** Node ids with lint errors — marked with a red dot. */
+  errorNodeIds?: ReadonlySet<string>;
+  /** Node ids whose config differs from the last-saved pipeline — marked with an amber dot. */
+  unsavedNodeIds?: ReadonlySet<string>;
   /** Row clicked: `highlightId` is the clicked node; `editableId` is the nearest node to reveal. */
   onSelectNode?: (highlightId: string, editableId?: string) => void;
   /** Edit mode only: add an input/output for an empty section (section name). */
@@ -157,6 +183,8 @@ type PipelineStructureTreeProps = {
 export function PipelineStructureTree({
   configYaml,
   selectedNodeId,
+  errorNodeIds,
+  unsavedNodeIds,
   onSelectNode,
   onAddConnector,
 }: PipelineStructureTreeProps) {
@@ -222,12 +250,14 @@ export function PipelineStructureTree({
                 <NodeRow
                   collapsedIds={collapsedIds}
                   depth={0}
+                  errorNodeIds={errorNodeIds}
                   key={node.id}
                   maps={maps}
                   node={node}
                   onSelect={(highlightId, editableId) => onSelectNode?.(highlightId, editableId)}
                   selectedId={selectedNodeId}
                   toggle={toggle}
+                  unsavedNodeIds={unsavedNodeIds}
                 />
               ))
           )}

@@ -64,6 +64,9 @@ import {
 // they reference. Passed to AddConnectorDialog's type filter.
 const INSERTABLE_TYPES = ['processor', 'cache', 'rate_limit'] satisfies ConnectComponentType[];
 
+// Stable empty set so the "no unsaved nodes" case doesn't churn the canvas layout memo.
+const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
+
 // Reads the picker title for a typed slot, e.g. "Insert an output" inside a switch.
 const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
   input: 'an input',
@@ -472,6 +475,14 @@ export function VisualEditorPanel({
     return messages;
   }, [lintByNode]);
 
+  // Nodes whose config differs from the last-saved/loaded pipeline — flagged with an unsaved dot.
+  // View mode is read-only, so nothing is ever unsaved there.
+  const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
+  const unsavedNodeIds = useMemo(
+    () => (isEditing && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS),
+    [isEditing, initialYaml, yamlContent]
+  );
+
   // The selected control-flow node's children, shown as a clickable list in its inspector so
   // the high-level construct links straight to each child's full config.
   const childItems = useMemo<InspectorChildItem[]>(
@@ -759,6 +770,7 @@ export function VisualEditorPanel({
           onSlotInsert={isEditing ? handleSlotInsert : undefined}
           selectedNodeId={selected?.id}
           selectedTargetKind={selected?.target.kind}
+          unsavedNodeIds={unsavedNodeIds}
         />
         {isEditing ? (
           <TooltipProvider>

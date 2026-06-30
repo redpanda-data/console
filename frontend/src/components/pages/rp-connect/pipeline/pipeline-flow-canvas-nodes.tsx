@@ -276,6 +276,8 @@ export type FlowCardData = {
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
+  /** Config differs from the last-saved pipeline — flagged with an amber "unsaved" dot. */
+  unsaved?: boolean;
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
   onAddConnector?: (section: string) => void;
@@ -463,6 +465,16 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     </span>
   ) : null;
 
+// An amber dot marking a node whose config differs from the last-saved pipeline.
+const UnsavedDot = ({ show }: { show?: boolean }) =>
+  show ? (
+    <span
+      aria-hidden
+      className="size-2 shrink-0 rounded-full bg-amber-500"
+      title="Unsaved changes on this node"
+    />
+  ) : null;
+
 // The component's `label:` — shown on every node (leaf, container, sidebar) when set.
 const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
   label ? (
@@ -504,6 +516,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
               switch case's condition gets the prominent row above instead. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} onEdit={data.onEditCondition} />}
           <LintBadge errors={data.lintErrors} />
+          <UnsavedDot show={data.unsaved} />
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
           <LogoTile name={data.label} />
@@ -770,6 +783,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           </span>
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
+          <UnsavedDot show={data.unsaved} />
         </div>
         {/* "Add case / Add input" lives INSIDE the construct card as a footer row (clearly tied to
             the node) rather than a floating pill below it. Edit mode only. */}

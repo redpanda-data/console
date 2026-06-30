@@ -108,7 +108,8 @@ import type {
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
-import { enclosingNodeId, mergeLintHints, nodeLineRanges } from '../utils/pipeline-lint';
+import { changedNodeIds } from '../utils/pipeline-diff';
+import { enclosingNodeId, mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -141,6 +142,9 @@ function tipsContextForLane(isView: boolean, viewLane: string, editLane: string)
   }
   return editLane === 'visual' ? 'visual' : 'yaml';
 }
+
+// Stable empty set for the "nothing unsaved" / view-mode case so highlights don't churn renders.
+const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 
 const pipelineFormSchema = z.object({
   name: z
@@ -661,6 +665,8 @@ function SidebarPanel({
   mode,
   yamlContent,
   isPipelineDiagramsEnabled,
+  errorNodeIds,
+  unsavedNodeIds,
   onAddConnector,
   onBrowseTemplates,
   onOpenCommandMenu,
@@ -668,6 +674,8 @@ function SidebarPanel({
   mode: string;
   yamlContent: string;
   isPipelineDiagramsEnabled: boolean;
+  errorNodeIds?: ReadonlySet<string>;
+  unsavedNodeIds?: ReadonlySet<string>;
   onAddConnector: (type: ConnectComponentType | 'resource') => void;
   onBrowseTemplates?: () => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
@@ -758,9 +766,11 @@ function SidebarPanel({
           {showStructureTree ? (
             <PipelineStructureTree
               configYaml={yamlContent}
+              errorNodeIds={errorNodeIds}
               onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
               onSelectNode={handleSelectNode}
               selectedNodeId={activeNodeId}
+              unsavedNodeIds={unsavedNodeIds}
             />
           ) : null}
         </div>
@@ -942,6 +952,17 @@ function PipelinePageContent() {
   // Guard against losing unsaved edits when navigating away from the editor (edit or create).
   const yamlDirty = initialYaml !== null && yamlContent !== initialYaml;
   const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
+
+  // Node-level highlights for the structure tree: which nodes have lint errors, and which
+  // have unsaved edits (config changed vs the last-saved/loaded baseline).
+  const errorNodeIds = useMemo(
+    () => new Set(mapLintHintsToNodes(yamlContent, Object.values(lintHints)).keys()),
+    [yamlContent, lintHints]
+  );
+  const unsavedNodeIds = useMemo(
+    () => (mode !== 'view' && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS),
+    [mode, initialYaml, yamlContent]
+  );
   const blocker = useBlocker({
     shouldBlockFn: () => hasUnsavedChanges && !editorStore.getState().allowNavigation,
     enableBeforeUnload: () => hasUnsavedChanges,
@@ -1161,11 +1182,13 @@ function PipelinePageContent() {
         <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
           {showSidebar ? (
             <SidebarPanel
+              errorNodeIds={errorNodeIds}
               isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
               mode={mode}
               onAddConnector={(type) => setAddConnectorType(type)}
               onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
               onOpenCommandMenu={handleCommandMenuOpen}
+              unsavedNodeIds={unsavedNodeIds}
               yamlContent={yamlContent}
             />
           ) : null}

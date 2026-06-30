@@ -308,7 +308,9 @@ export function PipelineEditHeader({
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
             {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          {/* Relative so the unsaved-changes hint can sit BELOW the buttons (absolute) instead of
+              between Docs and Save — toggling it then never shifts the Docs button horizontally. */}
+          <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"
               href={DOCS_URL}
@@ -319,19 +321,19 @@ export function PipelineEditHeader({
             >
               Docs
             </Button>
+            <Button disabled={isSaving} onClick={onSave}>
+              Save
+              {isSaving ? <Spinner /> : null}
+            </Button>
             {hasUnsavedChanges ? (
               <span
-                className="flex items-center gap-1.5 text-muted-foreground text-sm"
+                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
                 title="You have unsaved changes"
               >
                 <span aria-hidden className="size-2 rounded-full bg-amber-500" />
                 Unsaved changes
               </span>
             ) : null}
-            <Button disabled={isSaving} onClick={onSave}>
-              Save
-              {isSaving ? <Spinner /> : null}
-            </Button>
           </div>
         </div>
       </div>

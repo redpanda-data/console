@@ -714,6 +714,8 @@ type CanvasCallbacks = {
   /** Kind of the selected edit target — `'switchCase'` means the condition, not the component. */
   selectedTargetKind?: string;
   lintErrorsByNode?: Map<string, string[]>;
+  /** Node ids whose config differs from the last-saved pipeline. */
+  unsavedNodeIds?: ReadonlySet<string>;
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
   /** Node ids present on the previous render — anything new is "appearing". */
@@ -759,6 +761,9 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   const lintErrors = cb.lintErrorsByNode?.get(node.id);
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
+  }
+  if (cb.unsavedNodeIds?.has(node.id)) {
+    data.unsaved = true;
   }
   if (cb.flashNodeIds?.has(node.id)) {
     data.flash = true;
@@ -934,6 +939,8 @@ type PipelineFlowCanvasProps = {
   selectedTargetKind?: string;
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
+  /** Node ids whose config differs from the last-saved pipeline — flagged with an unsaved dot. */
+  unsavedNodeIds?: ReadonlySet<string>;
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
   flashNodeIds?: ReadonlySet<string>;
   flashToken?: number;
@@ -958,6 +965,7 @@ export function PipelineFlowCanvas({
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
+  unsavedNodeIds,
   flashNodeIds,
   flashToken,
   focusNodeId,
@@ -1040,6 +1048,7 @@ export function PipelineFlowCanvas({
       selectedNodeId,
       selectedTargetKind,
       lintErrorsByNode,
+      unsavedNodeIds,
       flashNodeIds,
       flashToken,
       previousIds: previousIdsRef.current,
@@ -1082,6 +1091,7 @@ export function PipelineFlowCanvas({
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,
+    unsavedNodeIds,
     flashNodeIds,
     flashToken,
     onAddConnector,

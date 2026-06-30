@@ -155,4 +155,19 @@ describe('injectNodeData — appearance', () => {
     expect((injected.data as { appeared?: boolean }).appeared).toBeUndefined();
     expect((injected.style as { transition?: string }).transition).toBe('transform 200ms ease');
   });
+
+  it('flags a node as unsaved when its id is in unsavedNodeIds', () => {
+    const unsaved = injectNodeData(node, {
+      ...base,
+      previousIds: new Set(['child-1']),
+      unsavedNodeIds: new Set(['child-1']),
+    });
+    expect((unsaved.data as { unsaved?: boolean }).unsaved).toBe(true);
+    const clean = injectNodeData(node, {
+      ...base,
+      previousIds: new Set(['child-1']),
+      unsavedNodeIds: new Set(['other']),
+    });
+    expect((clean.data as { unsaved?: boolean }).unsaved).toBeUndefined();
+  });
 });
