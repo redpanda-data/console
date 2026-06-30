@@ -296,8 +296,8 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
           <CardContent className="flex flex-wrap gap-x-12 gap-y-4">
             <StatItem label="State" value={<ConsumerGroupStateCell state={group.state} />} />
             <StatItem label="Assigned Partitions" value={totalPartitions} />
-            <ProtocolType group={group} />
-            <StatItem label="Protocol Type" value={group.protocolType} />
+            <StatItem label="Protocol" value={group.protocol || '—'} />
+            <StatItem label="Protocol Type" value={group.protocolType || '—'} />
             <StatItem
               label={
                 <span className="inline-flex items-center gap-1">
@@ -737,15 +737,6 @@ const renderMergedID = (id?: string, clientId?: string) => {
   }
 
   return null;
-};
-
-const ProtocolType = (p: { group: GroupDescription }) => {
-  const protocol = p.group.protocolType;
-  if (protocol === 'consumer') {
-    return null;
-  }
-
-  return <StatItem label="Protocol" value={protocol} />;
 };
 
 function cannotEditGroupReason(
