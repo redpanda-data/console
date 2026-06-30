@@ -293,7 +293,7 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
       {/* Statistics Card */}
       {Boolean(uiSettings.consumerGroupDetails.showStatisticsBar) && (
         <Card className="gap-0 px-6 py-4" size="full" variant="standard">
-          <CardContent className="flex flex-wrap gap-x-12 gap-y-4">
+          <CardContent className="flex flex-wrap items-start gap-x-12 gap-y-4">
             <StatItem label="State" value={<ConsumerGroupStateCell state={group.state} />} />
             <StatItem label="Assigned Partitions" value={totalPartitions} />
             <StatItem label="Protocol" value={group.protocol || '—'} />
@@ -302,7 +302,7 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
               label={
                 <span className="inline-flex items-center gap-1">
                   Coordinator ID
-                  <CopyButton content={`${group.coordinatorId}`} size="icon" variant="ghost" />
+                  <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
                 </span>
               }
               value={group.coordinatorId}
