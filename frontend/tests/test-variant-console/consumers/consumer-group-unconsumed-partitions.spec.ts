@@ -134,7 +134,11 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
       const btn = page.getByTestId('partition-edit-1');
       await expect(btn).toBeVisible({ timeout: 5000 });
       await btn.hover();
-      await expect(page.getByRole('tooltip', { name: 'No committed offset' }).first()).toBeVisible({ timeout: 5000 });
+      // Registry (base-ui) tooltip renders a `[data-slot="tooltip-content"]` popup
+      // without role="tooltip", so match on the slot + text instead of the role.
+      await expect(
+        page.locator('[data-slot="tooltip-content"]').filter({ hasText: 'No committed offset' }).first()
+      ).toBeVisible({ timeout: 5000 });
       await page.mouse.move(0, 0);
     });
 
@@ -142,7 +146,9 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
       const btn = page.getByTestId('partition-edit-2');
       await expect(btn).toBeVisible({ timeout: 5000 });
       await btn.hover();
-      await expect(page.getByRole('tooltip', { name: 'No committed offset' }).first()).toBeVisible({ timeout: 5000 });
+      await expect(
+        page.locator('[data-slot="tooltip-content"]').filter({ hasText: 'No committed offset' }).first()
+      ).toBeVisible({ timeout: 5000 });
     });
   });
 });
