@@ -565,7 +565,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await expect(editButton).toBeVisible();
     });
 
-    test('should show delete buttons in table', async ({ page }) => {
+    test('should show delete action in row actions menu', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
       await schemaPage.goto();
 
@@ -573,6 +573,10 @@ test.describe('Schema Registry E2E Tests', () => {
       const schemaName = await firstSchema.textContent();
 
       if (schemaName) {
+        const actionsTrigger = page.getByTestId(`schema-list-actions-trigger-${schemaName}`);
+        await expect(actionsTrigger).toBeVisible();
+
+        await actionsTrigger.click();
         const deleteButton = page.getByTestId(`schema-list-delete-btn-${schemaName}`);
         await expect(deleteButton).toBeVisible();
       }
