@@ -10,31 +10,18 @@
  */
 
 import {
-  Accordion,
-  Checkbox,
-  CopyButton,
-  DataTable,
-  Empty,
-  Flex,
-  Grid,
-  GridItem,
-  Popover,
-  SearchField,
-  Section,
-  Tabs,
-  Text,
-} from '@redpanda-data/ui';
-import {
-  CheckCircleIcon,
-  EditIcon,
-  FlameIcon,
-  HelpIcon,
-  HourglassIcon,
-  SkipIcon,
-  TrashIcon,
-  WarningIcon,
-} from 'components/icons';
-import React, { type JSX, useMemo, useState } from 'react';
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import { EditIcon, SkipIcon, TrashIcon } from 'components/icons';
+import { Search, X } from 'lucide-react';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
@@ -42,16 +29,32 @@ import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
-import { Button, DefaultSkeleton, IconButton, numberToThousandsString } from '../../../utils/tsx-utils';
+import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
-import { Statistic } from '../../misc/statistic';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../redpanda-ui/components/accordion';
+import { Button } from '../../redpanda-ui/components/button';
+import { Card, CardContent } from '../../redpanda-ui/components/card';
+import { Checkbox } from '../../redpanda-ui/components/checkbox';
+import { CopyButton } from '../../redpanda-ui/components/copy-button';
+import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../../redpanda-ui/components/empty';
+import { ListLayoutSearchInput } from '../../redpanda-ui/components/list-layout';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../redpanda-ui/components/tabs';
+import { Text } from '../../redpanda-ui/components/typography';
+import { ConsumerGroupStateCell } from '../../ui/consumer-group/consumer-group-state-cell';
+import { DisabledReasonButton } from '../../ui/disabled-reason-button';
 import { PageComponent, type PageInitHelper } from '../page';
 import AclList from '../topics/Tab.Acl/acl-list';
+
+type GroupTab = 'topics' | 'acl';
 
 type GroupSearchParams = {
   q?: string;
   withLag?: boolean;
+  tab?: GroupTab;
 };
 
 const DEFAULT_MATCH_ALL_REGEX = /.*/s;
@@ -113,6 +116,13 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
   }
 }
 
+const StatItem = ({ label, value }: { label: ReactNode; value: ReactNode }) => (
+  <div className="flex flex-col gap-0.5">
+    <div className="font-semibold text-lg tabular-nums">{value}</div>
+    <Text className="text-muted-foreground text-sm">{label}</Text>
+  </div>
+);
+
 const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps) => {
   const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
   const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
@@ -136,7 +146,8 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const setDeletingMode = (v: GroupDeletingMode) => setDeletingState((prev) => ({ ...prev, mode: v }));
   const setDeletingOffsets = (v: GroupOffset[] | null) => setDeletingState((prev) => ({ ...prev, offsets: v }));
   const [quickSearch, setQuickSearch] = useState(search?.q ?? '');
-  const [showWithLagOnly, setShowWithLagOnly] = useState(search?.withLag ?? false);
+  const showWithLagOnly = search?.withLag ?? false;
+  const activeTab: GroupTab = search?.tab ?? 'topics';
 
   const groupId2 = decodeURIComponent(groupId);
   const consumerGroupsSize = useApiStoreHook((s) => s.consumerGroups.size);
@@ -192,107 +203,121 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
 
   return (
     <PageContent className="groupDetails">
-      <Flex gap={2}>
-        <Button
-          disabledReason={cannotEditGroupReason(group, featurePatchGroup)}
+      <div className="flex gap-2">
+        <DisabledReasonButton
           onClick={() => editGroup()}
+          reason={cannotEditGroupReason(group, featurePatchGroup)}
+          size="sm"
           variant="outline"
         >
           Edit Group
-        </Button>
-        <Button
-          disabledReason={cannotDeleteGroupReason(group, featureDeleteGroup)}
+        </DisabledReasonButton>
+        <DisabledReasonButton
           onClick={() => deleteGroup()}
+          reason={cannotDeleteGroupReason(group, featureDeleteGroup)}
+          size="sm"
           variant="outline"
         >
           Delete Group
-        </Button>
-      </Flex>
+        </DisabledReasonButton>
+      </div>
+
       {/* Statistics Card */}
       {Boolean(uiSettings.consumerGroupDetails.showStatisticsBar) && (
-        <Section py={4}>
-          <div className="statisticsBar">
-            <Flex gap="2rem" justifyContent="space-between">
-              <Statistic title="State" value={<GroupState group={group} />} />
-              <Statistic title="Assigned Partitions" value={totalPartitions} />
-              <ProtocolType group={group} />
-              <Statistic title="Protocol Type" value={group.protocolType} />
-              <Statistic
-                title={
-                  <Flex alignItems="center" gap={1}>
-                    Coordinator ID <CopyButton content={`${group.coordinatorId}`} variant="sm" />
-                  </Flex>
-                }
-                value={group.coordinatorId}
-              />
-              <Statistic title="Total Lag" value={numberToThousandsString(group.lagSum)} />
-            </Flex>
-          </div>
-        </Section>
+        <Card className="gap-0 px-6 py-4" size="full" variant="standard">
+          <CardContent className="flex flex-wrap items-start gap-x-12 gap-y-4">
+            <StatItem label="State" value={<ConsumerGroupStateCell state={group.state} />} />
+            <StatItem label="Assigned Partitions" value={totalPartitions} />
+            <StatItem label="Protocol" value={group.protocol || '—'} />
+            <StatItem label="Protocol Type" value={group.protocolType || '—'} />
+            <StatItem
+              label={
+                <span className="inline-flex items-center gap-1">
+                  Coordinator ID
+                  <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
+                </span>
+              }
+              value={group.coordinatorId}
+            />
+            <StatItem label="Total Lag" value={numberToThousandsString(group.lagSum)} />
+          </CardContent>
+        </Card>
       )}
 
       {/* Main Card */}
-      <Section>
-        {/* View Buttons */}
-        <Tabs
-          isFitted
-          items={[
-            {
-              key: 'topics',
-              name: 'Topics',
-              component: (
-                <>
-                  <Flex alignItems="center" gap={4} mb={6}>
-                    <SearchField
-                      placeholderText="Filter by member"
-                      searchText={quickSearch}
-                      setSearchText={(filterText) => {
-                        setQuickSearch(filterText);
-                        onSearchChange({ q: filterText });
-                      }}
-                      width={300}
-                    />
-                    <Checkbox
-                      isChecked={showWithLagOnly}
-                      onChange={(e) => {
-                        setShowWithLagOnly(e.target.checked);
-                        onSearchChange({ withLag: e.target.checked });
-                      }}
-                    >
-                      Only show topics with lag
-                    </Checkbox>
-                  </Flex>
+      <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
+        <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
+          <TabsTrigger value="topics" variant="underline">
+            Topics
+          </TabsTrigger>
+          <TabsTrigger value="acl" variant="underline">
+            ACL
+          </TabsTrigger>
+        </TabsList>
 
-                  <GroupByTopics
-                    group={group}
-                    onDeleteOffsets={(offsets, mode) => {
-                      setDeletingMode(mode);
-                      setDeletingOffsets(offsets);
-                    }}
-                    onEditOffsets={(g) => {
-                      editGroup();
-                      setEditedTopic(g[0].topicName);
-                      if (g.length === 1) {
-                        setEditedPartition(g[0].partitionId);
-                      } else {
-                        setEditedPartition(null);
-                      }
-                    }}
-                    onlyShowPartitionsWithLag={showWithLagOnly}
-                    quickSearch={quickSearch}
-                  />
-                </>
-              ),
-            },
-            {
-              key: 'acl',
-              name: 'ACL',
-              component: <AclList acl={consumerGroupAcl} />,
-            },
-          ]}
-          variant="fitted"
-        />
-      </Section>
+        <TabsContent className="mt-4" value="topics">
+          <div className="mb-6 flex items-center gap-4">
+            <div className="relative w-[300px]">
+              {!quickSearch && (
+                <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground">
+                  <Search className="h-4 w-4" />
+                </span>
+              )}
+              <ListLayoutSearchInput
+                className={quickSearch ? 'pr-8' : 'pl-8'}
+                onChange={(e) => {
+                  setQuickSearch(e.target.value);
+                  onSearchChange({ q: e.target.value });
+                }}
+                placeholder="Filter by member"
+                value={quickSearch}
+              />
+              {quickSearch && (
+                <button
+                  className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setQuickSearch('');
+                    onSearchChange({ q: '' });
+                  }}
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={showWithLagOnly}
+                onCheckedChange={(checked) => onSearchChange({ withLag: checked === true })}
+              />
+              Only show topics with lag
+            </label>
+          </div>
+
+          <GroupByTopics
+            group={group}
+            onDeleteOffsets={(offsets, mode) => {
+              setDeletingMode(mode);
+              setDeletingOffsets(offsets);
+            }}
+            onEditOffsets={(g) => {
+              editGroup();
+              setEditedTopic(g[0].topicName);
+              if (g.length === 1) {
+                setEditedPartition(g[0].partitionId);
+              } else {
+                setEditedPartition(null);
+              }
+            }}
+            onlyShowPartitionsWithLag={showWithLagOnly}
+            quickSearch={quickSearch}
+          />
+        </TabsContent>
+
+        <TabsContent className="mt-4" value="acl">
+          <AclList acl={consumerGroupAcl} />
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       <EditOffsetsModal
@@ -319,6 +344,171 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   );
 };
 
+type PartitionRow = {
+  topicName: string;
+  partitionId: number;
+  groupOffset: number | null;
+  highWaterMark: number | null;
+  lag: number | null;
+  assignedMember: GroupMemberDescription | undefined;
+  id: string | undefined;
+  clientId: string | undefined;
+  host: string | undefined;
+  isUnconsumed: boolean;
+};
+
+type PartitionTableProps = {
+  partitions: PartitionRow[];
+  group: GroupDescription;
+  featurePatchGroup: boolean;
+  featureDeleteGroupOffsets: boolean;
+  onEditOffsets: (offsets: GroupOffset[]) => void;
+  onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
+};
+
+const PartitionTable = ({
+  partitions,
+  group,
+  featurePatchGroup,
+  featureDeleteGroupOffsets,
+  onEditOffsets,
+  onDeleteOffsets,
+}: PartitionTableProps) => {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE });
+
+  const columns: ColumnDef<PartitionRow>[] = [
+    {
+      accessorKey: 'partitionId',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
+      meta: { headWidth: 'sm' as const },
+    },
+    {
+      accessorKey: 'id',
+      header: 'Assigned Member',
+      enableSorting: false,
+      meta: { headWidth: 'full' as const },
+      cell: ({ row: { original } }) =>
+        original.assignedMember ? (
+          renderMergedID(original.id, original.clientId)
+        ) : (
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <SkipIcon size={14} /> No assigned member
+          </span>
+        ),
+    },
+    {
+      accessorKey: 'host',
+      header: 'Host',
+      enableSorting: false,
+      cell: ({ row: { original } }) =>
+        original.host ?? (
+          <span className="text-muted-foreground opacity-60">
+            <SkipIcon size={14} />
+          </span>
+        ),
+    },
+    {
+      accessorKey: 'highWaterMark',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Log End Offset" />,
+      meta: { headWidth: 'sm' as const },
+      cell: ({ row: { original } }) =>
+        original.highWaterMark !== null ? numberToThousandsString(original.highWaterMark) : '—',
+    },
+    {
+      accessorKey: 'groupOffset',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Group Offset" />,
+      meta: { headWidth: 'sm' as const },
+      cell: ({ row: { original } }) =>
+        original.groupOffset !== null ? numberToThousandsString(original.groupOffset) : '—',
+    },
+    {
+      accessorKey: 'lag',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Lag" />,
+      meta: { headWidth: 'sm' as const },
+      cell: ({ row: { original } }) => (original.lag !== null ? <ShortNum tooltip value={original.lag} /> : '—'),
+    },
+    {
+      id: 'action',
+      header: '',
+      enableSorting: false,
+      meta: { align: 'right' as const, headWidth: 'fit' as const },
+      cell: ({ row: { original } }) => (
+        <div className="flex justify-end gap-1">
+          <DisabledReasonButton
+            iconOnly
+            onClick={() => onEditOffsets([original])}
+            reason={cannotEditGroupReason(group, featurePatchGroup, original.isUnconsumed ? [] : undefined)}
+            testId={`partition-edit-${original.partitionId}`}
+          >
+            <EditIcon size={16} />
+          </DisabledReasonButton>
+          <DisabledReasonButton
+            iconOnly
+            onClick={() => onDeleteOffsets([original], 'partition')}
+            reason={cannotDeleteGroupOffsetsReason(
+              group,
+              featureDeleteGroupOffsets,
+              original.isUnconsumed ? [] : undefined
+            )}
+            testId={`partition-delete-${original.partitionId}`}
+          >
+            <TrashIcon size={16} />
+          </DisabledReasonButton>
+        </div>
+      ),
+    },
+  ];
+
+  const table = useReactTable({
+    data: partitions,
+    columns,
+    state: { sorting, pagination },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
+                const meta = header.column.columnDef.meta as Meta | undefined;
+                return (
+                  <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getVisibleCells().map((cell) => {
+                const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
+                return (
+                  <TableCell align={meta?.align} key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {table.getPageCount() > 1 && <DataTablePagination table={table} />}
+    </div>
+  );
+};
+
 const GroupByTopics = (groupProps: {
   group: GroupDescription;
   onlyShowPartitionsWithLag: boolean;
@@ -335,7 +525,7 @@ const GroupByTopics = (groupProps: {
     m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds ?? [] }))
   );
 
-  const lagsFlat = topicLags.flatMap((topicLag) =>
+  const lagsFlat: PartitionRow[] = topicLags.flatMap((topicLag) =>
     topicLag.partitionOffsets.map((partLag) => {
       const assignedMember = allAssignments.find(
         (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
@@ -362,199 +552,103 @@ const GroupByTopics = (groupProps: {
     .sort((a, b) => a.key.localeCompare(b.key))
     .map((x) => ({ topicName: x.key, partitions: x.items }));
 
-  const topicEntries = lagGroupsByTopic.map((g) => {
-    const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
-    const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
+  const topicEntries = lagGroupsByTopic
+    .map((g) => {
+      const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
+      const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
-    const partitions = groupProps.onlyShowPartitionsWithLag
-      ? g.partitions.filter((e) => e.isUnconsumed || (e.lag !== null && e.lag !== 0))
-      : g.partitions;
+      const partitions = groupProps.onlyShowPartitionsWithLag
+        ? g.partitions.filter((e) => e.isUnconsumed || (e.lag !== null && e.lag !== 0))
+        : g.partitions;
 
-    if (partitions.length === 0) {
-      return null;
-    }
+      if (partitions.length === 0) {
+        return null;
+      }
 
-    const consumedPartitions = g.partitions.filter((p) => !p.isUnconsumed);
+      const consumedPartitions = g.partitions.filter((p) => !p.isUnconsumed);
 
-    return {
-      heading: (
-        <Flex flexDirection="column" gap={4}>
-          <Flex gap={2}>
-            {/* Title */}
-            <Text fontSize="lg" fontWeight={600}>
-              {g.topicName}
-            </Text>
+      return { topicName: g.topicName, partitions, totalLagAll, partitionsAssigned, consumedPartitions };
+    })
+    .filterNull();
 
-            <Flex gap={2}>
-              <IconButton
-                disabledReason={cannotEditGroupReason(groupProps.group, featurePatchGroup, consumedPartitions)}
-                onClick={(e) => {
-                  groupProps.onEditOffsets(consumedPartitions);
-                  e.stopPropagation();
-                }}
-              >
-                <EditIcon />
-              </IconButton>
-              <IconButton
-                disabledReason={cannotDeleteGroupOffsetsReason(
-                  groupProps.group,
-                  featureDeleteGroupOffsets,
-                  consumedPartitions
-                )}
-                onClick={(e) => {
-                  groupProps.onDeleteOffsets(consumedPartitions, 'topic');
-                  e.stopPropagation();
-                }}
-              >
-                <TrashIcon />
-              </IconButton>
-            </Flex>
-          </Flex>
-          <Flex alignItems="center" color="gray.600" fontSize="sm" fontWeight="normal" gap={4}>
-            <span>Lag: {numberToThousandsString(totalLagAll)}</span>
-            <span>Assigned partitions: {partitionsAssigned}</span>
-            <Button
-              onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(g.topicName)}`)}
-              size="sm"
-              variant="link"
-            >
-              Go to topic
-            </Button>
-          </Flex>
-        </Flex>
-      ),
-      description: (
-        <DataTable<{
-          topicName: string;
-          partitionId: number;
-          groupOffset: number | null;
-          highWaterMark: number | null;
-          lag: number | null;
-          assignedMember: GroupMemberDescription | undefined;
-          id: string | undefined;
-          clientId: string | undefined;
-          host: string | undefined;
-          isUnconsumed: boolean;
-        }>
-          columns={[
-            {
-              size: 100,
-              header: 'Partition',
-              accessorKey: 'partitionId',
-            },
-            {
-              size: Number.POSITIVE_INFINITY,
-              header: 'Assigned Member',
-              accessorKey: 'id',
-              cell: ({
-                row: {
-                  original: { assignedMember, id, clientId },
-                },
-              }) =>
-                assignedMember ? (
-                  renderMergedID(id, clientId)
-                ) : (
-                  <span style={{ margin: '0 3px' }}>
-                    <SkipIcon /> No assigned member
-                  </span>
-                ),
-            },
-            {
-              header: 'Host',
-              accessorKey: 'host',
-              cell: ({
-                row: {
-                  original: { host },
-                },
-              }) =>
-                host ?? (
-                  <span style={{ opacity: 0.66, margin: '0 3px' }}>
-                    <SkipIcon />
-                  </span>
-                ),
-            },
-            {
-              size: 120,
-              header: 'Log End Offset',
-              accessorKey: 'highWaterMark',
-              cell: ({ row: { original } }) =>
-                original.highWaterMark !== null ? numberToThousandsString(original.highWaterMark) : '—',
-            },
-            {
-              size: 120,
-              header: 'Group Offset',
-              accessorKey: 'groupOffset',
-              cell: ({ row: { original } }) =>
-                original.groupOffset !== null ? numberToThousandsString(original.groupOffset) : '—',
-            },
-            {
-              size: 80,
-              header: 'Lag',
-              accessorKey: 'lag',
-              cell: ({ row: { original } }) =>
-                original.lag !== null ? ShortNum({ value: original.lag, tooltip: true }) : '—',
-            },
-            {
-              size: 1,
-              header: '',
-              id: 'action',
-              cell: ({ row: { original } }) => (
-                <Flex gap={1} pr={2}>
-                  <IconButton
-                    data-testid={`partition-edit-${original.partitionId}`}
-                    disabledReason={cannotEditGroupReason(
-                      groupProps.group,
-                      featurePatchGroup,
-                      original.isUnconsumed ? [] : undefined
-                    )}
-                    onClick={() => groupProps.onEditOffsets([original])}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    data-testid={`partition-delete-${original.partitionId}`}
-                    disabledReason={cannotDeleteGroupOffsetsReason(
-                      groupProps.group,
-                      featureDeleteGroupOffsets,
-                      original.isUnconsumed ? [] : undefined
-                    )}
-                    onClick={() => groupProps.onDeleteOffsets([original], 'partition')}
-                  >
-                    <TrashIcon />
-                  </IconButton>
-                </Flex>
-              ),
-            },
-          ]}
-          data={partitions}
-          pagination
-          sorting
-        />
-      ),
-    };
-  });
-
-  const defaultExpand: number | undefined =
-    lagGroupsByTopic.length === 1
-      ? 0 // only one -> expand
-      : undefined; // more than one -> collapse
-
-  const nullEntries = topicEntries.filter((e) => e === null).length;
-  if (topicEntries.length === 0 || topicEntries.length === nullEntries) {
+  if (topicEntries.length === 0) {
     return (
-      <Empty
-        description={
-          groupProps.onlyShowPartitionsWithLag ? (
-            <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
-          ) : (
-            'No data found'
-          )
-        }
-      />
+      <div className="rounded-lg border border-border border-solid bg-card py-8">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Search />
+            </EmptyMedia>
+            <EmptyTitle>{groupProps.onlyShowPartitionsWithLag ? 'No topics with lag' : 'No data found'}</EmptyTitle>
+            <EmptyDescription>
+              {groupProps.onlyShowPartitionsWithLag
+                ? `All ${lagGroupsByTopic.length} topics have been filtered (no lag on any partition).`
+                : 'This consumer group has no committed topic offsets.'}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
     );
   }
 
-  return <Accordion allowToggle defaultIndex={defaultExpand} items={topicEntries.filterNull()} />;
+  // Only one topic -> expand it by default; otherwise leave all collapsed.
+  const defaultOpen = topicEntries.length === 1 ? [topicEntries[0].topicName] : [];
+
+  return (
+    <Accordion defaultValue={defaultOpen} variant="contained">
+      {topicEntries.map((entry) => (
+        <AccordionItem key={entry.topicName} value={entry.topicName}>
+          <AccordionTrigger className="px-4 py-3">
+            <div className="flex flex-col gap-1 text-start">
+              <Text className="font-semibold text-lg">{entry.topicName}</Text>
+              <div className="flex items-center gap-4 font-normal text-muted-foreground text-sm">
+                <span>Lag: {numberToThousandsString(entry.totalLagAll)}</span>
+                <span>Assigned partitions: {entry.partitionsAssigned}</span>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            {/* Topic-level actions live in the content (not nested inside the trigger button). */}
+            <div className="mb-3 flex items-center justify-end gap-1">
+              <DisabledReasonButton
+                iconOnly
+                onClick={() => groupProps.onEditOffsets(entry.consumedPartitions)}
+                reason={cannotEditGroupReason(groupProps.group, featurePatchGroup, entry.consumedPartitions)}
+              >
+                <EditIcon size={16} />
+              </DisabledReasonButton>
+              <DisabledReasonButton
+                iconOnly
+                onClick={() => groupProps.onDeleteOffsets(entry.consumedPartitions, 'topic')}
+                reason={cannotDeleteGroupOffsetsReason(
+                  groupProps.group,
+                  featureDeleteGroupOffsets,
+                  entry.consumedPartitions
+                )}
+              >
+                <TrashIcon size={16} />
+              </DisabledReasonButton>
+              <Button
+                onClick={() => appGlobal.historyPush(`/topics/${encodeURIComponent(entry.topicName)}`)}
+                size="sm"
+                variant="link"
+              >
+                Go to topic
+              </Button>
+            </div>
+            <PartitionTable
+              featureDeleteGroupOffsets={featureDeleteGroupOffsets}
+              featurePatchGroup={featurePatchGroup}
+              group={groupProps.group}
+              onDeleteOffsets={groupProps.onDeleteOffsets}
+              onEditOffsets={groupProps.onEditOffsets}
+              partitions={entry.partitions}
+            />
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+  );
 };
 
 const renderMergedID = (id?: string, clientId?: string) => {
@@ -577,73 +671,6 @@ const renderMergedID = (id?: string, clientId?: string) => {
   return null;
 };
 
-type StateIcon = 'stable' | 'completingrebalance' | 'preparingrebalance' | 'empty' | 'dead' | 'unknown';
-
-const stateIcons = new Map<StateIcon, JSX.Element>([
-  ['stable', <CheckCircleIcon color="#52c41a" key="stable" size={16} />],
-  ['completingrebalance', <HourglassIcon color="#52c41a" key="completingrebalance" size={16} />],
-  ['preparingrebalance', <HourglassIcon color="orange" key="preparingrebalance" size={16} />],
-  ['empty', <WarningIcon color="orange" key="empty" size={16} />],
-  ['dead', <FlameIcon color="orangered" key="dead" size={16} />],
-  ['unknown', <HelpIcon key="unknown" size={16} />],
-]);
-
-const stateIconNames: Record<StateIcon, string> = {
-  stable: 'Stable',
-  completingrebalance: 'Completing Rebalance',
-  preparingrebalance: 'Preparing Rebalance',
-  empty: 'Empty',
-  dead: 'Dead',
-  unknown: 'Unknown',
-};
-
-const stateIconDescriptions: Record<StateIcon, string> = {
-  stable: 'Consumer group has members which have been assigned partitions',
-  completingrebalance: 'Kafka is assigning partitions to group members',
-  preparingrebalance: 'A reassignment of partitions is required, members have been asked to stop consuming',
-  empty: 'Consumer group exists, but does not have any members',
-  dead: 'Consumer group does not have any members and its metadata has been removed',
-  unknown: 'Group state is not known',
-};
-
-const consumerGroupStateTable = (
-  <Grid gap={4} templateColumns="auto 300px">
-    {Array.from(stateIcons.entries()).map(([key, icon]) => (
-      <React.Fragment key={key}>
-        {/* Icon column */}
-        <GridItem alignItems="center" display="flex" gap={2}>
-          {icon} <strong>{stateIconNames[key]}</strong>
-        </GridItem>
-
-        {/* Description column */}
-        <GridItem>{stateIconDescriptions[key]}</GridItem>
-      </React.Fragment>
-    ))}
-  </Grid>
-);
-
-export const GroupState = (p: { group: GroupDescription }) => {
-  const state = p.group.state.toLowerCase();
-  const icon = stateIcons.get(state as StateIcon);
-
-  return (
-    <Popover content={consumerGroupStateTable} hideCloseButton isInPortal placement="right" size="auto" trigger="hover">
-      <Flex alignItems="center" gap={2}>
-        {icon}
-        <span> {p.group.state}</span>
-      </Flex>
-    </Popover>
-  );
-};
-const ProtocolType = (p: { group: GroupDescription }) => {
-  const protocol = p.group.protocolType;
-  if (protocol === 'consumer') {
-    return null;
-  }
-
-  return <Statistic title="Protocol" value={protocol} />;
-};
-
 function cannotEditGroupReason(
   group: GroupDescription,
   featurePatchGroup: boolean,
@@ -656,7 +683,7 @@ function cannotEditGroupReason(
     return "You don't have 'editConsumerGroup' permissions for this group";
   }
   if (group.isInUse) {
-    return 'Consumer groups with active members cannot be edited';
+    return 'Offsets can only be edited while the group is Empty with no connected members.';
   }
   if (!featurePatchGroup) {
     return 'This cluster does not support editing group offsets';
@@ -668,7 +695,7 @@ function cannotDeleteGroupReason(group: GroupDescription, featureDeleteGroup: bo
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
   if (group.isInUse) {
-    return 'Consumer groups with active members cannot be deleted';
+    return 'A consumer group can only be deleted while it is Empty with no connected members.';
   }
   if (!featureDeleteGroup) {
     return 'This cluster does not support deleting groups';
@@ -687,7 +714,7 @@ function cannotDeleteGroupOffsetsReason(
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
   if (group.isInUse) {
-    return 'Consumer groups with active members cannot be deleted';
+    return 'Offsets can only be deleted while the group is Empty with no connected members.';
   }
   if (!featureDeleteGroupOffsets) {
     return 'This cluster does not support deleting group offsets';
