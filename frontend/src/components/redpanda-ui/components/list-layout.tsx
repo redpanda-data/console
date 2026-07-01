@@ -169,7 +169,10 @@ interface ListLayoutPaginationProps extends React.HTMLAttributes<HTMLDivElement>
 const ListLayoutPagination = React.forwardRef<HTMLDivElement, ListLayoutPaginationProps>(
   ({ className, children, ...props }, ref) => (
     <div
-      className={cn('flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between', className)}
+      className={cn(
+        'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between [&>*]:w-full',
+        className
+      )}
       ref={ref}
       {...props}
     >

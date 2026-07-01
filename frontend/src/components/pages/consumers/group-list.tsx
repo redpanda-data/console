@@ -29,7 +29,6 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import {
   ListLayout,
-  ListLayoutContent,
   ListLayoutFilters,
   ListLayoutPagination,
   ListLayoutSearchInput,
@@ -330,26 +329,24 @@ const GroupList: FC = () => {
         />
       </ListLayoutFilters>
 
-      <ListLayoutContent>
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
-                  const meta = header.column.columnDef.meta as Meta | undefined;
-                  return (
-                    <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>{renderBody()}</TableBody>
-        </Table>
-      </ListLayoutContent>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
+                const meta = header.column.columnDef.meta as Meta | undefined;
+                return (
+                  <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>{renderBody()}</TableBody>
+      </Table>
 
       <ListLayoutPagination>
         <DataTablePagination table={table} />
