@@ -572,11 +572,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       })
     : messages;
 
-  // For continuous pagination, just use the filtered messages directly
-  // We don't use placeholders as they cause page content to shift
+  // Default ordering for the "Newest" (last N) view: show messages newest-first, sorted by
+  // timestamp descending with offset descending as a tiebreaker. Offset isn't global across
+  // partitions, so timestamp is the primary key. This applies unless the user has picked an
+  // explicit column sort (sorting.length > 0), in which case the table's sorted row model wins.
+  // Continuous pagination forces sorting to [] and disables column sorting, so it always lands here.
   const filteredMessages =
-    continuousPaginationEnabled && startOffset === PartitionOffsetOrigin.EndMinusResults
-      ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp)
+    startOffset === PartitionOffsetOrigin.EndMinusResults && sorting.length === 0
+      ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp || b.offset - a.offset)
       : baseFilteredMessages;
 
   // Convert @computed activePreviewTags to useMemo
