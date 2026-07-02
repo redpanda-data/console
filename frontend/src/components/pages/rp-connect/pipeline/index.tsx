@@ -1213,7 +1213,9 @@ function PipelinePageContent() {
               <VisualEditorPanel
                 componentList={componentListResponse?.components ?? ({} as ComponentList)}
                 components={components}
-                isLoading={initialYaml === null}
+                // Only edit mode waits on a server fetch/hydration; a new pipeline (create) is
+                // immediately editable, so it shows its empty state rather than a skeleton.
+                isLoading={mode === 'edit' && initialYaml === null}
                 lintHints={Object.values(lintHints)}
                 mode={mode}
                 onAddConnector={(type) => setAddConnectorType(type)}

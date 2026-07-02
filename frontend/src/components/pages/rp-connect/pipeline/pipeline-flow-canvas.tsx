@@ -434,17 +434,20 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
   return null;
 }
 
-// Frame the graph on first load: fully zoomed out (MIN_ZOOM) and anchored to its top-left corner.
-// Runs once, on the next animation frame after the pane is sized and the nodes exist — retrying a
-// few frames until `getNodesBounds` reports real dimensions (i.e. the custom nodes have been
-// measured), since fitting/positioning before that lands the view on the origin.
+// Frame the graph on first load. If the whole graph fits at a readable zoom it's CENTERED (so a new
+// pipeline's couple of nodes sit in the middle, not lost in a corner); if it's too big to fit even
+// fully zoomed out, we anchor its top-left corner instead so you start at the input. Runs once, on
+// the next animation frame after the pane is sized and the nodes exist — retrying a few frames until
+// `getNodesBounds` reports real dimensions (the custom nodes have been measured), since
+// fitting/positioning before that lands the view on the origin.
 function FitOnInit() {
   const paneWidth = useStore((s) => s.width);
+  const paneHeight = useStore((s) => s.height);
   const nodeCount = useStore((s) => s.nodes.length);
-  const { getNodes, getNodesBounds, setViewport } = useReactFlow();
+  const { getNodes, getNodesBounds, setViewport, fitView } = useReactFlow();
   const doneRef = useRef(false);
   useEffect(() => {
-    if (doneRef.current || !(paneWidth > 0 && nodeCount > 0)) {
+    if (doneRef.current || !(paneWidth > 0 && paneHeight > 0 && nodeCount > 0)) {
       return;
     }
     let raf = 0;
@@ -453,12 +456,22 @@ function FitOnInit() {
       const bounds = getNodesBounds(getNodes());
       if (bounds && bounds.width > 0 && bounds.height > 0) {
         doneRef.current = true;
-        // Put the graph's top-left corner at (padding, padding) with the view fully zoomed out.
-        setViewport({
-          x: INITIAL_VIEW_PADDING - bounds.x * MIN_ZOOM,
-          y: INITIAL_VIEW_PADDING - bounds.y * MIN_ZOOM,
-          zoom: MIN_ZOOM,
-        });
+        // The zoom at which the whole graph would fit within the padded pane.
+        const fitZoom = Math.min(
+          (paneWidth - 2 * INITIAL_VIEW_PADDING) / bounds.width,
+          (paneHeight - 2 * INITIAL_VIEW_PADDING) / bounds.height
+        );
+        if (fitZoom >= MIN_ZOOM) {
+          // Fits without going below the zoom floor — center it (capped so a tiny graph isn't blown up).
+          fitView({ padding: 0.2, minZoom: MIN_ZOOM, maxZoom: 1 });
+        } else {
+          // Bigger than the pane — anchor the top-left corner, fully zoomed out, so you start at the input.
+          setViewport({
+            x: INITIAL_VIEW_PADDING - bounds.x * MIN_ZOOM,
+            y: INITIAL_VIEW_PADDING - bounds.y * MIN_ZOOM,
+            zoom: MIN_ZOOM,
+          });
+        }
         return;
       }
       tries += 1;
@@ -468,7 +481,7 @@ function FitOnInit() {
     };
     raf = requestAnimationFrame(place);
     return () => cancelAnimationFrame(raf);
-  }, [paneWidth, nodeCount, getNodes, getNodesBounds, setViewport]);
+  }, [paneWidth, paneHeight, nodeCount, getNodes, getNodesBounds, setViewport, fitView]);
   return null;
 }
 

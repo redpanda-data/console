@@ -275,6 +275,9 @@ function Row({
   onPreview: (component: ConnectComponentSpec) => void;
 }) {
   const category = component.categories?.[0];
+  // Fall back to the humanized type (cache / rate_limit / …) so same-named components of different
+  // kinds — e.g. the redis cache vs the redis rate-limit — are distinguishable in the list.
+  const badgeLabel = category ? getCategoryDisplayName(category) : component.type.replace(/_/g, ' ');
   return (
     <CommandItem
       className="gap-3 hover:bg-accent/50"
@@ -287,9 +290,9 @@ function Row({
         <HighlightedName name={component.name} query={query} />
         {statusBadge(component.status, component.name)}
       </span>
-      {category ? (
-        <Badge className="ml-auto shrink-0" size="sm" variant="simple-outline">
-          {getCategoryDisplayName(category)}
+      {badgeLabel ? (
+        <Badge className="ml-auto shrink-0 capitalize" size="sm" variant="simple-outline">
+          {badgeLabel}
         </Badge>
       ) : null}
     </CommandItem>
