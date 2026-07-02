@@ -439,7 +439,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
             propertiesObject ?? {}
           );
 
-          const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
+          const errorCount = validationResult.configs.sum((x) => (x.value?.errors ?? []).length);
 
           if (errorCount > 0) {
             setInvalidValidationResult(validationResult);
@@ -693,9 +693,9 @@ function Review({
   );
 }
 
-function getDataSource(validationResult: ConnectorValidationResult) {
+export function getDataSource(validationResult: ConnectorValidationResult) {
   return validationResult.configs
-    .filter((connectorProperty) => connectorProperty.value.errors.length > 0)
+    .filter((connectorProperty) => (connectorProperty.value?.errors ?? []).length > 0)
     .map((cp) => cp.value);
 }
 
