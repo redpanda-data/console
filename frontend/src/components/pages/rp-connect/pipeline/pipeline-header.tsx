@@ -253,7 +253,9 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <Separator className="mx-1 h-6" orientation="vertical" />
+          {/* self-center: the vertical Separator defaults to `self-stretch`, which with a fixed
+              height (h-6) top-aligns instead of centering in the row. */}
+          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>

@@ -1146,98 +1146,104 @@ function PipelinePageContent() {
           url={pipeline?.url}
         />
       ) : null}
-      {/* View-mode lanes: Monitor, YAML (read-only), Visual. */}
-      {mode === 'view' && pipeline ? (
-        <Tabs value={activeViewLane}>
-          <TabsList className="w-fit" variant="underline">
-            <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
-              Monitor
-            </TabsTrigger>
-            <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
-              YAML
-            </TabsTrigger>
-            {isVisualEditorEnabled ? (
-              <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
-                Visual
-              </TabsTrigger>
-            ) : null}
-          </TabsList>
-        </Tabs>
-      ) : null}
-      {/* Edit-mode lanes: YAML editor vs. visual editor. */}
-      {mode !== 'view' && isVisualEditorEnabled ? (
-        <Tabs value={activeEditLane}>
-          <TabsList className="w-fit" variant="underline">
-            <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
-              YAML
-            </TabsTrigger>
-            <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
-              Visual
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      ) : null}
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
       <div className="flex min-h-[640px] min-w-0 flex-1 flex-col gap-2">
-        {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-border!">
-          {showSidebar ? (
-            <SidebarPanel
-              errorNodeIds={errorNodeIds}
-              isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
-              mode={mode}
-              onAddConnector={(type) => setAddConnectorType(type)}
-              onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
-              onOpenCommandMenu={handleCommandMenuOpen}
-              unsavedNodeIds={unsavedNodeIds}
-              yamlContent={yamlContent}
-            />
+        {/* Framed panel: the lane tabs sit flush at the top (their full-width underline is the
+            internal divider) with the content below, all inside one rounded border. */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border!">
+          {mode === 'view' && pipeline ? (
+            <Tabs value={activeViewLane}>
+              {/* Full-width list (so the underline divider spans) but content-width triggers so they
+                  pack to the left instead of stretching across. */}
+              <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+                <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
+                  Monitor
+                </TabsTrigger>
+                <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
+                  YAML
+                </TabsTrigger>
+                {isVisualEditorEnabled ? (
+                  <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
+                    Visual
+                  </TabsTrigger>
+                ) : null}
+              </TabsList>
+            </Tabs>
           ) : null}
-          <div className="min-w-0 flex-1">
-            {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
-            {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
-              <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
-            ) : null}
-            {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
-              <VisualEditorPanel
-                componentList={componentListResponse?.components ?? ({} as ComponentList)}
-                components={components}
-                lintHints={Object.values(lintHints)}
-                mode="view"
-                onNavigateToYaml={goToYamlNode}
-                onYamlChange={setYamlContent}
-                yamlContent={pipeline.configYaml}
-              />
-            ) : null}
-            {mode !== 'view' && activeEditLane === 'visual' ? (
-              <VisualEditorPanel
-                componentList={componentListResponse?.components ?? ({} as ComponentList)}
-                components={components}
-                // Only edit mode waits on a server fetch/hydration; a new pipeline (create) is
-                // immediately editable, so it shows its empty state rather than a skeleton.
-                isLoading={mode === 'edit' && initialYaml === null}
-                lintHints={Object.values(lintHints)}
+          {mode !== 'view' && isVisualEditorEnabled ? (
+            <Tabs value={activeEditLane}>
+              {/* Full-width list (so the underline divider spans) but content-width triggers so they
+                  pack to the left instead of stretching across. */}
+              <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+                <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
+                  YAML
+                </TabsTrigger>
+                <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
+                  Visual
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : null}
+          {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
+          <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+            {showSidebar ? (
+              <SidebarPanel
+                errorNodeIds={errorNodeIds}
+                isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
                 mode={mode}
                 onAddConnector={(type) => setAddConnectorType(type)}
-                onAddSasl={handleAddSasl}
-                onAddTopic={handleAddTopic}
                 onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
-                onNavigateToYaml={goToYamlNode}
-                onYamlChange={setYamlContent}
+                onOpenCommandMenu={handleCommandMenuOpen}
+                unsavedNodeIds={unsavedNodeIds}
                 yamlContent={yamlContent}
               />
             ) : null}
-            {mode === 'view' || activeEditLane === 'visual' ? null : (
-              <EditorPanel
-                isLintPending={isLintPending}
-                isServerlessInitializing={isServerlessInitializing}
-                lintHints={lintHints}
-                onEditorMount={setEditorInstance}
-                onYamlChange={setYamlContent}
-                yamlContent={yamlContent}
-                yamlEditorSchema={yamlEditorSchema}
-              />
-            )}
+            <div className="min-w-0 flex-1">
+              {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
+              {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
+                <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
+              ) : null}
+              {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
+                <VisualEditorPanel
+                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  components={components}
+                  lintHints={Object.values(lintHints)}
+                  mode="view"
+                  onNavigateToYaml={goToYamlNode}
+                  onYamlChange={setYamlContent}
+                  yamlContent={pipeline.configYaml}
+                />
+              ) : null}
+              {mode !== 'view' && activeEditLane === 'visual' ? (
+                <VisualEditorPanel
+                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  components={components}
+                  // Only edit mode waits on a server fetch/hydration; a new pipeline (create) is
+                  // immediately editable, so it shows its empty state rather than a skeleton.
+                  isLoading={mode === 'edit' && initialYaml === null}
+                  lintHints={Object.values(lintHints)}
+                  mode={mode}
+                  onAddConnector={(type) => setAddConnectorType(type)}
+                  onAddSasl={handleAddSasl}
+                  onAddTopic={handleAddTopic}
+                  onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
+                  onNavigateToYaml={goToYamlNode}
+                  onYamlChange={setYamlContent}
+                  yamlContent={yamlContent}
+                />
+              ) : null}
+              {mode === 'view' || activeEditLane === 'visual' ? null : (
+                <EditorPanel
+                  isLintPending={isLintPending}
+                  isServerlessInitializing={isServerlessInitializing}
+                  lintHints={lintHints}
+                  onEditorMount={setEditorInstance}
+                  onYamlChange={setYamlContent}
+                  yamlContent={yamlContent}
+                  yamlEditorSchema={yamlEditorSchema}
+                />
+              )}
+            </div>
           </div>
         </div>
         {tipsContext ? (
