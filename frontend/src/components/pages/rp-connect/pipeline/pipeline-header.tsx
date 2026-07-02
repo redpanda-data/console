@@ -309,6 +309,9 @@ export function PipelineEditHeader({
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
             {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
+            <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
+              Edit settings
+            </Button>
           </div>
           {/* Relative so the unsaved-changes hint can sit BELOW the buttons (absolute) instead of
               between Docs and Save — toggling it then never shifts the Docs button horizontally. */}
@@ -347,9 +350,6 @@ export function PipelineEditHeader({
           </DetailLine>
         ) : null}
         {description ? <DescriptionBlock text={description} /> : null}
-        <Button className="mt-1" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
-          Edit settings
-        </Button>
       </div>
     </header>
   );

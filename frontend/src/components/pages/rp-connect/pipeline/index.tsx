@@ -1119,10 +1119,11 @@ function PipelinePageContent() {
 
   return (
     // Bounded to the viewport (definite height, not just a min) so a tall lane — e.g. the Monitor
-    // structure tree — scrolls WITHIN the framed panel instead of stretching the page. The Visual
-    // lane already rendered at this height; this makes the other lanes share it.
+    // structure tree — scrolls WITHIN the framed panel instead of stretching the page. We reserve
+    // only the chrome ABOVE the page (the app header + its pt-8), NOT the app footer — so the editor
+    // fills the screen and the footer is pushed below the fold rather than eating usable height.
     // overflow-x-clip (not hidden) blocks stray horizontal overflow while keeping overflow-y visible.
-    <div className="flex h-[calc(100dvh-10rem)] min-h-[640px] min-w-0 flex-col gap-4 overflow-x-clip">
+    <div className="flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip">
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
           onBack={handleCancel}
