@@ -19,6 +19,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   useStore,
+  useStoreApi,
   ViewportPortal,
 } from '@xyflow/react';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
@@ -434,54 +435,67 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
   return null;
 }
 
-// Frame the graph on first load. If the whole graph fits at a readable zoom it's CENTERED (so a new
-// pipeline's couple of nodes sit in the middle, not lost in a corner); if it's too big to fit even
-// fully zoomed out, we anchor its top-left corner instead so you start at the input. Runs once, on
-// the next animation frame after the pane is sized and the nodes exist — retrying a few frames until
-// `getNodesBounds` reports real dimensions (the custom nodes have been measured), since
-// fitting/positioning before that lands the view on the origin.
+type Rect = { x: number; y: number; width: number; height: number };
+
+// The initial viewport for a graph of `bounds` in a `paneWidth`×`paneHeight` pane. If the whole
+// graph fits at the zoom floor it's centered (`fit`). Otherwise we zoom fully out and, PER AXIS,
+// center that axis if it fits or anchor its start (input side / top) if it overflows — so a wide,
+// short graph sits vertically centered starting from the input rather than crammed against the top.
+export function computeInitialView(
+  bounds: Rect,
+  paneWidth: number,
+  paneHeight: number
+): { fit: true } | { fit: false; x: number; y: number; zoom: number } {
+  const pad = INITIAL_VIEW_PADDING;
+  const fitZoom = Math.min((paneWidth - 2 * pad) / bounds.width, (paneHeight - 2 * pad) / bounds.height);
+  if (fitZoom >= MIN_ZOOM) {
+    return { fit: true };
+  }
+  const scaledW = bounds.width * MIN_ZOOM;
+  const scaledH = bounds.height * MIN_ZOOM;
+  return {
+    fit: false,
+    x: scaledW + 2 * pad <= paneWidth ? (paneWidth - scaledW) / 2 - bounds.x * MIN_ZOOM : pad - bounds.x * MIN_ZOOM,
+    y: scaledH + 2 * pad <= paneHeight ? (paneHeight - scaledH) / 2 - bounds.y * MIN_ZOOM : pad - bounds.y * MIN_ZOOM,
+    zoom: MIN_ZOOM,
+  };
+}
+
+// Frame the graph on first load (see computeInitialView). Retries each animation frame — reading the
+// pane size and node bounds FRESH — until both are real (pane laid out + custom nodes measured), so
+// it fires as soon as it can on load rather than waiting for a later resize (which read as a "snap").
 function FitOnInit() {
-  const paneWidth = useStore((s) => s.width);
-  const paneHeight = useStore((s) => s.height);
   const nodeCount = useStore((s) => s.nodes.length);
+  const storeApi = useStoreApi();
   const { getNodes, getNodesBounds, setViewport, fitView } = useReactFlow();
   const doneRef = useRef(false);
   useEffect(() => {
-    if (doneRef.current || !(paneWidth > 0 && paneHeight > 0 && nodeCount > 0)) {
+    if (doneRef.current || nodeCount === 0) {
       return;
     }
     let raf = 0;
     let tries = 0;
     const place = () => {
+      const { width, height } = storeApi.getState();
       const bounds = getNodesBounds(getNodes());
-      if (bounds && bounds.width > 0 && bounds.height > 0) {
+      if (width > 0 && height > 0 && bounds.width > 0 && bounds.height > 0) {
         doneRef.current = true;
-        // The zoom at which the whole graph would fit within the padded pane.
-        const fitZoom = Math.min(
-          (paneWidth - 2 * INITIAL_VIEW_PADDING) / bounds.width,
-          (paneHeight - 2 * INITIAL_VIEW_PADDING) / bounds.height
-        );
-        if (fitZoom >= MIN_ZOOM) {
-          // Fits without going below the zoom floor — center it (capped so a tiny graph isn't blown up).
+        const view = computeInitialView(bounds, width, height);
+        if (view.fit) {
           fitView({ padding: 0.2, minZoom: MIN_ZOOM, maxZoom: 1 });
         } else {
-          // Bigger than the pane — anchor the top-left corner, fully zoomed out, so you start at the input.
-          setViewport({
-            x: INITIAL_VIEW_PADDING - bounds.x * MIN_ZOOM,
-            y: INITIAL_VIEW_PADDING - bounds.y * MIN_ZOOM,
-            zoom: MIN_ZOOM,
-          });
+          setViewport({ x: view.x, y: view.y, zoom: view.zoom });
         }
         return;
       }
       tries += 1;
-      if (tries < 30) {
+      if (tries < 60) {
         raf = requestAnimationFrame(place);
       }
     };
     raf = requestAnimationFrame(place);
     return () => cancelAnimationFrame(raf);
-  }, [paneWidth, paneHeight, nodeCount, getNodes, getNodesBounds, setViewport, fitView]);
+  }, [nodeCount, storeApi, getNodes, getNodesBounds, setViewport, fitView]);
   return null;
 }
 

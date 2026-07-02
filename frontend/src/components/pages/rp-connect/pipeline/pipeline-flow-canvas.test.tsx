@@ -12,7 +12,7 @@
 import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { decorateEdges, injectNodeData, selectionTargetForNode } from './pipeline-flow-canvas';
+import { computeInitialView, decorateEdges, injectNodeData, selectionTargetForNode } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowGraphEdge', data: { insertIndex: 1 } },
@@ -169,5 +169,24 @@ describe('injectNodeData — appearance', () => {
       unsavedNodeIds: new Set(['other']),
     });
     expect((clean.data as { unsaved?: boolean }).unsaved).toBeUndefined();
+  });
+});
+
+describe('computeInitialView', () => {
+  const pane = { w: 1200, h: 800 };
+
+  it('centers (fit) a graph that fits at the zoom floor', () => {
+    const view = computeInitialView({ x: 0, y: 0, width: 400, height: 200 }, pane.w, pane.h);
+    expect(view.fit).toBe(true);
+  });
+
+  it('anchors the left edge but vertically centers a wide, short graph', () => {
+    const view = computeInitialView({ x: 0, y: 0, width: 5000, height: 300 }, pane.w, pane.h);
+    expect(view).toEqual({ fit: false, x: 48, y: (800 - 300 * 0.5) / 2, zoom: 0.5 });
+  });
+
+  it('anchors the top-left corner for a graph too big on both axes', () => {
+    const view = computeInitialView({ x: 0, y: 0, width: 5000, height: 3000 }, pane.w, pane.h);
+    expect(view).toEqual({ fit: false, x: 48, y: 48, zoom: 0.5 });
   });
 });
