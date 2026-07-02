@@ -572,12 +572,23 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       })
     : messages;
 
-  // For continuous pagination, just use the filtered messages directly
-  // We don't use placeholders as they cause page content to shift
-  const filteredMessages =
-    continuousPaginationEnabled && startOffset === PartitionOffsetOrigin.EndMinusResults
-      ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp)
-      : baseFilteredMessages;
+  // Newest-first display ordering: timestamp descending, then offset descending
+  // as a tiebreak (offset isn't global across partitions, so timestamp is the
+  // best cross-partition key). This is a pure client-side sort of the rows we
+  // already hold — independent of the backend request.
+  const newestFirst = (list: TopicMessage[]) =>
+    [...list].sort((a, b) => b.timestamp - a.timestamp || b.offset - a.offset);
+
+  const filteredMessages = continuousPaginationEnabled
+    ? // In infinite-scroll mode the append order depends on scroll direction, so
+      // only the "Newest" fetch gets forced newest-first; other origins keep the
+      // streamed order. Header sorting is disabled here.
+      startOffset === PartitionOffsetOrigin.EndMinusResults
+      ? newestFirst(baseFilteredMessages)
+      : baseFilteredMessages
+    : // Normal paginated view: newest-first is just the default display order.
+      // Clicking a column header still overrides it via the sorted row model.
+      newestFirst(baseFilteredMessages);
 
   // Convert @computed activePreviewTags to useMemo
   const activePreviewTags = useMemo(
