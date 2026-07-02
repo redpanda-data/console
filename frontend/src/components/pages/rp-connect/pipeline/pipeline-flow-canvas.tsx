@@ -50,9 +50,6 @@ const PARSE_DEBOUNCE_MS = 300;
 const PAN_PADDING = 240;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
-// The graph opens fully zoomed out (MIN_ZOOM), anchored to its top-left corner with this much
-// gap from the pane edge — so you see the start of the flow and as much of it as possible.
-const INITIAL_VIEW_PADDING = 48;
 
 // Bounding box of top-level nodes (children sit inside their parents). Measured, not assumed
 // from origin, since resource cards can sit at negative x.
@@ -350,19 +347,20 @@ function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
 // pan-drag ends in a click the zoom tool would act on, jumping the view.
 const canPanCanvas = (mode: ZoomMode): boolean => mode === null;
 
-// The zoom tool is SPRING-LOADED: held Z → zoom-in, held Shift (+Z) → zoom-out, nothing held → off.
-function heldZoomMode(zDown: boolean, shift: boolean): ZoomMode {
+// The zoom tool is SPRING-LOADED: held Z → zoom-in, held Z + Option/Alt → zoom-out (Figma-style),
+// nothing held → off.
+function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
   if (!zDown) {
     return null;
   }
-  return shift ? 'out' : 'in';
+  return alt ? 'out' : 'in';
 }
 
 const isTypingTarget = (target: EventTarget | null): boolean =>
   Boolean((target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor'));
 
-// Photoshop/Figma-style zoom TOOL, HOLD to activate: while Z is held the cursor is a magnifier and
-// a click zooms toward the pointer (Shift+Z = zoom out); releasing returns to normal pan/select.
+// Figma-style zoom TOOL, HOLD to activate: while Z is held the cursor is a magnifier and a click
+// zooms toward the pointer (add Option/Alt to zoom out); releasing returns to normal pan/select.
 // Pan is suppressed only while held (canPanCanvas), so panning and zooming never conflict. The
 // wheel is left to the page; the Controls buttons and pinch also zoom. Ignored while typing.
 function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode) => void }) {
@@ -372,25 +370,27 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
   // missed while the window was unfocused can't leave the tool stuck on.
   useEffect(() => {
     let zDown = false;
-    let shiftHeld = false;
-    const sync = () => setMode(heldZoomMode(zDown, shiftHeld));
+    let altHeld = false;
+    const sync = () => setMode(heldZoomMode(zDown, altHeld));
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') {
-        shiftHeld = true;
+      if (e.key === 'Alt') {
+        altHeld = true;
         sync();
         return;
       }
-      if (e.code !== 'KeyZ' || e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) {
+      // Match on `code` (not `key`) so Option+Z on macOS — which emits a special character — still
+      // registers as Z. Meta/Ctrl are reserved for the app shell, so ignore those combos.
+      if (e.code !== 'KeyZ' || e.metaKey || e.ctrlKey || isTypingTarget(e.target)) {
         return;
       }
       e.preventDefault();
       zDown = true;
-      shiftHeld = e.shiftKey;
+      altHeld = e.altKey;
       sync();
     };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') {
-        shiftHeld = false;
+      if (e.key === 'Alt') {
+        altHeld = false;
       } else if (e.code === 'KeyZ') {
         zDown = false;
       } else {
@@ -400,7 +400,7 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
     };
     const reset = () => {
       zDown = false;
-      shiftHeld = false;
+      altHeld = false;
       sync();
     };
     window.addEventListener('keydown', onKeyDown);
@@ -435,39 +435,15 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
   return null;
 }
 
-type Rect = { x: number; y: number; width: number; height: number };
-
-// The initial viewport for a graph of `bounds` in a `paneWidth`×`paneHeight` pane. If the whole
-// graph fits at the zoom floor it's centered (`fit`). Otherwise we zoom fully out and, PER AXIS,
-// center that axis if it fits or anchor its start (input side / top) if it overflows — so a wide,
-// short graph sits vertically centered starting from the input rather than crammed against the top.
-export function computeInitialView(
-  bounds: Rect,
-  paneWidth: number,
-  paneHeight: number
-): { fit: true } | { fit: false; x: number; y: number; zoom: number } {
-  const pad = INITIAL_VIEW_PADDING;
-  const fitZoom = Math.min((paneWidth - 2 * pad) / bounds.width, (paneHeight - 2 * pad) / bounds.height);
-  if (fitZoom >= MIN_ZOOM) {
-    return { fit: true };
-  }
-  const scaledW = bounds.width * MIN_ZOOM;
-  const scaledH = bounds.height * MIN_ZOOM;
-  return {
-    fit: false,
-    x: scaledW + 2 * pad <= paneWidth ? (paneWidth - scaledW) / 2 - bounds.x * MIN_ZOOM : pad - bounds.x * MIN_ZOOM,
-    y: scaledH + 2 * pad <= paneHeight ? (paneHeight - scaledH) / 2 - bounds.y * MIN_ZOOM : pad - bounds.y * MIN_ZOOM,
-    zoom: MIN_ZOOM,
-  };
-}
-
-// Frame the graph on first load (see computeInitialView). Retries each animation frame — reading the
-// pane size and node bounds FRESH — until both are real (pane laid out + custom nodes measured), so
-// it fires as soon as it can on load rather than waiting for a later resize (which read as a "snap").
+// Frame the graph on first load: centered on the middle of the graph, zoomed out enough to fit it
+// (down to the zoom floor for graphs too big to fit — `fitView` still centers them). Retries each
+// animation frame — reading the pane size and node bounds FRESH — until both are real (pane laid
+// out + custom nodes measured), so it fires as soon as it can on load rather than waiting for a
+// later resize (which read as a "snap").
 function FitOnInit() {
   const nodeCount = useStore((s) => s.nodes.length);
   const storeApi = useStoreApi();
-  const { getNodes, getNodesBounds, setViewport, fitView } = useReactFlow();
+  const { getNodes, getNodesBounds, fitView } = useReactFlow();
   const doneRef = useRef(false);
   useEffect(() => {
     if (doneRef.current || nodeCount === 0) {
@@ -480,12 +456,7 @@ function FitOnInit() {
       const bounds = getNodesBounds(getNodes());
       if (width > 0 && height > 0 && bounds.width > 0 && bounds.height > 0) {
         doneRef.current = true;
-        const view = computeInitialView(bounds, width, height);
-        if (view.fit) {
-          fitView({ padding: 0.2, minZoom: MIN_ZOOM, maxZoom: 1 });
-        } else {
-          setViewport({ x: view.x, y: view.y, zoom: view.zoom });
-        }
+        fitView({ padding: 0.2, minZoom: MIN_ZOOM, maxZoom: 1 });
         return;
       }
       tries += 1;
@@ -495,7 +466,7 @@ function FitOnInit() {
     };
     raf = requestAnimationFrame(place);
     return () => cancelAnimationFrame(raf);
-  }, [nodeCount, storeApi, getNodes, getNodesBounds, setViewport, fitView]);
+  }, [nodeCount, storeApi, getNodes, getNodesBounds, fitView]);
   return null;
 }
 
@@ -1028,7 +999,7 @@ export function PipelineFlowCanvas({
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
   // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
-  // The armed zoom tool (Z / Shift+Z) — drives the magnifier cursor and click-to-zoom.
+  // The armed zoom tool (Z / Option+Z) — drives the magnifier cursor and click-to-zoom.
   const [zoomMode, setZoomMode] = useState<ZoomMode>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   useZoomCursor(zoomMode, wrapperRef);
@@ -1210,7 +1181,7 @@ export function PipelineFlowCanvas({
           onPaneClick={() => onClearSelection?.()}
           panOnDrag={canPanCanvas(zoomMode)}
           panOnScroll={false}
-          // The wheel scrolls the embedded page (the canvas is full-height); zoom is on the Z / Shift+Z
+          // The wheel scrolls the embedded page (the canvas is full-height); zoom is on the Z / Option+Z
           // keys (see ZoomTool), the Controls buttons, and trackpad pinch.
           preventScrolling={false}
           proOptions={{ hideAttribution: true }}

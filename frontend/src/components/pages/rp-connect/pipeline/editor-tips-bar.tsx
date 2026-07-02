@@ -16,6 +16,8 @@ import { isMacOS } from 'utils/platform';
 
 const MAC = isMacOS();
 const MOD = MAC ? '⌘' : 'Ctrl';
+// The zoom-out modifier (Figma-style): Option on macOS, Alt elsewhere.
+const ALT = MAC ? '⌥' : 'Alt';
 
 /** Which editor surface the tips relate to — drives a different tip set. */
 export type TipContext = 'yaml' | 'visual';
@@ -40,7 +42,7 @@ function tipsFor(
         id: 'zoom',
         content: (
           <>
-            Drag to pan, hold <Key>Z</Key> / <Key>⇧Z</Key> and click to zoom
+            Drag to pan, hold <Key>Z</Key> / <Key>{`${ALT}Z`}</Key> and click to zoom
           </>
         ),
       },

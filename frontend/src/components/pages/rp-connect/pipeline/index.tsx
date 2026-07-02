@@ -86,6 +86,7 @@ import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
+import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { useSlashCommand } from './use-slash-command';
@@ -762,7 +763,7 @@ function SidebarPanel({
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
       {/* Relative so the template entry point can float pinned at the bottom with an enter/exit animation. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto overflow-x-hidden">
+        <ScrollShadow className="h-full overflow-x-hidden">
           {showStructureTree ? (
             <PipelineStructureTree
               configYaml={yamlContent}
@@ -773,7 +774,7 @@ function SidebarPanel({
               unsavedNodeIds={unsavedNodeIds}
             />
           ) : null}
-        </div>
+        </ScrollShadow>
         {showStructureTree && onBrowseTemplates ? (
           <TemplateGalleryCta onBrowseTemplates={onBrowseTemplates} show={showTemplateCta} />
         ) : null}
@@ -1117,8 +1118,11 @@ function PipelinePageContent() {
   );
 
   return (
+    // Bounded to the viewport (definite height, not just a min) so a tall lane — e.g. the Monitor
+    // structure tree — scrolls WITHIN the framed panel instead of stretching the page. The Visual
+    // lane already rendered at this height; this makes the other lanes share it.
     // overflow-x-clip (not hidden) blocks stray horizontal overflow while keeping overflow-y visible.
-    <div className="flex min-h-[calc(100dvh-10rem)] min-w-0 flex-col gap-4 overflow-x-clip">
+    <div className="flex h-[calc(100dvh-10rem)] min-h-[640px] min-w-0 flex-col gap-4 overflow-x-clip">
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
           onBack={handleCancel}
@@ -1147,7 +1151,7 @@ function PipelinePageContent() {
         />
       ) : null}
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
-      <div className="flex min-h-[640px] min-w-0 flex-1 flex-col gap-2">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
         {/* Framed panel: the lane tabs sit flush at the top (their full-width underline is the
             internal divider) with the content below, all inside one rounded border. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border!">
