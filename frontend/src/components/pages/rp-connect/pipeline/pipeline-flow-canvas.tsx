@@ -17,7 +17,6 @@ import {
   type Node,
   ReactFlow,
   ReactFlowProvider,
-  useNodesInitialized,
   useReactFlow,
   useStore,
   ViewportPortal,
@@ -50,6 +49,9 @@ const PARSE_DEBOUNCE_MS = 300;
 const PAN_PADDING = 240;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
+// The graph opens fully zoomed out (MIN_ZOOM), anchored to its top-left corner with this much
+// gap from the pane edge — so you see the start of the flow and as much of it as possible.
+const INITIAL_VIEW_PADDING = 48;
 
 // Bounding box of top-level nodes (children sit inside their parents). Measured, not assumed
 // from origin, since resource cards can sit at negative x.
@@ -432,23 +434,41 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
   return null;
 }
 
-// Fit the whole diagram into view once the nodes have been MEASURED. React Flow's `fitView` prop
-// fits on first paint — before custom nodes report their size — so the initial fit is wrong and the
-// canvas lands zoomed into the top-left. Waiting for `useNodesInitialized` fits accurately. Fires
-// once per mount (so returning to the lane re-centers, but editing mid-session doesn't yank the view).
+// Frame the graph on first load: fully zoomed out (MIN_ZOOM) and anchored to its top-left corner.
+// Runs once, on the next animation frame after the pane is sized and the nodes exist — retrying a
+// few frames until `getNodesBounds` reports real dimensions (i.e. the custom nodes have been
+// measured), since fitting/positioning before that lands the view on the origin.
 function FitOnInit() {
-  const initialized = useNodesInitialized();
   const paneWidth = useStore((s) => s.width);
-  const { fitView } = useReactFlow();
-  const fittedRef = useRef(false);
+  const nodeCount = useStore((s) => s.nodes.length);
+  const { getNodes, getNodesBounds, setViewport } = useReactFlow();
+  const doneRef = useRef(false);
   useEffect(() => {
-    // Wait for both the nodes to be measured AND the pane to have real dimensions — fitting into a
-    // 0×0 pane (mid lane-mount / rail animation) is what left it zoomed into the corner.
-    if (initialized && paneWidth > 0 && !fittedRef.current) {
-      fittedRef.current = true;
-      fitView({ padding: 0.2, maxZoom: 1 });
+    if (doneRef.current || !(paneWidth > 0 && nodeCount > 0)) {
+      return;
     }
-  }, [initialized, paneWidth, fitView]);
+    let raf = 0;
+    let tries = 0;
+    const place = () => {
+      const bounds = getNodesBounds(getNodes());
+      if (bounds && bounds.width > 0 && bounds.height > 0) {
+        doneRef.current = true;
+        // Put the graph's top-left corner at (padding, padding) with the view fully zoomed out.
+        setViewport({
+          x: INITIAL_VIEW_PADDING - bounds.x * MIN_ZOOM,
+          y: INITIAL_VIEW_PADDING - bounds.y * MIN_ZOOM,
+          zoom: MIN_ZOOM,
+        });
+        return;
+      }
+      tries += 1;
+      if (tries < 30) {
+        raf = requestAnimationFrame(place);
+      }
+    };
+    raf = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(raf);
+  }, [paneWidth, nodeCount, getNodes, getNodesBounds, setViewport]);
   return null;
 }
 

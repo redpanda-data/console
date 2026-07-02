@@ -35,6 +35,7 @@ import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 import { TemplateGalleryCta } from './template-cta';
@@ -380,6 +381,8 @@ type VisualEditorPanelProps = {
   onBrowseTemplates?: () => void;
   /** Switch to the YAML lane and reveal the given node there (inspector "View in YAML"). */
   onNavigateToYaml?: (nodeId: string) => void;
+  /** The pipeline config is still loading — the canvas shows a skeleton until it's ready. */
+  isLoading?: boolean;
 };
 
 /**
@@ -400,6 +403,7 @@ export function VisualEditorPanel({
   onAddSasl,
   onBrowseTemplates,
   onNavigateToYaml,
+  isLoading,
 }: VisualEditorPanelProps) {
   const isEditing = mode !== 'view';
   const [selected, setSelected] = useState<{ id: string; target: EditTarget; caseTarget?: EditTarget } | null>(null);
@@ -791,79 +795,87 @@ export function VisualEditorPanel({
   return (
     <div className="flex h-full w-full">
       <div className="relative min-w-0 flex-1">
-        <PipelineFlowCanvas
-          configYaml={yamlContent}
-          flashNodeIds={flash.ids}
-          flashToken={flash.token}
-          focusNodeId={focus.id || undefined}
-          focusToken={focus.token}
-          lintErrorsByNode={lintMessagesByNode}
-          onAddConnector={isEditing && onAddConnector ? handleAddConnectorSection : undefined}
-          onAddSasl={isEditing ? onAddSasl : undefined}
-          onAddTopic={isEditing ? onAddTopic : undefined}
-          onClearSelection={handleClearSelection}
-          onInsert={isEditing ? handleSpineInsert : undefined}
-          onSelectNode={handleCanvasSelectNode}
-          onSlotInsert={isEditing ? handleSlotInsert : undefined}
-          selectedNodeId={selected?.id}
-          selectedTargetKind={selected?.target.kind}
-          unsavedNodeIds={unsavedNodeIds}
-        />
-        {isEditing ? (
-          <TooltipProvider>
-            <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
-                      <Undo2 />
-                    </Button>
-                  }
-                />
-                <TooltipContent>
-                  <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
-                      <Redo2 />
-                    </Button>
-                  }
-                />
-                <TooltipContent>
-                  <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
-                </TooltipContent>
-              </Tooltip>
+        {/* Don't mount the canvas until the config is loaded — otherwise its parse debounce seeds
+            with the empty pre-hydration config and briefly renders (and fits) a placeholder graph. */}
+        {isLoading ? (
+          <PipelineFlowSkeleton />
+        ) : (
+          <>
+            <PipelineFlowCanvas
+              configYaml={yamlContent}
+              flashNodeIds={flash.ids}
+              flashToken={flash.token}
+              focusNodeId={focus.id || undefined}
+              focusToken={focus.token}
+              lintErrorsByNode={lintMessagesByNode}
+              onAddConnector={isEditing && onAddConnector ? handleAddConnectorSection : undefined}
+              onAddSasl={isEditing ? onAddSasl : undefined}
+              onAddTopic={isEditing ? onAddTopic : undefined}
+              onClearSelection={handleClearSelection}
+              onInsert={isEditing ? handleSpineInsert : undefined}
+              onSelectNode={handleCanvasSelectNode}
+              onSlotInsert={isEditing ? handleSlotInsert : undefined}
+              selectedNodeId={selected?.id}
+              selectedTargetKind={selected?.target.kind}
+              unsavedNodeIds={unsavedNodeIds}
+            />
+            {isEditing ? (
+              <TooltipProvider>
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
+                          <Undo2 />
+                        </Button>
+                      }
+                    />
+                    <TooltipContent>
+                      <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
+                          <Redo2 />
+                        </Button>
+                      }
+                    />
+                    <TooltipContent>
+                      <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            ) : null}
+            <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
+              <PipelineProblemsPanel
+                missingSecrets={missingSecrets}
+                onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
+                onSelectProblem={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
+                problems={problems}
+              />
+              <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
             </div>
-          </TooltipProvider>
-        ) : null}
-        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
-          <PipelineProblemsPanel
-            missingSecrets={missingSecrets}
-            onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-            onSelectProblem={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
-            problems={problems}
-          />
-          <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
-        </div>
-        {onBrowseTemplates ? (
-          <TemplateGalleryCta
-            className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
-            hint={
-              <>
-                or press{' '}
-                <Kbd size="xs" variant="filled">
-                  /
-                </Kbd>{' '}
-                to search nodes &amp; actions
-              </>
-            }
-            onBrowseTemplates={onBrowseTemplates}
-            show={isEditing && isPipelineEmpty}
-          />
-        ) : null}
+            {onBrowseTemplates ? (
+              <TemplateGalleryCta
+                className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
+                hint={
+                  <>
+                    or press{' '}
+                    <Kbd size="xs" variant="filled">
+                      /
+                    </Kbd>{' '}
+                    to search nodes &amp; actions
+                  </>
+                }
+                onBrowseTemplates={onBrowseTemplates}
+                show={isEditing && isPipelineEmpty}
+              />
+            ) : null}
+          </>
+        )}
       </div>
 
       {/* Inspector rail (Figma-style): mounted only when a node is selected. We animate

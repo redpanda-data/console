@@ -107,8 +107,8 @@ import type {
   UserStepRef,
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
-import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import { changedNodeIds } from '../utils/pipeline-diff';
+import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
@@ -960,7 +960,8 @@ function PipelinePageContent() {
     [yamlContent, lintHints]
   );
   const unsavedNodeIds = useMemo(
-    () => (mode !== 'view' && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS),
+    () =>
+      mode !== 'view' && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS,
     [mode, initialYaml, yamlContent]
   );
   const blocker = useBlocker({
@@ -1212,6 +1213,7 @@ function PipelinePageContent() {
               <VisualEditorPanel
                 componentList={componentListResponse?.components ?? ({} as ComponentList)}
                 components={components}
+                isLoading={initialYaml === null}
                 lintHints={Object.values(lintHints)}
                 mode={mode}
                 onAddConnector={(type) => setAddConnectorType(type)}
