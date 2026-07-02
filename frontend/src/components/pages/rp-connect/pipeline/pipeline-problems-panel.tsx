@@ -153,7 +153,7 @@ export function PipelineProblemsPanel({
     : 'border-warning/50 text-warning hover:bg-warning-subtle';
 
   return (
-    <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+    <div className="flex flex-col items-end gap-1.5">
       <button
         aria-expanded={open}
         className={cn(

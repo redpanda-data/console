@@ -36,6 +36,7 @@ import { NodeInspector } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
+import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 import { TemplateGalleryCta } from './template-cta';
 import { usePipelineEditorStore } from './use-pipeline-editor-store';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -108,6 +109,23 @@ function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: Pipeli
   const parent = flowNodes.find((n) => n.id === node.parentId);
   const firstChild = flowNodes.find((n) => n.parentId === node.parentId);
   return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
+}
+
+// What a "jump to node" should select + recenter. A processor-switch CASE is a structural wrapper
+// with no rendered card (its `editTarget` is the `switchCase` itself); its condition rides its first
+// body step. So resolve such a wrapper to that rendered entry, carrying the case's condition target
+// so the inspector opens on the case. Every other node jumps to itself. Returns null if unjumpable.
+function resolveJumpTarget(
+  node: PipelineFlowNode,
+  flowNodes: PipelineFlowNode[]
+): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
+  if (node.editTarget?.kind === 'switchCase') {
+    const entry = flowNodes.find((n) => n.parentId === node.id);
+    if (entry?.editTarget) {
+      return { id: entry.id, target: entry.editTarget, caseTarget: node.caseEditTarget };
+    }
+  }
+  return node.editTarget ? { id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget } : null;
 }
 
 // The direct children (cases / steps) of a control-flow node, as clickable inspector items.
@@ -482,6 +500,15 @@ export function VisualEditorPanel({
     () => (isEditing && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS),
     [isEditing, initialYaml, yamlContent]
   );
+  // The unsaved nodes as a jumpable list for the floating "unsaved" panel (only nodes with an
+  // edit target can be selected/recentered).
+  const unsavedNodeList = useMemo(
+    () =>
+      flowNodes
+        .filter((n) => unsavedNodeIds.has(n.id) && n.editTarget)
+        .map((n) => ({ id: n.id, label: n.label, detail: n.labelText })),
+    [flowNodes, unsavedNodeIds]
+  );
 
   // The selected control-flow node's children, shown as a clickable list in its inspector so
   // the high-level construct links straight to each child's full config.
@@ -713,13 +740,23 @@ export function VisualEditorPanel({
   // edit target are listed, so the target is always present.
   const handleJumpToNode = useCallback(
     (node: PipelineFlowNode) => {
-      if (!node.editTarget) {
+      const jump = resolveJumpTarget(node, flowNodes);
+      if (!jump) {
         return;
       }
-      selectNode({ id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget });
-      setFocus((f) => ({ id: node.id, token: f.token + 1 }));
+      selectNode({ id: jump.id, target: jump.target, caseTarget: jump.caseTarget });
+      setFocus((f) => ({ id: jump.id, token: f.token + 1 }));
     },
-    [selectNode]
+    [flowNodes, selectNode]
+  );
+  const handleJumpToNodeId = useCallback(
+    (nodeId: string) => {
+      const node = flowNodes.find((n) => n.id === nodeId);
+      if (node) {
+        handleJumpToNode(node);
+      }
+    },
+    [flowNodes, handleJumpToNode]
   );
 
   // The slot dictates which component types the picker offers: a nested slot accepts
@@ -802,12 +839,15 @@ export function VisualEditorPanel({
             </div>
           </TooltipProvider>
         ) : null}
-        <PipelineProblemsPanel
-          missingSecrets={missingSecrets}
-          onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-          onSelectProblem={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
-          problems={problems}
-        />
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
+          <PipelineProblemsPanel
+            missingSecrets={missingSecrets}
+            onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
+            onSelectProblem={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
+            problems={problems}
+          />
+          <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
+        </div>
         {onBrowseTemplates ? (
           <TemplateGalleryCta
             className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
