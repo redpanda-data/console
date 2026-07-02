@@ -22,9 +22,6 @@ export const firstKey = (obj: unknown): string | undefined => {
   return Object.keys(obj).find((k) => !RESERVED_COMPONENT_KEYS.has(k));
 };
 
-/** Alias used within this file. */
-const componentName = firstKey;
-
 /** Extract child input names from a multi-input component (broker, sequence). */
 export const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
   if (
@@ -118,23 +115,22 @@ const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<Conne
   }
 };
 
-const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): Document.Parsed => {
+const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const inputNode = doc.get('input') as { toJSON?: () => unknown } | undefined;
   if (!inputNode) {
-    return doc;
+    return;
   }
 
   const inputObj = (inputNode.toJSON?.() as Record<string, unknown>) || {};
   const inputType = Object.keys(inputObj)[0];
   if (!inputType) {
-    return doc;
+    return;
   }
 
   const scannerName = Object.keys(newConfigObject as Record<string, unknown>)[0];
   const scannerConfig = (newConfigObject as Record<string, unknown>)[scannerName];
 
   doc.setIn(['input', inputType, 'scanner'], scannerConfig);
-  return doc;
 };
 
 type DetectedComponentType = 'processor' | 'cache' | 'rate_limit' | 'root' | 'scanner' | 'unknown';
@@ -524,13 +520,13 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
     }
 
     const processors = Array.isArray(config.pipeline?.processors)
-      ? config.pipeline.processors.map(componentName).filter((p): p is string => !!p)
+      ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
       : [];
 
     const inputObj = config.input;
     let inputs: string[] = [];
     if (inputObj && typeof inputObj === 'object') {
-      const inputKey = componentName(inputObj);
+      const inputKey = firstKey(inputObj);
       if (inputKey) {
         inputs = parseMultiInputs(inputKey, inputObj[inputKey]) ?? [inputKey];
       }
@@ -539,7 +535,7 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
     const outputObj = config.output;
     let outputs: string[] = [];
     if (outputObj && typeof outputObj === 'object') {
-      const outputKey = componentName(outputObj);
+      const outputKey = firstKey(outputObj);
       if (outputKey) {
         outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
       }
@@ -555,7 +551,7 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
 // Surgical YAML patching for Redpanda components
 // ============================================================================
 
-export type RedpandaPatch = {
+type RedpandaPatch = {
   topicName?: string;
   sasl?: { mechanism: string; username: string; password: string }[];
 };
@@ -569,7 +565,7 @@ export type RedpandaSetupResultLike = {
 };
 
 /** Build a SASL patch array from setup result data. */
-export function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] | undefined {
+function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] | undefined {
   if (result.authMethod === 'service-account' && result.serviceAccountSecretName) {
     return [
       {

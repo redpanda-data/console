@@ -44,7 +44,7 @@ type ParsedYamlConfig = {
 
 const REDPANDA_COMPONENTS: ReadonlySet<string> = new Set(REDPANDA_TOPIC_AND_USER_COMPONENTS);
 
-export type FlowNodeKind = 'section' | 'group' | 'leaf';
+type FlowNodeKind = 'section' | 'group' | 'leaf';
 
 export type PipelineFlowNode = {
   id: string;
@@ -345,13 +345,7 @@ function hasNonEmptySasl(obj: unknown): boolean {
 }
 
 function hasSaslConfig(componentConfig: unknown, rootConfig: ParsedYamlConfig): boolean {
-  if (hasNonEmptySasl(componentConfig)) {
-    return true;
-  }
-  if (hasNonEmptySasl(rootConfig.redpanda)) {
-    return true;
-  }
-  return false;
+  return hasNonEmptySasl(componentConfig) || hasNonEmptySasl(rootConfig.redpanda);
 }
 
 function parseInputNodes(
@@ -473,6 +467,7 @@ function isErroredCheck(check: unknown): boolean {
 
 function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): PipelineFlowNode {
   const meta = summarizeComponent(name, componentValue);
+  const topics = extractTopics(componentValue);
   return {
     id: ctx.idPrefix,
     kind: 'leaf',
@@ -483,7 +478,7 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     resourceRefCandidates: extractRefCandidates(componentValue),
     // Surface key config on nested leaves too, like top-level processors.
     ...(meta.length > 0 ? { meta } : {}),
-    ...(extractTopics(componentValue) ? { topics: extractTopics(componentValue) } : {}),
+    ...(topics ? { topics } : {}),
     editTarget: pathEditTarget(ctx.section, ctx.path),
   };
 }
@@ -977,7 +972,7 @@ function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig)
   }
 }
 
-export type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
+type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
 
 const EMPTY_CONFIG_NODES: PipelineFlowNode[] = [
   { id: 'section-input', kind: 'section', label: 'input', section: 'input' },
@@ -1237,12 +1232,11 @@ function routingData(node: PipelineFlowNode) {
  *  reference cable plugs into. Must match the node component's handle offset. */
 export const FLOW_SPINE_HANDLE_LEFT = 18;
 
-function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number, depth = 0) {
+function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number) {
   return {
     label: node.label,
     collapsible: node.collapsible ?? false,
     collapsed,
-    depth,
     ...(node.section ? { section: node.section } : {}),
     ...(node.labelText ? { labelText: node.labelText } : {}),
     ...(node.topics ? { topics: node.topics } : {}),
@@ -1302,7 +1296,7 @@ const RESOURCE_GAP = 28;
 // The bottom/top handle's x offset from a card's left edge (matches NodeHandles).
 const HANDLE_X = FLOW_SPINE_HANDLE_LEFT;
 
-type GraphEdgeType = 'flow' | 'conditional' | 'error' | 'copy' | 'merge' | 'loopback' | 'reference';
+type GraphEdgeType = 'flow' | 'conditional' | 'error' | 'copy' | 'merge' | 'reference';
 
 type GraphNodeSpec = {
   id: string;
@@ -1730,7 +1724,7 @@ function refEdge(id: string, from: string, to: string, points: { x: number; y: n
     targetHandle: 't',
     type: 'flowGraphEdge',
     zIndex: 4,
-    data: { graphType: 'reference', tone: 'muted', dashed: true, points },
+    data: { tone: 'muted', dashed: true, points },
   };
 }
 
@@ -1801,7 +1795,7 @@ function placeResourceDependencies(
       initialHeight: h,
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-      data: makeFlowNodeData(resource, false, 0, 0),
+      data: makeFlowNodeData(resource, false, 0),
     });
     cursor = x + FULL_DIMS.cardW + RESOURCE_GAP;
     right = Math.max(right, x + FULL_DIMS.cardW);
@@ -1879,7 +1873,6 @@ const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
   error: 'error',
   copy: 'primary',
   merge: 'primary',
-  loopback: 'muted',
   reference: 'muted',
 };
 
@@ -1998,7 +1991,7 @@ export function computeGraphLayout(
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
       data: {
-        ...makeFlowNodeData(node, false, gn.childCount ?? 0, 0),
+        ...makeFlowNodeData(node, false, gn.childCount ?? 0),
         ...(node.parentId ? { ownerId: node.parentId } : {}),
         ...(gn.footerAdd ? { addAction: gn.footerAdd } : {}),
       },
@@ -2010,21 +2003,16 @@ export function computeGraphLayout(
     const points = graphEdgePoints(ge, g);
     const tone = GRAPH_EDGE_TONE[ge.type];
     const dashed =
-      ge.type === 'error' ||
-      ge.type === 'copy' ||
-      ge.type === 'merge' ||
-      ge.type === 'loopback' ||
-      ge.type === 'reference';
+      ge.type === 'error' || ge.type === 'copy' || ge.type === 'merge' || ge.type === 'reference';
     rfEdges.push({
       id: ge.id,
       source: ge.from,
       target: ge.to,
-      sourceHandle: ge.type === 'loopback' ? 't' : 'r',
-      targetHandle: ge.type === 'loopback' ? 'b' : 'l',
+      sourceHandle: 'r',
+      targetHandle: 'l',
       type: 'flowGraphEdge',
       zIndex: 4,
       data: {
-        graphType: ge.type,
         tone,
         dashed,
         label: ge.label,
@@ -2043,7 +2031,7 @@ export function computeGraphLayout(
       // otherwise stack several heads on one point and read as a messy blob. Fan-out / flow /
       // copy / error edges keep their arrow.
       markerEnd:
-        ge.type === 'loopback' || ge.id.startsWith('fanin-') || ge.id.startsWith('merge-')
+        ge.id.startsWith('fanin-') || ge.id.startsWith('merge-')
           ? undefined
           : {
               type: MarkerType.ArrowClosed,

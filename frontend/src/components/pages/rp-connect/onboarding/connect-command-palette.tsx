@@ -376,7 +376,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   );
 }
 
-export type ConnectCommandPaletteProps = {
+type ConnectCommandPaletteProps = {
   components?: ComponentList;
   additionalComponents?: ExtendedConnectComponentSpec[];
   /** Component types valid in the slot being filled — the palette locks to these unless "Show all" is toggled. */
@@ -411,12 +411,10 @@ export const ConnectCommandPalette = ({
     return [...builtIn, ...(additionalComponents ?? [])];
   }, [components, additionalComponents]);
 
-  const lockedTypes = allowedTypes;
-
   const typeAllowed = useMemo(() => {
-    const set = lockedTypes && lockedTypes.length > 0 ? new Set(lockedTypes) : null;
+    const set = allowedTypes && allowedTypes.length > 0 ? new Set(allowedTypes) : null;
     return (type: ConnectComponentType) => !set || set.has(type);
-  }, [lockedTypes]);
+  }, [allowedTypes]);
 
   const inScope = useMemo(() => allComponents.filter((c) => typeAllowed(c.type)), [allComponents, typeAllowed]);
   const byName = useMemo(() => new Map(inScope.map((c) => [c.name, c])), [inScope]);

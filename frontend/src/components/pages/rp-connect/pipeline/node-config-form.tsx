@@ -384,7 +384,7 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
   return { scalars, arrays };
 }
 
-export type FormValues = {
+type FormValues = {
   label: string;
   raw: string;
   fields: Record<string, string | boolean>;

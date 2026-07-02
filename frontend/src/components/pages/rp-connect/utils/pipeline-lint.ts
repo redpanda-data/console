@@ -15,7 +15,7 @@ import { LineCounter, parseDocument } from 'yaml';
 import { parsePipelineFlowTree } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
-export type NodeRange = { id: string; start: number; end: number; span: number };
+type NodeRange = { id: string; start: number; end: number; span: number };
 
 // Each editable node's [startLine, endLine] in the YAML. Lines are 1-based to match LintHint.line.
 export function nodeLineRanges(yaml: string): NodeRange[] {

@@ -34,7 +34,7 @@ type PaletteAction = {
   enabled?: boolean;
 };
 
-export type CanvasCommandPaletteProps = {
+type CanvasCommandPaletteProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Every parsed flow node — the searchable "go to" list is derived from the selectable ones. */

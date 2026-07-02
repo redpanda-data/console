@@ -231,16 +231,9 @@ const ConditionRow = ({ data, onEdit, selected }: { data: FlowCardData; onEdit?:
 export type FlowCardData = {
   label: string;
   section?: string;
-  /** Y (px) anchors of the container routing ports: `gs` (entry/copy/fan-out) and `gt`
-      (merge/fan-in). Level with a child's connector row for sequential flows, children-area
-      centre for fans. */
-  portOutY?: number;
-  portInY?: number;
   collapsible?: boolean;
   collapsed?: boolean;
   childCount?: number;
-  /** Nesting level (0 = top-level); alternates the surface so adjacent levels don't blend. */
-  depth?: number;
   labelText?: string;
   topics?: string[];
   meta?: NodeMetaEntry[];
@@ -255,10 +248,6 @@ export type FlowCardData = {
   // Logical parent (parser parentId) used for selection/scope when the node carries no
   // React Flow `parentId` (the block layout positions everything absolutely).
   ownerId?: string;
-  // Lane-label header variant (see the layout's `LaneLabelVariant`).
-  variant?: 'case' | 'route' | 'stage' | 'name' | 'plain';
-  // Lane band: an error/dead-letter lane is tinted red.
-  isError?: boolean;
   editTarget?: EditTarget;
   /** Edit target for this node's switch CASE (routing condition), distinct from `editTarget`
       (the component). Drives the clickable condition chip. */
@@ -558,7 +547,7 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-export type FlowInsertData = {
+type FlowInsertData = {
   label?: string;
   payload?: FlowInsertPayload;
   /** A "ghost branch" add (e.g. Add case) reached by a dashed connector — styled as a pill. */
@@ -601,21 +590,8 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
 type LinkTone = 'primary' | 'muted' | 'error';
 type FlowLinkData = {
   label?: string;
-  labelOffsetY?: number;
-  tone?: LinkTone;
-  dashed?: boolean;
-  laneFromSource?: number;
-  laneFromTarget?: number;
-  /** Draw a small "port" socket at the container end so the line visibly plugs in. */
-  portDot?: 'source' | 'target';
   /** Selection context: unrelated edges fade, connected ones render full strength. */
   dimmed?: boolean;
-  emphasized?: boolean;
-  /** Idle reference edges: readable hint, softer than full strength. */
-  faint?: boolean;
-  /** Orthogonal cable route (reference edges): drop → channel beside the column → down it →
-      along the bus below the flow → into the resource. */
-  route?: { channelX: number; busY: number };
 };
 
 const HIGHLIGHT_STROKE = 'var(--color-primary)';
@@ -861,7 +837,6 @@ const EdgeInsertButton = ({
 );
 
 type FlowGraphEdgeData = {
-  graphType?: string;
   tone?: LinkTone;
   dashed?: boolean;
   label?: string;
@@ -923,7 +898,7 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
 // Every edge in the Dagre DAG: routed through Dagre's waypoints (so lines avoid nodes), styled by
 // type — solid primary for flow, marching dashes for live data, red dashed for error/dead-letter,
 // dashed for branch copy/merge and resource refs.
-export function FlowGraphEdge({
+function FlowGraphEdge({
   sourceX,
   sourceY,
   sourcePosition,
@@ -1004,7 +979,7 @@ export function FlowGraphEdge({
       ) : null}
       {d?.label ? (
         <LinkLabel
-          d={{ label: d.label, tone, dimmed: d.dimmed }}
+          d={{ label: d.label, dimmed: d.dimmed }}
           onClick={d.onLabelClick}
           tone={tone}
           x={labelX}
