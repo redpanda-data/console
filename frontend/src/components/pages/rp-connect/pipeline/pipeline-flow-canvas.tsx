@@ -48,8 +48,24 @@ import type { EditTarget } from '../utils/yaml';
 const PARSE_DEBOUNCE_MS = 300;
 // How far past the diagram the canvas may be panned, so an edge node can be brought to the middle.
 const PAN_PADDING = 240;
+// Default interactive zoom-out floor for normal-sized graphs.
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
+// A big graph may not fit even at MIN_ZOOM, so we lower the floor to "the whole graph fits" — but
+// never below this absolute bound, so it can't zoom out to a dot.
+const ABSOLUTE_MIN_ZOOM = 0.05;
+
+// The zoom-out floor for a graph of `graphW`×`graphH` in a `paneW`×`paneH` pane: MIN_ZOOM normally,
+// but lower (down to ABSOLUTE_MIN_ZOOM) when the graph is too big to fit at MIN_ZOOM — so large
+// graphs can be zoomed out until the whole thing is visible, and no further.
+function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number): number {
+  if (graphW <= 0 || graphH <= 0 || paneW <= 0 || paneH <= 0) {
+    return MIN_ZOOM;
+  }
+  // 0.9 leaves a little margin around the fully-zoomed-out graph.
+  const fit = 0.9 * Math.min(paneW / graphW, paneH / graphH);
+  return Math.min(MIN_ZOOM, Math.max(ABSOLUTE_MIN_ZOOM, fit));
+}
 
 // Bounding box of top-level nodes (children sit inside their parents). Measured, not assumed
 // from origin, since resource cards can sit at negative x.
@@ -363,7 +379,7 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 // zooms toward the pointer (add Option/Alt to zoom out); releasing returns to normal pan/select.
 // Pan is suppressed only while held (canPanCanvas), so panning and zooming never conflict. The
 // wheel is left to the page; the Controls buttons and pinch also zoom. Ignored while typing.
-function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode) => void }) {
+function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: ZoomMode) => void; minZoom: number }) {
   const { screenToFlowPosition, getZoom, setCenter } = useReactFlow();
 
   // Track the physical key-hold state and derive the mode — keydown/keyup, plus blur so a release
@@ -425,12 +441,12 @@ function ZoomTool({ mode, setMode }: { mode: ZoomMode; setMode: (next: ZoomMode)
       e.preventDefault();
       e.stopPropagation();
       const point = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      const next = clampValue(getZoom() * (mode === 'in' ? ZOOM_STEP : 1 / ZOOM_STEP), MIN_ZOOM, MAX_ZOOM);
+      const next = clampValue(getZoom() * (mode === 'in' ? ZOOM_STEP : 1 / ZOOM_STEP), minZoom, MAX_ZOOM);
       setCenter(point.x, point.y, { zoom: next, duration: 200 });
     };
     window.addEventListener('click', onClick, true);
     return () => window.removeEventListener('click', onClick, true);
-  }, [mode, screenToFlowPosition, getZoom, setCenter]);
+  }, [mode, minZoom, screenToFlowPosition, getZoom, setCenter]);
 
   return null;
 }
@@ -456,7 +472,9 @@ function FitOnInit() {
       const bounds = getNodesBounds(getNodes());
       if (width > 0 && height > 0 && bounds.width > 0 && bounds.height > 0) {
         doneRef.current = true;
-        fitView({ padding: 0.2, minZoom: MIN_ZOOM, maxZoom: 1 });
+        // Allow the initial fit to zoom out far enough to show the whole graph (big graphs go below
+        // MIN_ZOOM); small graphs stay capped so a couple of nodes aren't blown up.
+        fitView({ padding: 0.2, minZoom: fitMinZoom(bounds.width, bounds.height, width, height), maxZoom: 1 });
         return;
       }
       tries += 1;
@@ -467,6 +485,28 @@ function FitOnInit() {
     raf = requestAnimationFrame(place);
     return () => cancelAnimationFrame(raf);
   }, [nodeCount, storeApi, getNodes, getNodesBounds, fitView]);
+  return null;
+}
+
+// Keeps the interactive zoom-out floor in sync with the graph size: a big graph can be zoomed out
+// until the whole thing fits (see fitMinZoom); a normal graph keeps MIN_ZOOM. Recomputes when the
+// graph or the pane resizes. Lives inside the provider for the pane dimensions.
+function MinZoomController({
+  graphWidth,
+  graphHeight,
+  onChange,
+}: {
+  graphWidth: number;
+  graphHeight: number;
+  onChange: (minZoom: number) => void;
+}) {
+  const paneWidth = useStore((s) => s.width);
+  const paneHeight = useStore((s) => s.height);
+  useEffect(() => {
+    if (paneWidth > 0 && paneHeight > 0) {
+      onChange(fitMinZoom(graphWidth, graphHeight, paneWidth, paneHeight));
+    }
+  }, [graphWidth, graphHeight, paneWidth, paneHeight, onChange]);
   return null;
 }
 
@@ -1001,6 +1041,8 @@ export function PipelineFlowCanvas({
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
   // The armed zoom tool (Z / Option+Z) — drives the magnifier cursor and click-to-zoom.
   const [zoomMode, setZoomMode] = useState<ZoomMode>(null);
+  // Interactive zoom-out floor — lowered for graphs too big to fit at MIN_ZOOM (MinZoomController).
+  const [minZoom, setMinZoom] = useState(MIN_ZOOM);
   const wrapperRef = useRef<HTMLDivElement>(null);
   useZoomCursor(zoomMode, wrapperRef);
   // Node ids committed last render; anything new this render "appears" in place and skips the
@@ -1050,7 +1092,7 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  const { rfNodes, layoutEdges, translateExtent, legend } = useMemo(() => {
+  const { rfNodes, layoutEdges, translateExtent, contentWidth, contentHeight, legend } = useMemo(() => {
     // Edit mode (nested inserts wired) shows the ghost "add" branches; read-only hides them.
     const editable = Boolean(onSlotInsert);
     const layout = computeGraphLayout(nodes, editable);
@@ -1100,6 +1142,8 @@ export function PipelineFlowCanvas({
       rfNodes: injectedNodes,
       layoutEdges: layout.rfEdges,
       translateExtent: extent,
+      contentWidth: bounds.maxX - bounds.minX,
+      contentHeight: bounds.maxY - bounds.minY,
       legend: legendFlags,
     };
   }, [
@@ -1160,7 +1204,7 @@ export function PipelineFlowCanvas({
           edgeTypes={flowEdgeTypes}
           elementsSelectable={false}
           maxZoom={MAX_ZOOM}
-          minZoom={MIN_ZOOM}
+          minZoom={minZoom}
           nodes={rfNodes}
           nodesConnectable={false}
           nodesDraggable={false}
@@ -1200,9 +1244,10 @@ export function PipelineFlowCanvas({
           {/* Renders only for control-flow markers (flowSplit/flowMerge). */}
           <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
           <FitOnInit />
+          <MinZoomController graphHeight={contentHeight} graphWidth={contentWidth} onChange={setMinZoom} />
           <KeepSelectionInView focusToken={focusToken} selectedNodeId={selectedNodeId} />
           <FocusNode nodeId={focusNodeId} token={focusToken} />
-          <ZoomTool mode={zoomMode} setMode={setZoomMode} />
+          <ZoomTool minZoom={minZoom} mode={zoomMode} setMode={setZoomMode} />
         </ReactFlow>
       </ReactFlowProvider>
       <FlowLegend flags={legend} />
