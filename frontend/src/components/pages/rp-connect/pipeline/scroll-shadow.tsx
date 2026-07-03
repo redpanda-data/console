@@ -11,7 +11,7 @@
 
 import { useScrollShadow } from 'components/redpanda-ui/lib/use-scroll-shadow';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
 
 type ScrollShadowProps = {
   /** Classes for the scroll container (it fills its flex parent and scrolls). */
@@ -26,16 +26,16 @@ type ScrollShadowProps = {
  * overflows that edge — the same affordance as `DialogBody`.
  */
 export function ScrollShadow({ className, contentClassName, children }: ScrollShadowProps) {
-  const { containerRef, topRef, bottomRef, edges } = useScrollShadow<HTMLDivElement>(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const edges = useScrollShadow(containerRef);
 
   return (
     <div className={cn('relative min-h-0 flex-1 overflow-y-auto', className)} ref={containerRef}>
-      <div aria-hidden className="h-px shrink-0" ref={topRef} />
       <div
         aria-hidden
         className={cn(
           'pointer-events-none sticky top-0 z-10 h-0 transition-opacity duration-150',
-          edges.top ? 'opacity-100' : 'opacity-0'
+          edges.start ? 'opacity-100' : 'opacity-0'
         )}
       >
         <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
@@ -45,12 +45,11 @@ export function ScrollShadow({ className, contentClassName, children }: ScrollSh
         aria-hidden
         className={cn(
           'pointer-events-none sticky bottom-0 z-10 h-0 transition-opacity duration-150',
-          edges.bottom ? 'opacity-100' : 'opacity-0'
+          edges.end ? 'opacity-100' : 'opacity-0'
         )}
       >
         <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
       </div>
-      <div aria-hidden className="h-px shrink-0" ref={bottomRef} />
     </div>
   );
 }
