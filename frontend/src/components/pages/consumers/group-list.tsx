@@ -348,7 +348,7 @@ const GroupList: FC = () => {
         <TableBody>{renderBody()}</TableBody>
       </Table>
 
-      <ListLayoutPagination>
+      <ListLayoutPagination className="[&>*]:w-full">
         <DataTablePagination table={table} />
       </ListLayoutPagination>
     </ListLayout>
