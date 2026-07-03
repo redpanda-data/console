@@ -1285,8 +1285,9 @@ const GRAPH_INSERT_H = 24;
 // than crammed against a card or the split.
 const GRAPH_RANKSEP = 120;
 // Generous vertical spacing between stacked branches so routing-condition labels (which sit
-// on the fan-out edges) have room and don't overlap each other or the split.
-const GRAPH_NODESEP = 56;
+// on the fan-out edges) have room, and so adjacent control-flow constructs' scope-region boxes
+// sit far enough apart not to overlap.
+const GRAPH_NODESEP = 84;
 const GRAPH_EDGESEP = 16;
 const GRAPH_MARGIN = 24;
 // Resource dependency lane: a horizontal bus just below the flow, with the resource cards
