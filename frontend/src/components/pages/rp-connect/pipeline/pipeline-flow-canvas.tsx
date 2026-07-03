@@ -15,7 +15,6 @@ import {
   type Node,
   ReactFlow,
   ReactFlowProvider,
-  useNodesInitialized,
   useReactFlow,
   useStore,
   useStoreApi,
@@ -688,12 +687,20 @@ function ScopeRegions({
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
 }) {
-  // Measured render sizes (keyed by id); the memo re-runs when measurement completes so boxes tighten
-  // from the layout estimate to the rendered card size.
+  // Measured render sizes live on the store's (stably-mutated) nodeLookup, so subscribing to it alone
+  // won't re-render. `measuredKey` is a primitive digest of every node's measured height — it changes
+  // when cards measure, re-rendering + recomputing the memo so boxes tighten from the layout estimate
+  // to the rendered card size.
   const nodeLookup = useStore((s) => s.nodeLookup);
-  const nodesInitialized = useNodesInitialized();
+  const measuredKey = useStore((s) => {
+    let key = '';
+    for (const [id, n] of s.nodeLookup) {
+      key += `${id}:${Math.round(n.measured?.height ?? 0)};`;
+    }
+    return key;
+  });
   // Geometry depends only on the layout + measurements, so cache it across hover/selection changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: nodesInitialized re-triggers bounds once cards are measured.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: measuredKey re-triggers bounds when cards measure.
   const regions = useMemo<ScopeRegion[]>(() => {
     type Draft = Omit<ScopeRegion, 'pad' | 'topPad'>;
     const drafts: Draft[] = [];
@@ -729,7 +736,7 @@ function ScopeRegions({
       const extra = innerDepth(i) * SCOPE_REGION_NEST_STEP;
       return { ...r, pad: SCOPE_REGION_PAD + extra, topPad: SCOPE_REGION_TOP_PAD + extra };
     });
-  }, [rfNodes, scopeOf, nodeLookup, nodesInitialized]);
+  }, [rfNodes, scopeOf, nodeLookup, measuredKey]);
 
   if (regions.length === 0) {
     return null;
