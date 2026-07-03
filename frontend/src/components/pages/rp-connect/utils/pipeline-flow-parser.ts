@@ -17,7 +17,6 @@ import {
   type NodeLabel,
 } from '@dagrejs/dagre';
 import type { Edge, Node } from '@xyflow/react';
-import { MarkerType } from '@xyflow/react';
 import { parse as parseYaml } from 'yaml';
 
 import { type NodeMetaEntry, summarizeComponent, truncate } from './pipeline-flow-meta';
@@ -2030,21 +2029,7 @@ export function computeGraphLayout(
         // between the split and the target card — not poking into the card (was ≈0.72, which
         // overlapped the card's left edge once the gap widened) nor piling up at the split.
         ...((ge.type === 'conditional' || ge.type === 'error') && ge.label ? { labelT: 0.5 } : {}),
-        animated: ge.type === 'flow' || ge.type === 'conditional',
       },
-      // Fan-in / merge-back edges terminate at a join node (merge disc or broker hub) whose
-      // shape already conveys "flow converges here" — so they omit the arrowhead, which would
-      // otherwise stack several heads on one point and read as a messy blob. Fan-out / flow /
-      // copy / error edges keep their arrow.
-      markerEnd:
-        ge.id.startsWith('fanin-') || ge.id.startsWith('merge-')
-          ? undefined
-          : {
-              type: MarkerType.ArrowClosed,
-              width: 12,
-              height: 12,
-              color: tone === 'error' ? 'var(--color-destructive)' : 'var(--color-primary)',
-            },
     });
   }
 

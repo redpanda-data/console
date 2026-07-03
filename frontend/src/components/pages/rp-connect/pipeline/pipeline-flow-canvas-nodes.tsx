@@ -845,7 +845,6 @@ type FlowGraphEdgeData = {
   label?: string;
   points?: { x: number; y: number }[];
   insertIndex?: number;
-  animated?: boolean;
   dimmed?: boolean;
   emphasized?: boolean;
   faint?: boolean;
@@ -899,8 +898,8 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
 }
 
 // Every edge in the Dagre DAG: routed through Dagre's waypoints (so lines avoid nodes), styled by
-// type — solid primary for flow, marching dashes for live data, red dashed for error/dead-letter,
-// dashed for branch copy/merge and resource refs.
+// type — solid primary for flow, red dashed for error/dead-letter, dashed for branch copy/merge and
+// resource refs. No arrowheads (the left-to-right layout already reads as direction).
 function FlowGraphEdge({
   sourceX,
   sourceY,
@@ -908,7 +907,6 @@ function FlowGraphEdge({
   targetX,
   targetY,
   targetPosition,
-  markerEnd,
   data,
 }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
@@ -960,26 +958,13 @@ function FlowGraphEdge({
   } else if (d?.faint) {
     opacity = 0.6;
   }
-  const width = d?.emphasized ? 2.5 : 1.75;
+  const width = d?.emphasized ? 4 : 3;
   return (
     <>
       <BaseEdge
-        markerEnd={markerEnd}
         path={path}
-        style={{ stroke, strokeWidth: width, strokeDasharray: d?.dashed ? '5 4' : undefined, opacity }}
+        style={{ stroke, strokeWidth: width, strokeDasharray: d?.dashed ? '6 5' : undefined, opacity }}
       />
-      {d?.animated && !d?.dimmed ? (
-        <path
-          className="pipeline-flow-dash"
-          d={path}
-          fill="none"
-          stroke={stroke}
-          strokeDasharray="2 8"
-          strokeLinecap="round"
-          strokeWidth={d?.emphasized ? 3 : 2}
-          style={{ opacity: 0.9, pointerEvents: 'none' }}
-        />
-      ) : null}
       {d?.label ? (
         <LinkLabel
           d={{ label: d.label, dimmed: d.dimmed }}

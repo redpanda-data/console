@@ -907,7 +907,11 @@ export function VisualEditorPanel({
                 onCreateResource={isEditing ? handleRequestCreateResource : undefined}
                 onDelete={isEditing ? setPendingDelete : undefined}
                 onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
-                onSelectChild={(item) => selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget })}
+                onSelectChild={(item) => {
+                  selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget });
+                  // Recenter on the child so the newly selected node is in view (like the palette jump).
+                  setFocus((f) => ({ id: item.id, token: f.token + 1 }));
+                }}
                 readOnly={!isEditing}
                 target={selected.target}
                 yaml={yamlContent}

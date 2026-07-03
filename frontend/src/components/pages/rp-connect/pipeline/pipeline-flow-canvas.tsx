@@ -10,13 +10,12 @@
  */
 
 import {
-  Background,
-  BackgroundVariant,
   Controls,
   type Edge,
   type Node,
   ReactFlow,
   ReactFlowProvider,
+  useNodesInitialized,
   useReactFlow,
   useStore,
   useStoreApi,
@@ -279,9 +278,7 @@ function nodeInScope(node: Node, scope: ReadonlySet<string>): boolean {
 }
 
 // Selecting a control-flow construct focuses its branch: nodes OUTSIDE its scope fade back, so the
-// construct's members read clearly even where the dashed region box is suppressed (Dagre can
-// scatter members so a box would enclose a foreign card — see boxEnclosesForeignNode). Complements
-// the edge-scope dimming.
+// construct's members read clearly. Complements the always-on region box and the edge-scope dimming.
 function focusDimNodes(
   rfNodes: Node[],
   selectedNodeId: string | undefined,
@@ -525,7 +522,8 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
     }
     // Keep the current zoom (clamped to a readable band) so jumping doesn't lurch the scale.
     const zoom = Math.min(Math.max(getZoom(), 0.8), 1);
-    setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: 300, zoom });
+    // Ease over ~600ms so the pan reads as a deliberate glide, not an instant jump.
+    setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: 600, zoom });
   }, [nodeId, token, getNodesBounds, setCenter, getZoom]);
   return null;
 }
@@ -578,14 +576,14 @@ function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: 
   return null;
 }
 
-// Padding (px) between a construct's members and the region edge. Kept tight so a box hugs its own
-// nodes (less bleed into neighbours). TOP gets extra room so the region's label sits in a clear band
-// above the first member, never over it.
-const SCOPE_REGION_PAD = 10;
-const SCOPE_REGION_TOP_PAD = 26;
-// Extra padding per nesting level inside a region, so an outer region stands off from the inner
-// ones it contains (else nested boxes sharing an extreme member draw flush).
-const SCOPE_REGION_NEST_STEP = 12;
+// Padding (px) between a construct's members and the region edge. Tight and EQUAL on all sides so a
+// box hugs its own nodes symmetrically. The label sits just ABOVE the top border (not in an internal
+// band), so the top gap can match the others.
+const SCOPE_REGION_PAD = 6;
+const SCOPE_REGION_TOP_PAD = 6;
+// Extra padding per level of boxes nested INSIDE a region, so an outer region stands off from the
+// inner ones it contains (else nested boxes sharing an extreme member draw flush).
+const SCOPE_REGION_NEST_STEP = 4;
 
 // Accent colour for a construct's scope region: red for error/dead-letter (catch), else the role accent.
 function constructAccent(node?: Node): string {
@@ -598,16 +596,24 @@ function constructAccent(node?: Node): string {
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
-// Bounding box (flow coords) of every node in `scope` — including merge dots, which sit outside
-// the parser tree but carry their construct's id as `ownerId`.
-function scopeMemberBounds(nodes: Node[], scope: ReadonlySet<string>): ScopeBounds | null {
+// Bounding box (flow coords) of every node in `scope` — including merge dots, which sit outside the
+// parser tree but carry their construct's id as `ownerId`. Prefers each node's MEASURED render size
+// (so the box hugs the rendered card, not the layout's initialHeight estimate, which can over-reserve
+// height and leave a lopsided bottom gap); falls back to the layout size before measurement so boxes
+// always draw.
+function scopeMemberBounds(
+  nodes: Node[],
+  scope: ReadonlySet<string>,
+  measuredById: Map<string, { measured?: { width?: number; height?: number } }>
+): ScopeBounds | null {
   let b: ScopeBounds | null = null;
   for (const n of nodes) {
     if (!nodeInScope(n, scope)) {
       continue;
     }
-    const w = (n.initialWidth ?? n.width ?? 0) as number;
-    const h = (n.initialHeight ?? n.height ?? 0) as number;
+    const m = measuredById.get(n.id)?.measured;
+    const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
+    const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
     const right = n.position.x + w;
     const bottom = n.position.y + h;
     b = b
@@ -620,28 +626,6 @@ function scopeMemberBounds(nodes: Node[], scope: ReadonlySet<string>): ScopeBoun
       : { minX: n.position.x, minY: n.position.y, maxX: right, maxY: bottom };
   }
   return b;
-}
-
-// True if any node OUTSIDE the scope overlaps the padded member box — i.e. the region would
-// enclose/cut through an unrelated card. Dagre doesn't keep a construct's members spatially
-// contiguous (e.g. a `catch`'s `log` inside a `try`'s span); callers skip the box when this is true.
-function boxEnclosesForeignNode(nodes: Node[], scope: ReadonlySet<string>, b: ScopeBounds, pad: number): boolean {
-  const left = b.minX - pad;
-  const right = b.maxX + pad;
-  const top = b.minY - pad;
-  const bottom = b.maxY + pad;
-  for (const n of nodes) {
-    // Members and the construct's own "+ Add" ghost pills aren't foreign content.
-    if (nodeInScope(n, scope) || n.type === 'flowInsert') {
-      continue;
-    }
-    const w = (n.initialWidth ?? n.width ?? 0) as number;
-    const h = (n.initialHeight ?? n.height ?? 0) as number;
-    if (n.position.x < right && n.position.x + w > left && n.position.y < bottom && n.position.y + h > top) {
-      return true;
-    }
-  }
-  return false;
 }
 
 type ScopeRegion = {
@@ -672,9 +656,9 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
         zIndex: 0,
       }}
     >
-      {/* Seated in the reserved top band, never over a member card. Faint until active. */}
+      {/* Sits just above the top border (not an internal band) so the top gap matches the others. Faint until active. */}
       <span
-        className="absolute top-1.5 left-2 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
+        className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
         style={{
           color: accent,
           opacity: active ? 1 : 0.8,
@@ -691,8 +675,8 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
 // Faint enclosure boxes around every control-flow construct's sub-graph, emphasized when the
 // construct (or anything inside it) is selected/hovered. Drawn via `ViewportPortal` (flow coords,
 // moves with pan/zoom), behind the nodes, non-interactive — so it never perturbs the nodes array
-// (hover stays cheap). A box is skipped when it would enclose an unrelated card — see
-// `boxEnclosesForeignNode`.
+// (hover stays cheap). Every construct gets a box (Dagre can scatter members so a box may span a
+// non-member card — accepted trade-off for always-visible scopes).
 function ScopeRegions({
   hoveredId,
   selectedId,
@@ -704,7 +688,12 @@ function ScopeRegions({
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
 }) {
-  // Geometry depends only on the layout, so cache it across hover/selection changes.
+  // Measured render sizes (keyed by id); the memo re-runs when measurement completes so boxes tighten
+  // from the layout estimate to the rendered card size.
+  const nodeLookup = useStore((s) => s.nodeLookup);
+  const nodesInitialized = useNodesInitialized();
+  // Geometry depends only on the layout + measurements, so cache it across hover/selection changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nodesInitialized re-triggers bounds once cards are measured.
   const regions = useMemo<ScopeRegion[]>(() => {
     type Draft = Omit<ScopeRegion, 'pad' | 'topPad'>;
     const drafts: Draft[] = [];
@@ -716,8 +705,8 @@ function ScopeRegions({
       if (!scope || scope.size < 2) {
         continue;
       }
-      const bounds = scopeMemberBounds(rfNodes, scope);
-      if (!bounds || boxEnclosesForeignNode(rfNodes, scope, bounds, SCOPE_REGION_PAD)) {
+      const bounds = scopeMemberBounds(rfNodes, scope, nodeLookup);
+      if (!bounds) {
         continue;
       }
       drafts.push({
@@ -728,16 +717,19 @@ function ScopeRegions({
         label: (node.data as FlowCardData).label,
       });
     }
-    // How many OTHER regions enclose each (its construct id is in their scope). Most-nested keeps
-    // base padding; each enclosing region gets one step more so outer boxes stand off from inner ones.
+    // How many OTHER regions enclose each (its construct id is in their scope).
     const depthOf = (r: Draft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
-    const maxDepth = depths.length > 0 ? Math.max(...depths) : 0;
+    // Standoff scales with how deeply a region's OWN contents nest (0 if it holds no inner boxes), so
+    // each enclosing box stands one step off the inner ones — but a construct with nothing nested
+    // inside hugs its nodes tightly, regardless of nesting elsewhere in the graph.
+    const innerDepth = (i: number) =>
+      drafts.reduce((h, o, j) => (j !== i && drafts[i].scope.has(o.id) ? Math.max(h, depths[j] - depths[i]) : h), 0);
     return drafts.map((r, i) => {
-      const extra = (maxDepth - depths[i]) * SCOPE_REGION_NEST_STEP;
+      const extra = innerDepth(i) * SCOPE_REGION_NEST_STEP;
       return { ...r, pad: SCOPE_REGION_PAD + extra, topPad: SCOPE_REGION_TOP_PAD + extra };
     });
-  }, [rfNodes, scopeOf]);
+  }, [rfNodes, scopeOf, nodeLookup, nodesInitialized]);
 
   if (regions.length === 0) {
     return null;
@@ -1237,7 +1229,6 @@ export function PipelineFlowCanvas({
           zoomOnPinch
           zoomOnScroll={false}
         >
-          <Background gap={20} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls
             className="overflow-hidden rounded-md border border-border bg-background/90 shadow-sm backdrop-blur-sm"
             position="bottom-right"

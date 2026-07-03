@@ -67,14 +67,3 @@
     scroll-behavior: auto !important;
   }
 }
-
-/* Marching dashes along the RPCN visual editor's data-flow spine. The prefers-reduced-motion
-   guard above disables it. */
-@keyframes pipeline-flow-dash {
-  to {
-    stroke-dashoffset: -20;
-  }
-}
-.pipeline-flow-dash {
-  animation: pipeline-flow-dash 0.9s linear infinite;
-}
