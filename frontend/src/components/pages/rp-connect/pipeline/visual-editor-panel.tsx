@@ -44,7 +44,12 @@ import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { changedNodeIds } from '../utils/pipeline-diff';
-import { type FlowInsertPayload, type PipelineFlowNode, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import {
+  type FlowInsertPayload,
+  isPipelineEmpty as isPipelineEmptyNodes,
+  type PipelineFlowNode,
+  parsePipelineFlowTree,
+} from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
   appendResource,
@@ -327,7 +332,10 @@ function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
 function useEditHistory(
   yaml: string,
   onChange: (next: string) => void,
-  onNavigate?: (from: string, to: string) => void
+  onNavigate?: (from: string, to: string) => void,
+  // Runs before a history step is applied — discards the inspector's in-flight draft so it can't be
+  // re-committed against the now-shifted YAML (positional node ids move when a step is undone).
+  beforeApply?: () => void
 ) {
   const undoStack = usePipelineEditorStore((s) => s.editUndoStack);
   const redoStack = usePipelineEditorStore((s) => s.editRedoStack);
@@ -344,21 +352,23 @@ function useEditHistory(
     if (undoStack.length === 0 || baseline === null) {
       return;
     }
+    beforeApply?.();
     const target = undoStack.at(-1) as string;
     commitEditHistory({ undo: undoStack.slice(0, -1), redo: [baseline, ...redoStack], baseline: target });
     onChange(target);
     onNavigate?.(baseline, target);
-  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate]);
+  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate, beforeApply]);
 
   const redo = useCallback(() => {
     if (redoStack.length === 0 || baseline === null) {
       return;
     }
+    beforeApply?.();
     const target = redoStack[0];
     commitEditHistory({ undo: [...undoStack, baseline], redo: redoStack.slice(1), baseline: target });
     onChange(target);
     onNavigate?.(baseline, target);
-  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate]);
+  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate, beforeApply]);
 
   return { undo, redo, canUndo: undoStack.length > 0, canRedo: redoStack.length > 0 };
 }
@@ -472,16 +482,21 @@ export function VisualEditorPanel({
   }, []);
   useEffect(() => () => clearTimeout(flashTimer.current ?? undefined), []);
 
-  const { undo, redo, canUndo, canRedo } = useEditHistory(yamlContent, onYamlChange, handleNavigate);
+  const discardPendingEdit = useCallback(() => {
+    commitRef.current = null;
+  }, []);
+  const { undo, redo, canUndo, canRedo } = useEditHistory(
+    yamlContent,
+    onYamlChange,
+    handleNavigate,
+    discardPendingEdit
+  );
 
   const flowNodes = useMemo(() => parsePipelineFlowTree(yamlContent).nodes, [yamlContent]);
 
   // A freshly-started pipeline (only section labels / `none` placeholders) gets the
   // floating "Start from a template" entry point.
-  const isPipelineEmpty = useMemo(
-    () => !flowNodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none')),
-    [flowNodes]
-  );
+  const isPipelineEmpty = useMemo(() => isPipelineEmptyNodes(flowNodes), [flowNodes]);
 
   // Associate server lint hints with the nodes they belong to, so they show in
   // context (a badge on the node, full messages in the inspector).
@@ -734,10 +749,13 @@ export function VisualEditorPanel({
   const handleRequestCreateResource = useCallback(
     (kind: ResourceKind) => {
       if (selected) {
+        // Flush the node's in-progress edits first (as the other insert handlers do): the insert
+        // builds on the current YAML and re-links the node, so an uncommitted draft would clobber it.
+        commitPending();
         setPendingInsert({ context: 'resourceForNode', kind, target: selected.target });
       }
     },
-    [selected]
+    [selected, commitPending]
   );
 
   // Command-palette "go to": select the node and recenter the canvas on it. Only nodes with an

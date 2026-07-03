@@ -693,11 +693,15 @@ function ScopeRegions({
   // to the rendered card size.
   const nodeLookup = useStore((s) => s.nodeLookup);
   const measuredKey = useStore((s) => {
-    let key = '';
-    for (const [id, n] of s.nodeLookup) {
-      key += `${id}:${Math.round(n.measured?.height ?? 0)};`;
+    // Numeric digest of measured card sizes — no per-frame string allocation (this selector re-runs
+    // on every store change, incl. every pan/zoom frame). Folds width + height so a reflow at
+    // constant height still retriggers the geometry memo, tightening boxes to the rendered size.
+    let h = 0;
+    for (const n of s.nodeLookup.values()) {
+      h = (h * 31 + Math.round(n.measured?.width ?? 0)) % 2_147_483_647;
+      h = (h * 31 + Math.round(n.measured?.height ?? 0)) % 2_147_483_647;
     }
-    return key;
+    return h;
   });
   // Geometry depends only on the layout + measurements, so cache it across hover/selection changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: measuredKey re-triggers bounds when cards measure.
@@ -912,22 +916,11 @@ type DecorateEdgeOptions = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
 };
 
-// Highlighted edges render in `primary`; recolour the arrowhead to match. Error edges keep
-// their red markers — those semantics win over the highlight.
-function withHighlightMarker(edge: Edge): Edge {
-  const tone = (edge.data as { tone?: string } | undefined)?.tone;
-  if (tone === 'error' || typeof edge.markerEnd !== 'object' || !edge.markerEnd) {
-    return edge;
-  }
-  return { ...edge, markerEnd: { ...edge.markerEnd, color: 'var(--color-primary)' } };
-}
-
 // Reference edges are context lines (dashed, muted), so they never fully dim — they stay at the
 // readable "faint" tier even when an unrelated node is selected. An active endpoint highlights them.
 function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined): Edge {
   const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
-  const next = { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
-  return touchesActive ? withHighlightMarker(next) : next;
+  return { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
 }
 
 // Per-render edge styling: reference edges stay faint until an endpoint is active; a selection
@@ -960,8 +953,7 @@ export function decorateEdges(
     }
     if (selectedScope !== undefined) {
       const touchesSelection = selectedScope.has(next.source) || selectedScope.has(next.target);
-      next = { ...next, data: { ...next.data, dimmed: !touchesSelection, emphasized: touchesSelection } };
-      return touchesSelection ? withHighlightMarker(next) : next;
+      return { ...next, data: { ...next.data, dimmed: !touchesSelection, emphasized: touchesSelection } };
     }
     return next;
   });
@@ -1054,20 +1046,23 @@ export function PipelineFlowCanvas({
   const { nodes, error, showingStale } = useResilientParse(debouncedYaml);
 
   // A node's "scope" — itself plus all descendants — so selecting/hovering a container keeps its
-  // internal wiring (chains, copy/merge, fan edges) lit and focuses its branch.
+  // internal wiring (chains, fan/merge edges) lit and focuses its branch.
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string | undefined, string[]>();
+    for (const node of nodes) {
+      const siblings = map.get(node.parentId);
+      if (siblings) {
+        siblings.push(node.id);
+      } else {
+        map.set(node.parentId, [node.id]);
+      }
+    }
+    return map;
+  }, [nodes]);
   const scopeOf = useCallback(
     (id: string | undefined): ReadonlySet<string> | undefined => {
       if (id === undefined) {
         return;
-      }
-      const childrenByParent = new Map<string | undefined, string[]>();
-      for (const node of nodes) {
-        const siblings = childrenByParent.get(node.parentId);
-        if (siblings) {
-          siblings.push(node.id);
-        } else {
-          childrenByParent.set(node.parentId, [node.id]);
-        }
       }
       const scope = new Set([id]);
       const queue = [id];
@@ -1079,7 +1074,7 @@ export function PipelineFlowCanvas({
       }
       return scope;
     },
-    [nodes]
+    [childrenByParent]
   );
 
   const toggleCollapse = useCallback((nodeId: string) => {

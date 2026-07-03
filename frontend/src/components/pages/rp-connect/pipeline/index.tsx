@@ -109,7 +109,7 @@ import type {
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
-import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import { isPipelineEmpty, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
@@ -654,12 +654,8 @@ function EditorPanel({
   );
 }
 
-// Empty = only section labels and `none` placeholders, no real components.
 function useIsPipelineEmpty(yamlContent: string): boolean {
-  return useMemo(() => {
-    const { nodes } = parsePipelineFlowTree(yamlContent);
-    return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
-  }, [yamlContent]);
+  return useMemo(() => isPipelineEmpty(parsePipelineFlowTree(yamlContent).nodes), [yamlContent]);
 }
 
 function SidebarPanel({
@@ -1072,6 +1068,17 @@ function PipelinePageContent() {
     isPipelineDiagramsEnabled,
     onResolved: handleInitialYamlResolved,
   });
+
+  // Non-serverless create mode with the visual editor: useCreateModeInitialYaml's non-serverless
+  // path bails when diagrams are on, so nothing resolves a baseline — seed it from the starting
+  // content, else `initialYaml` stays null, the unsaved-changes guard never arms, and canvas-only
+  // edits are lost on navigate-away. Excludes serverless mode, which resolves its own baseline once
+  // components load (seeding '' here first would leave a stale empty baseline → false-dirty on load).
+  useEffect(() => {
+    if (mode === 'create' && isPipelineDiagramsEnabled && !isServerlessMode && initialYaml === null) {
+      resolveInitialYaml(yamlContent);
+    }
+  }, [mode, isPipelineDiagramsEnabled, isServerlessMode, initialYaml, yamlContent, resolveInitialYaml]);
 
   const handleCancel = useCallback(() => {
     if (mode === 'create') {

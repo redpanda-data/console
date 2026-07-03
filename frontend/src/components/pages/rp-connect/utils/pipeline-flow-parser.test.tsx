@@ -353,6 +353,32 @@ pipeline:
     expect(procNodes.filter((n) => n.kind === 'leaf')).toHaveLength(2);
   });
 
+  it('parses group_by processor as case groups (not "check" leaves)', () => {
+    const yaml = `
+pipeline:
+  processors:
+    - group_by:
+        - check: 'this.type == "a"'
+          processors:
+            - mapping: 'root = this.a'
+        - check: 'this.type == "b"'
+          processors:
+            - mapping: 'root = this.b'
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const procNodes = nodes.filter((n) => n.section === 'processor' && n.kind !== 'section');
+    // group_by(group) -> case0(group) -> mapping(leaf), case1(group) -> mapping(leaf)
+    expect(procNodes.find((n) => n.id === 'proc-0')).toMatchObject({ kind: 'group', label: 'group_by' });
+    expect(procNodes.filter((n) => n.kind === 'group' && n.parentId === 'proc-0')).toHaveLength(2);
+    // The leaves are the real mapping processors, not the case `check` strings.
+    const leaves = procNodes.filter((n) => n.kind === 'leaf');
+    expect(leaves).toHaveLength(2);
+    expect(leaves.map((n) => n.label)).toEqual(['mapping', 'mapping']);
+    // The case carries an editable routing condition, not a broken processor edit target.
+    const firstCase = procNodes.find((n) => n.kind === 'group' && n.parentId === 'proc-0');
+    expect(firstCase?.caseEditTarget?.kind).toBe('switchCase');
+  });
+
   it('parses while processor with nested processors', () => {
     const yaml = `
 pipeline:
@@ -722,6 +748,29 @@ output:
     // split), not at the far right next to the merge.
     expect(maxMapX).toBeGreaterThan(minMapX);
     expect(logX - minMapX).toBeLessThan((maxMapX - minMapX) / 2);
+  });
+
+  it('renders group_by as a routing fan (split → cases → merge) with condition chips on the entries', () => {
+    const yaml = `pipeline:
+  processors:
+    - group_by:
+        - check: 'this.type == "a"'
+          processors:
+            - mapping: 'root = this.a'
+        - check: 'this.type == "b"'
+          processors:
+            - mapping: 'root = this.b'
+output:
+  drop: {}`;
+    const laid = computeGraphLayout(parsePipelineFlowTree(yaml).nodes).rfNodes;
+    const at = (id: string) => laid.find((n) => n.id === id);
+    // The group_by is a compact split marker and its cases reconverge at a merge (a fan, not a chain).
+    expect(at('proc-0')?.type).toBe('flowSplit');
+    expect(laid.some((n) => n.id === 'proc-0-merge')).toBe(true);
+    // Each case's entry card carries the editable routing condition (chip), like a switch case.
+    const entry = at('proc-0-case-1-p0')?.data as { condition?: string; caseEditTarget?: { kind?: string } } | undefined;
+    expect(entry?.condition).toBe('this.type == "a"');
+    expect(entry?.caseEditTarget?.kind).toBe('switchCase');
   });
 
   it('annotates each top-level flow edge with the processor index an insertion there would use', () => {

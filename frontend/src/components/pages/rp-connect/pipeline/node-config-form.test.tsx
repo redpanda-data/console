@@ -139,6 +139,22 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.queryByText('Not a valid integer')).not.toBeInTheDocument();
   });
 
+  test('keeps an interpolation typed into a numeric field (not coerced to NaN and dropped)', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } });
+    await user.click(screen.getByText('batching'));
+    const countInput = screen.getByDisplayValue('5');
+    await user.clear(countInput);
+    // `{{` is userEvent's escape for a literal `{`; this types `${env.COUNT}`.
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
+    await user.type(countInput, '${{env.COUNT}');
+
+    const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
+    // The interpolation is preserved verbatim, not NaN-coerced to '' and deleted.
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
+    expect(next.kafka.batching.count).toBe('${env.COUNT}');
+  });
+
   test('does not render nested-component fields; surfaces a hint and preserves them on edit', async () => {
     const user = userEvent.setup();
     // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.

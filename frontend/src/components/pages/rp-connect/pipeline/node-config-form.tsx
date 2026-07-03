@@ -338,15 +338,21 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | numbe
   if (spec.type === 'bool') {
     return Boolean(raw);
   }
+  const text = String(raw);
+  // Interpolations (`${ENV}`, secrets, Bloblang) are valid in any field, incl. numeric ones — keep
+  // them verbatim rather than coercing to a number (NaN → '' → dropped on commit). Matches numericHint.
+  if ((spec.type === 'int' || spec.type === 'float') && text.includes('${')) {
+    return text;
+  }
   if (spec.type === 'int') {
-    const n = Number.parseInt(String(raw), 10);
+    const n = Number.parseInt(text, 10);
     return Number.isNaN(n) ? '' : n;
   }
   if (spec.type === 'float') {
-    const n = Number(raw);
-    return raw === '' || Number.isNaN(n) ? '' : n;
+    const n = Number(text);
+    return text === '' || Number.isNaN(n) ? '' : n;
   }
-  return String(raw);
+  return text;
 }
 
 function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
@@ -391,15 +397,22 @@ type FormValues = {
   arrays: Record<string, string>;
 };
 
-function parseRawSection(showRaw: boolean, raw: string): Record<string, unknown> {
+// Parse the "Other settings (YAML)" text. Returns the mapping, `{}` when empty (an intentional
+// clear), or `null` when the text is invalid / not a mapping — so callers preserve the existing
+// keys instead of silently wiping them.
+function parseRawSection(showRaw: boolean, raw: string): Record<string, unknown> | null {
   if (!(showRaw && raw.trim())) {
     return {};
   }
   try {
     const parsed = parseYaml(raw);
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+    // Empty / comments-only parses to nullish — treat as an intentional clear, not invalid.
+    if (parsed === null || parsed === undefined) {
+      return {};
+    }
+    return typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
   } catch {
-    return {};
+    return null;
   }
 }
 
@@ -476,10 +489,15 @@ function buildComponentEntry({
 
   const config: Record<string, unknown> = structuredClone(inner);
   if (showRaw && dirty.raw) {
-    for (const key of rawKeys) {
-      delete config[key];
+    const parsedRaw = parseRawSection(showRaw, data.raw);
+    // Invalid YAML → null: keep the existing raw keys rather than wiping them (the editor shows
+    // an inline error; the broken draft just isn't committed).
+    if (parsedRaw) {
+      for (const key of rawKeys) {
+        delete config[key];
+      }
+      Object.assign(config, parsedRaw);
     }
-    Object.assign(config, parseRawSection(showRaw, data.raw));
   }
 
   applyScalarEdits(config, leaves.scalars, data, dirty);
@@ -875,16 +893,26 @@ export function NodeConfigForm({
               <Controller
                 control={control}
                 name="raw"
-                render={({ field }) => (
-                  <div className="h-[200px] overflow-hidden rounded-md border border-border">
-                    <YamlEditor
-                      onChange={(v) => field.onChange(v || '')}
-                      options={{ minimap: { enabled: false } }}
-                      transparentBackground
-                      value={field.value}
-                    />
-                  </div>
-                )}
+                render={({ field }) => {
+                  const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
+                  return (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-[200px] overflow-hidden rounded-md border border-border">
+                        <YamlEditor
+                          onChange={(v) => field.onChange(v || '')}
+                          options={{ minimap: { enabled: false } }}
+                          transparentBackground
+                          value={field.value}
+                        />
+                      </div>
+                      {invalid ? (
+                        <Text className="text-destructive" variant="bodySmall">
+                          Invalid YAML — these settings won't be saved until fixed.
+                        </Text>
+                      ) : null}
+                    </div>
+                  );
+                }}
               />
             </FieldGroup>
           ) : null}

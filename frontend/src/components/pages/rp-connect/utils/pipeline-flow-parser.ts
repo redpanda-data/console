@@ -71,7 +71,7 @@ export type PipelineFlowNode = {
   isDefault?: boolean;
   // Error / dead-letter path (catch handler, `errored()` route, fallback). Drawn red/dashed.
   isErrorPath?: boolean;
-  // A `branch` processor: request_map copy-out / result_map merge-back. Drives copy/merge edges.
+  // A `branch` processor: request_map copy-out / result_map merge-back. Rendered inline as a marker.
   branch?: { request: boolean; result: boolean };
   // Label of a resource this component references (cache/rate_limit `resource`); draws a
   // dashed reference edge to the matching resource node.
@@ -399,15 +399,12 @@ function parseInputNodes(
 
 const BRANCHING_FIELDS = new Set([
   'while',
-  'workflow',
   'switch',
   'catch',
   'try',
   'for_each',
   'parallel',
   'branch',
-  'cached',
-  'retry',
   'group_by',
   'group_by_value',
   'processors',
@@ -486,7 +483,11 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
 }
 
 // Components whose children are alternatives/parallel branches, not a sequential sub-pipeline.
-const PARALLEL_GROUP_COMPONENTS: ReadonlySet<string> = new Set(['switch', 'workflow', 'parallel']);
+const PARALLEL_GROUP_COMPONENTS: ReadonlySet<string> = new Set(['switch', 'parallel', 'group_by']);
+
+// Processors that are arrays of `{ check, processors }` cases (routing vs grouping) — rendered as
+// a fan of condition-labelled case lanes with an "Add case" affordance.
+const CASE_CONTAINER_LABELS: ReadonlySet<string> = new Set(['switch', 'group_by']);
 
 function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
   return {
@@ -547,43 +548,6 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
   return nodes;
 }
 
-function parseWorkflowStages(fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
-  if (!fieldValue || typeof fieldValue !== 'object') {
-    return [];
-  }
-  const stages = (fieldValue as Record<string, unknown>).stages;
-  if (!stages || typeof stages !== 'object') {
-    return [];
-  }
-  const nodes: PipelineFlowNode[] = [];
-  for (const [stageName, stageValue] of Object.entries(stages as Record<string, unknown>)) {
-    if (!stageValue || typeof stageValue !== 'object') {
-      continue;
-    }
-    const stageProcs = extractProcessorArray((stageValue as Record<string, unknown>).processors);
-    if (!stageProcs) {
-      continue;
-    }
-    const stageId = `${ctx.idPrefix}-stage-${stageName}`;
-    nodes.push({
-      id: stageId,
-      kind: 'group',
-      label: stageName,
-      section: ctx.section,
-      parentId: ctx.idPrefix,
-      collapsible: true,
-      childFlow: 'sequential',
-    });
-    pushProcessorChildren(nodes, stageProcs, {
-      ...ctx,
-      parentId: stageId,
-      idPrefix: stageId,
-      path: [...ctx.path, 'stages', stageName, 'processors'],
-    });
-  }
-  return nodes;
-}
-
 function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, unknown>[], ctx: BranchContext): void {
   // ctx.path is the processors array; each child component sits at [...path, index].
   for (const [pi, proc] of procs.entries()) {
@@ -606,39 +570,12 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, 
   }
 }
 
-function parseWrappedProcessor(fieldValue: unknown, ctx: BranchContext, key: string): PipelineFlowNode[] {
-  if (!fieldValue || typeof fieldValue !== 'object') {
-    return [];
-  }
-  const wrappedConfig = fieldValue as Record<string, unknown>;
-  for (const [innerKey, innerValue] of Object.entries(wrappedConfig)) {
-    if (
-      innerKey !== 'key' &&
-      innerKey !== 'count' &&
-      innerKey !== 'backoff' &&
-      innerValue &&
-      typeof innerValue === 'object'
-    ) {
-      return parseComponentWithBranching(innerKey, innerValue, {
-        ...ctx,
-        idPrefix: `${ctx.idPrefix}-${key}-inner`,
-        depth: ctx.depth + 1,
-        path: [...ctx.path, innerKey],
-      });
-    }
-  }
-  return [];
-}
-
 const PROCESSORS_FIELD_KEYS = new Set(['while', 'branch', 'group_by', 'group_by_value']);
 
 function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
   // ctx.path is the inner config; the field value lives at [...ctx.path, key].
   if (key === 'switch' && Array.isArray(fieldValue)) {
     return parseSwitchCases(fieldValue, { ...ctx, path: [...ctx.path, key] });
-  }
-  if (key === 'workflow') {
-    return parseWorkflowStages(fieldValue, { ...ctx, path: [...ctx.path, key] });
   }
   if (PROCESSORS_FIELD_KEYS.has(key) && fieldValue && typeof fieldValue === 'object') {
     const innerProcs = extractProcessorArray((fieldValue as Record<string, unknown>).processors);
@@ -658,9 +595,6 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
     const nodes: PipelineFlowNode[] = [];
     pushProcessorChildren(nodes, procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}`, path: [...ctx.path, key] });
     return nodes;
-  }
-  if (key === 'cached' || key === 'retry') {
-    return parseWrappedProcessor(fieldValue, { ...ctx, path: [...ctx.path, key] }, key);
   }
   return [];
 }
@@ -687,10 +621,12 @@ function parseDirectArrayBranching(
 ): PipelineFlowNode[] {
   // The component's value array lives at [...ctx.path, componentName].
   const valuePath = [...ctx.path, componentName];
-  if (componentName === 'switch') {
+  // `switch` and `group_by` are both arrays of `{ check, processors }` cases (routing vs grouping),
+  // so both render as case groups — not a flat processor array.
+  if (CASE_CONTAINER_LABELS.has(componentName)) {
     const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
     const group = makeGroup(componentName, ctx);
-    // The switch can grow a new case appended to its value array, even with no cases yet.
+    // Can grow a new case appended to its value array, even with no cases yet.
     group.addChildSlot = { containerPath: valuePath, section: 'processor' };
     return [group, ...caseNodes];
   }
@@ -1005,6 +941,11 @@ export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTree
   }
 }
 
+/** True when the pipeline has no real components — only section labels / `none` placeholders. */
+export function isPipelineEmpty(nodes: PipelineFlowNode[]): boolean {
+  return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
+}
+
 // Post-parse pass deriving cross-node metadata the per-node parsers can't see in isolation:
 // which containers accept inserts, which resource refs dangle, and per-resource usage counts.
 function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
@@ -1198,18 +1139,18 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   return h;
 }
 
-// A parallel processor container (switch/parallel/workflow): its alternatives reconverge
+// A parallel processor container (switch/parallel/group_by): its alternatives reconverge
 // (data flows back out and continues), unlike output fans which terminate at their sinks.
 function reconverges(node: PipelineFlowNode): boolean {
-  return node.childFlow === 'parallel' && node.section === 'processor' && !node.branch;
+  return node.childFlow === 'parallel' && node.section === 'processor';
 }
 
 // Which sides of a container carry routed edges: `out` is the `gs` source side
-// (entry / copy / fan-out), `in` is the `gt` target side (merge-back / fan-in).
+// (entry / fan-out), `in` is the `gt` target side (merge-back / fan-in).
 function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   return {
-    out: Boolean(node.branch) || (node.childFlow === 'parallel' && node.section !== 'input'),
-    in: Boolean(node.branch) || node.section === 'input' || reconverges(node),
+    out: node.childFlow === 'parallel' && node.section !== 'input',
+    in: node.section === 'input' || reconverges(node),
   };
 }
 
@@ -1300,7 +1241,7 @@ const RESOURCE_GAP = 28;
 // The bottom/top handle's x offset from a card's left edge (matches NodeHandles).
 const HANDLE_X = FLOW_SPINE_HANDLE_LEFT;
 
-type GraphEdgeType = 'flow' | 'conditional' | 'error' | 'copy' | 'merge' | 'reference';
+type GraphEdgeType = 'flow' | 'conditional' | 'error' | 'reference';
 
 type GraphNodeSpec = {
   id: string;
@@ -1405,16 +1346,8 @@ function addGraphInsert(ctx: GraphCtx, id: string, anchorId: string, payload: Fl
   }
 }
 
-// The label + edge tone for a fan branch (a switch case, fallback tier, workflow stage).
-function branchEdgeInfo(
-  owner: PipelineFlowNode,
-  node: PipelineFlowNode,
-  parentLabel: string
-): { type: GraphEdgeType; label?: string } {
-  if (node.branch) {
-    // No text label — the dashed style + merge node + legend convey copy/merge.
-    return { type: 'copy' };
-  }
+// The label + edge tone for a fan branch (a switch/group_by case, fallback tier).
+function branchEdgeInfo(owner: PipelineFlowNode): { type: GraphEdgeType; label?: string } {
   if (owner.isErrorPath) {
     return { type: 'error', label: owner.condition ?? 'on error' };
   }
@@ -1424,16 +1357,13 @@ function branchEdgeInfo(
   if (owner.isDefault) {
     return { type: 'conditional', label: 'default' };
   }
-  if (parentLabel === 'workflow') {
-    return { type: 'flow', label: owner.label };
-  }
   return { type: 'flow' };
 }
 
 // Whether a fan's direct children are structural wrappers to unwrap into a lane (a
-// switch's cases, a workflow's stages) rather than items that are each their own lane.
+// switch's / group_by's cases) rather than items that are each their own lane.
 function fanUnwrapsChildren(node: PipelineFlowNode): boolean {
-  return (node.label === 'switch' && node.section === 'processor') || node.label === 'workflow';
+  return CASE_CONTAINER_LABELS.has(node.label) && node.section === 'processor';
 }
 
 type FanLane = { owner: PipelineFlowNode; bodySteps: PipelineFlowNode[] };
@@ -1460,9 +1390,6 @@ function caseEntrySteps(lane: FanLane): PipelineFlowNode[] {
 }
 
 function fanLaneList(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx): FanLane[] {
-  if (node.branch) {
-    return [{ owner: node, bodySteps: kids }];
-  }
   const unwrap = fanUnwrapsChildren(node);
   return kids.map((kid) =>
     unwrap && kid.kind === 'group'
@@ -1493,25 +1420,25 @@ function emitFan(
       : addGraphSplit(ctx, node, footerAdd)
     : undefined;
   const lanes = fanLaneList(node, kids, ctx);
-  const isSwitch = node.label === 'switch';
+  const carriesCaseChips = CASE_CONTAINER_LABELS.has(node.label);
 
   for (const lane of lanes) {
-    // For switch cases the routing condition lives on the case's ENTRY card as a clickable chip
-    // (single source of truth, editable in place) — not as a floating edge label that duplicates
+    // For switch/group_by cases the routing condition lives on the case's ENTRY card as a clickable
+    // chip (single source of truth, editable in place) — not as a floating edge label that duplicates
     // it and crowds the fan. So push the condition + edit target onto the first body step and
     // drop the edge label. An empty-bodied case (no card yet) keeps the edge label as a fallback.
-    const carriesChip = isSwitch && lane.bodySteps.length > 0;
+    const carriesChip = carriesCaseChips && lane.bodySteps.length > 0;
     const body = emitSequence(carriesChip ? caseEntrySteps(lane) : lane.bodySteps, ctx);
-    const info = branchEdgeInfo(lane.owner, node, node.label);
+    const info = branchEdgeInfo(lane.owner);
     // The "add a step into this body" affordance rides ON the body's terminal edge as an
-    // on-line "+" (chain-style lanes only: a branch / switch case / workflow stage).
-    const bodySlot = node.branch ? node.insertSlot : lane.owner.insertSlot;
+    // on-line "+" (chain-style lanes only: a switch/group_by case).
+    const bodySlot = lane.owner.insertSlot;
     const appendSlot = (atEnd: boolean): FlowInsertPayload | undefined =>
       bodySlot ? { kind: 'insert', ...bodySlot, index: atEnd ? ctx.childrenOf(lane.owner.id).length : 0 } : undefined;
     // The case edit target rides the fan-out edge ONLY when the chip can't host it (empty case);
     // otherwise the entry card's chip owns selection/editing.
     const selectTarget = carriesChip ? undefined : lane.owner.caseEditTarget;
-    const fanoutId = node.branch ? `copy-${node.id}` : `fanout-${lane.owner.id}`;
+    const fanoutId = `fanout-${lane.owner.id}`;
     if (split) {
       addGraphEdge(ctx, {
         id: fanoutId,
@@ -1526,10 +1453,10 @@ function emitFan(
     }
     if (merge && body) {
       addGraphEdge(ctx, {
-        id: node.branch ? `merge-${node.id}` : `fanin-${lane.owner.id}`,
+        id: `fanin-${lane.owner.id}`,
         from: body.exit,
         to: merge,
-        type: node.branch ? 'merge' : lane.owner.isErrorPath ? 'error' : 'flow',
+        type: lane.owner.isErrorPath ? 'error' : 'flow',
         slot: appendSlot(true),
       });
     }
@@ -1876,8 +1803,6 @@ const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
   flow: 'primary',
   conditional: 'primary',
   error: 'error',
-  copy: 'primary',
-  merge: 'primary',
   reference: 'muted',
 };
 
@@ -2007,8 +1932,7 @@ export function computeGraphLayout(
   for (const ge of ctx.gedges) {
     const points = graphEdgePoints(ge, g);
     const tone = GRAPH_EDGE_TONE[ge.type];
-    const dashed =
-      ge.type === 'error' || ge.type === 'copy' || ge.type === 'merge' || ge.type === 'reference';
+    const dashed = ge.type === 'error' || ge.type === 'reference';
     rfEdges.push({
       id: ge.id,
       source: ge.from,
