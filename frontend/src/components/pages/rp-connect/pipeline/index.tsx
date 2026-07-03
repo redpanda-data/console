@@ -579,7 +579,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
           <Separator className="my-8" variant="subtle" />
         </>
       ) : null}
-      <section className="flex min-h-0 flex-col gap-4">
+      <section className="flex flex-col gap-4">
         {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
           // Title renders inline in the explorer's control row to line up with the table.
           <LogExplorer
