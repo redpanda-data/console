@@ -599,29 +599,6 @@ const SchemaList: FC = () => {
           selectedContext={selectedContext}
         />
       )}
-      <div className="my-4 flex items-center gap-2">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                data-testid="schema-list-create-btn"
-                disabled={api.userData?.canCreateSchemas === false}
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
-                    : appGlobal.historyPush('/schema-registry/create')
-                }
-                variant="primary"
-              >
-                Create new schema
-              </Button>
-            }
-          />
-          {api.userData?.canCreateSchemas === false && (
-            <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
-          )}
-        </Tooltip>
-      </div>
       <RequestErrors />
       {isError ? (
         <Alert variant="destructive">
@@ -666,7 +643,33 @@ const SchemaList: FC = () => {
               </div>
             </DescriptionWithHelp>
           </Text>
-          <ListLayoutFilters>
+          <ListLayoutFilters
+            actions={
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      data-testid="schema-list-create-btn"
+                      disabled={api.userData?.canCreateSchemas === false}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`
+                            )
+                          : appGlobal.historyPush('/schema-registry/create')
+                      }
+                      variant="primary"
+                    >
+                      Create new schema
+                    </Button>
+                  }
+                />
+                {api.userData?.canCreateSchemas === false && (
+                  <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+                )}
+              </Tooltip>
+            }
+          >
             <div className="relative" data-testid="schema-list-search-field">
               <SearchIcon
                 aria-hidden="true"
