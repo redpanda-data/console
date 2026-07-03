@@ -10,7 +10,7 @@ import {
   CommandList,
 } from 'components/redpanda-ui/components/command';
 import { DialogFooter } from 'components/redpanda-ui/components/dialog';
-import { Tabs, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { ScrollableTabsList, Tabs, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, Text } from 'components/redpanda-ui/components/typography';
 import { ExternalLink, Waypoints } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -19,7 +19,6 @@ import { useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 
 import { ConnectorLogo } from './connector-logo';
-import { ScrollableTabsList } from './scrollable-tabs-list';
 import { getConnectorDocsUrl } from '../pipeline/pipeline-flow-nodes';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { getCategoryDisplayName } from '../utils/categories';
