@@ -2,8 +2,9 @@
 
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
-import type React from 'react';
+import React from 'react';
 
+import { DragScrollArea } from './drag-scroll-area';
 import { cn, type SharedProps } from '../lib/utils';
 
 const tabsVariants = cva('flex data-[orientation=horizontal]:flex-col', {
@@ -100,6 +101,8 @@ function TabsList({
   style,
   ...props
 }: TabsListProps) {
+  // To make an overflowing strip drag-scrollable, wrap <TabsList> in <DragScrollArea> and add
+  // `w-max min-w-full` to size the list to its content. See the scrollable tabs demos.
   return (
     <TabsPrimitive.List
       className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
@@ -123,6 +126,36 @@ function TabsList({
       />
       {children}
     </TabsPrimitive.List>
+  );
+}
+
+type ScrollableTabsListProps = TabsListProps & {
+  // Classes for the scroll viewport (the DragScrollArea wrapper) — `className`/`style` go to the
+  // list itself, so use this to size or constrain the viewport, e.g. `scrollAreaClassName="max-w-sm"`.
+  scrollAreaClassName?: string;
+  // Width of the edge fade in px (forwarded to DragScrollArea).
+  fadeSize?: number;
+};
+
+// Keep the bottom 4px opaque through the edge fade so the baseline border and active indicator
+// (`after:-bottom-px after:h-0.5`, ~3px tall) stay crisp; still well below the label baseline.
+const UNDERLINE_OPAQUE_PX = 4;
+
+/**
+ * `TabsList` pre-composed with `DragScrollArea` for overflowing strips: handles the content sizing
+ * (`w-max min-w-full`) and, for `underline`, the wrapper padding and crisp baseline. Drop in for
+ * `TabsList` when the strip can overflow.
+ */
+function ScrollableTabsList({ className, scrollAreaClassName, fadeSize, variant, ...props }: ScrollableTabsListProps) {
+  const underline = variant === 'underline';
+  return (
+    <DragScrollArea
+      className={cn(underline && 'pb-px', scrollAreaClassName)}
+      fadeSize={fadeSize}
+      preserveBottomEdge={underline ? UNDERLINE_OPAQUE_PX : 0}
+    >
+      <TabsList className={cn('w-max min-w-full', className)} variant={variant} {...props} />
+    </DragScrollArea>
   );
 }
 
@@ -195,11 +228,13 @@ function TabsContents({ children, className, ...props }: TabsContentsProps) {
 export {
   Tabs,
   TabsList,
+  ScrollableTabsList,
   TabsTrigger,
   TabsContent,
   TabsContents,
   type TabsProps,
   type TabsListProps,
+  type ScrollableTabsListProps,
   type TabsTriggerProps,
   type TabsContentProps,
   type TabsContentsProps,
