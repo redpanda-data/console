@@ -80,6 +80,9 @@ export function PipelineStatusToggle({
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
+  const isStarting = pipelineState === PipelineState.STARTING;
+  const isStopping = pipelineState === PipelineState.STOPPING;
+
   const handleStart = useCallback(() => {
     if (!pipelineId) {
       return;
@@ -99,7 +102,7 @@ export function PipelineStatusToggle({
     }
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
-        toast.success('Pipeline stopped');
+        toast.success(isStarting ? 'Canceling pipeline start' : 'Pipeline stopped');
         setIsStopConfirmOpen(false);
       },
       onError: (err) => {
@@ -107,15 +110,17 @@ export function PipelineStatusToggle({
         setIsStopConfirmOpen(false);
       },
     });
-  }, [pipelineId, stopMutation]);
+  }, [pipelineId, stopMutation, isStarting]);
 
-  // Switch reflects (and drives) the running state. Starting/stopping are
-  // in-flight, so the control is locked until the backend settles.
-  const checked = pipelineState === PipelineState.RUNNING || pipelineState === PipelineState.STARTING;
-  const isTransitioning = pipelineState === PipelineState.STARTING || pipelineState === PipelineState.STOPPING;
-  const isDisabled = !pipelineId || isTransitioning || isStartPending || isStopPending;
+  // Switch reflects (and drives) the running state. A STARTING pipeline stays interactive so it can
+  // be cancelled back to Stopped (matching STOPPABLE_STATES) — this rescues one stuck mid-start.
+  // STOPPING is already settling toward Stopped, so it's locked until the backend confirms.
+  const checked = pipelineState === PipelineState.RUNNING || isStarting;
+  const isDisabled = !pipelineId || isStopping || isStartPending || isStopPending;
   const label = (pipelineState !== undefined && PIPELINE_STATE_LABELS[pipelineState]) || 'Unknown';
   const tone = getTone(pipelineState);
+  const runningAriaLabel = checked ? 'Stop pipeline' : 'Start pipeline';
+  const switchAriaLabel = isStarting ? 'Cancel pipeline start' : runningAriaLabel;
 
   const handleCheckedChange = useCallback(
     (next: boolean) => {
@@ -125,7 +130,7 @@ export function PipelineStatusToggle({
       if (next) {
         handleStart();
       } else {
-        // Stopping halts processing, so gate it behind a confirmation.
+        // Stopping halts processing (or cancels an in-progress start), so gate it behind a confirmation.
         setIsStopConfirmOpen(true);
       }
     },
@@ -136,7 +141,7 @@ export function PipelineStatusToggle({
     <>
       <div className={statusPill({ tone })}>
         <Switch
-          aria-label={checked ? 'Stop pipeline' : 'Start pipeline'}
+          aria-label={switchAriaLabel}
           checked={checked}
           className={cn(tone === 'success' && 'data-[checked]:bg-success')}
           disabled={isDisabled}
@@ -144,7 +149,7 @@ export function PipelineStatusToggle({
           onCheckedChange={handleCheckedChange}
           testId="pipeline-run-toggle"
         />
-        {isTransitioning ? <Spinner className="size-3.5!" /> : null}
+        {isStarting || isStopping ? <Spinner className="size-3.5!" /> : null}
         <Label className="cursor-pointer" htmlFor={`pipeline-run-toggle-${pipelineId}`}>
           {label}
         </Label>
@@ -152,12 +157,16 @@ export function PipelineStatusToggle({
       <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Stop pipeline?</DialogTitle>
+            <DialogTitle>{isStarting ? 'Cancel pipeline start?' : 'Stop pipeline?'}</DialogTitle>
           </DialogHeader>
-          <DialogBody>Stopping the pipeline halts all data processing until you start it again.</DialogBody>
+          <DialogBody>
+            {isStarting
+              ? 'This stops the pipeline before it finishes starting and returns it to Stopped.'
+              : 'Stopping the pipeline halts all data processing until you start it again.'}
+          </DialogBody>
           <DialogFooter>
             <Button onClick={() => setIsStopConfirmOpen(false)} variant="ghost">
-              Cancel
+              {isStarting ? 'Keep starting' : 'Cancel'}
             </Button>
             <Button
               disabled={isStopPending}
@@ -165,7 +174,7 @@ export function PipelineStatusToggle({
               onClick={performStop}
               variant="destructive"
             >
-              Stop pipeline
+              {isStarting ? 'Cancel start' : 'Stop pipeline'}
             </Button>
           </DialogFooter>
         </DialogContent>
