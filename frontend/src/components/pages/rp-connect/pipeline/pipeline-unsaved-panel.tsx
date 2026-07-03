@@ -42,7 +42,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
         onClick={() => setOpen((o) => !o)}
         type="button"
       >
-        <span aria-hidden className="size-2 rounded-full bg-amber-500" />
+        <span aria-hidden className="size-2 rounded-full bg-unsaved" />
         {nodes.length === 1 ? '1 unsaved' : `${nodes.length} unsaved`}
         <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
       </button>
@@ -62,7 +62,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
               }}
               type="button"
             >
-              <span aria-hidden className="size-2 shrink-0 rounded-full bg-amber-500" />
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-unsaved" />
               <Text as="span" className="min-w-0 truncate text-foreground text-xs" variant="bodySmall">
                 {node.label}
               </Text>

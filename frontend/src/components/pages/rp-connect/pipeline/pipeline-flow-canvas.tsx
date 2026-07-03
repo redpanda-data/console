@@ -652,7 +652,34 @@ type ScopeRegion = {
   /** Side / top padding — larger for outer regions so nested ones don't touch. */
   pad: number;
   topPad: number;
+  /** This region's padded box bleeds into a sibling region's (neither contains the other). Such a
+      box is drawn only while active, so two unrelated faint boxes don't overlap at rest. */
+  overlapsSibling: boolean;
 };
+
+// AABB overlap of two regions' padded boxes.
+function regionsOverlap(a: ScopeRegion, b: ScopeRegion): boolean {
+  const ax1 = a.bounds.minX - a.pad;
+  const ax2 = a.bounds.maxX + a.pad;
+  const ay1 = a.bounds.minY - a.topPad;
+  const ay2 = a.bounds.maxY + a.pad;
+  const bx1 = b.bounds.minX - b.pad;
+  const bx2 = b.bounds.maxX + b.pad;
+  const by1 = b.bounds.minY - b.topPad;
+  const by2 = b.bounds.maxY + b.pad;
+  return ax1 < bx2 && ax2 > bx1 && ay1 < by2 && ay2 > by1;
+}
+
+// Flag each region whose padded box bleeds into a sibling's (a region neither contains nor is
+// contained by). Nested (containing) regions are expected to overlap and are not flagged.
+function markSiblingOverlaps(regions: ScopeRegion[]): void {
+  const contains = (a: ScopeRegion, b: ScopeRegion) => a.scope.has(b.id);
+  for (const r of regions) {
+    r.overlapsSibling = regions.some(
+      (o) => o.id !== r.id && !(contains(o, r) || contains(r, o)) && regionsOverlap(r, o)
+    );
+  }
+}
 
 // One construct's enclosure box. Drawn FAINT (a quiet nesting hint); it and its label
 // strengthen when the construct, or anything inside it, is the active (selected/hovered) node.
@@ -705,7 +732,7 @@ function ScopeRegions({
 }) {
   // Geometry depends only on the layout, so cache it across hover/selection changes.
   const regions = useMemo<ScopeRegion[]>(() => {
-    type Draft = Omit<ScopeRegion, 'pad' | 'topPad'>;
+    type Draft = Omit<ScopeRegion, 'pad' | 'topPad' | 'overlapsSibling'>;
     const drafts: Draft[] = [];
     for (const node of rfNodes) {
       if (node.type !== 'flowSplit') {
@@ -732,10 +759,17 @@ function ScopeRegions({
     const depthOf = (r: Draft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
     const maxDepth = depths.length > 0 ? Math.max(...depths) : 0;
-    return drafts.map((r, i) => {
+    const padded: ScopeRegion[] = drafts.map((r, i) => {
       const extra = (maxDepth - depths[i]) * SCOPE_REGION_NEST_STEP;
-      return { ...r, pad: SCOPE_REGION_PAD + extra, topPad: SCOPE_REGION_TOP_PAD + extra };
+      return {
+        ...r,
+        pad: SCOPE_REGION_PAD + extra,
+        topPad: SCOPE_REGION_TOP_PAD + extra,
+        overlapsSibling: false,
+      };
     });
+    markSiblingOverlaps(padded);
+    return padded;
   }, [rfNodes, scopeOf]);
 
   if (regions.length === 0) {
@@ -753,6 +787,11 @@ function ScopeRegions({
         const active =
           activeId !== undefined &&
           (region.scope.has(activeId) || (activeOwner ? region.scope.has(activeOwner) : false));
+        // A box that would overlap a sibling's stays hidden until it (or a member) is active, so
+        // two unrelated faint boxes never clutter the same space at rest.
+        if (region.overlapsSibling && !active) {
+          return null;
+        }
         return <RegionBox active={active} key={region.id} region={region} />;
       })}
     </ViewportPortal>
@@ -820,7 +859,9 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
   }
-  if (cb.unsavedNodeIds?.has(node.id)) {
+  // A processor-switch case's condition edit is attributed to its (non-rendered) case-wrapper node,
+  // so also mark the entry card standing in for that wrapper.
+  if (cb.unsavedNodeIds?.has(node.id) || (data.caseOwnerId && cb.unsavedNodeIds?.has(data.caseOwnerId))) {
     data.unsaved = true;
   }
   if (cb.flashNodeIds?.has(node.id)) {
@@ -854,7 +895,7 @@ function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
   );
 }
 
-// A filled chip swatch for node-borne vocabulary (the brand-accented routing condition), vs. edge line swatches.
+// A filled chip swatch for node-borne vocabulary (the amber/gold routing condition), vs. edge line swatches.
 function LegendChipSwatch({ color }: { color: string }) {
   return (
     <span
@@ -878,7 +919,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
       </div>
       {flags.condition ? (
         <div className="flex items-center gap-2">
-          <LegendChipSwatch color="var(--color-brand)" />
+          <LegendChipSwatch color="var(--color-condition)" />
           Routing condition
         </div>
       ) : null}

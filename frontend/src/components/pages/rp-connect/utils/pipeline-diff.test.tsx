@@ -40,6 +40,20 @@ output:
     expect(changedNodeIds(base, base)).toEqual([]);
   });
 
+  it('attributes a nested edit to the child only, not its ancestor containers', () => {
+    const nested = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.x == 1'
+          processors:
+            - mapping: 'root = this'
+output:
+  drop: {}`;
+    const next = nested.replace('root = this', 'root = this.foo');
+    // Editing the mapping changes the switch + case config too, but only the mapping is reported.
+    expect(changedNodeIds(nested, next)).toEqual(['proc-0-case-1-p0']);
+  });
+
   it('never throws on malformed YAML', () => {
     expect(changedNodeIds('{{{', base)).toEqual(expect.any(Array));
     expect(changedNodeIds(base, '{{{')).toEqual([]);

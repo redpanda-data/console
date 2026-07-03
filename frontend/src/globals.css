@@ -4,6 +4,29 @@
 
 @source "../node_modules/streamdown/dist/index.js";
 
+/* App-owned semantic colour: the routing/decision accent for the RPCN visual editor's switch/branch
+   conditions (`text-condition` / `bg-condition` / `border-condition`, incl. `/opacity`). Amber-gold —
+   the flowchart decision-branch convention — and the ONLY hue not already claimed by a section accent
+   (input=green, processor=blue, output=purple, resource=orange), the red error/destructive tone, or
+   the indigo `primary` selection colour. Theme-aware: darker gold on light for text contrast, brighter
+   on dark. Defined here (app entry CSS), NOT the registry-synced theme.css, so it survives registry
+   re-syncs (cf. the Chakra override below); promote upstream if the design system adopts it. */
+@theme {
+  --color-condition: var(--color-yellow-700);
+}
+.dark {
+  --color-condition: var(--color-yellow-400);
+}
+
+/* App-owned semantic colour: the "unsaved / dirty" attention accent — the dot marking nodes, tree
+   rows, and chips whose config differs from the last-saved pipeline (`bg-unsaved` / `text-unsaved`,
+   incl. `/opacity`). Amber — distinct from the gold `condition` accent, the orange resource accent,
+   and red errors. Same app-owned rationale as `--color-condition` above (survives registry re-syncs;
+   reusable anywhere a "pending / unsaved" marker is needed). */
+@theme {
+  --color-unsaved: var(--color-amber-500);
+}
+
 /* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
    which collides with Monaco's internal .monaco-hover.fade-in class,
    forcing hover widgets to be invisible. Override to restore opacity. */

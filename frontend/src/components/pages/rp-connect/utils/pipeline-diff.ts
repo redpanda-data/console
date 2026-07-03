@@ -14,16 +14,24 @@ import { parseDocument } from 'yaml';
 import { parsePipelineFlowTree } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
-// Signature of each editable node's config, keyed by node id, for node-by-node comparison.
-function nodeConfigSignatures(yaml: string): Map<string, string> {
+type NodeSignatures = {
+  // Signature of each editable node's config, keyed by node id, for node-by-node comparison.
+  signatures: Map<string, string>;
+  // Every node's parent id (id -> parentId), used to attribute a change to the deepest node.
+  parentOf: Map<string, string | undefined>;
+};
+
+function nodeConfigSignatures(yaml: string): NodeSignatures {
   const signatures = new Map<string, string>();
+  const parentOf = new Map<string, string | undefined>();
   if (!yaml) {
-    return signatures;
+    return { signatures, parentOf };
   }
   try {
     const doc = parseDocument(yaml);
     const { nodes } = parsePipelineFlowTree(yaml);
     for (const node of nodes) {
+      parentOf.set(node.id, node.parentId);
       if (!node.editTarget) {
         continue;
       }
@@ -33,19 +41,34 @@ function nodeConfigSignatures(yaml: string): Map<string, string> {
   } catch {
     // Malformed YAML — nothing to compare.
   }
-  return signatures;
+  return { signatures, parentOf };
 }
 
-// Ids of nodes added or changed from `prevYaml` to `nextYaml`. Used to briefly highlight
-// the node(s) an undo/redo affected.
+// Ids of nodes added or changed from `prevYaml` to `nextYaml`. Used for unsaved-change markers and
+// to briefly highlight the node(s) an undo/redo affected. A container's config embeds its children,
+// so editing a nested node also changes every ancestor's signature; we attribute the change only to
+// the deepest node(s) by dropping any changed node that is an ancestor of another changed node.
 export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
   const prev = nodeConfigSignatures(prevYaml);
   const next = nodeConfigSignatures(nextYaml);
-  const changed: string[] = [];
-  for (const [id, signature] of next) {
-    if (prev.get(id) !== signature) {
-      changed.push(id);
+  const changed = new Set<string>();
+  for (const [id, signature] of next.signatures) {
+    if (prev.signatures.get(id) !== signature) {
+      changed.add(id);
     }
   }
-  return changed;
+  const isAncestorOfChanged = (id: string): boolean => {
+    for (const other of changed) {
+      if (other === id) {
+        continue;
+      }
+      for (let p = next.parentOf.get(other); p !== undefined; p = next.parentOf.get(p)) {
+        if (p === id) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  return [...changed].filter((id) => !isAncestorOfChanged(id));
 }

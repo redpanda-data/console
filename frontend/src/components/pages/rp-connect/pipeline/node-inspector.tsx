@@ -514,7 +514,7 @@ const SwitchCaseEditor = ({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-condition/10 text-condition">
           <Split className="size-3.5" />
         </span>
         <div className="flex min-w-0 flex-col">
@@ -558,8 +558,8 @@ const SwitchCaseEditor = ({
 };
 
 // The routing condition of a case-entry node, edited inline at the TOP of that node's
-// inspector panel (brand accent, matching the on-canvas condition). Writes the case's `check`; an
-// empty value means the default (else) case. Reported as a draft and auto-committed with the rest
+// inspector panel (amber/gold accent, matching the on-canvas condition). Writes the case's `check`;
+// an empty value means the default (else) case. Reported as a draft and auto-committed with the rest
 // of the node's edits on leave / save — no separate Apply.
 const CaseConditionSection = ({
   caseObject,
@@ -575,10 +575,10 @@ const CaseConditionSection = ({
 }) => {
   const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
   return (
-    <div className="border-brand/30 border-b bg-brand/5 px-4 py-3">
+    <div className="border-condition/30 border-b bg-condition/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
-        <Split className="size-3.5 shrink-0 text-brand" />
-        <Label className="font-semibold text-[11px] text-brand uppercase leading-none tracking-wide">
+        <Split className="size-3.5 shrink-0 text-condition" />
+        <Label className="font-semibold text-[11px] text-condition uppercase leading-none tracking-wide">
           Routing condition
         </Label>
         <TooltipProvider>
@@ -587,7 +587,7 @@ const CaseConditionSection = ({
               render={
                 <button
                   aria-label="About routing conditions"
-                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-brand/50 transition-colors hover:text-brand"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-condition/50 transition-colors hover:text-condition"
                   type="button"
                 />
               }

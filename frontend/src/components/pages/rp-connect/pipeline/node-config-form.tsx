@@ -63,7 +63,7 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   return;
 };
 
-// Routing-condition text color: red for error paths, muted for default, brand otherwise.
+// Routing-condition text color: red for error paths, muted for default, the condition accent otherwise.
 const childItemCondColor = (item: InspectorChildItem): string => {
   if (item.isErrorPath) {
     return 'text-destructive';
@@ -71,7 +71,7 @@ const childItemCondColor = (item: InspectorChildItem): string => {
   if (item.isDefault) {
     return 'text-muted-foreground';
   }
-  return 'text-brand';
+  return 'text-condition';
 };
 
 // One clickable child row: its routing condition over the component name, a lint count if

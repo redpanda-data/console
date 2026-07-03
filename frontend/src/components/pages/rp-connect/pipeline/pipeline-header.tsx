@@ -335,7 +335,7 @@ export function PipelineEditHeader({
                 className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
                 title="You have unsaved changes"
               >
-                <span aria-hidden className="size-2 rounded-full bg-amber-500" />
+                <span aria-hidden className="size-2 rounded-full bg-unsaved" />
                 Unsaved changes
               </span>
             ) : null}

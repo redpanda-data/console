@@ -141,8 +141,8 @@ const BranchConditionChip = ({
   const cls = cn(
     'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
-    tone === 'muted' && 'border-brand/30 bg-brand/5 text-brand/80',
-    tone === 'condition' && 'border-brand/40 bg-brand/10 text-brand',
+    tone === 'muted' && 'border-condition/30 bg-condition/5 text-condition/80',
+    tone === 'condition' && 'border-condition/40 bg-condition/10 text-condition',
     onEdit && 'nodrag nopan cursor-pointer transition-colors hover:bg-foreground/5',
     className
   );
@@ -168,12 +168,12 @@ const BranchConditionChip = ({
   );
 };
 
-// Routing conditions get the Redpanda brand accent — distinct from the section accents so routing
-// logic is easy to scan. Error/dead-letter routes keep red (that semantic wins); a `default`
-// catch-all is a muted brand tone.
+// Routing conditions get an amber/gold accent (the flowchart decision-branch convention) — distinct
+// from every section accent and from the red error tone, so routing logic is easy to scan. Error/
+// dead-letter routes keep red (that semantic wins); a `default` catch-all is a muted amber tone.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
-  condition: 'border-brand/30 bg-brand/10 text-brand',
-  muted: 'border-brand/20 bg-brand/5 text-brand/80',
+  condition: 'border-condition/30 bg-condition/10 text-condition',
+  muted: 'border-condition/20 bg-condition/5 text-condition/80',
   error: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
@@ -252,6 +252,9 @@ export type FlowCardData = {
   /** Edit target for this node's switch CASE (routing condition), distinct from `editTarget`
       (the component). Drives the clickable condition chip. */
   caseEditTarget?: EditTarget;
+  /** Id of the case-wrapper node this entry stands in for (processor switch), so an unsaved
+      condition edit — attributed to the wrapper — marks this card. */
+  caseOwnerId?: string;
   /** Highlighted because it's the node (component) selected in the inspector. */
   selected?: boolean;
   /** The CASE condition (not the component) is selected — highlight just the condition row. */
@@ -459,7 +462,7 @@ const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
     <span
       aria-hidden
-      className="size-2 shrink-0 rounded-full bg-amber-500"
+      className="size-2 shrink-0 rounded-full bg-unsaved"
       title="Unsaved changes on this node"
     />
   ) : null;

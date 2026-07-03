@@ -85,6 +85,9 @@ export type PipelineFlowNode = {
   // Edit target for the case's routing condition (`{ check, … }`); see the chip-clickability note
   // where this is forwarded to the entry card.
   caseEditTarget?: EditTarget;
+  // Id of the (non-rendered) case-wrapper node a processor-switch case entry stands in for, so a
+  // condition edit (which changes the wrapper's config) marks THIS entry card as unsaved.
+  caseOwnerId?: string;
   // Container accepting new children: the array's YAML path and the component kind it holds.
   // Drives in-container "+" (add a processor into a switch case, an input into a broker, …).
   insertSlot?: { containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output' };
@@ -1248,6 +1251,7 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     // The switch-case edit target travels onto the case's entry card so its condition chip is
     // clickable (selects the case → SwitchCaseEditor). Distinct from `editTarget` (component).
     ...(node.caseEditTarget ? { caseEditTarget: node.caseEditTarget } : {}),
+    ...(node.caseOwnerId ? { caseOwnerId: node.caseOwnerId } : {}),
     ...(node.insertSlot ? { insertSlot: node.insertSlot } : {}),
     ...(node.addChildSlot ? { addChildSlot: node.addChildSlot } : {}),
     ...(node.danglingRef ? { danglingRef: true } : {}),
@@ -1449,6 +1453,7 @@ function caseEntrySteps(lane: FanLane): PipelineFlowNode[] {
       isDefault: o.isDefault,
       isErrorPath: o.isErrorPath,
       caseEditTarget: o.caseEditTarget,
+      caseOwnerId: o.id,
     },
     ...rest,
   ];
