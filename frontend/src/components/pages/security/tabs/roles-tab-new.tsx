@@ -46,7 +46,6 @@ import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -329,9 +328,7 @@ export const RolesTabNew: FC = () => {
           </Table>
         </ListLayoutContent>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
       <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
     </>

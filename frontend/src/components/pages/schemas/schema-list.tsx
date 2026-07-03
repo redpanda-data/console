@@ -25,7 +25,8 @@ import {
   type Updater,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArchiveIcon, EditIcon, InfoIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
+import { ArchiveIcon, EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
+import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -35,24 +36,19 @@ import {
   DataTableFacetedFilter,
   DataTablePagination,
 } from 'components/redpanda-ui/components/data-table';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from 'components/redpanda-ui/components/drawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import {
-  ListLayout,
-  ListLayoutFilters,
-  ListLayoutPagination,
-  ListLayoutSearchInput,
-} from 'components/redpanda-ui/components/list-layout';
+import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { SearchIcon } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -146,7 +142,6 @@ const multiSelectFilterFn: FilterFn<EnrichedSubject> = (row, columnId, filterVal
 
 const SchemaList: FC = () => {
   const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
-  const [isHelpSidebarOpen, setIsHelpSidebarOpen] = useState(false);
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
   const [showSoftDeleted, setShowSoftDeleted] = useQueryStateWithCallback<boolean>(
@@ -628,52 +623,49 @@ const SchemaList: FC = () => {
         </Tooltip>
       </div>
       <RequestErrors />
-      <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
-        <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
-          <DrawerHeader className="border-b">
-            <DrawerTitle data-testid="schema-help-title" id="schema-help-title">
-              Schema Search Help
-            </DrawerTitle>
-          </DrawerHeader>
-
-          <div className="space-y-6 p-4">
-            <section aria-labelledby="filtering-heading" className="space-y-3">
-              <h3 className="font-semibold text-gray-900" id="filtering-heading">
-                Filtering schemas
-              </h3>
-              <p className="text-base text-gray-600 leading-relaxed">
-                There are two ways to filter schemas, and they work a little differently.
-              </p>
-            </section>
-
-            <div className="space-y-4 pl-4">
-              <section aria-labelledby="schema-id-heading" className="space-y-2">
-                <h3 className="font-semibold text-base text-gray-900" id="schema-id-heading">
-                  Schema ID
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  If a number matches a schema ID, the results include all subjects referencing that schema.
-                </p>
-              </section>
-
-              <section aria-labelledby="subject-name-heading" className="space-y-2">
-                <h3 className="font-semibold text-base text-gray-900" id="subject-name-heading">
-                  Subject name
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  To search subject names, enter that specific name or a regex.
-                </p>
-              </section>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
       {isError ? (
         <Alert variant="destructive">
           <AlertTitle>Error loading schemas</AlertTitle>
         </Alert>
       ) : (
         <ListLayout className="my-4" data-testid="schema-list-table">
+          <Text className="text-muted-foreground text-sm sm:text-base">
+            <DescriptionWithHelp
+              short="Subjects and versions for the schemas that validate your topic records."
+              testId="schema-search-help"
+              title="Schema search help"
+              titleTestId="schema-help-title"
+            >
+              <section aria-labelledby="filtering-heading" className="space-y-3">
+                <h3 className="font-semibold text-gray-900" id="filtering-heading">
+                  Filtering schemas
+                </h3>
+                <p className="text-base text-gray-600 leading-relaxed">
+                  There are two ways to filter schemas, and they work a little differently.
+                </p>
+              </section>
+
+              <div className="space-y-4 pl-4">
+                <section aria-labelledby="schema-id-heading" className="space-y-2">
+                  <h3 className="font-semibold text-base text-gray-900" id="schema-id-heading">
+                    Schema ID
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    If a number matches a schema ID, the results include all subjects referencing that schema.
+                  </p>
+                </section>
+
+                <section aria-labelledby="subject-name-heading" className="space-y-2">
+                  <h3 className="font-semibold text-base text-gray-900" id="subject-name-heading">
+                    Subject name
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    To search subject names, enter that specific name or a regex.
+                  </p>
+                </section>
+              </div>
+            </DescriptionWithHelp>
+          </Text>
           <ListLayoutFilters>
             <div className="relative" data-testid="schema-list-search-field">
               <SearchIcon
@@ -691,22 +683,6 @@ const SchemaList: FC = () => {
                 value={quickSearch ?? ''}
               />
             </div>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    aria-label="Search help"
-                    className="inline-flex cursor-pointer items-center"
-                    data-testid="schema-search-help"
-                    onClick={() => setIsHelpSidebarOpen(true)}
-                    type="button"
-                  >
-                    <InfoIcon aria-hidden="true" />
-                  </button>
-                }
-              />
-              <TooltipContent side="top">Help with schema search</TooltipContent>
-            </Tooltip>
             {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
             <DataTableFacetedFilter
               column={table.getColumn('type')}
@@ -749,9 +725,7 @@ const SchemaList: FC = () => {
             </TableHeader>
             <TableBody>{renderBody()}</TableBody>
           </Table>
-          <ListLayoutPagination>
-            <DataTablePagination table={table} />
-          </ListLayoutPagination>
+          <DataTablePagination table={table} />
         </ListLayout>
       )}
       <DeleteDialog
