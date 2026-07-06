@@ -10,6 +10,8 @@
  */
 
 import {
+  Background,
+  BackgroundVariant,
   Controls,
   type Edge,
   type Node,
@@ -1231,6 +1233,14 @@ export function PipelineFlowCanvas({
           zoomOnPinch
           zoomOnScroll={false}
         >
+          {/* Faint plus-mark texture so the canvas doesn't read as blank. A partly-transparent border
+              tone (theme-aware) with small, sparse marks — a background hint, not a grid. */}
+          <Background
+            color="color-mix(in srgb, var(--color-border) 55%, transparent)"
+            gap={28}
+            size={4}
+            variant={BackgroundVariant.Cross}
+          />
           <Controls
             className="overflow-hidden rounded-md border border-border bg-background/90 shadow-sm backdrop-blur-sm"
             position="bottom-right"
