@@ -32,8 +32,21 @@ describe('getConnectorDocsUrl', () => {
     );
   });
 
-  it('returns undefined for resource section', () => {
-    expect(getConnectorDocsUrl('resource', 'memory')).toBeUndefined();
+  it('builds correct URL for cache resources', () => {
+    expect(getConnectorDocsUrl('cache', 'memory')).toBe(
+      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/caches/memory/'
+    );
+  });
+
+  it('builds correct URL for rate limit resources', () => {
+    expect(getConnectorDocsUrl('rate_limit', 'local')).toBe(
+      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/rate_limits/local/'
+    );
+  });
+
+  it('returns undefined for sections whose docs path is not the naive plural', () => {
+    expect(getConnectorDocsUrl('metrics', 'prometheus')).toBeUndefined();
+    expect(getConnectorDocsUrl('tracer', 'jaeger')).toBeUndefined();
   });
 
   it('returns undefined for unknown section', () => {

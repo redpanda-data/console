@@ -39,8 +39,8 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 type Tone = 'success' | 'error' | 'muted';
 
-// Pill chrome per state: running is a filled green pill, error is red text,
-// everything else (stopped/completed/transitioning) reads as plain muted text.
+// Pill chrome per state: running is a filled green pill, error is red text, everything else
+// (stopped/completed/transitioning) reads as plain muted text.
 const statusPill = cva(
   'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-sm transition-colors',
   {
@@ -65,10 +65,8 @@ function getTone(state?: Pipeline_State): Tone {
   return 'muted';
 }
 
-// Combined status + run control: a switch whose on/off mirrors the pipeline's
-// running state, paired with the state label. Turning it on starts the
-// pipeline; turning it off opens a stop confirmation. Replaces the separate
-// status badge + start/stop button.
+// Combined status + run control: a switch mirroring the running state, paired with the state
+// label. On starts the pipeline; off opens a stop confirmation.
 export function PipelineStatusToggle({
   pipelineId,
   pipelineState,
@@ -112,9 +110,9 @@ export function PipelineStatusToggle({
     });
   }, [pipelineId, stopMutation, isStarting]);
 
-  // Switch reflects (and drives) the running state. A STARTING pipeline stays interactive so it can
-  // be cancelled back to Stopped (matching STOPPABLE_STATES) — this rescues one stuck mid-start.
-  // STOPPING is already settling toward Stopped, so it's locked until the backend confirms.
+  // Switch reflects and drives the running state. STARTING stays interactive so it can be cancelled
+  // back to Stopped (matching STOPPABLE_STATES), rescuing one stuck mid-start. STOPPING is already
+  // settling toward Stopped, so it's locked until the backend confirms.
   const checked = pipelineState === PipelineState.RUNNING || isStarting;
   const isDisabled = !pipelineId || isStopping || isStartPending || isStopPending;
   const label = (pipelineState !== undefined && PIPELINE_STATE_LABELS[pipelineState]) || 'Unknown';

@@ -13,9 +13,43 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertCircle, ChevronDown, KeyRound, MousePointerClick } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { EditTarget } from '../utils/yaml';
+
+/**
+ * Popover-style dismissal for a floating chip's expanded list: close on outside click or Escape.
+ * Returns the ref to attach to the chip's container (also used by the unsaved chip).
+ */
+export function useChipDismissal(open: boolean, setOpen: (open: boolean) => void) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.target instanceof Node && !containerRef.current?.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Claim the event: Escape dismisses only this topmost layer, not also the canvas
+        // selection (whose window-level handler checks defaultPrevented / stopped events).
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, setOpen]);
+  return containerRef;
+}
 
 export type PipelineProblem = {
   key: string;
@@ -139,6 +173,7 @@ export function PipelineProblemsPanel({
   onAddSecrets,
 }: PipelineProblemsPanelProps) {
   const [open, setOpen] = useState(false);
+  const containerRef = useChipDismissal(open, setOpen);
 
   const hasLint = problems.length > 0;
   const hasSecrets = missingSecrets.length > 0;
@@ -153,7 +188,7 @@ export function PipelineProblemsPanel({
     : 'border-warning/50 text-warning hover:bg-warning-subtle';
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="flex flex-col items-end gap-1.5" ref={containerRef}>
       <button
         aria-expanded={open}
         className={cn(

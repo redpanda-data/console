@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { ConnectCommandPalette } from './connect-command-palette';
@@ -33,6 +39,9 @@ export const AddConnectorDialog = ({
       <DialogContent height="lg" size="xl">
         <DialogHeader>
           <DialogTitle>{title ?? 'Add a connector'}</DialogTitle>
+          <DialogDescription>
+            Search the component catalog, then select a component to add it to your pipeline.
+          </DialogDescription>
         </DialogHeader>
         <ConnectCommandPalette
           allowedTypes={typeFilter}

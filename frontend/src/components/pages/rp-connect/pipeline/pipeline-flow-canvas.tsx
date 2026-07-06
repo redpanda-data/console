@@ -22,6 +22,7 @@ import {
   useStoreApi,
   ViewportPortal,
 } from '@xyflow/react';
+import { Banner, BannerContent } from 'components/redpanda-ui/components/banner';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { TriangleAlert } from 'lucide-react';
 import {
@@ -48,16 +49,19 @@ import type { EditTarget } from '../utils/yaml';
 const PARSE_DEBOUNCE_MS = 300;
 // How far past the diagram the canvas may be panned, so an edge node can be brought to the middle.
 const PAN_PADDING = 240;
+
+// RF's pan/zoom eases are d3-driven (JS), out of reach of the CSS reduced-motion rule — honour it
+// here by collapsing animated moves to instant.
+const animMs = (ms: number): number =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : ms;
 // Default interactive zoom-out floor for normal-sized graphs.
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
-// A big graph may not fit even at MIN_ZOOM, so we lower the floor to "the whole graph fits" — but
-// never below this absolute bound, so it can't zoom out to a dot.
+// Floor for graphs too big to fit even at MIN_ZOOM — never below this, so it can't zoom out to a dot.
 const ABSOLUTE_MIN_ZOOM = 0.05;
 
-// The zoom-out floor for a graph of `graphW`×`graphH` in a `paneW`×`paneH` pane: MIN_ZOOM normally,
-// but lower (down to ABSOLUTE_MIN_ZOOM) when the graph is too big to fit at MIN_ZOOM — so large
-// graphs can be zoomed out until the whole thing is visible, and no further.
+// Zoom-out floor for a `graphW`×`graphH` graph in a `paneW`×`paneH` pane: MIN_ZOOM normally, lower
+// (to ABSOLUTE_MIN_ZOOM) when too big to fit — so large graphs zoom out until fully visible, no further.
 function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number): number {
   if (graphW <= 0 || graphH <= 0 || paneW <= 0 || paneH <= 0) {
     return MIN_ZOOM;
@@ -103,8 +107,7 @@ function contentBounds(nodes: Node[]): { minX: number; minY: number; maxX: numbe
 const MINIMAP_WIDTH = 132;
 const MINIMAP_MIN_INNER_H = 32;
 const MINIMAP_MAX_INNER_H = 168;
-// Small inset between the drawing and the frame, so the viewport rect's border stays visible at
-// the pan limits rather than sitting hard against the edge.
+// Inset between drawing and frame so the viewport rect's border stays visible at the pan limits.
 const MINIMAP_PAD = 2;
 // The frame's 1px border (border-box) shrinks the svg's drawing area on each side.
 const MINIMAP_BORDER = 1;
@@ -152,10 +155,9 @@ function PipelineMiniMap({
     [translateExtent]
   );
 
-  // Draw only the pan-REACHABLE world. Per axis: while the viewport is smaller than the extent the
-  // whole extent is reachable by panning, so show it; otherwise that axis is locked, so show the
-  // fixed visible window — never buffer the viewport can't reach. Locked axes use the live window
-  // (React Flow pins an oversized viewport to an edge, not an assumed centre).
+  // Draw only the pan-REACHABLE world. Per axis: if the viewport is smaller than the extent the whole
+  // extent is reachable, so show it; else the axis is locked, so show the live visible window — RF
+  // pins an oversized viewport to an edge, not an assumed centre — never buffer that can't be reached.
   const canPanX = vw < ext.maxX - ext.minX;
   const canPanY = vh < ext.maxY - ext.minY;
   const world = {
@@ -167,9 +169,9 @@ function PipelineMiniMap({
   const worldW = Math.max(world.maxX - world.minX, 1);
   const worldH = Math.max(world.maxY - world.minY, 1);
 
-  // The world fills the drawing area (frame minus the MINIMAP_PAD inset). Frame height tracks the
-  // world's aspect (clamped to stay usable); each axis is scaled independently to fill exactly, so
-  // a clamp-forced aspect mismatch can't leave dead bands the viewport can't reach.
+  // World fills the drawing area (frame minus MINIMAP_PAD). Frame height tracks the world's aspect
+  // (clamped); each axis scales independently to fill exactly, so a clamp-forced aspect mismatch
+  // can't leave unreachable dead bands.
   const innerW = mapW - 2 * MINIMAP_PAD;
   const innerH = clampValue(innerW * (worldH / worldW), MINIMAP_MIN_INNER_H, MINIMAP_MAX_INNER_H);
   const mapH = innerH + 2 * MINIMAP_PAD;
@@ -199,6 +201,7 @@ function PipelineMiniMap({
       style={{ width: MINIMAP_WIDTH, height: mapH + 2 * MINIMAP_BORDER, right: 52, bottom: 12 }}
     >
       <svg
+        aria-label="Pipeline overview"
         className="block cursor-pointer"
         height={mapH}
         onPointerDown={(e) => {
@@ -215,7 +218,7 @@ function PipelineMiniMap({
           draggingRef.current = false;
           e.currentTarget.releasePointerCapture(e.pointerId);
         }}
-        role="presentation"
+        role="img"
         width={mapW}
       >
         {nodes.map((node) => {
@@ -257,11 +260,9 @@ function PipelineMiniMap({
 const SELECTION_REVEAL_MARGIN = 32;
 const RAIL_SETTLE_MS = 240;
 
-// Parse the YAML into the flow tree, keeping the last successfully-parsed nodes. While the YAML
-// is transiently invalid — mid-edit, a bad paste, switching to the Visual lane on a half-written
-// config — the parser yields no nodes; blanking the canvas there loses the user's place and reads
-// as broken. So we hold the last-good graph and flag it stale (the Step Functions / Kestra
-// "freeze last-good + banner" pattern).
+// Parse the YAML, holding the last-good nodes. While the YAML is transiently invalid (mid-edit, bad
+// paste) the parser yields nothing; blanking the canvas loses the user's place and reads as broken,
+// so we freeze the last-good graph and flag it stale (Step Functions / Kestra pattern).
 function useResilientParse(yaml: string): { nodes: PipelineFlowNode[]; error?: string; showingStale: boolean } {
   const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
   const lastGoodNodesRef = useRef<PipelineFlowNode[]>(parsed.nodes);
@@ -322,7 +323,6 @@ function StaleParseBanner({ show }: { show: boolean }) {
 type ZoomMode = 'in' | 'out' | null;
 const ZOOM_STEP = 1.5;
 
-// The native magnifier cursor for the armed zoom tool.
 function cursorForMode(mode: ZoomMode): string {
   if (mode === 'in') {
     return 'zoom-in';
@@ -333,9 +333,9 @@ function cursorForMode(mode: ZoomMode): string {
   return '';
 }
 
-// Paint the magnifier cursor while the zoom tool is armed. Set imperatively (inline) on the flow
-// container AND its pane: React Flow styles the pane cursor itself, so a Tailwind class loses to it,
-// but an inline style on the pane reliably wins — and the container style covers nodes by inheritance.
+// Paint the magnifier cursor while the zoom tool is armed. Set inline on the container AND its pane:
+// RF styles the pane cursor itself so a Tailwind class loses, but an inline style on the pane wins —
+// and the container style covers nodes by inheritance.
 function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const root = ref.current;
@@ -373,10 +373,10 @@ function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
 const isTypingTarget = (target: EventTarget | null): boolean =>
   Boolean((target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor'));
 
-// Figma-style zoom TOOL, HOLD to activate: while Z is held the cursor is a magnifier and a click
-// zooms toward the pointer (add Option/Alt to zoom out); releasing returns to normal pan/select.
-// Pan is suppressed only while held (canPanCanvas), so panning and zooming never conflict. The
-// wheel is left to the page; the Controls buttons and pinch also zoom. Ignored while typing.
+// Figma-style hold-to-activate zoom: while Z is held the cursor is a magnifier and a click zooms
+// toward the pointer (add Option/Alt to zoom out); releasing returns to pan/select. Pan is suppressed
+// only while held (canPanCanvas). The wheel is left to the page; Controls + pinch also zoom. Ignored
+// while typing.
 function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: ZoomMode) => void; minZoom: number }) {
   const { screenToFlowPosition, getZoom, setCenter } = useReactFlow();
 
@@ -440,7 +440,7 @@ function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: 
       e.stopPropagation();
       const point = screenToFlowPosition({ x: e.clientX, y: e.clientY });
       const next = clampValue(getZoom() * (mode === 'in' ? ZOOM_STEP : 1 / ZOOM_STEP), minZoom, MAX_ZOOM);
-      setCenter(point.x, point.y, { zoom: next, duration: 200 });
+      setCenter(point.x, point.y, { zoom: next, duration: animMs(200) });
     };
     window.addEventListener('click', onClick, true);
     return () => window.removeEventListener('click', onClick, true);
@@ -449,11 +449,10 @@ function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: 
   return null;
 }
 
-// Frame the graph on first load: centered on the middle of the graph, zoomed out enough to fit it
-// (down to the zoom floor for graphs too big to fit — `fitView` still centers them). Retries each
-// animation frame — reading the pane size and node bounds FRESH — until both are real (pane laid
-// out + custom nodes measured), so it fires as soon as it can on load rather than waiting for a
-// later resize (which read as a "snap").
+// Frame the graph on first load: centered and zoomed out to fit (down to the zoom floor for graphs
+// too big to fit). Retries each frame — reading pane size and node bounds FRESH — until both are
+// real (pane laid out + nodes measured), so it fires ASAP rather than waiting for a later resize
+// (which read as a "snap").
 function FitOnInit() {
   const nodeCount = useStore((s) => s.nodes.length);
   const storeApi = useStoreApi();
@@ -524,16 +523,15 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
     // Keep the current zoom (clamped to a readable band) so jumping doesn't lurch the scale.
     const zoom = Math.min(Math.max(getZoom(), 0.8), 1);
     // Ease over ~600ms so the pan reads as a deliberate glide, not an instant jump.
-    setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: 600, zoom });
+    setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: animMs(600), zoom });
   }, [nodeId, token, getNodesBounds, setCenter, getZoom]);
   return null;
 }
 
-// Keeps the selected node visible when the inspector rail opens. The rail is a flex sibling that
-// steals ~384px on the right, so a node near the right edge ends up hidden behind it. Once the
-// rail's open animation settles (pane stops resizing), nudge the viewport just enough to reveal the
-// node — only if actually clipped. The minimal dx stays inside `translateExtent`, so no clamping is
-// needed.
+// Keeps the selected node visible when the inspector rail opens. The rail is a flex sibling stealing
+// ~384px on the right, hiding a node near the right edge. Once its open animation settles (pane stops
+// resizing), nudge the viewport just enough to reveal the node, only if clipped. The minimal dx stays
+// inside `translateExtent`, so no clamping is needed.
 function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: string; focusToken?: number }) {
   const { getNodesBounds, getViewport, setViewport } = useReactFlow();
   // Re-runs as the canvas resizes during the rail animation; each change resets the settle
@@ -544,7 +542,6 @@ function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: 
   const lastFocusToken = useRef(focusToken);
 
   useEffect(() => {
-    // No-op until something is selected.
     if (!selectedNodeId) {
       return;
     }
@@ -568,7 +565,7 @@ function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: 
         dx = SELECTION_REVEAL_MARGIN - screenLeft;
       }
       if (dx !== 0) {
-        setViewport({ x: x + dx, y, zoom }, { duration: 200 });
+        setViewport({ x: x + dx, y, zoom }, { duration: animMs(200) });
       }
     }, RAIL_SETTLE_MS);
     return () => clearTimeout(timer);
@@ -597,11 +594,10 @@ function constructAccent(node?: Node): string {
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
-// Bounding box (flow coords) of every node in `scope` — including merge dots, which sit outside the
-// parser tree but carry their construct's id as `ownerId`. Prefers each node's MEASURED render size
-// (so the box hugs the rendered card, not the layout's initialHeight estimate, which can over-reserve
-// height and leave a lopsided bottom gap); falls back to the layout size before measurement so boxes
-// always draw.
+// Bounding box (flow coords) of every node in `scope` — incl. merge dots (outside the parser tree,
+// matched via `ownerId`). Prefers each node's MEASURED size (so the box hugs the rendered card, not
+// the layout's initialHeight estimate, which over-reserves height and leaves a lopsided bottom gap);
+// falls back to the layout size before measurement so boxes always draw.
 function scopeMemberBounds(
   nodes: Node[],
   scope: ReadonlySet<string>,
@@ -674,10 +670,10 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
 }
 
 // Faint enclosure boxes around every control-flow construct's sub-graph, emphasized when the
-// construct (or anything inside it) is selected/hovered. Drawn via `ViewportPortal` (flow coords,
-// moves with pan/zoom), behind the nodes, non-interactive — so it never perturbs the nodes array
-// (hover stays cheap). Every construct gets a box (Dagre can scatter members so a box may span a
-// non-member card — accepted trade-off for always-visible scopes).
+// construct (or anything inside) is selected/hovered. Drawn via `ViewportPortal` (flow coords),
+// behind the nodes, non-interactive — never perturbs the nodes array (hover stays cheap). Every
+// construct gets a box (Dagre can scatter members so a box may span a non-member card — accepted
+// for always-visible scopes).
 function ScopeRegions({
   hoveredId,
   selectedId,
@@ -689,15 +685,14 @@ function ScopeRegions({
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
 }) {
-  // Measured render sizes live on the store's (stably-mutated) nodeLookup, so subscribing to it alone
-  // won't re-render. `measuredKey` is a primitive digest of every node's measured height — it changes
-  // when cards measure, re-rendering + recomputing the memo so boxes tighten from the layout estimate
-  // to the rendered card size.
+  // Measured sizes live on the store's stably-mutated nodeLookup, so subscribing to it alone won't
+  // re-render. `measuredKey` is a primitive digest that changes when cards measure, re-rendering +
+  // recomputing the memo so boxes tighten from the layout estimate to the rendered size.
   const nodeLookup = useStore((s) => s.nodeLookup);
   const measuredKey = useStore((s) => {
-    // Numeric digest of measured card sizes — no per-frame string allocation (this selector re-runs
-    // on every store change, incl. every pan/zoom frame). Folds width + height so a reflow at
-    // constant height still retriggers the geometry memo, tightening boxes to the rendered size.
+    // Numeric digest of measured sizes — no per-frame string allocation (this selector re-runs on every
+    // store change, incl. every pan/zoom frame). Folds width + height so a reflow at constant height
+    // still retriggers the geometry memo.
     let h = 0;
     for (const n of s.nodeLookup.values()) {
       h = (h * 31 + Math.round(n.measured?.width ?? 0)) % 2_147_483_647;
@@ -734,8 +729,8 @@ function ScopeRegions({
     const depthOf = (r: Draft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
     // Standoff scales with how deeply a region's OWN contents nest (0 if it holds no inner boxes), so
-    // each enclosing box stands one step off the inner ones — but a construct with nothing nested
-    // inside hugs its nodes tightly, regardless of nesting elsewhere in the graph.
+    // each enclosing box stands one step off the inner ones; a construct with nothing nested hugs its
+    // nodes tightly regardless of nesting elsewhere.
     const innerDepth = (i: number) =>
       drafts.reduce((h, o, j) => (j !== i && drafts[i].scope.has(o.id) ? Math.max(h, depths[j] - depths[i]) : h), 0);
     return drafts.map((r, i) => {
@@ -836,9 +831,8 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
     data.flashToken = cb.flashToken;
   }
   wireNodeActions(data, node, cb);
-  // A node new this render (e.g. revealed by expanding its container) should appear in place,
-  // not slide from the origin: drop the transform transition so it snaps, and let the card fade
-  // + grow in (see `appeared`).
+  // A node new this render (e.g. revealed by expanding its container) appears in place, not sliding
+  // from origin: drop the transform transition so it snaps, and let the card fade + grow in (`appeared`).
   if (!cb.previousIds.has(node.id)) {
     data.appeared = true;
     return {
@@ -1091,35 +1085,16 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  const { rfNodes, layoutEdges, translateExtent, contentWidth, contentHeight, legend } = useMemo(() => {
-    // Edit mode (nested inserts wired) shows the ghost "add" branches; read-only hides them.
-    const editable = Boolean(onSlotInsert);
-    const layout = computeGraphLayout(nodes, editable);
+  // Edit mode (nested inserts wired) shows the ghost "add" branches; read-only hides them.
+  // Derived OUTSIDE the layout memo so the memo keys on the stable boolean, not the callback's
+  // identity — an ancestor re-creating onSlotInsert must not re-run the Dagre pass.
+  const editable = Boolean(onSlotInsert);
 
-    const callbacks: CanvasCallbacks = {
-      onAddConnector,
-      onAddTopic,
-      onAddSasl,
-      onSlotInsert,
-      onSelectNode,
-      collapsedIds,
-      toggleCollapse,
-      selectedNodeId,
-      selectedTargetKind,
-      lintErrorsByNode,
-      unsavedNodeIds,
-      flashNodeIds,
-      flashToken,
-      previousIds: previousIdsRef.current,
-    };
-    // Inject per-node selection/lint/flash data, then fade nodes outside a selected construct's
-    // scope (focusDimNodes). Both are selection-driven, so this memo (which excludes hover) stays
-    // off the cheap-hover path.
-    const injectedNodes = focusDimNodes(
-      layout.rfNodes.map((node: Node) => injectNodeData(node, callbacks)),
-      selectedNodeId,
-      scopeOf
-    );
+  // Expensive layout memo: the full Dagre pass plus everything derived purely from its geometry
+  // (pan extent, legend). Keyed ONLY on the parsed nodes + edit mode, so selection / lint / flash /
+  // unsaved decoration changes (every click) never re-run layout.
+  const { layoutNodes, layoutEdges, translateExtent, contentWidth, contentHeight, legend } = useMemo(() => {
+    const layout = computeGraphLayout(nodes, editable);
 
     // Allow panning a margin past the content (measured, since resources sit at negative x) so
     // an edge node can reach the middle.
@@ -1138,15 +1113,43 @@ export function PipelineFlowCanvas({
     };
 
     return {
-      rfNodes: injectedNodes,
+      layoutNodes: layout.rfNodes,
       layoutEdges: layout.rfEdges,
       translateExtent: extent,
       contentWidth: bounds.maxX - bounds.minX,
       contentHeight: bounds.maxY - bounds.minY,
       legend: legendFlags,
     };
+  }, [nodes, editable]);
+
+  // Cheap decoration memo over the laid-out nodes: inject per-node selection/lint/flash data, then
+  // fade nodes outside a selected construct's scope (focusDimNodes). Keyed on the decoration inputs
+  // only — a click re-runs this, never the Dagre layout above. Hover is excluded, so it stays off
+  // the cheap-hover (edges-only) path.
+  const rfNodes = useMemo(() => {
+    const callbacks: CanvasCallbacks = {
+      onAddConnector,
+      onAddTopic,
+      onAddSasl,
+      onSlotInsert,
+      onSelectNode,
+      collapsedIds,
+      toggleCollapse,
+      selectedNodeId,
+      selectedTargetKind,
+      lintErrorsByNode,
+      unsavedNodeIds,
+      flashNodeIds,
+      flashToken,
+      previousIds: previousIdsRef.current,
+    };
+    return focusDimNodes(
+      layoutNodes.map((node: Node) => injectNodeData(node, callbacks)),
+      selectedNodeId,
+      scopeOf
+    );
   }, [
-    nodes,
+    layoutNodes,
     collapsedIds,
     toggleCollapse,
     selectedNodeId,
@@ -1186,7 +1189,17 @@ export function PipelineFlowCanvas({
   if (rfNodes.length === 0) {
     return (
       <div className="relative h-full w-full">
-        <PipelineFlowSkeleton error={error} />
+        {/* A persistent parse error with NO last-good graph: the banner must stay (no dismiss) —
+            dismissing it left an unexplained frozen skeleton — and the copy points at the fix. */}
+        {error ? (
+          <Banner height="2rem" variant="accent">
+            <BannerContent>Unable to visualize this pipeline — fix the YAML in the YAML tab.</BannerContent>
+          </Banner>
+        ) : null}
+        {/* Freeze the skeleton under an error (it's a backdrop, not a loading state). */}
+        <div className={error ? 'opacity-40 **:animate-none!' : undefined}>
+          <PipelineFlowSkeleton />
+        </div>
       </div>
     );
   }

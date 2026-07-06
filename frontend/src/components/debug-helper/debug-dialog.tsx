@@ -718,7 +718,7 @@ function OverviewTab() {
           <KbdGroup>
             <Kbd size="xs">⌃/⌘</Kbd>
             <Kbd size="xs">⇧</Kbd>
-            <Kbd size="xs">U</Kbd>
+            <Kbd size="xs">D</Kbd>
           </KbdGroup>
         </span>
       </DebugSection>
@@ -814,7 +814,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <KbdGroup>
               <Kbd size="xs">⌃/⌘</Kbd>
               <Kbd size="xs">⇧</Kbd>
-              <Kbd size="xs">U</Kbd>
+              <Kbd size="xs">D</Kbd>
             </KbdGroup>
           </span>
           <Button onClick={close} size="sm" variant="secondary-ghost">
@@ -836,9 +836,7 @@ export function DebugHelper() {
     onTrigger: () => setOpen((v) => !v),
   });
 
-  console.log('DebugHelper rendered; isDev=%s', IsDev);
   if (!IsDev) {
-    console.log('RENDERBUT IS DEV FALSE');
     return null;
   }
 

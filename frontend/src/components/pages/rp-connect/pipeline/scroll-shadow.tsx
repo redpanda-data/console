@@ -38,7 +38,7 @@ export function ScrollShadow({ className, contentClassName, children }: ScrollSh
           edges.start ? 'opacity-100' : 'opacity-0'
         )}
       >
-        <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/10 to-transparent dark:from-black/40" />
       </div>
       <div className={contentClassName}>{children}</div>
       <div
@@ -48,7 +48,7 @@ export function ScrollShadow({ className, contentClassName, children }: ScrollSh
           edges.end ? 'opacity-100' : 'opacity-0'
         )}
       >
-        <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/10 to-transparent dark:from-black/40" />
       </div>
     </div>
   );

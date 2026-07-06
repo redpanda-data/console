@@ -127,8 +127,54 @@ describe('NodeConfigForm — full schema', () => {
     renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '1000$' } } });
     await user.click(screen.getByText('batching'));
     expect(screen.getByDisplayValue('1000$')).toBeInTheDocument();
-    // …and flags it inline as not a valid integer.
-    expect(screen.getByText('Not a valid integer')).toBeInTheDocument();
+    // …and flags it inline as not a valid integer (with the not-saved warning).
+    expect(screen.getByText(/Not a valid integer/)).toBeInTheDocument();
+  });
+
+  test('does not commit a malformed numeric value (the saved value is kept)', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } });
+    await user.click(screen.getByText('batching'));
+    const countInput = screen.getByDisplayValue('5');
+    await user.clear(countInput);
+    await user.type(countInput, '10x');
+
+    // The field is flagged, and the reported config keeps the saved value — NOT `10` (parseInt
+    // truncation) and NOT dropped.
+    expect(screen.getByText(/won't be saved until fixed/)).toBeInTheDocument();
+    const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
+    expect(next.kafka.batching.count).toBe(5);
+  });
+
+  test('masks credential-named fields and offers a secret-reference tip', async () => {
+    const user = userEvent.setup();
+    renderForm({ kafka: { topic: 't', addresses: ['a:9092'], sasl: { password: 'hunter2' } } });
+    await user.click(screen.getByText('Advanced'));
+    await user.click(screen.getByText('sasl'));
+
+    const password = screen.getByDisplayValue('hunter2');
+    expect(password).toHaveAttribute('type', 'password');
+    expect(screen.getAllByRole('button', { name: 'Show value' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/reference a secret/i).length).toBeGreaterThan(0);
+  });
+
+  test('keeps the saved label when a resource label field is cleared (references depend on it)', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onConfigChange={onConfigChange}
+        requireLabel
+        spec={spec}
+        value={{ label: 'shared', kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+
+    await user.clear(screen.getByDisplayValue('shared'));
+    expect(screen.getByText(/A resource needs a label/)).toBeInTheDocument();
+    const next = lastReported(onConfigChange) as { label?: string };
+    expect(next.label).toBe('shared');
   });
 
   test('does not flag secret/env interpolations in numeric fields', async () => {
@@ -136,7 +182,7 @@ describe('NodeConfigForm — full schema', () => {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
     renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '${secrets.BATCH_COUNT}' } } });
     await user.click(screen.getByText('batching'));
-    expect(screen.queryByText('Not a valid integer')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Not a valid integer/)).not.toBeInTheDocument();
   });
 
   test('keeps an interpolation typed into a numeric field (not coerced to NaN and dropped)', async () => {

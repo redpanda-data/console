@@ -264,14 +264,54 @@ function HighlightedName({ name, query }: { name: string; query: string }) {
   );
 }
 
+// "processors", "caches or rate limits" — plural label for the slot's allowed types.
+function pluralTypeLabel(types?: ConnectComponentType[]): string {
+  if (!types || types.length === 0) {
+    return 'components';
+  }
+  return types.map((type) => `${type.replace(/_/g, ' ')}s`).join(' or ');
+}
+
+const STARTS_WITH_VOWEL = /^[aeiou]/;
+
+// "an input", "an input or a processor" — out-of-scope types with indefinite articles.
+function withArticles(types: ConnectComponentType[]): string {
+  const labeled = types.map((type) => {
+    const label = type.replace(/_/g, ' ');
+    return `${STARTS_WITH_VOWEL.test(label) ? 'an' : 'a'} ${label}`;
+  });
+  if (labeled.length <= 1) {
+    return labeled[0] ?? '';
+  }
+  return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1)}`;
+}
+
+// Empty-state copy. A type-locked miss that matches other component types is explained
+// ("it exists as an input") so it doesn't read as a missing integration.
+export function buildEmptyMessage(
+  query: string,
+  allowedTypes?: ConnectComponentType[],
+  outOfScopeTypes: ConnectComponentType[] = []
+): string {
+  if (!query) {
+    return 'No components available.';
+  }
+  if (outOfScopeTypes.length === 0) {
+    return `No ${pluralTypeLabel(allowedTypes)} match “${query}”.`;
+  }
+  return `No ${pluralTypeLabel(allowedTypes)} match “${query}” — it exists as ${withArticles(outOfScopeTypes)}.`;
+}
+
 function Row({
   component,
   query,
   onPreview,
+  onCommit,
 }: {
   component: ConnectComponentSpec;
   query: string;
   onPreview: (component: ConnectComponentSpec) => void;
+  onCommit: (component: ConnectComponentSpec) => void;
 }) {
   const category = component.categories?.[0];
   // Fall back to the humanized type (cache / rate_limit / …) so same-named components of different
@@ -281,6 +321,7 @@ function Row({
     <CommandItem
       className="gap-3 hover:bg-accent/50"
       key={`${component.type}-${component.name}`}
+      onDoubleClick={() => onCommit(component)}
       onSelect={() => onPreview(component)}
       value={`${component.type}:${component.name}`}
     >
@@ -378,7 +419,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
 type ConnectCommandPaletteProps = {
   components?: ComponentList;
   additionalComponents?: ExtendedConnectComponentSpec[];
-  /** Component types valid in the slot being filled — the palette locks to these unless "Show all" is toggled. */
+  /** Component types valid in the slot being filled — the palette only lists components of these types. */
   allowedTypes?: ConnectComponentType[];
   onSelect: (connectionName: string, connectionType: ConnectComponentType) => void;
   /** Dismisses the picker without adding anything (wired to the footer Cancel button). */
@@ -446,6 +487,21 @@ export const ConnectCommandPalette = ({
         .map((r) => r.component)
     );
   }, [inScope, q]);
+
+  // When a type-locked search comes up empty, the component types (outside the slot's scope)
+  // that DO match the query — surfaced in the empty state so the miss isn't read as a gap.
+  const outOfScopeTypes = useMemo(() => {
+    if (!q || results.length > 0 || !allowedTypes || allowedTypes.length === 0) {
+      return [];
+    }
+    const types = new Set<ConnectComponentType>();
+    for (const component of allComponents) {
+      if (!typeAllowed(component.type) && matchRank(component, q, searchableText(component)) >= 0) {
+        types.add(component.type);
+      }
+    }
+    return [...types].sort();
+  }, [q, results, allowedTypes, allComponents, typeAllowed]);
 
   // Browse facets (no query): recents + suggested + everything grouped by category.
   const recentComponents = useMemo(
@@ -532,7 +588,8 @@ export const ConnectCommandPalette = ({
     return null; // "all" renders the grouped view, not a flat list.
   }, [currentTab, recentComponents, suggested, grouped]);
 
-  // Enter adds the highlighted component (fast keyboard path); clicking only previews, keeping insertion explicit.
+  // Enter adds the highlighted component (fast keyboard path); a single click only previews,
+  // keeping insertion explicit, while double-click commits directly.
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.nativeEvent.isComposing && activeComponent) {
       event.preventDefault();
@@ -574,7 +631,7 @@ export const ConnectCommandPalette = ({
 
         <div className="flex min-h-0 flex-1">
           <CommandList className="h-full max-h-none min-w-0 flex-1 md:max-w-[28rem] md:border-r">
-            <CommandEmpty>No components match “{query}”.</CommandEmpty>
+            <CommandEmpty>{buildEmptyMessage(query.trim(), allowedTypes, outOfScopeTypes)}</CommandEmpty>
 
             {q ? (
               <CommandGroup heading="Results">
@@ -582,6 +639,7 @@ export const ConnectCommandPalette = ({
                   <Row
                     component={component}
                     key={`${component.type}-${component.name}`}
+                    onCommit={handleCommit}
                     onPreview={handlePreview}
                     query={q}
                   />
@@ -593,6 +651,7 @@ export const ConnectCommandPalette = ({
                   <Row
                     component={component}
                     key={`${component.type}-${component.name}`}
+                    onCommit={handleCommit}
                     onPreview={handlePreview}
                     query=""
                   />
@@ -605,6 +664,7 @@ export const ConnectCommandPalette = ({
                     <Row
                       component={component}
                       key={`${component.type}-${component.name}`}
+                      onCommit={handleCommit}
                       onPreview={handlePreview}
                       query=""
                     />

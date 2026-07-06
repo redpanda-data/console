@@ -23,8 +23,8 @@ import { useMemo } from 'react';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
-// One quick action in the palette (view in YAML, undo/redo, …). Hidden entries (no handler) are
-// filtered out so the palette only lists what's actually available right now.
+// One quick action in the palette (view in YAML, undo/redo, …). Entries with no handler are
+// filtered out so the palette lists only what's available.
 type PaletteAction = {
   id: string;
   label: string;
@@ -64,11 +64,20 @@ function jumpableNodes(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
   return nodes.filter((n) => n.editTarget && n.section);
 }
 
-// The free-text a node matches on: its connector name, user label, role, and meta values.
-function searchValue(node: PipelineFlowNode): string {
-  const meta = node.meta?.map((m) => m.value).join(' ') ?? '';
-  // The id keeps cmdk values unique when two nodes share a name; it never shows in the UI.
-  return [node.label, node.labelText, node.section, meta, node.id].filter(Boolean).join(' ');
+// Free text a node matches on: its VISIBLE fields only (connector name, user label, role). cmdk
+// fuzzy-matches the whole `value`, so internal node ids must stay out — they made typing "0" or
+// "section" match rows for no visible reason. Uniqueness (when two nodes share a name) comes from
+// a zero-width-space suffix the user can't type.
+function searchValue(node: PipelineFlowNode, index: number): string {
+  const visible = [node.label, node.labelText, node.section].filter(Boolean).join(' ');
+  return `${visible}${'\u200B'.repeat(index + 1)}`;
+}
+
+// Meta values (topics, urls, …) stay searchable via cmdk's `keywords` — user-authored content,
+// unlike the synthetic ids.
+function searchKeywords(node: PipelineFlowNode): string[] | undefined {
+  const keywords = node.meta?.map((m) => m.value).filter(Boolean);
+  return keywords?.length ? keywords : undefined;
 }
 
 /**
@@ -135,8 +144,13 @@ export function CanvasCommandPalette({
         ) : null}
         {items.length > 0 ? (
           <CommandGroup heading="Go to node">
-            {items.map((node) => (
-              <CommandItem key={node.id} onSelect={() => pick(() => onJumpToNode(node))} value={searchValue(node)}>
+            {items.map((node, index) => (
+              <CommandItem
+                key={node.id}
+                keywords={searchKeywords(node)}
+                onSelect={() => pick(() => onJumpToNode(node))}
+                value={searchValue(node, index)}
+              >
                 <span
                   aria-hidden
                   className="size-2 shrink-0 rounded-full"

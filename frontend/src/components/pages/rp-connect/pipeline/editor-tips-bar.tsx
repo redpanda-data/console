@@ -18,6 +18,10 @@ const MAC = isMacOS();
 const MOD = MAC ? '⌘' : 'Ctrl';
 // The zoom-out modifier (Figma-style): Option on macOS, Alt elsewhere.
 const ALT = MAC ? '⌥' : 'Alt';
+const SHIFT = MAC ? '⇧' : 'Shift';
+// Chip text for a key combo: glyphs run together on macOS (⌘⇧Z); words join with "+" elsewhere
+// (Ctrl+Shift+Z), matching each platform's convention.
+const combo = (...keys: string[]): string => keys.join(MAC ? '' : '+');
 
 /** Which editor surface the tips relate to — drives a different tip set. */
 export type TipContext = 'yaml' | 'visual';
@@ -42,7 +46,7 @@ function tipsFor(
         id: 'zoom',
         content: (
           <>
-            Drag to pan, hold <Key>Z</Key> / <Key>{`${ALT}Z`}</Key> and click to zoom
+            Drag to pan, hold <Key>Z</Key> / <Key>{combo(ALT, 'Z')}</Key> and click to zoom
           </>
         ),
       },
@@ -60,7 +64,7 @@ function tipsFor(
         id: 'history',
         content: (
           <>
-            <Key>{MOD}Z</Key> to undo, <Key>{MOD}⇧Z</Key> to redo
+            <Key>{combo(MOD, 'Z')}</Key> to undo, <Key>{combo(MOD, SHIFT, 'Z')}</Key> to redo
           </>
         ),
       });
@@ -84,11 +88,7 @@ function tipsFor(
       id: 'save',
       content: (
         <>
-          Save with{' '}
-          <Key>
-            {MOD}
-            {MAC ? '' : '+'}S
-          </Key>
+          Save with <Key>{combo(MOD, 'S')}</Key>
         </>
       ),
     });

@@ -1,7 +1,16 @@
 import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
-import { Document, isScalar, isSeq, parseDocument, parse as parseYaml, visit, stringify as yamlStringify } from 'yaml';
+import {
+  Document,
+  isPair,
+  isScalar,
+  isSeq,
+  parseDocument,
+  parse as parseYaml,
+  visit,
+  stringify as yamlStringify,
+} from 'yaml';
 
 import { schemaToConfig } from './schema';
 import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
@@ -11,8 +20,13 @@ import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, R
 // Shared pure YAML helpers
 // ============================================================================
 
-/** Keys that appear as siblings to the component name (e.g. `label`). */
-const RESERVED_COMPONENT_KEYS = new Set(['label']);
+// Never fold long lines (`lineWidth: 0` = unlimited). Every mutation stringify MUST use this:
+// the lib default folds long single-line bloblang mappings at col 80, reformatting lines the
+// user never touched.
+const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
+
+/** Keys that appear as siblings to the component name (e.g. `label`, a `<<` merge key). */
+const RESERVED_COMPONENT_KEYS = new Set(['label', '<<']);
 
 /** Extract the component name from an object, skipping reserved keys like `label`. */
 export const firstKey = (obj: unknown): string | undefined => {
@@ -289,7 +303,7 @@ export const mergeConnectConfigs = (
 
 const yamlConfig = {
   indent: 2,
-  lineWidth: 120,
+  ...YAML_STRINGIFY_OPTIONS,
   minContentWidth: 20,
   doubleQuotedAsJSON: false,
 };
@@ -514,7 +528,7 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
   }
 
   try {
-    const config = parseYaml(configYaml) as ParsedYamlConfig | null;
+    const config = parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null;
     if (!config) {
       return empty;
     }
@@ -564,7 +578,6 @@ export type RedpandaSetupResultLike = {
   serviceAccountSecretName?: string;
 };
 
-/** Build a SASL patch array from setup result data. */
 function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] | undefined {
   if (result.authMethod === 'service-account' && result.serviceAccountSecretName) {
     return [
@@ -709,8 +722,7 @@ export function tryPatchRedpandaYaml(
 }
 
 /**
- * Extract topic(s) configured on a Redpanda connector from YAML.
- * Works for all Redpanda component types — topics are always at
+ * Extract topic(s) from a Redpanda connector. All Redpanda types keep topics at
  * `[section].[componentName].topics[]` (inputs) or `.topic` (outputs).
  */
 export function extractConnectorTopics(
@@ -763,11 +775,8 @@ function componentExistsInYaml(yamlContent: string, section: string, componentNa
 
 /**
  * Apply Redpanda setup result to YAML.
- *
- * - If the component already exists in the YAML, surgically patches only the
- *   requested fields (topic / SASL) without touching anything else.
- * - If the component is new (not yet in the YAML), generates a full template
- *   via getConnectTemplate and then patches topic/user onto it.
+ * - Component already present: surgically patch only topic / SASL, touching nothing else.
+ * - New component: generate a full template via getConnectTemplate, then patch topic/user onto it.
  */
 export function applyRedpandaSetup({
   yamlContent,
@@ -811,24 +820,19 @@ export function extractAllTopics(yamlContent: string): string[] {
     return [];
   }
 
-  let config: Record<string, unknown>;
-  try {
-    config = parseYaml(yamlContent) as Record<string, unknown>;
-  } catch {
-    return [];
-  }
-
-  if (!config) {
-    return [];
-  }
-
   const topics = new Set<string>();
+  // Circular alias configs (`a: &x {b: *x}`) parse to circular objects — guard revisits.
+  const seen = new WeakSet<object>();
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive tree walker
   function walkForTopics(obj: unknown): void {
     if (!obj || typeof obj !== 'object') {
       return;
     }
+    if (seen.has(obj)) {
+      return;
+    }
+    seen.add(obj);
 
     if (Array.isArray(obj)) {
       for (const item of obj) {
@@ -853,14 +857,19 @@ export function extractAllTopics(yamlContent: string): string[] {
     }
   }
 
-  walkForTopics(config);
+  try {
+    const config = parseYaml(yamlContent, { merge: true }) as Record<string, unknown> | null;
+    if (!config) {
+      return [];
+    }
+    walkForTopics(config);
+  } catch {
+    return [];
+  }
   return [...topics];
 }
 
-/**
- * Generates YAML from onboarding wizard connection data by composing
- * input and (optionally) output templates via getConnectTemplate.
- */
+/** YAML from onboarding wizard data: compose input and (optional) output templates. */
 export function generateYamlFromWizardData(
   input: { connectionName: string; connectionType: string } | undefined,
   output: { connectionName: string; connectionType: string } | undefined,
@@ -894,17 +903,16 @@ export function generateYamlFromWizardData(
 // ============================================================================
 // Visual-editor mutations
 // ----------------------------------------------------------------------------
-// Deterministic, pure (yaml -> yaml | null) transforms over a parsed Document, so
-// comments/formatting survive and YAML stays the single source of truth. `null` on
-// parse failure lets callers keep the prior content.
+// Pure yaml -> (yaml | null) transforms over a parsed Document, so comments/formatting
+// survive and YAML stays the source of truth. `null` on parse failure keeps prior content.
 // ============================================================================
 
 export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
 
 /**
- * Addresses a visually editable component. The first kinds are top-level conveniences
- * (with tailored prune-on-delete); `path` addresses any component (including ones nested
- * in branch/switch/try/broker) by exact YAML location, carrying its type to load the schema.
+ * Addresses a visually editable component. Early kinds are top-level conveniences (with
+ * tailored prune-on-delete); `path` addresses any component (incl. ones nested in
+ * branch/switch/try/broker) by exact YAML location, carrying its type to load the schema.
  */
 export type EditTarget =
   | { kind: 'input' }
@@ -941,8 +949,11 @@ function isEmptyMap(node: unknown): boolean {
   return Array.isArray(items) && items.length === 0;
 }
 
-// After a delete, drop now-empty containers so the diagram falls back to its placeholder
-// (e.g. removing the last processor removes `pipeline`).
+// After a delete, drop now-empty TOP-LEVEL containers so the diagram falls back to its
+// placeholder (e.g. removing the last processor removes `pipeline`). Nested arrays (a branch's
+// `processors`, a `try` body, a switch's cases) are deliberately kept as `[]`: they render as
+// fillable groups, whereas deleting the key can hide surviving content (e.g. a check-only
+// switch case) or leave `- {}` cruft.
 function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
   if (target.kind === 'processor') {
     if (isEmptySeq(doc.getIn(['pipeline', 'processors']))) {
@@ -953,16 +964,16 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
     }
   } else if (target.kind === 'resource' && isEmptySeq(doc.getIn([target.resourceKey]))) {
     doc.delete(target.resourceKey);
-  } else if (target.kind === 'path' || target.kind === 'switchCase') {
-    // If the nested component's containing array is now empty, drop the array key too
-    // (e.g. an emptied branch's `processors`).
-    const last = target.path.at(-1);
-    if (typeof last === 'number') {
-      const arrayPath = target.path.slice(0, -1);
-      if (arrayPath.length > 0 && isEmptySeq(doc.getIn(arrayPath))) {
-        doc.deleteIn(arrayPath);
-      }
-    }
+  } else if (
+    target.kind === 'path' &&
+    typeof target.path[0] === 'string' &&
+    target.path[0].endsWith('_resources') &&
+    typeof target.path[1] === 'number' &&
+    isEmptySeq(doc.get(target.path[0]))
+  ) {
+    // input_resources/processor_resources/output_resources items are path targets, but their
+    // array is still a TOP-LEVEL container — drop it when emptied, like the branches above.
+    doc.delete(target.path[0]);
   }
 }
 
@@ -985,8 +996,14 @@ export function setComponentAt(
 ): string | null {
   try {
     const doc = parseDocument(yaml);
-    doc.setIn(editTargetPath(target), componentObject);
-    return doc.toString();
+    const path = editTargetPath(target);
+    // A stale index into a sequence would make setIn PAD the array with `- null` entries;
+    // refuse to write through a numeric tail that doesn't address an existing item.
+    if (typeof path.at(-1) === 'number' && doc.getIn(path) === undefined) {
+      return null;
+    }
+    doc.setIn(path, componentObject);
+    return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {
     return null;
   }
@@ -998,7 +1015,7 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
     const doc = parseDocument(yaml);
     doc.deleteIn(editTargetPath(target));
     pruneEmptyContainers(doc, target);
-    return doc.toString();
+    return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {
     return null;
   }
@@ -1036,7 +1053,7 @@ export function insertComponentAt(
       // No array yet — create it with this lone item.
       doc.setIn(containerPath, [componentObject]);
     }
-    return doc.toString();
+    return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {
     return null;
   }
@@ -1056,7 +1073,7 @@ export function appendResource(
     } else {
       doc.setIn([resourceKey], [resourceObject]);
     }
-    return doc.toString();
+    return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {
     return null;
   }
@@ -1100,9 +1117,9 @@ export function buildInsertableComponent(
 // ============================================================================
 // Resource references (cache/rate_limit) — link by label, no manual sync.
 // ----------------------------------------------------------------------------
-// A `cache`/`rate_limit` processor's `resource:` field must equal a `*_resources`
-// entry's `label:`. These helpers offer a typed dropdown, create-and-link, and rename
-// with cascade to every reference — so labels never drift out of sync.
+// A `cache`/`rate_limit` processor's `resource:` must equal a `*_resources` entry's `label:`.
+// These helpers offer a typed dropdown, create-and-link, and rename-with-cascade so labels
+// never drift out of sync.
 // ============================================================================
 
 export type ResourceKind = 'cache' | 'rate_limit';
@@ -1111,6 +1128,14 @@ const RESOURCE_KEY_BY_KIND: Record<ResourceKind, ResourceArrayKey> = {
   cache: 'cache_resources',
   rate_limit: 'rate_limit_resources',
 };
+
+/** The resource kind of a `resource` edit target (cache_resources → cache, …). */
+export function resourceTargetKind(target: EditTarget): ResourceKind | undefined {
+  if (target.kind !== 'resource') {
+    return;
+  }
+  return target.resourceKey === 'cache_resources' ? 'cache' : 'rate_limit';
+}
 
 /** Labels of every resource of a kind, in document order — the options for a reference dropdown. */
 export function listResourceLabels(yaml: string, kind: ResourceKind): string[] {
@@ -1168,51 +1193,77 @@ export function createResourceAndReturnLabel(
     } else {
       doc.setIn([key], [resourceObject]);
     }
-    return { yaml: doc.toString(), label };
+    return { yaml: doc.toString(YAML_STRINGIFY_OPTIONS), label };
   } catch {
     return null;
   }
 }
 
-/** Repoint every `resource:` reference from `oldLabel` to `newLabel` across the document. */
-export function renameResourceReferences(yaml: string, oldLabel: string, newLabel: string): string | null {
+// The component name enclosing a visited pair: for `- cache: { resource: x }` the pair's
+// containing map is the value of the `cache` pair, so `path.at(-2)` names the component.
+function enclosingComponentKey(path: readonly unknown[]): unknown {
+  const parent = path.at(-2);
+  return isPair(parent) && isScalar(parent.key) ? parent.key.value : undefined;
+}
+
+// Visit every `resource: <label>` pair; with `kind`, only those inside a component of that
+// name (a `cache`/`rate_limit` processor form), so a cache rename can't touch a same-labelled
+// rate_limit reference (or an input/output `resource:` indirection).
+function visitResourceReferences(
+  doc: Document.Parsed,
+  label: string,
+  kind: ResourceKind | undefined,
+  onMatch: (value: { value: unknown }) => void
+): void {
+  visit(doc, {
+    Pair(_, pair, path) {
+      const matches =
+        isScalar(pair.key) && pair.key.value === 'resource' && isScalar(pair.value) && pair.value.value === label;
+      if (matches && (!kind || enclosingComponentKey(path) === kind) && isScalar(pair.value)) {
+        onMatch(pair.value);
+      }
+    },
+  });
+}
+
+/**
+ * Repoint every `resource:` reference from `oldLabel` to `newLabel` across the document.
+ * With `kind`, only references belonging to that resource kind are rewritten; without it,
+ * every matching `resource:` scalar is (legacy behavior).
+ */
+export function renameResourceReferences(
+  yaml: string,
+  oldLabel: string,
+  newLabel: string,
+  kind?: ResourceKind
+): string | null {
   if (oldLabel === '' || oldLabel === newLabel) {
     return yaml;
   }
   try {
     const doc = parseDocument(yaml);
-    visit(doc, {
-      Pair(_, pair) {
-        if (
-          isScalar(pair.key) &&
-          pair.key.value === 'resource' &&
-          isScalar(pair.value) &&
-          pair.value.value === oldLabel
-        ) {
-          pair.value.value = newLabel;
-        }
-      },
+    visitResourceReferences(doc, oldLabel, kind, (value) => {
+      value.value = newLabel;
     });
-    return doc.toString();
+    return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {
     return null;
   }
 }
 
-/** Count how many components reference a resource label (via their `resource:` field). */
-export function countResourceReferences(yaml: string, label: string): number {
+/**
+ * Count how many components reference a resource label (via their `resource:` field).
+ * With `kind`, only references belonging to that resource kind are counted.
+ */
+export function countResourceReferences(yaml: string, label: string, kind?: ResourceKind): number {
   if (!label) {
     return 0;
   }
   try {
     const doc = parseDocument(yaml);
     let count = 0;
-    visit(doc, {
-      Pair(_, pair) {
-        if (isScalar(pair.key) && pair.key.value === 'resource' && isScalar(pair.value) && pair.value.value === label) {
-          count += 1;
-        }
-      },
+    visitResourceReferences(doc, label, kind, () => {
+      count += 1;
     });
     return count;
   } catch {

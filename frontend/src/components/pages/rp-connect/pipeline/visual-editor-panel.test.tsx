@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { render, screen, waitForElementToBeRemoved } from 'test-utils';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { PipelineEditorProvider } from './use-pipeline-editor-store';
+import { PipelineEditorProvider, usePipelineEditorStore } from './use-pipeline-editor-store';
 import { VisualEditorPanel } from './visual-editor-panel';
 import { mockComponents } from '../utils/__fixtures__/component-schemas';
 
@@ -247,6 +247,52 @@ describe('VisualEditorPanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Redo' }));
     expect(yamlOnCanvas()).toContain('10m');
+  });
+
+  test('edits made after a save-flush still auto-commit (the flush must not disarm the hook)', async () => {
+    const user = userEvent.setup();
+    // The pipeline Save flushes the pending inspector edit via the store's `pendingEditCommit`
+    // without changing the selection — a regression here silently dropped every edit made after it.
+    function SaveFlushButton() {
+      const flush = usePipelineEditorStore((s) => s.pendingEditCommit);
+      return (
+        <button onClick={() => flush?.()} type="button">
+          save-flush
+        </button>
+      );
+    }
+    function Harness() {
+      const [yaml, setYaml] = useState('cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n');
+      return (
+        <PipelineEditorProvider>
+          <VisualEditorPanel
+            componentList={{} as ComponentList}
+            components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+            mode="edit"
+            onYamlChange={setYaml}
+            yamlContent={yaml}
+          />
+          <SaveFlushButton />
+        </PipelineEditorProvider>
+      );
+    }
+    render(<Harness />);
+    const yamlOnCanvas = () => screen.getByTestId('flow-canvas').getAttribute('data-configyaml') ?? '';
+
+    await user.click(screen.getByText('select-cache-resource'));
+    const ttl = await screen.findByDisplayValue('5m');
+    await user.clear(ttl);
+    await user.type(ttl, '10m');
+    // Simulate the pipeline Save flushing the pending edit (selection unchanged).
+    await user.click(screen.getByRole('button', { name: 'save-flush' }));
+    expect(yamlOnCanvas()).toContain('10m');
+
+    // Edit the (still-selected, re-keyed) node again; leaving it must commit this edit too.
+    const ttl2 = await screen.findByDisplayValue('10m');
+    await user.clear(ttl2);
+    await user.type(ttl2, '15m');
+    await user.click(screen.getByRole('button', { name: 'deselect' }));
+    expect(yamlOnCanvas()).toContain('15m');
   });
 
   test('surfaces a lint problem for the selected node in the inspector', async () => {

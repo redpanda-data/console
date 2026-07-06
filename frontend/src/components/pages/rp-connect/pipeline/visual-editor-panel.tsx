@@ -25,14 +25,15 @@ import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { Redo2, TriangleAlert, Undo2 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { toast } from 'sonner';
 import { isMacOS } from 'utils/platform';
 
 import type { InspectorChildItem } from './node-config-form';
-import { NodeInspector } from './node-inspector';
+import { NodeInspector, type PendingNodeCommit } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
@@ -63,6 +64,7 @@ import {
   type ResourceArrayKey,
   type ResourceKind,
   removeComponentAt,
+  resourceTargetKind,
   seqLengthAt,
   setComponentAt,
 } from '../utils/yaml';
@@ -118,9 +120,8 @@ function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: Pipeli
 }
 
 // What a "jump to node" should select + recenter. A processor-switch CASE is a structural wrapper
-// with no rendered card (its `editTarget` is the `switchCase` itself); its condition rides its first
-// body step. So resolve such a wrapper to that rendered entry, carrying the case's condition target
-// so the inspector opens on the case. Every other node jumps to itself. Returns null if unjumpable.
+// with no rendered card, so resolve it to its first body step (the rendered entry), carrying the
+// case's condition target. Every other node jumps to itself. Returns null if unjumpable.
 function resolveJumpTarget(
   node: PipelineFlowNode,
   flowNodes: PipelineFlowNode[]
@@ -144,10 +145,9 @@ function buildChildItems(
 ): InspectorChildItem[] {
   const items: InspectorChildItem[] = [];
   for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
-    // A structural switch-case wrapper (editTarget is the `switchCase` itself, not a real
-    // component) isn't navigable as a component — its rendered entry is the first step of its
-    // body, so we navigate there (full config) and NAME the row by that node (the type the
-    // branch starts with), not "case N". An output-switch case is itself a leaf component.
+    // A structural switch-case wrapper (editTarget is the `switchCase` itself) isn't navigable as
+    // a component — navigate to its first body step (the rendered entry) and NAME the row by that
+    // node, not "case N". An output-switch case is itself a leaf component.
     const isCaseWrapper = child.editTarget?.kind === 'switchCase';
     const entry = isCaseWrapper ? (flowNodes.find((n) => n.parentId === child.id) ?? child) : child;
     if (!entry?.editTarget) {
@@ -190,10 +190,9 @@ function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): boolean {
   return true; // input / output — singletons, kind match is enough
 }
 
-// Resolve the chosen connector + insertion target to the next YAML (or null if the
-// component couldn't be generated). Caches and rate limits always append to their
-// top-level resource arrays (they're referenced, not nested); every other component
-// splices into the target container array.
+// Resolve the chosen connector + insertion target to the next YAML (or null if the component
+// couldn't be generated). Caches/rate limits append to their top-level resource arrays (they're
+// referenced, not nested); every other component splices into the target container array.
 function buildInsertedYaml({
   yaml,
   connectionName,
@@ -201,9 +200,8 @@ function buildInsertedYaml({
   target,
   components,
 }: InsertParams): InsertResult | null {
-  // Switch case: wrap the chosen step in a new case (default condition; edited afterwards) appended
-  // to the switch's cases — `{ check, output }` for an output switch, `{ check, processors: [step] }`
-  // for a processor switch. Select the step inside the new case (its config is what the user fills in).
+  // Switch case: wrap the chosen step in a new case (empty condition, edited afterwards) appended
+  // to the switch's cases. Select the step inside the new case — its config is what the user fills in.
   if (target.context === 'switchCase') {
     if (connectionType !== target.section) {
       return null;
@@ -224,9 +222,8 @@ function buildInsertedYaml({
         : [...target.containerPath, caseIndex, 'processors', 0];
     return { yaml: next, selectTarget: { kind: 'path', path: stepPath, componentType: target.section } };
   }
-  // Create the chosen cache/rate_limit resource and link it to the node's `resource:`
-  // field in one commit — so the new resource is never left unlinked. (No re-select: the
-  // currently-selected node stays — it just got the link.)
+  // Create the chosen cache/rate_limit resource and link it to the node's `resource:` field in one
+  // commit, so it's never left unlinked. No re-select: the selected node stays, just gets the link.
   if (target.context === 'resourceForNode') {
     if (connectionType !== target.kind) {
       return null;
@@ -298,12 +295,17 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
 function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
-  if ((e.target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
+  // Another layer (a chip popover, a dialog) already handled this key.
+  if (e.defaultPrevented) {
+    return null;
+  }
+  const target = e.target as HTMLElement | null;
+  if (target?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
     return null;
   }
   // `/` opens the command palette (the GitHub/Slack "focus search" convention). ⌘K is taken by the
   // outer app-shell search, so the canvas uses its own non-conflicting key.
-  if (e.key === '/') {
+  if (e.key === '/' && !(e.metaKey || e.ctrlKey || e.altKey)) {
     return 'palette';
   }
   if (e.key === 'Escape') {
@@ -325,10 +327,9 @@ function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-// Undo/redo for visual edits: the YAML lane has Monaco's native undo, but visual mutations write
-// YAML directly, so this keeps a history of YAML snapshots for ⌘Z / ⌘⇧Z. The history lives in the
-// store (not local state) so it SURVIVES switching to the YAML lane and back; `recordEdit` no-ops
-// on an unchanged round-trip, and records an external (Monaco) edit as one step when seen on return.
+// Undo/redo for visual edits: visual mutations write YAML directly, so this keeps a history of YAML
+// snapshots for ⌘Z / ⌘⇧Z. Lives in the store so it SURVIVES lane switches; `recordEdit` no-ops on an
+// unchanged round-trip and folds an external (Monaco) edit into one step when seen on return.
 function useEditHistory(
   yaml: string,
   onChange: (next: string) => void,
@@ -423,22 +424,18 @@ export function VisualEditorPanel({
   const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
 
   // Inspector edits auto-commit on leave / save (no per-node Apply). The inspector populates
-  // `commitRef` with a pure `(yaml) => yaml` that applies the selected node's pending edits; we
-  // call it BEFORE any selection change and on pipeline save, so leaving a node commits its edits.
-  const commitRef = useRef<((yaml: string) => string) | null>(null);
+  // `commitRef` with the selected node's hooks; we commit BEFORE any selection change and on save.
+  // `commit` consumes drafts as it applies them, so flushing at multiple points (save, insert,
+  // deselect, even mid exit-animation) never double-applies; edits after a flush commit on the next.
+  const commitRef = useRef<PendingNodeCommit | null>(null);
   const yamlRef = useRef(yamlContent);
   yamlRef.current = yamlContent;
   const commitPending = useCallback(() => {
-    const commit = commitRef.current;
-    if (!commit) {
+    const pending = commitRef.current;
+    if (!pending) {
       return;
     }
-    // One-shot: clear the hook before applying so the SAME pending edit can't be committed twice
-    // (e.g. the rail's exit animation keeps the inspector briefly mounted after a deselect — a
-    // follow-up selection must not re-apply the just-committed draft). The inspector re-registers
-    // its commit on its next render.
-    commitRef.current = null;
-    const next = commit(yamlRef.current);
+    const next = pending.commit(yamlRef.current);
     if (next !== yamlRef.current) {
       onYamlChange(next);
     }
@@ -483,7 +480,7 @@ export function VisualEditorPanel({
   useEffect(() => () => clearTimeout(flashTimer.current ?? undefined), []);
 
   const discardPendingEdit = useCallback(() => {
-    commitRef.current = null;
+    commitRef.current?.discard();
   }, []);
   const { undo, redo, canUndo, canRedo } = useEditHistory(
     yamlContent,
@@ -492,11 +489,25 @@ export function VisualEditorPanel({
     discardPendingEdit
   );
 
-  const flowNodes = useMemo(() => parsePipelineFlowTree(yamlContent).nodes, [yamlContent]);
+  const parsedFlow = useMemo(() => parsePipelineFlowTree(yamlContent), [yamlContent]);
+  const flowNodes = parsedFlow.nodes;
 
   // A freshly-started pipeline (only section labels / `none` placeholders) gets the
-  // floating "Start from a template" entry point.
-  const isPipelineEmpty = useMemo(() => isPipelineEmptyNodes(flowNodes), [flowNodes]);
+  // floating "Start from a template" entry point. Never over UNPARSEABLE YAML — that
+  // document is full of content, just invalid; offering a template would invite replacing it.
+  const isPipelineEmpty = useMemo(
+    () => !parsedFlow.error && isPipelineEmptyNodes(flowNodes),
+    [parsedFlow.error, flowNodes]
+  );
+
+  // If an undo/redo or external edit removes the selected node entirely, close the inspector —
+  // leaving it open on an empty state (with a stale draft) invites edits that can't land.
+  useEffect(() => {
+    if (selected && getComponentAt(yamlContent, selected.target) === undefined) {
+      commitRef.current?.discard();
+      setSelected(null);
+    }
+  }, [selected, yamlContent]);
 
   // Associate server lint hints with the nodes they belong to, so they show in
   // context (a badge on the node, full messages in the inspector).
@@ -619,7 +630,8 @@ export function VisualEditorPanel({
     }
     const comp = getComponentAt(yamlContent, pendingDelete);
     const label = comp && typeof comp.label === 'string' ? comp.label : undefined;
-    return label ? countResourceReferences(yamlContent, label) : 0;
+    // Kind-scoped: a same-labelled resource of the other kind must not inflate the warning.
+    return label ? countResourceReferences(yamlContent, label, resourceTargetKind(pendingDelete)) : 0;
   }, [pendingDelete, yamlContent]);
 
   const confirmDeleteNode = useCallback(() => {
@@ -627,10 +639,14 @@ export function VisualEditorPanel({
       const next = removeComponentAt(yamlContent, pendingDelete);
       if (next !== null) {
         onYamlChange(next);
+      } else {
+        // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. an anchor
+        // referenced elsewhere) — say so rather than silently keeping the node.
+        toast.error('Couldn’t remove this node — edit it in the YAML view instead.');
       }
     }
-    // Deleting discards any pending edit for the node (don't commit it), so clear the commit hook.
-    commitRef.current = null;
+    // Deleting discards any pending edit for the node (don't commit it).
+    commitRef.current?.discard();
     setSelected(null);
     setPendingDelete(null);
   }, [pendingDelete, yamlContent, onYamlChange]);
@@ -664,6 +680,13 @@ export function VisualEditorPanel({
       },
     };
     const onKeyDown = (e: KeyboardEvent) => {
+      // With one of the editor's own dialogs open (insert picker, delete confirm, palette, secrets)
+      // the canvas shortcuts stay inert — `/` would stack the palette, Backspace stage a second
+      // delete, ⌘Z mutate the YAML under a staged insert, Escape belongs to the dialog. Checked
+      // against component state, not a role="dialog" query, so a host-shell dialog can't disable us.
+      if (pendingInsert || pendingDelete || isPaletteOpen || isSecretsDialogOpen) {
+        return;
+      }
       const action = canvasKeyAction(e);
       if (action) {
         handlers[action](e);
@@ -671,7 +694,7 @@ export function VisualEditorPanel({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEditing, undo, redo, selected, selectNode]);
+  }, [isEditing, undo, redo, selected, selectNode, pendingInsert, pendingDelete, isPaletteOpen, isSecretsDialogOpen]);
 
   const handleInsertSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -682,6 +705,9 @@ export function VisualEditorPanel({
       }
       const result = buildInsertedYaml({ yaml: yamlContent, connectionName, connectionType, target, components });
       if (result === null) {
+        // The insert can fail if the slot's container vanished from the YAML (e.g. an undo while
+        // the picker was open) — say so rather than closing the dialog with nothing added.
+        toast.error(`Couldn’t add ${connectionName} — the insert position no longer exists.`);
         return;
       }
       onYamlChange(result.yaml);
@@ -700,10 +726,9 @@ export function VisualEditorPanel({
   );
 
   // The in-container "+" affordances: open the picker filtered to the slot's type. "Add case" on a
-  // switch opens it too (pick the case's first step, then it's wrapped as a case) — rather than
-  // dropping an empty case the user then has to find and fill. Commit any pending inspector edit
-  // first: the insert builds on the current YAML, and we'll select the new node (dropping the old
-  // selection), so the in-progress edit must be flushed now rather than lost.
+  // switch opens it too (pick the case's first step, then wrap it as a case). Commit any pending
+  // inspector edit first: the insert builds on the current YAML and we'll select the new node
+  // (dropping the old selection), so the in-progress edit must be flushed now rather than lost.
   const handleSlotInsert = useCallback(
     (payload: FlowInsertPayload) => {
       commitPending();
@@ -803,7 +828,7 @@ export function VisualEditorPanel({
       : pendingInsert?.context === 'switchCase'
         ? pendingInsert.section
         : undefined;
-  let insertTitle = 'Insert a step';
+  let insertTitle = 'Insert a step or resource';
   if (isResourceInsert) {
     insertTitle = `Add ${pendingInsert.kind === 'cache' ? 'cache' : 'rate limit'} resource`;
   } else if (slotKind) {
@@ -811,201 +836,208 @@ export function VisualEditorPanel({
   }
 
   return (
-    <div className="flex h-full w-full">
-      <div className="relative min-w-0 flex-1">
-        {/* Don't mount the canvas until the config is loaded — otherwise its parse debounce seeds
+    // reducedMotion="user" collapses the rail/flash animations for prefers-reduced-motion —
+    // the global CSS rule can't reach these JS-driven motion/react animations.
+    <MotionConfig reducedMotion="user">
+      <div className="flex h-full w-full">
+        <div className="relative min-w-0 flex-1">
+          {/* Don't mount the canvas until the config is loaded — otherwise its parse debounce seeds
             with the empty pre-hydration config and briefly renders (and fits) a placeholder graph. */}
-        {isLoading ? (
-          <PipelineFlowSkeleton />
-        ) : (
-          <>
-            <PipelineFlowCanvas
-              configYaml={yamlContent}
-              flashNodeIds={flash.ids}
-              flashToken={flash.token}
-              focusNodeId={focus.id || undefined}
-              focusToken={focus.token}
-              lintErrorsByNode={lintMessagesByNode}
-              onAddConnector={isEditing && onAddConnector ? handleAddConnectorSection : undefined}
-              onAddSasl={isEditing ? onAddSasl : undefined}
-              onAddTopic={isEditing ? onAddTopic : undefined}
-              onClearSelection={handleClearSelection}
-              onInsert={isEditing ? handleSpineInsert : undefined}
-              onSelectNode={handleCanvasSelectNode}
-              onSlotInsert={isEditing ? handleSlotInsert : undefined}
-              selectedNodeId={selected?.id}
-              selectedTargetKind={selected?.target.kind}
-              unsavedNodeIds={unsavedNodeIds}
-            />
-            {isEditing ? (
-              <TooltipProvider>
-                <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
-                          <Undo2 />
-                        </Button>
-                      }
-                    />
-                    <TooltipContent>
-                      <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
-                          <Redo2 />
-                        </Button>
-                      }
-                    />
-                    <TooltipContent>
-                      <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </TooltipProvider>
-            ) : null}
-            <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
-              <PipelineProblemsPanel
-                missingSecrets={missingSecrets}
-                onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-                onSelectProblem={(id, target, caseTarget) => selectNode({ id, target, caseTarget })}
-                problems={problems}
+          {isLoading ? (
+            <PipelineFlowSkeleton />
+          ) : (
+            <>
+              <PipelineFlowCanvas
+                configYaml={yamlContent}
+                flashNodeIds={flash.ids}
+                flashToken={flash.token}
+                focusNodeId={focus.id || undefined}
+                focusToken={focus.token}
+                lintErrorsByNode={lintMessagesByNode}
+                onAddConnector={isEditing && onAddConnector ? handleAddConnectorSection : undefined}
+                onAddSasl={isEditing ? onAddSasl : undefined}
+                onAddTopic={isEditing ? onAddTopic : undefined}
+                onClearSelection={handleClearSelection}
+                onInsert={isEditing ? handleSpineInsert : undefined}
+                onSelectNode={handleCanvasSelectNode}
+                onSlotInsert={isEditing ? handleSlotInsert : undefined}
+                selectedNodeId={selected?.id}
+                selectedTargetKind={selected?.target.kind}
+                unsavedNodeIds={unsavedNodeIds}
               />
-              <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
-            </div>
-            {onBrowseTemplates ? (
-              <TemplateGalleryCta
-                className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
-                hint={
-                  <>
-                    or press{' '}
-                    <Kbd size="xs" variant="filled">
-                      /
-                    </Kbd>{' '}
-                    to search nodes &amp; actions
-                  </>
-                }
-                onBrowseTemplates={onBrowseTemplates}
-                show={isEditing && isPipelineEmpty}
-              />
-            ) : null}
-          </>
-        )}
-      </div>
-
-      {/* Inspector rail (Figma-style): mounted only when a node is selected. We animate
-          its WIDTH (the flex slot) rather than a transform, so the canvas — and its
-          right-anchored minimap / zoom controls — glide in lockstep instead of snapping
-          when the rail finishes closing. The content is pinned to the rail's right edge
-          at a fixed width so it doesn't reflow while the width animates. */}
-      <AnimatePresence>
-        {selected ? (
-          <motion.aside
-            animate={{ width: 384, opacity: 1 }}
-            className="relative shrink-0 overflow-hidden border-border border-l bg-background"
-            exit={{ width: 0, opacity: 0 }}
-            initial={{ width: 0, opacity: 0 }}
-            key="node-inspector"
-            transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
-          >
-            {/* Fill the rail's actual width (so the content never leaves a gap), with a
-                min-width so it clips rather than reflows while the width animates. */}
-            <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
-              <NodeInspector
-                caseTarget={selected.caseTarget}
-                childItems={childItems}
-                commitRef={isEditing ? commitRef : undefined}
-                components={components}
-                lintHints={lintByNode.get(selected.id)}
-                onApply={onYamlChange}
-                onClose={() => selectNode(null)}
-                onCreateResource={isEditing ? handleRequestCreateResource : undefined}
-                onDelete={isEditing ? setPendingDelete : undefined}
-                onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
-                onSelectChild={(item) => {
-                  selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget });
-                  // Recenter on the child so the newly selected node is in view (like the palette jump).
-                  setFocus((f) => ({ id: item.id, token: f.token + 1 }));
-                }}
-                readOnly={!isEditing}
-                target={selected.target}
-                yaml={yamlContent}
-              />
-            </div>
-          </motion.aside>
-        ) : null}
-      </AnimatePresence>
-
-      <AddConnectorDialog
-        components={componentList}
-        connectorType={insertTypes}
-        isOpen={pendingInsert !== null}
-        onAddConnector={handleInsertSelected}
-        onCloseAddConnector={() => setPendingInsert(null)}
-        searchPlaceholder={
-          isResourceInsert ? 'Search caches, rate limits…' : slotKind ? `Search ${slotKind}s…` : 'Search components…'
-        }
-        title={insertTitle}
-      />
-
-      <AddSecretsDialog
-        existingSecrets={existingSecrets}
-        isOpen={isSecretsDialogOpen}
-        missingSecrets={missingSecrets}
-        onClose={() => setIsSecretsDialogOpen(false)}
-        onSecretsCreated={() => setIsSecretsDialogOpen(false)}
-        onUpdateEditorContent={handleRenameSecretReferences}
-      />
-
-      <CanvasCommandPalette
-        canRedo={canRedo}
-        canUndo={canUndo}
-        nodes={flowNodes}
-        onJumpToNode={handleJumpToNode}
-        onOpenChange={setIsPaletteOpen}
-        onRedo={isEditing ? redo : undefined}
-        onUndo={isEditing ? undo : undefined}
-        onViewSelectedInYaml={selected && onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
-        open={isPaletteOpen}
-      />
-
-      <AlertDialog onOpenChange={(open) => (open ? undefined : setPendingDelete(null))} open={pendingDelete !== null}>
-        <AlertDialogContent>
-          <AlertDialogHeader className="text-left">
-            <AlertDialogTitle>Remove this node?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingDeleteName ? (
-                <>
-                  This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You
-                  can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.
-                </>
-              ) : (
-                <>This removes the node from the pipeline. You can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.</>
-              )}
-            </AlertDialogDescription>
-            {pendingDeleteRefCount > 0 ? (
-              <div className="mt-1 flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-sm">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
-                <span>
-                  This resource is still referenced by{' '}
-                  <span className="font-semibold">
-                    {pendingDeleteRefCount} {pendingDeleteRefCount === 1 ? 'node' : 'nodes'}
-                  </span>
-                  . Removing it leaves {pendingDeleteRefCount === 1 ? 'that reference' : 'those references'} pointing at
-                  a missing resource.
-                </span>
+              {isEditing ? (
+                <TooltipProvider>
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
+                            <Undo2 />
+                          </Button>
+                        }
+                      />
+                      <TooltipContent>
+                        <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
+                            <Redo2 />
+                          </Button>
+                        }
+                      />
+                      <TooltipContent>
+                        <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              ) : null}
+              <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
+                <PipelineProblemsPanel
+                  missingSecrets={missingSecrets}
+                  onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
+                  onSelectProblem={(id, target, caseTarget) => {
+                    // Select AND recenter — the offending node may be off-screen.
+                    selectNode({ id, target, caseTarget });
+                    setFocus((f) => ({ id, token: f.token + 1 }));
+                  }}
+                  problems={problems}
+                />
+                <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
               </div>
-            ) : null}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
-            <AlertDialogAction onClick={confirmDeleteNode} render={<Button variant="destructive">Remove</Button>} />
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+              {onBrowseTemplates ? (
+                <TemplateGalleryCta
+                  className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
+                  hint={
+                    <>
+                      or press{' '}
+                      <Kbd size="xs" variant="filled">
+                        /
+                      </Kbd>{' '}
+                      to search nodes &amp; actions
+                    </>
+                  }
+                  onBrowseTemplates={onBrowseTemplates}
+                  show={isEditing && isPipelineEmpty}
+                />
+              ) : null}
+            </>
+          )}
+        </div>
+
+        {/* Inspector rail: mounted only when a node is selected. Animate its WIDTH (the flex slot),
+          not a transform, so the canvas and its right-anchored minimap/zoom controls glide in
+          lockstep instead of snapping when the rail closes. The content is pinned at a fixed width
+          so it doesn't reflow while the width animates. */}
+        <AnimatePresence>
+          {selected ? (
+            <motion.aside
+              animate={{ width: 384, opacity: 1 }}
+              className="relative shrink-0 overflow-hidden border-border border-l bg-background"
+              exit={{ width: 0, opacity: 0 }}
+              initial={{ width: 0, opacity: 0 }}
+              key="node-inspector"
+              transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+            >
+              {/* Fill the rail's actual width (so the content never leaves a gap), with a
+                min-width so it clips rather than reflows while the width animates. */}
+              <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
+                <NodeInspector
+                  caseTarget={selected.caseTarget}
+                  childItems={childItems}
+                  commitRef={isEditing ? commitRef : undefined}
+                  components={components}
+                  lintHints={lintByNode.get(selected.id)}
+                  onApply={onYamlChange}
+                  onClose={() => selectNode(null)}
+                  onCreateResource={isEditing ? handleRequestCreateResource : undefined}
+                  onDelete={isEditing ? setPendingDelete : undefined}
+                  onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+                  onSelectChild={(item) => {
+                    selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget });
+                    // Recenter on the child so the newly selected node is in view (like the palette jump).
+                    setFocus((f) => ({ id: item.id, token: f.token + 1 }));
+                  }}
+                  readOnly={!isEditing}
+                  target={selected.target}
+                  yaml={yamlContent}
+                />
+              </div>
+            </motion.aside>
+          ) : null}
+        </AnimatePresence>
+
+        <AddConnectorDialog
+          components={componentList}
+          connectorType={insertTypes}
+          isOpen={pendingInsert !== null}
+          onAddConnector={handleInsertSelected}
+          onCloseAddConnector={() => setPendingInsert(null)}
+          searchPlaceholder={
+            isResourceInsert ? 'Search caches, rate limits…' : slotKind ? `Search ${slotKind}s…` : 'Search components…'
+          }
+          title={insertTitle}
+        />
+
+        <AddSecretsDialog
+          existingSecrets={existingSecrets}
+          isOpen={isSecretsDialogOpen}
+          missingSecrets={missingSecrets}
+          onClose={() => setIsSecretsDialogOpen(false)}
+          onSecretsCreated={() => setIsSecretsDialogOpen(false)}
+          onUpdateEditorContent={handleRenameSecretReferences}
+        />
+
+        <CanvasCommandPalette
+          canRedo={canRedo}
+          canUndo={canUndo}
+          nodes={flowNodes}
+          onJumpToNode={handleJumpToNode}
+          onOpenChange={setIsPaletteOpen}
+          onRedo={isEditing ? redo : undefined}
+          onUndo={isEditing ? undo : undefined}
+          onViewSelectedInYaml={selected && onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+          open={isPaletteOpen}
+        />
+
+        <AlertDialog onOpenChange={(open) => (open ? undefined : setPendingDelete(null))} open={pendingDelete !== null}>
+          <AlertDialogContent>
+            <AlertDialogHeader className="text-left">
+              <AlertDialogTitle>Remove this node?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingDeleteName ? (
+                  <>
+                    This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You
+                    can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.
+                  </>
+                ) : (
+                  <>This removes the node from the pipeline. You can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.</>
+                )}
+              </AlertDialogDescription>
+              {pendingDeleteRefCount > 0 ? (
+                <div className="mt-1 flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-sm">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
+                  <span>
+                    This resource is still referenced by{' '}
+                    <span className="font-semibold">
+                      {pendingDeleteRefCount} {pendingDeleteRefCount === 1 ? 'node' : 'nodes'}
+                    </span>
+                    . Removing it leaves {pendingDeleteRefCount === 1 ? 'that reference' : 'those references'} pointing
+                    at a missing resource.
+                  </span>
+                </div>
+              ) : null}
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
+              <AlertDialogAction onClick={confirmDeleteNode} render={<Button variant="destructive">Remove</Button>} />
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </MotionConfig>
   );
 }

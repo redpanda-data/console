@@ -39,7 +39,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type MutableRefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
@@ -56,6 +57,7 @@ import {
   getComponentAt,
   listResourceLabels,
   renameResourceReferences,
+  resourceTargetKind,
   setComponentAt,
 } from '../utils/yaml';
 
@@ -118,10 +120,17 @@ type NodeInspectorProps = {
   childItems?: InspectorChildItem[];
   /** Navigate the inspector to a child node. */
   onSelectChild?: (item: InspectorChildItem) => void;
-  /** Populated by the inspector with a pure `(yaml) => yaml` that commits ALL pending edits for the
-      selected node (component + routing condition, threaded so they don't clobber). The panel calls
-      it before leaving the node and on pipeline save — there is no per-node Apply button. */
-  commitRef?: MutableRefObject<((yaml: string) => string) | null>;
+  /** The inspector registers the selected node's pending-edit hooks here (see PendingNodeCommit).
+      The panel commits before leaving the node and on pipeline save — no per-node Apply button. */
+  commitRef?: MutableRefObject<PendingNodeCommit | null>;
+};
+
+/** The inspector's pending-edit hooks, registered into the panel's `commitRef`. */
+export type PendingNodeCommit = {
+  /** Apply the node's pending edits into `yaml` and consume them (idempotent once consumed). */
+  commit: (yaml: string) => string;
+  /** Drop the pending edits without applying (delete / undo / redo). */
+  discard: () => void;
 };
 
 // The lint message (if any) that falls on a switch case's routing `check` line — so the
@@ -171,29 +180,41 @@ export function NodeInspector({
   // The routing condition for a case-entry node, read from its switch case.
   const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
 
-  // Pending edits, reported by the active editors as they change (null when clean). Refs (not
-  // state) so per-keystroke reporting doesn't re-render the inspector. `component` is what the form
-  // / raw / switch-case editor edits (applied at `target`); `condition` is the routing-condition
-  // section (applied at `caseTarget`).
+  // Pending edits reported by the active editors (null when clean). Refs, not state, so
+  // per-keystroke reporting doesn't re-render. `component` is edited by the form/raw/switch-case
+  // editor (applied at `target`); `condition` is the routing-condition section (at `caseTarget`).
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
   const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
   // The resource's original label, captured for the rename cascade when committing a resource edit.
   const resourceLabel0 =
     target?.kind === 'resource' && component && typeof component.label === 'string' ? component.label : undefined;
 
-  // Commit ALL pending edits for this node into `yaml`, returning the next YAML. Condition first
-  // (it replaces the whole case, preserving the body), then the component (written into that case),
-  // so a node with both edits commits atomically without one clobbering the other.
+  // Commit ALL pending edits for this node into `yaml`. Condition first (it replaces the whole
+  // case, preserving the body), then the component written into that case, so a node with both
+  // commits atomically without one clobbering the other. Consumes drafts as it applies them, so
+  // re-calling is a no-op until the next edit — callers can flush anywhere (deselect/save/insert).
   const commit = useCallback(
     (input: string): string => {
       let next = input;
       const cond = conditionDraftRef.current;
       if (cond && caseTarget) {
-        next = setComponentAt(next, caseTarget, cond) ?? next;
+        const applied = setComponentAt(next, caseTarget, cond);
+        if (applied === null) {
+          // Write can fail on YAML the surgical editor can't safely rewrite — keep the draft
+          // (next flush retries) and tell the user rather than silently dropping it.
+          toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
+        } else {
+          next = applied;
+          conditionDraftRef.current = null;
+        }
       }
       const comp = componentDraftRef.current;
       if (comp && target) {
-        next = applyComponentDraft(next, target, comp, resourceLabel0);
+        const applied = applyComponentDraft(next, target, comp, resourceLabel0);
+        if (applied !== null) {
+          next = applied;
+          componentDraftRef.current = null;
+        }
       }
       return next;
     },
@@ -203,7 +224,13 @@ export function NodeInspector({
     if (!commitRef) {
       return;
     }
-    commitRef.current = commit;
+    commitRef.current = {
+      commit,
+      discard: () => {
+        conditionDraftRef.current = null;
+        componentDraftRef.current = null;
+      },
+    };
     return () => {
       commitRef.current = null;
     };
@@ -214,8 +241,8 @@ export function NodeInspector({
     componentDraftRef.current = null;
     conditionDraftRef.current = null;
   }, [target, caseTarget]);
-  // A lint problem that lands on the condition's `check` line — so the condition field can show
-  // its own error state (red), not just the banner at the top.
+  // A lint problem on the condition's `check` line, so the condition field shows its own error
+  // state (red), not just the top banner.
   const conditionError = useMemo(
     () => (caseTarget ? lintMessageOnCaseCheck(yaml, caseTarget, lintHints) : undefined),
     [yaml, caseTarget, lintHints]
@@ -255,13 +282,13 @@ export function NodeInspector({
   const kindLabel = COMPONENT_TYPE_LABEL[kind] ?? 'Component';
   const docsUrl = getConnectorDocsUrl(kind, componentName);
   const useForm = (spec?.config?.children?.length ?? 0) > 0;
-  // The destructive remove action now lives in the footer (the header's trailing slot
-  // is the close X). Disabled in read-only / when no delete handler is wired.
+  // Delete lives in the header's 3-dot menu — disabled in read-only or with no delete handler.
   const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
 
   // A resource's own label, and how many components reference it (shown as "Used by N").
+  // Kind-scoped: a same-labelled resource of the OTHER kind must not inflate the count.
   const resourceLabel = target.kind === 'resource' && typeof component.label === 'string' ? component.label : undefined;
-  const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel) : 0;
+  const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceTargetKind(target)) : 0;
 
   // Resource labels for the `resource:` dropdowns in this component's form.
   const resourceLabels: Record<ResourceKind, string[]> = {
@@ -314,9 +341,8 @@ export function NodeInspector({
         <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
       ) : null}
       {(() => {
-        // A case-entry node routes "WHEN <check>" — its condition is edited at the top of the
-        // panel (its own target). For the form editor it scrolls WITH the fields (headerSlot);
-        // the rarer raw/read-only case-entries render it above the editor.
+        // A case-entry node's condition is edited at the top of the panel (its own target). The
+        // form editor scrolls it WITH the fields (headerSlot); raw/read-only render it above.
         const conditionSection =
           caseTarget && caseObject ? (
             <CaseConditionSection
@@ -353,6 +379,7 @@ export function NodeInspector({
               }}
               onCreateResource={onCreateResource}
               onSelectChild={onSelectChild}
+              requireLabel={target.kind === 'resource'}
               resourceLabels={resourceLabels}
               spec={spec}
               value={component}
@@ -376,8 +403,8 @@ export function NodeInspector({
   );
 }
 
-// Secondary node actions (View in YAML, Delete) tucked into a 3-dot menu in the
-// header, so the destructive Delete sits well away from the footer's Apply/Save.
+// Secondary node actions (View in YAML, Delete) in a 3-dot menu, keeping the
+// destructive Delete out of the way of the header's primary controls.
 const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () => void; onDelete?: () => void }) => {
   if (!(onOpenInYaml || onDelete)) {
     return null;
@@ -430,31 +457,35 @@ const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
   </div>
 );
 
-// Write a component-config draft at `target`, cascading a resource label rename to every component
-// that references it (so the link is never silently broken). Extracted from the inspector's commit
-// to keep that callback under the complexity budget.
+// Write a component-config draft at `target`, cascading a resource-label rename to every component
+// that references it (so the link is never silently broken).
 function applyComponentDraft(
   yaml: string,
   target: EditTarget,
   config: Record<string, unknown>,
   originalLabel?: string
-): string {
+): string | null {
   const applied = setComponentAt(yaml, target, config);
   if (applied === null) {
-    return yaml;
+    // Write can fail on YAML the surgical editor can't safely rewrite (e.g. an anchor referenced
+    // elsewhere). Toast AND return null so the caller keeps the draft (next flush retries) rather
+    // than consuming an edit that never landed.
+    toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
+    return null;
   }
   if (target.kind === 'resource' && originalLabel) {
     const nextLabel = typeof config.label === 'string' ? config.label : undefined;
     if (nextLabel && nextLabel !== originalLabel) {
-      return renameResourceReferences(applied, originalLabel, nextLabel) ?? applied;
+      // Kind-scoped: renaming a cache must not rewrite a same-labelled rate limit's references.
+      return renameResourceReferences(applied, originalLabel, nextLabel, resourceTargetKind(target)) ?? applied;
     }
   }
   return applied;
 }
 
-// Apply a routing-condition `check` to a switch case, preserving key order: a non-empty check
-// is set in place; an empty one is omitted (the default/else case). Rebuilds rather than
-// `delete`-ing, so it stays out of the YAML's way and clean per the linter.
+// Apply a routing-condition `check` to a switch case, preserving key order: a non-empty check is
+// set in place, an empty one omitted (the default/else case). Rebuilds rather than `delete`-ing,
+// to stay clean per the linter.
 function caseWithCheck(caseObject: Record<string, unknown>, check: string): Record<string, unknown> {
   const trimmed = check.trim();
   const next: Record<string, unknown> = {};
@@ -510,6 +541,7 @@ const SwitchCaseEditor = ({
   readOnly?: boolean;
 }) => {
   const { check, setCheck } = useCaseCheckDraft(caseObject, onConfigChange);
+  const inputId = useId();
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -541,10 +573,13 @@ const SwitchCaseEditor = ({
         </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-4">
-        <Label className="font-medium text-sm">Condition (check)</Label>
+        <Label className="font-medium text-sm" htmlFor={inputId}>
+          Condition (check)
+        </Label>
         <Input
           className="font-mono"
           disabled={readOnly}
+          id={inputId}
           onChange={(e) => setCheck(e.target.value)}
           placeholder='e.g. this.region == "us"'
           value={check}
@@ -557,10 +592,9 @@ const SwitchCaseEditor = ({
   );
 };
 
-// The routing condition of a case-entry node, edited inline at the TOP of that node's
-// inspector panel (amber/gold accent, matching the on-canvas condition). Writes the case's `check`;
-// an empty value means the default (else) case. Reported as a draft and auto-committed with the rest
-// of the node's edits on leave / save — no separate Apply.
+// The routing condition of a case-entry node, edited inline at the TOP of its inspector panel
+// (condition accent, matching the on-canvas node). Writes the case's `check`; empty means the
+// default (else) case. Reported as a draft, auto-committed with the node's other edits.
 const CaseConditionSection = ({
   caseObject,
   onConfigChange,
@@ -574,11 +608,15 @@ const CaseConditionSection = ({
   error?: string;
 }) => {
   const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
+  const inputId = useId();
   return (
     <div className="border-condition/30 border-b bg-condition/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
         <Split className="size-3.5 shrink-0 text-condition" />
-        <Label className="font-semibold text-[11px] text-condition uppercase leading-none tracking-wide">
+        <Label
+          className="font-semibold text-[11px] text-condition uppercase leading-none tracking-wide"
+          htmlFor={inputId}
+        >
           Routing condition
         </Label>
         <TooltipProvider>
@@ -605,12 +643,13 @@ const CaseConditionSection = ({
         aria-invalid={error ? true : undefined}
         className="w-full font-mono"
         disabled={readOnly}
+        id={inputId}
         onChange={(e) => setCheck(e.target.value)}
         placeholder='e.g. this.region == "us"'
         value={check}
       />
-      {/* The field's own error message, so the problem is shown right where it's fixed (not
-          only in the banner). Hidden once the user starts editing — they're addressing it. */}
+      {/* The field's own error, shown right where it's fixed (not only in the banner). Hidden
+          once the user starts editing — they're addressing it. */}
       {error && !dirty ? (
         <Text className="flex items-center gap-1 pt-1.5 text-destructive" variant="bodySmall">
           <AlertCircle className="size-3.5 shrink-0" />
@@ -749,9 +788,8 @@ const RawComponentEditor = ({
     setDraft(initial);
   }, [initial]);
 
-  // Parse the draft live: a valid mapping is reported as the node's pending config (auto-committed
-  // on leave / save); a clean draft or a parse error reports nothing (so invalid YAML is never
-  // committed — the inline error tells the user why nothing was applied).
+  // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
+  // error reports nothing, so invalid YAML is never committed (the inline error says why).
   useEffect(() => {
     if (draft === initial) {
       setError(null);

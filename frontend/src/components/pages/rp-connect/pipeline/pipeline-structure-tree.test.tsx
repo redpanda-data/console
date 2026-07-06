@@ -10,7 +10,7 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import { render, screen } from 'test-utils';
+import { act, render, screen } from 'test-utils';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PipelineStructureTree } from './pipeline-structure-tree';
@@ -69,9 +69,80 @@ describe('PipelineStructureTree', () => {
   it('collapses a group to hide its descendants', async () => {
     render(<PipelineStructureTree configYaml={NESTED} />);
     expect(screen.getByText('http')).toBeInTheDocument();
-    // Toggles appear in document order: switch is the first collapsible group.
-    await userEvent.click(screen.getAllByLabelText('Collapse')[0]);
+    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+    expect(switchRow).toHaveAttribute('aria-expanded', 'true');
+    act(() => switchRow.focus());
+    await userEvent.keyboard('{ArrowLeft}');
     expect(screen.queryByText('http')).not.toBeInTheDocument();
+    expect(switchRow).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByText('switch')).toBeInTheDocument();
+  });
+
+  it('toggles a group via the chevron without selecting the node', async () => {
+    const onSelectNode = vi.fn();
+    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+    // The chevron is presentational (the row owns the ARIA expansion), so target it directly.
+    const chevron = switchRow.querySelector('button');
+    expect(chevron).not.toBeNull();
+    await userEvent.click(chevron as HTMLElement);
+    expect(screen.queryByText('http')).not.toBeInTheDocument();
+    // Collapsing must not also select the node.
+    expect(onSelectNode).not.toHaveBeenCalled();
+  });
+
+  it('exposes rows as treeitems with level, position and expansion state', () => {
+    render(<PipelineStructureTree configYaml={NESTED} />);
+    // One labelled tree per non-empty section, so role="tree" owns only treeitems
+    // (headers / Add buttons live between the trees).
+    expect(screen.getByRole('tree', { name: 'PROCESSORS' })).toBeInTheDocument();
+    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+    expect(switchRow).toHaveAttribute('aria-level', '1');
+    expect(switchRow).toHaveAttribute('aria-posinset', '2');
+    expect(switchRow).toHaveAttribute('aria-setsize', '2');
+    expect(switchRow).toHaveAttribute('aria-expanded', 'true');
+    const httpRow = screen.getByRole('treeitem', { name: 'http' });
+    expect(httpRow).toHaveAttribute('aria-level', '4');
+    // Leaves expose no aria-expanded.
+    expect(httpRow).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('moves focus between visible rows with the arrow, Home and End keys', async () => {
+    render(<PipelineStructureTree configYaml={NESTED} />);
+    const first = screen.getByRole('treeitem', { name: 'kafka_franz' });
+    // Roving tabindex: only the first row is initially tabbable.
+    expect(first).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('treeitem', { name: 'mapping' })).toHaveAttribute('tabindex', '-1');
+    act(() => first.focus());
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('treeitem', { name: 'mapping' })).toHaveFocus();
+    await userEvent.keyboard('{End}');
+    expect(screen.getByRole('treeitem', { name: 'drop' })).toHaveFocus();
+    await userEvent.keyboard('{Home}');
+    expect(first).toHaveFocus();
+  });
+
+  it('moves into an expanded group with ArrowRight and to the parent with ArrowLeft', async () => {
+    render(<PipelineStructureTree configYaml={NESTED} />);
+    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+    act(() => switchRow.focus());
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.getByRole('treeitem', { name: 'case 1' })).toHaveFocus();
+    // From a leaf, ArrowLeft climbs to the parent group.
+    const httpRow = screen.getByRole('treeitem', { name: 'http' });
+    act(() => httpRow.focus());
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('treeitem', { name: 'branch' })).toHaveFocus();
+  });
+
+  it('selects the focused row with Enter', async () => {
+    const onSelectNode = vi.fn();
+    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+    const httpRow = screen.getByRole('treeitem', { name: 'http' });
+    act(() => httpRow.focus());
+    await userEvent.keyboard('{Enter}');
+    expect(onSelectNode).toHaveBeenCalledTimes(1);
+    const [highlightId, editableId] = onSelectNode.mock.calls[0];
+    expect(highlightId).toBe(editableId);
   });
 });

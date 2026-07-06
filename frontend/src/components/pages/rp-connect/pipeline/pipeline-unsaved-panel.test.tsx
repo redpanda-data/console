@@ -50,4 +50,37 @@ describe('PipelineUnsavedPanel', () => {
     render(<PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={vi.fn()} />);
     expect(screen.getByTestId('pipeline-unsaved-chip')).toHaveTextContent('1 unsaved');
   });
+
+  test('dismisses the expanded list on Escape', async () => {
+    const user = userEvent.setup();
+    render(<PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={vi.fn()} />);
+
+    await user.click(screen.getByTestId('pipeline-unsaved-chip'));
+    expect(screen.getByTestId('pipeline-unsaved-list')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByTestId('pipeline-unsaved-list')).not.toBeInTheDocument();
+  });
+
+  test('dismisses the expanded list on an outside click', async () => {
+    const user = userEvent.setup();
+    render(
+      <div>
+        <button data-testid="outside" type="button">
+          outside
+        </button>
+        <PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={vi.fn()} />
+      </div>
+    );
+
+    await user.click(screen.getByTestId('pipeline-unsaved-chip'));
+    expect(screen.getByTestId('pipeline-unsaved-list')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('outside'));
+    expect(screen.queryByTestId('pipeline-unsaved-list')).not.toBeInTheDocument();
+
+    // Clicking inside the panel (the chip re-toggle aside, rows) must not count as outside.
+    await user.click(screen.getByTestId('pipeline-unsaved-chip'));
+    expect(screen.getByTestId('pipeline-unsaved-list')).toBeInTheDocument();
+  });
 });

@@ -1,7 +1,7 @@
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, it } from 'vitest';
 
-import { asciidocToMarkdown, byProminence } from './connect-command-palette';
+import { asciidocToMarkdown, buildEmptyMessage, byProminence } from './connect-command-palette';
 import type { ConnectComponentSpec } from '../types/schema';
 
 const spec = (name: string, status: ComponentStatus = ComponentStatus.STABLE): ConnectComponentSpec =>
@@ -52,5 +52,40 @@ describe('asciidocToMarkdown', () => {
 
   it('converts AsciiDoc bullets to Markdown list items', () => {
     expect(asciidocToMarkdown('* first\n* second')).toBe('- first\n- second');
+  });
+});
+
+describe('buildEmptyMessage', () => {
+  it('reports an empty catalog when there is no query', () => {
+    expect(buildEmptyMessage('')).toBe('No components available.');
+    expect(buildEmptyMessage('', ['processor'])).toBe('No components available.');
+  });
+
+  it('reports a plain miss without type locking', () => {
+    expect(buildEmptyMessage('flurb')).toBe('No components match “flurb”.');
+  });
+
+  it('names the locked type when the slot restricts the catalog', () => {
+    expect(buildEmptyMessage('flurb', ['processor'])).toBe('No processors match “flurb”.');
+    expect(buildEmptyMessage('flurb', ['rate_limit'])).toBe('No rate limits match “flurb”.');
+  });
+
+  it('joins multiple locked types', () => {
+    expect(buildEmptyMessage('flurb', ['cache', 'rate_limit'])).toBe('No caches or rate limits match “flurb”.');
+  });
+
+  it('points at a single out-of-scope type the query exists as', () => {
+    expect(buildEmptyMessage('generate', ['processor'], ['input'])).toBe(
+      'No processors match “generate” — it exists as an input.'
+    );
+  });
+
+  it('lists multiple out-of-scope types with articles and "or"', () => {
+    expect(buildEmptyMessage('kafka_franz', ['processor'], ['input', 'output'])).toBe(
+      'No processors match “kafka_franz” — it exists as an input or an output.'
+    );
+    expect(buildEmptyMessage('redis', ['input'], ['cache', 'processor', 'rate_limit'])).toBe(
+      'No inputs match “redis” — it exists as a cache, a processor or a rate limit.'
+    );
   });
 });

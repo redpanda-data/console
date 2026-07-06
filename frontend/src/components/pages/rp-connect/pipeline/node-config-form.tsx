@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -24,8 +25,8 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useContext, useEffect } from 'react';
+import { AlertCircle, ChevronDown, ChevronRight, Eye, EyeOff, Plus } from 'lucide-react';
+import { createContext, useContext, useEffect, useId, useState } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -167,10 +168,12 @@ const ResourceReferenceSelect = ({
   kind,
   value,
   onChange,
+  id,
 }: {
   kind: ResourceKind;
   value: string;
   onChange: (value: unknown) => void;
+  id?: string;
 }) => {
   const { labels, onCreateResource } = useContext(ResourceFieldContext);
   const options = labels[kind];
@@ -187,7 +190,7 @@ const ResourceReferenceSelect = ({
       }}
       value={current}
     >
-      <SelectTrigger>
+      <SelectTrigger id={id}>
         <SelectValue placeholder="Select a resource…" />
       </SelectTrigger>
       <SelectContent>
@@ -429,11 +432,18 @@ type BuildArgs = {
   showRaw: boolean;
   data: FormValues;
   dirty: DirtyState;
+  /** Resources are referenced by label — never drop it, even if the field is cleared. */
+  requireLabel?: boolean;
 };
 
 function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data: FormValues, dirty: DirtyState): void {
   for (const { spec, path, key } of scalars) {
     if (!dirty.fields?.[key]) {
+      continue;
+    }
+    // A malformed numeric literal is flagged on the field and NOT committed — coercing it would
+    // silently truncate (`10x` → 10) or drop the value; the saved value is kept until it's fixed.
+    if (numericHint(spec, data.fields[key])) {
       continue;
     }
     const coerced = coerceScalar(spec, data.fields[key]);
@@ -470,18 +480,22 @@ function buildComponentEntry({
   showRaw,
   data,
   dirty,
+  requireLabel,
 }: BuildArgs): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   if (data.label.trim()) {
     next.label = data.label.trim();
+  } else if (requireLabel && typeof value.label === 'string' && value.label) {
+    // Clearing a resource's label would strand every `resource: <label>` reference —
+    // keep the saved label (the field shows an inline explanation).
+    next.label = value.label;
   }
 
   const original = value[componentName];
-  // A component whose value isn't a plain object — e.g. a `switch`/`try`/`catch`/
-  // `for_each` whose value is a list of cases/processors, or a scalar-valued component.
-  // The object-field form can't model these (their nested items are edited on the
-  // canvas), so preserve the value verbatim and only patch the label. Rebuilding it
-  // here would drop the children (it would write `{}` over the array).
+  // A component whose value isn't a plain object — a `switch`/`try`/`catch`/`for_each` list of
+  // cases/processors, or a scalar. The object-field form can't model these (nested items are
+  // edited on the canvas), so preserve the value verbatim and only patch the label — rebuilding
+  // would write `{}` over the array and drop the children.
   if (!(original && typeof original === 'object') || Array.isArray(original)) {
     next[componentName] = original ?? {};
     return next;
@@ -510,11 +524,13 @@ function buildComponentEntry({
 
 // ---- field rendering ----------------------------------------------------------
 
-const FieldLabel = ({ spec }: { spec: RawFieldSpec }) => (
+const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
-    <Label className="font-medium text-sm">{spec.name}</Label>
+    <Label className="font-medium text-sm" htmlFor={htmlFor}>
+      {spec.name}
+    </Label>
     {checkRequired(spec) ? (
-      <span className="text-destructive text-xs" title="Required">
+      <span aria-hidden className="text-destructive text-xs" title="Required">
         *
       </span>
     ) : null}
@@ -534,27 +550,69 @@ const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
     </Text>
   ) : null;
 
+// Field names that plausibly hold credentials — masked by default so a screen-share
+// doesn't leak them (the schema has no secret flag, so this is a name heuristic).
+const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/i;
+
+const isSecretField = (spec: RawFieldSpec): boolean =>
+  spec.type === 'string' && !hasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
+
+// A masked text input with a reveal toggle. A `${…}` value is an interpolation
+// (e.g. a `${secrets.NAME}` reference), not a credential — shown in the clear.
+const SecretInput = (props: { id?: string; value: string; onChange: (value: unknown) => void; required?: boolean }) => {
+  const [show, setShow] = useState(false);
+  const isReference = props.value.includes('${');
+  return (
+    <div className="flex items-center gap-1.5">
+      <Input
+        aria-required={props.required || undefined}
+        autoComplete="off"
+        id={props.id}
+        onChange={props.onChange}
+        type={show || isReference ? 'text' : 'password'}
+        value={props.value}
+      />
+      {isReference ? null : (
+        <Button
+          aria-label={show ? 'Hide value' : 'Show value'}
+          onClick={() => setShow((v) => !v)}
+          size="icon-sm"
+          type="button"
+          variant="ghost"
+        >
+          {show ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+        </Button>
+      )}
+    </div>
+  );
+};
+
 const ScalarControl = ({
   spec,
   value,
   onChange,
+  id,
+  invalid,
 }: {
   spec: RawFieldSpec;
   value: string | boolean;
   onChange: (value: unknown) => void;
+  id?: string;
+  invalid?: boolean;
 }) => {
   const { componentResourceKind } = useContext(ResourceFieldContext);
+  const required = checkRequired(spec);
   if (spec.type === 'bool') {
-    return <Switch checked={Boolean(value)} onCheckedChange={onChange} />;
+    return <Switch aria-label={spec.name} checked={Boolean(value)} id={id} onCheckedChange={onChange} />;
   }
   const resourceKind = resolveResourceKind(spec, componentResourceKind);
   if (resourceKind) {
-    return <ResourceReferenceSelect kind={resourceKind} onChange={onChange} value={String(value ?? '')} />;
+    return <ResourceReferenceSelect id={id} kind={resourceKind} onChange={onChange} value={String(value ?? '')} />;
   }
   if (hasOptions(spec)) {
     return (
       <Select onValueChange={onChange} value={String(value ?? '')}>
-        <SelectTrigger>
+        <SelectTrigger aria-label={spec.name} aria-required={required || undefined} id={id}>
           <SelectValue placeholder={spec.defaultValue || 'Select…'} />
         </SelectTrigger>
         <SelectContent>
@@ -567,16 +625,21 @@ const ScalarControl = ({
       </Select>
     );
   }
-  // Numeric fields use a text input with a numeric inputMode rather than
-  // type="number": a number input blanks out any value the browser can't parse
-  // (e.g. a config like `count: 1000$`), hiding the real value. Text always shows
-  // it — including malformed values — so typos are visible and fixable.
+  if (isSecretField(spec)) {
+    return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
+  }
+  // Numeric fields use a text input with a numeric inputMode, not type="number": a number input
+  // blanks out any value the browser can't parse (e.g. `count: 1000$`), hiding it. Text always
+  // shows the value — including malformed ones — so typos are visible and fixable.
   const numericMode = spec.type === 'int' ? 'numeric' : 'decimal';
   return (
     <Input
+      aria-invalid={invalid || undefined}
+      aria-required={required || undefined}
+      id={id}
       inputMode={spec.type === 'int' || spec.type === 'float' ? numericMode : undefined}
       onChange={onChange}
-      placeholder={spec.defaultValue || undefined}
+      placeholder={spec.defaultValue || spec.examples?.[0] || undefined}
       type="text"
       value={String(value ?? '')}
     />
@@ -585,64 +648,87 @@ const ScalarControl = ({
 
 const INT_VALUE_RE = /^-?\d+$/;
 
-// A non-blocking validity hint for numeric fields. Values containing `${…}` are
-// interpolations (env vars, secrets, Bloblang) — legitimate in any field — so only
-// plainly malformed literals are flagged.
+// A non-blocking validity hint for numeric fields. `${…}` values are interpolations (env vars,
+// secrets, Bloblang) — legitimate anywhere — so only plainly malformed literals are flagged.
 function numericHint(spec: RawFieldSpec, value: string | boolean): string | null {
   const text = String(value ?? '').trim();
   if (text === '' || typeof value === 'boolean' || text.includes('${')) {
     return null;
   }
   if (spec.type === 'int' && !INT_VALUE_RE.test(text)) {
-    return 'Not a valid integer';
+    return "Not a valid integer — this change won't be saved until fixed.";
   }
   if (spec.type === 'float' && Number.isNaN(Number(text))) {
-    return 'Not a valid number';
+    return "Not a valid number — this change won't be saved until fixed.";
   }
   return null;
 }
 
-const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => (
-  <Controller
-    control={control}
-    name={`fields.${leaf.key}` as FieldPath<FormValues>}
-    render={({ field }) => {
-      const hint = numericHint(leaf.spec, field.value as string | boolean);
-      return (
+// biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect secret reference, not a JS template
+const SECRET_REF_EXAMPLE = '${secrets.MY_SECRET}';
+
+const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
+  const inputId = useId();
+  return (
+    <Controller
+      control={control}
+      name={`fields.${leaf.key}` as FieldPath<FormValues>}
+      render={({ field }) => {
+        const hint = numericHint(leaf.spec, field.value as string | boolean);
+        const showSecretTip = isSecretField(leaf.spec) && !String(field.value ?? '').includes('${');
+        return (
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor={inputId} spec={leaf.spec} />
+            <ScalarControl
+              id={inputId}
+              invalid={Boolean(hint)}
+              onChange={field.onChange}
+              spec={leaf.spec}
+              value={field.value as string | boolean}
+            />
+            {hint ? (
+              <Text className="text-destructive" variant="bodySmall">
+                {hint}
+              </Text>
+            ) : null}
+            {showSecretTip ? (
+              <Text className="text-muted-foreground" variant="bodySmall">
+                Tip: reference a secret (<span className="font-mono">{SECRET_REF_EXAMPLE}</span>) instead of a literal
+                value.
+              </Text>
+            ) : null}
+            <FieldDescription spec={leaf.spec} />
+          </div>
+        );
+      }}
+    />
+  );
+};
+
+const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
+  const inputId = useId();
+  return (
+    <Controller
+      control={control}
+      name={`arrays.${leaf.key}` as FieldPath<FormValues>}
+      render={({ field }) => (
         <div className="flex flex-col gap-1.5">
-          <FieldLabel spec={leaf.spec} />
-          <ScalarControl onChange={field.onChange} spec={leaf.spec} value={field.value as string | boolean} />
-          {hint ? (
-            <Text className="text-destructive" variant="bodySmall">
-              {hint}
-            </Text>
-          ) : null}
+          <FieldLabel htmlFor={inputId} spec={leaf.spec} />
+          <Textarea
+            aria-required={checkRequired(leaf.spec) || undefined}
+            className="font-mono text-sm"
+            id={inputId}
+            onChange={field.onChange}
+            placeholder="One value per line"
+            rows={3}
+            value={String(field.value ?? '')}
+          />
           <FieldDescription spec={leaf.spec} />
         </div>
-      );
-    }}
-  />
-);
-
-const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => (
-  <Controller
-    control={control}
-    name={`arrays.${leaf.key}` as FieldPath<FormValues>}
-    render={({ field }) => (
-      <div className="flex flex-col gap-1.5">
-        <FieldLabel spec={leaf.spec} />
-        <Textarea
-          className="font-mono text-sm"
-          onChange={field.onChange}
-          placeholder="One value per line"
-          rows={3}
-          value={String(field.value ?? '')}
-        />
-        <FieldDescription spec={leaf.spec} />
-      </div>
-    )}
-  />
-);
+      )}
+    />
+  );
+};
 
 const FieldGroup = ({
   label,
@@ -728,6 +814,8 @@ type NodeConfigFormProps = {
   /** Reports the assembled component config as the form changes (null when clean), so the inspector
       can auto-commit it on node-leave / pipeline-save — there is no per-node Apply button. */
   onConfigChange?: (config: Record<string, unknown> | null) => void;
+  /** Resource nodes are referenced by label — the label field must not be cleared. */
+  requireLabel?: boolean;
 };
 
 export function NodeConfigForm({
@@ -740,14 +828,15 @@ export function NodeConfigForm({
   childItems,
   onSelectChild,
   onConfigChange,
+  requireLabel,
 }: NodeConfigFormProps) {
+  const labelId = useId();
   const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
   const fields = spec.config?.children ?? [];
   const componentValue = value[componentName];
-  // A list-valued component (switch/try/catch/for_each): its value is an array of
-  // cases/processors edited on the canvas, not a set of object fields. The schema's
-  // field list actually describes a single case, so rendering it here is misleading and
-  // saving it would clobber the array — show a hint instead.
+  // A list-valued component (switch/try/catch/for_each): its value is an array of cases/processors
+  // edited on the canvas, not object fields. The schema's field list describes a single case, so
+  // rendering it here would mislead and saving would clobber the array — show a hint instead.
   const isListValued = Array.isArray(componentValue);
   const inner =
     componentValue && typeof componentValue === 'object' && !isListValued
@@ -805,6 +894,7 @@ export function NodeConfigForm({
             showRaw,
             data: getValues(),
             dirty: dirtyFields,
+            requireLabel,
           })
         : null
     );
@@ -824,16 +914,31 @@ export function NodeConfigForm({
           {/* Full-bleed to the scroll edges and top, then the normal padded fields follow. */}
           {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
           <div className="flex flex-col gap-1.5">
-            <Label className="font-medium text-sm">label</Label>
+            <Label className="font-medium text-sm" htmlFor={labelId}>
+              label
+            </Label>
             <Controller
               control={control}
               name="label"
               render={({ field }) => (
-                <Input
-                  onChange={field.onChange}
-                  placeholder="Optional identifier for this component"
-                  value={field.value}
-                />
+                <>
+                  <Input
+                    aria-required={requireLabel || undefined}
+                    id={labelId}
+                    onChange={field.onChange}
+                    placeholder={
+                      requireLabel
+                        ? 'Name other nodes use to reference this resource'
+                        : 'Optional identifier for this component'
+                    }
+                    value={field.value}
+                  />
+                  {requireLabel && !field.value.trim() ? (
+                    <Text className="text-destructive" variant="bodySmall">
+                      A resource needs a label — nodes reference it by name. The saved label is kept.
+                    </Text>
+                  ) : null}
+                </>
               )}
             />
           </div>

@@ -614,7 +614,8 @@ describe('PipelinePage', () => {
     // from the config — its input/output components appear as tree rows once the pipeline loads.
     await waitFor(() => expect(screen.getByText('stdin')).toBeInTheDocument());
     expect(screen.getByText('stdout')).toBeInTheDocument();
-    expect(screen.getByRole('tree')).toBeInTheDocument();
+    // One labelled tree per non-empty section.
+    expect(screen.getAllByRole('tree').length).toBeGreaterThan(0);
   });
 
   it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {
@@ -626,7 +627,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    await waitFor(() => expect(screen.getByRole('tree')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByRole('tree').length).toBeGreaterThan(0));
     expect(screen.queryByTestId('flow-canvas')).not.toBeInTheDocument();
   });
 
@@ -683,7 +684,10 @@ describe('PipelinePage', () => {
   it('view page Visual lane renders the full pipeline diagram from the pipeline config', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
+    // The visual editor builds on the diagrams flag, so both are required.
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enableRpcnVisualEditor' || flag === 'enablePipelineDiagrams'
+    );
     mockIsEmbedded.mockReturnValue(true);
 
     render(<PipelinePage />, { transport: createTransport() });
@@ -697,7 +701,10 @@ describe('PipelinePage', () => {
   it('opens editing on the Visual lane when the visual editor is enabled, and YAML swaps in the editor', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnVisualEditor');
+    // The visual editor builds on the diagrams flag, so both are required.
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enableRpcnVisualEditor' || flag === 'enablePipelineDiagrams'
+    );
     mockIsEmbedded.mockReturnValue(true);
 
     render(<PipelinePage />, { transport: createTransport() });

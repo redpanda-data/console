@@ -768,7 +768,9 @@ output:
     expect(at('proc-0')?.type).toBe('flowSplit');
     expect(laid.some((n) => n.id === 'proc-0-merge')).toBe(true);
     // Each case's entry card carries the editable routing condition (chip), like a switch case.
-    const entry = at('proc-0-case-1-p0')?.data as { condition?: string; caseEditTarget?: { kind?: string } } | undefined;
+    const entry = at('proc-0-case-1-p0')?.data as
+      | { condition?: string; caseEditTarget?: { kind?: string } }
+      | undefined;
     expect(entry?.condition).toBe('this.type == "a"');
     expect(entry?.caseEditTarget?.kind).toBe('switchCase');
   });
@@ -1340,6 +1342,122 @@ cache_resources:
     expect(dedupeUser?.danglingRef).toBeUndefined();
     const resource = nodes.find((n) => n.section === 'resource' && n.labelText === 'dedupe');
     expect(resource?.usedByCount).toBe(2);
+  });
+
+  it('never links a cache reference to a same-labelled rate_limit resource', () => {
+    const yaml = `pipeline:
+  processors:
+    - cache: { resource: shared, operator: add, key: x }
+output:
+  drop: {}
+rate_limit_resources:
+  - label: shared
+    local: { count: 1 }`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    expect(nodes.find((n) => n.id === 'proc-0')).toMatchObject({ resourceRef: 'shared', danglingRef: true });
+    expect(nodes.find((n) => n.id === 'resource-rate_limit_resources-0')?.usedByCount).toBe(0);
+    const layout = computeGraphLayout(nodes);
+    expect(layout.rfEdges.some((e) => e.id.startsWith('ref-'))).toBe(false);
+  });
+
+  it('links same-labelled cache and rate_limit references each to their own kind', () => {
+    const yaml = `pipeline:
+  processors:
+    - cache: { resource: shared, operator: add, key: x }
+    - rate_limit: { resource: shared }
+output:
+  drop: {}
+cache_resources:
+  - label: shared
+    memory: {}
+rate_limit_resources:
+  - label: shared
+    local: { count: 1 }`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    expect(nodes.find((n) => n.id === 'resource-cache_resources-0')?.usedByCount).toBe(1);
+    expect(nodes.find((n) => n.id === 'resource-rate_limit_resources-0')?.usedByCount).toBe(1);
+    const layout = computeGraphLayout(nodes);
+    expect(layout.rfEdges.some((e) => e.id === 'ref-proc-0-resource-cache_resources-0')).toBe(true);
+    expect(layout.rfEdges.some((e) => e.id === 'ref-proc-1-resource-rate_limit_resources-0')).toBe(true);
+  });
+
+  it('renders a check-only switch case (no processors key) with its condition and an add slot', () => {
+    const yaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.x == 1'
+        - processors:
+            - mapping: 'root = this'
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const case1 = nodes.find((n) => n.id === 'proc-0-case-1');
+    expect(case1).toMatchObject({ isCase: true, condition: 'this.x == 1' });
+    expect(case1?.insertSlot).toEqual({
+      containerPath: ['pipeline', 'processors', 0, 'switch', 0, 'processors'],
+      accepts: 'processor',
+    });
+    expect(nodes.find((n) => n.id === 'proc-0-case-2')).toMatchObject({ isCase: true, isDefault: true });
+  });
+
+  it('resolves << merge keys so merged fields render on the component', () => {
+    const yaml = `defaults: &d
+  topics: [orders]
+input:
+  kafka:
+    <<: *d
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const input = nodes.find((n) => n.id === 'input-0');
+    expect(input?.label).toBe('kafka');
+    expect(input?.topics).toEqual(['orders']);
+    expect(input?.missingTopic).toBeUndefined();
+  });
+
+  it('falls back to the placeholder node when input/output are unrenderable arrays', () => {
+    const { nodes } = parsePipelineFlowTree('input: []\noutput: [1, 2]');
+    expect(nodes.find((n) => n.id === 'input-placeholder')).toMatchObject({ kind: 'leaf', label: 'none' });
+    expect(nodes.find((n) => n.id === 'output-placeholder')).toMatchObject({ kind: 'leaf', label: 'none' });
+  });
+
+  it('carries YAML indices (not rendered positions) on insert edges when unparseable entries sit in the list', () => {
+    const yaml = `input:
+  generate: {}
+pipeline:
+  processors:
+    - null
+    - mapping: 'root = this'
+    - log: { message: hi }
+output:
+  drop: {}`;
+    const layout = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
+    const insertIndex = (source: string, target: string) =>
+      (layout.rfEdges.find((e) => e.source === source && e.target === target)?.data as { insertIndex?: number })
+        ?.insertIndex;
+    expect(insertIndex('input-0', 'proc-1')).toBe(1);
+    expect(insertIndex('proc-1', 'proc-2')).toBe(2);
+    expect(insertIndex('proc-2', 'output-0')).toBe(3);
+  });
+
+  it('keeps original YAML indices in NESTED edit targets when unparseable entries sit in the list', () => {
+    const yaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.x == 1'
+          processors:
+            - null
+            - mapping: 'root = this'
+output:
+  drop: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const mapping = nodes.find((n) => n.label === 'mapping');
+    // The mapping is the SECOND entry (index 1) of the case's processors — its edit target must
+    // not compact past the unparseable `- null`, or edits/deletes land on the wrong entry.
+    expect(mapping?.editTarget).toMatchObject({
+      kind: 'path',
+      path: ['pipeline', 'processors', 0, 'switch', 0, 'processors', 1],
+    });
   });
 });
 

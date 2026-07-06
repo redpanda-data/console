@@ -74,6 +74,38 @@ pipeline:
 output:
   drop: {}`;
 
+// Valid pipeline with no output — the canvas renders an output placeholder card.
+const NO_OUTPUT_YAML = `input:
+  generate:
+    mapping: 'root = {}'`;
+const ADD_OUTPUT_RE = /add output/i;
+const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
+
+describe('PipelineFlowCanvas — placeholder cards', () => {
+  it('renders a non-interactive "No output configured" note in read-only mode', async () => {
+    // No edit callbacks → viewer mode. A disabled "Add output" button would read as broken
+    // permissions; plain text explains the state instead.
+    render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} />);
+    expect(await screen.findByText('No output configured')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: ADD_OUTPUT_RE })).not.toBeInTheDocument();
+  });
+
+  it('renders an enabled "Add output" button in edit mode', async () => {
+    render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={vi.fn()} />);
+    expect(await screen.findByRole('button', { name: ADD_OUTPUT_RE })).toBeEnabled();
+  });
+});
+
+describe('PipelineFlowCanvas — invalid YAML from the start', () => {
+  it('shows a persistent (non-dismissible) banner pointing at the YAML tab', async () => {
+    // Unparseable from the first render: no last-good graph to fall back to, so the banner must
+    // stay up (no close button) or the frozen skeleton behind it is unexplained.
+    const { container } = render(<PipelineFlowCanvas configYaml={'input: [unclosed'} />);
+    expect(await screen.findByText(YAML_TAB_HINT_RE)).toBeInTheDocument();
+    expect(container.querySelectorAll('button')).toHaveLength(0);
+  });
+});
+
 describe('PipelineFlowCanvas — control-flow render', () => {
   it('renders the Dagre split → merge DAG without crashing', async () => {
     render(<PipelineFlowCanvas configYaml={CONTROL_FLOW_YAML} />);

@@ -14,6 +14,8 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronDown, MousePointerClick } from 'lucide-react';
 import { useState } from 'react';
 
+import { useChipDismissal } from './pipeline-problems-panel';
+
 export type UnsavedNode = { id: string; label: string; detail?: string };
 
 type PipelineUnsavedPanelProps = {
@@ -28,13 +30,14 @@ type PipelineUnsavedPanelProps = {
  */
 export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelProps) {
   const [open, setOpen] = useState(false);
+  const containerRef = useChipDismissal(open, setOpen);
 
   if (nodes.length === 0) {
     return null;
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="flex flex-col items-end gap-1.5" ref={containerRef}>
       <button
         aria-expanded={open}
         className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background/90 px-2.5 py-1.5 font-medium text-muted-foreground text-xs shadow-sm backdrop-blur-sm transition-colors hover:bg-muted/50"

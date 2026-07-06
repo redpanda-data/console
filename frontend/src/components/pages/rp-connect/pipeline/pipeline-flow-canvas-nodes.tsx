@@ -93,6 +93,16 @@ const SECTION_ACCENT: Record<string, string> = {
   resource: 'var(--color-orange-500)',
 };
 
+// The accents above are FILL colours (blips, borders, tints) — as text on a light card they fall
+// to ~2:1 contrast. Wherever the accent is rendered as text (kind captions, split descriptors),
+// use these theme-aware tokens (darker in light mode, the 500s in dark — see globals.css).
+const SECTION_ACCENT_TEXT: Record<string, string> = {
+  input: 'var(--color-accent-input-text)',
+  processor: 'var(--color-accent-processor-text)',
+  output: 'var(--color-accent-output-text)',
+  resource: 'var(--color-accent-resource-text)',
+};
+
 export function sectionAccent(section?: string): string | undefined {
   return section ? SECTION_ACCENT[section] : undefined;
 }
@@ -113,16 +123,8 @@ const LogoTile = ({ name }: { name: string }) => (
 
 // A node's routing semantics as a chip: `if <check>`, `default` (catch-all), or `on error`
 // (catch) — red for error / dead-letter routes. The single home for a switch case's condition
-// (no duplicate floating edge label); with `onEdit` the chip opens the case editor.
-const BranchConditionChip = ({
-  data,
-  className,
-  onEdit,
-}: {
-  data: FlowCardData;
-  className?: string;
-  onEdit?: () => void;
-}) => {
+// (no duplicate floating edge label). Display-only: conditions are edited in the inspector panel.
+const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
   }
@@ -143,24 +145,8 @@ const BranchConditionChip = ({
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
     tone === 'muted' && 'border-condition/30 bg-condition/5 text-condition/80',
     tone === 'condition' && 'border-condition/40 bg-condition/10 text-condition',
-    onEdit && 'nodrag nopan cursor-pointer transition-colors hover:bg-foreground/5',
     className
   );
-  if (onEdit) {
-    return (
-      <button
-        className={cls}
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
-        }}
-        title={`${text} — click to edit condition`}
-        type="button"
-      >
-        <span className="truncate">{text}</span>
-      </button>
-    );
-  }
   return (
     <span className={cls} title={text}>
       <span className="truncate">{text}</span>
@@ -178,9 +164,9 @@ const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
 };
 
 // A switch case's routing condition on its own full-width row (more contrast than the inline
-// header chip): a `WHEN <check>` / `DEFAULT` / `ON ERROR` line. The click target for editing the
-// case (distinct from selecting the component card); inset ring when the condition is selected.
-const ConditionRow = ({ data, onEdit, selected }: { data: FlowCardData; onEdit?: () => void; selected?: boolean }) => {
+// header chip): a `WHEN <check>` / `DEFAULT` / `ON ERROR` line. Display-only (conditions are
+// edited in the inspector panel); inset ring when the condition is selected.
+const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boolean }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
   if (data.isErrorPath) {
     tone = 'error';
@@ -193,14 +179,14 @@ const ConditionRow = ({ data, onEdit, selected }: { data: FlowCardData; onEdit?:
   } else if (data.isDefault) {
     eyebrow = 'default';
   }
-  const cls = cn(
-    'flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left',
-    CONDITION_ROW_TONE[tone],
-    onEdit && 'nodrag nopan cursor-pointer transition-[filter] hover:brightness-95',
-    selected && 'ring-2 ring-primary ring-inset'
-  );
-  const body = (
-    <>
+  return (
+    <div
+      className={cn(
+        'flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left',
+        CONDITION_ROW_TONE[tone],
+        selected && 'ring-2 ring-primary ring-inset'
+      )}
+    >
       <Split className="size-3.5 shrink-0 opacity-80" />
       <span className="shrink-0 font-semibold text-[10px] uppercase tracking-wide opacity-70">{eyebrow}</span>
       {data.condition ? (
@@ -208,24 +194,8 @@ const ConditionRow = ({ data, onEdit, selected }: { data: FlowCardData; onEdit?:
           {data.condition}
         </span>
       ) : null}
-    </>
+    </div>
   );
-  if (onEdit) {
-    return (
-      <button
-        className={cls}
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
-        }}
-        title={`${eyebrow}${data.condition ? ` ${data.condition}` : ''} — click to edit condition`}
-        type="button"
-      >
-        {body}
-      </button>
-    );
-  }
-  return <div className={cls}>{body}</div>;
 };
 
 export type FlowCardData = {
@@ -275,8 +245,6 @@ export type FlowCardData = {
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
-  /** Open the case editor for this node's routing condition (clicking the chip). */
-  onEditCondition?: () => void;
   /** A fan construct's in-card add affordance ("Add case" / "Add input"): payload + label. */
   addAction?: { payload: FlowInsertPayload; label: string };
   /** Invoke the add affordance (wired by the canvas in edit mode). */
@@ -294,11 +262,9 @@ const NodeHandles = () => (
   <>
     {HANDLE_IDS.map((h) => {
       const horizontal = h.id === 'l' || h.id === 'r';
-      // Horizontal (left/right) handles use React Flow's DEFAULT vertical centering (no style
-      // override), so a graph edge attaches at the card's vertical CENTRE — arrowheads land in
-      // the middle of the node, not a top/bottom corner, and a same-rank spine reads straight.
-      // Vertical (top/bottom) handles stay pinned to a fixed left offset (transform cleared) so
-      // vertically-stacked cards of differing widths connect on a straight vertical line.
+      // Horizontal (l/r) handles keep RF's DEFAULT vertical centering so an edge attaches at the card's
+      // vertical CENTRE (a same-rank spine reads straight). Vertical (t/b) handles pin to a fixed left
+      // offset (transform cleared) so stacked cards of differing widths connect on a straight line.
       const style = horizontal ? undefined : { left: FLOW_SPINE_HANDLE_LEFT, transform: 'none' };
       return (
         <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
@@ -386,7 +352,11 @@ const MissingChip = ({
     <Button
       className="nodrag nopan"
       icon={<PlusIcon className="size-3" />}
-      onClick={onAdd}
+      onClick={(e) => {
+        // Adding the missing piece shouldn't also select the node.
+        e.stopPropagation();
+        onAdd();
+      }}
       size="xs"
       variant="secondary"
     >
@@ -399,20 +369,30 @@ const MissingChip = ({
   );
 
 const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
-  const onClick = data.onAddConnector ? () => data.onAddConnector?.(data.section ?? '') : undefined;
-  const label = `Add ${data.section ?? 'connector'}`;
+  const section = data.section ?? 'connector';
+  const onAdd = data.onAddConnector;
+  // Read-only (no handler): plain descriptive text, not a disabled button that reads as
+  // broken permissions.
+  if (!onAdd) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm">
+        <Text as="span" className="text-sm" variant="bodyMedium">
+          No {section} configured
+        </Text>
+      </div>
+    );
+  }
   return (
     <button
       className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
-      disabled={!data.onAddConnector}
-      onClick={onClick}
+      onClick={() => onAdd(data.section ?? '')}
       type="button"
     >
       <span className="flex size-8 items-center justify-center rounded-full border border-current/40 bg-background/70 transition-colors group-hover:border-primary group-hover:bg-primary/10">
         <PlusIcon className="size-4" />
       </span>
       <Text as="span" className="font-medium text-sm" variant="bodyStrongMedium">
-        {label}
+        Add {section}
       </Text>
     </button>
   );
@@ -460,11 +440,9 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
 // An amber dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
-    <span
-      aria-hidden
-      className="size-2 shrink-0 rounded-full bg-unsaved"
-      title="Unsaved changes on this node"
-    />
+    <span className="size-2 shrink-0 rounded-full bg-unsaved" title="Unsaved changes on this node">
+      <span className="sr-only">Unsaved changes</span>
+    </span>
   ) : null;
 
 // The component's `label:` — shown on every node (leaf, container, sidebar) when set.
@@ -480,6 +458,7 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
 const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: boolean }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   const accent = SECTION_ACCENT[data.section ?? ''];
+  const accentText = SECTION_ACCENT_TEXT[data.section ?? ''];
   return (
     <div
       className={cn(
@@ -490,23 +469,21 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
     >
       {/* A switch case's routing condition sits at the TOP — "WHEN <check> → this node" — making
           the editable condition the first, most obvious section to click. */}
-      {data.caseEditTarget ? (
-        <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} />
-      ) : null}
+      {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
       {/* Tinted title band carries the role colour; the body below stays clean. */}
       <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <Text
             as="span"
             className="shrink-0 uppercase tracking-wide"
-            style={accent ? { color: accent } : undefined}
+            style={accentText ? { color: accentText } : undefined}
             variant="captionStrongMedium"
           >
             {kindLabel}
           </Text>
           {/* Non-case condition info (rare, e.g. an error-lane tint) stays an inline chip; a
               switch case's condition gets the prominent row above instead. */}
-          {data.caseEditTarget ? null : <BranchConditionChip data={data} onEdit={data.onEditCondition} />}
+          {data.caseEditTarget ? null : <BranchConditionChip data={data} />}
           <LintBadge errors={data.lintErrors} />
           <UnsavedDot show={data.unsaved} />
         </div>
@@ -591,6 +568,8 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
 };
 
 type LinkTone = 'primary' | 'muted' | 'error';
+// Edge LABELS also support the amber routing-condition tone (the line itself stays primary).
+type LinkLabelTone = LinkTone | 'condition';
 type FlowLinkData = {
   label?: string;
   /** Selection context: unrelated edges fade, connected ones render full strength. */
@@ -608,10 +587,12 @@ const LINK_STROKE: Record<LinkTone, string> = {
 // Tone-matched label styling so copy/merge/error tags read clearly against the stacked (and
 // progressively darker) nested-container backgrounds: a solid pill, a tinted border, and text in
 // the edge's own colour rather than low-contrast gray.
-const LINK_LABEL_STYLE: Record<LinkTone, string> = {
+const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   primary: 'border-primary/40 text-primary',
   error: 'border-destructive/40 text-destructive',
   muted: 'border-border text-foreground',
+  // Routing conditions read amber, matching the legend and the cards' condition chips.
+  condition: 'border-condition/40 text-condition',
 };
 // Edge labels render into RF's shared layer below the nodes; lift the pill above the cards so a
 // label in a container's gutter isn't painted over by the card. (Nodes here aren't selectable.)
@@ -624,7 +605,7 @@ const LinkLabel = ({
   onClick,
 }: {
   d: FlowLinkData;
-  tone: LinkTone;
+  tone: LinkLabelTone;
   x: number;
   y: number;
   onClick?: () => void;
@@ -723,6 +704,10 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
   const isError = Boolean(data.isErrorPath);
   const accent = isError ? 'var(--color-destructive)' : (SECTION_ACCENT[data.section ?? ''] ?? 'var(--color-primary)');
+  // The descriptor is TEXT — use the readable text variant (destructive/primary already read as text).
+  const accentText = isError
+    ? 'var(--color-destructive)'
+    : (SECTION_ACCENT_TEXT[data.section ?? ''] ?? 'var(--color-primary)');
   const { Icon, descriptor } = controlFlowPresentation(data);
   return (
     <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
@@ -736,16 +721,14 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
       >
         {/* A switch-case ENTRY's routing condition sits at the TOP — "WHEN <check> → this
             construct" — the first, most obvious section to click (like leaf cards). */}
-        {data.caseEditTarget ? (
-          <ConditionRow data={data} onEdit={data.onEditCondition} selected={data.conditionSelected} />
-        ) : null}
+        {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
           <span className="flex min-w-0 flex-1 flex-col">
             <Text
               as="span"
               className="truncate text-[10px] uppercase leading-none tracking-wide"
-              style={{ color: accent }}
+              style={{ color: accentText }}
               title={descriptor}
               variant="captionStrongMedium"
             >
@@ -897,18 +880,34 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
   return `${d} L ${last.x} ${last.y}`;
 }
 
+// Stroke colour under selection context: emphasized wins (except on error edges, whose red stays),
+// then the faint tier, then the tone's own colour.
+function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
+  if (d?.emphasized && tone !== 'error') {
+    return HIGHLIGHT_STROKE;
+  }
+  if (d?.faint) {
+    return 'var(--color-muted-foreground)';
+  }
+  return LINK_STROKE[tone];
+}
+
+// Edge opacity tiers: dimmed (unrelated to the selection) < ghost (decorative) < faint (context
+// line) < full strength.
+function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
+  if (d?.dimmed) {
+    return 0.25;
+  }
+  if (d?.ghost) {
+    return 0.4;
+  }
+  return d?.faint ? 0.6 : 1;
+}
+
 // Every edge in the Dagre DAG: routed through Dagre's waypoints (so lines avoid nodes), styled by
 // type — solid primary for flow, red dashed for error/dead-letter, dashed for branch copy/merge and
 // resource refs. No arrowheads (the left-to-right layout already reads as direction).
-function FlowGraphEdge({
-  sourceX,
-  sourceY,
-  sourcePosition,
-  targetX,
-  targetY,
-  targetPosition,
-  data,
-}: EdgeProps) {
+function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
   let path: string;
   // `label*` is where a condition label sits (often near its target); `insert*` is the on-edge "+" (midpoint).
@@ -944,32 +943,26 @@ function FlowGraphEdge({
     insertY = ly;
   }
   const tone: LinkTone = d?.tone ?? 'muted';
-  let stroke = LINK_STROKE[tone];
-  if (d?.emphasized && tone !== 'error') {
-    stroke = HIGHLIGHT_STROKE;
-  } else if (d?.faint) {
-    stroke = 'var(--color-muted-foreground)';
-  }
-  let opacity = 1;
-  if (d?.dimmed) {
-    opacity = 0.25;
-  } else if (d?.ghost) {
-    opacity = 0.4;
-  } else if (d?.faint) {
-    opacity = 0.6;
-  }
   const width = d?.emphasized ? 4 : 3;
   return (
     <>
       <BaseEdge
         path={path}
-        style={{ stroke, strokeWidth: width, strokeDasharray: d?.dashed ? '6 5' : undefined, opacity }}
+        style={{
+          stroke: edgeStroke(d, tone),
+          strokeWidth: width,
+          strokeDasharray: d?.dashed ? '6 5' : undefined,
+          opacity: edgeOpacity(d),
+        }}
       />
       {d?.label ? (
         <LinkLabel
           d={{ label: d.label, dimmed: d.dimmed }}
           onClick={d.onLabelClick}
-          tone={tone}
+          // Only `conditional`-type edges carry a label at the primary tone (flow edges are
+          // unlabelled), so a labelled primary edge's label IS a routing condition — render it
+          // amber like the legend / condition chips, not primary-blue. The line stays primary.
+          tone={tone === 'primary' ? 'condition' : tone}
           x={labelX}
           // When an on-edge "+" shares this midpoint, lift the label clear so the two don't
           // overprint (e.g. a new empty case's "default" over its add "+").

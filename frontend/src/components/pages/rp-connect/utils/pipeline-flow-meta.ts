@@ -261,7 +261,6 @@ function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
  * `config` is the component's inner config; for mapping/bloblang it can be a bare string.
  */
 export function summarizeComponent(componentName: string, config: unknown): NodeMetaEntry[] {
-  // mapping/bloblang are configured with a bare string.
   if (typeof config === 'string') {
     return config.trim() ? [{ label: 'expr', value: truncate(config.split('\n')[0]) }] : [];
   }

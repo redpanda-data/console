@@ -40,6 +40,27 @@ output:
     expect(changedNodeIds(base, base)).toEqual([]);
   });
 
+  it('flags only the inserted node when a processor is inserted at the head', () => {
+    const next = `pipeline:
+  processors:
+    - http: { url: 'http://x' }
+    - mapping: 'root = this'
+    - log: { message: hi }
+output:
+  drop: {}`;
+    expect(changedNodeIds(base, next)).toEqual(['proc-0']);
+  });
+
+  it('does not flag nodes whose identical config merely shifted position', () => {
+    const next = `pipeline:
+  processors:
+    - log: { message: hi }
+    - mapping: 'root = this'
+output:
+  drop: {}`;
+    expect(changedNodeIds(base, next)).toEqual([]);
+  });
+
   it('attributes a nested edit to the child only, not its ancestor containers', () => {
     const nested = `pipeline:
   processors:

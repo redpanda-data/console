@@ -97,6 +97,9 @@ export type PipelineFlowNode = {
   danglingRef?: boolean;
   // For a resource node: how many components reference its label (for "Used by N").
   usedByCount?: number;
+  // For an array-resource node: the `*_resources` key it was defined under, so references
+  // resolve kind-aware (a cache ref never links to a same-labelled rate_limit).
+  resourceKey?: string;
 };
 
 type BranchContext = {
@@ -180,8 +183,7 @@ function multiMemberSpecs(section: 'input' | 'output', value: unknown): GroupChi
   return items.map((item) => memberNameAndMeta(section, item));
 }
 
-// YAML path to the i-th child of a multi-input/output component, so nested members are
-// individually editable.
+// YAML path to the i-th child of a multi-input/output component (nested members are editable).
 function multiChildPath(section: 'input' | 'output', groupLabel: string, i: number): (string | number)[] {
   if (section === 'input') {
     return ['input', groupLabel, 'inputs', i];
@@ -420,11 +422,21 @@ const DIRECT_ARRAY_PROC_CONTAINERS: ReadonlySet<string> = new Set(['try', 'catch
 // accepts a processor into `<name>.processors`.
 const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 'parallel']);
 
-function extractProcessorArray(value: unknown): Record<string, unknown>[] | undefined {
-  if (Array.isArray(value)) {
-    return value.filter((v) => v && typeof v === 'object') as Record<string, unknown>[];
+// A processor array's parseable entries WITH their original YAML indices. Unparseable
+// entries (`- null`, scalars mid-edit) are skipped for rendering, but each kept entry's
+// source index still feeds its editTarget path — an edit/delete must never land on a
+// neighbouring entry because the rendered positions were compacted.
+function extractProcessorEntries(value: unknown): Array<[number, Record<string, unknown>]> | undefined {
+  if (!Array.isArray(value)) {
+    return;
   }
-  return;
+  const entries: Array<[number, Record<string, unknown>]> = [];
+  for (const [i, v] of value.entries()) {
+    if (v && typeof v === 'object') {
+      entries.push([i, v as Record<string, unknown>]);
+    }
+  }
+  return entries;
 }
 
 // A resource reference is a string `resource:` field (cache/rate_limit processors);
@@ -511,10 +523,9 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       continue;
     }
     const caseRecord = caseObj as Record<string, unknown>;
-    const caseProcs = extractProcessorArray(caseRecord.processors);
-    if (!caseProcs) {
-      continue;
-    }
+    // A case without a `processors` array (e.g. hand-written check-only) still renders —
+    // as an empty case with its condition and an add slot — never silently vanishes.
+    const caseProcs = extractProcessorEntries(caseRecord.processors) ?? [];
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
     const check = caseRecord.check;
     const hasCheck = typeof check === 'string' && check !== '';
@@ -548,9 +559,14 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
   return nodes;
 }
 
-function pushProcessorChildren(nodes: PipelineFlowNode[], procs: Record<string, unknown>[], ctx: BranchContext): void {
-  // ctx.path is the processors array; each child component sits at [...path, index].
-  for (const [pi, proc] of procs.entries()) {
+function pushProcessorChildren(
+  nodes: PipelineFlowNode[],
+  procs: Array<[number, Record<string, unknown>]>,
+  ctx: BranchContext
+): void {
+  // ctx.path is the processors array; each child component sits at [...path, index], where
+  // `pi` is the entry's ORIGINAL YAML index (unparseable siblings don't shift it).
+  for (const [pi, proc] of procs) {
     const procName = firstKey(proc);
     if (procName) {
       const childNodes = parseComponentWithBranching(procName, proc[procName], {
@@ -578,7 +594,7 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
     return parseSwitchCases(fieldValue, { ...ctx, path: [...ctx.path, key] });
   }
   if (PROCESSORS_FIELD_KEYS.has(key) && fieldValue && typeof fieldValue === 'object') {
-    const innerProcs = extractProcessorArray((fieldValue as Record<string, unknown>).processors);
+    const innerProcs = extractProcessorEntries((fieldValue as Record<string, unknown>).processors);
     if (innerProcs) {
       const nodes: PipelineFlowNode[] = [];
       pushProcessorChildren(nodes, innerProcs, {
@@ -590,7 +606,7 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
     }
     return [];
   }
-  const procArray = extractProcessorArray(fieldValue);
+  const procArray = extractProcessorEntries(fieldValue);
   if (procArray) {
     const nodes: PipelineFlowNode[] = [];
     pushProcessorChildren(nodes, procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}`, path: [...ctx.path, key] });
@@ -631,7 +647,7 @@ function parseDirectArrayBranching(
     return [group, ...caseNodes];
   }
 
-  const procArray = extractProcessorArray(componentValue);
+  const procArray = extractProcessorEntries(componentValue);
   // try/catch/for_each hold a flat processor array — keep the group (with insert slot)
   // even when empty so the first processor can be added.
   if (procArray && DIRECT_ARRAY_PROC_CONTAINERS.has(componentName)) {
@@ -784,6 +800,7 @@ function parseArrayResource(value: unknown[], key: string, sectionId: string): P
         labelText,
         section: 'resource',
         parentId: sectionId,
+        resourceKey: key,
         editTarget: resourceItemEditTarget(key, i),
         meta: itemName ? summarizeComponent(itemName, itemObj[itemName]) : undefined,
       });
@@ -874,9 +891,15 @@ function parseOutputNodes(
 function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
   const sectionId = 'section-input';
   nodes.push({ id: sectionId, kind: 'section', label: 'input', section: 'input' });
-  if (config.input && typeof config.input === 'object') {
-    nodes.push(...parseInputNodes(config.input as Record<string, unknown>, sectionId, config));
+  const parsed =
+    config.input && typeof config.input === 'object'
+      ? parseInputNodes(config.input as Record<string, unknown>, sectionId, config)
+      : [];
+  if (parsed.length > 0) {
+    nodes.push(...parsed);
   } else {
+    // No parseable component (absent, or unrenderable like `input: []`) — always keep the
+    // placeholder so the "Add input" affordance exists.
     nodes.push({ id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: sectionId });
   }
 }
@@ -903,8 +926,12 @@ function buildResourceSection(nodes: PipelineFlowNode[], config: ParsedYamlConfi
 function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
   const sectionId = 'section-output';
   nodes.push({ id: sectionId, kind: 'section', label: 'output', section: 'output' });
-  if (config.output && typeof config.output === 'object') {
-    nodes.push(...parseOutputNodes(config.output as Record<string, unknown>, sectionId, config));
+  const parsed =
+    config.output && typeof config.output === 'object'
+      ? parseOutputNodes(config.output as Record<string, unknown>, sectionId, config)
+      : [];
+  if (parsed.length > 0) {
+    nodes.push(...parsed);
   } else {
     nodes.push({ id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: sectionId });
   }
@@ -925,7 +952,9 @@ export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTree
   }
 
   try {
-    const config = (parseYaml(configYaml) as ParsedYamlConfig | null) ?? {};
+    // `merge: true` resolves `<<: *anchor` keys so merged fields (topics, sasl, …) render
+    // as part of the component instead of a literal `<<` node with false missing-* badges.
+    const config = (parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null) ?? {};
     const nodes: PipelineFlowNode[] = [];
 
     buildInputSection(nodes, config);
@@ -978,32 +1007,76 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
     }
   }
 
-  // Resource references: flag dangling links and count usages per label.
-  const resourceLabels = new Set<string>();
-  for (const node of nodes) {
-    if (node.section === 'resource' && node.labelText) {
-      resourceLabels.add(node.labelText);
+  annotateResourceRefs(nodes);
+}
+
+// The `*_resources` array a node's reference must resolve into, from the referencing
+// component itself: `cache`/`rate_limit` processors name their kind; a `resource:`
+// indirection resolves within its own section. Undefined = kind unknown (candidate-promoted
+// refs from arbitrary fields) — those match a resource of any kind.
+function expectedResourceKey(node: PipelineFlowNode): string | undefined {
+  if (node.label === 'cache') {
+    return 'cache_resources';
+  }
+  if (node.label === 'rate_limit') {
+    return 'rate_limit_resources';
+  }
+  if (node.label === 'resource' && node.section && node.section !== 'resource') {
+    return `${node.section}_resources`;
+  }
+  return;
+}
+
+type ResourceRefResolver = (node: PipelineFlowNode, label: string) => PipelineFlowNode | undefined;
+
+// Kind-aware lookup from a referencing node + label to the resource card it plugs into,
+// so a cache processor's dependency can't land on a same-labelled rate_limit resource.
+function buildResourceRefResolver(resources: PipelineFlowNode[]): ResourceRefResolver {
+  const byKeyAndLabel = new Map<string, PipelineFlowNode>();
+  const byLabel = new Map<string, PipelineFlowNode>();
+  for (const resource of resources) {
+    if (!resource.labelText) {
+      continue;
+    }
+    if (resource.resourceKey) {
+      byKeyAndLabel.set(`${resource.resourceKey} ${resource.labelText}`, resource);
+    }
+    if (!byLabel.has(resource.labelText)) {
+      byLabel.set(resource.labelText, resource);
     }
   }
-  // Promote a candidate matching a resource label to a real reference — catches refs in
+  return (node, label) => {
+    const key = expectedResourceKey(node);
+    return key ? byKeyAndLabel.get(`${key} ${label}`) : byLabel.get(label);
+  };
+}
+
+// Resource references: promote field candidates, flag dangling links, and count usages —
+// all through the kind-aware resolver.
+function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
+  const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
+  // Promote a candidate resolving to a resource label into a real reference — catches refs in
   // non-`resource` fields and on input/output nodes that carry no explicit `resource` field.
   for (const node of nodes) {
     if (!node.resourceRef && node.resourceRefCandidates) {
-      node.resourceRef = node.resourceRefCandidates.find((c) => resourceLabels.has(c));
+      node.resourceRef = node.resourceRefCandidates.find((c) => resolve(node, c));
     }
   }
   const usedBy = new Map<string, number>();
   for (const node of nodes) {
-    if (node.resourceRef) {
-      usedBy.set(node.resourceRef, (usedBy.get(node.resourceRef) ?? 0) + 1);
+    if (!node.resourceRef || node.section === 'resource') {
+      continue;
+    }
+    const target = resolve(node, node.resourceRef);
+    if (target) {
+      usedBy.set(target.id, (usedBy.get(target.id) ?? 0) + 1);
+    } else {
+      node.danglingRef = true;
     }
   }
   for (const node of nodes) {
-    if (node.resourceRef && !resourceLabels.has(node.resourceRef)) {
-      node.danglingRef = true;
-    }
     if (node.section === 'resource' && node.labelText) {
-      node.usedByCount = usedBy.get(node.labelText) ?? 0;
+      node.usedByCount = usedBy.get(node.id) ?? 0;
     }
   }
 }
@@ -1011,9 +1084,9 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
 // ============================================================================
 // Shared data-flow model
 // ----------------------------------------------------------------------------
-// The canvas draws the flow (input → each top-level processor → output, each group
-// threading its children: sequential chains, parallel fans out). Connections come from
-// these helpers, separate from layout-specific positioning.
+// The canvas draws the flow (input → top-level processors → output; each group threads its
+// children: sequential chains, parallel fans out). These helpers supply the connections,
+// separate from layout positioning.
 // ============================================================================
 
 function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {
@@ -1052,12 +1125,11 @@ export function mainFlowSequence(nodes: PipelineFlowNode[]): PipelineFlowNode[] 
 // ============================================================================
 // Expanded canvas layout (left → right flow with nested containers)
 // ----------------------------------------------------------------------------
-// Main path runs left→right (input → each top-level processor → output). A processor
-// wrapping a sub-pipeline (branch/try/catch/…), running alternatives (switch/workflow/
-// parallel), or a multi-input broker renders as a titled CONTAINER enclosing its children
-// — flow enters the container, runs its steps, then continues to the next top-level step
-// (à la Step Functions / NiFi). Container children are real React Flow child nodes
-// (parentId + relative position).
+// Main path runs left→right (input → top-level processors → output). A processor wrapping a
+// sub-pipeline (branch/try/catch/…), alternatives (switch/workflow/parallel), or a multi-input
+// broker renders as a titled CONTAINER enclosing its children — flow enters, runs its steps,
+// then continues to the next top-level step (à la Step Functions / NiFi). Container children
+// are real React Flow child nodes (parentId + relative position).
 // ============================================================================
 
 /** Leaf card width on the full canvas; the node component must match this. A touch wider
@@ -1219,10 +1291,9 @@ const GRAPH_MERGE_W = 48;
 const GRAPH_MERGE_H = 32;
 const GRAPH_INSERT_W = 150;
 const GRAPH_INSERT_H = 24;
-// Dagre spacing: gap between ranks (horizontal), between nodes in a rank (vertical). Deliberately
-// roomy (well above the original 64/38) so Dagre has space to route edges AROUND nodes (fewer
-// lines crossing cards), and so on-edge condition labels sit in clear space between ranks rather
-// than crammed against a card or the split.
+// Dagre spacing: gap between ranks (horizontal) and between nodes in a rank (vertical).
+// Deliberately roomy (well above the original 64/38) so Dagre can route edges AROUND nodes
+// (fewer lines crossing cards) and on-edge condition labels sit in clear space between ranks.
 const GRAPH_RANKSEP = 120;
 // Generous vertical spacing between stacked branches so routing-condition labels (which sit
 // on the fan-out edges) have room, and so adjacent control-flow constructs' scope-region boxes
@@ -1570,13 +1641,19 @@ function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
 const isTryStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'try';
 const isCatchStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'catch';
 
+// A top-level processor step's ACTUAL index into `pipeline.processors` — the splice index
+// mutations use. Rendered position drifts from it when unparseable entries (`- null`, `- {}`)
+// are skipped, so on-edge inserts must carry the YAML index, not a rendered count.
+const topLevelProcessorIndex = (n?: PipelineFlowNode): number | undefined =>
+  n?.editTarget?.kind === 'processor' ? n.editTarget.index : undefined;
+
 // Chain a list of steps with flow edges. At the top level the connecting edges carry the
 // processor-insert index so the spine "+" works. A try immediately followed by a catch is
 // fused into one success/error structure.
 function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false): GraphSegment {
   let entry: string | undefined;
   let prevExit: string | undefined;
-  let processorsSeen = 0;
+  let lastProcessorIndex = -1;
   let i = 0;
   while (i < steps.length) {
     const step = steps[i];
@@ -1593,21 +1670,22 @@ function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false
         entry = seg.entry;
       }
       if (prevExit !== undefined) {
+        // Inserting on the edge INTO a processor splices right before it (its YAML index);
+        // on the edge into the output it lands right after the last processor.
+        const insertIndex = topLevelProcessorIndex(step) ?? lastProcessorIndex + 1;
         addGraphEdge(ctx, {
           id: `flow-${prevExit}-${seg.entry}`,
           from: prevExit,
           to: seg.entry,
           type: 'flow',
-          ...(topLevel ? { insertIndex: processorsSeen } : {}),
+          ...(topLevel ? { insertIndex } : {}),
         });
       }
       prevExit = seg.exit;
     }
     if (topLevel) {
       for (let k = 0; k < consumed; k += 1) {
-        if (steps[i + k]?.section === 'processor') {
-          processorsSeen += 1;
-        }
+        lastProcessorIndex = topLevelProcessorIndex(steps[i + k]) ?? lastProcessorIndex;
       }
     }
     i += consumed;
@@ -1676,18 +1754,13 @@ function placeResourceDependencies(
   if (resources.length === 0) {
     return { right: bounds.maxX, bottom: bounds.maxY };
   }
-  const resByLabel = new Map<string, PipelineFlowNode>();
-  for (const r of resources) {
-    if (r.labelText) {
-      resByLabel.set(r.labelText, r);
-    }
-  }
+  const resolve = buildResourceRefResolver(resources);
   // Every (placed user → resource) dependency, and each resource's desired x (its nearest user).
   const refs: { userId: string; resourceId: string }[] = [];
   const desiredX = new Map<string, number>();
   const seen = new Set<string>();
   for (const node of nodes) {
-    const resource = node.resourceRef ? resByLabel.get(node.resourceRef) : undefined;
+    const resource = node.resourceRef ? resolve(node, node.resourceRef) : undefined;
     const userBox = resource ? boxes.get(node.id) : undefined;
     if (!(resource && userBox)) {
       continue;
