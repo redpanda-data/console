@@ -1236,7 +1236,7 @@ export function PipelineFlowCanvas({
           {/* Faint plus-mark texture so the canvas doesn't read as blank. A partly-transparent border
               tone (theme-aware) with small, sparse marks — a background hint, not a grid. */}
           <Background
-            color="color-mix(in srgb, var(--color-border) 55%, transparent)"
+            color="color-mix(in srgb, var(--color-border) 30%, transparent)"
             gap={28}
             size={4}
             variant={BackgroundVariant.Cross}
