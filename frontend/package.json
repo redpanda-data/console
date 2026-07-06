@@ -205,13 +205,19 @@
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "undici": "^7.28.0",
+    "ws": "^8.21.0"
   },
   "resolutions": {
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "undici": "^7.28.0",
+    "ws": "^8.21.0"
   },
   "patchedDependencies": {
     "@tanstack/react-router@1.170.15": "patches/@tanstack%2Freact-router@1.170.15.patch"
