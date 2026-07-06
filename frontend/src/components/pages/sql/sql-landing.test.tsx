@@ -58,19 +58,22 @@ function renderLanding(overrides: Partial<SqlLandingProps> = {}) {
   const onRunQuery = vi.fn();
   const onOpenEditor = vi.fn();
   const onAddTopic = vi.fn();
+  const onRetry = vi.fn();
   render(
     <SqlLanding
       catalogs={catalogs}
       hasTables={true}
+      isError={false}
       isLoading={false}
       onAddTopic={onAddTopic}
       onOpenEditor={onOpenEditor}
+      onRetry={onRetry}
       onRunQuery={onRunQuery}
       sqlRole="admin"
       {...overrides}
     />
   );
-  return { onAddTopic, onOpenEditor, onRunQuery };
+  return { onAddTopic, onOpenEditor, onRetry, onRunQuery };
 }
 
 afterEach(() => {
@@ -103,6 +106,24 @@ describe('SqlLanding populated overview', () => {
     const { onRunQuery } = renderLanding();
     await userEvent.click(screen.getByText('SELECT 1'));
     expect(onRunQuery).toHaveBeenCalledWith('SELECT 1');
+  });
+});
+
+describe('SqlLanding loading and error states', () => {
+  test('a load in flight shows the loading row, not the empty-state onboarding', () => {
+    renderLanding({ isLoading: true, catalogs: [], hasTables: false });
+    expect(screen.getByText('Loading catalogs…')).toBeInTheDocument();
+    expect(screen.queryByText('No tables yet')).toBeNull();
+    expect(screen.queryByText(/Connected/)).toBeNull();
+  });
+
+  test('a failed catalog load shows the error state with retry, not the empty state', async () => {
+    const { onRetry } = renderLanding({ isError: true, catalogs: [], hasTables: false });
+    expect(screen.getByText("Couldn't load the SQL catalog")).toBeInTheDocument();
+    expect(screen.queryByText('No tables yet')).toBeNull();
+    expect(screen.queryByText(/Connected/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: /Retry/ }));
+    expect(onRetry).toHaveBeenCalledOnce();
   });
 });
 

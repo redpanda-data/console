@@ -16,7 +16,18 @@ import { useGetSqlIdentityQuery, useListCatalogsQuery, useListTablesQuery } from
 import type { Catalog, SqlRole, TableRef } from './sql-types';
 
 export type SqlCatalogs = {
+  /**
+   * True until catalogs, the Redpanda catalog's tables AND the caller identity
+   * have all settled. Tables load after catalogs (the request needs the
+   * resolved catalog name), so tracking only the first fetch would report
+   * "loaded" while the table list — and therefore the empty-vs-populated
+   * decision — is still in flight.
+   */
   isLoading: boolean;
+  /** True when the catalog or table listing failed; identity failures fall back to viewer instead. */
+  isError: boolean;
+  /** Re-run whichever catalog/table request failed. */
+  refetch: () => void;
   /** Caller's effective role; admin unlocks write/DDL affordances. */
   sqlRole: SqlRole;
   /** Bare catalog list mapped to the tree view model (empty `tables`). */
@@ -30,14 +41,16 @@ export type SqlCatalogs = {
 
 // Shared SQL catalog + identity fetching for the landing and the editor studio.
 // Only one of those is mounted at a time (the route renders one or the other),
-// so there is no double-fetch; React Query also dedupes if there were.
+// and the underlying queries carry a long stale time, so switching views serves
+// from cache instead of refetching.
 //
 // `sqlRoleProp` lets tests/storybook pin the role; otherwise it's derived from
 // the SQL identity (admin when the caller is a superuser).
 export function useSqlCatalogs(sqlRoleProp?: SqlRole): SqlCatalogs {
-  const { data: catalogsData, isLoading } = useListCatalogsQuery();
-  const { data: identity } = useGetSqlIdentityQuery();
-  const sqlRole: SqlRole = sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
+  const catalogsQuery = useListCatalogsQuery();
+  const identityQuery = useGetSqlIdentityQuery();
+  const sqlRole: SqlRole = sqlRoleProp ?? (identityQuery.data?.isAdmin ? 'admin' : 'viewer');
+  const catalogsData = catalogsQuery.data;
 
   const catalogs = useMemo<Catalog[]>(() => {
     // MVP surfaces only the Redpanda catalog; Iceberg catalog support lands later.
@@ -51,8 +64,16 @@ export function useSqlCatalogs(sqlRoleProp?: SqlRole): SqlCatalogs {
   }, [catalogsData]);
 
   const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
-  const { data: redpandaTablesData } = useListTablesQuery({ catalog: redpandaCatalogName });
+  const tablesQuery = useListTablesQuery({ catalog: redpandaCatalogName });
+  const redpandaTablesData = tablesQuery.data;
   const hasTables = (redpandaTablesData?.tables?.length ?? 0) > 0;
+
+  // Identity loading is included so role-gated copy (e.g. the admin-only
+  // "Add a topic" CTA) doesn't flash the viewer variant at an admin while the
+  // lookup is in flight. An identity *error* is not fatal: the viewer fallback
+  // is the safe degradation.
+  const isLoading = catalogsQuery.isLoading || tablesQuery.isLoading || (!sqlRoleProp && identityQuery.isLoading);
+  const isError = catalogsQuery.isError || tablesQuery.isError;
 
   const completionCatalogs = useMemo<Catalog[]>(
     () =>
@@ -86,5 +107,14 @@ export function useSqlCatalogs(sqlRoleProp?: SqlRole): SqlCatalogs {
     [catalogs, redpandaCatalogName, redpandaTablesData]
   );
 
-  return { isLoading, sqlRole, catalogs, completionCatalogs, hasTables, redpandaTablesData };
+  const refetch = () => {
+    if (catalogsQuery.isError) {
+      catalogsQuery.refetch();
+    }
+    if (tablesQuery.isError) {
+      tablesQuery.refetch();
+    }
+  };
+
+  return { isLoading, isError, refetch, sqlRole, catalogs, completionCatalogs, hasTables, redpandaTablesData };
 }

@@ -16,6 +16,14 @@
 
 import type { Catalog } from './sql-types';
 
+// Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
+// operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`. This
+// preview shape is shared by the editor's catalog tree and the landing page's
+// table/suggested-query CTAs so the two can't drift.
+export function previewSql(catalogName: string, tableName: string): string {
+  return `SELECT *\nFROM ${catalogName}=>${tableName}\nLIMIT 100;`;
+}
+
 // Leading whitespace, line/block comments, and opening parens — so a query
 // wrapped like `(SELECT …)` still resolves to its first keyword.
 const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/;

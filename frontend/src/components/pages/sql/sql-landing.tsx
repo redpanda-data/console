@@ -10,9 +10,17 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { Heading, InlineCode } from 'components/redpanda-ui/components/typography';
+import {
+  CardTitle,
+  Card as RegistryCard,
+  CardAction as RegistryCardAction,
+  CardHeader as RegistryCardHeader,
+} from 'components/redpanda-ui/components/card';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Heading, InlineCode, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
+  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   Database,
@@ -22,14 +30,17 @@ import {
   Play,
   Plug,
   Plus,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Table as TableIcon,
   Terminal,
 } from 'lucide-react';
 import { type ReactNode, useMemo } from 'react';
-import { z } from 'zod';
+import { prettyMilliseconds } from 'utils/utils';
 
+import { previewSql } from './sql';
+import { loadHistory } from './sql-history';
 import type { Catalog, SqlRole, TableRef } from './sql-types';
 
 // The SQL section landing page — the default view for the /sql route. It renders
@@ -41,9 +52,8 @@ import type { Catalog, SqlRole, TableRef } from './sql-types';
 // connection-details card (host/port/JDBC/psql). Neither has a backend today:
 // - The metric tiles need named ObservabilityService queries that don't exist
 //   yet (only the per-topic `iceberg_topic_*_lag` instant queries do). When
-//   those land, render the tiles behind a `metricsAvailable` gate (e.g. embedded
-//   cloud where the Prometheus-backed ObservabilityService is reachable) — see
-//   `OBSERVABILITY_TILES` below for the intended shape.
+//   those land, add the tiles behind a capability gate (e.g. embedded cloud
+//   where the Prometheus-backed ObservabilityService is reachable).
 // - The connection card needs the SQL Postgres-wire endpoint surfaced to the UI
 //   (host/port/catalog), which Console doesn't expose. When a connection-info
 //   source exists, gate the card on it (likely embedded-only).
@@ -95,65 +105,23 @@ const ONBOARDING_STEPS: Array<{ icon: LucideIcon; title: string; desc: string }>
   },
 ];
 
-const HISTORY_KEY = 'rp_sql_history_v1';
 const MAX_RECENT = 6;
 const MAX_SUGGESTED = 4;
-
-// Mirrors the schema written by sql-editor.tsx's history.
-const RecentQuerySchema = z.object({ sql: z.string(), at: z.number() });
-type RecentQuery = z.infer<typeof RecentQuerySchema>;
-
-// Reads the editor's localStorage history (written by sql-editor.tsx). Kept
-// defensive so a malformed entry never throws.
-function loadRecentQueries(): RecentQuery[] {
-  if (typeof localStorage === 'undefined') {
-    return [];
-  }
-  try {
-    const raw: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
-    if (!Array.isArray(raw)) {
-      return [];
-    }
-    return raw.flatMap((entry) => {
-      const parsed = RecentQuerySchema.safeParse(entry);
-      return parsed.success ? [parsed.data] : [];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function relativeTime(at: number): string {
-  const seconds = Math.max(0, Math.round((Date.now() - at) / 1000));
-  if (seconds < 60) {
-    return 'just now';
-  }
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes} min ago`;
-  }
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) {
-    return `${hours} hr ago`;
-  }
-  const days = Math.round(hours / 24);
-  return `${days} d ago`;
-}
-
-// Oxla addresses catalog-qualified tables with the `=>` operator, matching the
-// editor's onQueryTable (`<catalog>=>table`).
-function previewSql(catalogName: string, tableName: string): string {
-  return `SELECT *\nFROM ${catalogName}=>${tableName}\nLIMIT 100;`;
-}
 
 function flattenTables(catalog: Catalog): TableRef[] {
   return catalog.namespaces.flatMap((ns) => ns.tables);
 }
 
 // ---- card shell -------------------------------------------------------------
+// Thin flush-list adapters over the registry card: no outer padding, dividers
+// between rows, and a compact single-row header.
 
 function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('overflow-hidden rounded-lg border bg-card shadow-sm', className)}>{children}</div>;
+  return (
+    <RegistryCard className={cn('gap-0 overflow-hidden p-0 shadow-sm', className)} size="full" variant="standard">
+      {children}
+    </RegistryCard>
+  );
 }
 
 function CardHead({
@@ -168,24 +136,40 @@ function CardHead({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2.5 border-border-subtle border-b px-4 py-3">
-      <Icon className="shrink-0 text-action-primary" size={16} />
-      <span className="whitespace-nowrap font-semibold text-sm text-strong tracking-tight">{title}</span>
-      {badge}
-      {action ? <div className="ml-auto flex items-center gap-4">{action}</div> : null}
-    </div>
+    <RegistryCardHeader className="items-center px-4 py-3">
+      <CardTitle>
+        <span className="flex items-center gap-2.5">
+          <Icon className="shrink-0 text-action-primary" size={16} />
+          <span className="whitespace-nowrap font-semibold text-sm text-strong tracking-tight">{title}</span>
+          {badge}
+        </span>
+      </CardTitle>
+      {action ? <RegistryCardAction className="flex items-center gap-4">{action}</RegistryCardAction> : null}
+    </RegistryCardHeader>
   );
 }
 
-function CardAction({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+// Divider under the card header; rows inside separate themselves with border-t.
+function CardRows({ children }: { children: ReactNode }) {
+  return <div className="border-border-subtle border-t">{children}</div>;
+}
+
+function CardActionButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <button
-      className="inline-flex items-center gap-1.5 whitespace-nowrap font-medium text-action-primary text-xs hover:underline"
-      onClick={onClick}
-      type="button"
-    >
+    <Button className="h-auto p-0 font-medium text-xs" onClick={onClick} size="sm" variant="link">
       {children}
-    </button>
+    </Button>
+  );
+}
+
+function LoadingRow({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-1.75 px-4 py-4">
+      <Spinner className="size-3.5 shrink-0 text-muted-foreground" />
+      <Text as="span" className="text-muted-foreground" variant="bodySmall">
+        {label}
+      </Text>
+    </div>
   );
 }
 
@@ -213,7 +197,7 @@ function MetricStrip({ tableCount, catalogCount, role }: { tableCount: number; c
     },
   ];
   return (
-    <div className="mt-7 flex overflow-hidden rounded-lg border bg-card shadow-sm">
+    <Card className="mt-7 flex-row">
       {tiles.map((tile) => (
         <div className="flex-1 border-border-subtle border-l px-4 py-4 first:border-l-0" key={tile.label}>
           <div className="mb-2 flex items-center gap-1.5">
@@ -226,7 +210,7 @@ function MetricStrip({ tableCount, catalogCount, role }: { tableCount: number; c
           <div className="mt-1.5 truncate text-muted-foreground text-xs">{tile.sub}</div>
         </div>
       ))}
-    </div>
+    </Card>
   );
 }
 
@@ -234,12 +218,10 @@ function MetricStrip({ tableCount, catalogCount, role }: { tableCount: number; c
 
 function TablesOverview({
   catalogs,
-  isLoading,
   onRunQuery,
   onOpenEditor,
 }: {
   catalogs: Catalog[];
-  isLoading: boolean;
   onRunQuery: (sql: string) => void;
   onOpenEditor: () => void;
 }) {
@@ -247,64 +229,60 @@ function TablesOverview({
     <Card>
       <CardHead
         action={
-          <CardAction onClick={onOpenEditor}>
+          <CardActionButton onClick={onOpenEditor}>
             Browse in editor <ArrowRight size={13} />
-          </CardAction>
+          </CardActionButton>
         }
         icon={TableIcon}
         title="Catalogs & tables"
       />
-      <div>
-        {isLoading ? (
-          <div className="px-4 py-6 text-muted-foreground text-sm">Loading catalogs…</div>
-        ) : (
-          catalogs.map((catalog) => {
-            const tables = flattenTables(catalog);
-            return (
-              <div className="border-border border-b last:border-b-0" key={catalog.name}>
-                <div className="flex items-center gap-2 bg-muted px-4 py-2.5">
-                  <span className="grid size-5 shrink-0 place-items-center rounded-sm bg-action-primary/10 text-action-primary">
-                    <Database size={12} />
-                  </span>
-                  <span className="font-semibold text-sm">{catalog.displayLabel}</span>
-                  <span className="ml-auto text-muted-foreground text-xs">
-                    {tables.length} {tables.length === 1 ? 'table' : 'tables'}
-                  </span>
-                </div>
-                {tables.length === 0 ? (
-                  <div className="px-4 py-3 text-muted-foreground text-xs">No tables in this catalog yet.</div>
-                ) : (
-                  tables.map((table) => {
-                    const sql = previewSql(table.catalogName, table.name);
-                    return (
-                      <button
-                        className="flex w-full cursor-pointer items-center gap-3 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
-                        key={table.id}
-                        onClick={() => onRunQuery(sql)}
-                        type="button"
-                      >
-                        <TableIcon className="shrink-0 text-action-primary" size={15} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium font-mono text-sm text-strong">{table.name}</div>
-                          {table.topicName ? (
-                            <div className="truncate text-muted-foreground text-xs">topic · {table.topicName}</div>
-                          ) : null}
-                        </div>
-                        <span
-                          className="grid size-7 shrink-0 place-items-center rounded-md border bg-background text-action-primary transition-colors hover:bg-action-primary/10"
-                          title="Query table"
-                        >
-                          <Play size={13} />
-                        </span>
-                      </button>
-                    );
-                  })
-                )}
+      <CardRows>
+        {catalogs.map((catalog) => {
+          const tables = flattenTables(catalog);
+          return (
+            <div className="border-border border-b last:border-b-0" key={catalog.name}>
+              <div className="flex items-center gap-2 bg-muted px-4 py-2.5">
+                <span className="grid size-5 shrink-0 place-items-center rounded-sm bg-action-primary/10 text-action-primary">
+                  <Database size={12} />
+                </span>
+                <span className="font-semibold text-sm">{catalog.displayLabel}</span>
+                <span className="ml-auto text-muted-foreground text-xs">
+                  {tables.length} {tables.length === 1 ? 'table' : 'tables'}
+                </span>
               </div>
-            );
-          })
-        )}
-      </div>
+              {tables.length === 0 ? (
+                <div className="px-4 py-3 text-muted-foreground text-xs">No tables in this catalog yet.</div>
+              ) : (
+                tables.map((table) => {
+                  const sql = previewSql(table.catalogName, table.name);
+                  return (
+                    <button
+                      className="flex w-full cursor-pointer items-center gap-3 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
+                      key={table.id}
+                      onClick={() => onRunQuery(sql)}
+                      type="button"
+                    >
+                      <TableIcon className="shrink-0 text-action-primary" size={15} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium font-mono text-sm text-strong">{table.name}</div>
+                        {table.topicName ? (
+                          <div className="truncate text-muted-foreground text-xs">topic · {table.topicName}</div>
+                        ) : null}
+                      </div>
+                      <span
+                        className="grid size-7 shrink-0 place-items-center rounded-md border bg-background text-action-primary transition-colors hover:bg-action-primary/10"
+                        title="Query table"
+                      >
+                        <Play size={13} />
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          );
+        })}
+      </CardRows>
     </Card>
   );
 }
@@ -315,6 +293,9 @@ function SuggestedQueries({ catalogs, onRunQuery }: { catalogs: Catalog[]; onRun
   const suggestions = useMemo(() => {
     const tables = catalogs.flatMap((catalog) => flattenTables(catalog));
     return tables.slice(0, MAX_SUGGESTED).map((table) => ({
+      // Table ids are fully qualified (catalog.namespace.table), so two
+      // same-named tables in different namespaces don't collide as keys.
+      id: table.id,
       label: `Preview ${table.name}`,
       sub: table.topicName ? `Latest 100 rows from topic ${table.topicName}` : 'Latest 100 rows',
       sql: previewSql(table.catalogName, table.name),
@@ -328,11 +309,11 @@ function SuggestedQueries({ catalogs, onRunQuery }: { catalogs: Catalog[]; onRun
   return (
     <Card>
       <CardHead icon={Sparkles} title="Suggested queries" />
-      <div>
+      <CardRows>
         {suggestions.map((suggestion) => (
           <button
             className="group flex w-full cursor-pointer items-center gap-3 border-border-subtle border-t px-4 py-3 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
-            key={suggestion.label}
+            key={suggestion.id}
             onClick={() => onRunQuery(suggestion.sql)}
             type="button"
           >
@@ -345,7 +326,7 @@ function SuggestedQueries({ catalogs, onRunQuery }: { catalogs: Catalog[]; onRun
             </span>
           </button>
         ))}
-      </div>
+      </CardRows>
     </Card>
   );
 }
@@ -353,14 +334,14 @@ function SuggestedQueries({ catalogs, onRunQuery }: { catalogs: Catalog[]; onRun
 // ---- recent queries (localStorage) ------------------------------------------
 
 function RecentQueries({ onRunQuery }: { onRunQuery: (sql: string) => void }) {
-  const recent = useMemo(() => loadRecentQueries().slice(0, MAX_RECENT), []);
+  const recent = useMemo(() => loadHistory().slice(0, MAX_RECENT), []);
   if (recent.length === 0) {
     return null;
   }
   return (
     <Card>
       <CardHead icon={FileText} title="Recent queries" />
-      <div>
+      <CardRows>
         {recent.map((entry) => (
           <button
             className="flex w-full cursor-pointer items-center gap-2.5 border-border-subtle border-t px-4 py-2.5 text-left transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
@@ -371,11 +352,11 @@ function RecentQueries({ onRunQuery }: { onRunQuery: (sql: string) => void }) {
             <span className="size-2 shrink-0 rounded-full bg-muted-foreground/40" />
             <span className="min-w-0 flex-1 truncate font-mono text-foreground text-xs">{entry.sql}</span>
             <span className="shrink-0 whitespace-nowrap text-muted-foreground text-xs tabular-nums">
-              {relativeTime(entry.at)}
+              {`${prettyMilliseconds(Date.now() - entry.at, { compact: true })} ago`}
             </span>
           </button>
         ))}
-      </div>
+      </CardRows>
     </Card>
   );
 }
@@ -386,7 +367,7 @@ function DocsCard() {
   return (
     <Card>
       <CardHead icon={FileText} title="Learn more" />
-      <div>
+      <CardRows>
         {DOC_LINKS.map((doc) => (
           <a
             className="group flex items-center gap-3 border-border-subtle border-t px-4 py-3 transition-colors first:border-t-0 hover:bg-muted/50 dark:hover:bg-surface-default-hover"
@@ -405,7 +386,7 @@ function DocsCard() {
             <ArrowUpRight className="shrink-0 text-muted-foreground/70" size={13} />
           </a>
         ))}
-      </div>
+      </CardRows>
     </Card>
   );
 }
@@ -416,16 +397,45 @@ function OnboardingSteps() {
   return (
     <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-3">
       {ONBOARDING_STEPS.map((step, index) => (
-        <div className="relative rounded-lg border bg-card p-5 shadow-sm" key={step.title}>
+        <RegistryCard className="relative gap-0 p-5 shadow-sm" key={step.title} size="full" variant="standard">
           <span className="absolute top-4 right-4 font-bold text-3xl text-border leading-none">{index + 1}</span>
           <div className="mb-3.5 grid size-10 place-items-center rounded-md bg-action-primary/10 text-action-primary">
             <step.icon size={18} />
           </div>
           <div className="mb-1.5 font-semibold text-sm text-strong">{step.title}</div>
           <div className="text-muted-foreground text-xs leading-relaxed">{step.desc}</div>
-        </div>
+        </RegistryCard>
       ))}
     </div>
+  );
+}
+
+// ---- load/error states ------------------------------------------------------
+
+function LoadingSection() {
+  return (
+    <Card className="mt-7">
+      <LoadingRow label="Loading catalogs…" />
+    </Card>
+  );
+}
+
+function ErrorSection({ onRetry }: { onRetry: () => void }) {
+  return (
+    <RegistryCard className="mt-7 gap-0 p-6 shadow-sm" size="full" variant="standard">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 shrink-0 text-destructive" size={18} />
+        <div className="min-w-0 flex-1">
+          <Text className="mb-1 font-semibold text-sm text-strong">Couldn't load the SQL catalog</Text>
+          <Text className="text-muted-foreground text-sm leading-relaxed">
+            The catalog or table listing failed. The SQL endpoint may be unreachable, or your session may have expired.
+          </Text>
+        </div>
+        <Button onClick={onRetry} size="sm" variant="secondary">
+          <RefreshCw size={14} /> Retry
+        </Button>
+      </div>
+    </RegistryCard>
   );
 }
 
@@ -435,43 +445,103 @@ export type SqlLandingProps = {
   catalogs: Catalog[];
   sqlRole: SqlRole;
   isLoading: boolean;
+  /** Catalog/table listing failed — render the error state, not the empty state. */
+  isError: boolean;
   hasTables: boolean;
-  /** Cluster label for the connection status line; omitted when not embedded. */
-  clusterName?: string;
   onOpenEditor: () => void;
   /** Switch to the editor and run the given SQL. */
   onRunQuery: (sql: string) => void;
   /** Open the add-topic wizard (admin only). */
   onAddTopic: () => void;
+  /** Re-run the failed catalog/table requests. */
+  onRetry: () => void;
 };
 
 export function SqlLanding({
   catalogs,
   sqlRole,
   isLoading,
+  isError,
   hasTables,
-  clusterName,
   onOpenEditor,
   onRunQuery,
   onAddTopic,
+  onRetry,
 }: SqlLandingProps) {
   const isAdmin = sqlRole === 'admin';
-  const isEmpty = !(isLoading || hasTables);
+  // Only assert "empty" once the catalog and table listings have actually
+  // settled successfully — a load in flight or a failed request is not an
+  // empty catalog.
+  const isEmpty = !(isLoading || isError || hasTables);
+  const showOnboarding = isEmpty;
   const tableCount = useMemo(
     () => catalogs.reduce((sum, catalog) => sum + flattenTables(catalog).length, 0),
     [catalogs]
   );
 
   const openEditorButton = (
-    <Button onClick={onOpenEditor} size="md" variant={isEmpty ? 'secondary' : 'primary'}>
+    <Button onClick={onOpenEditor} size="md" variant={showOnboarding ? 'secondary' : 'primary'}>
       <Terminal size={15} /> Open query editor
     </Button>
   );
   const addTopicButton = isAdmin ? (
-    <Button onClick={onAddTopic} size="md" variant={isEmpty ? 'primary' : 'secondary'}>
+    <Button onClick={onAddTopic} size="md" variant={showOnboarding ? 'primary' : 'secondary'}>
       <Plus size={15} /> Add a topic
     </Button>
   ) : null;
+
+  let body: ReactNode;
+  if (isLoading) {
+    body = <LoadingSection />;
+  } else if (isError) {
+    body = <ErrorSection onRetry={onRetry} />;
+  } else if (showOnboarding) {
+    body = (
+      <>
+        <OnboardingSteps />
+        <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_364px]">
+          <div className="min-w-0">
+            <RegistryCard
+              className="gap-0 p-6 text-muted-foreground text-sm leading-relaxed shadow-sm"
+              size="full"
+              variant="standard"
+            >
+              <Text className="mb-2 font-semibold text-strong">No tables yet</Text>
+              <Text className="text-muted-foreground text-sm leading-relaxed">
+                {isAdmin ? (
+                  <>
+                    Add a Redpanda topic to create your first table — schema is inferred, and reads mesh the live tail
+                    with Iceberg history. Use <InlineCode>Add a topic</InlineCode> above to get started.
+                  </>
+                ) : (
+                  'Ask an admin to add a Redpanda topic as a table before you can query it with SQL.'
+                )}
+              </Text>
+            </RegistryCard>
+          </div>
+          <div className="min-w-0">
+            <DocsCard />
+          </div>
+        </div>
+      </>
+    );
+  } else {
+    body = (
+      <>
+        <MetricStrip catalogCount={catalogs.length} role={sqlRole} tableCount={tableCount} />
+        <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_364px]">
+          <div className="flex min-w-0 flex-col gap-5">
+            <TablesOverview catalogs={catalogs} onOpenEditor={onOpenEditor} onRunQuery={onRunQuery} />
+            <DocsCard />
+          </div>
+          <div className="flex min-w-0 flex-col gap-5">
+            <SuggestedQueries catalogs={catalogs} onRunQuery={onRunQuery} />
+            <RecentQueries onRunQuery={onRunQuery} />
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
@@ -483,15 +553,17 @@ export function SqlLanding({
               <Database size={13} /> SQL
             </div>
             <Heading className="mb-3 font-semibold text-3xl text-strong leading-tight tracking-heading" level={1}>
-              {isEmpty ? 'Run SQL on your Redpanda topics' : 'Query your streaming data with SQL'}
+              {showOnboarding ? 'Run SQL on your Redpanda topics' : 'Query your streaming data with SQL'}
             </Heading>
-            <p className="mb-6 text-base text-muted-foreground leading-relaxed">
-              {isEmpty
+            {/* Text (renders a div), not <p>: an unlayered global reset zeroes margins
+                on paragraph elements and beats Tailwind's layered mb-* utilities. */}
+            <Text className="mb-6 text-base text-muted-foreground leading-relaxed">
+              {showOnboarding
                 ? 'Expose a topic as a table and query it instantly — Redpanda meshes the live tail with Iceberg history, so every read is fresh and complete. No pipeline to build.'
                 : 'Read live topics and Iceberg tables together through one PostgreSQL-compatible endpoint. Bridge queries mesh the live tail with tiered history at query time.'}
-            </p>
+            </Text>
             <div className="flex flex-wrap items-center gap-2.5">
-              {isEmpty ? (
+              {showOnboarding ? (
                 <>
                   {addTopicButton}
                   {openEditorButton}
@@ -503,68 +575,19 @@ export function SqlLanding({
                 </>
               )}
             </div>
-            <div className="mt-5 flex items-center gap-2 text-muted-foreground text-sm">
-              <span className="size-2 shrink-0 rounded-full bg-success" />
-              Connected
-              {clusterName ? (
-                <>
-                  {' · '}
-                  <strong className="font-semibold text-strong">{clusterName}</strong>
-                </>
-              ) : null}
-              {' · '}PostgreSQL wire
-            </div>
+            {/* Only claim a live connection once the catalog listing has actually succeeded. */}
+            {isLoading || isError ? null : (
+              <div className="mt-5 flex items-center gap-2 text-muted-foreground text-sm">
+                <span className="size-2 shrink-0 rounded-full bg-success" />
+                Connected{' · '}PostgreSQL wire
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* body */}
-      <div className="mx-auto w-full max-w-[1500px] px-12 pb-14">
-        {isEmpty ? (
-          <>
-            <OnboardingSteps />
-            <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_364px]">
-              <div className="min-w-0">
-                <div className="rounded-lg border bg-card p-6 text-muted-foreground text-sm leading-relaxed shadow-sm">
-                  <p className="mb-2 font-semibold text-strong">No tables yet</p>
-                  <p>
-                    {isAdmin ? (
-                      <>
-                        Add a Redpanda topic to create your first table — schema is inferred, and reads mesh the live
-                        tail with Iceberg history. Use <InlineCode>Add a topic</InlineCode> above to get started.
-                      </>
-                    ) : (
-                      'Ask an admin to add a Redpanda topic as a table before you can query it with SQL.'
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="min-w-0">
-                <DocsCard />
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <MetricStrip catalogCount={catalogs.length} role={sqlRole} tableCount={tableCount} />
-            <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_364px]">
-              <div className="flex min-w-0 flex-col gap-5">
-                <TablesOverview
-                  catalogs={catalogs}
-                  isLoading={isLoading}
-                  onOpenEditor={onOpenEditor}
-                  onRunQuery={onRunQuery}
-                />
-                <DocsCard />
-              </div>
-              <div className="flex min-w-0 flex-col gap-5">
-                <SuggestedQueries catalogs={catalogs} onRunQuery={onRunQuery} />
-                <RecentQueries onRunQuery={onRunQuery} />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <div className="mx-auto w-full max-w-[1500px] px-12 pb-14">{body}</div>
     </div>
   );
 }

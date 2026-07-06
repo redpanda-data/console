@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index';
 import { Route as TransformsIndexRouteImport } from './routes/transforms/index';
 import { Route as TranscriptsIndexRouteImport } from './routes/transcripts/index';
 import { Route as TopicsIndexRouteImport } from './routes/topics/index';
+import { Route as SqlIndexRouteImport } from './routes/sql/index';
 import { Route as ShadowlinksIndexRouteImport } from './routes/shadowlinks/index';
 import { Route as SecurityIndexRouteImport } from './routes/security/index';
 import { Route as SecretsIndexRouteImport } from './routes/secrets/index';
@@ -34,6 +35,7 @@ import { Route as DebugBundleIndexRouteImport } from './routes/debug-bundle/inde
 import { Route as ConnectClustersIndexRouteImport } from './routes/connect-clusters/index';
 import { Route as AgentsIndexRouteImport } from './routes/agents/index';
 import { Route as TransformsTransformNameRouteImport } from './routes/transforms/$transformName';
+import { Route as SqlEditorRouteImport } from './routes/sql/editor';
 import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create';
 import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
 import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
@@ -143,6 +145,11 @@ const TopicsIndexRoute = TopicsIndexRouteImport.update({
   path: '/topics/',
   getParentRoute: () => rootRouteImport,
 } as any);
+const SqlIndexRoute = SqlIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SqlRoute,
+} as any);
 const ShadowlinksIndexRoute = ShadowlinksIndexRouteImport.update({
   id: '/shadowlinks/',
   path: '/shadowlinks/',
@@ -212,6 +219,11 @@ const TransformsTransformNameRoute = TransformsTransformNameRouteImport.update({
   id: '/transforms/$transformName',
   path: '/transforms/$transformName',
   getParentRoute: () => rootRouteImport,
+} as any);
+const SqlEditorRoute = SqlEditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
+  getParentRoute: () => SqlRoute,
 } as any);
 const ShadowlinksCreateRoute = ShadowlinksCreateRouteImport.update({
   id: '/shadowlinks/create',
@@ -510,7 +522,7 @@ export interface FileRoutesByFullPath {
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
   '/security': typeof SecurityRouteWithChildren;
-  '/sql': typeof SqlRoute;
+  '/sql': typeof SqlRouteWithChildren;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -528,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
+  '/sql/editor': typeof SqlEditorRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents/': typeof AgentsIndexRoute;
   '/connect-clusters/': typeof ConnectClustersIndexRoute;
@@ -542,6 +555,7 @@ export interface FileRoutesByFullPath {
   '/secrets/': typeof SecretsIndexRoute;
   '/security/': typeof SecurityIndexRoute;
   '/shadowlinks/': typeof ShadowlinksIndexRoute;
+  '/sql/': typeof SqlIndexRoute;
   '/topics/': typeof TopicsIndexRoute;
   '/transcripts/': typeof TranscriptsIndexRoute;
   '/transforms/': typeof TransformsIndexRoute;
@@ -589,7 +603,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
-  '/sql': typeof SqlRoute;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -607,6 +620,7 @@ export interface FileRoutesByTo {
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
+  '/sql/editor': typeof SqlEditorRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents': typeof AgentsIndexRoute;
   '/connect-clusters': typeof ConnectClustersIndexRoute;
@@ -621,6 +635,7 @@ export interface FileRoutesByTo {
   '/secrets': typeof SecretsIndexRoute;
   '/security': typeof SecurityIndexRoute;
   '/shadowlinks': typeof ShadowlinksIndexRoute;
+  '/sql': typeof SqlIndexRoute;
   '/topics': typeof TopicsIndexRoute;
   '/transcripts': typeof TranscriptsIndexRoute;
   '/transforms': typeof TransformsIndexRoute;
@@ -670,7 +685,7 @@ export interface FileRoutesById {
   '/quotas': typeof QuotasRoute;
   '/reassign-partitions': typeof ReassignPartitionsRoute;
   '/security': typeof SecurityRouteWithChildren;
-  '/sql': typeof SqlRoute;
+  '/sql': typeof SqlRouteWithChildren;
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
@@ -688,6 +703,7 @@ export interface FileRoutesById {
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
+  '/sql/editor': typeof SqlEditorRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents/': typeof AgentsIndexRoute;
   '/connect-clusters/': typeof ConnectClustersIndexRoute;
@@ -702,6 +718,7 @@ export interface FileRoutesById {
   '/secrets/': typeof SecretsIndexRoute;
   '/security/': typeof SecurityIndexRoute;
   '/shadowlinks/': typeof ShadowlinksIndexRoute;
+  '/sql/': typeof SqlIndexRoute;
   '/topics/': typeof TopicsIndexRoute;
   '/transcripts/': typeof TranscriptsIndexRoute;
   '/transforms/': typeof TransformsIndexRoute;
@@ -770,6 +787,7 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/shadowlinks/create'
+    | '/sql/editor'
     | '/transforms/$transformName'
     | '/agents/'
     | '/connect-clusters/'
@@ -784,6 +802,7 @@ export interface FileRouteTypes {
     | '/secrets/'
     | '/security/'
     | '/shadowlinks/'
+    | '/sql/'
     | '/topics/'
     | '/transcripts/'
     | '/transforms/'
@@ -831,7 +850,6 @@ export interface FileRouteTypes {
     | '/'
     | '/quotas'
     | '/reassign-partitions'
-    | '/sql'
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
@@ -849,6 +867,7 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/shadowlinks/create'
+    | '/sql/editor'
     | '/transforms/$transformName'
     | '/agents'
     | '/connect-clusters'
@@ -863,6 +882,7 @@ export interface FileRouteTypes {
     | '/secrets'
     | '/security'
     | '/shadowlinks'
+    | '/sql'
     | '/topics'
     | '/transcripts'
     | '/transforms'
@@ -929,6 +949,7 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/shadowlinks/create'
+    | '/sql/editor'
     | '/transforms/$transformName'
     | '/agents/'
     | '/connect-clusters/'
@@ -943,6 +964,7 @@ export interface FileRouteTypes {
     | '/secrets/'
     | '/security/'
     | '/shadowlinks/'
+    | '/sql/'
     | '/topics/'
     | '/transcripts/'
     | '/transforms/'
@@ -992,7 +1014,7 @@ export interface RootRouteChildren {
   QuotasRoute: typeof QuotasRoute;
   ReassignPartitionsRoute: typeof ReassignPartitionsRoute;
   SecurityRoute: typeof SecurityRouteWithChildren;
-  SqlRoute: typeof SqlRoute;
+  SqlRoute: typeof SqlRouteWithChildren;
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
@@ -1132,6 +1154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TopicsIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/sql/': {
+      id: '/sql/';
+      path: '/';
+      fullPath: '/sql/';
+      preLoaderRoute: typeof SqlIndexRouteImport;
+      parentRoute: typeof SqlRoute;
+    };
     '/shadowlinks/': {
       id: '/shadowlinks/';
       path: '/shadowlinks';
@@ -1229,6 +1258,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/transforms/$transformName';
       preLoaderRoute: typeof TransformsTransformNameRouteImport;
       parentRoute: typeof rootRouteImport;
+    };
+    '/sql/editor': {
+      id: '/sql/editor';
+      path: '/editor';
+      fullPath: '/sql/editor';
+      preLoaderRoute: typeof SqlEditorRouteImport;
+      parentRoute: typeof SqlRoute;
     };
     '/shadowlinks/create': {
       id: '/shadowlinks/create';
@@ -1644,12 +1680,24 @@ const SecurityRouteWithChildren = SecurityRoute._addFileChildren(
   SecurityRouteChildren,
 );
 
+interface SqlRouteChildren {
+  SqlEditorRoute: typeof SqlEditorRoute;
+  SqlIndexRoute: typeof SqlIndexRoute;
+}
+
+const SqlRouteChildren: SqlRouteChildren = {
+  SqlEditorRoute: SqlEditorRoute,
+  SqlIndexRoute: SqlIndexRoute,
+};
+
+const SqlRouteWithChildren = SqlRoute._addFileChildren(SqlRouteChildren);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   QuotasRoute: QuotasRoute,
   ReassignPartitionsRoute: ReassignPartitionsRoute,
   SecurityRoute: SecurityRouteWithChildren,
-  SqlRoute: SqlRoute,
+  SqlRoute: SqlRouteWithChildren,
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,

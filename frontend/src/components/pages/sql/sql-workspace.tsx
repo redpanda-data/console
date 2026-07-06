@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
@@ -24,16 +23,14 @@ import {
   type Row as SqlRow,
   type Value as SqlValue,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { type Ref, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import { useExecuteQueryMutation, useInvalidateSqlCatalog, useTopicIcebergQuery } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
-import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
-import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { bridgeTopicForQuery, firstKeyword, isWriteKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isWriteKeyword, previewSql } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -121,14 +118,6 @@ const setPageExpanded = (expanded: boolean) => {
   } else {
     root.removeAttribute(PAGE_EXPANDED_ATTR);
   }
-};
-
-// Standalone console renders its own breadcrumb/title header for the SQL route;
-// populate it the way other pages do (no-op visually when embedded, where the
-// host supplies the header).
-const setStudioPageHeader = () => {
-  uiState.pageTitle = 'SQL';
-  uiState.pageBreadcrumbs = [{ title: 'SQL', linkTo: '/sql', heading: 'SQL' }];
 };
 
 // Renders the workspace as a fixed overlay filling the area right of the
@@ -290,95 +279,6 @@ function setupOverlayLayout(
   };
 }
 
-type SqlEditorViewProps = {
-  catalogs: Catalog[];
-  completionCatalogs: Catalog[];
-  isLoading: boolean;
-  sqlRole: SqlRole;
-  /** SQL the editor seeds its first tab with on mount. */
-  editorSeed: string;
-  editorRef: Ref<SqlEditorHandle>;
-  run: QueryRun;
-  bridge: BridgeInfo | undefined;
-  hasTables: boolean;
-  wizardOpen: boolean;
-  wizardError: string | undefined;
-  isCreating: boolean;
-  wizardTopics: WizardTopic[];
-  onQueryTable: (catalog: Catalog, table: TableRef) => void;
-  openWizard: () => void;
-  closeWizard: () => void;
-  onCreateTable: (args: { topic: string; tableName: string }) => void;
-  doRun: (sql: string) => void;
-};
-
-// The catalog tree + editor/results (or the add-topic wizard). Split out from
-// SqlWorkspace so the two top-level views (landing vs editor) stay flat there.
-function SqlEditorView({
-  catalogs,
-  completionCatalogs,
-  isLoading,
-  sqlRole,
-  editorSeed,
-  editorRef,
-  run,
-  bridge,
-  hasTables,
-  wizardOpen,
-  wizardError,
-  isCreating,
-  wizardTopics,
-  onQueryTable,
-  openWizard,
-  closeWizard,
-  onCreateTable,
-  doRun,
-}: SqlEditorViewProps) {
-  return (
-    <>
-      <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">
-        <CatalogTree
-          catalogs={catalogs}
-          isLoading={isLoading}
-          onAddTable={openWizard}
-          onQueryTable={onQueryTable}
-          sqlRole={sqlRole}
-        />
-      </div>
-      <div className="flex min-h-0 min-w-0 flex-1">
-        {wizardOpen ? (
-          <SqlWizard
-            error={wizardError}
-            isCreating={isCreating}
-            onClose={closeWizard}
-            onCreate={onCreateTable}
-            topics={wizardTopics}
-          />
-        ) : (
-          <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
-            <ResizablePanel
-              className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
-              defaultSize="42%"
-              minSize="15%"
-            >
-              <SqlEditor catalogs={completionCatalogs} initialQuery={editorSeed} onRun={doRun} ref={editorRef} />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
-              <SqlResults
-                hasTables={hasTables}
-                onAddTable={openWizard}
-                run={run.state === 'success' ? { ...run, bridge } : run}
-                sqlRole={sqlRole}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        )}
-      </div>
-    </>
-  );
-}
-
 // The studio header row: a back affordance to the SQL overview, the title, the
 // role badge and the fullscreen toggle. Split out so its conditionals stay off
 // SqlWorkspace's complexity budget.
@@ -465,7 +365,6 @@ function useStudioMode(): {
       // Reflect the mode for the cloud-ui shell while the studio is mounted, and
       // clear it on unmount so it leaves no residue on other pages.
       setPageExpanded(modeRef.current === 'full');
-      setStudioPageHeader();
       const handle = setupOverlayLayout(el, () => modeRef.current);
       overlayCleanup.current = handle.teardown;
       overlayRelayout.current = handle.relayout;
@@ -502,16 +401,6 @@ export function SqlWorkspace({
   openWizardOnMount = false,
   onBack,
 }: SqlWorkspaceProps) {
-  const navigate = useNavigate();
-  // The route guard skips the redirect while endpoint compatibility is still
-  // loading; once it resolves, bounce clusters that genuinely lack SQLService.
-  const endpointsLoaded = useSupportedFeaturesStore((s) => s.endpointCompatibility !== null);
-  useEffect(() => {
-    if (endpointsLoaded && !isSupported(Feature.SQLService)) {
-      navigate({ to: '/', replace: true });
-    }
-  }, [endpointsLoaded, navigate]);
-
   const [run, setRun] = useState<QueryRun>({ state: 'idle' });
   // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
   // is queried from the catalog tree; the lag itself comes from the
@@ -639,17 +528,16 @@ export function SqlWorkspace({
   );
 
   const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
-    // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
-    // operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`.
-    const ref = `${catalog.name}=>${table.name}`;
-    const sql = `SELECT *\nFROM ${ref}\nLIMIT 100;`;
-    editorRef.current?.setQuery(sql, table.name);
+    editorRef.current?.setQuery(previewSql(catalog.name, table.name), table.name);
   }, []);
 
   // ---- Add-topic wizard ----
   const [wizardOpen, setWizardOpen] = useState(openWizardOnMount);
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
-  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  // The topic listing is the heaviest request on this page (it's the full
+  // cluster topic list) and only feeds the wizard's picker — fetch it when the
+  // wizard actually opens, not for every editor visit.
+  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true, enabled: wizardOpen });
   const invalidateSqlCatalog = useInvalidateSqlCatalog();
 
   // Topics already exposed as tables in the Redpanda catalog — excluded from
@@ -683,16 +571,17 @@ export function SqlWorkspace({
     setWizardError(undefined);
   }, []);
 
-  // Run the seed query once when the studio opens from a landing "run" CTA. The
-  // studio mounts fresh on each entry, so this fires exactly once per entry;
-  // the ref guards against re-running if doRun's identity changes mid-mount.
+  // Run the seed query once when the studio opens from a landing "run" CTA,
+  // through the editor's run path so it lands in the query history like any
+  // user-initiated run. The studio mounts fresh on each entry, so this fires
+  // exactly once per entry; the ref guards against strict-mode double-invoke.
   const didAutoRun = useRef(false);
   useEffect(() => {
-    if (!didAutoRun.current && autoRun && seedQuery) {
+    if (!(didAutoRun.current || wizardOpen) && autoRun && seedQuery) {
       didAutoRun.current = true;
-      doRun(seedQuery);
+      editorRef.current?.run(seedQuery);
     }
-  }, [autoRun, seedQuery, doRun]);
+  }, [autoRun, seedQuery, wizardOpen]);
 
   const onCreateTable = useCallback(
     ({ topic, tableName }: { topic: string; tableName: string }) => {
@@ -714,11 +603,9 @@ export function SqlWorkspace({
 
   return (
     <div
-      // The registry's near-black dark theme renders borders at rgba(255,255,255,0.04)
-      // — effectively invisible. The SQL design uses visible grey dividers
-      // (grey-700/600/800), so re-point the border tokens to those registry grey
-      // scale values for this surface in dark mode only. Light mode is untouched.
-      className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      // Dark-mode border-token remap is inherited from the /sql layout route's
+      // wrapper (see routes/sql.tsx SQL_DARK_BORDERS) — defined once for both views.
+      className="flex h-full flex-col bg-background text-strong"
       ref={attachOverlay}
     >
       <StudioHeader mode={mode} onBack={onBack} sqlRole={sqlRole} toggleMode={toggleMode} />
@@ -735,26 +622,45 @@ export function SqlWorkspace({
             : 'rounded-none border border-x-transparent border-b-transparent shadow-none'
         )}
       >
-        <SqlEditorView
-          bridge={bridge}
-          catalogs={catalogs}
-          closeWizard={closeWizard}
-          completionCatalogs={completionCatalogs}
-          doRun={doRun}
-          editorRef={editorRef}
-          editorSeed={seedQuery}
-          hasTables={hasTables}
-          isCreating={executeQuery.isPending}
-          isLoading={isLoading}
-          onCreateTable={onCreateTable}
-          onQueryTable={onQueryTable}
-          openWizard={openWizard}
-          run={run}
-          sqlRole={sqlRole}
-          wizardError={wizardError}
-          wizardOpen={wizardOpen}
-          wizardTopics={wizardTopics}
-        />
+        <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">
+          <CatalogTree
+            catalogs={catalogs}
+            isLoading={isLoading}
+            onAddTable={openWizard}
+            onQueryTable={onQueryTable}
+            sqlRole={sqlRole}
+          />
+        </div>
+        <div className="flex min-h-0 min-w-0 flex-1">
+          {wizardOpen ? (
+            <SqlWizard
+              error={wizardError}
+              isCreating={executeQuery.isPending}
+              onClose={closeWizard}
+              onCreate={onCreateTable}
+              topics={wizardTopics}
+            />
+          ) : (
+            <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
+              <ResizablePanel
+                className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
+                defaultSize="42%"
+                minSize="15%"
+              >
+                <SqlEditor catalogs={completionCatalogs} initialQuery={seedQuery} onRun={doRun} ref={editorRef} />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
+                <SqlResults
+                  hasTables={hasTables}
+                  onAddTable={openWizard}
+                  run={run.state === 'success' ? { ...run, bridge } : run}
+                  sqlRole={sqlRole}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          )}
+        </div>
       </div>
     </div>
   );
