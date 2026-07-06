@@ -12,7 +12,7 @@
 import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { decorateEdges, injectNodeData, selectionTargetForNode } from './pipeline-flow-canvas';
+import { decorateEdges, injectNodeData, scopeColumnSlabs, selectionTargetForNode } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowGraphEdge', data: { insertIndex: 1 } },
@@ -24,6 +24,39 @@ const refData = (decorated: Edge[]) =>
   decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean; faint?: boolean };
 
 const scope = (...ids: string[]) => new Set(ids);
+
+describe('scopeColumnSlabs — a construct footprint that excludes a sibling in the L-corner', () => {
+  const node = (id: string, x: number, y: number): Node => ({
+    id,
+    position: { x, y },
+    initialWidth: 200,
+    initialHeight: 80,
+    data: {},
+    type: 'flowCard',
+  });
+  const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
+
+  it('draws one box per column and never covers a non-member sitting below the marker', () => {
+    // A fallback-style L: the marker (col 0, mid) fans to two outputs (col 1, top + bottom); the
+    // sibling case's `aws_s3` sits in col 0 BELOW the marker — the old single bounding box swallowed it.
+    const marker = node('marker', 0, 300);
+    const out1 = node('out1', 500, 0);
+    const out2 = node('out2', 500, 600);
+    const sibling = node('aws_s3', 0, 620); // NOT in scope
+    const slabs = scopeColumnSlabs([marker, out1, out2, sibling], scope('marker', 'out1', 'out2'), noMeasure);
+
+    // Two columns → two slabs.
+    expect(slabs).toHaveLength(2);
+    const covers = (b: (typeof slabs)[number], n: Node) =>
+      n.position.x >= b.minX && n.position.x <= b.maxX && n.position.y >= b.minY && n.position.y <= b.maxY;
+    // No slab covers the sibling: col 0's slab spans only the marker (y 300–380), not down to aws_s3 (y 620).
+    expect(slabs.some((b) => covers(b, sibling))).toBe(false);
+    // The members are still covered.
+    expect(slabs.some((b) => covers(b, marker))).toBe(true);
+    expect(slabs.some((b) => covers(b, out1))).toBe(true);
+    expect(slabs.some((b) => covers(b, out2))).toBe(true);
+  });
+});
 
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {

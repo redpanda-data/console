@@ -594,16 +594,22 @@ function constructAccent(node?: Node): string {
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
-// Bounding box (flow coords) of every node in `scope` — incl. merge dots (outside the parser tree,
-// matched via `ownerId`). Prefers each node's MEASURED size (so the box hugs the rendered card, not
-// the layout's initialHeight estimate, which over-reserves height and leaves a lopsided bottom gap);
-// falls back to the layout size before measurement so boxes always draw.
-function scopeMemberBounds(
+// Center-x gap that starts a new column. Dagre gives every node in a rank the same center-x, and
+// adjacent ranks sit far wider apart than this, so it cleanly buckets members by rank/column.
+const SCOPE_COLUMN_GAP = 80;
+
+// A scope's footprint as ONE box PER COLUMN (Dagre rank) rather than a single bounding box.
+// A construct's members can form an L — a fan marker on the left, its outputs a column to the
+// right — whose overall bounding box swallows an unrelated sibling card in the empty corner. A
+// per-column footprint hugs the members in each column instead, so it never covers a card that
+// isn't a member. Prefers each node's MEASURED size (so a slab hugs the rendered card, not the
+// layout's over-reserved estimate); falls back to the layout size before measurement.
+export function scopeColumnSlabs(
   nodes: Node[],
   scope: ReadonlySet<string>,
   measuredById: Map<string, { measured?: { width?: number; height?: number } }>
-): ScopeBounds | null {
-  let b: ScopeBounds | null = null;
+): ScopeBounds[] {
+  const rects: { cx: number; bounds: ScopeBounds }[] = [];
   for (const n of nodes) {
     if (!nodeInScope(n, scope)) {
       continue;
@@ -611,24 +617,34 @@ function scopeMemberBounds(
     const m = measuredById.get(n.id)?.measured;
     const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
     const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
-    const right = n.position.x + w;
-    const bottom = n.position.y + h;
-    b = b
-      ? {
-          minX: Math.min(b.minX, n.position.x),
-          minY: Math.min(b.minY, n.position.y),
-          maxX: Math.max(b.maxX, right),
-          maxY: Math.max(b.maxY, bottom),
-        }
-      : { minX: n.position.x, minY: n.position.y, maxX: right, maxY: bottom };
+    rects.push({
+      cx: n.position.x + w / 2,
+      bounds: { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h },
+    });
   }
-  return b;
+  rects.sort((a, z) => a.cx - z.cx);
+  const slabs: ScopeBounds[] = [];
+  let curCx = Number.NEGATIVE_INFINITY;
+  for (const { cx, bounds } of rects) {
+    const slab = slabs.at(-1);
+    if (slab && cx - curCx <= SCOPE_COLUMN_GAP) {
+      slab.minX = Math.min(slab.minX, bounds.minX);
+      slab.minY = Math.min(slab.minY, bounds.minY);
+      slab.maxX = Math.max(slab.maxX, bounds.maxX);
+      slab.maxY = Math.max(slab.maxY, bounds.maxY);
+    } else {
+      slabs.push({ ...bounds });
+    }
+    curCx = cx;
+  }
+  return slabs;
 }
 
 type ScopeRegion = {
   id: string;
   scope: ReadonlySet<string>;
-  bounds: ScopeBounds;
+  // One box per column the construct occupies (see scopeColumnSlabs).
+  slabs: ScopeBounds[];
   accent: string;
   label: string;
   /** Side / top padding — larger for outer regions so nested ones don't touch. */
@@ -636,36 +652,61 @@ type ScopeRegion = {
   topPad: number;
 };
 
-// One construct's enclosure box. Drawn FAINT (a quiet nesting hint); it and its label
-// strengthen when the construct, or anything inside it, is the active (selected/hovered) node.
-// Non-interactive, behind the nodes, in flow coordinates.
+// The slab that hosts the region's label — the top-left-most column, so the label sits where
+// the construct starts.
+function labelSlabIndex(slabs: ScopeBounds[]): number {
+  let best = 0;
+  for (let i = 1; i < slabs.length; i += 1) {
+    const s = slabs[i];
+    const b = slabs[best];
+    if (s.minX < b.minX || (s.minX === b.minX && s.minY < b.minY)) {
+      best = i;
+    }
+  }
+  return best;
+}
+
+// One construct's enclosure — a faint dashed box PER COLUMN it occupies (so an L-shaped construct
+// hugs its members instead of one big box swallowing a sibling in the corner). Drawn FAINT (a quiet
+// nesting hint); the boxes and label strengthen when the construct, or anything inside it, is the
+// active (selected/hovered) node. Non-interactive, behind the nodes, in flow coordinates.
 function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
-  const { bounds, accent, label, pad, topPad } = region;
+  const { slabs, accent, label, pad, topPad } = region;
+  const labelIdx = labelSlabIndex(slabs);
+  const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
+  const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
   return (
-    <div
-      className="pointer-events-none absolute rounded-xl border border-dashed transition-[background-color,border-color] duration-200"
-      style={{
-        transform: `translate(${bounds.minX - pad}px, ${bounds.minY - topPad}px)`,
-        width: bounds.maxX - bounds.minX + 2 * pad,
-        height: bounds.maxY - bounds.minY + topPad + pad,
-        borderColor: `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`,
-        backgroundColor: `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`,
-        zIndex: 0,
-      }}
-    >
-      {/* Sits just above the top border (not an internal band) so the top gap matches the others. Faint until active. */}
-      <span
-        className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
-        style={{
-          color: accent,
-          opacity: active ? 1 : 0.8,
-          backgroundColor: 'var(--color-background)',
-          border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
-        }}
-      >
-        {label}
-      </span>
-    </div>
+    <>
+      {slabs.map((bounds, i) => (
+        <div
+          className="pointer-events-none absolute rounded-xl border border-dashed transition-[background-color,border-color] duration-200"
+          key={`${bounds.minX}-${bounds.minY}`}
+          style={{
+            transform: `translate(${bounds.minX - pad}px, ${bounds.minY - topPad}px)`,
+            width: bounds.maxX - bounds.minX + 2 * pad,
+            height: bounds.maxY - bounds.minY + topPad + pad,
+            borderColor,
+            backgroundColor,
+            zIndex: 0,
+          }}
+        >
+          {/* Label sits just above the top border of the construct's first column. Faint until active. */}
+          {i === labelIdx ? (
+            <span
+              className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
+              style={{
+                color: accent,
+                opacity: active ? 1 : 0.8,
+                backgroundColor: 'var(--color-background)',
+                border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
+              }}
+            >
+              {label}
+            </span>
+          ) : null}
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -713,14 +754,14 @@ function ScopeRegions({
       if (!scope || scope.size < 2) {
         continue;
       }
-      const bounds = scopeMemberBounds(rfNodes, scope, nodeLookup);
-      if (!bounds) {
+      const slabs = scopeColumnSlabs(rfNodes, scope, nodeLookup);
+      if (slabs.length === 0) {
         continue;
       }
       drafts.push({
         id: node.id,
         scope,
-        bounds,
+        slabs,
         accent: constructAccent(node),
         label: (node.data as FlowCardData).label,
       });

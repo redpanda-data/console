@@ -283,31 +283,72 @@ function emptySectionContainerGroup(
   ];
 }
 
-// Output branches with routing: switch cases carry a `check` (no check ⇒ default);
-// fallback tiers route "on failure" of the prior.
-function parseOutputBranches(outputKey: string, value: unknown): GroupChildSpec[] | undefined {
-  if (outputKey === 'switch' && value && typeof value === 'object' && 'cases' in value) {
-    const cases = (value as { cases?: Record<string, unknown>[] }).cases;
-    if (!Array.isArray(cases)) {
-      return;
-    }
-    return cases.map((c) => {
-      const check = c.check;
-      const hasCheck = typeof check === 'string' && check !== '';
-      return {
-        ...memberNameAndMeta('output', c.output),
-        condition: hasCheck ? (check as string) : undefined,
-        isDefault: hasCheck ? undefined : true,
-        isErrorPath: isErroredCheck(check) ? true : undefined,
-      };
-    });
-  }
-  if (outputKey === 'fallback' && Array.isArray(value)) {
-    return value.map((item, i) => ({
-      ...memberNameAndMeta('output', item),
+// One member of an output container, with the YAML path to its component object and the
+// routing that selects it, so `buildOutputNodes` can recurse into it.
+type OutputMemberSpec = {
+  obj: unknown;
+  path: (string | number)[];
+  condition?: string;
+  isDefault?: boolean;
+  isErrorPath?: boolean;
+  caseEditTarget?: EditTarget;
+};
+
+// Members of an output container (broker/switch/fallback), or undefined if `key` isn't one.
+// `path` points to the container object `{ key: value }`; each member's path is derived from
+// it so nesting composes (a fallback inside a switch case gets a deep, editable path).
+function outputContainerMembers(
+  key: string,
+  value: unknown,
+  path: (string | number)[]
+): OutputMemberSpec[] | undefined {
+  // A recognised container always returns a (possibly empty) member list, so a malformed or
+  // empty one still renders as a fan-out container with its "Add …" affordance, never a leaf.
+  if (key === 'fallback') {
+    // Tier 0 is primary; each later tier runs only "on failure" of the prior.
+    return (Array.isArray(value) ? value : []).map((obj, i) => ({
+      obj,
+      path: [...path, key, i],
       condition: i === 0 ? undefined : 'on failure',
       isErrorPath: i === 0 ? undefined : true,
     }));
+  }
+  if (key === 'switch') {
+    const cases = (value as { cases?: Record<string, unknown>[] } | undefined)?.cases;
+    if (!Array.isArray(cases)) {
+      return [];
+    }
+    return cases.map((c, i) => {
+      const check = c.check;
+      const hasCheck = typeof check === 'string' && check !== '';
+      return {
+        obj: c.output,
+        path: [...path, key, 'cases', i, 'output'],
+        condition: hasCheck ? (check as string) : undefined,
+        isDefault: hasCheck ? undefined : true,
+        isErrorPath: isErroredCheck(check) ? true : undefined,
+        caseEditTarget: { kind: 'switchCase', path: [...path, key, 'cases', i] },
+      };
+    });
+  }
+  if (key === 'broker') {
+    const outputs = (value as { outputs?: unknown[] } | undefined)?.outputs;
+    return (Array.isArray(outputs) ? outputs : []).map((obj, i) => ({ obj, path: [...path, key, 'outputs', i] }));
+  }
+  return;
+}
+
+// The in-place "grow" affordance for an output container: switch appends a `{ check, output }`
+// case; broker/fallback append a bare output.
+function outputContainerSlot(key: string, path: (string | number)[]): ContainerSlot | undefined {
+  if (key === 'switch') {
+    return { addChildSlot: { containerPath: [...path, 'switch', 'cases'], section: 'output' } };
+  }
+  if (key === 'fallback') {
+    return { insertSlot: { containerPath: [...path, 'fallback'], accepts: 'output' } };
+  }
+  if (key === 'broker') {
+    return { insertSlot: { containerPath: [...path, 'broker', 'outputs'], accepts: 'output' } };
   }
   return;
 }
@@ -422,15 +463,18 @@ const DIRECT_ARRAY_PROC_CONTAINERS: ReadonlySet<string> = new Set(['try', 'catch
 // accepts a processor into `<name>.processors`.
 const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 'parallel']);
 
+// A parseable processor entry paired with its ORIGINAL YAML index.
+type ProcessorEntry = [number, Record<string, unknown>];
+
 // A processor array's parseable entries WITH their original YAML indices. Unparseable
 // entries (`- null`, scalars mid-edit) are skipped for rendering, but each kept entry's
 // source index still feeds its editTarget path — an edit/delete must never land on a
 // neighbouring entry because the rendered positions were compacted.
-function extractProcessorEntries(value: unknown): Array<[number, Record<string, unknown>]> | undefined {
+function extractProcessorEntries(value: unknown): ProcessorEntry[] | undefined {
   if (!Array.isArray(value)) {
     return;
   }
-  const entries: Array<[number, Record<string, unknown>]> = [];
+  const entries: ProcessorEntry[] = [];
   for (const [i, v] of value.entries()) {
     if (v && typeof v === 'object') {
       entries.push([i, v as Record<string, unknown>]);
@@ -559,11 +603,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
   return nodes;
 }
 
-function pushProcessorChildren(
-  nodes: PipelineFlowNode[],
-  procs: Array<[number, Record<string, unknown>]>,
-  ctx: BranchContext
-): void {
+function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[], ctx: BranchContext): void {
   // ctx.path is the processors array; each child component sits at [...path, index], where
   // `pi` is the entry's ORIGINAL YAML index (unparseable siblings don't shift it).
   for (const [pi, proc] of procs) {
@@ -838,6 +878,87 @@ function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): Pipeli
   return nodes;
 }
 
+type OutputNodeArgs = {
+  obj: unknown;
+  id: string;
+  parentId: string;
+  // YAML path to `obj` (the component object being built).
+  path: (string | number)[];
+  // How to edit this node: `{ kind: 'output' }` at the top level, a path when nested.
+  editTarget: EditTarget;
+  // Routing that selects this node (a switch case's check, a fallback tier's "on failure").
+  routing?: Pick<OutputMemberSpec, 'condition' | 'isDefault' | 'isErrorPath' | 'caseEditTarget'>;
+  labelText?: string;
+  config: ParsedYamlConfig;
+};
+
+// Build the node subtree for an output component. broker/switch/fallback become a fan-out
+// GROUP whose members recurse — so a fallback nested inside a switch case (or a broker, …) is
+// itself a branching container with per-member editable nodes and a grow affordance, not a
+// summary leaf. Anything else is an editable leaf.
+function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
+  const { obj, id, parentId, path, editTarget, routing, labelText, config } = args;
+  const key = firstKey(obj);
+  if (!key) {
+    return [];
+  }
+  const value = (obj as Record<string, unknown>)[key];
+  const members = outputContainerMembers(key, value, path);
+  if (members) {
+    const group: PipelineFlowNode = {
+      id,
+      kind: 'group',
+      label: key,
+      section: 'output',
+      parentId,
+      collapsible: true,
+      childFlow: 'parallel',
+      editTarget,
+      ...(labelText ? { labelText } : {}),
+      ...routing,
+      ...outputContainerSlot(key, path),
+    };
+    const children = members.flatMap((member, i) =>
+      buildOutputNodes({
+        obj: member.obj,
+        id: `${id}-${i}`,
+        parentId: id,
+        path: member.path,
+        editTarget: pathEditTarget('output', member.path),
+        routing: {
+          condition: member.condition,
+          isDefault: member.isDefault,
+          isErrorPath: member.isErrorPath,
+          caseEditTarget: member.caseEditTarget,
+        },
+        config,
+      })
+    );
+    return [group, ...children];
+  }
+
+  const topics = extractTopics(value);
+  const isRedpanda = REDPANDA_COMPONENTS.has(key);
+  return [
+    {
+      id,
+      kind: 'leaf',
+      label: key,
+      section: 'output',
+      parentId,
+      ...(labelText ? { labelText } : {}),
+      ...(topics ? { topics } : {}),
+      missingTopic: isRedpanda && !topics ? true : undefined,
+      missingSasl: isRedpanda && !hasSaslConfig(value, config) ? true : undefined,
+      editTarget,
+      meta: summarizeComponent(key, value),
+      resourceRef: indirectionResourceRef(key, value),
+      resourceRefCandidates: extractRefCandidates(value),
+      ...routing,
+    },
+  ];
+}
+
 function parseOutputNodes(
   outputObj: Record<string, unknown>,
   sectionId: string,
@@ -847,45 +968,18 @@ function parseOutputNodes(
   if (!outputKey) {
     return [];
   }
-
-  const childNames = parseMultiOutputs(outputKey, outputObj[outputKey]);
-  if (childNames && childNames.length > 0) {
-    const branches = parseOutputBranches(outputKey, outputObj[outputKey]);
-    const children =
-      branches ?? multiMemberSpecs('output', outputObj[outputKey]) ?? childNames.map((name) => ({ name }));
-    const groupNodes = buildGroupWithChildren(
-      { groupId: `output-${outputKey}`, groupLabel: outputKey, section: 'output', sectionId },
-      children
-    );
-    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'output' }, labelText: extractLabel(outputObj) };
-    return groupNodes;
-  }
-
-  const emptyContainer = emptySectionContainerGroup(outputKey, 'output', sectionId, extractLabel(outputObj));
-  if (emptyContainer) {
-    return emptyContainer;
-  }
-
-  const labelText = extractLabel(outputObj);
-  const topics = extractTopics(outputObj[outputKey]);
-  const isRedpanda = REDPANDA_COMPONENTS.has(outputKey);
-  return [
-    {
-      id: 'output-0',
-      kind: 'leaf',
-      label: outputKey,
-      labelText,
-      topics,
-      section: 'output',
-      parentId: sectionId,
-      missingTopic: isRedpanda && !topics ? true : undefined,
-      missingSasl: isRedpanda && !hasSaslConfig(outputObj[outputKey], config) ? true : undefined,
-      editTarget: { kind: 'output' },
-      meta: summarizeComponent(outputKey, outputObj[outputKey]),
-      resourceRef: indirectionResourceRef(outputKey, outputObj[outputKey]),
-      resourceRefCandidates: extractRefCandidates(outputObj[outputKey]),
-    },
-  ];
+  // A container's top-level id keeps its `output-<key>` form (children `output-<key>-<i>`);
+  // a plain output stays `output-0`. Tests and selection depend on these ids.
+  const isContainer = Boolean(outputContainerMembers(outputKey, outputObj[outputKey], ['output']));
+  return buildOutputNodes({
+    obj: outputObj,
+    id: isContainer ? `output-${outputKey}` : 'output-0',
+    parentId: sectionId,
+    path: ['output'],
+    editTarget: { kind: 'output' },
+    labelText: extractLabel(outputObj),
+    config,
+  });
 }
 
 function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {

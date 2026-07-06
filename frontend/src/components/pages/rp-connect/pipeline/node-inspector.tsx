@@ -43,7 +43,7 @@ import { type MutableRefObject, useCallback, useEffect, useId, useMemo, useRef, 
 import { toast } from 'sonner';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
-import { type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
+import { ChildItemsList, type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
 import { getConnectorDocsUrl } from './pipeline-flow-nodes';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
@@ -384,6 +384,20 @@ export function NodeInspector({
               spec={spec}
               value={component}
             />
+          );
+        }
+        // A fan-out container with no schema form (fallback / broker / an output switch) — show
+        // its members as a clickable list (each opens its own config) rather than raw YAML, so the
+        // branching reads as nodes. Raw editing of the whole container stays under "View in YAML".
+        if (childItems && childItems.length > 0 && onSelectChild) {
+          const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
+          return (
+            <>
+              {conditionSection}
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <ChildItemsList items={childItems} label={listLabel} onSelect={onSelectChild} />
+              </div>
+            </>
           );
         }
         return (

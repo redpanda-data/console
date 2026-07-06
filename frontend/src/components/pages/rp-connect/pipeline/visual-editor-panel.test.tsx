@@ -39,6 +39,9 @@ vi.mock('./pipeline-flow-canvas', () => ({
       <button onClick={() => props.onInsert?.(1)} type="button">
         insert-end
       </button>
+      <button onClick={() => props.onSelectNode?.('output-fallback', { kind: 'output' })} type="button">
+        select-output-fallback
+      </button>
     </div>
   ),
 }));
@@ -293,6 +296,34 @@ describe('VisualEditorPanel', () => {
     await user.type(ttl2, '15m');
     await user.click(screen.getByRole('button', { name: 'deselect' }));
     expect(yamlOnCanvas()).toContain('15m');
+  });
+
+  test('a fallback output opens a clickable member list in the inspector, not raw YAML', async () => {
+    const user = userEvent.setup();
+    const fallbackYaml = `input:
+  generate:
+    mapping: 'root = {}'
+output:
+  fallback:
+    - gcp_pubsub:
+        project: my-project
+    - redpanda:
+        topic: orders-fallback`;
+    renderPanel({ yamlContent: fallbackYaml });
+
+    await user.click(screen.getByText('select-output-fallback'));
+
+    // The container shows its members as a navigable list (each opens its own config) rather
+    // than a raw YAML editor.
+    expect(await screen.findByText('Outputs')).toBeInTheDocument();
+    expect(screen.getByText('gcp_pubsub')).toBeInTheDocument();
+    expect(screen.getByText('redpanda')).toBeInTheDocument();
+    expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
+
+    // Clicking a member navigates the inspector to that output's own config editor.
+    await user.click(screen.getByText('gcp_pubsub'));
+    const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
+    expect(editor.value).toContain('project: my-project');
   });
 
   test('surfaces a lint problem for the selected node in the inspector', async () => {

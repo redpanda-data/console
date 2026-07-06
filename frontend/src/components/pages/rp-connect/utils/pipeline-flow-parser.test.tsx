@@ -292,9 +292,38 @@ output:
       label: 'http_client',
       parentId: 'output-fallback',
     });
+    // The fallback grows by appending a tier — an "Add output" affordance on the group.
+    expect(outputNodes[1].insertSlot).toEqual({ containerPath: ['output', 'fallback'], accepts: 'output' });
+    // Later tiers route "on failure" of the prior; tier 0 is the primary (no condition).
+    expect(outputNodes[2]).not.toHaveProperty('isErrorPath', true);
+    expect(outputNodes[3]).toMatchObject({ condition: 'on failure', isErrorPath: true });
   });
 
-  it('summarizes the wrapped members of a nested broker-style output member', () => {
+  it('fans a nested fallback (a switch case output) into its own split with per-tier edges', () => {
+    const yaml = `
+output:
+  switch:
+    cases:
+      - output:
+          fallback:
+            - gcp_pubsub:
+                project: my-project
+            - redpanda:
+                topic: orders-fallback
+`;
+    const layout = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
+    const find = (id: string) => layout.rfNodes.find((n) => n.id === id);
+    // The switch's only case output is a fallback → its own split marker (not a leaf card),
+    // fanning to its tiers.
+    expect(find('output-switch-0')?.type).toBe('flowSplit');
+    expect(find('output-switch-0-0')?.type).toBe('flowCard');
+    expect(find('output-switch-0-1')?.type).toBe('flowCard');
+    // The second tier's fan-out edge is the red "on failure" route.
+    const tier1 = layout.rfEdges.find((e) => e.id === 'fanout-output-switch-0-1');
+    expect((tier1?.data as { tone?: string }).tone).toBe('error');
+  });
+
+  it('expands a container nested as an output member into its own branching subtree', () => {
     const yaml = `
 output:
   switch:
@@ -311,17 +340,34 @@ output:
                 topic: orders-fallback
 `;
     const { nodes } = parsePipelineFlowTree(yaml);
-    const outputNodes = nodes.filter((n) => n.section === 'output');
-    // A plain member keeps its own config summary.
-    expect(outputNodes.find((n) => n.id === 'output-switch-0')).toMatchObject({
+    const byId = (id: string) => nodes.find((n) => n.id === id);
+    // A plain member keeps its own config summary leaf.
+    expect(byId('output-switch-0')).toMatchObject({
+      kind: 'leaf',
       label: 'aws_s3',
       meta: [{ label: 'bucket', value: 'my-bucket' }],
     });
-    // A member that is itself a broker-style container reveals the components it routes to,
-    // instead of collapsing to just "fallback".
-    expect(outputNodes.find((n) => n.id === 'output-switch-1')).toMatchObject({
+    // A member that is itself a container becomes a fan-out GROUP (not a summary leaf), with a
+    // grow affordance, and its members are their own editable nodes.
+    expect(byId('output-switch-1')).toMatchObject({
+      kind: 'group',
       label: 'fallback',
-      meta: [{ label: 'tries', value: 'gcp_pubsub → redpanda' }],
+      childFlow: 'parallel',
+      insertSlot: { containerPath: ['output', 'switch', 'cases', 1, 'output', 'fallback'], accepts: 'output' },
+    });
+    expect(byId('output-switch-1-0')).toMatchObject({
+      kind: 'leaf',
+      label: 'gcp_pubsub',
+      parentId: 'output-switch-1',
+      editTarget: { kind: 'path', path: ['output', 'switch', 'cases', 1, 'output', 'fallback', 0], componentType: 'output' },
+    });
+    expect(byId('output-switch-1-1')).toMatchObject({
+      kind: 'leaf',
+      label: 'redpanda',
+      parentId: 'output-switch-1',
+      isErrorPath: true,
+      condition: 'on failure',
+      editTarget: { kind: 'path', path: ['output', 'switch', 'cases', 1, 'output', 'fallback', 1], componentType: 'output' },
     });
   });
 

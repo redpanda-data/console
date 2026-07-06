@@ -112,7 +112,7 @@ const ChildItemRow = ({
   );
 };
 
-const ChildItemsList = ({
+export const ChildItemsList = ({
   items,
   onSelect,
   label,
