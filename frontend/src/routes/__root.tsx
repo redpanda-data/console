@@ -32,6 +32,7 @@ import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { IsDev } from '../utils/env';
 import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -56,7 +57,7 @@ function RootLayout() {
         {process.env.NODE_ENV === 'development' && <DebugHelper />}
       </NuqsAdapter>
 
-      {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
+      {IsDev && <TanStackRouterDevtools position="bottom-right" />}
     </>
   );
 }
