@@ -88,7 +88,7 @@
     "@stepperize/react": "^5.1.9",
     "@tanstack/react-form": "^1.12.3",
     "@tanstack/react-query": "^5.99.2",
-    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-router": "^1.170.17",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@tanstack/zod-adapter": "^1.167.0",
@@ -166,7 +166,7 @@
     "@tailwindcss/vite": "4.2.4",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-router-devtools": "^1.167.0",
-    "@tanstack/router-plugin": "^1.168.18",
+    "@tanstack/router-plugin": "^1.168.19",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -206,15 +206,18 @@
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "undici": "^7.28.0",
+    "ws": "^8.21.0"
   },
   "resolutions": {
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
-  },
-  "patchedDependencies": {
-    "@tanstack/react-router@1.170.15": "patches/@tanstack%2Freact-router@1.170.15.patch"
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "undici": "^7.28.0",
+    "ws": "^8.21.0"
   }
 }
