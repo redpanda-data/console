@@ -95,12 +95,14 @@ const SECTION_ACCENT: Record<string, string> = {
 
 // The accents above are FILL colours (blips, borders, tints) — as text on a light card they fall
 // to ~2:1 contrast. Wherever the accent is rendered as text (kind captions, split descriptors),
-// use these theme-aware tokens (darker in light mode, the 500s in dark — see globals.css).
-const SECTION_ACCENT_TEXT: Record<string, string> = {
-  input: 'var(--color-accent-input-text)',
-  processor: 'var(--color-accent-processor-text)',
-  output: 'var(--color-accent-output-text)',
-  resource: 'var(--color-accent-resource-text)',
+// apply these classes instead: a darker hue that clears 4.5:1 on white in light mode, stepping to
+// the 500 shade in dark mode. Class-based (not an app-owned CSS var) so it reuses the registry
+// colour scale directly and needs no theme tokens.
+const SECTION_ACCENT_TEXT_CLASS: Record<string, string> = {
+  input: 'text-green-600 dark:text-green-500',
+  processor: 'text-blue-800 dark:text-blue-500',
+  output: 'text-purple-600 dark:text-purple-500',
+  resource: 'text-orange-900 dark:text-orange-500',
 };
 
 export function sectionAccent(section?: string): string | undefined {
@@ -458,7 +460,7 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
 const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: boolean }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   const accent = SECTION_ACCENT[data.section ?? ''];
-  const accentText = SECTION_ACCENT_TEXT[data.section ?? ''];
+  const accentTextClass = SECTION_ACCENT_TEXT_CLASS[data.section ?? ''];
   return (
     <div
       className={cn(
@@ -475,8 +477,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <Text
             as="span"
-            className="shrink-0 uppercase tracking-wide"
-            style={accentText ? { color: accentText } : undefined}
+            className={cn('shrink-0 uppercase tracking-wide', accentTextClass)}
             variant="captionStrongMedium"
           >
             {kindLabel}
@@ -705,9 +706,9 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const isError = Boolean(data.isErrorPath);
   const accent = isError ? 'var(--color-destructive)' : (SECTION_ACCENT[data.section ?? ''] ?? 'var(--color-primary)');
   // The descriptor is TEXT — use the readable text variant (destructive/primary already read as text).
-  const accentText = isError
-    ? 'var(--color-destructive)'
-    : (SECTION_ACCENT_TEXT[data.section ?? ''] ?? 'var(--color-primary)');
+  const accentTextClass = isError
+    ? 'text-destructive'
+    : (SECTION_ACCENT_TEXT_CLASS[data.section ?? ''] ?? 'text-primary');
   const { Icon, descriptor } = controlFlowPresentation(data);
   return (
     <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
@@ -727,8 +728,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           <span className="flex min-w-0 flex-1 flex-col">
             <Text
               as="span"
-              className="truncate text-[10px] uppercase leading-none tracking-wide"
-              style={{ color: accentText }}
+              className={cn('truncate text-[10px] uppercase leading-none tracking-wide', accentTextClass)}
               title={descriptor}
               variant="captionStrongMedium"
             >
