@@ -57,7 +57,12 @@ type NavLinkProps = {
   isDisabled?: boolean;
   disabledText?: string;
   group?: string;
+  /** Sub-pages rendered as an expandable list under the parent row. */
+  children?: Array<{ title: string; to: string }>;
 };
+
+/** Nested sidebar entry rendered as an expandable sub-item under its parent row. */
+export type SidebarChildItem = { path: string; title: string };
 
 // Sidebar item definition
 export type SidebarItem = {
@@ -66,6 +71,8 @@ export type SidebarItem = {
   icon?: LucideIcon | ((props: React.SVGProps<SVGSVGElement>) => JSX.Element);
   visibilityCheck?: () => MenuItemState;
   group: SidebarSectionName;
+  /** Sub-pages shown under the parent; visibility follows the parent's check. */
+  children?: SidebarChildItem[];
 };
 
 // Visibility state for menu items
@@ -260,6 +267,8 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     // single source of truth for both embedded (cloud) and self-hosted, so the
     // nav is gated on capability detection rather than a feature flag.
     visibilityCheck: routeVisibility(true, [Feature.SQLService]),
+    // Direct entry to the query editor without going via the landing page.
+    children: [{ path: '/sql/editor', title: 'Editor' }],
   },
   {
     path: '/connect-clusters',
@@ -377,6 +386,8 @@ function processSidebarItem(item: SidebarItem): NavLinkProps | null {
     icon: item.icon,
     isDisabled: !isEnabled,
     disabledText: disabledText || undefined,
+    // A disabled parent offers no sub-navigation.
+    children: isEnabled ? item.children?.map((child) => ({ title: child.title, to: child.path })) : undefined,
   };
 }
 

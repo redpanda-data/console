@@ -11,6 +11,7 @@
 
 import { Link, useLocation } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/redpanda-ui/components/avatar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,12 +29,16 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   useSidebar,
 } from 'components/redpanda-ui/components/sidebar';
-import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide-react';
+import { ChevronRight, ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
@@ -199,6 +204,10 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
     </>
   );
 
+  if (item.children?.length && !item.isDisabled) {
+    return <SidebarNavItemWithChildren isSectionActive={isActive} item={item} onNavClick={onNavClick} />;
+  }
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -217,6 +226,68 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
         {item.isDisabled ? <span className="flex items-center gap-2">{itemContent}</span> : itemContent}
       </SidebarMenuButton>
     </SidebarMenuItem>
+  );
+}
+
+// A nav row with an expandable sub-menu (e.g. SQL → Editor). The row itself
+// still navigates to the parent page; the chevron toggles the sub-items so
+// users can jump straight to a sub-page. Keyed on section-activity below so
+// entering the section auto-expands and leaving collapses.
+function SidebarNavItemWithChildren({
+  item,
+  isSectionActive,
+  onNavClick,
+}: {
+  item: NavItemProps['item'];
+  isSectionActive: boolean;
+  onNavClick: () => void;
+}) {
+  const location = useLocation();
+  const Icon = item.icon;
+  const titleString = typeof item.title === 'string' ? item.title : item.to;
+  // With sub-items present, the parent row highlights only on its exact page;
+  // a matching child claims the highlight instead.
+  const isParentActive = location.pathname === item.to;
+
+  return (
+    <Collapsible defaultOpen={isSectionActive} key={String(isSectionActive)} render={<SidebarMenuItem />}>
+      <SidebarMenuButton
+        aria-current={isParentActive ? 'page' : undefined}
+        isActive={isParentActive}
+        render={<Link aria-current={isParentActive ? 'page' : undefined} onClick={onNavClick} to={item.to} />}
+        tooltip={titleString}
+      >
+        {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0" /> : null}
+        <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
+      </SidebarMenuButton>
+      <CollapsibleTrigger
+        render={
+          <SidebarMenuAction
+            aria-label={`Toggle ${titleString} submenu`}
+            className="[&[data-panel-open]>svg]:rotate-90"
+          />
+        }
+      >
+        <ChevronRight aria-hidden="true" className="transition-transform" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <SidebarMenuSub>
+          {item.children?.map((child) => {
+            const isChildActive = location.pathname === child.to;
+            return (
+              <SidebarMenuSubItem key={child.to}>
+                <SidebarMenuSubButton
+                  isActive={isChildActive}
+                  render={<Link aria-current={isChildActive ? 'page' : undefined} onClick={onNavClick} to={child.to} />}
+                >
+                  <span>{child.title}</span>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            );
+          })}
+        </SidebarMenuSub>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
