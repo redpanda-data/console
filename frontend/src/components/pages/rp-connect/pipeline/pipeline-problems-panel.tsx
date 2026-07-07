@@ -93,13 +93,13 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
           {problem.message}
         </Text>
         {onSelect ? (
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1 text-muted-foreground text-xs">
             <MousePointerClick className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
             {problem.nodeLabel}
             {problem.line ? ` · line ${problem.line}` : ''}
           </span>
         ) : (
-          problem.line && <span className="text-[11px] text-muted-foreground">line {problem.line}</span>
+          problem.line && <span className="text-muted-foreground text-xs">line {problem.line}</span>
         )}
       </span>
     </>
@@ -144,7 +144,7 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
           <Text as="span" className="text-foreground text-xs" variant="bodySmall">
             Missing secret <span className="font-medium font-mono">{name}</span>
           </Text>
-          <span className="text-[11px] text-muted-foreground">Referenced by the pipeline but not created</span>
+          <span className="text-muted-foreground text-xs">Referenced by the pipeline but not created</span>
         </span>
       </div>
     ))}

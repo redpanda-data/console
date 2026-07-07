@@ -93,7 +93,10 @@ const ChildItemRow = ({
     >
       <span className="flex min-w-0 flex-1 flex-col">
         {condText ? (
-          <span className={cn('truncate font-medium font-mono text-[10px]', childItemCondColor(item))} title={condText}>
+          <span
+            className={cn('truncate font-medium font-mono text-caption-sm', childItemCondColor(item))}
+            title={condText}
+          >
             {condText}
           </span>
         ) : null}
@@ -102,7 +105,7 @@ const ChildItemRow = ({
         </span>
       </span>
       {item.lintCount ? (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-[10px] text-destructive">
+        <span className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-caption-sm text-destructive">
           <AlertCircle className="size-3" />
           {item.lintCount}
         </span>

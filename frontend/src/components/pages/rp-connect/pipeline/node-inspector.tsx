@@ -610,10 +610,7 @@ const CaseConditionSection = ({
     <div className="border-warning/30 border-b bg-warning/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
         <Split className="size-3.5 shrink-0 text-warning" />
-        <Label
-          className="font-semibold text-[11px] text-warning uppercase leading-none tracking-wide"
-          htmlFor={inputId}
-        >
+        <Label className="font-semibold text-warning text-xs uppercase leading-none tracking-wide" htmlFor={inputId}>
           Routing condition
         </Label>
         <TooltipProvider>

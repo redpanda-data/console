@@ -70,10 +70,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
                 {node.label}
               </Text>
               {node.detail ? (
-                <span
-                  className="min-w-0 max-w-[45%] shrink truncate text-[11px] text-muted-foreground"
-                  title={node.detail}
-                >
+                <span className="min-w-0 max-w-[45%] shrink truncate text-muted-foreground text-xs" title={node.detail}>
                   {node.detail}
                 </span>
               ) : null}

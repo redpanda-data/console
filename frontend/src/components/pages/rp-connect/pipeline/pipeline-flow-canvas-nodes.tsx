@@ -84,22 +84,14 @@ const SECTION_LABEL: Record<string, string> = {
   resource: 'Resource',
 };
 
-// Each role's colour identity: sources, transforms, sinks, and shared resources read apart at a glance.
+// Each role's colour identity via semantic tokens (theme-aware, readable as either fill or text):
+// input → success, processor → informative, resource → warning. Output has no matching status token,
+// so it borrows a chart accent.
 const SECTION_ACCENT: Record<string, string> = {
-  input: 'var(--color-green-500)',
-  processor: 'var(--color-blue-500)',
-  output: 'var(--color-purple-500)',
-  resource: 'var(--color-orange-500)',
-};
-
-// The accents above are FILL colours (~2:1 as text on a light card). Where the accent renders as
-// text, use these instead — a darker hue clearing 4.5:1 on white, stepping to the 500 shade in
-// dark mode.
-const SECTION_ACCENT_TEXT_CLASS: Record<string, string> = {
-  input: 'text-green-600 dark:text-green-500',
-  processor: 'text-blue-800 dark:text-blue-500',
-  output: 'text-purple-600 dark:text-purple-500',
-  resource: 'text-orange-900 dark:text-orange-500',
+  input: 'var(--color-success)',
+  processor: 'var(--color-informative)',
+  output: 'var(--color-chart-1)',
+  resource: 'var(--color-warning)',
 };
 
 export function sectionAccent(section?: string): string | undefined {
@@ -138,7 +130,7 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
     tone = 'muted';
   }
   const cls = cn(
-    'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
+    'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-caption-sm leading-none',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
     tone === 'muted' && 'border-warning/30 bg-warning/5 text-warning/80',
     tone === 'condition' && 'border-warning/40 bg-warning/10 text-warning',
@@ -183,7 +175,7 @@ const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boole
       )}
     >
       <Split className="size-3.5 shrink-0 opacity-80" />
-      <span className="shrink-0 font-semibold text-[10px] uppercase tracking-wide opacity-70">{eyebrow}</span>
+      <span className="shrink-0 font-semibold text-caption-sm uppercase tracking-wide opacity-70">{eyebrow}</span>
       {data.condition ? (
         <span className="min-w-0 flex-1 truncate font-mono text-xs" title={data.condition}>
           {data.condition}
@@ -286,7 +278,7 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
             <span className="truncate font-mono">{topic}</span>
           </Badge>
         ))}
-        {extra > 0 ? <span className="self-center text-[10px] text-muted-foreground">+{extra}</span> : null}
+        {extra > 0 ? <span className="self-center text-caption-sm text-muted-foreground">+{extra}</span> : null}
       </span>
     </div>
   );
@@ -421,7 +413,7 @@ const FlashPulse = ({ token }: { token?: number }) => (
 const LintBadge = ({ errors }: { errors?: string[] }) =>
   errors && errors.length > 0 ? (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-[10px] text-destructive"
+      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-caption-sm text-destructive"
       title={errors.join('\n')}
     >
       <AlertCircle className="size-3" />
@@ -449,7 +441,6 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
 const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: boolean }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   const accent = SECTION_ACCENT[data.section ?? ''];
-  const accentTextClass = SECTION_ACCENT_TEXT_CLASS[data.section ?? ''];
   return (
     <div
       className={cn(
@@ -464,7 +455,8 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <Text
             as="span"
-            className={cn('shrink-0 uppercase tracking-wide', accentTextClass)}
+            className="shrink-0 uppercase tracking-wide"
+            style={accent ? { color: accent } : undefined}
             variant="captionStrongMedium"
           >
             {kindLabel}
@@ -597,7 +589,7 @@ const LinkLabel = ({
 }) => {
   const className = cn(
     // Condition labels are Bloblang code: mono, not uppercased, matching the card's condition chips.
-    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-[10px] shadow-sm',
+    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-caption-sm shadow-sm',
     LINK_LABEL_STYLE[tone],
     // A condition label is clickable to edit its case — make that obvious.
     onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
@@ -687,10 +679,6 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
   const isError = Boolean(data.isErrorPath);
   const accent = isError ? 'var(--color-destructive)' : (SECTION_ACCENT[data.section ?? ''] ?? 'var(--color-primary)');
-  // The descriptor is TEXT — use the readable text variant (destructive/primary already read as text).
-  const accentTextClass = isError
-    ? 'text-destructive'
-    : (SECTION_ACCENT_TEXT_CLASS[data.section ?? ''] ?? 'text-primary');
   const { Icon, descriptor } = controlFlowPresentation(data);
   return (
     <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
@@ -709,7 +697,8 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           <span className="flex min-w-0 flex-1 flex-col">
             <Text
               as="span"
-              className={cn('truncate text-[10px] uppercase leading-none tracking-wide', accentTextClass)}
+              className="truncate text-caption-sm uppercase leading-none tracking-wide"
+              style={{ color: accent }}
               title={descriptor}
               variant="captionStrongMedium"
             >

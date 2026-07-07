@@ -867,7 +867,7 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
       {/* Label sits just above the top border where the construct starts. Faint until active. */}
       <div className="pointer-events-none absolute" style={{ transform: `translate(${anchor.x}px, ${anchor.y}px)` }}>
         <span
-          className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
+          className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-caption-sm uppercase tracking-wide transition-opacity duration-200"
           style={{
             color: accent,
             opacity: active ? 1 : 0.8,
@@ -1081,7 +1081,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
   }
   return (
     <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-border bg-background/90 px-3 py-2 text-muted-foreground text-xs shadow-sm backdrop-blur-sm">
-      <div className="font-semibold text-[10px] text-muted-foreground/70 uppercase tracking-wide">Legend</div>
+      <div className="font-semibold text-caption-sm text-muted-foreground/70 uppercase tracking-wide">Legend</div>
       <div className="flex items-center gap-2">
         <LegendSwatch color="var(--color-primary)" />
         Data flow
