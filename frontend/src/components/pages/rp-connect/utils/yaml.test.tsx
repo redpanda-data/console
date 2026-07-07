@@ -1,17 +1,29 @@
 import { describe, expect, test } from 'vitest';
+import { parse as parseYaml } from 'yaml';
 
 import { mockComponents } from './__fixtures__/component-schemas';
 import { schemaToConfig } from './schema';
 import {
+  appendResource,
   applyRedpandaSetup,
+  buildInsertableComponent,
   configToYaml,
+  countResourceReferences,
+  createResourceAndReturnLabel,
+  type EditTarget,
   extractAllTopics,
   extractConnectorTopics,
   generateYamlFromWizardData,
+  getComponentAt,
   getConnectTemplate,
+  insertComponentAt,
+  listResourceLabels,
   mergeConnectConfigs,
   parseConfigComponents,
   patchRedpandaConfig,
+  removeComponentAt,
+  renameResourceReferences,
+  setComponentAt,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -1110,6 +1122,24 @@ output:
 `;
       expect(extractAllTopics(yaml)).toEqual(['shared_topic']);
     });
+
+    test('returns without crashing on a circular alias config', () => {
+      const yaml = `a: &x
+  b: *x
+  topic: looped
+`;
+      expect(extractAllTopics(yaml)).toEqual(['looped']);
+    });
+
+    test('resolves merge keys so merged topics are found', () => {
+      const yaml = `defaults: &d
+  topics: [merged_topic]
+input:
+  kafka:
+    <<: *d
+`;
+      expect(extractAllTopics(yaml)).toContain('merged_topic');
+    });
   });
 
   describe('patchRedpandaConfig', () => {
@@ -1555,5 +1585,364 @@ output:
 
   test('returns undefined for invalid YAML', () => {
     expect(patchRedpandaConfig('{{{', 'input', 'kafka_franz', { topicName: 'x' })).toBeUndefined();
+  });
+});
+
+describe('visual-editor mutations', () => {
+  const pipelineYaml = `input:
+  generate:
+    mapping: 'root = {}'
+pipeline:
+  processors:
+    - log:
+        message: hello
+    - mapping: 'root = this'
+output:
+  drop: {}`;
+
+  describe('getComponentAt', () => {
+    test('reads the input component', () => {
+      expect(getComponentAt(pipelineYaml, { kind: 'input' })).toEqual({ generate: { mapping: 'root = {}' } });
+    });
+
+    test('reads a processor by index', () => {
+      expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+    });
+
+    test('returns undefined on parse failure', () => {
+      expect(getComponentAt('{{{', { kind: 'input' })).toBeUndefined();
+    });
+  });
+
+  describe('setComponentAt', () => {
+    test('replaces a processor config in place', () => {
+      const next = setComponentAt(pipelineYaml, { kind: 'processor', index: 0 }, { log: { message: 'changed' } });
+      expect(next).not.toBeNull();
+      expect(getComponentAt(next as string, { kind: 'processor', index: 0 })).toEqual({ log: { message: 'changed' } });
+      // Sibling processor is untouched.
+      expect(getComponentAt(next as string, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+    });
+
+    test('returns null on parse failure', () => {
+      expect(setComponentAt('{{{', { kind: 'input' }, { generate: {} })).toBeNull();
+    });
+
+    test('returns null for a stale numeric index instead of padding the sequence with nulls', () => {
+      expect(setComponentAt(pipelineYaml, { kind: 'processor', index: 5 }, { log: { message: 'x' } })).toBeNull();
+      expect(
+        setComponentAt(
+          pipelineYaml,
+          { kind: 'path', path: ['pipeline', 'processors', 9], componentType: 'processor' },
+          { log: {} }
+        )
+      ).toBeNull();
+    });
+  });
+
+  describe('formatting stability', () => {
+    const longMapping =
+      'root.out = this.first_field.second_field.third_field.fourth_field.fifth_field.sixth_field.seventh_field.eighth_field.ninth_field';
+
+    test('an unrelated insert never folds long lines and keeps flow collections on one line', () => {
+      const yaml = `input:
+  kafka:
+    topics: [ foo, bar ]
+pipeline:
+  processors:
+    - mapping: '${longMapping}'
+output:
+  drop: {}`;
+      const next = insertComponentAt(yaml, ['pipeline', 'processors'], 1, { log: { message: 'hi' } }) as string;
+      expect(next).toContain(longMapping);
+      expect(next).toContain('topics: [ foo, bar ]');
+    });
+
+    test('replacing a component keeps unrelated long lines unfolded', () => {
+      const yaml = `pipeline:
+  processors:
+    - mapping: '${longMapping}'
+    - log:
+        message: hello
+output:
+  drop: {}`;
+      const next = setComponentAt(yaml, { kind: 'processor', index: 1 }, { log: { message: 'bye' } }) as string;
+      expect(next).toContain(longMapping);
+    });
+  });
+
+  describe('path edit targets (nested components)', () => {
+    const nestedYaml = `pipeline:
+  processors:
+    - branch:
+        request_map: 'root = this'
+        processors:
+          - http:
+              url: http://old
+        result_map: 'root.x = this'
+output:
+  drop: {}`;
+    const httpTarget: EditTarget = {
+      kind: 'path',
+      path: ['pipeline', 'processors', 0, 'branch', 'processors', 0],
+      componentType: 'processor',
+    };
+
+    test('reads a nested component by path', () => {
+      expect(getComponentAt(nestedYaml, httpTarget)).toEqual({ http: { url: 'http://old' } });
+    });
+
+    test('replaces a nested component in place, leaving siblings intact', () => {
+      const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
+      expect(next).not.toBeNull();
+      expect(getComponentAt(next as string, httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
+      // The branch's request_map/result_map are untouched.
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
+      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+    });
+
+    test('removing the last nested child keeps an empty fillable processors array', () => {
+      const next = removeComponentAt(nestedYaml, httpTarget);
+      expect(next).not.toBeNull();
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
+      expect(parsed.pipeline.processors[0].branch.processors).toEqual([]);
+      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+    });
+
+    test('removing the only step of a try keeps the try as an empty fillable array', () => {
+      const tryYaml = `pipeline:
+  processors:
+    - try:
+        - mapping: 'root = this'
+output:
+  drop: {}`;
+      const next = removeComponentAt(tryYaml, {
+        kind: 'path',
+        path: ['pipeline', 'processors', 0, 'try', 0],
+        componentType: 'processor',
+      });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { try: unknown[] }[] } };
+      expect(parsed.pipeline.processors[0].try).toEqual([]);
+    });
+
+    test('removing the only processor of a switch case keeps the case and its check', () => {
+      const switchYaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.x == 1'
+          processors:
+            - mapping: 'root = this'
+output:
+  drop: {}`;
+      const next = removeComponentAt(switchYaml, {
+        kind: 'path',
+        path: ['pipeline', 'processors', 0, 'switch', 0, 'processors', 0],
+        componentType: 'processor',
+      });
+      const parsed = parseYaml(next as string) as {
+        pipeline: { processors: { switch: { check: string; processors: unknown[] }[] }[] };
+      };
+      expect(parsed.pipeline.processors[0].switch[0]).toEqual({ check: 'this.x == 1', processors: [] });
+    });
+
+    test('removing the last item of a top-level resource array drops the emptied key', () => {
+      const resYaml = `input:
+  generate:
+    mapping: 'root = {}'
+input_resources:
+  - label: in_a
+    stdin: {}
+output:
+  drop: {}`;
+      const next = removeComponentAt(resYaml, {
+        kind: 'path',
+        path: ['input_resources', 0],
+        componentType: 'input',
+      });
+      const parsed = parseYaml(next as string) as Record<string, unknown>;
+      // A top-level container prunes like `pipeline:` does — no dead `input_resources: []` left behind.
+      expect(parsed.input_resources).toBeUndefined();
+      expect(parsed.input).toBeDefined();
+    });
+  });
+
+  describe('appendResource', () => {
+    test('appends to a new cache_resources array', () => {
+      const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
+      const parsed = parseYaml(next as string) as { cache_resources: Record<string, unknown>[] };
+      expect(parsed.cache_resources).toEqual([{ label: 'c', memory: {} }]);
+    });
+  });
+
+  describe('insertComponentAt (nested)', () => {
+    const switchYaml = `pipeline:
+  processors:
+    - switch:
+        - check: a == 1
+          processors:
+            - mapping: 'root = this'
+        - processors:
+            - mapping: 'root = that'
+output:
+  drop: {}`;
+
+    test('inserts a processor into a specific switch case at an index', () => {
+      const casePath = ['pipeline', 'processors', 0, 'switch', 0, 'processors'];
+      const next = insertComponentAt(switchYaml, casePath, 0, { log: { message: 'first' } });
+      expect(next).not.toBeNull();
+      const parsed = parseYaml(next as string) as {
+        pipeline: { processors: { switch: { processors: Record<string, unknown>[] }[] }[] };
+      };
+      const case0 = parsed.pipeline.processors[0].switch[0].processors;
+      expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
+      // The other case is untouched.
+      expect(parsed.pipeline.processors[0].switch[1].processors).toEqual([{ mapping: 'root = that' }]);
+    });
+
+    test('creates a nested processors array when the container has none yet', () => {
+      const branchYaml = `pipeline:
+  processors:
+    - branch:
+        request_map: 'root = this'
+output:
+  drop: {}`;
+      const next = insertComponentAt(branchYaml, ['pipeline', 'processors', 0, 'branch', 'processors'], 0, {
+        mapping: 'root = x',
+      });
+      const parsed = parseYaml(next as string) as {
+        pipeline: { processors: { branch: { processors: unknown[]; request_map: string } }[] };
+      };
+      expect(parsed.pipeline.processors[0].branch.processors).toEqual([{ mapping: 'root = x' }]);
+      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+    });
+
+    test('appends a structural switch-case skeleton', () => {
+      const next = insertComponentAt(switchYaml, ['pipeline', 'processors', 0, 'switch'], 99, {
+        check: '',
+        processors: [],
+      });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: { switch: unknown[] }[] } };
+      expect(parsed.pipeline.processors[0].switch).toHaveLength(3);
+      expect(parsed.pipeline.processors[0].switch.at(-1)).toEqual({ check: '', processors: [] });
+    });
+  });
+
+  describe('resource references', () => {
+    const withResources = `pipeline:
+  processors:
+    - cache:
+        resource: dedupe
+        operator: add
+        key: x
+    - branch:
+        processors:
+          - cache:
+              resource: dedupe
+              operator: get
+              key: y
+    - rate_limit:
+        resource: limiter
+output:
+  drop: {}
+cache_resources:
+  - label: dedupe
+    memory: {}
+rate_limit_resources:
+  - label: limiter
+    local: { count: 1, interval: 1s }`;
+
+    test('listResourceLabels returns labels per kind', () => {
+      expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
+      expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
+      expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
+    });
+
+    test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {
+      const base = 'output:\n  drop: {}';
+      const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
+      expect(result).not.toBeNull();
+      expect(result?.label).toBeTruthy();
+      const parsed = parseYaml((result as { yaml: string }).yaml) as { cache_resources: { label: string }[] };
+      expect(parsed.cache_resources).toHaveLength(1);
+      expect(parsed.cache_resources[0].label).toBe(result?.label);
+      // The label the caller gets back is exactly the one it can link into a node.
+      expect(listResourceLabels((result as { yaml: string }).yaml, 'cache')).toContain(result?.label);
+    });
+
+    test('createResourceAndReturnLabel makes the label collision-safe', () => {
+      const base = 'cache_resources:\n  - label: memory\n    memory: {}\noutput:\n  drop: {}';
+      const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
+      expect(result?.label).not.toBe('memory');
+      expect(listResourceLabels((result as { yaml: string }).yaml, 'cache')).toHaveLength(2);
+    });
+
+    const sharedLabelYaml = `pipeline:
+  processors:
+    - cache:
+        resource: shared
+        operator: add
+        key: x
+    - rate_limit:
+        resource: shared
+output:
+  drop: {}
+cache_resources:
+  - label: shared
+    memory: {}
+rate_limit_resources:
+  - label: shared
+    local: { count: 1, interval: 1s }`;
+
+    type SharedParsed = {
+      pipeline: { processors: [{ cache: { resource: string } }, { rate_limit: { resource: string } }] };
+    };
+
+    test('renameResourceReferences with a kind leaves same-labelled references of the other kind alone', () => {
+      const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed', 'cache') as string;
+      const parsed = parseYaml(next) as SharedParsed;
+      expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
+      expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('shared');
+    });
+
+    test('renameResourceReferences without a kind rewrites every matching reference', () => {
+      const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed') as string;
+      const parsed = parseYaml(next) as SharedParsed;
+      expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
+      expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('renamed');
+    });
+
+    test('countResourceReferences scopes to the kind when given', () => {
+      expect(countResourceReferences(sharedLabelYaml, 'shared')).toBe(2);
+      expect(countResourceReferences(sharedLabelYaml, 'shared', 'cache')).toBe(1);
+      expect(countResourceReferences(sharedLabelYaml, 'shared', 'rate_limit')).toBe(1);
+    });
+  });
+
+  describe('removeComponentAt', () => {
+    test('removes a processor and keeps the rest', () => {
+      const next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 0 });
+      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
+      expect(parsed.pipeline.processors).toEqual([{ mapping: 'root = this' }]);
+    });
+
+    test('prunes the pipeline key when the last processor is removed', () => {
+      let next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 1 }) as string;
+      next = removeComponentAt(next, { kind: 'processor', index: 0 }) as string;
+      const parsed = parseYaml(next) as Record<string, unknown>;
+      expect(parsed.pipeline).toBeUndefined();
+    });
+
+    test('removes the input key', () => {
+      const next = removeComponentAt(pipelineYaml, { kind: 'input' });
+      const parsed = parseYaml(next as string) as Record<string, unknown>;
+      expect(parsed.input).toBeUndefined();
+    });
+  });
+
+  describe('buildInsertableComponent', () => {
+    test('returns undefined when the component spec is unknown', () => {
+      const target: EditTarget = { kind: 'processor', index: 0 };
+      expect(target.kind).toBe('processor');
+      expect(buildInsertableComponent('does_not_exist', 'processor', [])).toBeUndefined();
+    });
   });
 });

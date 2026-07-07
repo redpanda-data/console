@@ -99,6 +99,8 @@ const mockEditorInstance = {
     contentChangeListeners.push(cb);
     return { dispose: vi.fn() };
   }),
+  // Cursor → structure-tree highlight sync subscribes to this.
+  onDidChangeCursorPosition: vi.fn(() => ({ dispose: vi.fn() })),
   executeEdits: vi.fn(),
   focus: vi.fn(),
   // Scroll API used by the read-only viewer's vertical overflow shadows.
@@ -133,11 +135,12 @@ vi.mock('components/ui/yaml/yaml-editor', async () => {
 });
 
 // 5. Mock complex sub-components that are irrelevant to our tests
-vi.mock('./pipeline-flow-diagram', async () => {
+// The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
+vi.mock('./pipeline-flow-canvas', async () => {
   const React = await import('react');
   return {
-    PipelineFlowDiagram: (props: { configYaml: string }) =>
-      React.createElement('div', { 'data-testid': 'flow-diagram', 'data-configyaml': props.configYaml }),
+    PipelineFlowCanvas: (props: { configYaml: string }) =>
+      React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
   };
 });
 vi.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
@@ -371,6 +374,28 @@ describe('PipelinePage', () => {
 
   // ── Creating a pipeline ─────────────────────────────────────────────
 
+  it('Cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn().mockReturnValue(
+      create(ConsoleCreatePipelineResponseSchema, {
+        response: create(CreatePipelineResponseSchema, {
+          pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
+        }),
+      })
+    );
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    await setPipelineNameViaDialog(user, 'my-pipeline');
+    fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  generate: {}' } });
+
+    fireEvent.keyDown(window, { key: 's', metaKey: true });
+
+    await waitFor(() => {
+      expect(createPipelineMock).toHaveBeenCalled();
+    });
+  });
+
   it('saving a new pipeline sends the name and YAML config to the backend', async () => {
     const user = userEvent.setup();
     const createPipelineMock = vi.fn().mockReturnValue(
@@ -576,33 +601,121 @@ describe('PipelinePage', () => {
     expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
   });
 
-  it('hydrates the flow diagram with pipeline configYaml in view mode', async () => {
+  it('hydrates the sidebar structure tree from the pipeline config in view mode', async () => {
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enablePipelineDiagrams' || flag === 'enableRpcnVisualEditor'
+    );
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // The sidebar is the structure-tree outline (the old mini flow diagram was removed), hydrated
+    // from the config — its input/output components appear as tree rows once the pipeline loads.
+    await waitFor(() => expect(screen.getByText('stdin')).toBeInTheDocument());
+    expect(screen.getByText('stdout')).toBeInTheDocument();
+    // One labelled tree per non-empty section.
+    expect(screen.getAllByRole('tree').length).toBeGreaterThan(0);
+  });
+
+  it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {
+    // Diagrams on, visual-editor lane off → the sidebar still uses the structure outline
+    // (the old mini flow diagram was removed), and the full Visual canvas stays hidden.
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
     mockIsEmbedded.mockReturnValue(true);
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    await waitFor(() => {
-      const diagram = screen.getByTestId('flow-diagram');
-      expect(diagram.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
-    });
+    await waitFor(() => expect(screen.getAllByRole('tree').length).toBeGreaterThan(0));
+    expect(screen.queryByTestId('flow-canvas')).not.toBeInTheDocument();
   });
 
-  it('view page exposes Monitor and Configuration lanes; Configuration shows the YAML read-only', async () => {
+  it('offers a "Start from a template" entry in the sidebar visualizer while the pipeline is empty', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'create' });
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) =>
+        flag === 'enablePipelineDiagrams' || flag === 'enableRpcnVisualEditor' || flag === 'enableRpcnTemplateGallery'
+    );
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // The visual editor defaults to the Visual lane; the sidebar (with its template
+    // CTA) lives alongside the YAML lane, so switch there first.
+    await user.click(await screen.findByRole('tab', { name: 'YAML' }));
+
+    // Empty pipeline → the template gallery entry is offered.
+    expect(await screen.findByTestId('browse-templates-cta')).toBeInTheDocument();
+
+    // Once the pipeline has real content, the entry animates away.
+    fireEvent.change(screen.getByTestId('yaml-editor'), {
+      target: { value: 'input:\n  generate:\n    mapping: root = {}' },
+    });
+    await waitFor(() => expect(screen.queryByTestId('browse-templates-cta')).not.toBeInTheDocument());
+  });
+
+  it('view page exposes Monitor and YAML lanes; YAML shows the config read-only', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
     render(<PipelinePage />, { transport: createTransport() });
 
     // Monitor is the default lane — no YAML editor shown yet.
-    expect(await screen.findByText('Configuration')).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
     expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
 
-    // Switching to Configuration shows the pipeline YAML.
-    await user.click(screen.getByText('Configuration'));
+    // Switching to the YAML lane shows the pipeline config read-only.
+    await user.click(screen.getByRole('tab', { name: 'YAML' }));
     const yaml = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
     expect(yaml.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
+  });
+
+  it('hides the view-mode Visual lane unless the visual editor flag is enabled', async () => {
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
+  });
+
+  it('view page Visual lane renders the full pipeline diagram from the pipeline config', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
+    // The visual editor builds on the diagrams flag, so both are required.
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enableRpcnVisualEditor' || flag === 'enablePipelineDiagrams'
+    );
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    await user.click(await screen.findByRole('tab', { name: 'Visual' }));
+
+    const canvas = await screen.findByTestId('flow-canvas');
+    expect(canvas.getAttribute('data-configyaml')).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
+  });
+
+  it('opens editing on the Visual lane when the visual editor is enabled, and YAML swaps in the editor', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+    // The visual editor builds on the diagrams flag, so both are required.
+    mockIsFeatureFlagEnabled.mockImplementation(
+      (flag: string) => flag === 'enableRpcnVisualEditor' || flag === 'enablePipelineDiagrams'
+    );
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // Visual is the default edit lane when the flag is on — the editor is not shown.
+    expect(await screen.findByTestId('flow-canvas')).toBeInTheDocument();
+    expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
+
+    // Switching to YAML swaps in the editor.
+    await user.click(await screen.findByRole('tab', { name: 'YAML' }));
+    expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
   });
 
   it('confirms before stopping a running pipeline', async () => {
@@ -685,18 +798,18 @@ describe('PipelinePage', () => {
   // ── Feature flags and mode routing ──────────────────────────────────
 
   describe('feature flags and mode routing', () => {
-    it('shows a slash-command tip banner when the feature is enabled', async () => {
+    it('shows the slash-command tip in the editor tips bar when the feature is enabled', async () => {
       mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableConnectSlashMenu');
 
       render(<PipelinePage />, { transport: createTransport() });
 
+      // The tips bar leads with the slash tip (rotation starts at index 0).
       await waitFor(() => {
-        expect(screen.getByText(/Tip: Use/)).toBeInTheDocument();
         expect(screen.getByText(/to insert variables/)).toBeInTheDocument();
       });
     });
 
-    it('hides the slash-command tip banner when the feature is disabled', async () => {
+    it('omits the slash-command tip when the feature is disabled', async () => {
       // Default: all flags return false
       render(<PipelinePage />, { transport: createTransport() });
 
@@ -704,7 +817,7 @@ describe('PipelinePage', () => {
         expect(screen.getByTestId('yaml-editor')).toBeInTheDocument();
       });
 
-      expect(screen.queryByText(/Tip: Use/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/to insert variables/)).not.toBeInTheDocument();
     });
 
     it('uses the new log explorer when the feature flag is enabled', async () => {

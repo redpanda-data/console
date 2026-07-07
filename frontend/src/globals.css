@@ -4,6 +4,23 @@
 
 @source "../node_modules/streamdown/dist/index.js";
 
+/* App-owned semantic colours (here, not registry theme.css, so they survive registry re-syncs).
+   `accent-*-text`: text variants of the canvas section accents — the fill 400/500 shades fail
+   contrast as text on a light card, so light mode uses the darkest hue clearing 4.5:1 on white.
+   (Routing conditions and the unsaved-state marker reuse the registry `warning` accent.) */
+@theme {
+  --color-accent-input-text: var(--color-green-600);
+  --color-accent-processor-text: var(--color-blue-800);
+  --color-accent-output-text: var(--color-purple-600);
+  --color-accent-resource-text: var(--color-orange-900);
+}
+.dark {
+  --color-accent-input-text: var(--color-green-500);
+  --color-accent-processor-text: var(--color-blue-500);
+  --color-accent-output-text: var(--color-purple-500);
+  --color-accent-resource-text: var(--color-orange-500);
+}
+
 /* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
    which collides with Monaco's internal .monaco-hover.fade-in class,
    forcing hover widgets to be invisible. Override to restore opacity. */
