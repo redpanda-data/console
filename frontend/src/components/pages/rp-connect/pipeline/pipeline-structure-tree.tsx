@@ -12,12 +12,13 @@
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Box, ChevronDown, ChevronRight, Plus, TriangleAlert } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
+import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
-import { type PipelineFlowNode, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
 const SECTION_TITLES: Record<string, string> = {
   input: 'INPUT',
@@ -258,6 +259,18 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   </div>
 );
 
+// The invalid-config notice shown atop the outline: `showingStale` = we're holding the last valid
+// outline; a bare `error` with nothing to fall back to = the outline can't be built at all yet.
+function invalidOutlineNotice(showingStale: boolean, error?: string): string | undefined {
+  if (showingStale) {
+    return 'Showing the last valid outline — the current YAML is invalid.';
+  }
+  if (error) {
+    return 'The current YAML is invalid — fix it in the editor to see the outline.';
+  }
+  return;
+}
+
 type PipelineStructureTreeProps = {
   configYaml: string;
   /** Node id to highlight (e.g. the node under the YAML cursor). */
@@ -288,7 +301,9 @@ export function PipelineStructureTree({
   onSelectNode,
   onAddConnector,
 }: PipelineStructureTreeProps) {
-  const { nodes } = useMemo(() => parsePipelineFlowTree(configYaml), [configYaml]);
+  // Hold the last valid outline when an edit leaves the YAML unparseable (or valid but no longer a
+  // pipeline), so the lane doesn't blank out mid-edit — it stays put with an "invalid" notice.
+  const { nodes, error, showingStale } = useResilientParse(configYaml);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const maps = useMemo<NodeMaps>(() => {
@@ -359,12 +374,22 @@ export function PipelineStructureTree({
   };
 
   const nav: TreeNav = { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId };
+  const notice = invalidOutlineNotice(showingStale, error);
 
   return (
     // Each non-empty section is its OWN labelled tree so role="tree" owns only treeitems —
     // the visible headers, "empty" notes and Add buttons live between the trees, not inside
     // one (a tree may own only treeitem/group children). Arrow keys still walk across sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
+      {notice ? (
+        <div
+          className="mx-2 flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-2.5 py-2 text-foreground text-xs"
+          role="status"
+        >
+          <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" />
+          <span>{notice}</span>
+        </div>
+      ) : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
         return (

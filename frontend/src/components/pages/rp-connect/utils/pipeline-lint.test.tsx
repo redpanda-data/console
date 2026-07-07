@@ -12,7 +12,7 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { describe, expect, it } from 'vitest';
 
-import { mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from './pipeline-lint';
+import { localYamlLintHints, mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from './pipeline-lint';
 
 const hint = (line: number, msg: string): LintHint => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
 
@@ -131,5 +131,35 @@ describe('mergeLintHints', () => {
   it('dedupes repeats within a single source too', () => {
     const merged = mergeLintHints({}, [hint(3, 'same'), hint(3, 'same')]);
     expect(Object.keys(merged)).toHaveLength(1);
+  });
+
+  it('folds local hints in alongside error and query hints', () => {
+    const merged = mergeLintHints({}, [hint(9, 'server lint')], [hint(15, 'syntax error')]);
+    expect(Object.keys(merged)).toHaveLength(2);
+    expect(Object.values(merged).find((h) => h.line === 15)?.hint).toBe('syntax error');
+  });
+});
+
+describe('localYamlLintHints', () => {
+  it('returns no hints for valid (or blank) YAML', () => {
+    expect(localYamlLintHints('')).toEqual([]);
+    expect(localYamlLintHints('   \n')).toEqual([]);
+    expect(localYamlLintHints('input:\n  generate: {}\noutput:\n  drop: {}')).toEqual([]);
+  });
+
+  it('reports a YAML syntax error as an error hint with a clean single-line message', () => {
+    // `fds` is a bare scalar where a mapping key is expected — the class the server rejected on save.
+    const hints = localYamlLintHints('input:\n  generate: {}\nfds\noutput:\n  drop: {}');
+    expect(hints.length).toBeGreaterThan(0);
+    expect(hints[0].lintType).toBe('error');
+    expect(hints[0].line).toBeGreaterThan(0);
+    // No embedded code snippet (prettyErrors: false), so it renders as one panel row.
+    expect(hints[0].hint).not.toContain('\n');
+  });
+
+  it('maps the error to its 1-based line', () => {
+    // Unclosed flow sequence on line 1 — a deterministic position.
+    const hints = localYamlLintHints('input: [1, 2');
+    expect(hints[0]?.line).toBe(1);
   });
 });

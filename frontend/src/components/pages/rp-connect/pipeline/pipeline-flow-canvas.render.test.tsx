@@ -78,6 +78,15 @@ const NO_OUTPUT_YAML = `input:
     mapping: 'root = {}'`;
 const ADD_OUTPUT_RE = /add output/i;
 const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
+const NO_OUTPUT_NOTE_RE = /no output configured/i;
+const STALE_LAYOUT_RE = /showing the last valid layout/i;
+
+// A complete valid pipeline used as the last-good baseline for the resilient-parse test.
+const VALID_PIPELINE_YAML = `input:
+  generate:
+    mapping: 'root = {}'
+output:
+  drop: {}`;
 
 describe('PipelineFlowCanvas — placeholder cards', () => {
   it('renders a non-interactive "No output configured" note in read-only mode', async () => {
@@ -100,6 +109,22 @@ describe('PipelineFlowCanvas — invalid YAML from the start', () => {
     const { container } = render(<PipelineFlowCanvas configYaml={'input: [unclosed'} />);
     expect(await screen.findByText(YAML_TAB_HINT_RE)).toBeInTheDocument();
     expect(container.querySelectorAll('button')).toHaveLength(0);
+  });
+});
+
+describe('PipelineFlowCanvas — resilient parse', () => {
+  it('holds the last valid layout (flagged stale) when an edit leaves valid YAML that no longer describes a pipeline', async () => {
+    const { rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
+    // Baseline: a real pipeline renders (input generate → drop output), not the empty placeholders.
+    expect(await screen.findByText('generate')).toBeInTheDocument();
+    expect(screen.queryByText(NO_OUTPUT_NOTE_RE)).not.toBeInTheDocument();
+
+    // One bad edit: still valid YAML, but the input/output/pipeline sections are gone. The canvas
+    // must NOT collapse to `input: none` placeholders — it holds the last valid layout and flags it.
+    rerender(<PipelineFlowCanvas configYaml={'renamed_root:\n  generate: {}'} />);
+    expect(await screen.findByText(STALE_LAYOUT_RE)).toBeInTheDocument();
+    expect(screen.getByText('generate')).toBeInTheDocument();
+    expect(screen.queryByText(NO_OUTPUT_NOTE_RE)).not.toBeInTheDocument();
   });
 });
 

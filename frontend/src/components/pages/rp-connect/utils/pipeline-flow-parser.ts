@@ -1086,6 +1086,21 @@ export function isPipelineEmpty(nodes: PipelineFlowNode[]): boolean {
   return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
 }
 
+/**
+ * True when the config text carries no meaningful content — only whitespace and `#` comments.
+ *
+ * Distinct from {@link isPipelineEmpty}, which looks at the parsed graph: a config can be full of
+ * text yet parse to no components (invalid YAML, or valid YAML that's lost its input/output/pipeline
+ * sections). Only a genuinely blank config should offer "start from a template" — offering it over
+ * real text invites clobbering the user's work.
+ */
+export function isConfigTextEmpty(configYaml: string): boolean {
+  return configYaml.split('\n').every((line) => {
+    const trimmed = line.trim();
+    return trimmed === '' || trimmed.startsWith('#');
+  });
+}
+
 // Post-parse pass deriving cross-node metadata the per-node parsers can't see in isolation:
 // which containers accept inserts, which resource refs dangle, and per-resource usage counts.
 function annotateFlowMeta(nodes: PipelineFlowNode[]): void {

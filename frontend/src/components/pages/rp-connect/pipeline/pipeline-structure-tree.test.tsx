@@ -145,4 +145,20 @@ describe('PipelineStructureTree', () => {
     const [highlightId, editableId] = onSelectNode.mock.calls[0];
     expect(highlightId).toBe(editableId);
   });
+
+  it('keeps the last valid outline, flagged, when an edit makes the YAML invalid', () => {
+    const { rerender } = render(<PipelineStructureTree configYaml={NESTED} />);
+    expect(screen.getByText('switch')).toBeInTheDocument();
+
+    // A syntax error mid-edit: the lane must not blank out — it holds the outline and flags it.
+    rerender(<PipelineStructureTree configYaml={'input: [unclosed'} />);
+    expect(screen.getByText(/last valid outline/i)).toBeInTheDocument();
+    expect(screen.getByText('switch')).toBeInTheDocument();
+  });
+
+  it('shows a fix-it notice (no crash) when the YAML is invalid from the start', () => {
+    render(<PipelineStructureTree configYaml={'input: [unclosed'} />);
+    expect(screen.getByText(/the current yaml is invalid/i)).toBeInTheDocument();
+    expect(screen.queryByText('INPUT')).not.toBeInTheDocument();
+  });
 });

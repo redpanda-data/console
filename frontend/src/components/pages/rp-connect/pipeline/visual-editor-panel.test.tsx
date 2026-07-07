@@ -414,4 +414,16 @@ output:
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(onYamlChange).not.toHaveBeenCalled();
   });
+
+  test('offers the template entry point for a genuinely blank config', () => {
+    renderPanel({ onBrowseTemplates: vi.fn(), yamlContent: '   \n# just a comment\n' });
+    expect(screen.getByTestId('browse-templates-cta')).toBeInTheDocument();
+  });
+
+  test('does not offer a template when the config has content but parses to no pipeline', () => {
+    // Valid YAML that lost its input/output/pipeline sections (e.g. from one bad edit): full of text,
+    // so the template offer would clobber it. Guard on raw content, not just the empty parse.
+    renderPanel({ onBrowseTemplates: vi.fn(), yamlContent: 'not-a-pipeline: true\nother: value' });
+    expect(screen.queryByTestId('browse-templates-cta')).not.toBeInTheDocument();
+  });
 });

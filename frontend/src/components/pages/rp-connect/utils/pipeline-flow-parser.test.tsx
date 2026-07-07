@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { summarizeComponent } from './pipeline-flow-meta';
-import { computeGraphLayout, mainFlowSequence, parsePipelineFlowTree } from './pipeline-flow-parser';
+import { computeGraphLayout, isConfigTextEmpty, mainFlowSequence, parsePipelineFlowTree } from './pipeline-flow-parser';
 
 describe('parsePipelineFlowTree', () => {
   it('returns placeholder input/output sections with placeholder leaves for empty string', () => {
@@ -1506,6 +1506,25 @@ output:
   drop: {}`;
     const seq = mainFlowSequence(parsePipelineFlowTree(yaml).nodes).map((n) => n.id);
     expect(seq).toEqual(['input-0', 'proc-0', 'proc-1', 'output-0']);
+  });
+});
+
+describe('isConfigTextEmpty', () => {
+  it('treats a blank or whitespace-only config as empty', () => {
+    expect(isConfigTextEmpty('')).toBe(true);
+    expect(isConfigTextEmpty('   \n\t\n  ')).toBe(true);
+  });
+
+  it('treats a comments-only config as empty', () => {
+    expect(isConfigTextEmpty('# just a note\n  # indented note\n')).toBe(true);
+  });
+
+  it('treats any real content as non-empty', () => {
+    expect(isConfigTextEmpty('input:\n  generate: {}')).toBe(false);
+    // A trailing comment on a content line does not make the config empty.
+    expect(isConfigTextEmpty('foo: bar # note')).toBe(false);
+    // Structurally-invalid-but-present text is still non-empty (so no template offer).
+    expect(isConfigTextEmpty('not-a-pipeline: true')).toBe(false);
   });
 });
 

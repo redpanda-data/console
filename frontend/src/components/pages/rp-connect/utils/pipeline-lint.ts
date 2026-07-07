@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { create } from '@bufbuild/protobuf';
 import { LineCounter, parseDocument } from 'yaml';
 
 import { parsePipelineFlowTree } from './pipeline-flow-parser';
@@ -61,7 +62,8 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
  */
 export function mergeLintHints(
   errorHints: Record<string, LintHint>,
-  queryHints: readonly LintHint[]
+  queryHints: readonly LintHint[],
+  localHints: readonly LintHint[] = []
 ): Record<string, LintHint> {
   const merged: Record<string, LintHint> = {};
   const seen = new Set<string>();
@@ -73,6 +75,14 @@ export function mergeLintHints(
       merged[`error_${key}`] = hint;
     }
   }
+  // Locally-derived hints (YAML syntax, or a swallowed lint-RPC failure) — surfaced so the panel
+  // reflects problems the live server lint can't report while the document is unparseable.
+  for (const [idx, hint] of localHints.entries()) {
+    if (!seen.has(signature(hint))) {
+      seen.add(signature(hint));
+      merged[`local_${idx}`] = hint;
+    }
+  }
   for (const [idx, hint] of queryHints.entries()) {
     if (!seen.has(signature(hint))) {
       seen.add(signature(hint));
@@ -80,6 +90,29 @@ export function mergeLintHints(
     }
   }
   return merged;
+}
+
+/**
+ * Client-side YAML syntax lint: the `yaml` parser's own errors, with 1-based line/column. Surfaces
+ * the "invalid YAML" class (unclosed brackets, a key missing its `:`) in the Lint panel immediately,
+ * without a save round-trip — the live server lint can't report these while the document won't parse.
+ * `prettyErrors: false` keeps the message a single clean line (no embedded code snippet).
+ */
+export function localYamlLintHints(configYaml: string): LintHint[] {
+  if (!configYaml.trim()) {
+    return [];
+  }
+  const lineCounter = new LineCounter();
+  const doc = parseDocument(configYaml, { lineCounter, prettyErrors: false });
+  return doc.errors.map((err) => {
+    const pos = err.pos ? lineCounter.linePos(err.pos[0]) : undefined;
+    return create(LintHintSchema, {
+      line: pos?.line ?? 0,
+      column: pos?.col ?? 0,
+      hint: err.message,
+      lintType: 'error',
+    });
+  });
 }
 
 // Smallest node range containing `line` (most specific enclosing node).

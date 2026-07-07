@@ -39,12 +39,8 @@ import {
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
 import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
-import {
-  computeGraphLayout,
-  type FlowInsertPayload,
-  type PipelineFlowNode,
-  parsePipelineFlowTree,
-} from '../utils/pipeline-flow-parser';
+import { useResilientParse } from './use-resilient-parse';
+import { computeGraphLayout, type FlowInsertPayload } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
@@ -257,18 +253,6 @@ function PipelineMiniMap({
 const SELECTION_REVEAL_MARGIN = 32;
 const RAIL_SETTLE_MS = 240;
 
-// Parse the YAML, holding the last-good nodes: while it's transiently invalid the parser yields
-// nothing, and blanking the canvas reads as broken, so freeze the last-good graph and flag it stale.
-function useResilientParse(yaml: string): { nodes: PipelineFlowNode[]; error?: string; showingStale: boolean } {
-  const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
-  const lastGoodNodesRef = useRef<PipelineFlowNode[]>(parsed.nodes);
-  if (!parsed.error) {
-    lastGoodNodesRef.current = parsed.nodes;
-  }
-  const showingStale = Boolean(parsed.error) && parsed.nodes.length === 0 && lastGoodNodesRef.current.length > 0;
-  return { nodes: showingStale ? lastGoodNodesRef.current : parsed.nodes, error: parsed.error, showingStale };
-}
-
 // In scope if it's a member by id, or carries the construct's id as `ownerId` (marks outside the parser tree).
 function nodeInScope(node: Node, scope: ReadonlySet<string>): boolean {
   return scope.has(node.id) || scope.has((node.data as FlowCardData).ownerId ?? ' ');
@@ -308,7 +292,7 @@ function StaleParseBanner({ show }: { show: boolean }) {
   return (
     <output className="absolute top-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-1.5 text-foreground text-sm shadow-sm backdrop-blur-sm">
       <TriangleAlert className="size-4 shrink-0 text-warning" />
-      <span>Can&apos;t parse the latest YAML — showing the last valid layout.</span>
+      <span>Can&apos;t visualize the latest YAML — showing the last valid layout.</span>
     </output>
   );
 }
