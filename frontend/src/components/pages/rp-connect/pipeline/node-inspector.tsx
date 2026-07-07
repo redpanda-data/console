@@ -560,7 +560,7 @@ const SwitchCaseEditor = ({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-condition/10 text-condition">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning">
           <Split className="size-3.5" />
         </span>
         <div className="flex min-w-0 flex-col">
@@ -624,11 +624,11 @@ const CaseConditionSection = ({
   const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
   const inputId = useId();
   return (
-    <div className="border-condition/30 border-b bg-condition/5 px-4 py-3">
+    <div className="border-warning/30 border-b bg-warning/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
-        <Split className="size-3.5 shrink-0 text-condition" />
+        <Split className="size-3.5 shrink-0 text-warning" />
         <Label
-          className="font-semibold text-[11px] text-condition uppercase leading-none tracking-wide"
+          className="font-semibold text-[11px] text-warning uppercase leading-none tracking-wide"
           htmlFor={inputId}
         >
           Routing condition
@@ -639,7 +639,7 @@ const CaseConditionSection = ({
               render={
                 <button
                   aria-label="About routing conditions"
-                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-condition/50 transition-colors hover:text-condition"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-warning/50 transition-colors hover:text-warning"
                   type="button"
                 />
               }

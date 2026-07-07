@@ -594,22 +594,21 @@ function constructAccent(node?: Node): string {
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 
-// Center-x gap that starts a new column. Dagre gives every node in a rank the same center-x, and
-// adjacent ranks sit far wider apart than this, so it cleanly buckets members by rank/column.
-const SCOPE_COLUMN_GAP = 80;
-
-// A scope's footprint as ONE box PER COLUMN (Dagre rank) rather than a single bounding box.
-// A construct's members can form an L — a fan marker on the left, its outputs a column to the
-// right — whose overall bounding box swallows an unrelated sibling card in the empty corner. A
-// per-column footprint hugs the members in each column instead, so it never covers a card that
-// isn't a member. Prefers each node's MEASURED size (so a slab hugs the rendered card, not the
-// layout's over-reserved estimate); falls back to the layout size before measurement.
-export function scopeColumnSlabs(
+// A construct's footprint as ONE bounding box enclosing ALL its members — a single cohesive area
+// around the whole switch / broker / branch, not one box per Dagre column (which reads as
+// disconnected vertical stripes on a big fan-out). Prefers each node's MEASURED size (so the box
+// hugs the rendered cards, not the layout's over-reserved estimate); falls back to the layout size
+// before measurement. Returns null when the scope has no placed members.
+export function scopeBounds(
   nodes: Node[],
   scope: ReadonlySet<string>,
   measuredById: Map<string, { measured?: { width?: number; height?: number } }>
-): ScopeBounds[] {
-  const rects: { cx: number; bounds: ScopeBounds }[] = [];
+): ScopeBounds | null {
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  let found = false;
   for (const n of nodes) {
     if (!nodeInScope(n, scope)) {
       continue;
@@ -617,34 +616,20 @@ export function scopeColumnSlabs(
     const m = measuredById.get(n.id)?.measured;
     const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
     const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
-    rects.push({
-      cx: n.position.x + w / 2,
-      bounds: { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h },
-    });
+    minX = Math.min(minX, n.position.x);
+    minY = Math.min(minY, n.position.y);
+    maxX = Math.max(maxX, n.position.x + w);
+    maxY = Math.max(maxY, n.position.y + h);
+    found = true;
   }
-  rects.sort((a, z) => a.cx - z.cx);
-  const slabs: ScopeBounds[] = [];
-  let curCx = Number.NEGATIVE_INFINITY;
-  for (const { cx, bounds } of rects) {
-    const slab = slabs.at(-1);
-    if (slab && cx - curCx <= SCOPE_COLUMN_GAP) {
-      slab.minX = Math.min(slab.minX, bounds.minX);
-      slab.minY = Math.min(slab.minY, bounds.minY);
-      slab.maxX = Math.max(slab.maxX, bounds.maxX);
-      slab.maxY = Math.max(slab.maxY, bounds.maxY);
-    } else {
-      slabs.push({ ...bounds });
-    }
-    curCx = cx;
-  }
-  return slabs;
+  return found ? { minX, minY, maxX, maxY } : null;
 }
 
 type ScopeRegion = {
   id: string;
   scope: ReadonlySet<string>;
-  // One box per column the construct occupies (see scopeColumnSlabs).
-  slabs: ScopeBounds[];
+  // One bounding box enclosing the whole construct (see scopeBounds).
+  bounds: ScopeBounds;
   accent: string;
   label: string;
   /** Side / top padding — larger for outer regions so nested ones don't touch. */
@@ -652,60 +637,77 @@ type ScopeRegion = {
   topPad: number;
 };
 
-// The slab that hosts the region's label — the top-left-most column, so the label sits where
-// the construct starts.
-function labelSlabIndex(slabs: ScopeBounds[]): number {
-  let best = 0;
-  for (let i = 1; i < slabs.length; i += 1) {
-    const s = slabs[i];
-    const b = slabs[best];
-    if (s.minX < b.minX || (s.minX === b.minX && s.minY < b.minY)) {
-      best = i;
-    }
-  }
-  return best;
-}
+// rounded-xl (0.75rem) in px — the region box's corner radius, applied only to the outermost piece.
+const REGION_RADIUS = 12;
+// A construct that fans out to many members (a switch with dozens of cases) makes its enclosing box
+// very TALL. Past the browser's max paintable/composited element size (~8k–16k device px) the fill
+// and border silently drop — the "area with too many nodes has no background" bug. So render a tall
+// box as a STACK of capped pieces instead of one giant div. The cap sits well under that limit even
+// at MAX_ZOOM × a 2× DPR, so every piece always paints. Only the first piece draws the top edge and
+// the last the bottom (middle seams stay borderless), so the stack reads as one seamless box.
+// Exported so the render test can assert no rendered piece exceeds this cap.
+export const MAX_REGION_SLAB_PX = 3000;
 
-// One construct's enclosure — a faint dashed box PER COLUMN it occupies (so an L-shaped construct
-// hugs its members instead of one big box swallowing a sibling in the corner). Drawn FAINT (a quiet
-// nesting hint); the boxes and label strengthen when the construct, or anything inside it, is the
-// active (selected/hovered) node. Non-interactive, behind the nodes, in flow coordinates.
+// One construct's enclosure — a single faint dashed box around ALL its members. Drawn FAINT (a quiet
+// nesting hint); the box and label strengthen when the construct, or anything inside it, is the
+// active (selected/hovered) node. Non-interactive, behind the nodes, in flow coordinates. A tall box
+// is split into stacked, size-capped pieces (see MAX_REGION_SLAB_PX) that read as one continuous box.
 function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
-  const { slabs, accent, label, pad, topPad } = region;
-  const labelIdx = labelSlabIndex(slabs);
+  const { bounds, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
+  const border = `1px dashed ${borderColor}`;
+  const left = bounds.minX - pad;
+  const top = bounds.minY - topPad;
+  const width = bounds.maxX - bounds.minX + 2 * pad;
+  const fullHeight = bounds.maxY - bounds.minY + topPad + pad;
+  // Split into equal pieces each ≤ the cap; a short box stays a single (fully bordered) piece.
+  const pieceCount = Math.max(1, Math.ceil(fullHeight / MAX_REGION_SLAB_PX));
+  const pieceHeight = fullHeight / pieceCount;
   return (
     <>
-      {slabs.map((bounds, i) => (
-        <div
-          className="pointer-events-none absolute rounded-xl border border-dashed transition-[background-color,border-color] duration-200"
-          key={`${bounds.minX}-${bounds.minY}`}
-          style={{
-            transform: `translate(${bounds.minX - pad}px, ${bounds.minY - topPad}px)`,
-            width: bounds.maxX - bounds.minX + 2 * pad,
-            height: bounds.maxY - bounds.minY + topPad + pad,
-            borderColor,
-            backgroundColor,
-            zIndex: 0,
-          }}
-        >
-          {/* Label sits just above the top border of the construct's first column. Faint until active. */}
-          {i === labelIdx ? (
-            <span
-              className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
-              style={{
-                color: accent,
-                opacity: active ? 1 : 0.8,
-                backgroundColor: 'var(--color-background)',
-                border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
-              }}
-            >
-              {label}
-            </span>
-          ) : null}
-        </div>
-      ))}
+      {Array.from({ length: pieceCount }, (_, p) => {
+        const isFirst = p === 0;
+        const isLast = p === pieceCount - 1;
+        return (
+          <div
+            className="pointer-events-none absolute transition-[background-color,border-color] duration-200"
+            key={p}
+            style={{
+              transform: `translate(${left}px, ${top + p * pieceHeight}px)`,
+              width,
+              height: pieceHeight,
+              backgroundColor,
+              // Sides on every piece; top only on the first, bottom only on the last — so stacked
+              // pieces join without an internal border line and read as one continuous box.
+              borderLeft: border,
+              borderRight: border,
+              borderTop: isFirst ? border : undefined,
+              borderBottom: isLast ? border : undefined,
+              borderTopLeftRadius: isFirst ? REGION_RADIUS : undefined,
+              borderTopRightRadius: isFirst ? REGION_RADIUS : undefined,
+              borderBottomLeftRadius: isLast ? REGION_RADIUS : undefined,
+              borderBottomRightRadius: isLast ? REGION_RADIUS : undefined,
+              zIndex: 0,
+            }}
+          >
+            {/* Label sits just above the top border of the construct's box. Faint until active. */}
+            {isFirst ? (
+              <span
+                className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
+                style={{
+                  color: accent,
+                  opacity: active ? 1 : 0.8,
+                  backgroundColor: 'var(--color-background)',
+                  border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
+                }}
+              >
+                {label}
+              </span>
+            ) : null}
+          </div>
+        );
+      })}
     </>
   );
 }
@@ -754,14 +756,14 @@ function ScopeRegions({
       if (!scope || scope.size < 2) {
         continue;
       }
-      const slabs = scopeColumnSlabs(rfNodes, scope, nodeLookup);
-      if (slabs.length === 0) {
+      const bounds = scopeBounds(rfNodes, scope, nodeLookup);
+      if (!bounds) {
         continue;
       }
       drafts.push({
         id: node.id,
         scope,
-        slabs,
+        bounds,
         accent: constructAccent(node),
         label: (node.data as FlowCardData).label,
       });
@@ -921,7 +923,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
       </div>
       {flags.condition ? (
         <div className="flex items-center gap-2">
-          <LegendChipSwatch color="var(--color-condition)" />
+          <LegendChipSwatch color="var(--color-warning)" />
           Routing condition
         </div>
       ) : null}

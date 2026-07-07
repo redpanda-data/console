@@ -216,7 +216,7 @@ const NodeRow = ({
             <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" title="Has errors" />
           ) : null}
           {unsaved && !hasError ? (
-            <span aria-hidden className="size-2 shrink-0 rounded-full bg-unsaved" title="Unsaved changes" />
+            <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" title="Unsaved changes" />
           ) : null}
         </span>
       </div>

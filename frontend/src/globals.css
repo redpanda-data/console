@@ -5,19 +5,16 @@
 @source "../node_modules/streamdown/dist/index.js";
 
 /* App-owned semantic colours (here, not registry theme.css, so they survive registry re-syncs).
-   `condition`: gold decision accent for switch/branch conditions. `unsaved`: dirty-state marker.
    `accent-*-text`: text variants of the canvas section accents — the fill 400/500 shades fail
-   contrast as text on a light card, so light mode uses the darkest hue clearing 4.5:1 on white. */
+   contrast as text on a light card, so light mode uses the darkest hue clearing 4.5:1 on white.
+   (Routing conditions and the unsaved-state marker reuse the registry `warning` accent.) */
 @theme {
-  --color-condition: var(--color-yellow-700);
-  --color-unsaved: var(--color-amber-500);
   --color-accent-input-text: var(--color-green-600);
   --color-accent-processor-text: var(--color-blue-800);
   --color-accent-output-text: var(--color-purple-600);
   --color-accent-resource-text: var(--color-orange-900);
 }
 .dark {
-  --color-condition: var(--color-yellow-400);
   --color-accent-input-text: var(--color-green-500);
   --color-accent-processor-text: var(--color-blue-500);
   --color-accent-output-text: var(--color-purple-500);

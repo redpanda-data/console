@@ -12,7 +12,7 @@
 import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { decorateEdges, injectNodeData, scopeColumnSlabs, selectionTargetForNode } from './pipeline-flow-canvas';
+import { decorateEdges, injectNodeData, scopeBounds, selectionTargetForNode } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowGraphEdge', data: { insertIndex: 1 } },
@@ -25,7 +25,7 @@ const refData = (decorated: Edge[]) =>
 
 const scope = (...ids: string[]) => new Set(ids);
 
-describe('scopeColumnSlabs — a construct footprint that excludes a sibling in the L-corner', () => {
+describe('scopeBounds — one box enclosing the whole construct', () => {
   const node = (id: string, x: number, y: number): Node => ({
     id,
     position: { x, y },
@@ -36,25 +36,30 @@ describe('scopeColumnSlabs — a construct footprint that excludes a sibling in 
   });
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
-  it('draws one box per column and never covers a non-member sitting below the marker', () => {
-    // A fallback-style L: the marker (col 0, mid) fans to two outputs (col 1, top + bottom); the
-    // sibling case's `aws_s3` sits in col 0 BELOW the marker — the old single bounding box swallowed it.
+  it('returns a single bounding box that encloses every member', () => {
+    // A fan marker (col 0, mid) fanning to two outputs (col 1, top + bottom): the whole construct
+    // gets ONE cohesive box, not a box per column.
     const marker = node('marker', 0, 300);
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
-    const sibling = node('aws_s3', 0, 620); // NOT in scope
-    const slabs = scopeColumnSlabs([marker, out1, out2, sibling], scope('marker', 'out1', 'out2'), noMeasure);
+    const bounds = scopeBounds([marker, out1, out2], scope('marker', 'out1', 'out2'), noMeasure);
 
-    // Two columns → two slabs.
-    expect(slabs).toHaveLength(2);
-    const covers = (b: (typeof slabs)[number], n: Node) =>
+    expect(bounds).not.toBeNull();
+    // Spans from the marker's left/top-most extent to the outputs' right/bottom-most extent.
+    expect(bounds).toEqual({ minX: 0, minY: 0, maxX: 700, maxY: 680 });
+    const covers = (b: NonNullable<typeof bounds>, n: Node) =>
       n.position.x >= b.minX && n.position.x <= b.maxX && n.position.y >= b.minY && n.position.y <= b.maxY;
-    // No slab covers the sibling: col 0's slab spans only the marker (y 300–380), not down to aws_s3 (y 620).
-    expect(slabs.some((b) => covers(b, sibling))).toBe(false);
-    // The members are still covered.
-    expect(slabs.some((b) => covers(b, marker))).toBe(true);
-    expect(slabs.some((b) => covers(b, out1))).toBe(true);
-    expect(slabs.some((b) => covers(b, out2))).toBe(true);
+    for (const n of [marker, out1, out2]) {
+      expect(covers(bounds!, n)).toBe(true);
+    }
+  });
+
+  it('ignores nodes outside the scope and returns null for an empty scope', () => {
+    const marker = node('marker', 0, 300);
+    const outsider = node('outsider', 0, 620); // NOT in scope — must not stretch the box
+    const bounds = scopeBounds([marker, outsider], scope('marker'), noMeasure);
+    expect(bounds).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 });
+    expect(scopeBounds([marker, outsider], scope('nope'), noMeasure)).toBeNull();
   });
 });
 

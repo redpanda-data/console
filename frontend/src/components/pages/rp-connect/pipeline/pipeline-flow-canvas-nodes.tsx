@@ -143,8 +143,8 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   const cls = cn(
     'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-[10px] leading-none',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
-    tone === 'muted' && 'border-condition/30 bg-condition/5 text-condition/80',
-    tone === 'condition' && 'border-condition/40 bg-condition/10 text-condition',
+    tone === 'muted' && 'border-warning/30 bg-warning/5 text-warning/80',
+    tone === 'condition' && 'border-warning/40 bg-warning/10 text-warning',
     className
   );
   return (
@@ -154,12 +154,12 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   );
 };
 
-// Routing conditions get an amber/gold accent (the flowchart decision-branch convention) — distinct
+// Routing conditions reuse the `warning` accent (the flowchart decision-branch convention) — distinct
 // from every section accent and from the red error tone, so routing logic is easy to scan. Error/
-// dead-letter routes keep red (that semantic wins); a `default` catch-all is a muted amber tone.
+// dead-letter routes keep red (that semantic wins); a `default` catch-all is a muted warning tone.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
-  condition: 'border-condition/30 bg-condition/10 text-condition',
-  muted: 'border-condition/20 bg-condition/5 text-condition/80',
+  condition: 'border-warning/30 bg-warning/10 text-warning',
+  muted: 'border-warning/20 bg-warning/5 text-warning/80',
   error: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
@@ -238,7 +238,7 @@ export type FlowCardData = {
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
-  /** Config differs from the last-saved pipeline — flagged with an amber "unsaved" dot. */
+  /** Config differs from the last-saved pipeline — flagged with a warning-toned "unsaved" dot. */
   unsaved?: boolean;
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
@@ -437,10 +437,10 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     </span>
   ) : null;
 
-// An amber dot marking a node whose config differs from the last-saved pipeline.
+// A warning-toned dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
-    <span className="size-2 shrink-0 rounded-full bg-unsaved" title="Unsaved changes on this node">
+    <span className="size-2 shrink-0 rounded-full bg-warning" title="Unsaved changes on this node">
       <span className="sr-only">Unsaved changes</span>
     </span>
   ) : null;
@@ -568,7 +568,7 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
 };
 
 type LinkTone = 'primary' | 'muted' | 'error';
-// Edge LABELS also support the amber routing-condition tone (the line itself stays primary).
+// Edge LABELS also support the warning-toned routing-condition tone (the line itself stays primary).
 type LinkLabelTone = LinkTone | 'condition';
 type FlowLinkData = {
   label?: string;
@@ -591,8 +591,8 @@ const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   primary: 'border-primary/40 text-primary',
   error: 'border-destructive/40 text-destructive',
   muted: 'border-border text-foreground',
-  // Routing conditions read amber, matching the legend and the cards' condition chips.
-  condition: 'border-condition/40 text-condition',
+  // Routing conditions read as the warning accent, matching the legend and the cards' condition chips.
+  condition: 'border-warning/40 text-warning',
 };
 // Edge labels render into RF's shared layer below the nodes; lift the pill above the cards so a
 // label in a container's gutter isn't painted over by the card. (Nodes here aren't selectable.)
@@ -961,7 +961,7 @@ function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, tar
           onClick={d.onLabelClick}
           // Only `conditional`-type edges carry a label at the primary tone (flow edges are
           // unlabelled), so a labelled primary edge's label IS a routing condition — render it
-          // amber like the legend / condition chips, not primary-blue. The line stays primary.
+          // in the warning tone like the legend / condition chips, not primary-blue. The line stays primary.
           tone={tone === 'primary' ? 'condition' : tone}
           x={labelX}
           // When an on-edge "+" shares this midpoint, lift the label clear so the two don't

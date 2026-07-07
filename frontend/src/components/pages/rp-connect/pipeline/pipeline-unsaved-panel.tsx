@@ -25,7 +25,7 @@ type PipelineUnsavedPanelProps = {
 };
 
 /**
- * Floating amber "unsaved" chip on the Visual canvas, mirroring the problems chip. Expands to a
+ * Floating "unsaved" chip (warning-toned) on the Visual canvas, mirroring the problems chip. Expands to a
  * list of the nodes whose config differs from the last-saved pipeline; clicking one jumps to it.
  */
 export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelProps) {
@@ -45,7 +45,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
         onClick={() => setOpen((o) => !o)}
         type="button"
       >
-        <span aria-hidden className="size-2 rounded-full bg-unsaved" />
+        <span aria-hidden className="size-2 rounded-full bg-warning" />
         {nodes.length === 1 ? '1 unsaved' : `${nodes.length} unsaved`}
         <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
       </button>
@@ -65,7 +65,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
               }}
               type="button"
             >
-              <span aria-hidden className="size-2 shrink-0 rounded-full bg-unsaved" />
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
               <Text as="span" className="min-w-0 truncate text-foreground text-xs" variant="bodySmall">
                 {node.label}
               </Text>
