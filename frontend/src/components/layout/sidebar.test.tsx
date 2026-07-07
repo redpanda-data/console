@@ -60,7 +60,7 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
     expect(transcripts?.title).toBe('Transcripts');
   });
 
-  it('SQL item exposes an Editor sub-item when SQLService is supported', () => {
+  it('SQL item exposes a Studio sub-item when SQLService is supported', () => {
     const compatibility: EndpointCompatibility = {
       kafkaVersion: '3.6.0',
       endpoints: [
@@ -79,7 +79,7 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
     const allItems = createGroupedSidebarItems().flatMap((g) => g.items);
     const sql = allItems.find((item) => item.to === '/sql');
     expect(sql).toBeDefined();
-    expect(sql?.children).toEqual([{ title: 'Editor', to: '/sql/editor' }]);
+    expect(sql?.children).toEqual([{ title: 'Studio', to: '/sql/studio' }]);
   });
 
   it('store selector triggers re-render when endpointCompatibility changes', async () => {

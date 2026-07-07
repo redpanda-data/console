@@ -14,7 +14,7 @@ import { SqlLanding } from 'components/pages/sql/sql-landing';
 import { useSqlCatalogs } from 'components/pages/sql/use-sql-catalogs';
 
 // The SQL section's default view: a standalone landing/overview with no studio
-// chrome. Editor entry intent travels as /sql/editor search params.
+// chrome. Studio entry intent travels as /sql/studio search params.
 export const Route = createFileRoute('/sql/')({
   component: SqlLandingRoute,
 });
@@ -28,12 +28,12 @@ function SqlLandingRoute() {
       hasTables={hasTables}
       isError={isError}
       isLoading={isLoading}
-      onAddTopic={() => navigate({ to: '/sql/editor', search: { seed: undefined, run: undefined, wizard: true } })}
-      onOpenEditor={() =>
-        navigate({ to: '/sql/editor', search: { seed: undefined, run: undefined, wizard: undefined } })
+      onAddTopic={() => navigate({ to: '/sql/studio', search: { seed: undefined, run: undefined, wizard: true } })}
+      onOpenStudio={() =>
+        navigate({ to: '/sql/studio', search: { seed: undefined, run: undefined, wizard: undefined } })
       }
       onRetry={refetch}
-      onRunQuery={(sql) => navigate({ to: '/sql/editor', search: { seed: sql, run: true, wizard: undefined } })}
+      onRunQuery={(sql) => navigate({ to: '/sql/studio', search: { seed: sql, run: true, wizard: undefined } })}
       sqlRole={sqlRole}
     />
   );

@@ -486,7 +486,7 @@ export function SqlWorkspace({
         let hintAction = false;
         if (kw === 'CREATE') {
           title = 'Use the wizard to create tables';
-          message = "CREATE TABLE isn't run from the editor in this release.";
+          message = "CREATE TABLE isn't run from the studio in this release.";
           hint = 'Creating a table from a topic?';
           hintAction = true;
         } else if (kw === 'GRANT' || kw === 'REVOKE') {

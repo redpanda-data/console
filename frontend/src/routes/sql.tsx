@@ -16,8 +16,8 @@ import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported
 import { uiState } from 'state/ui-state';
 
 // Layout for the SQL section's two views: the landing/overview at /sql and the
-// query editor studio at /sql/editor. Each view is a real route, so the editor
-// is deep-linkable, the back button returns editor → landing, and entry intent
+// query studio at /sql/studio. Each view is a real route, so the studio is
+// deep-linkable, the back button returns studio → landing, and entry intent
 // (seed query, auto-run, wizard) travels in the URL instead of component state.
 
 // The registry's near-black dark theme renders borders at rgba(255,255,255,0.04)

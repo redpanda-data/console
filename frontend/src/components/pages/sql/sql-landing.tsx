@@ -219,18 +219,18 @@ function MetricStrip({ tableCount, catalogCount, role }: { tableCount: number; c
 function TablesOverview({
   catalogs,
   onRunQuery,
-  onOpenEditor,
+  onOpenStudio,
 }: {
   catalogs: Catalog[];
   onRunQuery: (sql: string) => void;
-  onOpenEditor: () => void;
+  onOpenStudio: () => void;
 }) {
   return (
     <Card>
       <CardHead
         action={
-          <CardActionButton onClick={onOpenEditor}>
-            Browse in editor <ArrowRight size={13} />
+          <CardActionButton onClick={onOpenStudio}>
+            Browse in studio <ArrowRight size={13} />
           </CardActionButton>
         }
         icon={TableIcon}
@@ -448,8 +448,8 @@ export type SqlLandingProps = {
   /** Catalog/table listing failed — render the error state, not the empty state. */
   isError: boolean;
   hasTables: boolean;
-  onOpenEditor: () => void;
-  /** Switch to the editor and run the given SQL. */
+  onOpenStudio: () => void;
+  /** Switch to the studio and run the given SQL. */
   onRunQuery: (sql: string) => void;
   /** Open the add-topic wizard (admin only). */
   onAddTopic: () => void;
@@ -463,7 +463,7 @@ export function SqlLanding({
   isLoading,
   isError,
   hasTables,
-  onOpenEditor,
+  onOpenStudio,
   onRunQuery,
   onAddTopic,
   onRetry,
@@ -479,9 +479,9 @@ export function SqlLanding({
     [catalogs]
   );
 
-  const openEditorButton = (
-    <Button onClick={onOpenEditor} size="md" variant={showOnboarding ? 'secondary' : 'primary'}>
-      <Terminal size={15} /> Open query editor
+  const openStudioButton = (
+    <Button onClick={onOpenStudio} size="md" variant={showOnboarding ? 'secondary' : 'primary'}>
+      <Terminal size={15} /> Open studio
     </Button>
   );
   const addTopicButton = isAdmin ? (
@@ -531,7 +531,7 @@ export function SqlLanding({
         <MetricStrip catalogCount={catalogs.length} role={sqlRole} tableCount={tableCount} />
         <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_364px]">
           <div className="flex min-w-0 flex-col gap-5">
-            <TablesOverview catalogs={catalogs} onOpenEditor={onOpenEditor} onRunQuery={onRunQuery} />
+            <TablesOverview catalogs={catalogs} onOpenStudio={onOpenStudio} onRunQuery={onRunQuery} />
             <DocsCard />
           </div>
           <div className="flex min-w-0 flex-col gap-5">
@@ -566,11 +566,11 @@ export function SqlLanding({
               {showOnboarding ? (
                 <>
                   {addTopicButton}
-                  {openEditorButton}
+                  {openStudioButton}
                 </>
               ) : (
                 <>
-                  {openEditorButton}
+                  {openStudioButton}
                   {addTopicButton}
                 </>
               )}

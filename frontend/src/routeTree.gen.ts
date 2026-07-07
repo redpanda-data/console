@@ -35,7 +35,7 @@ import { Route as DebugBundleIndexRouteImport } from './routes/debug-bundle/inde
 import { Route as ConnectClustersIndexRouteImport } from './routes/connect-clusters/index';
 import { Route as AgentsIndexRouteImport } from './routes/agents/index';
 import { Route as TransformsTransformNameRouteImport } from './routes/transforms/$transformName';
-import { Route as SqlEditorRouteImport } from './routes/sql/editor';
+import { Route as SqlStudioRouteImport } from './routes/sql/studio';
 import { Route as ShadowlinksCreateRouteImport } from './routes/shadowlinks/create';
 import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
 import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
@@ -220,9 +220,9 @@ const TransformsTransformNameRoute = TransformsTransformNameRouteImport.update({
   path: '/transforms/$transformName',
   getParentRoute: () => rootRouteImport,
 } as any);
-const SqlEditorRoute = SqlEditorRouteImport.update({
-  id: '/editor',
-  path: '/editor',
+const SqlStudioRoute = SqlStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => SqlRoute,
 } as any);
 const ShadowlinksCreateRoute = ShadowlinksCreateRouteImport.update({
@@ -540,7 +540,7 @@ export interface FileRoutesByFullPath {
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
-  '/sql/editor': typeof SqlEditorRoute;
+  '/sql/studio': typeof SqlStudioRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents/': typeof AgentsIndexRoute;
   '/connect-clusters/': typeof ConnectClustersIndexRoute;
@@ -620,7 +620,7 @@ export interface FileRoutesByTo {
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
-  '/sql/editor': typeof SqlEditorRoute;
+  '/sql/studio': typeof SqlStudioRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents': typeof AgentsIndexRoute;
   '/connect-clusters': typeof ConnectClustersIndexRoute;
@@ -703,7 +703,7 @@ export interface FileRoutesById {
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
   '/secrets/create': typeof SecretsCreateRoute;
   '/shadowlinks/create': typeof ShadowlinksCreateRoute;
-  '/sql/editor': typeof SqlEditorRoute;
+  '/sql/studio': typeof SqlStudioRoute;
   '/transforms/$transformName': typeof TransformsTransformNameRoute;
   '/agents/': typeof AgentsIndexRoute;
   '/connect-clusters/': typeof ConnectClustersIndexRoute;
@@ -787,7 +787,7 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/shadowlinks/create'
-    | '/sql/editor'
+    | '/sql/studio'
     | '/transforms/$transformName'
     | '/agents/'
     | '/connect-clusters/'
@@ -867,7 +867,7 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/shadowlinks/create'
-    | '/sql/editor'
+    | '/sql/studio'
     | '/transforms/$transformName'
     | '/agents'
     | '/connect-clusters'
@@ -949,7 +949,7 @@ export interface FileRouteTypes {
     | '/schema-registry/edit-mode'
     | '/secrets/create'
     | '/shadowlinks/create'
-    | '/sql/editor'
+    | '/sql/studio'
     | '/transforms/$transformName'
     | '/agents/'
     | '/connect-clusters/'
@@ -1259,11 +1259,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransformsTransformNameRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/sql/editor': {
-      id: '/sql/editor';
-      path: '/editor';
-      fullPath: '/sql/editor';
-      preLoaderRoute: typeof SqlEditorRouteImport;
+    '/sql/studio': {
+      id: '/sql/studio';
+      path: '/studio';
+      fullPath: '/sql/studio';
+      preLoaderRoute: typeof SqlStudioRouteImport;
       parentRoute: typeof SqlRoute;
     };
     '/shadowlinks/create': {
@@ -1681,12 +1681,12 @@ const SecurityRouteWithChildren = SecurityRoute._addFileChildren(
 );
 
 interface SqlRouteChildren {
-  SqlEditorRoute: typeof SqlEditorRoute;
+  SqlStudioRoute: typeof SqlStudioRoute;
   SqlIndexRoute: typeof SqlIndexRoute;
 }
 
 const SqlRouteChildren: SqlRouteChildren = {
-  SqlEditorRoute: SqlEditorRoute,
+  SqlStudioRoute: SqlStudioRoute,
   SqlIndexRoute: SqlIndexRoute,
 };
 

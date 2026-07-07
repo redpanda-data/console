@@ -15,7 +15,7 @@ import { SqlWorkspace } from 'components/pages/sql/sql-workspace';
 import { z } from 'zod';
 
 // Entry intent from the landing page, carried in the URL so a seeded or
-// auto-run editor link is shareable and refresh-safe.
+// auto-run studio link is shareable and refresh-safe.
 const searchSchema = z.object({
   /** SQL to seed the editor's first tab with. */
   seed: fallback(z.string().optional(), undefined),
@@ -25,12 +25,12 @@ const searchSchema = z.object({
   wizard: fallback(z.boolean().optional(), undefined),
 });
 
-export const Route = createFileRoute('/sql/editor')({
+export const Route = createFileRoute('/sql/studio')({
   validateSearch: zodValidator(searchSchema),
-  component: SqlEditorRoute,
+  component: SqlStudioRoute,
 });
 
-function SqlEditorRoute() {
+function SqlStudioRoute() {
   const { seed, run, wizard } = Route.useSearch();
   const navigate = useNavigate();
   return (

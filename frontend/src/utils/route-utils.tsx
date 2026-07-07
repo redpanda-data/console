@@ -267,8 +267,8 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     // single source of truth for both embedded (cloud) and self-hosted, so the
     // nav is gated on capability detection rather than a feature flag.
     visibilityCheck: routeVisibility(true, [Feature.SQLService]),
-    // Direct entry to the query editor without going via the landing page.
-    children: [{ path: '/sql/editor', title: 'Editor' }],
+    // Direct entry to the query studio without going via the landing page.
+    children: [{ path: '/sql/studio', title: 'Studio' }],
   },
   {
     path: '/connect-clusters',

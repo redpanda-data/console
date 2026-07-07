@@ -50,13 +50,13 @@ const catalogs: Catalog[] = [
 const ORDERS_SQL = 'SELECT *\nFROM default_redpanda_catalog=>orders\nLIMIT 100;';
 
 const PREVIEW_ORDERS_RE = /Preview orders/;
-const OPEN_EDITOR_RE = /Open query editor/;
+const OPEN_STUDIO_RE = /Open studio/;
 const ADD_TOPIC_RE = /Add a topic/;
 const ASK_ADMIN_RE = /Ask an admin to add a Redpanda topic/;
 
 function renderLanding(overrides: Partial<SqlLandingProps> = {}) {
   const onRunQuery = vi.fn();
-  const onOpenEditor = vi.fn();
+  const onOpenStudio = vi.fn();
   const onAddTopic = vi.fn();
   const onRetry = vi.fn();
   render(
@@ -66,14 +66,14 @@ function renderLanding(overrides: Partial<SqlLandingProps> = {}) {
       isError={false}
       isLoading={false}
       onAddTopic={onAddTopic}
-      onOpenEditor={onOpenEditor}
+      onOpenStudio={onOpenStudio}
       onRetry={onRetry}
       onRunQuery={onRunQuery}
       sqlRole="admin"
       {...overrides}
     />
   );
-  return { onAddTopic, onOpenEditor, onRetry, onRunQuery };
+  return { onAddTopic, onOpenStudio, onRetry, onRunQuery };
 }
 
 afterEach(() => {
@@ -95,10 +95,10 @@ describe('SqlLanding populated overview', () => {
     expect(onRunQuery).toHaveBeenCalledWith(ORDERS_SQL);
   });
 
-  test('Open query editor switches to the editor', async () => {
-    const { onOpenEditor } = renderLanding();
-    await userEvent.click(screen.getByRole('button', { name: OPEN_EDITOR_RE }));
-    expect(onOpenEditor).toHaveBeenCalledOnce();
+  test('Open studio switches to the studio', async () => {
+    const { onOpenStudio } = renderLanding();
+    await userEvent.click(screen.getByRole('button', { name: OPEN_STUDIO_RE }));
+    expect(onOpenStudio).toHaveBeenCalledOnce();
   });
 
   test('recent queries from history are listed and re-runnable', async () => {

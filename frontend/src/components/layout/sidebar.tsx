@@ -229,7 +229,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
   );
 }
 
-// A nav row with an expandable sub-menu (e.g. SQL → Editor). The row itself
+// A nav row with an expandable sub-menu (e.g. SQL → Studio). The row itself
 // still navigates to the parent page; the chevron toggles the sub-items so
 // users can jump straight to a sub-page. Keyed on section-activity below so
 // entering the section auto-expands and leaving collapses.
