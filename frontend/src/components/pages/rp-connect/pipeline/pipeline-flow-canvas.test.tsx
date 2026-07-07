@@ -12,7 +12,13 @@
 import type { Edge, Node } from '@xyflow/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { decorateEdges, injectNodeData, scopeBounds, selectionTargetForNode } from './pipeline-flow-canvas';
+import {
+  decorateEdges,
+  injectNodeData,
+  scopeColumns,
+  selectionTargetForNode,
+  unionOutline,
+} from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowGraphEdge', data: { insertIndex: 1 } },
@@ -25,7 +31,7 @@ const refData = (decorated: Edge[]) =>
 
 const scope = (...ids: string[]) => new Set(ids);
 
-describe('scopeBounds — one box enclosing the whole construct', () => {
+describe('scopeColumns — one tight box per Dagre column', () => {
   const node = (id: string, x: number, y: number): Node => ({
     id,
     position: { x, y },
@@ -36,30 +42,57 @@ describe('scopeBounds — one box enclosing the whole construct', () => {
   });
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
-  it('returns a single bounding box that encloses every member', () => {
-    // A fan marker (col 0, mid) fanning to two outputs (col 1, top + bottom): the whole construct
-    // gets ONE cohesive box, not a box per column.
+  it("returns one box per column, each hugging just that column's members", () => {
+    // A fan marker (col 0, vertically centered) fanning to two outputs (col 1, top + bottom). The
+    // marker column and the output column are SEPARATE boxes, so neither spans the empty corner
+    // between them where an unrelated sibling card can sit.
     const marker = node('marker', 0, 300);
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
-    const bounds = scopeBounds([marker, out1, out2], scope('marker', 'out1', 'out2'), noMeasure);
+    const columns = scopeColumns([marker, out1, out2], scope('marker', 'out1', 'out2'), noMeasure);
 
-    expect(bounds).not.toBeNull();
-    // Spans from the marker's left/top-most extent to the outputs' right/bottom-most extent.
-    expect(bounds).toEqual({ minX: 0, minY: 0, maxX: 700, maxY: 680 });
-    const covers = (b: NonNullable<typeof bounds>, n: Node) =>
-      n.position.x >= b.minX && n.position.x <= b.maxX && n.position.y >= b.minY && n.position.y <= b.maxY;
-    for (const n of [marker, out1, out2]) {
-      expect(covers(bounds!, n)).toBe(true);
-    }
+    expect(columns).toEqual([
+      { minX: 0, minY: 300, maxX: 200, maxY: 380 }, // marker column — short, mid-height
+      { minX: 500, minY: 0, maxX: 700, maxY: 680 }, // output column — spans both outputs
+    ]);
   });
 
-  it('ignores nodes outside the scope and returns null for an empty scope', () => {
+  it('ignores nodes outside the scope and returns [] for an empty scope', () => {
     const marker = node('marker', 0, 300);
-    const outsider = node('outsider', 0, 620); // NOT in scope — must not stretch the box
-    const bounds = scopeBounds([marker, outsider], scope('marker'), noMeasure);
-    expect(bounds).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 });
-    expect(scopeBounds([marker, outsider], scope('nope'), noMeasure)).toBeNull();
+    const outsider = node('outsider', 0, 620); // NOT in scope — must not stretch or add a column
+    expect(scopeColumns([marker, outsider], scope('marker'), noMeasure)).toEqual([
+      { minX: 0, minY: 300, maxX: 200, maxY: 380 },
+    ]);
+    expect(scopeColumns([marker, outsider], scope('nope'), noMeasure)).toEqual([]);
+  });
+});
+
+describe('unionOutline — one continuous border around the union', () => {
+  const rect = (minX: number, minY: number, maxX: number, maxY: number) => ({ minX, minY, maxX, maxY });
+
+  it('traces a single rectangle as one 4-corner loop', () => {
+    const loops = unionOutline([rect(0, 0, 10, 10)]);
+    expect(loops).toHaveLength(1);
+    expect(loops[0]).toHaveLength(4);
+  });
+
+  it('merges two abutting rects into one loop with no internal seam', () => {
+    const loops = unionOutline([rect(0, 0, 10, 10), rect(10, 0, 20, 10)]);
+    expect(loops).toHaveLength(1);
+    expect(loops[0]).toHaveLength(4); // one 0,0..20,10 rectangle — the shared edge cancels
+  });
+
+  it('keeps two spatially-disjoint rects as two loops', () => {
+    const loops = unionOutline([rect(0, 0, 10, 10), rect(50, 50, 60, 60)]);
+    expect(loops).toHaveLength(2);
+  });
+
+  it('traces bridged columns (a short one + a tall one) as one L-shaped 6-corner loop', () => {
+    // left column (short, top), a bridge, and a taller right column → an L outline: one loop whose
+    // empty bottom-left corner (where a sibling card sits) stays OUTSIDE the shape.
+    const loops = unionOutline([rect(0, 0, 10, 10), rect(10, 0, 20, 10), rect(20, 0, 30, 30)]);
+    expect(loops).toHaveLength(1);
+    expect(loops[0]).toHaveLength(6);
   });
 });
 

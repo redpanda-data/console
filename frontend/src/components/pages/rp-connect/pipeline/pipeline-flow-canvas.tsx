@@ -593,22 +593,27 @@ function constructAccent(node?: Node): string {
 }
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
+type Point = { x: number; y: number };
 
-// A construct's footprint as ONE bounding box enclosing ALL its members — a single cohesive area
-// around the whole switch / broker / branch, not one box per Dagre column (which reads as
-// disconnected vertical stripes on a big fan-out). Prefers each node's MEASURED size (so the box
-// hugs the rendered cards, not the layout's over-reserved estimate); falls back to the layout size
-// before measurement. Returns null when the scope has no placed members.
-export function scopeBounds(
+// Center-x gap that starts a new column. Dagre gives every node in a rank the same center-x, and
+// adjacent ranks sit far wider apart than this, so it cleanly buckets a construct's members by
+// rank/column.
+const SCOPE_COLUMN_GAP = 80;
+
+// A construct's footprint as ONE box PER COLUMN (Dagre rank), each hugging just the members in that
+// column. A fanned-out construct is an L / staircase — a marker on the left, its outputs a column to
+// the right — and a single bounding box over ALL members would fill the empty corner and cover an
+// unrelated sibling card sitting there. Per-column boxes never do; they're later stitched into ONE
+// connected outline so the construct still reads as a single area (see RegionBox). Prefers each
+// node's MEASURED size (so a box hugs the rendered card, not the layout's over-reserved estimate);
+// falls back to the layout size before measurement. Columns are returned left-to-right; empty when
+// the scope has no placed members.
+export function scopeColumns(
   nodes: Node[],
   scope: ReadonlySet<string>,
   measuredById: Map<string, { measured?: { width?: number; height?: number } }>
-): ScopeBounds | null {
-  let minX = Number.POSITIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-  let found = false;
+): ScopeBounds[] {
+  const rects: { cx: number; bounds: ScopeBounds }[] = [];
   for (const n of nodes) {
     if (!nodeInScope(n, scope)) {
       continue;
@@ -616,20 +621,159 @@ export function scopeBounds(
     const m = measuredById.get(n.id)?.measured;
     const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
     const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
-    minX = Math.min(minX, n.position.x);
-    minY = Math.min(minY, n.position.y);
-    maxX = Math.max(maxX, n.position.x + w);
-    maxY = Math.max(maxY, n.position.y + h);
-    found = true;
+    rects.push({
+      cx: n.position.x + w / 2,
+      bounds: { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h },
+    });
   }
-  return found ? { minX, minY, maxX, maxY } : null;
+  rects.sort((a, z) => a.cx - z.cx);
+  const columns: ScopeBounds[] = [];
+  let curCx = Number.NEGATIVE_INFINITY;
+  for (const { cx, bounds } of rects) {
+    const col = columns.at(-1);
+    if (col && cx - curCx <= SCOPE_COLUMN_GAP) {
+      col.minX = Math.min(col.minX, bounds.minX);
+      col.minY = Math.min(col.minY, bounds.minY);
+      col.maxX = Math.max(col.maxX, bounds.maxX);
+      col.maxY = Math.max(col.maxY, bounds.maxY);
+    } else {
+      columns.push({ ...bounds });
+    }
+    curCx = cx;
+  }
+  return columns;
+}
+
+const pointKey = (p: Point) => `${p.x},${p.y}`;
+
+// Boolean grid over the cells between consecutive grid lines: is a cell's centre inside any rect?
+function coverageGrid(rects: ScopeBounds[], xs: number[], ys: number[]): boolean[][] {
+  const grid: boolean[][] = [];
+  for (let i = 0; i + 1 < xs.length; i += 1) {
+    const cx = (xs[i] + xs[i + 1]) / 2;
+    grid[i] = [];
+    for (let j = 0; j + 1 < ys.length; j += 1) {
+      const cy = (ys[j] + ys[j + 1]) / 2;
+      grid[i][j] = rects.some((r) => cx > r.minX && cx < r.maxX && cy > r.minY && cy < r.maxY);
+    }
+  }
+  return grid;
+}
+
+type CellContext = {
+  xs: number[];
+  ys: number[];
+  covered: (ci: number, cj: number) => boolean;
+  add: (a: Point, b: Point) => void;
+};
+
+// Emit one covered cell's boundary edges clockwise, keeping only sides that face an uncovered cell
+// (shared/internal sides cancel because the neighbour emits the same edge reversed).
+function emitCellEdges(i: number, j: number, ctx: CellContext): void {
+  const { xs, ys, covered, add } = ctx;
+  const x0 = xs[i];
+  const x1 = xs[i + 1];
+  const y0 = ys[j];
+  const y1 = ys[j + 1];
+  if (!covered(i, j - 1)) {
+    add({ x: x0, y: y0 }, { x: x1, y: y0 });
+  }
+  if (!covered(i + 1, j)) {
+    add({ x: x1, y: y0 }, { x: x1, y: y1 });
+  }
+  if (!covered(i, j + 1)) {
+    add({ x: x1, y: y1 }, { x: x0, y: y1 });
+  }
+  if (!covered(i - 1, j)) {
+    add({ x: x0, y: y1 }, { x: x0, y: y0 });
+  }
+}
+
+// Directed boundary edges of the covered region, keyed by start point.
+function boundaryEdges(grid: boolean[][], xs: number[], ys: number[]): Map<string, Point[]> {
+  const covered = (i: number, j: number) => i >= 0 && j >= 0 && Boolean(grid[i]?.[j]);
+  const edges = new Map<string, Point[]>();
+  const add = (a: Point, b: Point) => {
+    const list = edges.get(pointKey(a));
+    if (list) {
+      list.push(b);
+    } else {
+      edges.set(pointKey(a), [b]);
+    }
+  };
+  const ctx: CellContext = { xs, ys, covered, add };
+  for (let i = 0; i < grid.length; i += 1) {
+    for (let j = 0; j < grid[i].length; j += 1) {
+      if (grid[i][j]) {
+        emitCellEdges(i, j, ctx);
+      }
+    }
+  }
+  return edges;
+}
+
+// Chain directed edges head-to-tail into closed loops, consuming each edge once.
+function chainLoops(edges: Map<string, Point[]>): Point[][] {
+  const loops: Point[][] = [];
+  for (const [startKey, ends] of edges) {
+    const [sx, sy] = startKey.split(',').map(Number);
+    while (ends.length > 0) {
+      const loop: Point[] = [{ x: sx, y: sy }];
+      let cur = ends.pop() as Point;
+      while (pointKey(cur) !== startKey) {
+        loop.push(cur);
+        const next = edges.get(pointKey(cur))?.pop();
+        if (!next) {
+          break;
+        }
+        cur = next;
+      }
+      loops.push(collapseCollinear(loop));
+    }
+  }
+  return loops;
+}
+
+// Trace the outline(s) of a union of axis-aligned rectangles as rectilinear loops. Grid/marching:
+// slice the plane along every rect edge, mark which cells any rect covers, then walk each covered
+// cell's boundary clockwise — edges shared with another covered cell cancel, so only the outer
+// boundary survives and chains head-to-tail into closed loops. This turns a construct's per-column
+// boxes (plus the bridges that join them) into ONE continuous path, so the dashed border is a single
+// box with no per-piece seams. Returns one loop per spatially-disjoint cluster.
+export function unionOutline(rects: ScopeBounds[]): Point[][] {
+  if (rects.length === 0) {
+    return [];
+  }
+  const xs = Array.from(new Set(rects.flatMap((r) => [r.minX, r.maxX]))).sort((a, b) => a - b);
+  const ys = Array.from(new Set(rects.flatMap((r) => [r.minY, r.maxY]))).sort((a, b) => a - b);
+  return chainLoops(boundaryEdges(coverageGrid(rects, xs, ys), xs, ys));
+}
+
+// Drop points that lie mid-segment (both neighbours share the point's x or y), leaving only corners.
+function collapseCollinear(loop: Point[]): Point[] {
+  const n = loop.length;
+  if (n < 3) {
+    return loop;
+  }
+  const out: Point[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const prev = loop[(i - 1 + n) % n];
+    const cur = loop[i];
+    const next = loop[(i + 1) % n];
+    const straight = (prev.x === cur.x && cur.x === next.x) || (prev.y === cur.y && cur.y === next.y);
+    if (!straight) {
+      out.push(cur);
+    }
+  }
+  return out;
 }
 
 type ScopeRegion = {
   id: string;
   scope: ReadonlySet<string>;
-  // One bounding box enclosing the whole construct (see scopeBounds).
-  bounds: ScopeBounds;
+  // One box per column the construct occupies (see scopeColumns); stitched into a single connected
+  // outline at render time (see RegionBox).
+  columns: ScopeBounds[];
   accent: string;
   label: string;
   /** Side / top padding — larger for outer regions so nested ones don't touch. */
@@ -637,77 +781,141 @@ type ScopeRegion = {
   topPad: number;
 };
 
-// rounded-xl (0.75rem) in px — the region box's corner radius, applied only to the outermost piece.
-const REGION_RADIUS = 12;
-// A construct that fans out to many members (a switch with dozens of cases) makes its enclosing box
-// very TALL. Past the browser's max paintable/composited element size (~8k–16k device px) the fill
-// and border silently drop — the "area with too many nodes has no background" bug. So render a tall
-// box as a STACK of capped pieces instead of one giant div. The cap sits well under that limit even
-// at MAX_ZOOM × a 2× DPR, so every piece always paints. Only the first piece draws the top edge and
-// the last the bottom (middle seams stay borderless), so the stack reads as one seamless box.
-// Exported so the render test can assert no rendered piece exceeds this cap.
-export const MAX_REGION_SLAB_PX = 3000;
+// A construct that fans out to many members (a switch with dozens of cases) makes its enclosing area
+// very TALL. Past the browser's max paintable/composited element size (~8k–16k device px) a filled
+// div silently drops its background — the "area with too many nodes has no background" bug. So the
+// translucent FILL is painted as a STACK of height-capped pieces instead of one giant div; the cap
+// sits well under that limit even at MAX_ZOOM × a 2× DPR, so every piece always paints. The dashed
+// BORDER is a single SVG path (not per-piece), so it needs no such splitting. Exported so the render
+// test can assert no fill piece exceeds this cap.
+export const MAX_REGION_PIECE_PX = 3000;
 
-// One construct's enclosure — a single faint dashed box around ALL its members. Drawn FAINT (a quiet
-// nesting hint); the box and label strengthen when the construct, or anything inside it, is the
-// active (selected/hovered) node. Non-interactive, behind the nodes, in flow coordinates. A tall box
-// is split into stacked, size-capped pieces (see MAX_REGION_SLAB_PX) that read as one continuous box.
+type RegionGeometry = {
+  /** Union rectangles (padded columns + connecting bridges) painted as the translucent fill. */
+  rects: ScopeBounds[];
+  /** SVG path (in bbox-local coords) tracing the whole union as one dashed outline. */
+  path: string;
+  /** Bounding box of the union, in flow coords — the SVG's position + size. */
+  bbox: { x: number; y: number; w: number; h: number };
+  /** Top-left-most column corner, where the label sits. */
+  anchor: Point;
+};
+
+// Turn a construct's per-column boxes into the geometry RegionBox renders: pad each column, bridge
+// adjacent columns across the card-free rank gap wherever they vertically overlap (so the union is
+// one connected shape, not floating stripes), then trace the union into a single outline path.
+function regionGeometry(columns: ScopeBounds[], pad: number, topPad: number): RegionGeometry {
+  const padded = columns.map((c) => ({
+    minX: c.minX - pad,
+    minY: c.minY - topPad,
+    maxX: c.maxX + pad,
+    maxY: c.maxY + pad,
+  }));
+  const rects: ScopeBounds[] = [...padded];
+  for (let i = 0; i + 1 < padded.length; i += 1) {
+    const a = padded[i];
+    const b = padded[i + 1];
+    const top = Math.max(a.minY, b.minY);
+    const bottom = Math.min(a.maxY, b.maxY);
+    // Bridge only when the columns don't already overlap in x and their vertical spans meet.
+    if (a.maxX < b.minX && bottom > top) {
+      rects.push({ minX: a.maxX, minY: top, maxX: b.minX, maxY: bottom });
+    }
+  }
+  let ox = Number.POSITIVE_INFINITY;
+  let oy = Number.POSITIVE_INFINITY;
+  let ox2 = Number.NEGATIVE_INFINITY;
+  let oy2 = Number.NEGATIVE_INFINITY;
+  let anchor = padded[0] ?? { minX: 0, minY: 0 };
+  for (const r of rects) {
+    ox = Math.min(ox, r.minX);
+    oy = Math.min(oy, r.minY);
+    ox2 = Math.max(ox2, r.maxX);
+    oy2 = Math.max(oy2, r.maxY);
+  }
+  for (const p of padded) {
+    if (p.minX < anchor.minX || (p.minX === anchor.minX && p.minY < anchor.minY)) {
+      anchor = p;
+    }
+  }
+  const path = unionOutline(rects)
+    .map((loop) => `M${loop.map((p) => `${p.x - ox} ${p.y - oy}`).join('L')}Z`)
+    .join('');
+  return { rects, path, bbox: { x: ox, y: oy, w: ox2 - ox, h: oy2 - oy }, anchor: { x: anchor.minX, y: anchor.minY } };
+}
+
+// One construct's enclosure — a single faint dashed box around ALL its members. The per-column boxes
+// (see scopeColumns) are padded, joined by bridges across the card-free gaps between columns that
+// vertically overlap, and traced into ONE rectilinear outline: a connected area hugging the
+// construct's L / staircase footprint, instead of a single rectangle whose empty corner covers an
+// unrelated card. Drawn FAINT (a quiet nesting hint); box + label strengthen when the construct, or
+// anything inside it, is the active (selected/hovered) node. Non-interactive, behind the nodes, in
+// flow coordinates.
 function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
-  const { bounds, accent, label, pad, topPad } = region;
+  const { columns, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
-  const border = `1px dashed ${borderColor}`;
-  const left = bounds.minX - pad;
-  const top = bounds.minY - topPad;
-  const width = bounds.maxX - bounds.minX + 2 * pad;
-  const fullHeight = bounds.maxY - bounds.minY + topPad + pad;
-  // Split into equal pieces each ≤ the cap; a short box stays a single (fully bordered) piece.
-  const pieceCount = Math.max(1, Math.ceil(fullHeight / MAX_REGION_SLAB_PX));
-  const pieceHeight = fullHeight / pieceCount;
+  const { rects, path, bbox, anchor } = regionGeometry(columns, pad, topPad);
+
   return (
     <>
-      {Array.from({ length: pieceCount }, (_, p) => {
-        const isFirst = p === 0;
-        const isLast = p === pieceCount - 1;
-        return (
-          <div
-            className="pointer-events-none absolute transition-[background-color,border-color] duration-200"
-            key={p}
-            style={{
-              transform: `translate(${left}px, ${top + p * pieceHeight}px)`,
-              width,
-              height: pieceHeight,
-              backgroundColor,
-              // Sides on every piece; top only on the first, bottom only on the last — so stacked
-              // pieces join without an internal border line and read as one continuous box.
-              borderLeft: border,
-              borderRight: border,
-              borderTop: isFirst ? border : undefined,
-              borderBottom: isLast ? border : undefined,
-              borderTopLeftRadius: isFirst ? REGION_RADIUS : undefined,
-              borderTopRightRadius: isFirst ? REGION_RADIUS : undefined,
-              borderBottomLeftRadius: isLast ? REGION_RADIUS : undefined,
-              borderBottomRightRadius: isLast ? REGION_RADIUS : undefined,
-              zIndex: 0,
-            }}
-          >
-            {/* Label sits just above the top border of the construct's box. Faint until active. */}
-            {isFirst ? (
-              <span
-                className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
-                style={{
-                  color: accent,
-                  opacity: active ? 1 : 0.8,
-                  backgroundColor: 'var(--color-background)',
-                  border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
-                }}
-              >
-                {label}
-              </span>
-            ) : null}
-          </div>
-        );
+      {/* Translucent fill: each union rect painted as height-capped pieces so a tall area never
+          exceeds the browser paint limit and drops its background. */}
+      {rects.flatMap((r) => {
+        const width = r.maxX - r.minX;
+        const height = r.maxY - r.minY;
+        const pieceCount = Math.max(1, Math.ceil(height / MAX_REGION_PIECE_PX));
+        const pieceHeight = height / pieceCount;
+        return Array.from({ length: pieceCount }, (_, p) => {
+          const topY = r.minY + p * pieceHeight;
+          return (
+            <div
+              className="pointer-events-none absolute transition-[background-color] duration-200"
+              data-region-fill="true"
+              key={`${r.minX}-${topY}`}
+              style={{
+                transform: `translate(${r.minX}px, ${topY}px)`,
+                width,
+                height: pieceHeight,
+                backgroundColor,
+                zIndex: 0,
+              }}
+            />
+          );
+        });
       })}
+      {/* One continuous dashed border as a single path — no per-piece side-dash seams. */}
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none absolute"
+        height={bbox.h}
+        style={{ transform: `translate(${bbox.x}px, ${bbox.y}px)`, overflow: 'visible', zIndex: 0 }}
+        width={bbox.w}
+      >
+        <path
+          d={path}
+          fill="none"
+          stroke={borderColor}
+          strokeDasharray="4 4"
+          strokeLinejoin="round"
+          strokeWidth={1}
+          style={{ transition: 'stroke 200ms' }}
+        />
+      </svg>
+      {/* Label sits just above the top border where the construct starts. Faint until active. */}
+      <div className="pointer-events-none absolute" style={{ transform: `translate(${anchor.x}px, ${anchor.y}px)` }}>
+        <span
+          className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-[10px] uppercase tracking-wide transition-opacity duration-200"
+          style={{
+            color: accent,
+            opacity: active ? 1 : 0.8,
+            backgroundColor: 'var(--color-background)',
+            border: `1px solid color-mix(in srgb, ${accent} ${active ? 55 : 32}%, transparent)`,
+          }}
+        >
+          {label}
+        </span>
+      </div>
     </>
   );
 }
@@ -756,14 +964,14 @@ function ScopeRegions({
       if (!scope || scope.size < 2) {
         continue;
       }
-      const bounds = scopeBounds(rfNodes, scope, nodeLookup);
-      if (!bounds) {
+      const columns = scopeColumns(rfNodes, scope, nodeLookup);
+      if (columns.length === 0) {
         continue;
       }
       drafts.push({
         id: node.id,
         scope,
-        bounds,
+        columns,
         accent: constructAccent(node),
         label: (node.data as FlowCardData).label,
       });

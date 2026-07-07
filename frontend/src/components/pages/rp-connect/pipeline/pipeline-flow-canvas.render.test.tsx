@@ -12,7 +12,7 @@
 import { render, screen } from 'test-utils';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { MAX_REGION_SLAB_PX, PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { MAX_REGION_PIECE_PX, PipelineFlowCanvas } from './pipeline-flow-canvas';
 
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
 const JOIN_TITLE_RE = /branches reconverge/i;
@@ -131,11 +131,11 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     // which jsdom doesn't lay out; those are asserted in the parser unit test instead.)
   });
 
-  // A switch that fans out to many cases makes its scope region very tall. A single div that tall
-  // exceeds the browser's max paintable element size and its background/border silently vanish (the
-  // "area with too many nodes has no background" bug). The region must be rendered as stacked,
+  // A switch that fans out to many cases makes its scope region very tall. A single fill div that
+  // tall exceeds the browser's max paintable element size and its background silently vanishes (the
+  // "area with too many nodes has no background" bug). The fill must be rendered as stacked,
   // size-capped pieces so it always paints.
-  it('caps every scope-region piece so a tall area still renders its background', async () => {
+  it('caps every scope-region fill piece so a tall area still renders its background', async () => {
     const cases = Array.from(
       { length: 60 },
       (_, i) => `      - check: this.x == ${i}\n        processors:\n          - mapping: 'root.y = ${i}'`
@@ -146,17 +146,18 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     // The switch marker also surfaces as a faint scope-region label, so there are several matches.
     await screen.findAllByText('switch');
 
-    // Region pieces render into React Flow's viewport portal, behind the nodes.
+    // Fill pieces render into React Flow's viewport portal, behind the nodes, tagged data-region-fill
+    // (the border is a single SVG path and is excluded here).
     const portal = container.querySelector('.react-flow__viewport-portal');
-    const pieces = portal ? Array.from(portal.children) : [];
+    const pieces = portal ? Array.from(portal.querySelectorAll('[data-region-fill]')) : [];
     const heights = pieces.map((el) => Number.parseFloat((el as HTMLElement).style.height));
 
     expect(pieces.length).toBeGreaterThan(0);
-    // No piece exceeds the cap — this is what keeps the fill/border paintable.
+    // No piece exceeds the cap — this is what keeps the fill paintable.
     for (const h of heights) {
-      expect(h).toBeLessThanOrEqual(MAX_REGION_SLAB_PX);
+      expect(h).toBeLessThanOrEqual(MAX_REGION_PIECE_PX);
     }
-    // The switch's tall enclosing box had to be split into several stacked pieces — proof the
+    // The switch's tall enclosing area had to be split into several stacked pieces — proof the
     // size-capping actually engaged (a single giant div would be one piece).
     expect(pieces.length).toBeGreaterThan(3);
   });
