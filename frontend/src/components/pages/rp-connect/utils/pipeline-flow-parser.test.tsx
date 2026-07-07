@@ -359,7 +359,11 @@ output:
       kind: 'leaf',
       label: 'gcp_pubsub',
       parentId: 'output-switch-1',
-      editTarget: { kind: 'path', path: ['output', 'switch', 'cases', 1, 'output', 'fallback', 0], componentType: 'output' },
+      editTarget: {
+        kind: 'path',
+        path: ['output', 'switch', 'cases', 1, 'output', 'fallback', 0],
+        componentType: 'output',
+      },
     });
     expect(byId('output-switch-1-1')).toMatchObject({
       kind: 'leaf',
@@ -367,7 +371,11 @@ output:
       parentId: 'output-switch-1',
       isErrorPath: true,
       condition: 'on failure',
-      editTarget: { kind: 'path', path: ['output', 'switch', 'cases', 1, 'output', 'fallback', 1], componentType: 'output' },
+      editTarget: {
+        kind: 'path',
+        path: ['output', 'switch', 'cases', 1, 'output', 'fallback', 1],
+        componentType: 'output',
+      },
     });
   });
 
