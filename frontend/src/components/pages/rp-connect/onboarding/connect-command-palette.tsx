@@ -444,7 +444,8 @@ export const ConnectCommandPalette = ({
   const [activeValue, setActiveValue] = useState('');
   // null until the user picks a tab, so the derived default can react to the catalog.
   const [tab, setTab] = useState<string | null>(null);
-  const recents = useMemo(() => readRecents(), []);
+  // State, not a mount-once memo, so a component committed while the palette stays mounted shows up.
+  const [recents, setRecents] = useState(() => readRecents());
 
   const allComponents = useMemo(() => {
     const builtIn = components ? parseSchema(components) : [];
@@ -465,6 +466,7 @@ export const ConnectCommandPalette = ({
 
   const handleCommit = (component: ConnectComponentSpec) => {
     pushRecent({ name: component.name, type: component.type });
+    setRecents(readRecents());
     onSelect(component.name, component.type);
   };
 

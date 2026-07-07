@@ -33,13 +33,32 @@ export const COMPONENT_ALIASES: Record<string, string[]> = {
   json: ['mapping', 'bloblang', 'json'],
 };
 
-// Extra searchable terms for a name: every alias key whose fragments the name contains
+// Does `name` contain `fragment` on `_`/string boundaries? Matches `kafka` in `kafka_franz` and
+// `rate_limit` whole, but not a fragment buried mid-token (`log` in `catalog`) — names are snake_case.
+function nameContainsToken(name: string, fragment: string): boolean {
+  let from = 0;
+  for (;;) {
+    const at = name.indexOf(fragment, from);
+    if (at === -1) {
+      return false;
+    }
+    const boundedBefore = at === 0 || name[at - 1] === '_';
+    const end = at + fragment.length;
+    const boundedAfter = end === name.length || name[end] === '_';
+    if (boundedBefore && boundedAfter) {
+      return true;
+    }
+    from = at + 1;
+  }
+}
+
+// Extra searchable terms for a name: every alias key whose fragments the name contains as a token
 // (lets the search index match "queue" against `kafka_franz`).
 export function aliasTermsForName(name: string): string[] {
   const lower = name.toLowerCase();
   const terms: string[] = [];
   for (const [alias, fragments] of Object.entries(COMPONENT_ALIASES)) {
-    if (fragments.some((fragment) => lower.includes(fragment))) {
+    if (fragments.some((fragment) => nameContainsToken(lower, fragment))) {
       terms.push(alias);
     }
   }

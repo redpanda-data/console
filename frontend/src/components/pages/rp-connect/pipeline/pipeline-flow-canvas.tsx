@@ -26,6 +26,7 @@ import { Banner, BannerContent } from 'components/redpanda-ui/components/banner'
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { TriangleAlert } from 'lucide-react';
 import {
+  memo,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
   useCallback,
@@ -196,6 +197,10 @@ function PipelineMiniMap({
         aria-label="Pipeline overview"
         className="block cursor-pointer"
         height={mapH}
+        onPointerCancel={() => {
+          // An interrupted drag never fires pointerup — clear the flag so moves stop re-centering.
+          draggingRef.current = false;
+        }}
         onPointerDown={(e) => {
           draggingRef.current = true;
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -813,11 +818,13 @@ function regionGeometry(columns: ScopeBounds[], pad: number, topPad: number): Re
 // footprint (see regionGeometry) instead of a rectangle whose empty corner covers an unrelated card.
 // Box + label strengthen when the construct, or anything inside it, is active. Non-interactive,
 // behind the nodes, in flow coordinates.
-function RegionBox({ region, active }: { region: ScopeRegion; active: boolean }) {
+const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boolean }) => {
   const { columns, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
-  const { rects, path, bbox, anchor } = regionGeometry(columns, pad, topPad);
+  // Geometry depends only on columns/padding, not `active`, so hover (which only restyles colours)
+  // doesn't retrace the outline.
+  const { rects, path, bbox, anchor } = useMemo(() => regionGeometry(columns, pad, topPad), [columns, pad, topPad]);
 
   return (
     <>
@@ -880,7 +887,7 @@ function RegionBox({ region, active }: { region: ScopeRegion; active: boolean })
       </div>
     </>
   );
-}
+});
 
 // Faint enclosure boxes around every construct's sub-graph, emphasized when the construct (or
 // anything inside) is active. Drawn via `ViewportPortal`, never perturbing the nodes array (hover
@@ -900,13 +907,31 @@ function ScopeRegions({
   // re-render; `measuredKey` is a primitive digest that changes when cards measure, so boxes tighten
   // from the layout estimate to the rendered size.
   const nodeLookup = useStore((s) => s.nodeLookup);
+  // Only scoped cards affect region geometry, so digest just those below — not every node — keeping
+  // the per-store-change selector cheap.
+  const scopedIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const node of rfNodes) {
+      if (node.type !== 'flowSplit') {
+        continue;
+      }
+      const scope = scopeOf(node.id);
+      if (scope) {
+        for (const id of scope) {
+          ids.add(id);
+        }
+      }
+    }
+    return ids;
+  }, [rfNodes, scopeOf]);
   const measuredKey = useStore((s) => {
-    // Numeric digest of measured sizes — no per-frame string allocation (this selector re-runs on
-    // every store change). Folds width + height so a reflow at constant height still retriggers the memo.
+    // Integer digest of scoped cards' measured sizes (no per-frame string alloc); folds width+height
+    // so a reflow at constant height still retriggers the memo.
     let h = 0;
-    for (const n of s.nodeLookup.values()) {
-      h = (h * 31 + Math.round(n.measured?.width ?? 0)) % 2_147_483_647;
-      h = (h * 31 + Math.round(n.measured?.height ?? 0)) % 2_147_483_647;
+    for (const id of scopedIds) {
+      const m = s.nodeLookup.get(id)?.measured;
+      h = (h * 31 + Math.round(m?.width ?? 0)) % 2_147_483_647;
+      h = (h * 31 + Math.round(m?.height ?? 0)) % 2_147_483_647;
     }
     return h;
   });

@@ -132,6 +132,8 @@ type GroupSpec = {
 
 type GroupChildSpec = {
   name: string;
+  /** Original index in the source array — drives the child id + edit path. */
+  index?: number;
   condition?: string;
   isDefault?: boolean;
   isErrorPath?: boolean;
@@ -180,7 +182,15 @@ function multiMemberSpecs(section: 'input' | 'output', value: unknown): GroupChi
   if (!Array.isArray(items)) {
     return;
   }
-  return items.map((item) => memberNameAndMeta(section, item));
+  // Skip null/scalar entries but keep each member's original index, so edit paths never land on a
+  // neighbour (mapping every element would emit a phantom leaf pointing at the null slot).
+  const specs: GroupChildSpec[] = [];
+  for (const [i, item] of items.entries()) {
+    if (item && typeof item === 'object') {
+      specs.push({ index: i, ...memberNameAndMeta(section, item) });
+    }
+  }
+  return specs;
 }
 
 // YAML path to the i-th child of a multi-input/output component (nested members are editable).
@@ -214,9 +224,11 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         ? { addChildSlot: { containerPath: ['output', 'switch', 'cases'], section: 'output' as const } }
         : {}),
     },
-    ...children.map(
-      (child, i): PipelineFlowNode => ({
-        id: `${spec.groupId}-${i}`,
+    ...children.map((child, i): PipelineFlowNode => {
+      // Original array index (falls back to render position) so ids/paths survive skipped entries.
+      const idx = child.index ?? i;
+      return {
+        id: `${spec.groupId}-${idx}`,
         kind: 'leaf',
         label: child.name,
         section: spec.section,
@@ -225,14 +237,14 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         isDefault: child.isDefault,
         isErrorPath: child.isErrorPath,
         meta: child.meta,
-        editTarget: pathEditTarget(spec.section, multiChildPath(spec.section, spec.groupLabel, i)),
+        editTarget: pathEditTarget(spec.section, multiChildPath(spec.section, spec.groupLabel, idx)),
         // An output-switch case's condition is editable as a switch case (the leaf still
         // edits its output). Other multi-output/input members have no case.
         ...(spec.section === 'output' && spec.groupLabel === 'switch'
-          ? { caseEditTarget: { kind: 'switchCase' as const, path: ['output', 'switch', 'cases', i] } }
+          ? { caseEditTarget: { kind: 'switchCase' as const, path: ['output', 'switch', 'cases', idx] } }
           : {}),
-      })
-    ),
+      };
+    }),
   ];
 }
 
@@ -562,10 +574,14 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
 
 function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNode[] {
   const nodes: PipelineFlowNode[] = [];
+  // Label counter — skipped (null) cases shouldn't leave gaps ("case 1", "case 3"). Ids/paths keep
+  // the raw YAML index `ci`.
+  let caseNum = 0;
   for (const [ci, caseObj] of cases.entries()) {
     if (!caseObj || typeof caseObj !== 'object') {
       continue;
     }
+    caseNum += 1;
     const caseRecord = caseObj as Record<string, unknown>;
     // A case without a `processors` array (e.g. hand-written check-only) still renders —
     // as an empty case with its condition and an add slot — never silently vanishes.
@@ -573,7 +589,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
     const check = caseRecord.check;
     const hasCheck = typeof check === 'string' && check !== '';
-    const caseLabel = `case ${ci + 1}`;
+    const caseLabel = `case ${caseNum}`;
     nodes.push({
       id: caseId,
       kind: 'group',
@@ -1033,7 +1049,8 @@ function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig)
 
 type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
 
-const EMPTY_CONFIG_NODES: PipelineFlowNode[] = [
+// Fresh placeholder graph per call, so a downstream mutation can't leak across parses.
+const emptyConfigNodes = (): PipelineFlowNode[] => [
   { id: 'section-input', kind: 'section', label: 'input', section: 'input' },
   { id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: 'section-input' },
   { id: 'section-output', kind: 'section', label: 'output', section: 'output' },
@@ -1042,7 +1059,7 @@ const EMPTY_CONFIG_NODES: PipelineFlowNode[] = [
 
 export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTreeResult {
   if (!configYaml) {
-    return { nodes: EMPTY_CONFIG_NODES };
+    return { nodes: emptyConfigNodes() };
   }
 
   try {
@@ -1316,7 +1333,8 @@ function reconverges(node: PipelineFlowNode): boolean {
 function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   return {
     out: node.childFlow === 'parallel' && node.section !== 'input',
-    in: node.section === 'input' || reconverges(node),
+    // Inputs fan in only when parallel (broker); a `sequence` renders as a sequential chain.
+    in: (node.section === 'input' && node.childFlow !== 'sequential') || reconverges(node),
   };
 }
 

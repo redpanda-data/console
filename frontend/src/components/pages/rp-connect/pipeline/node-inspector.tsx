@@ -178,6 +178,14 @@ export function NodeInspector({
   // reporting doesn't re-render. `component` applies at `target`; `condition` at `caseTarget`.
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
   const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
+  // Stable draft reporters — they sit in the editors' effect deps, so an inline arrow would re-fire
+  // the effect every render.
+  const reportComponentDraft = useCallback((next: Record<string, unknown> | null) => {
+    componentDraftRef.current = next;
+  }, []);
+  const reportConditionDraft = useCallback((next: Record<string, unknown> | null) => {
+    conditionDraftRef.current = next;
+  }, []);
   // The resource's original label, captured for the rename cascade when committing a resource edit.
   const resourceLabel0 =
     target?.kind === 'resource' && component && typeof component.label === 'string' ? component.label : undefined;
@@ -255,12 +263,13 @@ export function NodeInspector({
   // as a draft (at `target`), auto-committed on leave / save.
   if (target.kind === 'switchCase') {
     return (
+      // Key by the case's path so switching cases remounts the editor and resets the `check` draft —
+      // otherwise a typed value leaks to a sibling with an equal saved check, misrouting on save.
       <SwitchCaseEditor
         caseObject={component}
+        key={JSON.stringify(editTargetPath(target))}
         onClose={onClose}
-        onConfigChange={(next) => {
-          componentDraftRef.current = next;
-        }}
+        onConfigChange={reportComponentDraft}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
         onOpenInYaml={onOpenInYaml}
         readOnly={readOnly}
@@ -334,16 +343,12 @@ export function NodeInspector({
         // with the fields (headerSlot); raw/read-only render it above.
         const conditionSection =
           caseTarget && caseObject ? (
+            // Key by the case's path so selecting a sibling remounts + resets the draft (see above).
             <CaseConditionSection
               caseObject={caseObject}
               error={conditionError}
-              onConfigChange={
-                readOnly
-                  ? undefined
-                  : (next) => {
-                      conditionDraftRef.current = next;
-                    }
-              }
+              key={JSON.stringify(editTargetPath(caseTarget))}
+              onConfigChange={readOnly ? undefined : reportConditionDraft}
               readOnly={readOnly}
             />
           ) : null;
@@ -363,9 +368,7 @@ export function NodeInspector({
               headerSlot={conditionSection}
               // Re-key on the saved value so external changes (undo/redo, YAML lane) re-init the form.
               key={JSON.stringify(component)}
-              onConfigChange={(next) => {
-                componentDraftRef.current = next;
-              }}
+              onConfigChange={reportComponentDraft}
               onCreateResource={onCreateResource}
               onSelectChild={onSelectChild}
               requireLabel={target.kind === 'resource'}
@@ -394,9 +397,7 @@ export function NodeInspector({
             <RawComponentEditor
               component={component}
               key={JSON.stringify(component)}
-              onConfigChange={(next) => {
-                componentDraftRef.current = next;
-              }}
+              onConfigChange={reportComponentDraft}
             />
           </>
         );

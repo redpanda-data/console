@@ -18,6 +18,14 @@ describe('component aliases', () => {
     expect(aliasTermsForName('totally_unrelated_xyz')).toEqual([]);
   });
 
+  it('matches fragments on `_`/word boundaries, not mid-token substrings', () => {
+    // Whole multi-token fragments and `_`-delimited tokens match...
+    expect(aliasTermsForName('rate_limit')).toEqual(expect.arrayContaining(['throttle', 'ratelimit']));
+    expect(aliasTermsForName('json_schema')).toContain('json');
+    // ...but a fragment buried mid-token doesn't (`log` inside `catalog`).
+    expect(aliasTermsForName('catalog')).not.toContain('log');
+  });
+
   it('keeps alias keys and fragments lowercase', () => {
     for (const [key, fragments] of Object.entries(COMPONENT_ALIASES)) {
       expect(key).toBe(key.toLowerCase());

@@ -131,7 +131,7 @@ const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConf
   }
 
   const inputObj = (inputNode.toJSON?.() as Record<string, unknown>) || {};
-  const inputType = Object.keys(inputObj)[0];
+  const inputType = firstKey(inputObj);
   if (!inputType) {
     return;
   }
