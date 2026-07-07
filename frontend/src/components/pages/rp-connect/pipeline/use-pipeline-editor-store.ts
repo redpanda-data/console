@@ -21,7 +21,6 @@ type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | 
 type AddConnectorType = ConnectComponentType | 'resource' | null;
 type ConnectorSection = 'input' | 'output';
 export type ViewLane = 'monitor' | 'configuration' | 'visual';
-// Edit-mode lanes: YAML editor vs. visual editor.
 export type EditLane = 'yaml' | 'visual';
 
 // Canonical config YAML (plus baseline) that all views read/mutate through these actions.

@@ -52,13 +52,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
-// 1. Mock usePipelineMode
 const mockUsePipelineMode = vi.fn(() => ({ mode: 'create' as const }));
 vi.mock('../utils/use-pipeline-mode', () => ({
   usePipelineMode: (...args: unknown[]) => mockUsePipelineMode(...args),
 }));
 
-// 2. Mock config — hoist isFeatureFlagEnabled and isEmbedded so we can control them per-test
+// Overridable per test so flags and embedded can be toggled.
 const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
 const mockIsEmbedded = vi.fn(() => false);
 vi.mock('config', async (importOriginal) => {
@@ -71,7 +70,6 @@ vi.mock('config', async (importOriginal) => {
   };
 });
 
-// 3. Mock TanStack Router hooks
 const mockNavigate = vi.fn();
 const mockBack = vi.fn();
 const mockSearch = vi.fn(() => ({}));
@@ -86,7 +84,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
-// 4. Mock YamlEditor
 type ContentChangeCallback = (e: { changes: Array<{ text: string }> }) => void;
 const contentChangeListeners: ContentChangeCallback[] = [];
 
@@ -134,7 +131,6 @@ vi.mock('components/ui/yaml/yaml-editor', async () => {
   };
 });
 
-// 5. Mock complex sub-components that are irrelevant to our tests
 // The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
 vi.mock('./pipeline-flow-canvas', async () => {
   const React = await import('react');
@@ -166,9 +162,7 @@ vi.mock('../onboarding/add-connector-dialog', () => ({
     ) : null,
 }));
 
-// 6. Mock PipelineCommandMenu to render a simple testable version
-// The real component needs secrets/topics/users RPCs which are complex to mock
-// Includes variant prop to distinguish dialog vs popover instances
+// Simplified stub — the real menu needs secrets/topics/users RPCs; variant distinguishes dialog vs popover.
 vi.mock('./pipeline-command-menu', async () => ({
   PipelineCommandMenu: (props: {
     open: boolean;
@@ -192,7 +186,6 @@ vi.mock('./pipeline-command-menu', async () => ({
   },
 }));
 
-// 7. Mock Zustand stores
 vi.mock('state/rpcn-wizard-store', () => ({
   useRpcnWizardStore: Object.assign(
     vi.fn(() => ''),
@@ -203,7 +196,7 @@ vi.mock('state/rpcn-wizard-store', () => ({
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
 }));
 
-// Import the component under test AFTER all mocks are set up
+// Import after all mocks are set up.
 import PipelinePage from '.';
 
 function createTransport(overrides?: {
@@ -268,16 +261,14 @@ function createTransport(overrides?: {
   });
 }
 
-// The pipeline name now lives in the settings dialog (opened via "Edit settings")
-// rather than an inline field in the header.
+// The pipeline name lives in the settings dialog (opened via "Edit settings"), not an inline header field.
 const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
   await user.click(screen.getByRole('button', { name: /edit settings/i }));
   const nameInput = await screen.findByPlaceholderText('Enter pipeline name');
   await user.clear(nameInput);
   await user.type(nameInput, name);
   await user.click(screen.getByRole('button', { name: /save settings/i }));
-  // Wait for the settings dialog to fully close so its "Save settings" button
-  // can't collide with the header's "Save" in later queries.
+  // Wait for the dialog to close so its "Save settings" button can't collide with the header's "Save".
   await waitFor(() => expect(screen.queryByPlaceholderText('Enter pipeline name')).not.toBeInTheDocument());
 };
 
@@ -292,7 +283,7 @@ describe('PipelinePage', () => {
     contentChangeListeners.length = 0;
   });
 
-  // ── Lint panel (molecule gap — LintHintList has no own tests) ───────
+  // Lint panel — LintHintList has no tests of its own.
 
   it('displays lint warnings from the backend as the user types YAML', async () => {
     const lintMock = vi.fn().mockReturnValue(
@@ -303,14 +294,13 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ lintMock }) });
 
-    // Type YAML content to trigger the lint query (it fires on debounced yaml content)
+    // Typing triggers the debounced lint query.
     const yamlEditor = screen.getByTestId('yaml-editor');
     act(() => {
       fireEvent.change(yamlEditor, { target: { value: 'input:\n  stdin: {}' } });
     });
 
-    // Wait for debounced lint response to appear
-    // LintHintList renders hints via SimpleCodeBlock with format "Line N, Col N: hint"
+    // LintHintList renders hints as "Line N, Col N: hint".
     expect(await screen.findByText('Line 1, Col 1: response lint warning')).toBeInTheDocument();
   });
 
@@ -362,17 +352,13 @@ describe('PipelinePage', () => {
       fireEvent.change(yamlEditor, { target: { value: 'some: yaml' } });
     });
 
-    // Both hints should appear
     await waitFor(() => {
       expect(screen.getByText('Line 1, Col 1: first warning')).toBeInTheDocument();
       expect(screen.getByText('Line 2, Col 1: second warning')).toBeInTheDocument();
     });
 
-    // The "Lint issues" heading should be present
     expect(screen.getByText('Lint issues')).toBeInTheDocument();
   });
-
-  // ── Creating a pipeline ─────────────────────────────────────────────
 
   it('Cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
     const user = userEvent.setup();
@@ -410,11 +396,9 @@ describe('PipelinePage', () => {
 
     await setPipelineNameViaDialog(user, 'my-pipeline');
 
-    // Set YAML via the textarea mock
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  generate:\n    mapping: root = "hello"' } });
 
-    // Click Save
     const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
@@ -422,7 +406,6 @@ describe('PipelinePage', () => {
       expect(createPipelineMock).toHaveBeenCalled();
     });
 
-    // Verify the request contains our YAML content
     const callArgs = createPipelineMock.mock.calls[0][0];
     expect(callArgs.request.pipeline.configYaml).toBe('input:\n  generate:\n    mapping: root = "hello"');
   });
@@ -441,7 +424,6 @@ describe('PipelinePage', () => {
 
     await setPipelineNameViaDialog(user, 'my-pipeline');
 
-    // Set YAML and click Save
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  stdin: {}' } });
 
@@ -465,7 +447,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // Set the name directly in the inline title — no need to open the settings dialog.
+    // Name set directly in the inline title, no settings dialog needed.
     fireEvent.change(screen.getByRole('textbox', { name: 'Pipeline name' }), { target: { value: 'inline-named' } });
 
     fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
@@ -483,7 +465,6 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
-    // Click Save with no name entered — validation should block it.
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText(/at least 3 characters/i)).toBeInTheDocument();
@@ -493,14 +474,12 @@ describe('PipelinePage', () => {
   it('shows both save errors and real-time lint warnings when a save fails', async () => {
     const user = userEvent.setup();
 
-    // Lint mock returns a response lint hint
     const lintMock = vi.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 3, column: 1, hint: 'response warning' })],
       })
     );
 
-    // Create mock throws ConnectError
     const createPipelineMock = vi.fn().mockImplementation(() => {
       throw new ConnectError('invalid config');
     });
@@ -509,36 +488,30 @@ describe('PipelinePage', () => {
 
     await setPipelineNameViaDialog(user, 'my-pipeline');
 
-    // Set YAML (triggers lint query which returns response warning)
+    // Typing triggers the lint query → response warning.
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  bad_config: {}' } });
 
-    // Wait for the response lint hint to appear
     await waitFor(() => {
       expect(screen.getByText('Line 3, Col 1: response warning')).toBeInTheDocument();
     });
 
-    // Click Save to trigger the error
     const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
-    // After error, both the error hint from extractLintHintsFromError AND the response hint should be visible
+    // Both the save-error hint and the response lint hint stay visible.
     await waitFor(() => {
-      // Error hint from extractLintHintsFromError (generic case: "[code] message")
       expect(screen.getByText(/invalid config/)).toBeInTheDocument();
     });
 
-    // Response hint should still be present
     expect(screen.getByText('Line 3, Col 1: response warning')).toBeInTheDocument();
   });
 
   it('editing YAML after a failed save clears the stale error messages', async () => {
     const user = userEvent.setup();
 
-    // Lint mock returns no response hints
     const lintMock = vi.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }));
 
-    // Create mock throws ConnectError
     const createPipelineMock = vi.fn().mockImplementation(() => {
       throw new ConnectError('invalid config');
     });
@@ -547,29 +520,23 @@ describe('PipelinePage', () => {
 
     await setPipelineNameViaDialog(user, 'my-pipeline');
 
-    // Set YAML
     const yamlEditor = screen.getByTestId('yaml-editor');
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  bad: {}' } });
 
-    // Click Save to trigger the error
     const saveButton = screen.getByRole('button', { name: 'Save' });
     await user.click(saveButton);
 
-    // Error hint should appear
     await waitFor(() => {
       expect(screen.getByText(/invalid config/)).toBeInTheDocument();
     });
 
-    // Now edit the YAML — handleYamlChange calls setErrorLintHints({}) (H1 fix)
+    // Editing YAML clears the stale error hints (setErrorLintHints({})).
     fireEvent.change(yamlEditor, { target: { value: 'input:\n  fixed: {}' } });
 
-    // Error hint should be cleared; with no response hints either, we see "No issues found"
     await waitFor(() => {
       expect(screen.queryByText(/invalid config/)).not.toBeInTheDocument();
     });
   });
-
-  // ── Viewing a pipeline ──────────────────────────────────────────────
 
   it('leaving the view page navigates back to the pipeline list', async () => {
     const user = userEvent.setup();
@@ -577,10 +544,9 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // Wait for the view mode toolbar to load
     expect(await screen.findByText('Edit pipeline')).toBeInTheDocument();
 
-    // The back button is the first button in the view toolbar
+    // The back button is the first button in the view toolbar.
     const allButtons = screen.getAllByRole('button');
     const backButton = allButtons[0];
     await user.click(backButton);
@@ -595,8 +561,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The pipeline name is the page title (level-1 heading); the generic
-    // "Pipeline view" chrome heading was removed. The ID shows in the strip below.
+    // The pipeline name is the page title (level-1 heading); the generic "Pipeline view" heading was removed.
     expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
   });
@@ -610,17 +575,15 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The sidebar is the structure-tree outline (the old mini flow diagram was removed), hydrated
-    // from the config — its input/output components appear as tree rows once the pipeline loads.
+    // The sidebar structure-tree hydrates from the config: input/output components appear as tree rows.
     await waitFor(() => expect(screen.getByText('stdin')).toBeInTheDocument());
     expect(screen.getByText('stdout')).toBeInTheDocument();
-    // One labelled tree per non-empty section.
     expect(screen.getAllByRole('tree').length).toBeGreaterThan(0);
   });
 
   it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {
-    // Diagrams on, visual-editor lane off → the sidebar still uses the structure outline
-    // (the old mini flow diagram was removed), and the full Visual canvas stays hidden.
+    // Diagrams on, visual-editor lane off → the sidebar still uses the structure outline, and the
+    // full Visual canvas stays hidden.
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
     mockIsEmbedded.mockReturnValue(true);
@@ -642,8 +605,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The visual editor defaults to the Visual lane; the sidebar (with its template
-    // CTA) lives alongside the YAML lane, so switch there first.
+    // The template CTA lives alongside the YAML lane (not the default Visual lane), so switch there first.
     await user.click(await screen.findByRole('tab', { name: 'YAML' }));
 
     // Empty pipeline → the template gallery entry is offered.
@@ -740,13 +702,10 @@ describe('PipelinePage', () => {
     });
   });
 
-  // ── Command menu ───────────────────────────────────────────────────
-
   it('clicking a sidebar variable button opens the command menu with the correct filter', async () => {
     const user = userEvent.setup();
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The sidebar "Variables" button opens the command menu filtered to variables
     const variablesButton = screen.getByRole('button', { name: /variables/i });
     await user.click(variablesButton);
 
@@ -758,44 +717,34 @@ describe('PipelinePage', () => {
 
   it('typing / in the editor dismisses an open command menu to avoid overlap', async () => {
     const user = userEvent.setup();
-    // Enable the slash command feature flag for this test
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableConnectSlashMenu');
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // Wait for the editor mock to mount and the useSlashCommand hook to subscribe
+    // Wait for the editor mock to mount so useSlashCommand subscribes.
     await waitFor(() => {
       expect(contentChangeListeners.length).toBeGreaterThan(0);
     });
 
-    // Open the command menu via a sidebar button
     const secretsButton = screen.getByRole('button', { name: /secrets/i });
     await user.click(secretsButton);
 
-    // Verify command menu is open
     await waitFor(() => {
       expect(screen.getByTestId('command-menu')).toBeInTheDocument();
     });
 
-    // Simulate a slash trigger via the mock editor's content change listener.
-    // The useSlashCommand hook subscribes to onDidChangeModelContent.
-    // When a '/' is detected, detectSlashTrigger checks getPosition() + getModel().getLineContent().
-    // Our mock returns position {lineNumber:1, column:4} and lineContent '  /' which means
-    // slashColumn=3, charBefore=' ' (whitespace) → valid trigger position.
-    // The hook then calls onOpen (handleSlashOpen) which sets commandMenuFilter to null.
+    // Fire a slash trigger through the mock editor's content-change listener; the mock's position
+    // {line:1,col:4} + line content '  /' is a valid trigger, so the hook closes the command menu.
     act(() => {
       for (const cb of contentChangeListeners) {
         cb({ changes: [{ text: '/' }] });
       }
     });
 
-    // The command dialog should now be closed
     await waitFor(() => {
       expect(screen.queryByTestId('command-menu')).not.toBeInTheDocument();
     });
   });
-
-  // ── Feature flags and mode routing ──────────────────────────────────
 
   describe('feature flags and mode routing', () => {
     it('shows the slash-command tip in the editor tips bar when the feature is enabled', async () => {
@@ -856,7 +805,6 @@ describe('PipelinePage', () => {
         expect(screen.getByRole('textbox', { name: 'Pipeline name' })).toHaveValue('Test Pipeline');
       });
 
-      // The yaml editor textarea should be populated with the pipeline's configYaml
       const yamlEditor = screen.getByTestId('yaml-editor') as HTMLTextAreaElement;
       await waitFor(() => {
         expect(yamlEditor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
@@ -864,17 +812,14 @@ describe('PipelinePage', () => {
     });
   });
 
-  // ── AddConnectorDialog integration ─────────────────────────────────
-
   it('renders AddConnectorDialog inline and generates YAML on connector selection', async () => {
     mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
     mockUsePipelineMode.mockReturnValue({ mode: 'create' });
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The connector card "+" buttons set addConnectorType, but AddConnectorDialog
-    // is only rendered when addConnectorType is non-null. Since we mock
-    // AddConnectorsCard to null, we verify the dialog is not rendered by default.
+    // AddConnectorDialog only renders when addConnectorType is non-null; with AddConnectorsCard
+    // mocked to null nothing sets it, so the dialog stays absent.
     expect(screen.queryByTestId('add-connector-dialog')).not.toBeInTheDocument();
   });
 });

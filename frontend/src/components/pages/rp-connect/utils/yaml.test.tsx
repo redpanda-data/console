@@ -154,8 +154,7 @@ output:
 
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];
-        // For Redpanda components, TLS now renders as a parent object with enabled: true
-        // tls: line should not have an inline comment
+        // For Redpanda components, TLS renders as a parent object — no inline comment on the tls: line.
         expect(tlsLine.trim()).not.toContain('#');
       }
 
@@ -200,8 +199,7 @@ output:
       // topic IS required (no optional ancestor) → commented out
       expect(yaml).toContain('# topic: Required - string, must be manually set');
 
-      // metadata children are NOT required (parent metadata is optional)
-      // They should appear as normal YAML keys, not as comment-only lines
+      // metadata children are NOT required (parent metadata is optional) → normal keys, not comment-only lines
       expect(yaml).toMatch(/^\s+include_prefixes:/m);
       expect(yaml).toMatch(/^\s+include_patterns:/m);
       expect(yaml).not.toContain('# include_prefixes: Required');
@@ -209,12 +207,10 @@ output:
     });
 
     test('should preserve existing comments and add comments to merged component', () => {
-      // Start with a simple input
       const inputYaml = `input:
   generate:
     mapping: "" # Existing comment`;
 
-      // Now merge in an output component
       const kafkaOutputSpec = mockComponents.kafkaOutput;
       if (!kafkaOutputSpec) {
         throw new Error('kafka output not found');
@@ -227,10 +223,8 @@ output:
         existingYaml: inputYaml,
       });
 
-      // Should preserve existing input comments
       expect(mergedYaml).toContain('# Existing comment');
 
-      // Should have the output section
       expect(mergedYaml).toContain('output:');
       expect(mergedYaml).toContain('kafka:');
 
@@ -239,10 +233,6 @@ output:
     });
   });
 });
-
-// ============================================================================
-// parseConfigComponents
-// ============================================================================
 
 describe('parseConfigComponents', () => {
   describe('single input', () => {
@@ -1303,8 +1293,7 @@ input:
         result: { topicName: 'new-topic' },
         components: [redpandaInputSpec],
       });
-      // Should generate a template (non-empty) since the component spec exists
-      // Whether the topic gets patched depends on getConnectTemplate producing parseable YAML
+      // Should generate a (non-empty) template since the component spec exists.
       expect(result).toBeDefined();
     });
 
@@ -1334,9 +1323,8 @@ input:
         components: [redpandaInputSpec],
       });
       expect(result).toBeDefined();
-      // Should contain the topic we requested
       expect(result).toContain('my-topic');
-      // Should also contain template fields from getConnectTemplate (not just the patched topic)
+      // Also contains template fields, not just the patched topic.
       expect(result).toContain('input');
     });
 
@@ -1375,7 +1363,6 @@ input:
         components: [],
       });
       expect(result).toBeDefined();
-      // Patched field updated
       expect(result).toContain('new-topic');
       // All other fields preserved
       expect(result).toContain('broker:9092');
@@ -1402,7 +1389,6 @@ input:
         components: [],
       });
       expect(result).toBeDefined();
-      // SASL added
       expect(result).toContain('sasl');
       // Existing fields preserved
       expect(result).toContain('existing-topic');
@@ -1507,8 +1493,7 @@ output:
   });
 
   test('returns undefined topics for structurally invalid YAML with no topic fields', () => {
-    // parseDocument from the yaml library collects errors rather than throwing,
-    // so parseError stays false; the function simply finds no topic fields.
+    // parseDocument collects errors rather than throwing, so parseError stays false; it just finds no topics.
     const yaml = '{{{';
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);

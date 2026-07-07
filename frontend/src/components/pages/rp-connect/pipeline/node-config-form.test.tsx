@@ -19,9 +19,8 @@ import { mockKafkaOutput } from '../utils/__fixtures__/component-schemas';
 
 const spec = mockKafkaOutput as unknown as ConnectComponentSpec;
 
-// The form has no Apply button: it REPORTS the assembled config via onConfigChange as it changes
-// (null when clean), and the inspector auto-commits it on leave / save. Tests assert the latest
-// reported config rather than clicking Apply.
+// The form has no Apply button: it REPORTS the assembled config via onConfigChange (null when
+// clean) and the inspector auto-commits on leave/save. Tests assert the latest reported config.
 function renderForm(value: Record<string, unknown>, onConfigChange = vi.fn()) {
   render(<NodeConfigForm componentName="kafka" onConfigChange={onConfigChange} spec={spec} value={value} />);
   return onConfigChange;

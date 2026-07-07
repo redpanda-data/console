@@ -686,13 +686,12 @@ function SidebarPanel({
   // full-document parses off the per-keystroke critical path (the Monaco editor stays live).
   const deferredYaml = useDeferredValue(yamlContent);
   const isEmpty = useIsPipelineEmpty(deferredYaml);
-  // The structure outline is the single sidebar visualizer, shown whenever diagrams are enabled.
   const showStructureTree = isPipelineDiagramsEnabled;
 
   // Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node.
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
-  // Node → YAML line ranges, recomputed as the document changes.
+  // Node → YAML line ranges.
   const nodeRanges = useMemo(() => {
     try {
       return nodeLineRanges(deferredYaml);
@@ -981,9 +980,8 @@ function PipelinePageContent() {
     return form.formState.isDirty || (baseline !== null && yaml !== baseline);
   }, [mode, editorStore, form]);
 
-  // Node-level highlights for the structure tree: nodes with lint errors, and nodes with unsaved
-  // edits (config changed vs the saved/loaded baseline). Deferred YAML keeps these decorations'
-  // full-document parses/diffs off the per-keystroke critical path.
+  // Node-level highlights for the structure tree (lint errors + unsaved edits). Deferred YAML keeps
+  // these full-document parses/diffs off the per-keystroke critical path.
   const deferredYamlContent = useDeferredValue(yamlContent);
   const errorNodeIds = useMemo(
     () => new Set(mapLintHintsToNodes(deferredYamlContent, Object.values(lintHints)).keys()),

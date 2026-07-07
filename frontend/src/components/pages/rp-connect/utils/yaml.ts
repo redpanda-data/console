@@ -16,13 +16,8 @@ import { schemaToConfig } from './schema';
 import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
-// ============================================================================
-// Shared pure YAML helpers
-// ============================================================================
-
-// Never fold long lines (`lineWidth: 0` = unlimited). Every mutation stringify MUST use this:
-// the lib default folds long single-line bloblang mappings at col 80, reformatting lines the
-// user never touched.
+// `lineWidth: 0` disables folding: the lib default folds long single-line bloblang mappings at
+// col 80, reformatting lines the user never touched. Every mutation stringify must use this.
 const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
 
 /** Keys that appear as siblings to the component name (e.g. `label`, a `<<` merge key). */
@@ -504,10 +499,6 @@ export const getConnectTemplate = ({
   return configToYaml(newConfigObject, spec);
 };
 
-// ============================================================================
-// Config Component Parsing (used by pipeline list)
-// ============================================================================
-
 type ParsedYamlConfig = {
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
@@ -560,10 +551,6 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
     return empty;
   }
 };
-
-// ============================================================================
-// Surgical YAML patching for Redpanda components
-// ============================================================================
 
 type RedpandaPatch = {
   topicName?: string;
@@ -700,7 +687,7 @@ export function patchRedpandaConfig(
   }
 }
 
-/** Build a RedpandaPatch and apply it to existing YAML. Returns patched YAML or undefined. */
+/** Build a RedpandaPatch and apply it to existing YAML. */
 export function tryPatchRedpandaYaml(
   yamlContent: string,
   section: 'input' | 'output',
@@ -799,7 +786,6 @@ export function applyRedpandaSetup({
     }
   }
 
-  // Generate full template, then patch topic/user onto it.
   const base = getConnectTemplate({
     connectionName,
     connectionType,
@@ -900,12 +886,9 @@ export function generateYamlFromWizardData(
   return yaml;
 }
 
-// ============================================================================
-// Visual-editor mutations
-// ----------------------------------------------------------------------------
-// Pure yaml -> (yaml | null) transforms over a parsed Document, so comments/formatting
-// survive and YAML stays the source of truth. `null` on parse failure keeps prior content.
-// ============================================================================
+// Visual-editor mutations: pure yaml -> (yaml | null) transforms over a parsed Document, so
+// comments/formatting survive and YAML stays the source of truth. `null` on parse failure keeps
+// prior content.
 
 export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
 
@@ -988,7 +971,6 @@ export function getComponentAt(yaml: string, target: EditTarget): Record<string,
   }
 }
 
-/** Replace the component object at an edit target with a new one. */
 export function setComponentAt(
   yaml: string,
   target: EditTarget,
@@ -1033,9 +1015,8 @@ export function seqLengthAt(yaml: string, path: (string | number)[]): number {
 }
 
 /**
- * Insert a component into any array at `index` (creating the array as needed).
- * `containerPath` is the target array's YAML path, e.g. `['pipeline','processors']` or
- * `['input','broker','inputs']`. The one primitive behind every visual insertion.
+ * Insert a component into any array at `index` (creating the array as needed). `containerPath` is
+ * the target array's YAML path, e.g. `['pipeline','processors']` or `['input','broker','inputs']`.
  */
 export function insertComponentAt(
   yaml: string,
@@ -1114,13 +1095,9 @@ export function buildInsertableComponent(
   }
 }
 
-// ============================================================================
-// Resource references (cache/rate_limit) — link by label, no manual sync.
-// ----------------------------------------------------------------------------
-// A `cache`/`rate_limit` processor's `resource:` must equal a `*_resources` entry's `label:`.
-// These helpers offer a typed dropdown, create-and-link, and rename-with-cascade so labels
-// never drift out of sync.
-// ============================================================================
+// Resource references (cache/rate_limit): a `cache`/`rate_limit` processor's `resource:` must equal
+// a `*_resources` entry's `label:`. These helpers link by label — typed dropdown, create-and-link,
+// rename-with-cascade — so labels never drift out of sync.
 
 export type ResourceKind = 'cache' | 'rate_limit';
 

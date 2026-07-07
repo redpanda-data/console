@@ -43,14 +43,13 @@ import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from 
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
-// A node revealed this render fades + grows in. Applied to the card body, never the RF node
-// wrapper (whose `transform` drives positioning and would fight a scale/translate animation).
+// Applied to the card body, never the RF node wrapper — its `transform` drives positioning and
+// would fight a scale/translate animation.
 const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 
-// RF drives pan/drag from native listeners on ancestors (d3-zoom on mousedown/touchstart, d3-drag
-// on pointerdown); React's synthetic handlers run after, so they can't cancel the gesture. We
-// attach native listeners on the card and stop propagation only for presses on a real control —
-// so buttons click while dragging the card body (or canvas) still pans.
+// RF drives pan/drag from native listeners on ancestors (d3-zoom/d3-drag); React's synthetic
+// handlers run after and can't cancel the gesture. Attach native listeners and stop propagation
+// only for presses on a real control, so buttons click while the card body still pans.
 const CONTROL_SELECTOR = 'button, a, input, select, textarea, [role="button"]';
 const PRESS_EVENTS = ['mousedown', 'pointerdown', 'touchstart'] as const;
 
@@ -93,11 +92,9 @@ const SECTION_ACCENT: Record<string, string> = {
   resource: 'var(--color-orange-500)',
 };
 
-// The accents above are FILL colours (blips, borders, tints) — as text on a light card they fall
-// to ~2:1 contrast. Wherever the accent is rendered as text (kind captions, split descriptors),
-// apply these classes instead: a darker hue that clears 4.5:1 on white in light mode, stepping to
-// the 500 shade in dark mode. Class-based (not an app-owned CSS var) so it reuses the registry
-// colour scale directly and needs no theme tokens.
+// The accents above are FILL colours (~2:1 as text on a light card). Where the accent renders as
+// text, use these instead — a darker hue clearing 4.5:1 on white, stepping to the 500 shade in
+// dark mode.
 const SECTION_ACCENT_TEXT_CLASS: Record<string, string> = {
   input: 'text-green-600 dark:text-green-500',
   processor: 'text-blue-800 dark:text-blue-500',
@@ -109,9 +106,8 @@ export function sectionAccent(section?: string): string | undefined {
   return section ? SECTION_ACCENT[section] : undefined;
 }
 
-// Role colour as a tinted title band (not a border): a faint wash behind the kind label / logo /
-// name, body left clean, so it doesn't compete with the selection / error rings. Opaque (mixed
-// over the card colour) so it layers correctly on leaf cards and container headers alike.
+// Role colour as a tinted title band (not a border) so it doesn't compete with the selection /
+// error rings. Opaque (mixed over the card colour) so it layers on headers and leaf cards alike.
 function headerTintStyle(accent?: string): React.CSSProperties | undefined {
   return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
 }
@@ -123,9 +119,8 @@ const LogoTile = ({ name }: { name: string }) => (
   </span>
 );
 
-// A node's routing semantics as a chip: `if <check>`, `default` (catch-all), or `on error`
-// (catch) — red for error / dead-letter routes. The single home for a switch case's condition
-// (no duplicate floating edge label). Display-only: conditions are edited in the inspector panel.
+// A node's routing semantics as a chip: `if <check>`, `default`, or `on error` (red). Display-only;
+// conditions are edited in the inspector panel.
 const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
@@ -156,9 +151,8 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   );
 };
 
-// Routing conditions reuse the `warning` accent (the flowchart decision-branch convention) — distinct
-// from every section accent and from the red error tone, so routing logic is easy to scan. Error/
-// dead-letter routes keep red (that semantic wins); a `default` catch-all is a muted warning tone.
+// Routing conditions reuse the `warning` accent — distinct from section accents and the red error
+// tone, so routing logic is easy to scan. Error routes keep red; a `default` catch-all is muted.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
   condition: 'border-warning/30 bg-warning/10 text-warning',
   muted: 'border-warning/20 bg-warning/5 text-warning/80',
@@ -166,8 +160,7 @@ const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
 };
 
 // A switch case's routing condition on its own full-width row (more contrast than the inline
-// header chip): a `WHEN <check>` / `DEFAULT` / `ON ERROR` line. Display-only (conditions are
-// edited in the inspector panel); inset ring when the condition is selected.
+// header chip). Display-only; inset ring when the condition is selected.
 const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boolean }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
   if (data.isErrorPath) {
@@ -264,9 +257,9 @@ const NodeHandles = () => (
   <>
     {HANDLE_IDS.map((h) => {
       const horizontal = h.id === 'l' || h.id === 'r';
-      // Horizontal (l/r) handles keep RF's DEFAULT vertical centering so an edge attaches at the card's
-      // vertical CENTRE (a same-rank spine reads straight). Vertical (t/b) handles pin to a fixed left
-      // offset (transform cleared) so stacked cards of differing widths connect on a straight line.
+      // Horizontal (l/r) handles keep RF's default vertical centering so a same-rank spine reads
+      // straight. Vertical (t/b) handles pin to a fixed left offset so stacked cards of differing
+      // widths connect on a straight line.
       const style = horizontal ? undefined : { left: FLOW_SPINE_HANDLE_LEFT, transform: 'none' };
       return (
         <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
@@ -299,7 +292,6 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
   );
 };
 
-// Whether a leaf card renders any meta rows (config preview / topics / missing chips).
 function cardHasMeta(data: FlowCardData): boolean {
   return Boolean(data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl);
 }
@@ -400,8 +392,7 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-// The selection ring on the node the inspector is editing. Uses `primary`; the node also reads
-// clearly because its wiring is emphasized while unrelated edges dim.
+// The selection ring on the node the inspector is editing.
 const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
 // An error ring for nodes with lint problems (takes precedence over selection).
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
@@ -413,9 +404,8 @@ function cardRing(data: FlowCardData): string {
   return data.selected ? SELECTED_RING : '';
 }
 
-// A brief double-pulse ring drawn after an undo/redo touched a node. Uses the `brand`
-// (orange-red) token — a transient "this just changed" highlight, distinct from selection
-// (primary) and errors (destructive). Keyed by `token` so re-flashing replays the animation.
+// A brief double-pulse ring after an undo/redo touched a node — the `brand` token, distinct from
+// selection (primary) and errors (destructive). Keyed by `token` so re-flashing replays it.
 const FlashPulse = ({ token }: { token?: number }) => (
   <motion.span
     animate={{ opacity: [0, 1, 0.3, 1, 0] }}
@@ -455,8 +445,7 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
     </Badge>
   ) : null;
 
-// A leaf component card. The whole card is the click target (selection via RF's onNodeClick);
-// editing happens in the inspector rail.
+// A leaf component card. The whole card is the click target; editing happens in the inspector rail.
 const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: boolean }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   const accent = SECTION_ACCENT[data.section ?? ''];
@@ -469,10 +458,8 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
         cardRing(data)
       )}
     >
-      {/* A switch case's routing condition sits at the TOP — "WHEN <check> → this node" — making
-          the editable condition the first, most obvious section to click. */}
+      {/* Routing condition at the TOP — the editable condition is the first, most obvious click target. */}
       {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
-      {/* Tinted title band carries the role colour; the body below stays clean. */}
       <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <Text
@@ -482,8 +469,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
           >
             {kindLabel}
           </Text>
-          {/* Non-case condition info (rare, e.g. an error-lane tint) stays an inline chip; a
-              switch case's condition gets the prominent row above instead. */}
+          {/* Non-case condition info stays an inline chip; a switch case's condition uses the row above. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} />}
           <LintBadge errors={data.lintErrors} />
           <UnsavedDot show={data.unsaved} />
@@ -537,9 +523,8 @@ type FlowInsertData = {
   onInsert?: (payload: FlowInsertPayload) => void;
 };
 
-// An "add" affordance: a quiet "+" button. As a ghost branch (Add case / Add input) it's a
-// dashed pill reached by a faint connector; inline it's a plain "+". Edit mode only. The l/r
-// handles let the ghost connector edge attach.
+// An "add" affordance. As a ghost branch it's a dashed pill reached by a faint connector; inline
+// it's a plain "+". Edit mode only; the l/r handles let the ghost connector edge attach.
 const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
   if (!(data.onInsert && data.payload)) {
     return null;
@@ -585,9 +570,8 @@ const LINK_STROKE: Record<LinkTone, string> = {
   error: 'var(--color-destructive)',
 };
 
-// Tone-matched label styling so copy/merge/error tags read clearly against the stacked (and
-// progressively darker) nested-container backgrounds: a solid pill, a tinted border, and text in
-// the edge's own colour rather than low-contrast gray.
+// Tone-matched label styling — solid pill, tinted border, text in the edge's own colour — so tags
+// read clearly against the darker nested-container backgrounds rather than as low-contrast gray.
 const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   primary: 'border-primary/40 text-primary',
   error: 'border-destructive/40 text-destructive',
@@ -596,7 +580,7 @@ const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   condition: 'border-warning/40 text-warning',
 };
 // Edge labels render into RF's shared layer below the nodes; lift the pill above the cards so a
-// label in a container's gutter isn't painted over by the card. (Nodes here aren't selectable.)
+// label in a container's gutter isn't painted over.
 const LINK_LABEL_Z = 1000;
 const LinkLabel = ({
   d,
@@ -612,8 +596,7 @@ const LinkLabel = ({
   onClick?: () => void;
 }) => {
   const className = cn(
-    // Condition labels are Bloblang code (e.g. `this.fraud.score > 0.9`): mono, not uppercased,
-    // so they match the card's condition chips.
+    // Condition labels are Bloblang code: mono, not uppercased, matching the card's condition chips.
     'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-[10px] shadow-sm',
     LINK_LABEL_STYLE[tone],
     // A condition label is clickable to edit its case — make that obvious.
@@ -639,9 +622,9 @@ const LinkLabel = ({
   );
 };
 
-// Control-flow processors (branch/switch/try/for_each/…) have no logo and no config meta — they
-// route through a sub-pipeline. Each gets a glyph + a one-line descriptor (count of cases / steps
-// / stages, or its routing role) so the marker reads as a router, not an empty card.
+// Control-flow processors (branch/switch/try/for_each/…) have no logo or config meta. Each gets a
+// glyph + one-line descriptor (count of cases / steps, or routing role) so it reads as a router,
+// not an empty card.
 type ControlFlowPresentation = { Icon: LucideIcon; descriptor: string };
 
 function plural(n: number, noun: string): string {
@@ -683,8 +666,8 @@ function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
   return { Icon: spec.icon, descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}` };
 }
 
-// A filled accent tile holding the control-flow glyph — distinct from the white connector
-// `LogoTile` so a router/scope marker never reads as a data card.
+// A filled accent tile for the control-flow glyph — distinct from the white connector `LogoTile`
+// so a router marker never reads as a data card.
 const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => (
   <span
     className="flex size-7 shrink-0 items-center justify-center rounded-md border"
@@ -698,9 +681,8 @@ const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: strin
   </span>
 );
 
-// A control-flow processor (switch / branch / try / parallel / …) as a compact card. It never
-// wraps children — in the Dagre graph its branches fan out as labelled edges and reconverge at a
-// merge node. The card is the fan-out / scope marker: glyph + name + descriptor (N cases / N steps).
+// A control-flow processor as a compact card. It never wraps children — in the Dagre graph its
+// branches fan out as labelled edges and reconverge at a merge node. This card is the fan-out marker.
 const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
   const isError = Boolean(data.isErrorPath);
@@ -720,8 +702,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           cardRing(data)
         )}
       >
-        {/* A switch-case ENTRY's routing condition sits at the TOP — "WHEN <check> → this
-            construct" — the first, most obvious section to click (like leaf cards). */}
+        {/* Routing condition at the TOP — the first, most obvious click target (like leaf cards). */}
         {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
@@ -747,8 +728,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           <LintBadge errors={data.lintErrors} />
           <UnsavedDot show={data.unsaved} />
         </div>
-        {/* "Add case / Add input" lives INSIDE the construct card as a footer row (clearly tied to
-            the node) rather than a floating pill below it. Edit mode only. */}
+        {/* "Add case / Add input" as a footer row inside the card, clearly tied to the node. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button
             className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-border/70 border-t border-dashed px-3 py-1.5 font-medium text-primary text-xs transition-colors hover:bg-primary/5"
@@ -767,9 +747,8 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-// The join point where a fan's branches reconverge: a small circular node in the primary colour.
-// Fan-in edges plug into its left, flow leaves its right. A filled primary-tint disc (not a hollow
-// ring) so it reads as a deliberate "join" rather than a stray dot.
+// The join point where a fan's branches reconverge. Fan-in edges plug into its left, flow leaves
+// its right. A filled primary-tint disc (not a hollow ring) so it reads as a deliberate "join".
 const FlowMergeNode = () => {
   const handle = { top: 16, transform: 'none' } as const;
   return (
@@ -862,8 +841,8 @@ function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: numb
   return points.at(-1) as { x: number; y: number };
 }
 
-// Smooth a polyline through Dagre's node-avoiding waypoints (quadratic segments via midpoints).
-// Following Dagre's routed points is what keeps lines clear of the cards.
+// Smooth a polyline through Dagre's node-avoiding waypoints (quadratic segments via midpoints);
+// following those routed points keeps lines clear of the cards.
 function smoothGraphPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) {
     return '';
@@ -904,9 +883,9 @@ function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
   return d?.faint ? 0.6 : 1;
 }
 
-// Every edge in the Dagre DAG: routed through Dagre's waypoints (so lines avoid nodes), styled by
-// type — solid primary for flow, red dashed for error/dead-letter, dashed for branch copy/merge and
-// resource refs. No arrowheads (the left-to-right layout already reads as direction).
+// Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. Styled by
+// type: solid primary for flow, red dashed for error, dashed for copy/merge and resource refs. No
+// arrowheads — the left-to-right layout already reads as direction.
 function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
   let path: string;
@@ -959,13 +938,11 @@ function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, tar
         <LinkLabel
           d={{ label: d.label, dimmed: d.dimmed }}
           onClick={d.onLabelClick}
-          // Only `conditional`-type edges carry a label at the primary tone (flow edges are
-          // unlabelled), so a labelled primary edge's label IS a routing condition — render it
-          // in the warning tone like the legend / condition chips, not primary-blue. The line stays primary.
+          // A labelled primary edge's label IS a routing condition (flow edges are unlabelled), so
+          // render it in the warning tone like the condition chips, not primary-blue. Line stays primary.
           tone={tone === 'primary' ? 'condition' : tone}
           x={labelX}
-          // When an on-edge "+" shares this midpoint, lift the label clear so the two don't
-          // overprint (e.g. a new empty case's "default" over its add "+").
+          // When an on-edge "+" shares this midpoint, lift the label clear so the two don't overprint.
           y={d?.onInsert ? labelY - 18 : labelY}
         />
       ) : null}

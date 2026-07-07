@@ -96,10 +96,7 @@ function tipsFor(
   return tips;
 }
 
-/**
- * Full-width strip of contextual usage tips beneath the editor (different sets for YAML vs. visual).
- * Static by design: all tips visible at once, dot-separated, no moving parts.
- */
+/** Full-width strip of contextual usage tips beneath the editor (different sets for YAML vs. visual). */
 export function EditorTipsBar({
   context,
   slashMenuEnabled = false,

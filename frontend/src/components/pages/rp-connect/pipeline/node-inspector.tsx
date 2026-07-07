@@ -61,8 +61,7 @@ import {
   setComponentAt,
 } from '../utils/yaml';
 
-// The default impl used by the dangling-reference quick-fix (which must keep the exact
-// missing label); picking a specific impl goes through the resource picker instead.
+// Default impl for the dangling-reference quick-fix, which must reuse the exact missing label.
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
 
 const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
@@ -95,12 +94,10 @@ function targetComponentType(target: EditTarget): ConnectComponentType {
 }
 
 type NodeInspectorProps = {
-  /** The selected component, or null when nothing is selected. */
   target: EditTarget | null;
-  /** When the selected node is a switch-case ENTRY, the edit target for the case's routing
-      condition — surfaced as an editable section at the TOP of the panel. */
+  /** For a switch-case entry node: the case's routing-condition target, shown at the top of the panel. */
   caseTarget?: EditTarget | null;
-  /** Canonical pipeline YAML; the component is read from / written back to it. */
+  /** Canonical pipeline YAML — read from and written back to. */
   yaml: string;
   /** Component specs, used to drive the schema form. */
   components: ConnectComponentSpec[];
@@ -114,14 +111,13 @@ type NodeInspectorProps = {
   lintHints?: LintHint[];
   /** Jump to this node's lines in the YAML lane (footer "View in YAML" action). */
   onOpenInYaml?: () => void;
-  /** Close the inspector (deselect). Shown as an X in the header. */
+  /** Close the inspector (deselect). */
   onClose?: () => void;
   /** A control-flow node's direct children (cases / steps), shown as a clickable list. */
   childItems?: InspectorChildItem[];
   /** Navigate the inspector to a child node. */
   onSelectChild?: (item: InspectorChildItem) => void;
-  /** The inspector registers the selected node's pending-edit hooks here (see PendingNodeCommit).
-      The panel commits before leaving the node and on pipeline save — no per-node Apply button. */
+  /** The selected node's pending-edit hooks; the panel flushes them on node-leave / save — no per-node Apply button. */
   commitRef?: MutableRefObject<PendingNodeCommit | null>;
 };
 
@@ -133,8 +129,7 @@ export type PendingNodeCommit = {
   discard: () => void;
 };
 
-// The lint message (if any) that falls on a switch case's routing `check` line — so the
-// condition field can render its own error state, distinct from a problem in the component body.
+// Lint message falling on a switch case's routing `check` line, so the condition field can show its own error.
 function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]): string | undefined {
   if (!lintHints?.length) {
     return;
@@ -156,9 +151,8 @@ function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?
 }
 
 /**
- * The always-present right rail. Shows the selected node's identity and either a
- * schema-driven form (editable components) or scoped YAML (read-only / unknown
- * schema). Edits are written back into the canonical pipeline YAML at `target`.
+ * The always-present right rail: the selected node's identity plus either a schema-driven form
+ * or scoped YAML (read-only / unknown schema). Edits write back into the pipeline YAML at `target`.
  */
 export function NodeInspector({
   target,
@@ -180,19 +174,17 @@ export function NodeInspector({
   // The routing condition for a case-entry node, read from its switch case.
   const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
 
-  // Pending edits reported by the active editors (null when clean). Refs, not state, so
-  // per-keystroke reporting doesn't re-render. `component` is edited by the form/raw/switch-case
-  // editor (applied at `target`); `condition` is the routing-condition section (at `caseTarget`).
+  // Pending edits from the active editors (null when clean). Refs, not state, so per-keystroke
+  // reporting doesn't re-render. `component` applies at `target`; `condition` at `caseTarget`.
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
   const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
   // The resource's original label, captured for the rename cascade when committing a resource edit.
   const resourceLabel0 =
     target?.kind === 'resource' && component && typeof component.label === 'string' ? component.label : undefined;
 
-  // Commit ALL pending edits for this node into `yaml`. Condition first (it replaces the whole
-  // case, preserving the body), then the component written into that case, so a node with both
-  // commits atomically without one clobbering the other. Consumes drafts as it applies them, so
-  // re-calling is a no-op until the next edit — callers can flush anywhere (deselect/save/insert).
+  // Commit all pending edits into `yaml`, condition before component (the condition replaces the
+  // whole case, so writing it first avoids clobbering the component). Consumes drafts as applied,
+  // so re-calling is a no-op until the next edit.
   const commit = useCallback(
     (input: string): string => {
       let next = input;
@@ -200,8 +192,7 @@ export function NodeInspector({
       if (cond && caseTarget) {
         const applied = setComponentAt(next, caseTarget, cond);
         if (applied === null) {
-          // Write can fail on YAML the surgical editor can't safely rewrite — keep the draft
-          // (next flush retries) and tell the user rather than silently dropping it.
+          // Surgical editor couldn't rewrite this YAML; keep the draft (next flush retries) and warn.
           toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
         } else {
           next = applied;
@@ -241,8 +232,7 @@ export function NodeInspector({
     componentDraftRef.current = null;
     conditionDraftRef.current = null;
   }, [target, caseTarget]);
-  // A lint problem on the condition's `check` line, so the condition field shows its own error
-  // state (red), not just the top banner.
+  // Lint problem on the condition's `check` line, so the field shows its own error, not just the banner.
   const conditionError = useMemo(
     () => (caseTarget ? lintMessageOnCaseCheck(yaml, caseTarget, lintHints) : undefined),
     [yaml, caseTarget, lintHints]
@@ -261,8 +251,8 @@ export function NodeInspector({
     return <InspectorEmptyState readOnly={readOnly} />;
   }
 
-  // A switch case is edited for its routing condition only (its body is its own nodes). The edit
-  // is reported as a draft (applied at `target`) and auto-committed on leave / save.
+  // A switch case is edited for its routing condition only; its body is separate nodes. Reported
+  // as a draft (at `target`), auto-committed on leave / save.
   if (target.kind === 'switchCase') {
     return (
       <SwitchCaseEditor
@@ -285,8 +275,8 @@ export function NodeInspector({
   // Delete lives in the header's 3-dot menu — disabled in read-only or with no delete handler.
   const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
 
-  // A resource's own label, and how many components reference it (shown as "Used by N").
-  // Kind-scoped: a same-labelled resource of the OTHER kind must not inflate the count.
+  // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of the
+  // other kind must not inflate the count.
   const resourceLabel = target.kind === 'resource' && typeof component.label === 'string' ? component.label : undefined;
   const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceTargetKind(target)) : 0;
 
@@ -296,8 +286,8 @@ export function NodeInspector({
     rate_limit: listResourceLabels(yaml, 'rate_limit'),
   };
 
-  // A `resource:` reference on this component whose label has no matching resource —
-  // surfaced as a fixable warning (the link would otherwise fail only at deploy).
+  // A `resource:` reference whose label has no matching resource — a fixable warning (it would
+  // otherwise fail only at deploy).
   const refKind: ResourceKind | undefined =
     componentName === 'cache' ? 'cache' : componentName === 'rate_limit' ? 'rate_limit' : undefined;
   const innerConfig = component[componentName];
@@ -310,8 +300,7 @@ export function NodeInspector({
       ? { ref: refValue, kind: refKind }
       : undefined;
 
-  // Quick-fix a dangling reference: create the missing resource under that exact label
-  // so the existing reference resolves.
+  // Quick-fix: create the missing resource under that exact label so the reference resolves.
   const handleCreateMissingResource = () => {
     if (!danglingRef) {
       return;
@@ -341,8 +330,8 @@ export function NodeInspector({
         <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
       ) : null}
       {(() => {
-        // A case-entry node's condition is edited at the top of the panel (its own target). The
-        // form editor scrolls it WITH the fields (headerSlot); raw/read-only render it above.
+        // A case-entry node's condition is edited at the top of the panel. The form scrolls it
+        // with the fields (headerSlot); raw/read-only render it above.
         const conditionSection =
           caseTarget && caseObject ? (
             <CaseConditionSection
@@ -386,9 +375,8 @@ export function NodeInspector({
             />
           );
         }
-        // A fan-out container with no schema form (fallback / broker / an output switch) — show
-        // its members as a clickable list (each opens its own config) rather than raw YAML, so the
-        // branching reads as nodes. Raw editing of the whole container stays under "View in YAML".
+        // A fan-out container with no schema form (fallback / broker / output switch): show its
+        // members as a clickable list rather than raw YAML, so the branching reads as nodes.
         if (childItems && childItems.length > 0 && onSelectChild) {
           const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
           return (
@@ -425,8 +413,7 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   }
   return (
     <DropdownMenu>
-      {/* Base UI uses `render` (not Radix `asChild`) to project the trigger onto our Button —
-          so the menu trigger is the SAME icon-sm button as its neighbours (aligned, not nested). */}
+      {/* Base UI uses `render` (not Radix `asChild`) so the trigger IS our icon-sm Button — aligned with its neighbours, not nested. */}
       <DropdownMenuTrigger
         render={<Button aria-label="More actions" className="text-muted-foreground" size="icon-sm" variant="ghost" />}
       >
@@ -481,9 +468,8 @@ function applyComponentDraft(
 ): string | null {
   const applied = setComponentAt(yaml, target, config);
   if (applied === null) {
-    // Write can fail on YAML the surgical editor can't safely rewrite (e.g. an anchor referenced
-    // elsewhere). Toast AND return null so the caller keeps the draft (next flush retries) rather
-    // than consuming an edit that never landed.
+    // Surgical editor couldn't rewrite this YAML (e.g. an anchor referenced elsewhere). Return null
+    // so the caller keeps the draft (next flush retries) instead of consuming an edit that never landed.
     toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
     return null;
   }
@@ -498,8 +484,7 @@ function applyComponentDraft(
 }
 
 // Apply a routing-condition `check` to a switch case, preserving key order: a non-empty check is
-// set in place, an empty one omitted (the default/else case). Rebuilds rather than `delete`-ing,
-// to stay clean per the linter.
+// set in place, an empty one omitted (the default/else case).
 function caseWithCheck(caseObject: Record<string, unknown>, check: string): Record<string, unknown> {
   const trimmed = check.trim();
   const next: Record<string, unknown> = {};
@@ -520,8 +505,8 @@ function caseWithCheck(caseObject: Record<string, unknown>, check: string): Reco
   return next;
 }
 
-// Shared draft state for a case's `check` field: tracks the edited value, re-syncs when the
-// saved case changes, and reports the edited case up as a draft (null when clean) — no Apply button.
+// Shared draft state for a case's `check` field: tracks the value, re-syncs on saved-case change,
+// and reports the edited case up as a draft (null when clean).
 function useCaseCheckDraft(
   caseObject: Record<string, unknown>,
   onConfigChange?: (next: Record<string, unknown> | null) => void
@@ -536,9 +521,8 @@ function useCaseCheckDraft(
   return { check, setCheck, dirty };
 }
 
-// Edits a switch case's routing condition (`check`). An empty condition makes it the
-// default/else case. The case's body (processors / output) are separate nodes on the
-// canvas; this rail only owns the condition.
+// Edits a switch case's routing condition (`check`); empty makes it the default/else case. The
+// case's body is separate canvas nodes — this rail only owns the condition.
 const SwitchCaseEditor = ({
   caseObject,
   onConfigChange,
@@ -606,9 +590,8 @@ const SwitchCaseEditor = ({
   );
 };
 
-// The routing condition of a case-entry node, edited inline at the TOP of its inspector panel
-// (condition accent, matching the on-canvas node). Writes the case's `check`; empty means the
-// default (else) case. Reported as a draft, auto-committed with the node's other edits.
+// The routing condition of a case-entry node, edited inline at the top of its inspector panel.
+// Writes the case's `check` (empty = default/else); reported as a draft, auto-committed with the node.
 const CaseConditionSection = ({
   caseObject,
   onConfigChange,
@@ -662,8 +645,7 @@ const CaseConditionSection = ({
         placeholder='e.g. this.region == "us"'
         value={check}
       />
-      {/* The field's own error, shown right where it's fixed (not only in the banner). Hidden
-          once the user starts editing — they're addressing it. */}
+      {/* The field's own error, shown where it's fixed. Hidden once editing starts — they're addressing it. */}
       {error && !dirty ? (
         <Text className="flex items-center gap-1 pt-1.5 text-destructive" variant="bodySmall">
           <AlertCircle className="size-3.5 shrink-0" />
@@ -674,8 +656,8 @@ const CaseConditionSection = ({
   );
 };
 
-// A dangling `resource:` reference: the linked label has no matching resource. Offers
-// a one-click fix that creates the missing resource under that label.
+// A dangling `resource:` reference (label has no matching resource), with a one-click fix to
+// create it under that label.
 const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate: () => void }) => (
   <div className="flex shrink-0 items-center gap-2 border-warning/30 border-b bg-warning-subtle px-4 py-3">
     <AlertCircle className="size-4 shrink-0 text-warning" />
@@ -803,7 +785,7 @@ const RawComponentEditor = ({
   }, [initial]);
 
   // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
-  // error reports nothing, so invalid YAML is never committed (the inline error says why).
+  // error reports nothing, so invalid YAML is never committed.
   useEffect(() => {
     if (draft === initial) {
       setError(null);

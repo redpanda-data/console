@@ -38,8 +38,8 @@ import type { EditTarget, ResourceKind } from '../utils/yaml';
 // Re-exported for node-inspector, which imports ResourceKind from here.
 export type { ResourceKind } from '../utils/yaml';
 
-// A direct child (case / step) of a control-flow component, shown in the inspector as a
-// clickable row so you can jump from the high-level construct to the actual node's full config.
+// A direct child (case / step) of a control-flow component, shown as a clickable row to jump
+// from the high-level construct to the child node's full config.
 export type InspectorChildItem = {
   id: string;
   target: EditTarget;
@@ -75,8 +75,8 @@ const childItemCondColor = (item: InspectorChildItem): string => {
   return 'text-warning';
 };
 
-// One clickable child row: its routing condition over the component name, a lint count if
-// any, and a chevron. Selecting it navigates the inspector to that node.
+// One clickable child row (routing condition, component name, lint count, chevron). Selecting it
+// navigates the inspector to that node.
 const ChildItemRow = ({
   item,
   onSelect,
@@ -134,23 +134,21 @@ export const ChildItemsList = ({
   </div>
 );
 
-// Resource-link context: the existing labels to offer and a create-and-link action.
-// Provided by the inspector (which owns the full YAML) and consumed by resource-ref
-// fields, so the form itself stays a pure config editor.
+// Resource-link context (existing labels + create-and-link action), provided by the inspector
+// so the form itself stays a pure config editor.
 type ResourceFieldContextValue = {
   labels: Record<ResourceKind, string[]>;
   onCreateResource?: (kind: ResourceKind) => void;
-  // The resource kind of the component being edited (cache/rate_limit processor), so a
-  // plainly-typed `resource:` string field is still recognised as a link.
+  // Kind of the component being edited, so a plainly-typed `resource:` string field is still
+  // recognised as a link.
   componentResourceKind?: ResourceKind;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
 const CREATE_RESOURCE_VALUE = '__create_resource__';
 
-// Resolve which resource kind a field links to: by its field type, or — for a field
-// literally named `resource` — the kind of the cache/rate_limit component it sits in
-// (some schemas type the reference as a plain string).
+// Resolve which resource kind a field links to: by field type, or — for a field named `resource`
+// — the kind of the cache/rate_limit component it sits in (some schemas type it as a plain string).
 function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: ResourceKind): ResourceKind | undefined {
   if (spec.type === 'cache' || spec.type === 'rate_limit') {
     return spec.type;
@@ -161,9 +159,9 @@ function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: Resourc
   return;
 }
 
-// A typed dropdown for a `resource:` link: pick an existing label or create-and-link a
-// new resource. Never free text, so the reference can't be mistyped or dangle. A value
-// that isn't among the known labels (e.g. a stale link) is still shown, flagged missing.
+// A typed dropdown for a `resource:` link: pick an existing label or create-and-link a new one.
+// Never free text, so the reference can't be mistyped. An unknown value (stale link) is still
+// shown, flagged missing.
 const ResourceReferenceSelect = ({
   kind,
   value,
@@ -219,9 +217,8 @@ function hasOptions(spec: RawFieldSpec): boolean {
   return (spec.annotatedOptions?.length ?? 0) > 0;
 }
 
-// A reference to a cache/rate_limit resource: a scalar string whose field type names
-// the resource kind (not an inline component). Rendered as a label dropdown so the
-// link can't be mistyped, and stored/assembled like any other scalar string.
+// A reference to a cache/rate_limit resource: a scalar string whose field type names the kind
+// (not an inline component). Rendered as a label dropdown, stored like any other scalar string.
 function isResourceRefField(spec: RawFieldSpec): boolean {
   return (
     Boolean(spec.name) &&
@@ -252,9 +249,8 @@ function isObjectGroup(spec: RawFieldSpec): boolean {
   return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
 }
 
-// A field whose value is itself a nested component (a processor sub-pipeline, an
-// input/output, …). These are their own nodes in the graph and are edited by
-// selecting them on the canvas — never inline here. They're preserved untouched.
+// A field whose value is itself a nested component (processor sub-pipeline, input/output, …).
+// These are their own graph nodes, edited on the canvas — never inline here, preserved untouched.
 const COMPONENT_FIELD_TYPES = new Set([
   'input',
   'output',
@@ -278,8 +274,7 @@ function isFormField(spec: RawFieldSpec): boolean {
   return !isComponentField(spec) && (isScalarField(spec) || isScalarArray(spec) || isObjectGroup(spec));
 }
 
-// ---- plain-object path helpers (the config we mutate is plain JSON) -----------
-
+// Path helpers for the plain-JSON config object (not the YAML AST).
 function getInObj(obj: Record<string, unknown>, path: string[]): unknown {
   let cur: unknown = obj;
   for (const key of path) {
@@ -324,8 +319,6 @@ function pruneEmptyObjects(obj: Record<string, unknown>): void {
   }
 }
 
-// ---- value coercion -----------------------------------------------------------
-
 function initialScalar(spec: RawFieldSpec, current: unknown): string | boolean {
   const isMissing = current === undefined || current === null;
   if (spec.type === 'bool') {
@@ -342,8 +335,8 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | numbe
     return Boolean(raw);
   }
   const text = String(raw);
-  // Interpolations (`${ENV}`, secrets, Bloblang) are valid in any field, incl. numeric ones — keep
-  // them verbatim rather than coercing to a number (NaN → '' → dropped on commit). Matches numericHint.
+  // Interpolations (`${ENV}`, secrets, Bloblang) are valid even in numeric fields — keep verbatim
+  // rather than coercing to NaN (→ '' → dropped on commit). Matches numericHint.
   if ((spec.type === 'int' || spec.type === 'float') && text.includes('${')) {
     return text;
   }
@@ -368,8 +361,6 @@ function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
   }
   return lines;
 }
-
-// ---- flattening the schema into addressable leaves ----------------------------
 
 type Leaf = { spec: RawFieldSpec; path: string[]; key: string };
 
@@ -400,9 +391,8 @@ type FormValues = {
   arrays: Record<string, string>;
 };
 
-// Parse the "Other settings (YAML)" text. Returns the mapping, `{}` when empty (an intentional
-// clear), or `null` when the text is invalid / not a mapping — so callers preserve the existing
-// keys instead of silently wiping them.
+// Parse the "Other settings (YAML)" text: the mapping, `{}` when empty (intentional clear), or
+// `null` when invalid / not a mapping — so callers preserve existing keys instead of wiping them.
 function parseRawSection(showRaw: boolean, raw: string): Record<string, unknown> | null {
   if (!(showRaw && raw.trim())) {
     return {};
@@ -441,8 +431,8 @@ function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data
     if (!dirty.fields?.[key]) {
       continue;
     }
-    // A malformed numeric literal is flagged on the field and NOT committed — coercing it would
-    // silently truncate (`10x` → 10) or drop the value; the saved value is kept until it's fixed.
+    // A malformed numeric literal is flagged and NOT committed — coercing would silently truncate
+    // (`10x` → 10) or drop it; the saved value is kept until fixed.
     if (numericHint(spec, data.fields[key])) {
       continue;
     }
@@ -492,10 +482,9 @@ function buildComponentEntry({
   }
 
   const original = value[componentName];
-  // A component whose value isn't a plain object — a `switch`/`try`/`catch`/`for_each` list of
-  // cases/processors, or a scalar. The object-field form can't model these (nested items are
-  // edited on the canvas), so preserve the value verbatim and only patch the label — rebuilding
-  // would write `{}` over the array and drop the children.
+  // A component whose value isn't a plain object — a `switch`/`try`/`catch`/`for_each` list, or a
+  // scalar. The object-field form can't model these, so preserve the value verbatim and only patch
+  // the label; rebuilding would write `{}` over the array and drop the children.
   if (!(original && typeof original === 'object') || Array.isArray(original)) {
     next[componentName] = original ?? {};
     return next;
@@ -504,8 +493,7 @@ function buildComponentEntry({
   const config: Record<string, unknown> = structuredClone(inner);
   if (showRaw && dirty.raw) {
     const parsedRaw = parseRawSection(showRaw, data.raw);
-    // Invalid YAML → null: keep the existing raw keys rather than wiping them (the editor shows
-    // an inline error; the broken draft just isn't committed).
+    // Invalid YAML → null: keep the existing raw keys rather than wiping them (the editor shows the error).
     if (parsedRaw) {
       for (const key of rawKeys) {
         delete config[key];
@@ -521,8 +509,6 @@ function buildComponentEntry({
   next[componentName] = config;
   return next;
 }
-
-// ---- field rendering ----------------------------------------------------------
 
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
@@ -557,8 +543,8 @@ const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/
 const isSecretField = (spec: RawFieldSpec): boolean =>
   spec.type === 'string' && !hasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
 
-// A masked text input with a reveal toggle. A `${…}` value is an interpolation
-// (e.g. a `${secrets.NAME}` reference), not a credential — shown in the clear.
+// A masked text input with a reveal toggle. A `${…}` value is an interpolation, not a literal
+// credential — shown in the clear.
 const SecretInput = (props: { id?: string; value: string; onChange: (value: unknown) => void; required?: boolean }) => {
   const [show, setShow] = useState(false);
   const isReference = props.value.includes('${');
@@ -628,9 +614,9 @@ const ScalarControl = ({
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
   }
-  // Numeric fields use a text input with a numeric inputMode, not type="number": a number input
-  // blanks out any value the browser can't parse (e.g. `count: 1000$`), hiding it. Text always
-  // shows the value — including malformed ones — so typos are visible and fixable.
+  // Numeric fields use a text input with numeric inputMode, not type="number": a number input
+  // blanks any value the browser can't parse (e.g. `1000$`), hiding it. Text keeps malformed
+  // values visible and fixable.
   const numericMode = spec.type === 'int' ? 'numeric' : 'decimal';
   return (
     <Input
@@ -804,15 +790,13 @@ type NodeConfigFormProps = {
   resourceLabels?: Record<ResourceKind, string[]>;
   /** Create a new resource of a kind and link it to the field being edited. */
   onCreateResource?: (kind: ResourceKind) => void;
-  /** Rendered at the top of the scroll area (e.g. a case's routing-condition section), so it
-      scrolls WITH the form rather than sticking above it. */
+  /** Rendered at the top of the scroll area, so it scrolls with the form rather than sticking above it. */
   headerSlot?: React.ReactNode;
-  /** A control-flow component's direct children (cases / steps), shown as a clickable list so
-      the user can jump from this high-level node to a child's full config. */
+  /** A control-flow component's direct children (cases / steps), shown as a clickable list. */
   childItems?: InspectorChildItem[];
   onSelectChild?: (item: InspectorChildItem) => void;
-  /** Reports the assembled component config as the form changes (null when clean), so the inspector
-      can auto-commit it on node-leave / pipeline-save — there is no per-node Apply button. */
+  /** Reports the assembled config as the form changes (null when clean), so the inspector can
+      auto-commit on node-leave / save — no per-node Apply button. */
   onConfigChange?: (config: Record<string, unknown> | null) => void;
   /** Resource nodes are referenced by label — the label field must not be cleared. */
   requireLabel?: boolean;
@@ -834,9 +818,9 @@ export function NodeConfigForm({
   const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
   const fields = spec.config?.children ?? [];
   const componentValue = value[componentName];
-  // A list-valued component (switch/try/catch/for_each): its value is an array of cases/processors
-  // edited on the canvas, not object fields. The schema's field list describes a single case, so
-  // rendering it here would mislead and saving would clobber the array — show a hint instead.
+  // A list-valued component (switch/try/catch/for_each): its value is an array edited on the canvas,
+  // not object fields. Rendering the schema fields here would mislead and saving would clobber the
+  // array — show a hint instead.
   const isListValued = Array.isArray(componentValue);
   const inner =
     componentValue && typeof componentValue === 'object' && !isListValued
@@ -850,9 +834,8 @@ export function NodeConfigForm({
   // Nested-component fields are edited on the canvas; surface a hint, never a control.
   const componentFields = fields.filter(isComponentField);
 
-  // Leaves drive form defaults + assembly. Complex (non-component) schema fields and
-  // any unknown keys go to the raw-YAML fallback; nested-component fields are neither
-  // shown nor put in raw — they're preserved untouched (the form starts from a clone).
+  // Leaves drive form defaults + assembly. Complex schema fields and unknown keys go to the
+  // raw-YAML fallback; nested-component fields are preserved untouched (the form clones the config).
   const leaves = collectLeaves(fields);
   const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
   const complexSchemaKeys = fields.filter((f) => f.name && !(isFormField(f) || isComponentField(f))).map((f) => f.name);
@@ -911,7 +894,7 @@ export function NodeConfigForm({
     <ResourceFieldContext.Provider value={resourceCtx}>
       <div className="flex min-h-0 flex-1 flex-col">
         <ScrollShadow contentClassName="space-y-4 px-4 py-4">
-          {/* Full-bleed to the scroll edges and top, then the normal padded fields follow. */}
+          {/* Full-bleed to the scroll edges; padded fields follow. */}
           {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
           <div className="flex flex-col gap-1.5">
             <Label className="font-medium text-sm" htmlFor={labelId}>

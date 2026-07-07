@@ -43,9 +43,8 @@ describe('scopeColumns — one tight box per Dagre column', () => {
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
   it("returns one box per column, each hugging just that column's members", () => {
-    // A fan marker (col 0, vertically centered) fanning to two outputs (col 1, top + bottom). The
-    // marker column and the output column are SEPARATE boxes, so neither spans the empty corner
-    // between them where an unrelated sibling card can sit.
+    // Marker (col 0) fanning to two outputs (col 1): the marker and output columns are SEPARATE
+    // boxes, so neither spans the empty corner between them where a sibling card can sit.
     const marker = node('marker', 0, 300);
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
@@ -88,8 +87,8 @@ describe('unionOutline — one continuous border around the union', () => {
   });
 
   it('traces bridged columns (a short one + a tall one) as one L-shaped 6-corner loop', () => {
-    // left column (short, top), a bridge, and a taller right column → an L outline: one loop whose
-    // empty bottom-left corner (where a sibling card sits) stays OUTSIDE the shape.
+    // Short left column + bridge + taller right column → an L outline whose empty bottom-left
+    // corner (where a sibling card sits) stays OUTSIDE the shape.
     const loops = unionOutline([rect(0, 0, 10, 10), rect(10, 0, 20, 10), rect(20, 0, 30, 30)]);
     expect(loops).toHaveLength(1);
     expect(loops[0]).toHaveLength(6);
@@ -98,9 +97,8 @@ describe('unionOutline — one continuous border around the union', () => {
 
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
-    // Always present at a readable "faint" level — a hint, not clutter. Reference
-    // edges never fully dim: even when an unrelated node is selected they stay
-    // faint (muted but visible) rather than vanishing like dimmed flow edges.
+    // Reference edges never fully dim: even with an unrelated node selected they stay faint
+    // (a visible hint) rather than vanishing like dimmed flow edges.
     expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true });
     expect(refData(decorateEdges(edges, { selectedScope: scope('b') }))).toMatchObject({ faint: true });
 
@@ -137,8 +135,8 @@ describe('decorateEdges', () => {
   });
 
   it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
-    // Selecting the container 'a' whose subtree includes 'b' and 'c': the fan edge
-    // between its children must stay full-strength, not dim as "unrelated".
+    // Selecting container 'a' (subtree includes 'b','c'): the fan edge between its children must
+    // stay lit, not dim as "unrelated".
     const decorated = decorateEdges(edges, { selectedScope: scope('a', 'b', 'c') });
     const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
     expect(fanout.emphasized).toBe(true);

@@ -78,8 +78,7 @@ output:
       - output:
           drop: {}`;
     const byNode = mapLintHintsToNodes(switchYaml, [hint(6, 'unexpected end of expression')]);
-    // The condition error maps to the case's own node (so the canvas highlights the case, and
-    // its inspector shows the error on the routing condition) — not the whole switch.
+    // The condition error maps to the case's own node, not the whole switch.
     expect(byNode.has('output-switch-0')).toBe(true);
   });
 });
@@ -87,8 +86,7 @@ output:
 describe('nodeLineRanges', () => {
   it('ends a node on its last content line, not the line below', () => {
     const ranges = nodeLineRanges(yaml);
-    // The single-line `mapping` processor is line 3 only — it must not extend to the
-    // `- branch:` line below it (the trailing-newline over-select bug).
+    // The single-line mapping is line 3 only — not extending to `- branch:` below (trailing-newline over-select bug).
     expect(ranges.find((r) => r.id === 'proc-0')).toEqual({ id: 'proc-0', start: 3, end: 3, span: 0 });
     // The branch container spans its own block (lines 4–9), stopping before `output:`.
     expect(ranges.find((r) => r.id === 'proc-1')).toMatchObject({ start: 4, end: 9 });

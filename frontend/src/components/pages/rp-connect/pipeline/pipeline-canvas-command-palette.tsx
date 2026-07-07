@@ -81,8 +81,8 @@ function searchKeywords(node: PipelineFlowNode): string[] | undefined {
 }
 
 /**
- * The canvas command palette (opened with `/`): fuzzy-search to jump to any node, plus the global
- * actions (view in YAML, undo/redo). Opens on `/` because ⌘K is reserved by the app-shell search.
+ * The canvas command palette: fuzzy-search to jump to any node, plus global actions (view in YAML,
+ * undo/redo). Opens on `/` because ⌘K is reserved by the app-shell search.
  */
 export function CanvasCommandPalette({
   open,

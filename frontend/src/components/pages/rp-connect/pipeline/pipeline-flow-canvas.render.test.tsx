@@ -17,8 +17,7 @@ import { MAX_REGION_PIECE_PX, PipelineFlowCanvas } from './pipeline-flow-canvas'
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
 const JOIN_TITLE_RE = /branches reconverge/i;
 
-// React Flow needs ResizeObserver + measurable container dimensions to mount its nodes
-// in jsdom (it guards rendering on a measured size).
+// React Flow needs ResizeObserver + measurable container dimensions to mount nodes in jsdom.
 class ResizeObserverMock {
   observe() {}
   disconnect() {}
@@ -46,9 +45,8 @@ afterAll(() => {
   }
 });
 
-// Exercises every control-flow construct: an input broker (fan-in), a branch (copy/merge),
-// a switch (split → case lanes → merge, with a default and an errored() error lane), and a
-// try/catch pair.
+// Exercises every control-flow construct: broker (fan-in), branch, switch (with a default and an
+// errored() error lane), and try/catch.
 const CONTROL_FLOW_YAML = `input:
   broker:
     inputs:
@@ -83,8 +81,7 @@ const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
 
 describe('PipelineFlowCanvas — placeholder cards', () => {
   it('renders a non-interactive "No output configured" note in read-only mode', async () => {
-    // No edit callbacks → viewer mode. A disabled "Add output" button would read as broken
-    // permissions; plain text explains the state instead.
+    // No edit callbacks → viewer mode; a disabled "Add output" would read as broken permissions.
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} />);
     expect(await screen.findByText('No output configured')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: ADD_OUTPUT_RE })).not.toBeInTheDocument();
@@ -99,7 +96,7 @@ describe('PipelineFlowCanvas — placeholder cards', () => {
 describe('PipelineFlowCanvas — invalid YAML from the start', () => {
   it('shows a persistent (non-dismissible) banner pointing at the YAML tab', async () => {
     // Unparseable from the first render: no last-good graph to fall back to, so the banner must
-    // stay up (no close button) or the frozen skeleton behind it is unexplained.
+    // stay up (no close button).
     const { container } = render(<PipelineFlowCanvas configYaml={'input: [unclosed'} />);
     expect(await screen.findByText(YAML_TAB_HINT_RE)).toBeInTheDocument();
     expect(container.querySelectorAll('button')).toHaveLength(0);
@@ -116,25 +113,23 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     // Control-flow processors render as compact split markers (not growing containers).
     expect(screen.getAllByText('switch').length).toBeGreaterThan(0);
     expect(screen.getAllByText('branch').length).toBeGreaterThan(0);
-    // try + catch are paired; the catch marker renders as an error path. (The construct name
-    // can also appear as a faint scope-region label, so allow more than one match.)
+    // The construct name can also appear as a faint scope-region label, so allow more than one match.
     expect(screen.getAllByText('catch').length).toBeGreaterThan(0);
 
-    // Each control-flow marker carries a descriptor of what it encloses (so it reads as a
-    // router, not an empty card): the switch counts its 3 cases; catch labels its error role.
+    // Each marker carries a descriptor of what it encloses: the switch counts its 3 cases; catch
+    // labels its error role.
     expect(screen.getByText('3 cases')).toBeInTheDocument();
     expect(screen.getByText('on error')).toBeInTheDocument();
 
     // Branches reconverge at explicit join nodes (branch + switch + try/catch).
     expect(screen.getAllByTitle(JOIN_TITLE_RE).length).toBeGreaterThan(0);
-    // (Edge labels — the case conditions — render via React Flow's EdgeLabelRenderer,
-    // which jsdom doesn't lay out; those are asserted in the parser unit test instead.)
+    // Edge labels (the case conditions) render via EdgeLabelRenderer, which jsdom doesn't lay out;
+    // asserted in the parser unit test instead.
   });
 
-  // A switch that fans out to many cases makes its scope region very tall. A single fill div that
-  // tall exceeds the browser's max paintable element size and its background silently vanishes (the
-  // "area with too many nodes has no background" bug). The fill must be rendered as stacked,
-  // size-capped pieces so it always paints.
+  // A switch fanning out to many cases makes its scope region very tall; a single fill div that tall
+  // exceeds the browser's max paintable size and silently stops painting. Fix: stacked, size-capped
+  // pieces so the background always renders.
   it('caps every scope-region fill piece so a tall area still renders its background', async () => {
     const cases = Array.from(
       { length: 60 },
@@ -146,8 +141,8 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     // The switch marker also surfaces as a faint scope-region label, so there are several matches.
     await screen.findAllByText('switch');
 
-    // Fill pieces render into React Flow's viewport portal, behind the nodes, tagged data-region-fill
-    // (the border is a single SVG path and is excluded here).
+    // Fill pieces render into React Flow's viewport portal, tagged data-region-fill (the border is a
+    // single SVG path, excluded here).
     const portal = container.querySelector('.react-flow__viewport-portal');
     const pieces = portal ? Array.from(portal.querySelectorAll('[data-region-fill]')) : [];
     const heights = pieces.map((el) => Number.parseFloat((el as HTMLElement).style.height));
@@ -157,8 +152,7 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     for (const h of heights) {
       expect(h).toBeLessThanOrEqual(MAX_REGION_PIECE_PX);
     }
-    // The switch's tall enclosing area had to be split into several stacked pieces — proof the
-    // size-capping actually engaged (a single giant div would be one piece).
+    // Split into several stacked pieces — proof the capping engaged (a single giant div would be one).
     expect(pieces.length).toBeGreaterThan(3);
   });
 });

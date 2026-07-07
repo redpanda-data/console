@@ -45,8 +45,6 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
     // switch: the case node itself. Processor switch (no rendered wrapper): the wrapper's first
     // child. The case span is smaller than the switch's, so `enclosingNodeId` prefers it.
     if (node.caseEditTarget) {
-      // Output-switch cases are leaves (rendered themselves); processor-switch cases are group
-      // wrappers whose rendered entry is their first child — so map the case's `check` range there.
       const entryId = node.kind === 'leaf' ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
       if (entryId) {
         pushRange(entryId, editTargetPath(node.caseEditTarget));
