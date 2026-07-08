@@ -31,7 +31,7 @@ const refData = (decorated: Edge[]) =>
 
 const scope = (...ids: string[]) => new Set(ids);
 
-describe('scopeBounds — body bounds plus the entry marker as spine', () => {
+describe('scopeBounds — body bounds plus the entry marker', () => {
   const node = (id: string, x: number, y: number, type = 'flowCard'): Node => ({
     id,
     position: { x, y },
@@ -44,7 +44,7 @@ describe('scopeBounds — body bounds plus the entry marker as spine', () => {
 
   it('keeps everything but the entry marker in the body (the join stays inside)', () => {
     // Marker (col 0, the entry) fans to two outputs (col 1) and reconverges at a join (col 2). Only
-    // the marker is spine; the outputs AND the join are body, so the box covers them all.
+    // the marker is the entry; the outputs AND the join are body, so the box covers them all.
     const marker = node('marker', 0, 300, 'flowSplit');
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
@@ -56,18 +56,18 @@ describe('scopeBounds — body bounds plus the entry marker as spine', () => {
       (n) => n.id === 'marker'
     );
     expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
-    expect(geom?.spine).toEqual([{ minX: 0, minY: 300, maxX: 200, maxY: 380 }]); // just the entry marker
+    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
   });
 
-  it('puts everything in the body (no spine) when nothing is flagged', () => {
+  it('has a null entry when nothing is flagged', () => {
     const a = node('a', 0, 0);
     const b = node('b', 500, 300);
     const geom = scopeBounds([a, b], scope('a', 'b'), noMeasure);
     expect(geom?.body).toEqual({ minX: 0, minY: 0, maxX: 700, maxY: 380 });
-    expect(geom?.spine).toEqual([]);
+    expect(geom?.entry).toBeNull();
   });
 
-  it('ignores nodes outside the scope; returns null when the scope is all spine', () => {
+  it('ignores nodes outside the scope; returns null when the scope is only the entry', () => {
     const marker = node('marker', 0, 300, 'flowSplit');
     const outsider = node('outsider', 5000, 5000); // NOT in scope — must not stretch the bounds
     expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toEqual({
@@ -76,19 +76,19 @@ describe('scopeBounds — body bounds plus the entry marker as spine', () => {
       maxX: 200,
       maxY: 380,
     });
-    // Only the (spine) marker is in scope → no body → null.
+    // Only the entry marker is in scope → no body → null.
     expect(scopeBounds([marker, outsider], scope('marker'), noMeasure, (n) => n.id === 'marker')).toBeNull();
     expect(scopeBounds([marker, outsider], scope('nope'), noMeasure)).toBeNull();
   });
 });
 
-describe('regionGeometry — arms reach the entry/exit', () => {
+describe('regionGeometry — the arm reaches the entry marker', () => {
   const body = { minX: 500, minY: 300, maxX: 700, maxY: 480 };
 
   it('wraps a same-row marker with a thin arm clamped to the body height', () => {
     const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 }; // within the body's rows
-    const { rects } = regionGeometry(body, [marker], 6, 6);
-    expect(rects).toHaveLength(2); // padded body + one left arm
+    const { rects } = regionGeometry(body, marker, 6, 6);
+    expect(rects).toHaveLength(2); // padded body + one arm
     const arm = rects[1];
     expect(arm.maxX).toBe(body.minX - 6); // arm abuts the padded body's left edge
     expect(arm.minY).toBeGreaterThanOrEqual(body.minY - 6);
@@ -97,7 +97,7 @@ describe('regionGeometry — arms reach the entry/exit', () => {
 
   it('stretches the arm up to meet the body when the marker sits clear above it (try/catch)', () => {
     const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 }; // fully above the body
-    const { rects } = regionGeometry(body, [marker], 6, 6);
+    const { rects } = regionGeometry(body, marker, 6, 6);
     const arm = rects[1];
     // The arm covers the marker's row AND reaches down to the padded body top, so they connect.
     expect(arm.minY).toBe(marker.minY - 6);

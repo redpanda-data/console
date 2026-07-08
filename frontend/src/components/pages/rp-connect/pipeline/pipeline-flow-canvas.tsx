@@ -539,15 +539,13 @@ function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: 
   return null;
 }
 
-// Padding (px) between a construct's members and the region edge. Equal on all sides; the label
-// sits above the top border (not in an internal band) so the top gap matches the others.
+// Padding (px) between a construct's members and the region edge; extra per nesting level so an outer
+// region stands off from the inner ones.
 const SCOPE_REGION_PAD = 6;
 const SCOPE_REGION_TOP_PAD = 6;
-// Extra padding per nesting level, so an outer region stands off from the inner ones (else nested
-// boxes sharing an extreme member draw flush).
 const SCOPE_REGION_NEST_STEP = 4;
 
-// Accent colour for a construct's scope region: red for error/dead-letter (catch), else the role accent.
+// Red for an error/dead-letter path (catch), else the role accent.
 function constructAccent(node?: Node): string {
   const d = node?.data as FlowCardData | undefined;
   if (d?.isErrorPath) {
@@ -558,15 +556,12 @@ function constructAccent(node?: Node): string {
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 type Point = { x: number; y: number };
+type MeasuredById = Map<string, { measured?: { width?: number; height?: number } }>;
+// The area is one rectangle over the `body` members; the `entry` marker sits just outside, reached by
+// an arm (see regionGeometry), so the box can't overflow into whatever shares the marker's column.
+type ScopeGeometry = { body: ScopeBounds; entry: ScopeBounds | null };
 
-type ScopeGeometry = {
-  /** Bounds of the BODY members — everything except the entry marker. The main rectangle. */
-  body: ScopeBounds;
-  /** Rect of the entry marker (the construct itself) — rendered as an arm reaching into the body. */
-  spine: ScopeBounds[];
-};
-
-function nodeRect(n: Node, measuredById: Map<string, { measured?: { width?: number; height?: number } }>): ScopeBounds {
+function nodeRect(n: Node, measuredById: MeasuredById): ScopeBounds {
   const m = measuredById.get(n.id)?.measured;
   const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
   const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
@@ -583,39 +578,35 @@ const growBounds = (box: ScopeBounds | null, r: ScopeBounds): ScopeBounds =>
       }
     : r;
 
-// A construct's geometry: the BODY bounds (every member except the entry marker — branches/cases/
-// steps, the merge/join, and, for a try, its fused catch) plus the entry marker as a SPINE rect. The
-// area is one rectangle over the body; the entry marker sits just outside it, reached by a thin arm
-// (see regionGeometry) so the box never overflows up/down into whatever shares the marker's column.
-// Prefers measured size, falling back to layout size. Returns null when the scope has no body member.
+// Split a construct's scoped members into the body (everything but the entry marker) and the entry
+// marker's own rect. Prefers measured size, falling back to layout size. Null when there's no body.
 export function scopeBounds(
   nodes: Node[],
   scope: ReadonlySet<string>,
-  measuredById: Map<string, { measured?: { width?: number; height?: number } }>,
-  isSpine?: (n: Node) => boolean
+  measuredById: MeasuredById,
+  isEntry?: (n: Node) => boolean
 ): ScopeGeometry | null {
   let body: ScopeBounds | null = null;
-  const spine: ScopeBounds[] = [];
+  let entry: ScopeBounds | null = null;
   for (const n of nodes) {
     if (!nodeInScope(n, scope)) {
       continue;
     }
     const r = nodeRect(n, measuredById);
-    if (isSpine?.(n)) {
-      spine.push(r);
+    if (isEntry?.(n)) {
+      entry = r;
     } else {
       body = growBounds(body, r);
     }
   }
-  return body ? { body, spine } : null;
+  return body ? { body, entry } : null;
 }
 
 type ScopeRegion = {
   id: string;
   scope: ReadonlySet<string>;
-  /** Body bounds (the main rectangle) and the spine rects that become arms (see scopeBounds). */
   body: ScopeBounds;
-  spine: ScopeBounds[];
+  entry: ScopeBounds | null;
   accent: string;
   label: string;
   /** Side / top padding — larger for outer regions so nested ones don't touch. */
@@ -623,119 +614,101 @@ type ScopeRegion = {
   topPad: number;
 };
 
-// A construct that fans out to many members makes its enclosing area very tall. Past the browser's
-// max paintable element size (~8k–16k device px) a filled div silently drops its background, so the
-// translucent fill is painted as a stack of height-capped pieces; the cap sits well under the limit
-// even at MAX_ZOOM × 2× DPR. Exported so the render test can assert no piece exceeds it.
+// Past the browser's max paintable element size (~8k–16k device px) a filled div silently drops its
+// background, so a tall region's fill is painted as a stack of pieces capped well under the limit.
+// Exported so the render test can assert no piece exceeds it.
 export const MAX_REGION_PIECE_PX = 3000;
 
 type RegionGeometry = {
-  /** The padded body rect plus any arm rects, painted as the translucent fill (sliced by height). */
+  /** Padded body rect + optional arm rect, painted as the fill (sliced by MAX_REGION_PIECE_PX). */
   rects: ScopeBounds[];
-  /** SVG path (in bbox-local coords): the body rectangle with an arm poking out at each spine row. */
+  /** Dashed outline path in bbox-local coords: the body rectangle with an arm out to the entry. */
   path: string;
-  /** Bounding box in flow coords — the SVG's position + size. */
   bbox: { x: number; y: number; w: number; h: number };
   /** Body's top-left corner, where the label sits. */
   anchor: Point;
 };
 
-// A thin arm reaching from the body edge out to wrap a spine node (entry marker / merge-join) at its
-// own row — see closestClearSpine (which node) and armSpan (its vertical extent).
-type ScopeArm = { outerX: number; innerX: number; top: number; bottom: number };
-type ArmContext = { body: ScopeBounds; padded: ScopeBounds; pad: number };
+// A thin arm from the body edge out to the entry marker, at the marker's row.
+type ScopeArm = { side: 'left' | 'right'; outerX: number; top: number; bottom: number };
 
-// The spine node nearest the body and clear of it on `side` — the one the arm should reach.
-function closestClearSpine(spine: ScopeBounds[], side: 'left' | 'right', body: ScopeBounds): ScopeBounds | undefined {
-  let best: ScopeBounds | undefined;
-  for (const s of spine) {
-    const clear = side === 'left' ? s.maxX <= body.minX : s.minX >= body.maxX;
-    if (!clear) {
-      continue;
-    }
-    const closer = side === 'left' ? !best || s.maxX > best.maxX : !best || s.minX < best.minX;
-    if (closer) {
-      best = s;
-    }
+// Which side of the body the entry marker sits on (undefined if it overlaps the body horizontally).
+function entrySide(entry: ScopeBounds, body: ScopeBounds): 'left' | 'right' | undefined {
+  if (entry.maxX <= body.minX) {
+    return 'left';
   }
-  return best;
+  if (entry.minX >= body.maxX) {
+    return 'right';
+  }
+  return;
 }
 
-// The arm's vertical span: the node's own row, but stretched to meet the body when the node sits
-// clear above/below it (an OFFSET entry — e.g. a try marker parked between its body and the catch),
-// so they still connect. A same-row node stays clamped to the body (thin arm, no sibling reach).
-function armSpan(node: ScopeBounds, padded: ScopeBounds, pad: number): { top: number; bottom: number } {
-  let top = node.minY - pad;
-  let bottom = node.maxY + pad;
-  if (bottom < padded.minY) {
-    bottom = padded.minY;
-  } else if (top > padded.maxY) {
-    top = padded.maxY;
+// The arm to the entry marker: its own row, stretched to meet the body when the marker sits clear
+// above/below it (an offset entry — e.g. a try marker between its body and the catch); otherwise
+// clamped to the body so a same-row marker's arm stays thin and can't reach into a sibling.
+function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: number): ScopeArm | undefined {
+  const side = entrySide(entry, body);
+  if (!side) {
+    return;
+  }
+  let top = entry.minY - pad;
+  let bottom = entry.maxY + pad;
+  if (bottom < pb.minY) {
+    bottom = pb.minY;
+  } else if (top > pb.maxY) {
+    top = pb.maxY;
   } else {
-    top = Math.max(top, padded.minY);
-    bottom = Math.min(bottom, padded.maxY);
+    top = Math.max(top, pb.minY);
+    bottom = Math.min(bottom, pb.maxY);
   }
-  return { top, bottom };
+  return bottom > top
+    ? { side, outerX: side === 'left' ? entry.minX - pad : entry.maxX + pad, top, bottom }
+    : undefined;
 }
 
-function spineArm(
-  spine: ScopeBounds[],
-  side: 'left' | 'right',
-  { body, padded, pad }: ArmContext
-): ScopeArm | undefined {
-  const best = closestClearSpine(spine, side, body);
-  if (!best) {
-    return;
-  }
-  const { top, bottom } = armSpan(best, padded, pad);
-  if (bottom <= top) {
-    return;
-  }
-  return side === 'left'
-    ? { outerX: best.minX - pad, innerX: padded.minX, top, bottom }
-    : { outerX: best.maxX + pad, innerX: padded.maxX, top, bottom };
-}
-
-// Trace the body rectangle clockwise, poking an arm out at each spine row.
-function regionPath(pb: ScopeBounds, left?: ScopeArm, right?: ScopeArm): Point[] {
+// The body rectangle traced clockwise, poking the arm out at the entry marker's row.
+function regionPath(pb: ScopeBounds, arm?: ScopeArm): Point[] {
   const pts: Point[] = [
     { x: pb.minX, y: pb.minY },
     { x: pb.maxX, y: pb.minY },
   ];
-  if (right) {
+  if (arm?.side === 'right') {
     pts.push(
-      { x: right.innerX, y: right.top },
-      { x: right.outerX, y: right.top },
-      { x: right.outerX, y: right.bottom },
-      { x: right.innerX, y: right.bottom }
+      { x: pb.maxX, y: arm.top },
+      { x: arm.outerX, y: arm.top },
+      { x: arm.outerX, y: arm.bottom },
+      { x: pb.maxX, y: arm.bottom }
     );
   }
   pts.push({ x: pb.maxX, y: pb.maxY }, { x: pb.minX, y: pb.maxY });
-  if (left) {
+  if (arm?.side === 'left') {
     pts.push(
-      { x: left.innerX, y: left.bottom },
-      { x: left.outerX, y: left.bottom },
-      { x: left.outerX, y: left.top },
-      { x: left.innerX, y: left.top }
+      { x: pb.minX, y: arm.bottom },
+      { x: arm.outerX, y: arm.bottom },
+      { x: arm.outerX, y: arm.top },
+      { x: pb.minX, y: arm.top }
     );
   }
   return pts;
 }
 
-// RegionBox geometry: a padded body rectangle plus a thin arm out to each spine node (entry marker /
-// merge-join), so the entry reads as part of the area while the box itself stays clear of the sibling
-// cases stacked in the marker's column.
-export function regionGeometry(body: ScopeBounds, spine: ScopeBounds[], pad: number, topPad: number): RegionGeometry {
+// A padded body rectangle plus a thin arm out to the entry marker, so it reads as part of the area
+// while the box stays clear of whatever shares the marker's column.
+export function regionGeometry(
+  body: ScopeBounds,
+  entry: ScopeBounds | null,
+  pad: number,
+  topPad: number
+): RegionGeometry {
   const pb = { minX: body.minX - pad, minY: body.minY - topPad, maxX: body.maxX + pad, maxY: body.maxY + pad };
-  const armCtx: ArmContext = { body, padded: pb, pad };
-  const left = spineArm(spine, 'left', armCtx);
-  const right = spineArm(spine, 'right', armCtx);
+  const arm = entry ? entryArm(entry, body, pb, pad) : undefined;
   const rects: ScopeBounds[] = [pb];
-  if (left) {
-    rects.push({ minX: left.outerX, minY: left.top, maxX: left.innerX, maxY: left.bottom });
-  }
-  if (right) {
-    rects.push({ minX: right.innerX, minY: right.top, maxX: right.outerX, maxY: right.bottom });
+  if (arm) {
+    rects.push(
+      arm.side === 'left'
+        ? { minX: arm.outerX, minY: arm.top, maxX: pb.minX, maxY: arm.bottom }
+        : { minX: pb.maxX, minY: arm.top, maxX: arm.outerX, maxY: arm.bottom }
+    );
   }
   let ox = pb.minX;
   let oy = pb.minY;
@@ -747,31 +720,28 @@ export function regionGeometry(body: ScopeBounds, spine: ScopeBounds[], pad: num
     ox2 = Math.max(ox2, r.maxX);
     oy2 = Math.max(oy2, r.maxY);
   }
-  const path = `M${regionPath(pb, left, right)
+  const path = `M${regionPath(pb, arm)
     .map((p) => `${p.x - ox} ${p.y - oy}`)
     .join('L')}Z`;
   return { rects, path, bbox: { x: ox, y: oy, w: ox2 - ox, h: oy2 - oy }, anchor: { x: pb.minX, y: pb.minY } };
 }
 
-// One construct's enclosure — a faint dashed rectangle around its branching body, with a thin arm
-// reaching out to wrap the entry marker (and merge/join) so they read as part of the area without the
-// box covering their column (see regionGeometry). Box + label strengthen when the construct, or
-// anything inside, is active. Non-interactive, behind the nodes, in flow coordinates.
+// One construct's enclosure: a faint dashed rectangle around its body with a thin arm out to the
+// entry marker. Box + label strengthen when the construct (or anything inside) is active.
+// Non-interactive, behind the nodes, in flow coordinates.
 const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boolean }) => {
-  const { body, spine, accent, label, pad, topPad } = region;
+  const { body, entry, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
-  // Geometry depends only on body/spine/padding, not `active`, so hover (which only restyles colours)
-  // doesn't recompute it.
+  // Geometry is `active`-independent, so hover (colour only) doesn't recompute it.
   const { rects, path, bbox, anchor } = useMemo(
-    () => regionGeometry(body, spine, pad, topPad),
-    [body, spine, pad, topPad]
+    () => regionGeometry(body, entry, pad, topPad),
+    [body, entry, pad, topPad]
   );
 
   return (
     <>
-      {/* Translucent fill in height-capped pieces so a tall area never exceeds the browser paint
-          limit and drops its background (see MAX_REGION_PIECE_PX). */}
+      {/* Fill in height-capped pieces so a tall area never exceeds the browser paint limit (see MAX_REGION_PIECE_PX). */}
       {rects.flatMap((r) => {
         const width = r.maxX - r.minX;
         const height = r.maxY - r.minY;
@@ -795,7 +765,7 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
           );
         });
       })}
-      {/* One continuous dashed border as a single path — no per-piece side-dash seams. */}
+      {/* Dashed border as one path — no per-piece seams. */}
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute"
@@ -813,7 +783,7 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
           style={{ transition: 'stroke 200ms' }}
         />
       </svg>
-      {/* Label sits just above the top border where the construct starts. Faint until active. */}
+      {/* Label just above the body's top-left corner. */}
       <div className="pointer-events-none absolute" style={{ transform: `translate(${anchor.x}px, ${anchor.y}px)` }}>
         <span
           className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-caption-sm uppercase tracking-wide transition-opacity duration-200"
@@ -835,15 +805,13 @@ type ScopeRegionDraft = Omit<ScopeRegion, 'pad' | 'topPad'>;
 type RegionContext = {
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
-  nodeLookup: Map<string, { measured?: { width?: number; height?: number } }>;
+  nodeLookup: MeasuredById;
   /** try marker id → its fused catch marker id, so a try's area also covers its error handling. */
   tryCatchPairs: ReadonlyMap<string, string>;
 };
 
-// One construct's region (before nesting padding): a rectangle over the body — every member EXCEPT
-// the entry marker, which stays just outside and is reached by an arm so the box can't overflow into
-// whatever shares the marker's column. A try folds in its fused catch so the error handling is part
-// of the same area.
+// One construct's region (before nesting padding). Only the entry marker is held outside (reached by
+// an arm); everything else — branches, the merge/join, and a try's fused catch — is in the body.
 function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | null {
   const { rfNodes, scopeOf, nodeLookup, tryCatchPairs } = ctx;
   const own = scopeOf(node.id);
@@ -852,8 +820,6 @@ function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | nu
   }
   const catchId = tryCatchPairs.get(node.id);
   const scope = catchId ? new Set([...own, ...(scopeOf(catchId) ?? [])]) : own;
-  // Only the ENTRY marker (this construct) is a spine node held outside the box; everything else —
-  // branches, the merge/join, the fused catch — sits within the area.
   const geom = scopeBounds(rfNodes, scope, nodeLookup, (n) => n.id === node.id);
   if (!geom) {
     return null;
@@ -862,7 +828,7 @@ function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | nu
     id: node.id,
     scope,
     body: geom.body,
-    spine: geom.spine,
+    entry: geom.entry,
     accent: constructAccent(node),
     label: (node.data as FlowCardData).label,
   };

@@ -27,15 +27,13 @@ export type ResilientParse = { nodes: PipelineFlowNode[]; error?: string; showin
 export function useResilientParse(yaml: string): ResilientParse {
   const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
   const lastGoodRef = useRef<PipelineFlowNode[]>([]);
-  // Only a parse with real components is a fallback worth holding; a blank config resets it (a cleared
-  // editor has nothing to fall back to), and a placeholder-only parse is just the empty state.
+  // Hold only a real pipeline as the fallback; a blank config resets it (nothing left to fall back to).
   if (!(parsed.error || isPipelineEmpty(parsed.nodes))) {
     lastGoodRef.current = parsed.nodes;
   } else if (isConfigTextEmpty(yaml)) {
     lastGoodRef.current = [];
   }
-  // Stale = the current YAML can't render as itself (unparseable, or empty over non-blank text — a
-  // mis-indented/renamed section key) AND a real prior pipeline exists to show instead.
+  // Stale = the YAML can't render as itself (unparseable, or empty over non-blank text) and a prior pipeline exists.
   const brokenOverContent = !parsed.error && isPipelineEmpty(parsed.nodes) && !isConfigTextEmpty(yaml);
   const showingStale = (Boolean(parsed.error) || brokenOverContent) && lastGoodRef.current.length > 0;
   return { nodes: showingStale ? lastGoodRef.current : parsed.nodes, error: parsed.error, showingStale };
