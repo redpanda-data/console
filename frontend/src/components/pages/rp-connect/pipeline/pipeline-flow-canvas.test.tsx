@@ -15,9 +15,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   decorateEdges,
   injectNodeData,
-  scopeColumns,
+  regionGeometry,
+  scopeBounds,
   selectionTargetForNode,
-  unionOutline,
 } from './pipeline-flow-canvas';
 
 const edges: Edge[] = [
@@ -31,67 +31,77 @@ const refData = (decorated: Edge[]) =>
 
 const scope = (...ids: string[]) => new Set(ids);
 
-describe('scopeColumns — one tight box per Dagre column', () => {
-  const node = (id: string, x: number, y: number): Node => ({
+describe('scopeBounds — body bounds plus the entry marker as spine', () => {
+  const node = (id: string, x: number, y: number, type = 'flowCard'): Node => ({
     id,
     position: { x, y },
     initialWidth: 200,
     initialHeight: 80,
     data: {},
-    type: 'flowCard',
+    type,
   });
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
-  it("returns one box per column, each hugging just that column's members", () => {
-    // Marker (col 0) fanning to two outputs (col 1): the marker and output columns are SEPARATE
-    // boxes, so neither spans the empty corner between them where a sibling card can sit.
-    const marker = node('marker', 0, 300);
+  it('keeps everything but the entry marker in the body (the join stays inside)', () => {
+    // Marker (col 0, the entry) fans to two outputs (col 1) and reconverges at a join (col 2). Only
+    // the marker is spine; the outputs AND the join are body, so the box covers them all.
+    const marker = node('marker', 0, 300, 'flowSplit');
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
-    const columns = scopeColumns([marker, out1, out2], scope('marker', 'out1', 'out2'), noMeasure);
-
-    expect(columns).toEqual([
-      { minX: 0, minY: 300, maxX: 200, maxY: 380 }, // marker column — short, mid-height
-      { minX: 500, minY: 0, maxX: 700, maxY: 680 }, // output column — spans both outputs
-    ]);
+    const join = node('join', 1000, 300, 'flowMerge');
+    const geom = scopeBounds(
+      [marker, out1, out2, join],
+      scope('marker', 'out1', 'out2', 'join'),
+      noMeasure,
+      (n) => n.id === 'marker'
+    );
+    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
+    expect(geom?.spine).toEqual([{ minX: 0, minY: 300, maxX: 200, maxY: 380 }]); // just the entry marker
   });
 
-  it('ignores nodes outside the scope and returns [] for an empty scope', () => {
-    const marker = node('marker', 0, 300);
-    const outsider = node('outsider', 0, 620); // NOT in scope — must not stretch or add a column
-    expect(scopeColumns([marker, outsider], scope('marker'), noMeasure)).toEqual([
-      { minX: 0, minY: 300, maxX: 200, maxY: 380 },
-    ]);
-    expect(scopeColumns([marker, outsider], scope('nope'), noMeasure)).toEqual([]);
+  it('puts everything in the body (no spine) when nothing is flagged', () => {
+    const a = node('a', 0, 0);
+    const b = node('b', 500, 300);
+    const geom = scopeBounds([a, b], scope('a', 'b'), noMeasure);
+    expect(geom?.body).toEqual({ minX: 0, minY: 0, maxX: 700, maxY: 380 });
+    expect(geom?.spine).toEqual([]);
+  });
+
+  it('ignores nodes outside the scope; returns null when the scope is all spine', () => {
+    const marker = node('marker', 0, 300, 'flowSplit');
+    const outsider = node('outsider', 5000, 5000); // NOT in scope — must not stretch the bounds
+    expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toEqual({
+      minX: 0,
+      minY: 300,
+      maxX: 200,
+      maxY: 380,
+    });
+    // Only the (spine) marker is in scope → no body → null.
+    expect(scopeBounds([marker, outsider], scope('marker'), noMeasure, (n) => n.id === 'marker')).toBeNull();
+    expect(scopeBounds([marker, outsider], scope('nope'), noMeasure)).toBeNull();
   });
 });
 
-describe('unionOutline — one continuous border around the union', () => {
-  const rect = (minX: number, minY: number, maxX: number, maxY: number) => ({ minX, minY, maxX, maxY });
+describe('regionGeometry — arms reach the entry/exit', () => {
+  const body = { minX: 500, minY: 300, maxX: 700, maxY: 480 };
 
-  it('traces a single rectangle as one 4-corner loop', () => {
-    const loops = unionOutline([rect(0, 0, 10, 10)]);
-    expect(loops).toHaveLength(1);
-    expect(loops[0]).toHaveLength(4);
+  it('wraps a same-row marker with a thin arm clamped to the body height', () => {
+    const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 }; // within the body's rows
+    const { rects } = regionGeometry(body, [marker], 6, 6);
+    expect(rects).toHaveLength(2); // padded body + one left arm
+    const arm = rects[1];
+    expect(arm.maxX).toBe(body.minX - 6); // arm abuts the padded body's left edge
+    expect(arm.minY).toBeGreaterThanOrEqual(body.minY - 6);
+    expect(arm.maxY).toBeLessThanOrEqual(body.maxY + 6);
   });
 
-  it('merges two abutting rects into one loop with no internal seam', () => {
-    const loops = unionOutline([rect(0, 0, 10, 10), rect(10, 0, 20, 10)]);
-    expect(loops).toHaveLength(1);
-    expect(loops[0]).toHaveLength(4); // one 0,0..20,10 rectangle — the shared edge cancels
-  });
-
-  it('keeps two spatially-disjoint rects as two loops', () => {
-    const loops = unionOutline([rect(0, 0, 10, 10), rect(50, 50, 60, 60)]);
-    expect(loops).toHaveLength(2);
-  });
-
-  it('traces bridged columns (a short one + a tall one) as one L-shaped 6-corner loop', () => {
-    // Short left column + bridge + taller right column → an L outline whose empty bottom-left
-    // corner (where a sibling card sits) stays OUTSIDE the shape.
-    const loops = unionOutline([rect(0, 0, 10, 10), rect(10, 0, 20, 10), rect(20, 0, 30, 30)]);
-    expect(loops).toHaveLength(1);
-    expect(loops[0]).toHaveLength(6);
+  it('stretches the arm up to meet the body when the marker sits clear above it (try/catch)', () => {
+    const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 }; // fully above the body
+    const { rects } = regionGeometry(body, [marker], 6, 6);
+    const arm = rects[1];
+    // The arm covers the marker's row AND reaches down to the padded body top, so they connect.
+    expect(arm.minY).toBe(marker.minY - 6);
+    expect(arm.maxY).toBe(body.minY - 6);
   });
 });
 

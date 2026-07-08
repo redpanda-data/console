@@ -559,177 +559,63 @@ function constructAccent(node?: Node): string {
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 type Point = { x: number; y: number };
 
-// Center-x gap that starts a new column. Dagre gives a rank's nodes the same center-x and spaces
-// adjacent ranks far wider, so this cleanly buckets members by column.
-const SCOPE_COLUMN_GAP = 80;
+type ScopeGeometry = {
+  /** Bounds of the BODY members — everything except the entry marker. The main rectangle. */
+  body: ScopeBounds;
+  /** Rect of the entry marker (the construct itself) — rendered as an arm reaching into the body. */
+  spine: ScopeBounds[];
+};
 
-// A construct's footprint as one box per column (Dagre rank). A fanned-out construct is an L /
-// staircase, so a single bounding box over all members would fill the empty corner and cover an
-// unrelated sibling card; per-column boxes don't, and are later stitched into one outline (see
-// RegionBox). Prefers each node's measured size, falling back to the layout size before measurement.
-export function scopeColumns(
+function nodeRect(n: Node, measuredById: Map<string, { measured?: { width?: number; height?: number } }>): ScopeBounds {
+  const m = measuredById.get(n.id)?.measured;
+  const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
+  const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
+  return { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h };
+}
+
+const growBounds = (box: ScopeBounds | null, r: ScopeBounds): ScopeBounds =>
+  box
+    ? {
+        minX: Math.min(box.minX, r.minX),
+        minY: Math.min(box.minY, r.minY),
+        maxX: Math.max(box.maxX, r.maxX),
+        maxY: Math.max(box.maxY, r.maxY),
+      }
+    : r;
+
+// A construct's geometry: the BODY bounds (every member except the entry marker — branches/cases/
+// steps, the merge/join, and, for a try, its fused catch) plus the entry marker as a SPINE rect. The
+// area is one rectangle over the body; the entry marker sits just outside it, reached by a thin arm
+// (see regionGeometry) so the box never overflows up/down into whatever shares the marker's column.
+// Prefers measured size, falling back to layout size. Returns null when the scope has no body member.
+export function scopeBounds(
   nodes: Node[],
   scope: ReadonlySet<string>,
-  measuredById: Map<string, { measured?: { width?: number; height?: number } }>
-): ScopeBounds[] {
-  const rects: { cx: number; bounds: ScopeBounds }[] = [];
+  measuredById: Map<string, { measured?: { width?: number; height?: number } }>,
+  isSpine?: (n: Node) => boolean
+): ScopeGeometry | null {
+  let body: ScopeBounds | null = null;
+  const spine: ScopeBounds[] = [];
   for (const n of nodes) {
     if (!nodeInScope(n, scope)) {
       continue;
     }
-    const m = measuredById.get(n.id)?.measured;
-    const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
-    const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
-    rects.push({
-      cx: n.position.x + w / 2,
-      bounds: { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h },
-    });
-  }
-  rects.sort((a, z) => a.cx - z.cx);
-  const columns: ScopeBounds[] = [];
-  let curCx = Number.NEGATIVE_INFINITY;
-  for (const { cx, bounds } of rects) {
-    const col = columns.at(-1);
-    if (col && cx - curCx <= SCOPE_COLUMN_GAP) {
-      col.minX = Math.min(col.minX, bounds.minX);
-      col.minY = Math.min(col.minY, bounds.minY);
-      col.maxX = Math.max(col.maxX, bounds.maxX);
-      col.maxY = Math.max(col.maxY, bounds.maxY);
+    const r = nodeRect(n, measuredById);
+    if (isSpine?.(n)) {
+      spine.push(r);
     } else {
-      columns.push({ ...bounds });
-    }
-    curCx = cx;
-  }
-  return columns;
-}
-
-const pointKey = (p: Point) => `${p.x},${p.y}`;
-
-// Boolean grid over the cells between consecutive grid lines: is a cell's centre inside any rect?
-function coverageGrid(rects: ScopeBounds[], xs: number[], ys: number[]): boolean[][] {
-  const grid: boolean[][] = [];
-  for (let i = 0; i + 1 < xs.length; i += 1) {
-    const cx = (xs[i] + xs[i + 1]) / 2;
-    grid[i] = [];
-    for (let j = 0; j + 1 < ys.length; j += 1) {
-      const cy = (ys[j] + ys[j + 1]) / 2;
-      grid[i][j] = rects.some((r) => cx > r.minX && cx < r.maxX && cy > r.minY && cy < r.maxY);
+      body = growBounds(body, r);
     }
   }
-  return grid;
-}
-
-type CellContext = {
-  xs: number[];
-  ys: number[];
-  covered: (ci: number, cj: number) => boolean;
-  add: (a: Point, b: Point) => void;
-};
-
-// Emit one covered cell's boundary edges clockwise, keeping only sides that face an uncovered cell
-// (shared/internal sides cancel because the neighbour emits the same edge reversed).
-function emitCellEdges(i: number, j: number, ctx: CellContext): void {
-  const { xs, ys, covered, add } = ctx;
-  const x0 = xs[i];
-  const x1 = xs[i + 1];
-  const y0 = ys[j];
-  const y1 = ys[j + 1];
-  if (!covered(i, j - 1)) {
-    add({ x: x0, y: y0 }, { x: x1, y: y0 });
-  }
-  if (!covered(i + 1, j)) {
-    add({ x: x1, y: y0 }, { x: x1, y: y1 });
-  }
-  if (!covered(i, j + 1)) {
-    add({ x: x1, y: y1 }, { x: x0, y: y1 });
-  }
-  if (!covered(i - 1, j)) {
-    add({ x: x0, y: y1 }, { x: x0, y: y0 });
-  }
-}
-
-// Directed boundary edges of the covered region, keyed by start point.
-function boundaryEdges(grid: boolean[][], xs: number[], ys: number[]): Map<string, Point[]> {
-  const covered = (i: number, j: number) => i >= 0 && j >= 0 && Boolean(grid[i]?.[j]);
-  const edges = new Map<string, Point[]>();
-  const add = (a: Point, b: Point) => {
-    const list = edges.get(pointKey(a));
-    if (list) {
-      list.push(b);
-    } else {
-      edges.set(pointKey(a), [b]);
-    }
-  };
-  const ctx: CellContext = { xs, ys, covered, add };
-  for (let i = 0; i < grid.length; i += 1) {
-    for (let j = 0; j < grid[i].length; j += 1) {
-      if (grid[i][j]) {
-        emitCellEdges(i, j, ctx);
-      }
-    }
-  }
-  return edges;
-}
-
-// Chain directed edges head-to-tail into closed loops, consuming each edge once.
-function chainLoops(edges: Map<string, Point[]>): Point[][] {
-  const loops: Point[][] = [];
-  for (const [startKey, ends] of edges) {
-    const [sx, sy] = startKey.split(',').map(Number);
-    while (ends.length > 0) {
-      const loop: Point[] = [{ x: sx, y: sy }];
-      let cur = ends.pop() as Point;
-      while (pointKey(cur) !== startKey) {
-        loop.push(cur);
-        const next = edges.get(pointKey(cur))?.pop();
-        if (!next) {
-          break;
-        }
-        cur = next;
-      }
-      loops.push(collapseCollinear(loop));
-    }
-  }
-  return loops;
-}
-
-// Trace the outline(s) of a union of axis-aligned rectangles as rectilinear loops. Slice the plane
-// along every rect edge, mark covered cells, then walk each covered cell's boundary clockwise —
-// edges shared with another covered cell cancel, so only the outer boundary survives and chains into
-// closed loops. Turns a construct's per-column boxes into one seamless path. One loop per disjoint cluster.
-export function unionOutline(rects: ScopeBounds[]): Point[][] {
-  if (rects.length === 0) {
-    return [];
-  }
-  const xs = Array.from(new Set(rects.flatMap((r) => [r.minX, r.maxX]))).sort((a, b) => a - b);
-  const ys = Array.from(new Set(rects.flatMap((r) => [r.minY, r.maxY]))).sort((a, b) => a - b);
-  return chainLoops(boundaryEdges(coverageGrid(rects, xs, ys), xs, ys));
-}
-
-// Drop points that lie mid-segment (both neighbours share the point's x or y), leaving only corners.
-function collapseCollinear(loop: Point[]): Point[] {
-  const n = loop.length;
-  if (n < 3) {
-    return loop;
-  }
-  const out: Point[] = [];
-  for (let i = 0; i < n; i += 1) {
-    const prev = loop[(i - 1 + n) % n];
-    const cur = loop[i];
-    const next = loop[(i + 1) % n];
-    const straight = (prev.x === cur.x && cur.x === next.x) || (prev.y === cur.y && cur.y === next.y);
-    if (!straight) {
-      out.push(cur);
-    }
-  }
-  return out;
+  return body ? { body, spine } : null;
 }
 
 type ScopeRegion = {
   id: string;
   scope: ReadonlySet<string>;
-  // One box per column the construct occupies (see scopeColumns); stitched into one outline at render (RegionBox).
-  columns: ScopeBounds[];
+  /** Body bounds (the main rectangle) and the spine rects that become arms (see scopeBounds). */
+  body: ScopeBounds;
+  spine: ScopeBounds[];
   accent: string;
   label: string;
   /** Side / top padding — larger for outer regions so nested ones don't touch. */
@@ -744,69 +630,143 @@ type ScopeRegion = {
 export const MAX_REGION_PIECE_PX = 3000;
 
 type RegionGeometry = {
-  /** Union rectangles (padded columns + connecting bridges) painted as the translucent fill. */
+  /** The padded body rect plus any arm rects, painted as the translucent fill (sliced by height). */
   rects: ScopeBounds[];
-  /** SVG path (in bbox-local coords) tracing the whole union as one dashed outline. */
+  /** SVG path (in bbox-local coords): the body rectangle with an arm poking out at each spine row. */
   path: string;
-  /** Bounding box of the union, in flow coords — the SVG's position + size. */
+  /** Bounding box in flow coords — the SVG's position + size. */
   bbox: { x: number; y: number; w: number; h: number };
-  /** Top-left-most column corner, where the label sits. */
+  /** Body's top-left corner, where the label sits. */
   anchor: Point;
 };
 
-// Turn per-column boxes into RegionBox geometry: pad each column, bridge vertically-overlapping
-// adjacent columns across the rank gap (so the union is one connected shape), then trace the outline.
-function regionGeometry(columns: ScopeBounds[], pad: number, topPad: number): RegionGeometry {
-  const padded = columns.map((c) => ({
-    minX: c.minX - pad,
-    minY: c.minY - topPad,
-    maxX: c.maxX + pad,
-    maxY: c.maxY + pad,
-  }));
-  const rects: ScopeBounds[] = [...padded];
-  for (let i = 0; i + 1 < padded.length; i += 1) {
-    const a = padded[i];
-    const b = padded[i + 1];
-    const top = Math.max(a.minY, b.minY);
-    const bottom = Math.min(a.maxY, b.maxY);
-    // Bridge only when the columns don't already overlap in x and their vertical spans meet.
-    if (a.maxX < b.minX && bottom > top) {
-      rects.push({ minX: a.maxX, minY: top, maxX: b.minX, maxY: bottom });
+// A thin arm reaching from the body edge out to wrap a spine node (entry marker / merge-join) at its
+// own row — see closestClearSpine (which node) and armSpan (its vertical extent).
+type ScopeArm = { outerX: number; innerX: number; top: number; bottom: number };
+type ArmContext = { body: ScopeBounds; padded: ScopeBounds; pad: number };
+
+// The spine node nearest the body and clear of it on `side` — the one the arm should reach.
+function closestClearSpine(spine: ScopeBounds[], side: 'left' | 'right', body: ScopeBounds): ScopeBounds | undefined {
+  let best: ScopeBounds | undefined;
+  for (const s of spine) {
+    const clear = side === 'left' ? s.maxX <= body.minX : s.minX >= body.maxX;
+    if (!clear) {
+      continue;
+    }
+    const closer = side === 'left' ? !best || s.maxX > best.maxX : !best || s.minX < best.minX;
+    if (closer) {
+      best = s;
     }
   }
-  let ox = Number.POSITIVE_INFINITY;
-  let oy = Number.POSITIVE_INFINITY;
-  let ox2 = Number.NEGATIVE_INFINITY;
-  let oy2 = Number.NEGATIVE_INFINITY;
-  let anchor = padded[0] ?? { minX: 0, minY: 0 };
+  return best;
+}
+
+// The arm's vertical span: the node's own row, but stretched to meet the body when the node sits
+// clear above/below it (an OFFSET entry — e.g. a try marker parked between its body and the catch),
+// so they still connect. A same-row node stays clamped to the body (thin arm, no sibling reach).
+function armSpan(node: ScopeBounds, padded: ScopeBounds, pad: number): { top: number; bottom: number } {
+  let top = node.minY - pad;
+  let bottom = node.maxY + pad;
+  if (bottom < padded.minY) {
+    bottom = padded.minY;
+  } else if (top > padded.maxY) {
+    top = padded.maxY;
+  } else {
+    top = Math.max(top, padded.minY);
+    bottom = Math.min(bottom, padded.maxY);
+  }
+  return { top, bottom };
+}
+
+function spineArm(
+  spine: ScopeBounds[],
+  side: 'left' | 'right',
+  { body, padded, pad }: ArmContext
+): ScopeArm | undefined {
+  const best = closestClearSpine(spine, side, body);
+  if (!best) {
+    return;
+  }
+  const { top, bottom } = armSpan(best, padded, pad);
+  if (bottom <= top) {
+    return;
+  }
+  return side === 'left'
+    ? { outerX: best.minX - pad, innerX: padded.minX, top, bottom }
+    : { outerX: best.maxX + pad, innerX: padded.maxX, top, bottom };
+}
+
+// Trace the body rectangle clockwise, poking an arm out at each spine row.
+function regionPath(pb: ScopeBounds, left?: ScopeArm, right?: ScopeArm): Point[] {
+  const pts: Point[] = [
+    { x: pb.minX, y: pb.minY },
+    { x: pb.maxX, y: pb.minY },
+  ];
+  if (right) {
+    pts.push(
+      { x: right.innerX, y: right.top },
+      { x: right.outerX, y: right.top },
+      { x: right.outerX, y: right.bottom },
+      { x: right.innerX, y: right.bottom }
+    );
+  }
+  pts.push({ x: pb.maxX, y: pb.maxY }, { x: pb.minX, y: pb.maxY });
+  if (left) {
+    pts.push(
+      { x: left.innerX, y: left.bottom },
+      { x: left.outerX, y: left.bottom },
+      { x: left.outerX, y: left.top },
+      { x: left.innerX, y: left.top }
+    );
+  }
+  return pts;
+}
+
+// RegionBox geometry: a padded body rectangle plus a thin arm out to each spine node (entry marker /
+// merge-join), so the entry reads as part of the area while the box itself stays clear of the sibling
+// cases stacked in the marker's column.
+export function regionGeometry(body: ScopeBounds, spine: ScopeBounds[], pad: number, topPad: number): RegionGeometry {
+  const pb = { minX: body.minX - pad, minY: body.minY - topPad, maxX: body.maxX + pad, maxY: body.maxY + pad };
+  const armCtx: ArmContext = { body, padded: pb, pad };
+  const left = spineArm(spine, 'left', armCtx);
+  const right = spineArm(spine, 'right', armCtx);
+  const rects: ScopeBounds[] = [pb];
+  if (left) {
+    rects.push({ minX: left.outerX, minY: left.top, maxX: left.innerX, maxY: left.bottom });
+  }
+  if (right) {
+    rects.push({ minX: right.innerX, minY: right.top, maxX: right.outerX, maxY: right.bottom });
+  }
+  let ox = pb.minX;
+  let oy = pb.minY;
+  let ox2 = pb.maxX;
+  let oy2 = pb.maxY;
   for (const r of rects) {
     ox = Math.min(ox, r.minX);
     oy = Math.min(oy, r.minY);
     ox2 = Math.max(ox2, r.maxX);
     oy2 = Math.max(oy2, r.maxY);
   }
-  for (const p of padded) {
-    if (p.minX < anchor.minX || (p.minX === anchor.minX && p.minY < anchor.minY)) {
-      anchor = p;
-    }
-  }
-  const path = unionOutline(rects)
-    .map((loop) => `M${loop.map((p) => `${p.x - ox} ${p.y - oy}`).join('L')}Z`)
-    .join('');
-  return { rects, path, bbox: { x: ox, y: oy, w: ox2 - ox, h: oy2 - oy }, anchor: { x: anchor.minX, y: anchor.minY } };
+  const path = `M${regionPath(pb, left, right)
+    .map((p) => `${p.x - ox} ${p.y - oy}`)
+    .join('L')}Z`;
+  return { rects, path, bbox: { x: ox, y: oy, w: ox2 - ox, h: oy2 - oy }, anchor: { x: pb.minX, y: pb.minY } };
 }
 
-// One construct's enclosure — a faint dashed box around all its members, hugging its L / staircase
-// footprint (see regionGeometry) instead of a rectangle whose empty corner covers an unrelated card.
-// Box + label strengthen when the construct, or anything inside it, is active. Non-interactive,
-// behind the nodes, in flow coordinates.
+// One construct's enclosure — a faint dashed rectangle around its branching body, with a thin arm
+// reaching out to wrap the entry marker (and merge/join) so they read as part of the area without the
+// box covering their column (see regionGeometry). Box + label strengthen when the construct, or
+// anything inside, is active. Non-interactive, behind the nodes, in flow coordinates.
 const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boolean }) => {
-  const { columns, accent, label, pad, topPad } = region;
+  const { body, spine, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
-  // Geometry depends only on columns/padding, not `active`, so hover (which only restyles colours)
-  // doesn't retrace the outline.
-  const { rects, path, bbox, anchor } = useMemo(() => regionGeometry(columns, pad, topPad), [columns, pad, topPad]);
+  // Geometry depends only on body/spine/padding, not `active`, so hover (which only restyles colours)
+  // doesn't recompute it.
+  const { rects, path, bbox, anchor } = useMemo(
+    () => regionGeometry(body, spine, pad, topPad),
+    [body, spine, pad, topPad]
+  );
 
   return (
     <>
@@ -871,6 +831,43 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
   );
 });
 
+type ScopeRegionDraft = Omit<ScopeRegion, 'pad' | 'topPad'>;
+type RegionContext = {
+  rfNodes: Node[];
+  scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
+  nodeLookup: Map<string, { measured?: { width?: number; height?: number } }>;
+  /** try marker id → its fused catch marker id, so a try's area also covers its error handling. */
+  tryCatchPairs: ReadonlyMap<string, string>;
+};
+
+// One construct's region (before nesting padding): a rectangle over the body — every member EXCEPT
+// the entry marker, which stays just outside and is reached by an arm so the box can't overflow into
+// whatever shares the marker's column. A try folds in its fused catch so the error handling is part
+// of the same area.
+function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | null {
+  const { rfNodes, scopeOf, nodeLookup, tryCatchPairs } = ctx;
+  const own = scopeOf(node.id);
+  if (!own || own.size < 2) {
+    return null;
+  }
+  const catchId = tryCatchPairs.get(node.id);
+  const scope = catchId ? new Set([...own, ...(scopeOf(catchId) ?? [])]) : own;
+  // Only the ENTRY marker (this construct) is a spine node held outside the box; everything else —
+  // branches, the merge/join, the fused catch — sits within the area.
+  const geom = scopeBounds(rfNodes, scope, nodeLookup, (n) => n.id === node.id);
+  if (!geom) {
+    return null;
+  }
+  return {
+    id: node.id,
+    scope,
+    body: geom.body,
+    spine: geom.spine,
+    accent: constructAccent(node),
+    label: (node.data as FlowCardData).label,
+  };
+}
+
 // Faint enclosure boxes around every construct's sub-graph, emphasized when the construct (or
 // anything inside) is active. Drawn via `ViewportPortal`, never perturbing the nodes array (hover
 // stays cheap). Dagre can scatter members so a box may span a non-member card — accepted.
@@ -879,11 +876,13 @@ function ScopeRegions({
   selectedId,
   rfNodes,
   scopeOf,
+  tryCatchPairs,
 }: {
   hoveredId?: string;
   selectedId?: string;
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
+  tryCatchPairs: ReadonlyMap<string, string>;
 }) {
   // Measured sizes live on the store's stably-mutated nodeLookup, so subscribing to it alone won't
   // re-render; `measuredKey` is a primitive digest that changes when cards measure, so boxes tighten
@@ -920,30 +919,15 @@ function ScopeRegions({
   // Geometry depends only on the layout + measurements, so cache it across hover/selection changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: measuredKey re-triggers bounds when cards measure.
   const regions = useMemo<ScopeRegion[]>(() => {
-    type Draft = Omit<ScopeRegion, 'pad' | 'topPad'>;
-    const drafts: Draft[] = [];
-    for (const node of rfNodes) {
-      if (node.type !== 'flowSplit') {
-        continue;
-      }
-      const scope = scopeOf(node.id);
-      if (!scope || scope.size < 2) {
-        continue;
-      }
-      const columns = scopeColumns(rfNodes, scope, nodeLookup);
-      if (columns.length === 0) {
-        continue;
-      }
-      drafts.push({
-        id: node.id,
-        scope,
-        columns,
-        accent: constructAccent(node),
-        label: (node.data as FlowCardData).label,
-      });
-    }
+    // A catch fused into a try is drawn as part of the try's area, not its own region.
+    const absorbed = new Set(tryCatchPairs.values());
+    const ctx: RegionContext = { rfNodes, scopeOf, nodeLookup, tryCatchPairs };
+    const drafts = rfNodes
+      .filter((n) => n.type === 'flowSplit' && !absorbed.has(n.id))
+      .map((n) => scopeRegionDraft(n, ctx))
+      .filter((d): d is ScopeRegionDraft => d !== null);
     // How many OTHER regions enclose each (its construct id is in their scope).
-    const depthOf = (r: Draft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
+    const depthOf = (r: ScopeRegionDraft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
     // Standoff scales with how deeply a region's own contents nest (0 if none), so each enclosing box
     // stands one step off the inner ones and a construct with nothing nested hugs its nodes tightly.
@@ -953,7 +937,7 @@ function ScopeRegions({
       const extra = innerDepth(i) * SCOPE_REGION_NEST_STEP;
       return { ...r, pad: SCOPE_REGION_PAD + extra, topPad: SCOPE_REGION_TOP_PAD + extra };
     });
-  }, [rfNodes, scopeOf, nodeLookup, measuredKey]);
+  }, [rfNodes, scopeOf, nodeLookup, tryCatchPairs, measuredKey]);
 
   if (regions.length === 0) {
     return null;
@@ -1334,6 +1318,18 @@ export function PipelineFlowCanvas({
     };
   }, [nodes, editable]);
 
+  // try marker → its fused catch marker, from the "on error" edge (id `error-<try>-<catch>`), so a
+  // try's scope region folds in its catch (its error handling reads as part of the same area).
+  const tryCatchPairs = useMemo(() => {
+    const pairs = new Map<string, string>();
+    for (const edge of layoutEdges) {
+      if (edge.id.startsWith('error-')) {
+        pairs.set(edge.source, edge.target);
+      }
+    }
+    return pairs;
+  }, [layoutEdges]);
+
   // Cheap decoration memo: inject per-node selection/lint/flash data, then fade nodes outside a
   // selected construct's scope. Keyed on decoration inputs only, so a click re-runs this, not the
   // Dagre layout. Hover is excluded to stay off the cheap edges-only hover path.
@@ -1471,7 +1467,13 @@ export function PipelineFlowCanvas({
           />
           <PipelineMiniMap nodes={rfNodes} translateExtent={translateExtent} />
           {/* Renders only for control-flow markers (flowSplit/flowMerge). */}
-          <ScopeRegions hoveredId={hoveredNodeId} rfNodes={rfNodes} scopeOf={scopeOf} selectedId={selectedNodeId} />
+          <ScopeRegions
+            hoveredId={hoveredNodeId}
+            rfNodes={rfNodes}
+            scopeOf={scopeOf}
+            selectedId={selectedNodeId}
+            tryCatchPairs={tryCatchPairs}
+          />
           <FitOnInit />
           <MinZoomController graphHeight={contentHeight} graphWidth={contentWidth} onChange={setMinZoom} />
           <KeepSelectionInView focusToken={focusToken} selectedNodeId={selectedNodeId} />
