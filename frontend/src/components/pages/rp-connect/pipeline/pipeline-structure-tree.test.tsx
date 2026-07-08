@@ -15,6 +15,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PipelineStructureTree } from './pipeline-structure-tree';
 
+const HOLDING_NOTICE_RE = /last valid outline/i;
+const FIX_IT_NOTICE_RE = /the current yaml is invalid/i;
+const INVALID_NOTICE_RE = /invalid/i;
+
 // A deeply-nested config: switch → case → branch → http, plus a sibling rate_limit.
 const NESTED = `input:
   kafka_franz:
@@ -152,13 +156,20 @@ describe('PipelineStructureTree', () => {
 
     // A syntax error mid-edit: the lane must not blank out — it holds the outline and flags it.
     rerender(<PipelineStructureTree configYaml={'input: [unclosed'} />);
-    expect(screen.getByText(/last valid outline/i)).toBeInTheDocument();
+    expect(screen.getByText(HOLDING_NOTICE_RE)).toBeInTheDocument();
     expect(screen.getByText('switch')).toBeInTheDocument();
   });
 
   it('shows a fix-it notice (no crash) when the YAML is invalid from the start', () => {
     render(<PipelineStructureTree configYaml={'input: [unclosed'} />);
-    expect(screen.getByText(/the current yaml is invalid/i)).toBeInTheDocument();
+    expect(screen.getByText(FIX_IT_NOTICE_RE)).toBeInTheDocument();
     expect(screen.queryByText('INPUT')).not.toBeInTheDocument();
+  });
+
+  it('does not flag a valid but still-incomplete config as invalid while authoring from blank', () => {
+    const { rerender } = render(<PipelineStructureTree configYaml={''} />);
+    // `input:` is valid, just not yet a pipeline — no prior outline to hold, so no "invalid" notice.
+    rerender(<PipelineStructureTree configYaml={'input:'} />);
+    expect(screen.queryByText(INVALID_NOTICE_RE)).not.toBeInTheDocument();
   });
 });

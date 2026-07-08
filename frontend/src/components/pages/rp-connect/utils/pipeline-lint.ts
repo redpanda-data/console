@@ -75,8 +75,7 @@ export function mergeLintHints(
       merged[`error_${key}`] = hint;
     }
   }
-  // Locally-derived hints (YAML syntax, or a swallowed lint-RPC failure) — surfaced so the panel
-  // reflects problems the live server lint can't report while the document is unparseable.
+  // Locally-derived hints the live server lint can't report (YAML syntax, or a swallowed RPC failure).
   for (const [idx, hint] of localHints.entries()) {
     if (!seen.has(signature(hint))) {
       seen.add(signature(hint));
@@ -93,10 +92,9 @@ export function mergeLintHints(
 }
 
 /**
- * Client-side YAML syntax lint: the `yaml` parser's own errors, with 1-based line/column. Surfaces
- * the "invalid YAML" class (unclosed brackets, a key missing its `:`) in the Lint panel immediately,
- * without a save round-trip — the live server lint can't report these while the document won't parse.
- * `prettyErrors: false` keeps the message a single clean line (no embedded code snippet).
+ * Client-side YAML syntax lint: the `yaml` parser's own errors with 1-based line/column, so the
+ * "invalid YAML" class shows in the Lint panel without a save round-trip. `prettyErrors: false` keeps
+ * each message to a single clean line (no embedded code snippet).
  */
 export function localYamlLintHints(configYaml: string): LintHint[] {
   if (!configYaml.trim()) {

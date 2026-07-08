@@ -21,22 +21,22 @@ import {
 export type ResilientParse = { nodes: PipelineFlowNode[]; error?: string; showingStale: boolean };
 
 /**
- * Parse the YAML, holding the last-good nodes: while it's transiently broken the parser yields no
- * pipeline, and blanking the view (canvas or structure tree) reads as broken, so freeze the last-good
- * result and flag it stale. Shared by the visual canvas and the sidebar outline so both survive an
- * edit that leaves the YAML unparseable — or valid but no longer a pipeline.
+ * Hold the last REAL pipeline while an edit leaves the YAML unparseable, or valid but no longer a
+ * pipeline — blanking the view (canvas or sidebar outline) reads as broken. Shared by both.
  */
 export function useResilientParse(yaml: string): ResilientParse {
   const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
-  const lastGoodNodesRef = useRef<PipelineFlowNode[]>([]);
-  // A parse is trustworthy when it didn't throw AND it either produced real components or the text is
-  // genuinely blank. Valid-but-empty YAML over non-blank text — a mis-indented or renamed section key
-  // from one bad edit — is a transient break, NOT a real empty pipeline, so treat it like a parse
-  // error: hold the last valid result instead of collapsing to `input: none` placeholders.
-  const trustworthy = !parsed.error && (isConfigTextEmpty(yaml) || !isPipelineEmpty(parsed.nodes));
-  if (trustworthy) {
-    lastGoodNodesRef.current = parsed.nodes;
+  const lastGoodRef = useRef<PipelineFlowNode[]>([]);
+  // Only a parse with real components is a fallback worth holding; a blank config resets it (a cleared
+  // editor has nothing to fall back to), and a placeholder-only parse is just the empty state.
+  if (!(parsed.error || isPipelineEmpty(parsed.nodes))) {
+    lastGoodRef.current = parsed.nodes;
+  } else if (isConfigTextEmpty(yaml)) {
+    lastGoodRef.current = [];
   }
-  const showingStale = !trustworthy && lastGoodNodesRef.current.length > 0;
-  return { nodes: showingStale ? lastGoodNodesRef.current : parsed.nodes, error: parsed.error, showingStale };
+  // Stale = the current YAML can't render as itself (unparseable, or empty over non-blank text — a
+  // mis-indented/renamed section key) AND a real prior pipeline exists to show instead.
+  const brokenOverContent = !parsed.error && isPipelineEmpty(parsed.nodes) && !isConfigTextEmpty(yaml);
+  const showingStale = (Boolean(parsed.error) || brokenOverContent) && lastGoodRef.current.length > 0;
+  return { nodes: showingStale ? lastGoodRef.current : parsed.nodes, error: parsed.error, showingStale };
 }

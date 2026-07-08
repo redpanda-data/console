@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import { summarizeComponent } from './pipeline-flow-meta';
-import { computeGraphLayout, isConfigTextEmpty, mainFlowSequence, parsePipelineFlowTree } from './pipeline-flow-parser';
+import {
+  computeGraphLayout,
+  isConfigTextEmpty,
+  mainFlowSequence,
+  parsePipelineFlowTree,
+  shouldOfferTemplate,
+} from './pipeline-flow-parser';
 
 describe('parsePipelineFlowTree', () => {
   it('returns placeholder input/output sections with placeholder leaves for empty string', () => {
@@ -1525,6 +1531,20 @@ describe('isConfigTextEmpty', () => {
     expect(isConfigTextEmpty('foo: bar # note')).toBe(false);
     // Structurally-invalid-but-present text is still non-empty (so no template offer).
     expect(isConfigTextEmpty('not-a-pipeline: true')).toBe(false);
+  });
+});
+
+describe('shouldOfferTemplate', () => {
+  const offer = (yaml: string) => shouldOfferTemplate(yaml, parsePipelineFlowTree(yaml).nodes);
+
+  it('offers only for a genuinely blank config', () => {
+    expect(offer('')).toBe(true);
+    expect(offer('# just a comment')).toBe(true);
+  });
+
+  it('does not offer when content parses to no pipeline, or for a real pipeline', () => {
+    expect(offer('not-a-pipeline: true')).toBe(false);
+    expect(offer('input:\n  generate: {}\noutput:\n  drop: {}')).toBe(false);
   });
 });
 

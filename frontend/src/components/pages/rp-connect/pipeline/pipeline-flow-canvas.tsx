@@ -24,7 +24,6 @@ import {
 } from '@xyflow/react';
 import { Banner, BannerContent } from 'components/redpanda-ui/components/banner';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { TriangleAlert } from 'lucide-react';
 import {
   memo,
   type PointerEvent as ReactPointerEvent,
@@ -36,6 +35,7 @@ import {
   useState,
 } from 'react';
 
+import { InvalidConfigNotice } from './invalid-config-notice';
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
 import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
@@ -283,17 +283,15 @@ function focusDimNodes(
 // The graph fades back while it's showing the stale (last-good) layout, cueing that it's not live.
 const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
 
-// Banner shown while rendering the last-good graph for invalid YAML (see useResilientParse). A
-// status region so it's announced.
+// Banner shown while rendering the last-good graph for invalid YAML (see useResilientParse).
 function StaleParseBanner({ show }: { show: boolean }) {
   if (!show) {
     return null;
   }
   return (
-    <output className="absolute top-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-1.5 text-foreground text-sm shadow-sm backdrop-blur-sm">
-      <TriangleAlert className="size-4 shrink-0 text-warning" />
-      <span>Can&apos;t visualize the latest YAML — showing the last valid layout.</span>
-    </output>
+    <InvalidConfigNotice className="absolute top-3 left-1/2 z-20 -translate-x-1/2 px-3 py-1.5 text-sm shadow-sm backdrop-blur-sm">
+      Can&apos;t visualize the latest YAML — showing the last valid layout.
+    </InvalidConfigNotice>
   );
 }
 

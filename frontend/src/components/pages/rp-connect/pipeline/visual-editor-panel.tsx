@@ -47,10 +47,9 @@ import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema
 import { changedNodeIds } from '../utils/pipeline-diff';
 import {
   type FlowInsertPayload,
-  isConfigTextEmpty,
-  isPipelineEmpty as isPipelineEmptyNodes,
   type PipelineFlowNode,
   parsePipelineFlowTree,
+  shouldOfferTemplate,
 } from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
@@ -488,15 +487,7 @@ export function VisualEditorPanel({
   const parsedFlow = useMemo(() => parsePipelineFlowTree(yamlContent), [yamlContent]);
   const flowNodes = parsedFlow.nodes;
 
-  // The floating "Start from a template" entry point is offered ONLY for a genuinely blank config
-  // (whitespace/comments only). A config that's full of text but currently parses to no components —
-  // unparseable YAML, OR valid YAML that's lost its input/output/pipeline sections from one bad edit —
-  // is NOT empty: offering a template there would invite replacing the user's work. (The canvas keeps
-  // showing the last valid layout for those; see useResilientParse.)
-  const offerTemplate = useMemo(
-    () => isPipelineEmptyNodes(flowNodes) && isConfigTextEmpty(yamlContent),
-    [flowNodes, yamlContent]
-  );
+  const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
   // If an undo/redo or external edit removes the selected node entirely, close the inspector —
   // leaving it open on an empty state (with a stale draft) invites edits that can't land.

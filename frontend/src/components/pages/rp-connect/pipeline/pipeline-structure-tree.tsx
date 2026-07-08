@@ -12,9 +12,10 @@
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Box, ChevronDown, ChevronRight, Plus, TriangleAlert } from 'lucide-react';
+import { Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
+import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
 import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
@@ -259,8 +260,7 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   </div>
 );
 
-// The invalid-config notice shown atop the outline: `showingStale` = we're holding the last valid
-// outline; a bare `error` with nothing to fall back to = the outline can't be built at all yet.
+// Notice atop the outline: holding a last-valid outline, vs. can't build one at all yet.
 function invalidOutlineNotice(showingStale: boolean, error?: string): string | undefined {
   if (showingStale) {
     return 'Showing the last valid outline — the current YAML is invalid.';
@@ -301,8 +301,7 @@ export function PipelineStructureTree({
   onSelectNode,
   onAddConnector,
 }: PipelineStructureTreeProps) {
-  // Hold the last valid outline when an edit leaves the YAML unparseable (or valid but no longer a
-  // pipeline), so the lane doesn't blank out mid-edit — it stays put with an "invalid" notice.
+  // Hold the last valid outline so the lane doesn't blank out mid-edit (see useResilientParse).
   const { nodes, error, showingStale } = useResilientParse(configYaml);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
@@ -381,15 +380,7 @@ export function PipelineStructureTree({
     // the visible headers, "empty" notes and Add buttons live between the trees, not inside
     // one (a tree may own only treeitem/group children). Arrow keys still walk across sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
-      {notice ? (
-        <div
-          className="mx-2 flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-2.5 py-2 text-foreground text-xs"
-          role="status"
-        >
-          <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" />
-          <span>{notice}</span>
-        </div>
-      ) : null}
+      {notice ? <InvalidConfigNotice className="mx-2 px-2.5 py-2 text-xs">{notice}</InvalidConfigNotice> : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
         return (

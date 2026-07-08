@@ -40,7 +40,6 @@ import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-d
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
-import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
 import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
@@ -62,11 +61,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
-import {
-  useGetPipelineServiceConfigSchemaQuery,
-  useLintPipelineConfigQuery,
-  useListComponentsQuery,
-} from 'react-query/api/connect';
+import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
@@ -89,6 +84,7 @@ import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
+import { usePipelineLint } from './use-pipeline-lint';
 import { useSlashCommand } from './use-slash-command';
 import { VisualEditorPanel } from './visual-editor-panel';
 import { extractLintHintsFromError } from '../errors';
@@ -109,14 +105,8 @@ import type {
 } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
-import { isConfigTextEmpty, isPipelineEmpty, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
-import {
-  enclosingNodeId,
-  localYamlLintHints,
-  mapLintHintsToNodes,
-  mergeLintHints,
-  nodeLineRanges,
-} from '../utils/pipeline-lint';
+import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
+import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -245,35 +235,6 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
   } catch {
     return;
   }
-}
-
-function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
-  const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
-  const {
-    data: lintResponse,
-    isPending: isLintPending,
-    isError: isLintError,
-    error: lintError,
-  } = useLintPipelineConfigQuery(debouncedYamlContent, { enabled });
-
-  // Client-side YAML syntax errors — surfaced immediately, since the server lint can't report a
-  // config it can't parse (that's why an obviously-broken YAML read as "No issues found" until save).
-  const syntaxHints = useMemo(() => localYamlLintHints(debouncedYamlContent), [debouncedYamlContent]);
-  // If the live lint RPC itself failed on otherwise-parseable YAML, don't let that read as "no
-  // issues" — surface the failure (dropped once a syntax error already explains the problem).
-  const serverFailureHints = useMemo(
-    () => (isLintError && syntaxHints.length === 0 ? Object.values(extractLintHintsFromError(lintError)) : []),
-    [isLintError, lintError, syntaxHints.length]
-  );
-  const localHints = useMemo(() => [...syntaxHints, ...serverFailureHints], [syntaxHints, serverFailureHints]);
-
-  // Dedupe: after a failed save the same problem arrives from the error details and the re-lint.
-  const lintHints = useMemo(
-    () => mergeLintHints(errorLintHints, lintResponse?.lintHints ?? [], localHints),
-    [errorLintHints, lintResponse, localHints]
-  );
-
-  return { lintHints, isLintPending };
 }
 
 function usePipelineSave({
@@ -677,14 +638,8 @@ function EditorPanel({
   );
 }
 
-// The sidebar template entry point is offered only for a genuinely blank config (whitespace/comments
-// only). A config that's full of text but parses to no components — invalid YAML, or valid YAML that's
-// lost its input/output/pipeline sections — must NOT offer a template that would replace the work.
 function useShouldOfferTemplate(yamlContent: string): boolean {
-  return useMemo(
-    () => isConfigTextEmpty(yamlContent) && isPipelineEmpty(parsePipelineFlowTree(yamlContent).nodes),
-    [yamlContent]
-  );
+  return useMemo(() => shouldOfferTemplate(yamlContent, parsePipelineFlowTree(yamlContent).nodes), [yamlContent]);
 }
 
 function SidebarPanel({
@@ -711,7 +666,7 @@ function SidebarPanel({
   // The tree/decoration consumers below tolerate slightly-stale YAML, so defer it to keep their
   // full-document parses off the per-keystroke critical path (the Monaco editor stays live).
   const deferredYaml = useDeferredValue(yamlContent);
-  const shouldOfferTemplate = useShouldOfferTemplate(deferredYaml);
+  const offerTemplate = useShouldOfferTemplate(deferredYaml);
   const showStructureTree = isPipelineDiagramsEnabled;
 
   // Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node.
@@ -795,7 +750,7 @@ function SidebarPanel({
       requestRevealNode(null);
     }
   }, [revealNodeId, editorInstance, nodeRanges, revealNodeInEditor, requestRevealNode]);
-  const showTemplateCta = showStructureTree && canEdit && Boolean(onBrowseTemplates) && shouldOfferTemplate;
+  const showTemplateCta = showStructureTree && canEdit && Boolean(onBrowseTemplates) && offerTemplate;
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">

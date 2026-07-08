@@ -126,6 +126,15 @@ describe('PipelineFlowCanvas — resilient parse', () => {
     expect(screen.getByText('generate')).toBeInTheDocument();
     expect(screen.queryByText(NO_OUTPUT_NOTE_RE)).not.toBeInTheDocument();
   });
+
+  it('does not flag a valid but still-incomplete pipeline as stale while authoring from blank', async () => {
+    const { rerender } = render(<PipelineFlowCanvas configYaml={''} />);
+    // `input:` is valid YAML, just not yet a pipeline — a blank start has no real layout to fall back
+    // to, so this must render as the empty state, NOT a false "last valid layout" banner.
+    rerender(<PipelineFlowCanvas configYaml={'input:'} />);
+    expect(await screen.findByText(NO_OUTPUT_NOTE_RE)).toBeInTheDocument();
+    expect(screen.queryByText(STALE_LAYOUT_RE)).not.toBeInTheDocument();
+  });
 });
 
 describe('PipelineFlowCanvas — control-flow render', () => {
