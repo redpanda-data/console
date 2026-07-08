@@ -6,12 +6,12 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260209202127-80ab13bee0bf.1
 	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1
-	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260316210807-5d899910f714.1
-	buf.build/gen/go/redpandadata/core/connectrpc/go v1.19.1-20260226120209-2a07499aebcd.2
-	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260313213909-923579c57f1c.1
+	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260323171043-6e06f84ad823.1
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.20.0-20260706172830-ee867ae38d23.1
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260706172830-ee867ae38d23.1
 	buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1
 	buf.build/go/protovalidate v1.0.1
-	connectrpc.com/connect v1.19.1
+	connectrpc.com/connect v1.20.0
 	connectrpc.com/grpcreflect v1.3.0
 	github.com/aws/aws-sdk-go-v2/config v1.31.21
 	github.com/basgys/goxml2json v1.1.0
