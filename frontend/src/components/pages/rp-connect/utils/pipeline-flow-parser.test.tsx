@@ -267,6 +267,27 @@ output:
     });
   });
 
+  it('skips a null/scalar switch-output case without crashing and keeps real cases at their YAML index', () => {
+    const yaml = `
+output:
+  switch:
+    cases:
+      - null
+      - check: 'root.id == 1'
+        output:
+          kafka_franz:
+            seed_brokers: ["localhost:9092"]
+`;
+    const result = parsePipelineFlowTree(yaml);
+    // Before the null-guard, dereferencing the null case threw — swallowed into an "invalid YAML"
+    // result that blanked the whole canvas even though the config is valid.
+    expect(result.error).toBeUndefined();
+    const leaf = result.nodes.find((n) => n.label === 'kafka_franz');
+    expect(leaf).toBeDefined();
+    // The real case is the SECOND array entry: its edit path must keep index 1, not shift to 0.
+    expect(leaf?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+  });
+
   it('parses fallback output with children', () => {
     const yaml = `
 output:

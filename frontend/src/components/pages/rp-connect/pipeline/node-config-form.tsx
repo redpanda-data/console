@@ -97,7 +97,7 @@ const ChildItemRow = ({
   const condText = childItemConditionText(item);
   return (
     <button
-      className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
+      className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left outline-none transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       onClick={() => onSelect(item)}
       type="button"
     >

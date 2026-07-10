@@ -20,6 +20,7 @@ import {
 import { FileCode2, type LucideIcon, Redo2, Undo2 } from 'lucide-react';
 import { useMemo } from 'react';
 
+import { jumpableNodes, SECTION_LABEL, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
@@ -49,36 +50,6 @@ type CanvasCommandPaletteProps = {
   /** "View in YAML" for the current selection — only when something is selected. */
   onViewSelectedInYaml?: () => void;
 };
-
-const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, string> = {
-  input: 'Input',
-  processor: 'Processor',
-  output: 'Output',
-  resource: 'Resource',
-};
-
-// A node is reachable from the palette when it maps to an editable target (its own config).
-// Structural wrappers (bare switch cases, merge dots) carry no target and are skipped — their
-// editable entry is listed instead.
-function jumpableNodes(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
-  return nodes.filter((n) => n.editTarget && n.section);
-}
-
-// Free text a node matches on: its VISIBLE fields only (connector name, user label, role). cmdk
-// fuzzy-matches the whole `value`, so internal node ids must stay out — they made typing "0" or
-// "section" match rows for no visible reason. Uniqueness (when two nodes share a name) comes from
-// a zero-width-space suffix the user can't type.
-function searchValue(node: PipelineFlowNode, index: number): string {
-  const visible = [node.label, node.labelText, node.section].filter(Boolean).join(' ');
-  return `${visible}${'\u200B'.repeat(index + 1)}`;
-}
-
-// Meta values (topics, urls, …) stay searchable via cmdk's `keywords` — user-authored content,
-// unlike the synthetic ids.
-function searchKeywords(node: PipelineFlowNode): string[] | undefined {
-  const keywords = node.meta?.map((m) => m.value).filter(Boolean);
-  return keywords?.length ? keywords : undefined;
-}
 
 /**
  * The canvas command palette: fuzzy-search to jump to any node, plus global actions (view in YAML,

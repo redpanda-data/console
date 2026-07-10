@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
+import { pluralizeWithNumber } from 'utils/string';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
@@ -84,9 +85,8 @@ const SECTION_LABEL: Record<string, string> = {
   resource: 'Resource',
 };
 
-// Each role's colour identity via semantic tokens (theme-aware, readable as either fill or text):
-// input → success, processor → informative, resource → warning. Output has no matching status token,
-// so it borrows a chart accent.
+// Each role's colour identity via theme-aware semantic tokens (readable as either fill or text).
+// Output has no matching status token, so it borrows a chart accent.
 const SECTION_ACCENT: Record<string, string> = {
   input: 'var(--color-success)',
   processor: 'var(--color-informative)',
@@ -620,8 +620,7 @@ const LinkLabel = ({
 type ControlFlowPresentation = { Icon: LucideIcon; descriptor: string };
 
 function plural(n: number, noun: string): string {
-  const many = noun.endsWith('h') ? `${noun}es` : `${noun}s`;
-  return `${n} ${n === 1 ? noun : many}`;
+  return pluralizeWithNumber(n, noun, noun.endsWith('h') ? 'es' : 's');
 }
 
 // Per-construct glyph + descriptor recipe: `noun` is counted (e.g. "3 cases"), `prefix` precedes

@@ -360,6 +360,22 @@ function generateObjectValue(
   return obj;
 }
 
+// Placeholder value for a primitive field, used to seed generated configs with the right shape for
+// YAML/Bloblang formatting (arrays wrap this in `[x]`, 2d arrays in `[[x]]`).
+function scalarPlaceholder(type: RawFieldSpec['type']): unknown {
+  switch (type) {
+    case 'int':
+    case 'float':
+      return 0;
+    case 'bool':
+      return false;
+    case 'unknown':
+      return null;
+    default:
+      return '';
+  }
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 function generateArrayValue(params: {
   spec: RawFieldSpec;
@@ -399,40 +415,16 @@ function generateArrayValue(params: {
   }
 
   // Primitive arrays: return a placeholder element for proper YAML/Bloblang formatting.
-  switch (spec.type) {
-    case 'string':
-      return [''];
-    case 'int':
-    case 'float':
-      return [0];
-    case 'bool':
-      return [false];
-    case 'unknown':
-      return [null];
-    default:
-      return [''];
-  }
+  return [scalarPlaceholder(spec.type)];
 }
 
 function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions): unknown {
   const { showAdvancedFields, componentName } = options;
-  switch (spec.type) {
-    case 'string':
-      return '';
-    case 'int':
-    case 'float':
-      return 0;
-    case 'bool':
-      return false;
-    case 'unknown':
-      return null;
-    case 'object': {
-      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-      return obj && Object.keys(obj).length > 0 ? obj : undefined;
-    }
-    default:
-      return '';
+  if (spec.type === 'object') {
+    const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+    return obj && Object.keys(obj).length > 0 ? obj : undefined;
   }
+  return scalarPlaceholder(spec.type);
 }
 
 type GenerateDefaultValueOptions = {
@@ -663,23 +655,7 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
         const obj = generateObjectValue(spec, showAdvancedFields, componentName);
         generatedValue = obj && Object.keys(obj).length > 0 ? [[obj]] : [[]];
       } else {
-        switch (spec.type) {
-          case 'string':
-            generatedValue = [['']];
-            break;
-          case 'int':
-          case 'float':
-            generatedValue = [[0]];
-            break;
-          case 'bool':
-            generatedValue = [[false]];
-            break;
-          case 'unknown':
-            generatedValue = [[null]];
-            break;
-          default:
-            generatedValue = [['']];
-        }
+        generatedValue = [[scalarPlaceholder(spec.type)]];
       }
       break;
     case 'map':

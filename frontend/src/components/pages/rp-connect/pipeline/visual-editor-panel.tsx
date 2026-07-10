@@ -10,6 +10,7 @@
  */
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { formatShortcut, modKey, shiftKey } from 'utils/shortcuts';
+import { pluralizeWithNumber } from 'utils/string';
 
 import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector, type PendingNodeCommit } from './node-inspector';
@@ -981,17 +983,16 @@ export function VisualEditorPanel({
                 )}
               </AlertDialogDescription>
               {pendingDeleteRefCount > 0 ? (
-                <div className="mt-1 flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle px-3 py-2 text-sm">
-                  <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" />
-                  <span>
-                    This resource is still referenced by{' '}
-                    <span className="font-semibold">
-                      {pendingDeleteRefCount} {pendingDeleteRefCount === 1 ? 'node' : 'nodes'}
+                <Alert className="mt-1" icon={<TriangleAlert />} variant="warning">
+                  <AlertDescription>
+                    <span>
+                      This resource is still referenced by{' '}
+                      <span className="font-semibold">{pluralizeWithNumber(pendingDeleteRefCount, 'node')}</span>.
+                      Removing it leaves {pendingDeleteRefCount === 1 ? 'that reference' : 'those references'} pointing
+                      at a missing resource.
                     </span>
-                    . Removing it leaves {pendingDeleteRefCount === 1 ? 'that reference' : 'those references'} pointing
-                    at a missing resource.
-                  </span>
-                </div>
+                  </AlertDescription>
+                </Alert>
               ) : null}
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -39,7 +39,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { type MutableRefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type MutableRefObject, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -306,6 +306,20 @@ export function NodeInspector({
     onApply(appendResource(yaml, resourceArrayKey(danglingRef.kind), obj) ?? yaml);
   };
 
+  // A case-entry node's condition is edited at the top of the panel. The form scrolls it with the
+  // fields (headerSlot); raw/read-only render it above.
+  const conditionSection =
+    caseTarget && caseObject ? (
+      // Key by the case's path so selecting a sibling remounts + resets the draft (see above).
+      <CaseConditionSection
+        caseObject={caseObject}
+        error={conditionError}
+        key={JSON.stringify(editTargetPath(caseTarget))}
+        onConfigChange={readOnly ? undefined : reportConditionDraft}
+        readOnly={readOnly}
+      />
+    ) : null;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <InspectorHeader
@@ -321,73 +335,101 @@ export function NodeInspector({
       {danglingRef && !readOnly ? (
         <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
       ) : null}
-      {(() => {
-        // A case-entry node's condition is edited at the top of the panel. The form scrolls it
-        // with the fields (headerSlot); raw/read-only render it above.
-        const conditionSection =
-          caseTarget && caseObject ? (
-            // Key by the case's path so selecting a sibling remounts + resets the draft (see above).
-            <CaseConditionSection
-              caseObject={caseObject}
-              error={conditionError}
-              key={JSON.stringify(editTargetPath(caseTarget))}
-              onConfigChange={readOnly ? undefined : reportConditionDraft}
-              readOnly={readOnly}
-            />
-          ) : null;
-        if (readOnly) {
-          return (
-            <>
-              {conditionSection}
-              <ReadOnlyComponent component={component} />
-            </>
-          );
-        }
-        if (useForm && spec) {
-          return (
-            <NodeConfigForm
-              childItems={childItems}
-              componentName={componentName}
-              headerSlot={conditionSection}
-              // Re-key on the saved value so external changes (undo/redo, YAML lane) re-init the form.
-              key={JSON.stringify(component)}
-              onConfigChange={reportComponentDraft}
-              onCreateResource={onCreateResource}
-              onSelectChild={onSelectChild}
-              requireLabel={target.kind === 'resource'}
-              resourceLabels={resourceLabels}
-              spec={spec}
-              value={component}
-            />
-          );
-        }
-        // A fan-out container with no schema form (fallback / broker / output switch): show its
-        // members as a clickable list rather than raw YAML, so the branching reads as nodes.
-        if (childItems && childItems.length > 0 && onSelectChild) {
-          const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
-          return (
-            <>
-              {conditionSection}
-              <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                <ChildItemsList items={childItems} label={listLabel} onSelect={onSelectChild} />
-              </div>
-            </>
-          );
-        }
-        return (
-          <>
-            {conditionSection}
-            <RawComponentEditor
-              component={component}
-              key={JSON.stringify(component)}
-              onConfigChange={reportComponentDraft}
-            />
-          </>
-        );
-      })()}
+      <InspectorBody
+        childItems={childItems}
+        component={component}
+        componentName={componentName}
+        conditionSection={conditionSection}
+        onCreateResource={onCreateResource}
+        onSelectChild={onSelectChild}
+        readOnly={readOnly}
+        reportComponentDraft={reportComponentDraft}
+        resourceLabels={resourceLabels}
+        spec={spec}
+        target={target}
+        useForm={useForm}
+      />
     </div>
   );
 }
+
+type InspectorBodyProps = {
+  conditionSection: ReactNode;
+  component: Record<string, unknown>;
+  componentName: string;
+  useForm: boolean;
+  spec?: ConnectComponentSpec;
+  target: EditTarget;
+  readOnly?: boolean;
+  childItems?: InspectorChildItem[];
+  onSelectChild?: (item: InspectorChildItem) => void;
+  onCreateResource?: (kind: ResourceKind) => void;
+  resourceLabels: Record<ResourceKind, string[]>;
+  reportComponentDraft: (next: Record<string, unknown> | null) => void;
+};
+
+// The inspector body: the case-condition section (when any) plus one of a schema form, a read-only
+// view, a clickable child list, or scoped raw YAML — most specific match first.
+const InspectorBody = ({
+  conditionSection,
+  component,
+  componentName,
+  useForm,
+  spec,
+  target,
+  readOnly,
+  childItems,
+  onSelectChild,
+  onCreateResource,
+  resourceLabels,
+  reportComponentDraft,
+}: InspectorBodyProps) => {
+  if (readOnly) {
+    return (
+      <>
+        {conditionSection}
+        <ReadOnlyComponent component={component} />
+      </>
+    );
+  }
+  if (useForm && spec) {
+    return (
+      <NodeConfigForm
+        childItems={childItems}
+        componentName={componentName}
+        headerSlot={conditionSection}
+        // Re-key on the saved value so external changes (undo/redo, YAML lane) re-init the form.
+        key={JSON.stringify(component)}
+        onConfigChange={reportComponentDraft}
+        onCreateResource={onCreateResource}
+        onSelectChild={onSelectChild}
+        requireLabel={target.kind === 'resource'}
+        resourceLabels={resourceLabels}
+        spec={spec}
+        value={component}
+      />
+    );
+  }
+  // A fan-out container with no schema form (fallback / broker / output switch): show its members as
+  // a clickable list rather than raw YAML, so the branching reads as nodes.
+  if (childItems && childItems.length > 0 && onSelectChild) {
+    const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
+    return (
+      <>
+        {conditionSection}
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <ChildItemsList items={childItems} label={listLabel} onSelect={onSelectChild} />
+        </div>
+      </>
+    );
+  }
+  return (
+    <>
+      {conditionSection}
+      <RawComponentEditor component={component} key={JSON.stringify(component)} onConfigChange={reportComponentDraft} />
+    </>
+  );
+};
 
 // Secondary node actions (View in YAML, Delete) in a 3-dot menu, keeping the
 // destructive Delete out of the way of the header's primary controls.

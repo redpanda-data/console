@@ -929,8 +929,7 @@ export function computeGraphLayout(
         ...(ge.slot ? { slotPayload: ge.slot } : {}),
         ...(ge.selectId && ge.selectTarget ? { selectId: ge.selectId, selectTarget: ge.selectTarget } : {}),
         // Condition labels ride the MIDPOINT of the (roomy) rank gap so they sit in clear space
-        // between the split and the target card — not poking into the card (was ≈0.72, which
-        // overlapped the card's left edge once the gap widened) nor piling up at the split.
+        // between the split and the target card — not poking into the card nor piling up at the split.
         ...((ge.type === 'conditional' || ge.type === 'error') && ge.label ? { labelT: 0.5 } : {}),
       },
     });

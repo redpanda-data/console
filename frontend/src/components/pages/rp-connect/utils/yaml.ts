@@ -1,5 +1,6 @@
 import { ConnectError } from '@connectrpc/connect';
 import { toast } from 'sonner';
+import { escapeRegExp } from 'utils/regex';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import {
   Document,
@@ -58,9 +59,11 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
   }
 
   if (outputKey === 'switch' && value && typeof value === 'object' && !Array.isArray(value) && 'cases' in value) {
-    const cases = (value as { cases?: { output?: unknown }[] }).cases;
+    const cases = (value as { cases?: unknown[] }).cases;
     if (Array.isArray(cases)) {
-      return cases.map((c) => firstKey(c.output)).filter((k): k is string => !!k);
+      return cases
+        .map((c) => (c && typeof c === 'object' ? firstKey((c as { output?: unknown }).output) : undefined))
+        .filter((k): k is string => !!k);
     }
   }
 
@@ -589,6 +592,9 @@ function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] 
   return;
 }
 
+// The two pipeline sections a Redpanda connector can be patched into.
+type RedpandaSection = 'input' | 'output';
+
 // Strip commented-out placeholder lines for just-patched keys, so the user doesn't see
 // both the `# topics: Required ...` comment and the real value.
 function stripCommentedKeys(yaml: string, keys: string[], section: string, componentName: string): string {
@@ -597,7 +603,7 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   }
 
   const lines = yaml.split('\n');
-  const keyPattern = keys.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const keyPattern = keys.map(escapeRegExp).join('|');
   const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
 
   // Find the section start (e.g. `input:`)
@@ -606,7 +612,7 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   if (sectionStart === -1) return yaml;
 
   // Find the component within the section (e.g. `  kafka_franz:`)
-  const componentRegex = new RegExp(`^  ${componentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:`);
+  const componentRegex = new RegExp(`^  ${escapeRegExp(componentName)}:`);
   let componentStart = -1;
   for (let i = sectionStart + 1; i < lines.length; i++) {
     if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) break; // left section
@@ -641,7 +647,7 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
 
 export function patchRedpandaConfig(
   existingYaml: string,
-  section: 'input' | 'output',
+  section: RedpandaSection,
   componentName: string,
   patch: RedpandaPatch
 ): string | undefined {
@@ -690,7 +696,7 @@ export function patchRedpandaConfig(
 /** Build a RedpandaPatch and apply it to existing YAML. */
 export function tryPatchRedpandaYaml(
   yamlContent: string,
-  section: 'input' | 'output',
+  section: RedpandaSection,
   componentName: string,
   result: RedpandaSetupResultLike
 ): string | undefined {
@@ -714,7 +720,7 @@ export function tryPatchRedpandaYaml(
  */
 export function extractConnectorTopics(
   yamlContent: string,
-  section: 'input' | 'output',
+  section: RedpandaSection,
   componentName: string
 ): { topics: string[] | undefined; parseError: boolean } {
   if (!yamlContent.trim()) {

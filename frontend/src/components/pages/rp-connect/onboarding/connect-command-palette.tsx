@@ -18,6 +18,7 @@ import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
+import { pluralizeWithNumber } from 'utils/string';
 
 import {
   asciidocToMarkdown,
@@ -419,9 +420,7 @@ export const ConnectCommandPalette = ({
         <CommandInput onValueChange={setQuery} placeholder={searchPlaceholder ?? 'Search components…'} value={query} />
         {q ? (
           <div className="flex h-10 shrink-0 items-center border-b px-3">
-            <Text className="text-muted-foreground text-xs">
-              {results.length} result{results.length === 1 ? '' : 's'}
-            </Text>
+            <Text className="text-muted-foreground text-xs">{pluralizeWithNumber(results.length, 'result')}</Text>
           </div>
         ) : (
           <div className="min-w-0 shrink-0">

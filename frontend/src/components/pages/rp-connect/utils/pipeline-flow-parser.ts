@@ -292,22 +292,26 @@ function outputContainerMembers(
     }));
   }
   if (key === 'switch') {
-    const cases = (value as { cases?: Record<string, unknown>[] } | undefined)?.cases;
+    const cases = (value as { cases?: unknown[] } | undefined)?.cases;
     if (!Array.isArray(cases)) {
       return [];
     }
-    return cases.map((c, i) => {
-      const check = c.check;
-      const hasCheck = typeof check === 'string' && check !== '';
-      return {
-        obj: c.output,
+    // Keep the raw index for the edit path, but skip null/scalar case entries (trivially produced by
+    // hand-editing) rather than dereferencing them and crashing the whole parse — mirrors parseSwitchCases.
+    const members: OutputMemberSpec[] = [];
+    for (const [i, c] of cases.entries()) {
+      if (!c || typeof c !== 'object') {
+        continue;
+      }
+      const caseRecord = c as Record<string, unknown>;
+      members.push({
+        obj: caseRecord.output,
         path: [...path, key, 'cases', i, 'output'],
-        condition: hasCheck ? (check as string) : undefined,
-        isDefault: hasCheck ? undefined : true,
-        isErrorPath: isErroredCheck(check) ? true : undefined,
+        ...caseRouting(caseRecord.check),
         caseEditTarget: { kind: 'switchCase', path: [...path, key, 'cases', i] },
-      };
-    });
+      });
+    }
+    return members;
   }
   if (key === 'broker') {
     const outputs = (value as { outputs?: unknown[] } | undefined)?.outputs;
@@ -498,6 +502,17 @@ function isErroredCheck(check: unknown): boolean {
   return typeof check === 'string' && ERRORED_CHECK_RE.test(check);
 }
 
+// Routing that a switch/case entry's `check` selects: a non-empty check is the branch condition,
+// its absence marks the default (else) case, and an `errored()` check is the error path.
+function caseRouting(check: unknown): Pick<PipelineFlowNode, 'condition' | 'isDefault' | 'isErrorPath'> {
+  const hasCheck = typeof check === 'string' && check !== '';
+  return {
+    condition: hasCheck ? (check as string) : undefined,
+    isDefault: hasCheck ? undefined : true,
+    isErrorPath: isErroredCheck(check) ? true : undefined,
+  };
+}
+
 function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): PipelineFlowNode {
   const meta = summarizeComponent(name, componentValue);
   const topics = extractTopics(componentValue);
@@ -553,8 +568,6 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
     // as an empty case with its condition and an add slot — never silently vanishes.
     const caseProcs = extractProcessorEntries(caseRecord.processors) ?? [];
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
-    const check = caseRecord.check;
-    const hasCheck = typeof check === 'string' && check !== '';
     const caseLabel = `case ${caseNum}`;
     nodes.push({
       id: caseId,
@@ -564,9 +577,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       parentId: ctx.idPrefix,
       collapsible: true,
       childFlow: 'sequential',
-      condition: hasCheck ? (check as string) : undefined,
-      isDefault: hasCheck ? undefined : true,
-      isErrorPath: isErroredCheck(check) ? true : undefined,
+      ...caseRouting(caseRecord.check),
       isCase: true,
       // The case object is editable for its `check` condition; its processors are their own
       // nodes. Selecting the case opens the condition editor.

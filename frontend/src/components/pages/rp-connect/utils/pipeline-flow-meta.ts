@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { pluralizeWithNumber } from 'utils/string';
+
 // A metadata line shown on an expanded pipeline node card.
 export type NodeMetaEntry = { label: string; value: string };
 
@@ -224,7 +226,7 @@ function pushField(meta: NodeMetaEntry[], config: Record<string, unknown>, key: 
   } else if (Array.isArray(value) && value.length > 0) {
     const display = value.every((item) => isScalar(item))
       ? truncate(value.join(', '))
-      : `${value.length} item${value.length === 1 ? '' : 's'}`;
+      : pluralizeWithNumber(value.length, 'item');
     meta.push({ label, value: display });
   }
 }
