@@ -18,7 +18,7 @@ import {
   parsePipelineFlowTree,
 } from '../utils/pipeline-flow-parser';
 
-export type ResilientParse = { nodes: PipelineFlowNode[]; error?: string; showingStale: boolean };
+type ResilientParse = { nodes: PipelineFlowNode[]; error?: string; showingStale: boolean };
 
 /**
  * Hold the last REAL pipeline while an edit leaves the YAML unparseable, or valid but no longer a

@@ -10,13 +10,11 @@
  */
 
 import { Text } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
-import { ChevronDown, MousePointerClick } from 'lucide-react';
-import { useState } from 'react';
+import { MousePointerClick } from 'lucide-react';
 
-import { useChipDismissal } from './pipeline-problems-panel';
+import { FloatingChipPanel } from './floating-chip-panel';
 
-export type UnsavedNode = { id: string; label: string; detail?: string };
+type UnsavedNode = { id: string; label: string; detail?: string };
 
 type PipelineUnsavedPanelProps = {
   nodes: UnsavedNode[];
@@ -29,56 +27,43 @@ type PipelineUnsavedPanelProps = {
  * list of the nodes whose config differs from the last-saved pipeline; clicking one jumps to it.
  */
 export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useChipDismissal(open, setOpen);
-
   if (nodes.length === 0) {
     return null;
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5" ref={containerRef}>
-      <button
-        aria-expanded={open}
-        className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background/90 px-2.5 py-1.5 font-medium text-muted-foreground text-xs shadow-sm backdrop-blur-sm transition-colors hover:bg-muted/50"
-        data-testid="pipeline-unsaved-chip"
-        onClick={() => setOpen((o) => !o)}
-        type="button"
-      >
-        <span aria-hidden className="size-2 rounded-full bg-warning" />
-        {nodes.length === 1 ? '1 unsaved' : `${nodes.length} unsaved`}
-        <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
-      </button>
-
-      {open ? (
-        <div
-          className="flex max-h-72 w-72 flex-col overflow-y-auto rounded-md border border-border bg-background/95 p-1 shadow-md backdrop-blur-sm"
-          data-testid="pipeline-unsaved-list"
-        >
-          {nodes.map((node) => (
-            <button
-              className="group flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
-              key={node.id}
-              onClick={() => {
-                onSelect(node.id);
-                setOpen(false);
-              }}
-              type="button"
-            >
-              <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
-              <Text as="span" className="min-w-0 truncate text-foreground text-xs" variant="bodySmall">
-                {node.label}
-              </Text>
-              {node.detail ? (
-                <span className="min-w-0 max-w-[45%] shrink truncate text-muted-foreground text-xs" title={node.detail}>
-                  {node.detail}
-                </span>
-              ) : null}
-              <MousePointerClick className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    <FloatingChipPanel
+      chipClassName="border-border text-muted-foreground hover:bg-muted/50"
+      chipTestId="pipeline-unsaved-chip"
+      label={nodes.length === 1 ? '1 unsaved' : `${nodes.length} unsaved`}
+      leading={<span aria-hidden className="size-2 rounded-full bg-warning" />}
+      listClassName="w-72"
+      listTestId="pipeline-unsaved-list"
+    >
+      {(close) =>
+        nodes.map((node) => (
+          <button
+            className="group flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
+            key={node.id}
+            onClick={() => {
+              onSelect(node.id);
+              close();
+            }}
+            type="button"
+          >
+            <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
+            <Text as="span" className="min-w-0 truncate text-foreground text-xs" variant="bodySmall">
+              {node.label}
+            </Text>
+            {node.detail ? (
+              <span className="min-w-0 max-w-[45%] shrink truncate text-muted-foreground text-xs" title={node.detail}>
+                {node.detail}
+              </span>
+            ) : null}
+            <MousePointerClick className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          </button>
+        ))
+      }
+    </FloatingChipPanel>
   );
 }

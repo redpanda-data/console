@@ -429,7 +429,7 @@ const UnsavedDot = ({ show }: { show?: boolean }) =>
     </span>
   ) : null;
 
-// The component's `label:` — shown on every node (leaf, container, sidebar) when set.
+// The component's `label:` — shown on every node (leaf, container) when set.
 const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
   label ? (
     <Badge className={cn('min-w-0 max-w-full shrink-0', className)} size="sm" title={label} variant="info-inverted">

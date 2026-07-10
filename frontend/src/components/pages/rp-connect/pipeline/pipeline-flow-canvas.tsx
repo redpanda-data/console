@@ -931,8 +931,6 @@ type CanvasCallbacks = {
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
-  /** Select a node + edit target (used to open the switch-case editor from a chip click). */
-  onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
@@ -1128,8 +1126,7 @@ export function selectionTargetForNode(
 ): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
   let current: Node | undefined = node;
   while (current && !(current.data as FlowCardData).editTarget) {
-    // The block layout positions nodes absolutely (no RF parentId), so walk the logical owner in
-    // data; the compact lane still nests via parentId.
+    // Nodes are positioned absolutely (no RF parentId), so walk the logical owner in `data.ownerId`.
     const ownerId: string | undefined = current.parentId ?? (current.data as FlowCardData).ownerId;
     current = ownerId ? nodes.find((n) => n.id === ownerId) : undefined;
   }
@@ -1305,7 +1302,6 @@ export function PipelineFlowCanvas({
       onAddTopic,
       onAddSasl,
       onSlotInsert,
-      onSelectNode,
       collapsedIds,
       toggleCollapse,
       selectedNodeId,
@@ -1335,7 +1331,6 @@ export function PipelineFlowCanvas({
     onAddTopic,
     onAddSasl,
     onSlotInsert,
-    onSelectNode,
     scopeOf,
   ]);
 
@@ -1378,8 +1373,7 @@ export function PipelineFlowCanvas({
   }
 
   return (
-    // Compact lane: canvas is exactly as tall as its content and top-anchored, so it never re-centers
-    // as the lane resizes.
+    // Full-height wrapper so the canvas fills the panel.
     <div className="relative w-full" ref={wrapperRef} style={{ height: '100%' }}>
       <StaleParseBanner show={showingStale} />
       <ReactFlowProvider>

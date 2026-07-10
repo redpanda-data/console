@@ -747,59 +747,6 @@ export function extractConnectorTopics(
   return { topics: undefined, parseError: false };
 }
 
-/** Check whether a component already has an entry under [section][componentName] in the YAML. */
-function componentExistsInYaml(yamlContent: string, section: string, componentName: string): boolean {
-  if (!yamlContent.trim()) {
-    return false;
-  }
-  try {
-    const doc = parseDocument(yamlContent);
-    return doc.getIn([section, componentName]) != null;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Apply Redpanda setup result to YAML.
- * - Component already present: surgically patch only topic / SASL, touching nothing else.
- * - New component: generate a full template via getConnectTemplate, then patch topic/user onto it.
- */
-export function applyRedpandaSetup({
-  yamlContent,
-  connectionName,
-  connectionType,
-  result,
-  components,
-}: {
-  yamlContent: string;
-  connectionName: string;
-  connectionType: 'input' | 'output';
-  result: RedpandaSetupResultLike;
-  components: ConnectComponentSpec[];
-}): string | undefined {
-  // Surgical patch only if the component already exists (hint buttons); new components fall through.
-  if (componentExistsInYaml(yamlContent, connectionType, connectionName)) {
-    const patched = tryPatchRedpandaYaml(yamlContent, connectionType, connectionName, result);
-    if (patched) {
-      return patched;
-    }
-  }
-
-  const base = getConnectTemplate({
-    connectionName,
-    connectionType,
-    components,
-    showAdvancedFields: false,
-    existingYaml: yamlContent,
-  });
-  if (!base) {
-    return;
-  }
-
-  return tryPatchRedpandaYaml(base, connectionType, connectionName, result) ?? base;
-}
-
 /** Extract all referenced topic names from input/output configs. */
 export function extractAllTopics(yamlContent: string): string[] {
   if (!yamlContent.trim()) {
@@ -1157,23 +1104,12 @@ export function createResourceAndReturnLabel(
   if (!resourceObject) {
     return null;
   }
-  try {
-    const doc = parseDocument(yaml);
-    const key = RESOURCE_KEY_BY_KIND[kind];
-    const base =
-      typeof resourceObject.label === 'string' && resourceObject.label !== '' ? resourceObject.label : connectionName;
-    const label = uniqueResourceLabel(listResourceLabels(yaml, kind), base);
-    resourceObject.label = label;
-    const seq = doc.getIn([key]);
-    if (isSeq(seq)) {
-      seq.items.push(doc.createNode(resourceObject));
-    } else {
-      doc.setIn([key], [resourceObject]);
-    }
-    return { yaml: doc.toString(YAML_STRINGIFY_OPTIONS), label };
-  } catch {
-    return null;
-  }
+  const base =
+    typeof resourceObject.label === 'string' && resourceObject.label !== '' ? resourceObject.label : connectionName;
+  const label = uniqueResourceLabel(listResourceLabels(yaml, kind), base);
+  resourceObject.label = label;
+  const nextYaml = appendResource(yaml, RESOURCE_KEY_BY_KIND[kind], resourceObject);
+  return nextYaml === null ? null : { yaml: nextYaml, label };
 }
 
 // The component name enclosing a visited pair: for `- cache: { resource: x }` the pair's

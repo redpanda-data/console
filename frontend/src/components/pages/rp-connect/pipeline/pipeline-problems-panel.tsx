@@ -11,45 +11,10 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
-import { AlertCircle, ChevronDown, KeyRound, MousePointerClick } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, KeyRound, MousePointerClick } from 'lucide-react';
 
+import { FloatingChipPanel } from './floating-chip-panel';
 import type { EditTarget } from '../utils/yaml';
-
-/**
- * Popover-style dismissal for a floating chip's expanded list: close on outside click or Escape.
- * Returns the ref to attach to the chip's container (also used by the unsaved chip).
- */
-export function useChipDismissal(open: boolean, setOpen: (open: boolean) => void) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.target instanceof Node && !containerRef.current?.contains(e.target)) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Claim the event: Escape dismisses only this topmost layer, not also the canvas
-        // selection (whose window-level handler checks defaultPrevented / stopped events).
-        e.preventDefault();
-        e.stopPropagation();
-        setOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open, setOpen]);
-  return containerRef;
-}
 
 export type PipelineProblem = {
   key: string;
@@ -172,9 +137,6 @@ export function PipelineProblemsPanel({
   missingSecrets = [],
   onAddSecrets,
 }: PipelineProblemsPanelProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useChipDismissal(open, setOpen);
-
   const hasLint = problems.length > 0;
   const hasSecrets = missingSecrets.length > 0;
   if (!(hasLint || hasSecrets)) {
@@ -188,27 +150,16 @@ export function PipelineProblemsPanel({
     : 'border-warning/50 text-warning hover:bg-warning-subtle';
 
   return (
-    <div className="flex flex-col items-end gap-1.5" ref={containerRef}>
-      <button
-        aria-expanded={open}
-        className={cn(
-          'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 font-medium text-xs shadow-sm backdrop-blur-sm transition-colors',
-          tone
-        )}
-        data-testid="pipeline-problems-chip"
-        onClick={() => setOpen((o) => !o)}
-        type="button"
-      >
-        <Icon className="size-3.5" />
-        {issuesLabel(problems.length, missingSecrets.length)}
-        <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
-      </button>
-
-      {open ? (
-        <div
-          className="flex max-h-72 w-80 flex-col overflow-y-auto rounded-md border border-border bg-background/95 p-1 shadow-md backdrop-blur-sm"
-          data-testid="pipeline-problems-list"
-        >
+    <FloatingChipPanel
+      chipClassName={tone}
+      chipTestId="pipeline-problems-chip"
+      label={issuesLabel(problems.length, missingSecrets.length)}
+      leading={<Icon className="size-3.5" />}
+      listClassName="w-80"
+      listTestId="pipeline-problems-list"
+    >
+      {(close) => (
+        <>
           {hasSecrets ? (
             <SecretsSection
               missingSecrets={missingSecrets}
@@ -216,7 +167,7 @@ export function PipelineProblemsPanel({
                 onAddSecrets
                   ? () => {
                       onAddSecrets();
-                      setOpen(false);
+                      close();
                     }
                   : undefined
               }
@@ -235,15 +186,15 @@ export function PipelineProblemsPanel({
                 problem.nodeId && problem.target
                   ? () => {
                       onSelectProblem(problem.nodeId as string, problem.target as EditTarget, problem.caseTarget);
-                      setOpen(false);
+                      close();
                     }
                   : undefined
               }
               problem={problem}
             />
           ))}
-        </div>
-      ) : null}
-    </div>
+        </>
+      )}
+    </FloatingChipPanel>
   );
 }

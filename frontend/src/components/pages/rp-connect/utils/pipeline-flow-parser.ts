@@ -1106,17 +1106,7 @@ export function shouldOfferTemplate(configYaml: string, nodes: PipelineFlowNode[
 // Post-parse pass deriving cross-node metadata the per-node parsers can't see in isolation:
 // which containers accept inserts, which resource refs dangle, and per-resource usage counts.
 function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
-  const childrenByParent = new Map<string, PipelineFlowNode[]>();
-  for (const node of nodes) {
-    if (node.parentId) {
-      const list = childrenByParent.get(node.parentId);
-      if (list) {
-        list.push(node);
-      } else {
-        childrenByParent.set(node.parentId, [node]);
-      }
-    }
-  }
+  const childrenByParent = buildChildrenMap(nodes);
 
   // Insert slots: a container whose children sit at numeric YAML-array indices can accept a
   // new child into that array. Derived from any one child's path; parse-site slots untouched.
@@ -1167,7 +1157,7 @@ function buildResourceRefResolver(resources: PipelineFlowNode[]): ResourceRefRes
       continue;
     }
     if (resource.resourceKey) {
-      byKeyAndLabel.set(`${resource.resourceKey} ${resource.labelText}`, resource);
+      byKeyAndLabel.set(`${resource.resourceKey}\u0000${resource.labelText}`, resource);
     }
     if (!byLabel.has(resource.labelText)) {
       byLabel.set(resource.labelText, resource);
@@ -1175,7 +1165,7 @@ function buildResourceRefResolver(resources: PipelineFlowNode[]): ResourceRefRes
   }
   return (node, label) => {
     const key = expectedResourceKey(node);
-    return key ? byKeyAndLabel.get(`${key} ${label}`) : byLabel.get(label);
+    return key ? byKeyAndLabel.get(`${key}\u0000${label}`) : byLabel.get(label);
   };
 }
 
