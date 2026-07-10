@@ -548,7 +548,7 @@ const SCOPE_REGION_PAD = 6;
 const SCOPE_REGION_TOP_PAD = 6;
 const SCOPE_REGION_NEST_STEP = 4;
 
-// Red for an error/dead-letter path (catch), else the role accent.
+// The accent for a construct node; error/dead-letter paths (catch) get a distinct tone.
 function constructAccent(node?: Node): string {
   const d = node?.data as FlowCardData | undefined;
   if (d?.isErrorPath) {
@@ -1377,7 +1377,6 @@ export function PipelineFlowCanvas({
   }
 
   return (
-    // Full-height wrapper so the canvas fills the panel.
     <div className="relative w-full" ref={wrapperRef} style={{ height: '100%' }}>
       <StaleParseBanner show={showingStale} />
       <ReactFlowProvider>

@@ -61,12 +61,11 @@ export type PipelineFlowNode = {
   condition?: string;
   // Catch-all / else branch (a switch case with no `check`).
   isDefault?: boolean;
-  // Error / dead-letter path (catch handler, `errored()` route, fallback). Drawn red/dashed.
+  // Error / dead-letter path (catch handler, `errored()` route, fallback).
   isErrorPath?: boolean;
   // A `branch` processor: request_map copy-out / result_map merge-back. Rendered inline as a marker.
   branch?: { request: boolean; result: boolean };
-  // Label of a resource this component references (cache/rate_limit `resource`); draws a
-  // dashed reference edge to the matching resource node.
+  // Label of a resource this component references (cache/rate_limit `resource`).
   resourceRef?: string;
   // String values that MIGHT be resource labels (non-`resource` fields). The post-pass promotes
   // whichever matches a real resource label to `resourceRef`.

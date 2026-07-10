@@ -60,8 +60,7 @@ type FlowDims = {
 };
 const FULL_DIMS: FlowDims = {
   cardW: FLOW_CARD_WIDTH,
-  // Tinted header band (kind label + logo/name + divider). Measured to match ComponentCard
-  // so stacked siblings don't overlap.
+  // Measured to match ComponentCard so stacked siblings don't overlap.
   leafBaseH: 68,
   metaRowH: 22,
   headerH: 48,
@@ -472,8 +471,8 @@ function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], c
   return { entry: head, exit: head };
 }
 
-// A try immediately followed by a catch: success path = try body, error path = catch body
-// (red), both converging at a merge — the canonical dead-letter pattern.
+// A try immediately followed by a catch: success path = try body, error path = catch body,
+// both converging at a merge — the canonical dead-letter pattern.
 function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
   const tryHead = addGraphSplit(ctx, tryNode);
   const tryBody = emitSequence(ctx.childrenOf(tryNode.id), ctx);
@@ -942,7 +941,6 @@ export function computeGraphLayout(
     maxY = FULL_DIMS.leafBaseH;
   }
 
-  // Editing affordances (ghost branches / inserts) then the resource dependency lane.
   const inserts = placeGraphInserts(ctx, rfNodes, centerById);
   maxX = Math.max(maxX, inserts.maxX);
   maxY = Math.max(maxY, inserts.maxY);

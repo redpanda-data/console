@@ -83,8 +83,6 @@ const childItemCondColor = (item: InspectorChildItem): string => {
   return 'text-warning';
 };
 
-// One clickable child row (routing condition, component name, lint count, chevron). Selecting it
-// navigates the inspector to that node.
 const ChildItemRow = ({
   item,
   onSelect,
@@ -688,7 +686,6 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   return null;
 };
 
-// Render a list of fields, required ones first, then optional, then advanced.
 const SchemaFields = ({
   fields,
   path,

@@ -12,6 +12,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, KeyRound, MousePointerClick } from 'lucide-react';
+import { pluralizeWithNumber } from 'utils/string';
 
 import { FloatingChipPanel } from './floating-chip-panel';
 import type { EditTarget } from '../utils/yaml';
@@ -82,7 +83,6 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
   );
 };
 
-// Missing-secrets block: header with the "Add secrets" action, one row per missing secret.
 const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: string[]; onAddSecrets?: () => void }) => (
   <div data-testid="pipeline-problems-secrets">
     <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
@@ -119,12 +119,12 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
 // The chip's wording: specific when there's only one kind of issue, "issues" for a mix.
 function issuesLabel(problemCount: number, secretCount: number): string {
   if (secretCount === 0) {
-    return problemCount === 1 ? '1 problem' : `${problemCount} problems`;
+    return pluralizeWithNumber(problemCount, 'problem');
   }
   if (problemCount > 0) {
-    return `${problemCount + secretCount} issues`;
+    return pluralizeWithNumber(problemCount + secretCount, 'issue');
   }
-  return secretCount === 1 ? '1 missing secret' : `${secretCount} missing secrets`;
+  return pluralizeWithNumber(secretCount, 'missing secret');
 }
 
 /**
@@ -143,7 +143,6 @@ export function PipelineProblemsPanel({
     return null;
   }
 
-  // Lint errors are red; a secrets-only state is an (amber) warning.
   const Icon = hasLint ? AlertCircle : KeyRound;
   const tone = hasLint
     ? 'border-destructive/40 text-destructive hover:bg-destructive/5'

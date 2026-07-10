@@ -143,8 +143,8 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   );
 };
 
-// Routing conditions reuse the `warning` accent — distinct from section accents and the red error
-// tone, so routing logic is easy to scan. Error routes keep red; a `default` catch-all is muted.
+// Routing conditions reuse the `warning` accent, distinct from section accents, so routing logic is
+// easy to scan.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
   condition: 'border-warning/30 bg-warning/10 text-warning',
   muted: 'border-warning/20 bg-warning/5 text-warning/80',
@@ -409,7 +409,7 @@ const FlashPulse = ({ token }: { token?: number }) => (
   />
 );
 
-// A small red chip with the count of lint problems on a node; messages are the native tooltip.
+// Lint-problem count on a node; the messages are the native tooltip.
 const LintBadge = ({ errors }: { errors?: string[] }) =>
   errors && errors.length > 0 ? (
     <span
@@ -847,8 +847,8 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
   return `${d} L ${last.x} ${last.y}`;
 }
 
-// Stroke colour under selection context: emphasized wins (except on error edges, whose red stays),
-// then the faint tier, then the tone's own colour.
+// Stroke colour under selection: an emphasized edge wins — except error edges, which keep their own
+// tone.
 function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
   if (d?.emphasized && tone !== 'error') {
     return HIGHLIGHT_STROKE;
@@ -871,8 +871,7 @@ function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
   return d?.faint ? 0.6 : 1;
 }
 
-// Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. Styled by
-// type: solid primary for flow, red dashed for error, dashed for copy/merge and resource refs. No
+// Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. No
 // arrowheads — the left-to-right layout already reads as direction.
 function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
