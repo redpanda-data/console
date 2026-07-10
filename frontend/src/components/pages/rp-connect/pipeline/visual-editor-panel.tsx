@@ -30,13 +30,13 @@ import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
-import { isMacOS } from 'utils/platform';
+import { formatShortcut, modKey, shiftKey } from 'utils/shortcuts';
 
 import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector, type PendingNodeCommit } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
-import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
+import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 import { TemplateGalleryCta } from './template-cta';
@@ -45,12 +45,8 @@ import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { changedNodeIds } from '../utils/pipeline-diff';
-import {
-  type FlowInsertPayload,
-  type PipelineFlowNode,
-  parsePipelineFlowTree,
-  shouldOfferTemplate,
-} from '../utils/pipeline-flow-parser';
+import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
+import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
   appendResource,
@@ -272,9 +268,8 @@ function buildInsertedYaml({
 }
 
 // Undo/redo tooltip shortcuts, per platform (⌘ on macOS, Ctrl elsewhere).
-const MAC = isMacOS();
-const UNDO_SHORTCUT = MAC ? '⌘Z' : 'Ctrl+Z';
-const REDO_SHORTCUT = MAC ? '⌘⇧Z' : 'Ctrl+Shift+Z';
+const UNDO_SHORTCUT = formatShortcut(modKey(), 'Z');
+const REDO_SHORTCUT = formatShortcut(modKey(), shiftKey(), 'Z');
 
 const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
   <span className="flex items-center gap-2">
@@ -995,10 +990,10 @@ export function VisualEditorPanel({
                 {pendingDeleteName ? (
                   <>
                     This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You
-                    can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.
+                    can undo it with {UNDO_SHORTCUT}.
                   </>
                 ) : (
-                  <>This removes the node from the pipeline. You can undo it with {MAC ? '⌘Z' : 'Ctrl+Z'}.</>
+                  <>This removes the node from the pipeline. You can undo it with {UNDO_SHORTCUT}.</>
                 )}
               </AlertDialogDescription>
               {pendingDeleteRefCount > 0 ? (

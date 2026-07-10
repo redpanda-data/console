@@ -38,8 +38,8 @@ import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';

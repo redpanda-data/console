@@ -9,9 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { parseDocument } from 'yaml';
-
-import { parsePipelineFlowTree } from './pipeline-flow-parser';
+import { parseEditableNodes } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
 type NodeSignatures = {
@@ -28,8 +26,7 @@ function nodeConfigSignatures(yaml: string): NodeSignatures {
     return { signatures, parentOf };
   }
   try {
-    const doc = parseDocument(yaml);
-    const { nodes } = parsePipelineFlowTree(yaml);
+    const { doc, nodes } = parseEditableNodes(yaml);
     for (const node of nodes) {
       parentOf.set(node.id, node.parentId);
       if (!node.editTarget) {

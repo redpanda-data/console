@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { getConnectorDocsUrl } from './pipeline-flow-nodes';
+import { getConnectorDocsUrl } from './connector-docs';
 
 describe('getConnectorDocsUrl', () => {
   it('builds correct URL for input connectors', () => {

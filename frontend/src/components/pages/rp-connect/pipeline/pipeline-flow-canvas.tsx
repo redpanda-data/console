@@ -38,9 +38,9 @@ import {
 import { InvalidConfigNotice } from './invalid-config-notice';
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
 import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-canvas-nodes';
-import { PipelineFlowSkeleton } from './pipeline-flow-nodes';
+import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
 import { useResilientParse } from './use-resilient-parse';
-import { computeGraphLayout, type FlowInsertPayload } from '../utils/pipeline-flow-parser';
+import { computeGraphLayout, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;

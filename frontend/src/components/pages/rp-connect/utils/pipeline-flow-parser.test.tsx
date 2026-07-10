@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { computeGraphLayout } from './pipeline-flow-layout';
 import { summarizeComponent } from './pipeline-flow-meta';
-import {
-  computeGraphLayout,
-  isConfigTextEmpty,
-  mainFlowSequence,
-  parsePipelineFlowTree,
-  shouldOfferTemplate,
-} from './pipeline-flow-parser';
+import { isConfigTextEmpty, mainFlowSequence, parsePipelineFlowTree, shouldOfferTemplate } from './pipeline-flow-parser';
 
 describe('parsePipelineFlowTree', () => {
   it('returns placeholder input/output sections with placeholder leaves for empty string', () => {

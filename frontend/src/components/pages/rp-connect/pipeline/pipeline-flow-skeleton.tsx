@@ -13,18 +13,6 @@ import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/compo
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { cn } from 'components/redpanda-ui/lib/utils';
 
-const DOCS_BASE = 'https://docs.redpanda.com/redpanda-cloud/develop/connect/components';
-// Sections whose docs path is the naive plural (`${section}s`). Excludes metrics/tracer, whose
-// upstream paths ("metrics", "tracers") don't follow that rule.
-const DOCS_SECTIONS = new Set(['input', 'output', 'processor', 'cache', 'rate_limit']);
-
-export function getConnectorDocsUrl(section: string, connectorName: string): string | undefined {
-  if (!DOCS_SECTIONS.has(section)) {
-    return;
-  }
-  return `${DOCS_BASE}/${section}s/${connectorName}/`;
-}
-
 const SKELETON_SECTIONS = [
   { label: 'INPUT', leaves: 1 },
   { label: 'PROCESSORS', leaves: 2 },

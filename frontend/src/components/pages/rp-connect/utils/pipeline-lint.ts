@@ -13,7 +13,7 @@ import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild
 import { create } from '@bufbuild/protobuf';
 import { LineCounter, parseDocument } from 'yaml';
 
-import { parsePipelineFlowTree } from './pipeline-flow-parser';
+import { parseEditableNodes } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
 type NodeRange = { id: string; start: number; end: number; span: number };
@@ -21,8 +21,7 @@ type NodeRange = { id: string; start: number; end: number; span: number };
 // Each editable node's [startLine, endLine] in the YAML. Lines are 1-based to match LintHint.line.
 export function nodeLineRanges(yaml: string): NodeRange[] {
   const lineCounter = new LineCounter();
-  const doc = parseDocument(yaml, { lineCounter });
-  const { nodes } = parsePipelineFlowTree(yaml);
+  const { doc, nodes } = parseEditableNodes(yaml, lineCounter);
   const ranges: NodeRange[] = [];
   const pushRange = (id: string, path: (string | number)[]) => {
     const yamlNode = doc.getIn(path, true) as { range?: [number, number, number] } | undefined;

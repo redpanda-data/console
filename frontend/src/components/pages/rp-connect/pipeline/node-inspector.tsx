@@ -44,7 +44,7 @@ import { toast } from 'sonner';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ChildItemsList, type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
-import { getConnectorDocsUrl } from './pipeline-flow-nodes';
+import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import {
@@ -522,6 +522,33 @@ function useCaseCheckDraft(
   return { check, setCheck, dirty };
 }
 
+const CASE_CHECK_PLACEHOLDER = 'e.g. this.region == "us"';
+
+// The mono `check` text field shared by the switch-case editor and the inline case-condition section.
+const CaseCheckInput = ({
+  id,
+  check,
+  setCheck,
+  readOnly,
+  invalid,
+}: {
+  id: string;
+  check: string;
+  setCheck: (value: string) => void;
+  readOnly?: boolean;
+  invalid?: boolean;
+}) => (
+  <Input
+    aria-invalid={invalid ? true : undefined}
+    className="w-full font-mono"
+    disabled={readOnly}
+    id={id}
+    onChange={(e) => setCheck(e.target.value)}
+    placeholder={CASE_CHECK_PLACEHOLDER}
+    value={check}
+  />
+);
+
 // Edits a switch case's routing condition (`check`); empty makes it the default/else case. The
 // case's body is separate canvas nodes — this rail only owns the condition.
 const SwitchCaseEditor = ({
@@ -575,14 +602,7 @@ const SwitchCaseEditor = ({
         <Label className="font-medium text-sm" htmlFor={inputId}>
           Condition (check)
         </Label>
-        <Input
-          className="font-mono"
-          disabled={readOnly}
-          id={inputId}
-          onChange={(e) => setCheck(e.target.value)}
-          placeholder='e.g. this.region == "us"'
-          value={check}
-        />
+        <CaseCheckInput check={check} id={inputId} readOnly={readOnly} setCheck={setCheck} />
         <Text className="text-muted-foreground" variant="bodySmall">
           A Bloblang expression. Messages route to this case when it's true. Leave empty for the default (else) case.
         </Text>
@@ -634,15 +654,7 @@ const CaseConditionSection = ({
           </Tooltip>
         </TooltipProvider>
       </div>
-      <Input
-        aria-invalid={error ? true : undefined}
-        className="w-full font-mono"
-        disabled={readOnly}
-        id={inputId}
-        onChange={(e) => setCheck(e.target.value)}
-        placeholder='e.g. this.region == "us"'
-        value={check}
-      />
+      <CaseCheckInput check={check} id={inputId} invalid={Boolean(error)} readOnly={readOnly} setCheck={setCheck} />
       {/* The field's own error, shown where it's fixed. Hidden once editing starts — they're addressing it. */}
       {error && !dirty ? (
         <Text className="flex items-center gap-1 pt-1.5 text-destructive" variant="bodySmall">
