@@ -380,7 +380,9 @@ export function PipelineStructureTree({
     // the visible headers, "empty" notes and Add buttons live between the trees, not inside
     // one (a tree may own only treeitem/group children). Arrow keys still walk across sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
-      {notice ? <InvalidConfigNotice className="mx-2 px-2.5 py-2 text-xs">{notice}</InvalidConfigNotice> : null}
+      {/* Only a left margin: the container's `pr-2` supplies the matching right gap, so the banner
+          sits symmetrically instead of leaving extra room on the right. */}
+      {notice ? <InvalidConfigNotice className="ml-2 px-2.5 py-2 text-xs">{notice}</InvalidConfigNotice> : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
         return (

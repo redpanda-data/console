@@ -54,12 +54,14 @@ import {
   countResourceReferences,
   createResourceAndReturnLabel,
   type EditTarget,
+  editTargetsEqual,
   firstKey,
   getComponentAt,
   insertComponentAt,
   type ResourceArrayKey,
   type ResourceKind,
   removeComponentAt,
+  resourceArrayKey,
   resourceTargetKind,
   seqLengthAt,
   setComponentAt,
@@ -165,24 +167,6 @@ function buildChildItems(
 // The next YAML plus the edit target of the node that was just added, so the caller can select it.
 type InsertResult = { yaml: string; selectTarget?: EditTarget };
 
-// Structural equality of two edit targets — to find the parsed node for a just-inserted target.
-// Path/switchCase targets are identified by their YAML path; the rest by their discriminant fields.
-function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): boolean {
-  if (a?.kind !== b.kind) {
-    return false;
-  }
-  if (a.kind === 'processor' && b.kind === 'processor') {
-    return a.index === b.index;
-  }
-  if (a.kind === 'resource' && b.kind === 'resource') {
-    return a.resourceKey === b.resourceKey && a.index === b.index;
-  }
-  if ((a.kind === 'path' || a.kind === 'switchCase') && (b.kind === 'path' || b.kind === 'switchCase')) {
-    return JSON.stringify(a.path) === JSON.stringify(b.path);
-  }
-  return true; // input / output — singletons, kind match is enough
-}
-
 // Resolve the chosen connector + target to the next YAML (null if it couldn't be generated).
 // Caches/rate limits append to their top-level resource arrays (referenced, not nested); every
 // other component splices into the target container array.
@@ -236,7 +220,7 @@ function buildInsertedYaml({
   }
   if (connectionType === 'cache' || connectionType === 'rate_limit') {
     const resource = buildInsertableComponent(connectionName, connectionType, components);
-    const resourceKey: ResourceArrayKey = connectionType === 'cache' ? 'cache_resources' : 'rate_limit_resources';
+    const resourceKey: ResourceArrayKey = resourceArrayKey(connectionType);
     if (!resource) {
       return null;
     }

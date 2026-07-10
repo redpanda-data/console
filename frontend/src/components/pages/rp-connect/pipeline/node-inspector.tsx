@@ -57,8 +57,11 @@ import {
   getComponentAt,
   listResourceLabels,
   renameResourceReferences,
+  resourceArrayKey,
+  resourceKindForComponentName,
   resourceTargetKind,
   setComponentAt,
+  targetComponentType,
 } from '../utils/yaml';
 
 // Default impl for the dangling-reference quick-fix, which must reuse the exact missing label.
@@ -74,24 +77,6 @@ const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
   metrics: 'Metrics',
   tracer: 'Tracer',
 };
-
-function targetComponentType(target: EditTarget): ConnectComponentType {
-  switch (target.kind) {
-    case 'input':
-      return 'input';
-    case 'output':
-      return 'output';
-    case 'processor':
-      return 'processor';
-    case 'path':
-      return target.componentType;
-    case 'switchCase':
-      // Never used for rendering (the inspector special-cases switchCase first).
-      return 'processor';
-    default:
-      return target.resourceKey === 'cache_resources' ? 'cache' : 'rate_limit';
-  }
-}
 
 type NodeInspectorProps = {
   target: EditTarget | null;
@@ -297,8 +282,7 @@ export function NodeInspector({
 
   // A `resource:` reference whose label has no matching resource — a fixable warning (it would
   // otherwise fail only at deploy).
-  const refKind: ResourceKind | undefined =
-    componentName === 'cache' ? 'cache' : componentName === 'rate_limit' ? 'rate_limit' : undefined;
+  const refKind = resourceKindForComponentName(componentName);
   const innerConfig = component[componentName];
   const refValue =
     innerConfig && typeof innerConfig === 'object' && !Array.isArray(innerConfig)
@@ -319,8 +303,7 @@ export function NodeInspector({
       return;
     }
     obj.label = danglingRef.ref;
-    const key = danglingRef.kind === 'cache' ? 'cache_resources' : 'rate_limit_resources';
-    onApply(appendResource(yaml, key, obj) ?? yaml);
+    onApply(appendResource(yaml, resourceArrayKey(danglingRef.kind), obj) ?? yaml);
   };
 
   return (

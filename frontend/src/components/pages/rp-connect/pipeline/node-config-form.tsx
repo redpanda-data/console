@@ -43,6 +43,7 @@ import {
   isScalarField,
 } from '../utils/schema';
 import type { EditTarget, ResourceKind } from '../utils/yaml';
+import { resourceKindForComponentName } from '../utils/yaml';
 
 // Re-exported for node-inspector, which imports ResourceKind from here.
 export type { ResourceKind } from '../utils/yaml';
@@ -835,8 +836,7 @@ export function NodeConfigForm({
   const resourceCtx: ResourceFieldContextValue = {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
     onCreateResource,
-    componentResourceKind:
-      componentName === 'cache' ? 'cache' : componentName === 'rate_limit' ? 'rate_limit' : undefined,
+    componentResourceKind: resourceKindForComponentName(componentName),
   };
 
   return (

@@ -22,7 +22,6 @@ import {
   useStoreApi,
   ViewportPortal,
 } from '@xyflow/react';
-import { Banner, BannerContent } from 'components/redpanda-ui/components/banner';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
 import {
   memo,
@@ -283,13 +282,17 @@ function focusDimNodes(
 // The graph fades back while it's showing the stale (last-good) layout, cueing that it's not live.
 const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
 
+// Positioning for a notice floated over the top-center of the canvas.
+const CANVAS_NOTICE_CLASS =
+  'absolute top-3 left-1/2 z-20 -translate-x-1/2 px-3 py-1.5 text-sm shadow-sm backdrop-blur-sm';
+
 // Banner shown while rendering the last-good graph for invalid YAML (see useResilientParse).
 function StaleParseBanner({ show }: { show: boolean }) {
   if (!show) {
     return null;
   }
   return (
-    <InvalidConfigNotice className="absolute top-3 left-1/2 z-20 -translate-x-1/2 px-3 py-1.5 text-sm shadow-sm backdrop-blur-sm">
+    <InvalidConfigNotice className={CANVAS_NOTICE_CLASS}>
       Can&apos;t visualize the latest YAML — showing the last valid layout.
     </InvalidConfigNotice>
   );
@@ -1357,12 +1360,13 @@ export function PipelineFlowCanvas({
   if (rfNodes.length === 0) {
     return (
       <div className="relative h-full w-full">
-        {/* Persistent parse error with no last-good graph: the banner must stay (dismissing left an
-            unexplained frozen skeleton) and the copy points at the fix. */}
+        {/* Persistent parse error with no last-good graph: the notice must stay (dismissing left an
+            unexplained frozen skeleton) and the copy points at the fix. Same Alert as StaleParseBanner
+            so the "can't visualize" affordance is consistent whether or not a fallback layout exists. */}
         {error ? (
-          <Banner height="2rem" variant="accent">
-            <BannerContent>Unable to visualize this pipeline — fix the YAML in the YAML tab.</BannerContent>
-          </Banner>
+          <InvalidConfigNotice className={CANVAS_NOTICE_CLASS}>
+            Unable to visualize this pipeline — fix the YAML in the YAML tab.
+          </InvalidConfigNotice>
         ) : null}
         {/* Freeze the skeleton under an error (it's a backdrop, not a loading state). */}
         <div className={error ? 'opacity-40 **:animate-none!' : undefined}>

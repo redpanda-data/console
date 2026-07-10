@@ -907,6 +907,43 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
   }
 }
 
+/** The component type an edit target loads its schema/config as. */
+export function targetComponentType(target: EditTarget): ConnectComponentType {
+  switch (target.kind) {
+    case 'input':
+      return 'input';
+    case 'output':
+      return 'output';
+    case 'processor':
+      return 'processor';
+    case 'path':
+      return target.componentType;
+    case 'switchCase':
+      // Never used for rendering (the inspector special-cases switchCase first).
+      return 'processor';
+    default:
+      return target.resourceKey === 'cache_resources' ? 'cache' : 'rate_limit';
+  }
+}
+
+// Structural equality of two edit targets — to find the parsed node for a just-inserted target.
+// Path/switchCase targets are identified by their YAML path; the rest by their discriminant fields.
+export function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): boolean {
+  if (a?.kind !== b.kind) {
+    return false;
+  }
+  if (a.kind === 'processor' && b.kind === 'processor') {
+    return a.index === b.index;
+  }
+  if (a.kind === 'resource' && b.kind === 'resource') {
+    return a.resourceKey === b.resourceKey && a.index === b.index;
+  }
+  if ((a.kind === 'path' || a.kind === 'switchCase') && (b.kind === 'path' || b.kind === 'switchCase')) {
+    return JSON.stringify(a.path) === JSON.stringify(b.path);
+  }
+  return true; // input / output — singletons, kind match is enough
+}
+
 /** Read the component object at an edit target as plain JS (for the edit dialog). */
 export function getComponentAt(yaml: string, target: EditTarget): Record<string, unknown> | undefined {
   try {
@@ -1052,6 +1089,16 @@ const RESOURCE_KEY_BY_KIND: Record<ResourceKind, ResourceArrayKey> = {
   cache: 'cache_resources',
   rate_limit: 'rate_limit_resources',
 };
+
+/** The top-level resource array key for a kind (cache → cache_resources). */
+export function resourceArrayKey(kind: ResourceKind): ResourceArrayKey {
+  return RESOURCE_KEY_BY_KIND[kind];
+}
+
+/** The resource kind a `cache`/`rate_limit` component name maps to, else undefined. */
+export function resourceKindForComponentName(name: string): ResourceKind | undefined {
+  return name === 'cache' || name === 'rate_limit' ? name : undefined;
+}
 
 /** The resource kind of a `resource` edit target (cache_resources → cache, …). */
 export function resourceTargetKind(target: EditTarget): ResourceKind | undefined {
