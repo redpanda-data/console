@@ -55,8 +55,8 @@ function tipsFor(
         id: 'history',
         content: (
           <>
-            <Key>{formatShortcut(modKey(), 'Z')}</Key> to undo, <Key>{formatShortcut(modKey(), shiftKey(), 'Z')}</Key> to
-            redo
+            <Key>{formatShortcut(modKey(), 'Z')}</Key> to undo, <Key>{formatShortcut(modKey(), shiftKey(), 'Z')}</Key>{' '}
+            to redo
           </>
         ),
       });

@@ -19,10 +19,10 @@ import { useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 
 import { ConnectorLogo } from './connector-logo';
-import { getConnectorDocsUrl } from '../utils/connector-docs';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { getCategoryDisplayName } from '../utils/categories';
 import { aliasTermsForName } from '../utils/component-aliases';
+import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { componentStatusToString, parseSchema } from '../utils/schema';
 
 const RECENTS_KEY = 'rpcn-recent-components';

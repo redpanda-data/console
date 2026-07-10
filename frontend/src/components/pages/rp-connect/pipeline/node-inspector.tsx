@@ -44,9 +44,9 @@ import { toast } from 'sonner';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ChildItemsList, type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
-import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { getConnectorDocsUrl } from '../utils/connector-docs';
 import {
   appendResource,
   buildInsertableComponent,
