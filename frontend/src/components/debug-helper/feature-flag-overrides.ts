@@ -72,7 +72,7 @@ export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
 }
 
 export function getAllFlagKeys(): FeatureFlagKey[] {
-  return Object.keys(FEATURE_FLAGS) as FeatureFlagKey[];
+  return (Object.keys(FEATURE_FLAGS) as FeatureFlagKey[]).sort((a, b) => a.localeCompare(b));
 }
 
 let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };

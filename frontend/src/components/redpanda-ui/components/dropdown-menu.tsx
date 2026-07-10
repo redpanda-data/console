@@ -236,6 +236,8 @@ function DropdownMenuContent({
 type DropdownMenuItemProps = React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean;
   variant?: 'default' | 'destructive';
+  /** @deprecated Base UI menu items have no `onSelect`. Use `onClick` (add `closeOnClick={false}` to keep the menu open). */
+  onSelect?: never;
 };
 
 function DropdownMenuItem({
@@ -276,6 +278,8 @@ function DropdownMenuItem({
 
 type DropdownMenuCheckboxItemProps = React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & {
   inset?: boolean;
+  /** @deprecated Base UI menu items have no `onSelect`. Use `onClick` (add `closeOnClick={false}` to keep the menu open). */
+  onSelect?: never;
 };
 
 function DropdownMenuCheckboxItem({
@@ -313,6 +317,8 @@ function DropdownMenuCheckboxItem({
 
 type DropdownMenuRadioItemProps = React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & {
   inset?: boolean;
+  /** @deprecated Base UI menu items have no `onSelect`. Use `onClick` (add `closeOnClick={false}` to keep the menu open). */
+  onSelect?: never;
 };
 
 function DropdownMenuRadioItem({ className, children, disabled, inset, ...props }: DropdownMenuRadioItemProps) {

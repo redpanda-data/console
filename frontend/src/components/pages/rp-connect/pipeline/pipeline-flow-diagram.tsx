@@ -28,7 +28,6 @@ import { PipelineFlowSkeleton, pipelineEdgeTypes, pipelineNodeTypes } from './pi
 import {
   computeTreeLayout as defaultComputeLayout,
   parsePipelineFlowTree as defaultParseTree,
-  MAX_NESTING_DEPTH,
   type ParsePipelineFlowTreeResult,
   type PipelineFlowNode,
 } from '../utils/pipeline-flow-parser';
@@ -196,7 +195,7 @@ export const PipelineFlowDiagram = ({
     [debouncedYaml, parseTree, instanceId]
   );
 
-  const { rfNodes, rfEdges, maxDepth } = useMemo(() => {
+  const { rfNodes, rfEdges } = useMemo(() => {
     const layout = computeLayout(nodes, collapsedIds);
 
     // Inject callbacks into group, placeholder, and setup-hint leaf nodes.
@@ -231,12 +230,12 @@ export const PipelineFlowDiagram = ({
       return node;
     });
 
-    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges, maxDepth: layout.maxDepth ?? 0 };
+    return { rfNodes: nodesWithCallbacks, rfEdges: layout.rfEdges };
   }, [nodes, collapsedIds, toggleCollapse, computeLayout, onAddConnector, onAddTopic, onAddSasl]);
 
-  const { translateExtent, panOnScrollMode, contentOverflows } = useMemo(() => {
+  const { translateExtent, contentOverflows } = useMemo(() => {
     if (!containerSize) {
-      return { translateExtent: undefined, panOnScrollMode: PanOnScrollMode.Vertical, contentOverflows: false };
+      return { translateExtent: undefined, contentOverflows: false };
     }
     const extent = computeTranslateExtent(rfNodes, containerSize.width, containerSize.height);
     const rawMaxX = extent[1][0] - EXTENT_PADDING;
@@ -244,10 +243,9 @@ export const PipelineFlowDiagram = ({
     const overflows = rawMaxX > containerSize.width || rawMaxY > containerSize.height;
     return {
       translateExtent: extent,
-      panOnScrollMode: maxDepth > MAX_NESTING_DEPTH ? PanOnScrollMode.Free : PanOnScrollMode.Vertical,
       contentOverflows: overflows,
     };
-  }, [rfNodes, containerSize, maxDepth]);
+  }, [rfNodes, containerSize]);
 
   // React Flow occasionally settles with a vertical offset when the container
   // is much taller than the diagram; defaultViewport alone doesn't override it.
@@ -321,7 +319,7 @@ export const PipelineFlowDiagram = ({
             }}
             panOnDrag={false}
             panOnScroll={contentOverflows}
-            panOnScrollMode={panOnScrollMode}
+            panOnScrollMode={PanOnScrollMode.Vertical}
             preventScrolling={contentOverflows}
             proOptions={{ hideAttribution: true }}
             translateExtent={translateExtent}
