@@ -1,5 +1,6 @@
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Command,
@@ -18,119 +19,22 @@ import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb'
 import { useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 
+import {
+  asciidocToMarkdown,
+  buildEmptyMessage,
+  byProminence,
+  cleanText,
+  computeSuggested,
+  matchRank,
+  pushRecent,
+  readRecents,
+  searchableText,
+} from './connect-command-palette-utils';
 import { ConnectorLogo } from './connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { getCategoryDisplayName } from '../utils/categories';
-import { aliasTermsForName } from '../utils/component-aliases';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { componentStatusToString, parseSchema } from '../utils/schema';
-
-const RECENTS_KEY = 'rpcn-recent-components';
-const MAX_RECENTS = 6;
-
-// Curated "likely next" defaults per slot kind, shown before the user types. Names absent from the catalog are dropped.
-const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
-  input: ['kafka_franz', 'redpanda', 'generate', 'http_client', 'file'],
-  output: ['kafka_franz', 'redpanda', 'http_client', 'drop', 'stdout'],
-  processor: ['mapping', 'bloblang', 'cache', 'http', 'rate_limit', 'log'],
-  cache: ['memory', 'redis', 'memcached'],
-  rate_limit: ['local'],
-};
-
-// Everyday components sorted ahead of the long tail when browsing.
-const COMMON_COMPONENTS = new Set([
-  ...Object.values(SUGGESTED_BY_TYPE).flat(),
-  'kafka',
-  'redpanda_migrator',
-  'sql_insert',
-  'sql_select',
-  'aws_s3',
-  'gcp_cloud_storage',
-  'postgres_cdc',
-  'mysql_cdc',
-  'switch',
-  'branch',
-  'workflow',
-  'json_schema',
-  'unarchive',
-  'archive',
-]);
-
-// Deprecated/experimental components are de-emphasised: sorted below stable ones.
-function isDemoted(status: ComponentStatus): boolean {
-  return status === ComponentStatus.DEPRECATED || status === ComponentStatus.EXPERIMENTAL;
-}
-
-// Tiebreaker order (after relevance, primary when browsing): stable before demoted, common before long tail, then name.
-export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec): number {
-  const demoted = (isDemoted(a.status) ? 1 : 0) - (isDemoted(b.status) ? 1 : 0);
-  if (demoted !== 0) {
-    return demoted;
-  }
-  const common = (COMMON_COMPONENTS.has(a.name) ? 0 : 1) - (COMMON_COMPONENTS.has(b.name) ? 0 : 1);
-  if (common !== 0) {
-    return common;
-  }
-  return a.name.localeCompare(b.name);
-}
-
-type RecentEntry = { name: string; type: ConnectComponentType };
-
-function readRecents(): RecentEntry[] {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-  try {
-    const raw = window.localStorage.getItem(RECENTS_KEY);
-    const parsed = raw ? (JSON.parse(raw) as RecentEntry[]) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function pushRecent(entry: RecentEntry): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  try {
-    const next = [entry, ...readRecents().filter((r) => !(r.name === entry.name && r.type === entry.type))].slice(
-      0,
-      MAX_RECENTS
-    );
-    window.localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-  } catch {
-    // Best-effort; ignore storage failures.
-  }
-}
-
-// Lowercased searchable text (name + aliases + summary + description + categories) for substring matching.
-function searchableText(component: ConnectComponentSpec): string {
-  return [
-    component.name,
-    ...aliasTermsForName(component.name),
-    component.summary ?? '',
-    component.description ?? '',
-    ...(component.categories ?? []),
-  ]
-    .join(' ')
-    .toLowerCase();
-}
-
-// Rank a match: exact name > prefix > substring > other text. Lower is better; -1 = no match.
-function matchRank(component: ConnectComponentSpec, query: string, text: string): number {
-  const name = component.name.toLowerCase();
-  if (name === query) {
-    return 0;
-  }
-  if (name.startsWith(query)) {
-    return 1;
-  }
-  if (name.includes(query)) {
-    return 2;
-  }
-  return text.includes(query) ? 3 : -1;
-}
 
 function ComponentIcon({ component, className = 'size-5' }: { component: ConnectComponentSpec; className?: string }) {
   if (component.logoUrl) {
@@ -140,37 +44,6 @@ function ComponentIcon({ component, className = 'size-5' }: { component: Connect
     return <ConnectorLogo className={`${className} shrink-0`} name={component.name as ComponentName} />;
   }
   return <Waypoints className={`${className} shrink-0 text-muted-foreground`} />;
-}
-
-// Reduce one-line AsciiDoc summaries (link macros, code spans) to plain label text on a single line.
-function cleanText(text: string): string {
-  return text
-    .replace(/(?:xref|link):[^\s[]*\[([^\]]*)\]/g, '$1')
-    .replace(/https?:\/\/[^\s[]+\[([^\]]*)\]/g, '$1')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Convert the AsciiDoc constructs Connect uses (titles, link macros, bullets) to Markdown for react-markdown.
-// Unlike cleanText, newlines are preserved so titles/paragraphs stay distinct.
-export function asciidocToMarkdown(raw: string): string {
-  return (
-    raw
-      .replace(/\r\n/g, '\n')
-      // Link macros → label text.
-      .replace(/(?:xref|link):[^\s[\]]*\[([^\]]*)\]/g, '$1')
-      // Bare URL macro → Markdown link.
-      .replace(/(https?:\/\/[^\s[\]]+)\[([^\]]*)\]/g, '[$2]($1)')
-      // Section titles (`==`/`===`/… Title) → small heading.
-      .replace(/^=+\s+(.{1,60})$/gm, '#### $1')
-      // Strip leftover markers from over-long titles.
-      .replace(/^=+\s+/gm, '')
-      // List markers → bullets.
-      .replace(/^\*\s+/gm, '- ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  );
 }
 
 // Compact section title matching the inspector's small-label style.
@@ -207,32 +80,6 @@ function FormattedDescription({ markdown }: { markdown: string }) {
   );
 }
 
-// Long descriptions are clamped behind a "Show more" toggle to keep the preview scannable.
-// Keyed by component name at the call site so the toggle resets per row.
-function DescriptionBlock({ markdown, collapsible }: { markdown: string; collapsible: boolean }) {
-  const [expanded, setExpanded] = useState(false);
-  if (!collapsible) {
-    return <FormattedDescription markdown={markdown} />;
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      <div className={expanded ? '' : 'relative max-h-44 overflow-hidden'}>
-        <FormattedDescription markdown={markdown} />
-        {expanded ? null : (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent" />
-        )}
-      </div>
-      <button
-        className="self-start font-medium text-primary text-xs hover:underline"
-        onClick={() => setExpanded((v) => !v)}
-        type="button"
-      >
-        {expanded ? 'Show less' : 'Show more'}
-      </button>
-    </div>
-  );
-}
-
 function statusBadge(status: ComponentStatus, name: string) {
   if (
     name !== 'redpanda' &&
@@ -264,52 +111,14 @@ function HighlightedName({ name, query }: { name: string; query: string }) {
   );
 }
 
-// "processors", "caches or rate limits" — plural label for the slot's allowed types.
-function pluralTypeLabel(types?: ConnectComponentType[]): string {
-  if (!types || types.length === 0) {
-    return 'components';
-  }
-  return types.map((type) => `${type.replace(/_/g, ' ')}s`).join(' or ');
-}
-
-const STARTS_WITH_VOWEL = /^[aeiou]/;
-
-// "an input", "an input or a processor" — out-of-scope types with indefinite articles.
-function withArticles(types: ConnectComponentType[]): string {
-  const labeled = types.map((type) => {
-    const label = type.replace(/_/g, ' ');
-    return `${STARTS_WITH_VOWEL.test(label) ? 'an' : 'a'} ${label}`;
-  });
-  if (labeled.length <= 1) {
-    return labeled[0] ?? '';
-  }
-  return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1)}`;
-}
-
-// Empty-state copy. A type-locked miss that matches other component types is explained
-// ("it exists as an input") so it doesn't read as a missing integration.
-export function buildEmptyMessage(
-  query: string,
-  allowedTypes?: ConnectComponentType[],
-  outOfScopeTypes: ConnectComponentType[] = []
-): string {
-  if (!query) {
-    return 'No components available.';
-  }
-  if (outOfScopeTypes.length === 0) {
-    return `No ${pluralTypeLabel(allowedTypes)} match “${query}”.`;
-  }
-  return `No ${pluralTypeLabel(allowedTypes)} match “${query}” — it exists as ${withArticles(outOfScopeTypes)}.`;
-}
-
 function Row({
   component,
-  query,
+  query = '',
   onPreview,
   onCommit,
 }: {
   component: ConnectComponentSpec;
-  query: string;
+  query?: string;
   onPreview: (component: ConnectComponentSpec) => void;
   onCommit: (component: ConnectComponentSpec) => void;
 }) {
@@ -380,24 +189,24 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
 
       {summary ? <Text className="text-foreground text-sm leading-relaxed">{summary}</Text> : null}
 
-      {showDescription ? (
-        <DescriptionBlock
-          collapsible={(component.description?.length ?? 0) > 700}
-          key={`${component.type}:${component.name}`}
-          markdown={descriptionMd}
-        />
-      ) : null}
+      {showDescription ? <FormattedDescription markdown={descriptionMd} /> : null}
 
       {categories.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           <Text className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Categories</Text>
-          <div className="flex flex-wrap gap-1.5">
+          <BadgeGroup
+            gap="md"
+            maxVisible={6}
+            renderOverflowContent={(overflow) => <div className="flex flex-col gap-1">{overflow}</div>}
+            variant="neutral-inverted"
+            wrap
+          >
             {categories.map((category) => (
               <Badge key={category} size="sm" variant="neutral-inverted">
                 {category}
               </Badge>
             ))}
-          </div>
+          </BadgeGroup>
         </div>
       ) : null}
 
@@ -511,13 +320,10 @@ export const ConnectCommandPalette = ({
     [recents, byName]
   );
 
-  const suggested = useMemo(() => {
-    const names = new Set((allowedTypes ?? []).flatMap((t) => SUGGESTED_BY_TYPE[t] ?? []));
-    const recentNames = new Set(recentComponents.map((c) => c.name));
-    return [...names]
-      .map((n) => byName.get(n))
-      .filter((c): c is ConnectComponentSpec => Boolean(c) && !recentNames.has((c as ConnectComponentSpec).name));
-  }, [allowedTypes, byName, recentComponents]);
+  const suggested = useMemo(
+    () => computeSuggested(allowedTypes, byName, recentComponents),
+    [allowedTypes, byName, recentComponents]
+  );
 
   // In-scope components grouped by category, powering the "All" and per-category tabs. A component
   // appears under EVERY category it lists (not just the first), so it's found under each relevant tab.
@@ -655,7 +461,6 @@ export const ConnectCommandPalette = ({
                     key={`${component.type}-${component.name}`}
                     onCommit={handleCommit}
                     onPreview={handlePreview}
-                    query=""
                   />
                 ))}
               </CommandGroup>
@@ -668,7 +473,6 @@ export const ConnectCommandPalette = ({
                       key={`${component.type}-${component.name}`}
                       onCommit={handleCommit}
                       onPreview={handlePreview}
-                      query=""
                     />
                   ))}
                 </CommandGroup>

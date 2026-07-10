@@ -952,7 +952,7 @@ function PipelinePageContent() {
 
   // Guard-time dirty check: flush any in-progress inspector draft into the store first (the
   // rendered `hasUnsavedChanges` above can't see a pending draft), then re-read fresh state.
-  const hasUnsavedChangesFresh = useCallback(() => {
+  const checkUnsavedChanges = useCallback(() => {
     if (mode === 'view') {
       return false;
     }
@@ -976,8 +976,8 @@ function PipelinePageContent() {
     [mode, initialYaml, deferredYamlContent]
   );
   const blocker = useBlocker({
-    shouldBlockFn: () => hasUnsavedChangesFresh() && !editorStore.getState().allowNavigation,
-    enableBeforeUnload: () => hasUnsavedChangesFresh(),
+    shouldBlockFn: () => checkUnsavedChanges() && !editorStore.getState().allowNavigation,
+    enableBeforeUnload: () => checkUnsavedChanges(),
     withResolver: true,
   });
   // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).

@@ -12,6 +12,7 @@
 const CAMEL_CASE_REGEX = /([A-Z])/g;
 const FIRST_CHAR_REGEX = /^\w/;
 const WHITESPACE_REGEX = /\s+/;
+const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/;
 
 /**
  * Formats a field key into a human-readable label
@@ -64,6 +65,50 @@ export const pluralize = (count: number, noun: string, suffix = 's'): string => 
  */
 export const pluralizeWithNumber = (count: number, noun: string, suffix = 's'): string =>
   `${count} ${pluralize(count, noun, suffix)}`;
+
+/**
+ * Humanizes and pluralizes a list of snake_case labels, joining them with "or".
+ * Unlike {@link pluralize}, this is count-independent — every label is pluralized.
+ *
+ * Examples:
+ * - pluralTypeLabel(['processor']) → 'processors'
+ * - pluralTypeLabel(['cache', 'rate_limit']) → 'caches or rate limits'
+ * - pluralTypeLabel([], 'components') → 'components'
+ * - pluralTypeLabel(undefined) → 'items'
+ *
+ * @param labels The snake_case labels to humanize and pluralize
+ * @param emptyLabel Fallback returned when the list is empty/undefined (default: 'items')
+ * @returns The humanized, pluralized labels joined with "or"
+ */
+export const pluralTypeLabel = (labels: string[] | undefined, emptyLabel = 'items'): string => {
+  if (!labels || labels.length === 0) {
+    return emptyLabel;
+  }
+  return labels.map((label) => `${label.replace(/_/g, ' ')}s`).join(' or ');
+};
+
+/**
+ * Humanizes a list of snake_case labels and prefixes each with an indefinite
+ * article ("a"/"an"), joining them with "or".
+ *
+ * Examples:
+ * - withArticles(['input']) → 'an input'
+ * - withArticles(['input', 'output']) → 'an input or an output'
+ * - withArticles(['cache', 'processor', 'rate_limit']) → 'a cache, a processor or a rate limit'
+ *
+ * @param labels The snake_case labels to humanize and article-prefix
+ * @returns The article-prefixed labels joined with "or"
+ */
+export const withArticles = (labels: string[]): string => {
+  const labeled = labels.map((label) => {
+    const humanized = label.replace(/_/g, ' ');
+    return `${STARTS_WITH_VOWEL_REGEX.test(humanized) ? 'an' : 'a'} ${humanized}`;
+  });
+  if (labeled.length <= 1) {
+    return labeled[0] ?? '';
+  }
+  return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1)}`;
+};
 
 /**
  * Truncates a string to a specified length and adds an ellipsis if truncation occurs.
