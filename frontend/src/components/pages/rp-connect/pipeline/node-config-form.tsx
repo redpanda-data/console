@@ -11,6 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -25,14 +26,22 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { AlertCircle, ChevronDown, ChevronRight, Eye, EyeOff, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, EyeOff, Plus } from 'lucide-react';
 import { createContext, useContext, useEffect, useId, useState } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ScrollShadow } from './scroll-shadow';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
-import { checkRequired } from '../utils/schema';
+import {
+  checkRequired,
+  fieldHasOptions,
+  isComponentField,
+  isFormField,
+  isObjectGroupField,
+  isScalarArrayField,
+  isScalarField,
+} from '../utils/schema';
 import type { EditTarget, ResourceKind } from '../utils/yaml';
 
 // Re-exported for node-inspector, which imports ResourceKind from here.
@@ -91,25 +100,22 @@ const ChildItemRow = ({
       onClick={() => onSelect(item)}
       type="button"
     >
-      <span className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         {condText ? (
-          <span
-            className={cn('truncate font-medium font-mono text-caption-sm', childItemCondColor(item))}
+          <Text
+            as="span"
+            className={cn('truncate font-mono', childItemCondColor(item))}
             title={condText}
+            variant="captionStrongSmall"
           >
             {condText}
-          </span>
+          </Text>
         ) : null}
-        <span className="truncate font-medium text-sm" title={item.name}>
+        <Text as="span" className="truncate" title={item.name} variant="bodyStrongMedium">
           {item.name}
-        </span>
-      </span>
-      {item.lintCount ? (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-caption-sm text-destructive">
-          <AlertCircle className="size-3" />
-          {item.lintCount}
-        </span>
-      ) : null}
+        </Text>
+      </div>
+      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="error" /> : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </button>
   );
@@ -124,8 +130,12 @@ export const ChildItemsList = ({
   onSelect: (item: InspectorChildItem) => void;
   label: string;
 }) => (
+  // A heading, not a <label>: these rows are navigation buttons, so there's no single control for
+  // an htmlFor to associate with, and each button already carries its own accessible text.
   <div className="flex flex-col gap-1.5">
-    <Label className="font-medium text-sm">{label}</Label>
+    <Text className="font-medium" variant="bodyStrongMedium">
+      {label}
+    </Text>
     <div className="flex flex-col gap-1.5">
       {items.map((item) => (
         <ChildItemRow item={item} key={item.id} onSelect={onSelect} />
@@ -167,19 +177,18 @@ function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: Resourc
 // shown, flagged missing.
 const ResourceReferenceSelect = ({
   kind,
-  value,
+  value = '',
   onChange,
   id,
 }: {
   kind: ResourceKind;
-  value: string;
+  value?: string;
   onChange: (value: unknown) => void;
   id?: string;
 }) => {
   const { labels, onCreateResource } = useContext(ResourceFieldContext);
   const options = labels[kind];
-  const current = value ?? '';
-  const isMissing = current !== '' && !options.includes(current);
+  const isMissing = value !== '' && !options.includes(value);
   return (
     <Select
       onValueChange={(v) => {
@@ -189,13 +198,13 @@ const ResourceReferenceSelect = ({
         }
         onChange(v);
       }}
-      value={current}
+      value={value}
     >
       <SelectTrigger id={id}>
         <SelectValue placeholder="Select a resource…" />
       </SelectTrigger>
       <SelectContent>
-        {isMissing ? <SelectItem value={current}>{current} (missing)</SelectItem> : null}
+        {isMissing ? <SelectItem value={value}>{value} (missing)</SelectItem> : null}
         {options.map((label) => (
           <SelectItem key={label} value={label}>
             {label}
@@ -213,69 +222,6 @@ const ResourceReferenceSelect = ({
     </Select>
   );
 };
-
-const SCALAR_TYPES = new Set(['string', 'int', 'float', 'bool']);
-
-function hasOptions(spec: RawFieldSpec): boolean {
-  return (spec.annotatedOptions?.length ?? 0) > 0;
-}
-
-// A reference to a cache/rate_limit resource: a scalar string whose field type names the kind
-// (not an inline component). Rendered as a label dropdown, stored like any other scalar string.
-function isResourceRefField(spec: RawFieldSpec): boolean {
-  return (
-    Boolean(spec.name) &&
-    spec.kind === 'scalar' &&
-    (spec.type === 'cache' || spec.type === 'rate_limit') &&
-    !(spec.children?.length ?? 0)
-  );
-}
-
-// A single editable value: a primitive (string/int/float/bool), an enum select, or a
-// resource reference (stored as a string).
-function isScalarField(spec: RawFieldSpec): boolean {
-  return (
-    Boolean(spec.name) &&
-    spec.kind === 'scalar' &&
-    (SCALAR_TYPES.has(spec.type) || hasOptions(spec) || isResourceRefField(spec))
-  );
-}
-
-// A list of primitives (e.g. `topics: [a, b]`), edited as one-per-line text.
-function isScalarArray(spec: RawFieldSpec): boolean {
-  return Boolean(spec.name) && spec.kind === 'array' && SCALAR_TYPES.has(spec.type) && !hasOptions(spec);
-}
-
-// A nested object with its own fields (e.g. `tls`, `batching`) — rendered as a
-// collapsible sub-section whose children recurse through the same renderer.
-function isObjectGroup(spec: RawFieldSpec): boolean {
-  return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
-}
-
-// A field whose value is itself a nested component (processor sub-pipeline, input/output, …).
-// These are their own graph nodes, edited on the canvas — never inline here, preserved untouched.
-const COMPONENT_FIELD_TYPES = new Set([
-  'input',
-  'output',
-  'processor',
-  'cache',
-  'rate_limit',
-  'buffer',
-  'metrics',
-  'tracer',
-  'scanner',
-]);
-function isComponentField(spec: RawFieldSpec): boolean {
-  // A resource reference is a string link, not an inline nested component.
-  return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
-}
-
-// Fields rendered as form controls. Nested components are excluded (edited on the
-// canvas); other complex fields (object arrays, maps, 2d arrays, unknown keys) fall
-// back to the raw-YAML section.
-function isFormField(spec: RawFieldSpec): boolean {
-  return !isComponentField(spec) && (isScalarField(spec) || isScalarArray(spec) || isObjectGroup(spec));
-}
 
 // Path helpers for the plain-JSON config object (not the YAML AST).
 function getInObj(obj: Record<string, unknown>, path: string[]): unknown {
@@ -376,9 +322,9 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
     const leaf: Leaf = { spec: f, path, key: path.join('/') };
     if (isScalarField(f)) {
       scalars.push(leaf);
-    } else if (isScalarArray(f)) {
+    } else if (isScalarArrayField(f)) {
       arrays.push(leaf);
-    } else if (isObjectGroup(f)) {
+    } else if (isObjectGroupField(f)) {
       const nested = collectLeaves(f.children ?? [], path);
       scalars.push(...nested.scalars);
       arrays.push(...nested.arrays);
@@ -544,7 +490,7 @@ const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
 const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/i;
 
 const isSecretField = (spec: RawFieldSpec): boolean =>
-  spec.type === 'string' && !hasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
+  spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
 
 // A masked text input with a reveal toggle. A `${…}` value is an interpolation, not a literal
 // credential — shown in the clear.
@@ -598,7 +544,7 @@ const ScalarControl = ({
   if (resourceKind) {
     return <ResourceReferenceSelect id={id} kind={resourceKind} onChange={onChange} value={String(value ?? '')} />;
   }
-  if (hasOptions(spec)) {
+  if (fieldHasOptions(spec)) {
     return (
       <Select onValueChange={onChange} value={String(value ?? '')}>
         <SelectTrigger aria-label={spec.name} aria-required={required || undefined} id={id}>
@@ -746,10 +692,10 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   if (isScalarField(spec)) {
     return <ScalarField control={control} leaf={{ spec, path: here, key: here.join('/') }} />;
   }
-  if (isScalarArray(spec)) {
+  if (isScalarArrayField(spec)) {
     return <ArrayField control={control} leaf={{ spec, path: here, key: here.join('/') }} />;
   }
-  if (isObjectGroup(spec)) {
+  if (isObjectGroupField(spec)) {
     return (
       <FieldGroup defaultOpen={checkRequired(spec) && !spec.advanced} label={spec.name}>
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />

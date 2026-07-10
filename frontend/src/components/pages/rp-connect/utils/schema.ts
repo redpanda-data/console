@@ -23,6 +23,7 @@ import type {
   ConnectConfigObject,
   RawFieldSpec,
 } from '../types/schema';
+import { CONNECT_COMPONENT_TYPE } from '../types/schema';
 
 export function componentStatusToString(status: ComponentStatus): string {
   switch (status) {
@@ -510,6 +511,56 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   }
   // Object: required if any child is required.
   return spec.children.some((c) => checkRequired(c));
+}
+
+const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
+
+// Types whose value is a nested component edited on the canvas — every component type except the
+// wizard-only `custom`.
+const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
+
+export function fieldHasOptions(spec: RawFieldSpec): boolean {
+  return (spec.annotatedOptions?.length ?? 0) > 0;
+}
+
+// A scalar string that links to a cache/rate_limit resource by label rather than nesting a component.
+export function isResourceRefField(spec: RawFieldSpec): boolean {
+  return (
+    Boolean(spec.name) &&
+    spec.kind === 'scalar' &&
+    (spec.type === 'cache' || spec.type === 'rate_limit') &&
+    !(spec.children?.length ?? 0)
+  );
+}
+
+// A single editable value: a primitive, an enum select, or a resource reference (stored as a string).
+export function isScalarField(spec: RawFieldSpec): boolean {
+  return (
+    Boolean(spec.name) &&
+    spec.kind === 'scalar' &&
+    (SCALAR_FIELD_TYPES.has(spec.type) || fieldHasOptions(spec) || isResourceRefField(spec))
+  );
+}
+
+// A list of primitives (e.g. `topics: [a, b]`), edited one-per-line.
+export function isScalarArrayField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && spec.kind === 'array' && SCALAR_FIELD_TYPES.has(spec.type) && !fieldHasOptions(spec);
+}
+
+// A nested object with its own fields (e.g. `tls`, `batching`), rendered as a collapsible sub-section.
+export function isObjectGroupField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
+}
+
+// A field whose value is itself a nested component. Edited as its own canvas node, never inline.
+export function isComponentField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
+}
+
+// Fields rendered as form controls; nested components and complex fields (object arrays, maps, …)
+// are excluded and fall back to the raw-YAML section.
+export function isFormField(spec: RawFieldSpec): boolean {
+  return !isComponentField(spec) && (isScalarField(spec) || isScalarArrayField(spec) || isObjectGroupField(spec));
 }
 
 function getRequiredFieldTypeHint(spec: RawFieldSpec): string {

@@ -10,17 +10,20 @@
  */
 
 import { Alert } from 'components/redpanda-ui/components/alert';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 /**
  * Warning banner for a pipeline config that can't be shown as-is — shared by the visual canvas (stale
  * layout) and the sidebar outline (stale / can't build one yet). Renders the registry Alert in its
- * warning tone; callers pass positioning, padding and text size via `className`.
+ * warning tone. Overrides the Alert's `w-full` back to `w-auto` so it stays content-width when floated
+ * over the canvas (centered between the undo/redo + problems toolbars) and fills to its margins when
+ * placed inline; callers pass positioning, padding and text size via `className`.
  */
 export function InvalidConfigNotice({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <Alert className={className} icon={<TriangleAlert />} variant="warning">
+    <Alert className={cn('w-auto', className)} icon={<TriangleAlert />} variant="warning">
       <span className="col-start-2">{children}</span>
     </Alert>
   );
