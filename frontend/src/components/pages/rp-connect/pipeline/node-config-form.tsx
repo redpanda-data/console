@@ -908,7 +908,7 @@ export function NodeConfigForm({
                   const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
                   return (
                     <div className="flex flex-col gap-1.5">
-                      <div className="h-[200px] overflow-hidden rounded-md border border-border">
+                      <div className="h-[450px] overflow-hidden rounded-md border border-border">
                         <YamlEditor
                           onChange={(v) => field.onChange(v || '')}
                           options={{ minimap: { enabled: false } }}
