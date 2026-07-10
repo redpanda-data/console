@@ -31,8 +31,6 @@ function lastReported(onConfigChange: ReturnType<typeof vi.fn>): unknown {
   return onConfigChange.mock.calls.at(-1)?.[0];
 }
 
-const NESTED_COMPONENT_HINT = /processors is a nested component/i;
-
 describe('NodeConfigForm — full schema', () => {
   test('renders required scalar fields, a scalar-array field, and nested object groups', async () => {
     const user = userEvent.setup();
@@ -153,7 +151,8 @@ describe('NodeConfigForm — full schema', () => {
 
     const password = screen.getByDisplayValue('hunter2');
     expect(password).toHaveAttribute('type', 'password');
-    expect(screen.getAllByRole('button', { name: 'Show value' }).length).toBeGreaterThan(0);
+    // The registry Input's built-in reveal toggle (label "Show password") replaces the old one-off.
+    expect(screen.getAllByRole('button', { name: 'Show password' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/reference a secret/i).length).toBeGreaterThan(0);
   });
 
@@ -200,7 +199,7 @@ describe('NodeConfigForm — full schema', () => {
     expect(next.kafka.batching.count).toBe('${env.COUNT}');
   });
 
-  test('does not render nested-component fields; surfaces a hint and preserves them on edit', async () => {
+  test('does not render nested-component fields and preserves them on edit', async () => {
     const user = userEvent.setup();
     // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.
     const branchSpec = {
@@ -221,9 +220,10 @@ describe('NodeConfigForm — full schema', () => {
       />
     );
 
-    // The scalar is a control; the nested component is NOT — it's a hint instead.
+    // The scalar renders as a control; the nested component renders nothing here — it's its own
+    // canvas node (no inline control, and no redundant "select it on the canvas" hint).
     expect(screen.getByText('request_map')).toBeInTheDocument();
-    expect(screen.getByText(NESTED_COMPONENT_HINT)).toBeInTheDocument();
+    expect(screen.queryByText('processors')).not.toBeInTheDocument();
 
     await user.type(screen.getByDisplayValue('root = this'), '!');
 

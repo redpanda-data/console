@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -26,8 +25,8 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { ChevronDown, ChevronRight, Eye, EyeOff, Plus } from 'lucide-react';
-import { createContext, useContext, useEffect, useId, useState } from 'react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { createContext, useContext, useEffect, useId } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -74,7 +73,6 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   return;
 };
 
-// Routing-condition text color: red for error paths, muted for default, the warning accent otherwise.
 const childItemCondColor = (item: InspectorChildItem): string => {
   if (item.isErrorPath) {
     return 'text-destructive';
@@ -493,35 +491,19 @@ const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/
 const isSecretField = (spec: RawFieldSpec): boolean =>
   spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
 
-// A masked text input with a reveal toggle. A `${…}` value is an interpolation, not a literal
-// credential — shown in the clear.
-const SecretInput = (props: { id?: string; value: string; onChange: (value: unknown) => void; required?: boolean }) => {
-  const [show, setShow] = useState(false);
-  const isReference = props.value.includes('${');
-  return (
-    <div className="flex items-center gap-1.5">
-      <Input
-        aria-required={props.required || undefined}
-        autoComplete="off"
-        id={props.id}
-        onChange={props.onChange}
-        type={show || isReference ? 'text' : 'password'}
-        value={props.value}
-      />
-      {isReference ? null : (
-        <Button
-          aria-label={show ? 'Hide value' : 'Show value'}
-          onClick={() => setShow((v) => !v)}
-          size="icon-sm"
-          type="button"
-          variant="ghost"
-        >
-          {show ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        </Button>
-      )}
-    </div>
-  );
-};
+// A masked credential input. `type="password"` gives the registry Input's built-in reveal toggle;
+// a `${…}` value is an interpolation, not a literal credential, so it's shown in the clear (and the
+// toggle drops away with type="text").
+const SecretInput = (props: { id?: string; value: string; onChange: (value: unknown) => void; required?: boolean }) => (
+  <Input
+    aria-required={props.required || undefined}
+    autoComplete="off"
+    id={props.id}
+    onChange={props.onChange}
+    type={props.value.includes('${') ? 'text' : 'password'}
+    value={props.value}
+  />
+);
 
 const ScalarControl = ({
   spec,
@@ -781,7 +763,8 @@ export function NodeConfigForm({
   const required = topFields.filter((f) => checkRequired(f) && !f.advanced);
   const optional = topFields.filter((f) => !(checkRequired(f) || f.advanced));
   const advanced = topFields.filter((f) => f.advanced);
-  // Nested-component fields are edited on the canvas; surface a hint, never a control.
+  // Nested-component fields are their own canvas nodes, never inline controls — offered as a
+  // clickable "Steps" list when this node owns them, otherwise edited directly on the canvas.
   const componentFields = fields.filter(isComponentField);
 
   // Leaves drive form defaults + assembly. Complex schema fields and unknown keys go to the
@@ -914,15 +897,6 @@ export function NodeConfigForm({
               label="Steps"
               onSelect={onSelectChild as (item: InspectorChildItem) => void}
             />
-          ) : null}
-          {!isListValued && componentFields.length > 0 && !hasChildList ? (
-            <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
-              <Text className="text-muted-foreground" variant="bodySmall">
-                {componentFields.map((f) => f.name).join(', ')}{' '}
-                {componentFields.length === 1 ? 'is a nested component' : 'are nested components'} — select{' '}
-                {componentFields.length === 1 ? 'it' : 'them'} on the canvas to edit.
-              </Text>
-            </div>
           ) : null}
 
           {!isListValued && showRaw ? (
