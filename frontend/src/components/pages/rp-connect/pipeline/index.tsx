@@ -85,6 +85,7 @@ import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { usePipelineLint } from './use-pipeline-lint';
+import { useSaveHotkey } from './use-save-hotkey';
 import { useSlashCommand } from './use-slash-command';
 import { VisualEditorPanel } from './visual-editor-panel';
 import { extractLintHintsFromError } from '../errors';
@@ -985,30 +986,8 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // ⌘S / Ctrl+S saves (overriding the browser save-page dialog), from both YAML and Visual lanes.
-  useEffect(() => {
-    if (mode === 'view') {
-      return;
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Plain ⌘S/Ctrl+S only — ⌘⇧S (save-as) keeps its browser behaviour.
-      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 's') {
-        return;
-      }
-      // Skip while a MODAL dialog captures input (settings, discard-changes, …) — before
-      // preventDefault, so an unhandled press keeps browser behaviour. Scoped to aria-modal so a
-      // host-shell element or non-modal popover (role="dialog") can't disable it.
-      if (document.querySelector('[role="dialog"][aria-modal="true"], [role="alertdialog"]')) {
-        return;
-      }
-      e.preventDefault();
-      if (!isSaving) {
-        handleSave();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode, isSaving, handleSave]);
+  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes.
+  useSaveHotkey({ enabled: mode !== 'view', isSaving, onSave: handleSave });
 
   // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
   useEffect(

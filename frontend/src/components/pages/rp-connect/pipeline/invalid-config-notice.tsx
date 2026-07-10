@@ -9,25 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { Alert } from 'components/redpanda-ui/components/alert';
 import { TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 /**
  * Warning banner for a pipeline config that can't be shown as-is — shared by the visual canvas (stale
- * layout) and the sidebar outline (stale / can't build one yet). A `role=status` region so it's
- * announced; callers pass positioning, padding and text size via `className`.
+ * layout) and the sidebar outline (stale / can't build one yet). Renders the registry Alert in its
+ * warning tone; callers pass positioning, padding and text size via `className`.
  */
 export function InvalidConfigNotice({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <output
-      className={cn(
-        'flex items-start gap-2 rounded-md border border-warning/40 bg-warning-subtle text-foreground',
-        className
-      )}
-    >
-      <TriangleAlert className="mt-px size-4 shrink-0 text-warning" />
-      <span>{children}</span>
-    </output>
+    <Alert className={className} icon={<TriangleAlert />} variant="warning">
+      <span className="col-start-2">{children}</span>
+    </Alert>
   );
 }
