@@ -2,9 +2,11 @@ import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb'
 import { describe, expect, it } from 'vitest';
 
 import {
+  aliasTermsForName,
   asciidocToMarkdown,
   buildEmptyMessage,
   byProminence,
+  COMPONENT_ALIASES,
   computeSuggested,
   matchRank,
   searchableText,
@@ -61,6 +63,40 @@ describe('matchRank', () => {
 
   it('returns -1 when nothing matches', () => {
     expect(matchRank(gen, 'flurb', text)).toBe(-1);
+  });
+});
+
+describe('component aliases', () => {
+  it('maps intent terms to a component name via its fragments', () => {
+    // "queue" lists kafka, so kafka_franz surfaces under that intent.
+    expect(aliasTermsForName('kafka_franz')).toContain('queue');
+    expect(aliasTermsForName('kafka_franz')).toContain('stream');
+  });
+
+  it('maps transform/map intents to bloblang/mapping', () => {
+    expect(aliasTermsForName('mapping')).toEqual(expect.arrayContaining(['transform', 'map']));
+    expect(aliasTermsForName('bloblang')).toContain('transform');
+  });
+
+  it('returns no alias terms for a name no fragment matches', () => {
+    expect(aliasTermsForName('totally_unrelated_xyz')).toEqual([]);
+  });
+
+  it('matches fragments on `_`/word boundaries, not mid-token substrings', () => {
+    // Whole multi-token fragments and `_`-delimited tokens match...
+    expect(aliasTermsForName('rate_limit')).toEqual(expect.arrayContaining(['throttle', 'ratelimit']));
+    expect(aliasTermsForName('json_schema')).toContain('json');
+    // ...but a fragment buried mid-token doesn't (`log` inside `catalog`).
+    expect(aliasTermsForName('catalog')).not.toContain('log');
+  });
+
+  it('keeps alias keys and fragments lowercase', () => {
+    for (const [key, fragments] of Object.entries(COMPONENT_ALIASES)) {
+      expect(key).toBe(key.toLowerCase());
+      for (const fragment of fragments) {
+        expect(fragment).toBe(fragment.toLowerCase());
+      }
+    }
   });
 });
 

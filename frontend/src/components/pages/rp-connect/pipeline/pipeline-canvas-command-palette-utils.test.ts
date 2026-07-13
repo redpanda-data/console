@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { jumpableNodes, SECTION_LABEL, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
+import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
@@ -85,16 +85,5 @@ describe('searchKeywords', () => {
   test('returns undefined when there is no searchable meta', () => {
     expect(searchKeywords(node({}))).toBeUndefined();
     expect(searchKeywords(node({ meta: [{ label: 'group', value: '' }] }))).toBeUndefined();
-  });
-});
-
-describe('SECTION_LABEL', () => {
-  test('maps every section to a human label', () => {
-    expect(SECTION_LABEL).toEqual({
-      input: 'Input',
-      processor: 'Processor',
-      output: 'Output',
-      resource: 'Resource',
-    });
   });
 });

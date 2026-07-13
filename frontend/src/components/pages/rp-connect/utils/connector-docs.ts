@@ -10,8 +10,7 @@
  */
 
 const DOCS_BASE = 'https://docs.redpanda.com/redpanda-cloud/develop/connect/components';
-// Sections whose docs path is the naive plural (`${section}s`). Excludes metrics/tracer, whose
-// upstream paths ("metrics", "tracers") don't follow that rule.
+// Sections whose docs path is the naive plural (`${section}s`); metrics/tracer don't follow that rule.
 const DOCS_SECTIONS = new Set(['input', 'output', 'processor', 'cache', 'rate_limit']);
 
 /** Docs URL for a connector, or undefined for sections whose upstream path isn't the naive plural. */

@@ -1,14 +1,12 @@
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { pluralTypeLabel, withArticles } from 'utils/string';
 
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
-import { aliasTermsForName } from '../utils/component-aliases';
 
-export const RECENTS_KEY = 'rpcn-recent-components';
-export const MAX_RECENTS = 6;
+const RECENTS_KEY = 'rpcn-recent-components';
+const MAX_RECENTS = 6;
 
 // Curated "likely next" defaults per slot kind, shown before the user types. Names absent from the catalog are dropped.
-export const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
+const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
   input: ['kafka_franz', 'redpanda', 'generate', 'http_client', 'file'],
   output: ['kafka_franz', 'redpanda', 'http_client', 'drop', 'stdout'],
   processor: ['mapping', 'bloblang', 'cache', 'http', 'rate_limit', 'log'],
@@ -17,7 +15,7 @@ export const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> 
 };
 
 // Everyday components sorted ahead of the long tail when browsing.
-export const COMMON_COMPONENTS = new Set([
+const COMMON_COMPONENTS = new Set([
   ...Object.values(SUGGESTED_BY_TYPE).flat(),
   'kafka',
   'redpanda_migrator',
@@ -53,7 +51,7 @@ export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec): 
   return a.name.localeCompare(b.name);
 }
 
-export type RecentEntry = { name: string; type: ConnectComponentType };
+type RecentEntry = { name: string; type: ConnectComponentType };
 
 export function readRecents(): RecentEntry[] {
   if (typeof window === 'undefined') {
@@ -81,6 +79,71 @@ export function pushRecent(entry: RecentEntry): void {
   } catch {
     // Best-effort; ignore storage failures.
   }
+}
+
+// Search synonyms: a query matching an alias key surfaces every component whose name contains a
+// listed fragment (e.g. "queue" finds kafka/nats/redis). Keep entries lowercase.
+export const COMPONENT_ALIASES: Record<string, string[]> = {
+  queue: ['kafka', 'nats', 'redis', 'amqp', 'sqs', 'pubsub', 'nsq', 'mqtt'],
+  stream: ['kafka', 'redpanda', 'kinesis'],
+  topic: ['kafka', 'redpanda'],
+  transform: ['mapping', 'bloblang', 'mutation', 'jq'],
+  map: ['mapping', 'bloblang'],
+  enrich: ['branch', 'cache', 'http'],
+  filter: ['mapping', 'bloblang', 'filter'],
+  database: ['sql', 'postgres', 'mysql', 'mongodb', 'redis'],
+  db: ['sql', 'postgres', 'mysql', 'mongodb'],
+  sql: ['sql', 'postgres', 'mysql'],
+  cdc: ['cdc'],
+  cache: ['cache', 'redis', 'memcached'],
+  throttle: ['rate_limit'],
+  ratelimit: ['rate_limit'],
+  http: ['http', 'http_client', 'http_server'],
+  rest: ['http'],
+  api: ['http'],
+  webhook: ['http_server'],
+  s3: ['aws_s3'],
+  blob: ['aws_s3', 'gcp_cloud_storage', 'azure_blob_storage'],
+  bucket: ['aws_s3', 'gcp_cloud_storage', 'azure_blob_storage'],
+  warehouse: ['snowflake', 'bigquery', 'redshift'],
+  ai: ['openai', 'gpt', 'cohere', 'ollama', 'embeddings'],
+  llm: ['openai', 'gpt', 'cohere', 'ollama'],
+  vector: ['pinecone', 'qdrant', 'pgvector', 'embeddings'],
+  log: ['log'],
+  delay: ['sleep', 'rate_limit'],
+  retry: ['retry'],
+  json: ['mapping', 'bloblang', 'json'],
+};
+
+// Does `name` contain `fragment` on `_`/string boundaries? Matches `kafka` in `kafka_franz` and
+// `rate_limit` whole, but not a fragment buried mid-token (`log` in `catalog`) — names are snake_case.
+function nameContainsToken(name: string, fragment: string): boolean {
+  let from = 0;
+  for (;;) {
+    const at = name.indexOf(fragment, from);
+    if (at === -1) {
+      return false;
+    }
+    const boundedBefore = at === 0 || name[at - 1] === '_';
+    const end = at + fragment.length;
+    const boundedAfter = end === name.length || name[end] === '_';
+    if (boundedBefore && boundedAfter) {
+      return true;
+    }
+    from = at + 1;
+  }
+}
+
+// Every alias key whose fragments the name contains as a token ("queue" matches `kafka_franz`).
+export function aliasTermsForName(name: string): string[] {
+  const lower = name.toLowerCase();
+  const terms: string[] = [];
+  for (const [alias, fragments] of Object.entries(COMPONENT_ALIASES)) {
+    if (fragments.some((fragment) => nameContainsToken(lower, fragment))) {
+      terms.push(alias);
+    }
+  }
+  return terms;
 }
 
 // Lowercased searchable text (name + aliases + summary + description + categories) for substring matching.
@@ -142,8 +205,29 @@ export function asciidocToMarkdown(raw: string): string {
   );
 }
 
-// Empty-state copy. A type-locked miss that matches other component types is explained
-// ("it exists as an input") so it doesn't read as a missing integration.
+const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/;
+
+// Humanize + pluralize snake_case labels, joined with "or": ['cache', 'rate_limit'] → 'caches or rate limits'.
+function pluralTypeLabel(labels: string[] | undefined, emptyLabel: string): string {
+  if (!labels || labels.length === 0) {
+    return emptyLabel;
+  }
+  return labels.map((label) => `${label.replace(/_/g, ' ')}s`).join(' or ');
+}
+
+// Humanized labels prefixed with "a"/"an", joined with "or": ['cache', 'input'] → 'a cache or an input'.
+function withArticles(labels: string[]): string {
+  const labeled = labels.map((label) => {
+    const humanized = label.replace(/_/g, ' ');
+    return `${STARTS_WITH_VOWEL_REGEX.test(humanized) ? 'an' : 'a'} ${humanized}`;
+  });
+  if (labeled.length <= 1) {
+    return labeled[0] ?? '';
+  }
+  return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1)}`;
+}
+
+// Empty-state copy; a type-locked miss that exists as another type is called out ("it exists as an input").
 export function buildEmptyMessage(
   query: string,
   allowedTypes?: ConnectComponentType[],
@@ -158,8 +242,7 @@ export function buildEmptyMessage(
   return `No ${pluralTypeLabel(allowedTypes, 'components')} match “${query}” — it exists as ${withArticles(outOfScopeTypes)}.`;
 }
 
-// Browse-mode "Suggested" list: the curated names for the slot's allowed types, resolved against the
-// catalog and with anything already surfaced under "Recent" dropped.
+// "Suggested" tab: curated names for the slot's allowed types, resolved against the catalog, minus recents.
 export function computeSuggested(
   allowedTypes: ConnectComponentType[] | undefined,
   byName: Map<string, ConnectComponentSpec>,

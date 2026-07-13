@@ -15,11 +15,9 @@ import { TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 /**
- * Warning banner for a pipeline config that can't be shown as-is — shared by the visual canvas (stale
- * layout) and the sidebar outline (stale / can't build one yet). Renders the registry Alert in its
- * warning tone. Overrides the Alert's `w-full` back to `w-auto` so it stays content-width when floated
- * over the canvas (centered between the undo/redo + problems toolbars) and fills to its margins when
- * placed inline; callers pass positioning, padding and text size via `className`.
+ * Warning banner for a pipeline config that can't be shown as-is, shared by the visual canvas and the
+ * sidebar outline. Overrides the Alert's `w-full` to `w-auto` so it stays content-width when floated
+ * over the canvas; callers pass positioning, padding and text size via `className`.
  */
 export function InvalidConfigNotice({ children, className }: { children: ReactNode; className?: string }) {
   return (

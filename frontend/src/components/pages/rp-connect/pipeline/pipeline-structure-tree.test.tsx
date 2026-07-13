@@ -64,7 +64,7 @@ describe('PipelineStructureTree', () => {
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     await userEvent.click(screen.getByText('case 1'));
     const [highlightId, editableId] = onSelectNode.mock.calls[0];
-    // The case is now selectable in its own right (switchCase editTarget) so the
+    // The case is selectable in its own right (switchCase editTarget) so the
     // inspector can edit its `check` — both ids point at the case row.
     expect(highlightId).toContain('case');
     expect(editableId).toContain('case');

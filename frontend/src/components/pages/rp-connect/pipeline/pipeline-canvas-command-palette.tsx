@@ -20,17 +20,16 @@ import {
 import { FileCode2, type LucideIcon, Redo2, Undo2 } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { jumpableNodes, SECTION_LABEL, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
+import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
-import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { type PipelineFlowNode, SECTION_LABEL } from '../utils/pipeline-flow-parser';
 
-// One quick action in the palette (view in YAML, undo/redo, …). Entries with no handler are
-// filtered out so the palette lists only what's available.
+// A quick action in the palette (view in YAML, undo/redo, …); listed only when its handler prop was passed.
 type PaletteAction = {
   id: string;
   label: string;
   icon: LucideIcon;
-  run?: () => void;
+  run: () => void;
   /** When false the action is shown but disabled (e.g. nothing to undo). */
   enabled?: boolean;
 };
@@ -82,9 +81,9 @@ export function CanvasCommandPalette({
     return list;
   }, [onViewSelectedInYaml, onUndo, onRedo, canUndo, canRedo]);
 
-  const pick = (run?: () => void) => {
+  const pick = (run: () => void) => {
     onOpenChange(false);
-    run?.();
+    run();
   };
 
   return (

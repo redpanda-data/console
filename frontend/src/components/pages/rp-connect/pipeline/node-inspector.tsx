@@ -66,7 +66,7 @@ import {
   targetComponentType,
 } from '../utils/yaml';
 
-// Default impl for the dangling-reference quick-fix, which must reuse the exact missing label.
+// Default component per kind for the dangling-reference quick-fix.
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
 
 const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
@@ -86,7 +86,7 @@ type NodeInspectorProps = {
   caseTarget?: EditTarget | null;
   /** Canonical pipeline YAML — read from and written back to. */
   yaml: string;
-  /** Component specs, used to drive the schema form. */
+  /** Specs that drive the schema form. */
   components: ConnectComponentSpec[];
   onApply: (yaml: string) => void;
   onDelete?: (target: EditTarget) => void;
@@ -176,9 +176,8 @@ export function NodeInspector({
   const resourceLabel0 =
     target?.kind === 'resource' && component && typeof component.label === 'string' ? component.label : undefined;
 
-  // Commit all pending edits into `yaml`, condition before component (the condition replaces the
-  // whole case, so writing it first avoids clobbering the component). Consumes drafts as applied,
-  // so re-calling is a no-op until the next edit.
+  // Commit pending edits, condition before component — the condition replaces the whole case, so
+  // written second it would clobber the component edit. Drafts are consumed as applied (re-call = no-op).
   const commit = useCallback(
     (input: string): string => {
       let next = input;
@@ -267,7 +266,7 @@ export function NodeInspector({
   const kindLabel = COMPONENT_TYPE_LABEL[kind] ?? 'Component';
   const docsUrl = getConnectorDocsUrl(kind, componentName);
   const useForm = (spec?.config?.children?.length ?? 0) > 0;
-  // Delete lives in the header's 3-dot menu — disabled in read-only or with no delete handler.
+  // Delete lives in the header's 3-dot menu.
   const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
 
   // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of the
@@ -281,8 +280,7 @@ export function NodeInspector({
     rate_limit: listResourceLabels(yaml, 'rate_limit'),
   };
 
-  // A `resource:` reference whose label has no matching resource — a fixable warning (it would
-  // otherwise fail only at deploy).
+  // A `resource:` reference whose label has no matching resource — fixable here vs. failing at deploy.
   const refKind = resourceKindForComponentName(componentName);
   const innerConfig = component[componentName];
   const refValue =
@@ -369,8 +367,7 @@ type InspectorBodyProps = {
   reportComponentDraft: (next: Record<string, unknown> | null) => void;
 };
 
-// The inspector body: the case-condition section (when any) plus one of a schema form, a read-only
-// view, a clickable child list, or scoped raw YAML — most specific match first.
+// Case-condition section (if any) plus the most specific of: schema form, read-only view, child list, raw YAML.
 const InspectorBody = ({
   conditionSection,
   component,
@@ -399,9 +396,8 @@ const InspectorBody = ({
         childItems={childItems}
         componentName={componentName}
         headerSlot={conditionSection}
-        // Re-key on node identity + saved value: identity remounts when the selection changes (so a
-        // sibling with byte-identical config can't inherit this form's dirty state), value remounts on
-        // external changes (undo/redo, YAML lane).
+        // Re-key on node identity + saved value: identity remounts on selection change (a sibling with
+        // identical config can't inherit dirty state); value remounts on undo/redo or YAML-lane edits.
         key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
@@ -413,8 +409,7 @@ const InspectorBody = ({
       />
     );
   }
-  // A fan-out container with no schema form (fallback / broker / output switch): show its members as
-  // a clickable list rather than raw YAML, so the branching reads as nodes.
+  // Fan-out container with no schema form (fallback / broker / output switch): list members instead of raw YAML.
   if (childItems && childItems.length > 0 && onSelectChild) {
     const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
     return (
@@ -438,15 +433,14 @@ const InspectorBody = ({
   );
 };
 
-// Secondary node actions (View in YAML, Delete) in a 3-dot menu, keeping the
-// destructive Delete out of the way of the header's primary controls.
+// Secondary node actions (View in YAML, Delete) in a 3-dot menu.
 const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () => void; onDelete?: () => void }) => {
   if (!(onOpenInYaml || onDelete)) {
     return null;
   }
   return (
     <DropdownMenu>
-      {/* Base UI uses `render` (not Radix `asChild`) so the trigger IS our icon-sm Button — aligned with its neighbours, not nested. */}
+      {/* Base UI `render` (not Radix `asChild`): the trigger IS our icon-sm Button, not a nested one. */}
       <DropdownMenuTrigger
         render={<Button aria-label="More actions" className="text-muted-foreground" size="icon-sm" variant="ghost" />}
       >
@@ -698,8 +692,7 @@ const CaseConditionSection = ({
   );
 };
 
-// A dangling `resource:` reference (label has no matching resource), with a one-click fix to
-// create it under that label.
+// Banner for a dangling `resource:` reference, with a one-click fix that creates it under that label.
 const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate: () => void }) => (
   <div className="flex shrink-0 items-center gap-2 border-warning/30 border-b bg-warning-subtle px-4 py-3">
     <AlertCircle className="size-4 shrink-0 text-warning" />
@@ -809,8 +802,7 @@ const ReadOnlyComponent = ({ component }: { component: Record<string, unknown> }
   </div>
 );
 
-// Fallback editor for components without a known schema (e.g. bloblang mappings):
-// the component as scoped, editable YAML.
+// Fallback editor for components without a known schema (e.g. bloblang mappings): scoped, editable YAML.
 const RawComponentEditor = ({
   component,
   onConfigChange,

@@ -41,16 +41,15 @@ import { pluralize, pluralizeWithNumber } from 'utils/string';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
+import { sectionLabel } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
-// Applied to the card body, never the RF node wrapper — its `transform` drives positioning and
-// would fight a scale/translate animation.
+// Applied to the card body, never the RF node wrapper, whose `transform` drives positioning.
 const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 
-// RF drives pan/drag from native listeners on ancestors (d3-zoom/d3-drag); React's synthetic
-// handlers run after and can't cancel the gesture. Attach native listeners and stop propagation
-// only for presses on a real control, so buttons click while the card body still pans.
+// RF drives pan/drag from native d3 listeners on ancestors; React's synthetic handlers run too late to
+// cancel. Stop propagation natively, only for presses on a real control, so the card body still pans.
 const CONTROL_SELECTOR = 'button, a, input, select, textarea, [role="button"]';
 const PRESS_EVENTS = ['mousedown', 'pointerdown', 'touchstart'] as const;
 
@@ -78,15 +77,7 @@ function useStopPanOnControls() {
   return ref;
 }
 
-const SECTION_LABEL: Record<string, string> = {
-  input: 'Input',
-  processor: 'Processor',
-  output: 'Output',
-  resource: 'Resource',
-};
-
-// Each role's colour identity via theme-aware semantic tokens (readable as either fill or text).
-// Output has no matching status token, so it borrows a chart accent.
+// Role colour identities as theme-aware tokens; output has no status token, so it borrows a chart accent.
 const SECTION_ACCENT: Record<string, string> = {
   input: 'var(--color-success)',
   processor: 'var(--color-informative)',
@@ -98,8 +89,7 @@ export function sectionAccent(section?: string): string | undefined {
   return section ? SECTION_ACCENT[section] : undefined;
 }
 
-// Role colour as a tinted title band (not a border) so it doesn't compete with the selection /
-// error rings. Opaque (mixed over the card colour) so it layers on headers and leaf cards alike.
+// A tinted title band, not a border, so it doesn't compete with selection/error rings; opaque over the card colour.
 function headerTintStyle(accent?: string): React.CSSProperties | undefined {
   return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
 }
@@ -111,8 +101,7 @@ const LogoTile = ({ name }: { name: string }) => (
   </span>
 );
 
-// A node's routing semantics as a chip: `if <check>`, `default`, or `on error` (red). Display-only;
-// conditions are edited in the inspector panel.
+// Routing semantics as a chip: `if <check>`, `default`, or `on error`. Display-only; edited in the inspector.
 const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
@@ -143,16 +132,14 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   );
 };
 
-// Routing conditions reuse the `warning` accent, distinct from section accents, so routing logic is
-// easy to scan.
+// Routing conditions reuse the `warning` accent, distinct from section accents, so routing is easy to scan.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
   condition: 'border-warning/30 bg-warning/10 text-warning',
   muted: 'border-warning/20 bg-warning/5 text-warning/80',
   error: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
-// A switch case's routing condition on its own full-width row (more contrast than the inline
-// header chip). Display-only; inset ring when the condition is selected.
+// A switch case's condition on its own full-width row. Display-only; inset ring when selected.
 const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boolean }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
   if (data.isErrorPath) {
@@ -202,8 +189,7 @@ export type FlowCardData = {
   isErrorPath?: boolean;
   // A `switch` case wrapper — rendered as a condition-forward "case" card.
   isCase?: boolean;
-  // Logical parent (parser parentId) used for selection/scope when the node carries no
-  // React Flow `parentId` (the block layout positions everything absolutely).
+  // Logical parent (parser parentId) for selection/scope; nodes carry no React Flow `parentId`.
   ownerId?: string;
   editTarget?: EditTarget;
   /** Edit target for this node's switch CASE (routing condition), distinct from `editTarget`
@@ -220,8 +206,7 @@ export type FlowCardData = {
   flash?: boolean;
   /** Changes on each flash so the pulse animation replays. */
   flashToken?: number;
-  /** New this render (e.g. revealed by expanding a container) — fades and grows in place
-      rather than sliding from the origin. */
+  /** New this render — fades and grows in place rather than sliding from the origin. */
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
@@ -249,9 +234,8 @@ const NodeHandles = () => (
   <>
     {HANDLE_IDS.map((h) => {
       const horizontal = h.id === 'l' || h.id === 'r';
-      // Horizontal (l/r) handles keep RF's default vertical centering so a same-rank spine reads
-      // straight. Vertical (t/b) handles pin to a fixed left offset so stacked cards of differing
-      // widths connect on a straight line.
+      // l/r handles keep RF's default centering so a same-rank spine reads straight; t/b pin to a
+      // fixed left offset so stacked cards of differing widths connect on a straight line.
       const style = horizontal ? undefined : { left: FLOW_SPINE_HANDLE_LEFT, transform: 'none' };
       return (
         <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
@@ -260,8 +244,7 @@ const NodeHandles = () => (
   </>
 );
 
-// Kafka/Redpanda topics as scannable chips — the single most useful fact for a source or sink.
-// Capped so a long topic list doesn't blow out the card.
+// Topics as scannable chips, capped so a long list doesn't blow out the card.
 const TOPIC_CHIP_LIMIT = 4;
 const TopicChips = ({ topics }: { topics?: string[] }) => {
   if (!topics?.length) {
@@ -357,8 +340,7 @@ const MissingChip = ({
 const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   const section = data.section ?? 'connector';
   const onAdd = data.onAddConnector;
-  // Read-only (no handler): plain descriptive text, not a disabled button that reads as
-  // broken permissions.
+  // Read-only (no handler): plain text, not a disabled button that reads as broken permissions.
   if (!onAdd) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm">
@@ -436,7 +418,7 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
 
 // A leaf component card. The whole card is the click target; editing happens in the inspector rail.
 const ComponentCard = ({ data }: { data: FlowCardData }) => {
-  const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
+  const kindLabel = sectionLabel(data.section);
   const accent = SECTION_ACCENT[data.section ?? ''];
   return (
     <div
@@ -555,8 +537,7 @@ const LINK_STROKE: Record<LinkTone, string> = {
   error: 'var(--color-destructive)',
 };
 
-// Tone-matched label styling — solid pill, tinted border, text in the edge's own colour — so tags
-// read clearly against the darker nested-container backgrounds rather than as low-contrast gray.
+// Tone-matched labels — solid pill, tinted border, text in the edge's colour — read clearly over region fills.
 const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   primary: 'border-primary/40 text-primary',
   error: 'border-destructive/40 text-destructive',
@@ -564,8 +545,7 @@ const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   // Routing conditions read as the warning accent, matching the legend and the cards' condition chips.
   condition: 'border-warning/40 text-warning',
 };
-// Edge labels render into RF's shared layer below the nodes; lift the pill above the cards so a
-// label in a container's gutter isn't painted over.
+// Edge labels render into RF's shared layer below the nodes; lift the pill above the cards.
 const LINK_LABEL_Z = 1000;
 const LinkLabel = ({
   d,
@@ -607,9 +587,8 @@ const LinkLabel = ({
   );
 };
 
-// Control-flow processors (branch/switch/try/for_each/…) have no logo or config meta. Each gets a
-// glyph + one-line descriptor (count of cases / steps, or routing role) so it reads as a router,
-// not an empty card.
+// Control-flow processors have no logo or config meta; each gets a glyph + one-line descriptor
+// (count of cases/steps, or routing role) so it reads as a router, not an empty card.
 type ControlFlowPresentation = { Icon: LucideIcon; descriptor: string };
 
 function plural(n: number, noun: string): string {
@@ -650,8 +629,7 @@ function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
   return { Icon: spec.icon, descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}` };
 }
 
-// A filled accent tile for the control-flow glyph — distinct from the white connector `LogoTile`
-// so a router marker never reads as a data card.
+// Filled accent tile — distinct from the white `LogoTile` so a router marker never reads as a data card.
 const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => (
   <span
     className="flex size-7 shrink-0 items-center justify-center rounded-md border"
@@ -682,7 +660,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           cardRing(data)
         )}
       >
-        {/* Routing condition at the TOP — the first, most obvious click target (like leaf cards). */}
+        {/* Routing condition at the TOP, as on leaf cards. */}
         {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
@@ -709,7 +687,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           <LintBadge errors={data.lintErrors} />
           <UnsavedDot show={data.unsaved} />
         </div>
-        {/* "Add case / Add input" as a footer row inside the card, clearly tied to the node. Edit mode only. */}
+        {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button
             className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-border/70 border-t border-dashed px-3 py-1.5 font-medium text-primary text-xs transition-colors hover:bg-primary/5"
@@ -728,8 +706,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-// The join point where a fan's branches reconverge. Fan-in edges plug into its left, flow leaves
-// its right. A filled primary-tint disc (not a hollow ring) so it reads as a deliberate "join".
+// The join point where a fan's branches reconverge; a filled primary-tint disc so it reads as a deliberate "join".
 const FlowMergeNode = () => {
   const handle = { top: 16, transform: 'none' } as const;
   return (
@@ -822,8 +799,7 @@ function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: numb
   return points.at(-1) as { x: number; y: number };
 }
 
-// Smooth a polyline through Dagre's node-avoiding waypoints (quadratic segments via midpoints);
-// following those routed points keeps lines clear of the cards.
+// Smooth a polyline through Dagre's node-avoiding waypoints (quadratic segments via midpoints).
 function smoothGraphPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) {
     return '';
@@ -840,8 +816,7 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
   return `${d} L ${last.x} ${last.y}`;
 }
 
-// Stroke colour under selection: an emphasized edge wins — except error edges, which keep their own
-// tone.
+// An emphasized edge takes the highlight stroke — except error edges, which keep their own tone.
 function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
   if (d?.emphasized && tone !== 'error') {
     return HIGHLIGHT_STROKE;
@@ -852,8 +827,7 @@ function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
   return LINK_STROKE[tone];
 }
 
-// Edge opacity tiers: dimmed (unrelated to the selection) < ghost (decorative) < faint (context
-// line) < full strength.
+// Opacity tiers: dimmed (unrelated to selection) < ghost (decorative) < faint (context line) < full strength.
 function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
   return d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
 }

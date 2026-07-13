@@ -19,9 +19,8 @@ import { extractLintHintsFromError } from '../errors';
 import { localYamlLintHints, mergeLintHints } from '../utils/pipeline-lint';
 
 /**
- * Hints for the Lint-issues panel, pulled from three sources and deduped: the live server lint RPC
- * (semantic), client-side YAML syntax errors (the server can't lint a doc it can't parse), and
- * save-error hints. Debounced so it tracks the editor without re-linting every keystroke.
+ * Deduped hints for the Lint-issues panel: server lint RPC, client-side YAML syntax errors, and
+ * save-error hints. Debounced so it doesn't re-lint on every keystroke.
  */
 export function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
@@ -32,21 +31,20 @@ export function usePipelineLint(yamlContent: string, errorLintHints: Record<stri
     error: lintError,
   } = useLintPipelineConfigQuery(debouncedYamlContent, { enabled });
 
-  // Client-side YAML syntax errors — the live server lint can't report a config it can't parse, so
-  // without these an unparseable doc reads as "No issues found" until a save round-trips it.
+  // The server can't lint an unparseable doc, so without these it would read as "No issues found".
   const syntaxHints = useMemo(
     () => (enabled ? localYamlLintHints(debouncedYamlContent) : []),
     [enabled, debouncedYamlContent]
   );
 
   const lintHints = useMemo(() => {
-    // A local syntax error means the doc is unparseable: the server lint returns nothing and any
-    // save-error hints describe the SAME problem with worse positions, so the local ones supersede.
+    // Local syntax errors supersede: server lint returns nothing and save-error hints repeat the same problem
+    // with worse positions.
     if (syntaxHints.length > 0) {
       return mergeLintHints({}, [], syntaxHints);
     }
-    // Surface a lint RPC that actually REJECTED the config (invalid_argument) so a swallowed rejection
-    // isn't read as "no issues"; ignore transient infra failures, which would falsely flag valid YAML.
+    // Surface lint RPC rejections (invalid_argument) as hints; ignore transient infra failures,
+    // which would falsely flag valid YAML.
     const rejection =
       isLintError && lintError instanceof ConnectError && lintError.code === Code.InvalidArgument
         ? Object.values(extractLintHintsFromError(lintError))

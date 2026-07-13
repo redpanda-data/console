@@ -40,10 +40,8 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
     if (node.editTarget) {
       pushRange(node.id, editTargetPath(node.editTarget));
     }
-    // A switch case's range (includes its routing `check`) is attributed to the RENDERED
-    // case-entry node so a condition error highlights the case, not the whole switch. Output
-    // switch: the case node itself. Processor switch (no rendered wrapper): the wrapper's first
-    // child. The case span is smaller than the switch's, so `enclosingNodeId` prefers it.
+    // Attribute a case's range (incl. its `check`) to the rendered case-entry node — the case itself
+    // (output switch) or the wrapper's first child (processor switch); its smaller span wins in enclosingNodeId.
     if (node.caseEditTarget) {
       const entryId = node.kind === 'leaf' ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
       if (entryId) {
@@ -55,9 +53,8 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
 }
 
 /**
- * Merge save-error lint hints with the live lint query's hints, dropping duplicates.
- * After a failed save the same problem arrives from both sources under different keys;
- * without deduping it renders twice. The error-derived copy wins (carries `lintType`).
+ * Merge save-error lint hints with live-lint hints, deduping: after a failed save the same problem
+ * arrives from both sources under different keys. The error-derived copy wins (carries `lintType`).
  */
 export function mergeLintHints(
   errorHints: Record<string, LintHint>,
@@ -91,9 +88,8 @@ export function mergeLintHints(
 }
 
 /**
- * Client-side YAML syntax lint: the `yaml` parser's own errors with 1-based line/column, so the
- * "invalid YAML" class shows in the Lint panel without a save round-trip. `prettyErrors: false` keeps
- * each message to a single clean line (no embedded code snippet).
+ * Client-side YAML syntax lint (1-based line/column) so invalid YAML shows without a save round-trip.
+ * `prettyErrors: false` keeps each message to a single clean line (no embedded code snippet).
  */
 export function localYamlLintHints(configYaml: string): LintHint[] {
   if (!configYaml.trim()) {

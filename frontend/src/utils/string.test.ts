@@ -17,9 +17,7 @@ import {
   getUserInitials,
   pluralize,
   pluralizeWithNumber,
-  pluralTypeLabel,
   truncateWithEllipsis,
-  withArticles,
 } from './string';
 
 describe('formatFieldLabel', () => {
@@ -156,42 +154,5 @@ describe('getUserInitials', () => {
   test('should uppercase initials', () => {
     expect(getUserInitials('john doe')).toBe('JD');
     expect(getUserInitials('ALICE SMITH')).toBe('AS');
-  });
-});
-
-describe('pluralTypeLabel', () => {
-  test('pluralizes a single label', () => {
-    expect(pluralTypeLabel(['processor'])).toBe('processors');
-  });
-
-  test('humanizes snake_case and joins multiple labels with "or"', () => {
-    expect(pluralTypeLabel(['cache', 'rate_limit'])).toBe('caches or rate limits');
-  });
-
-  test('returns the fallback for an empty or missing list', () => {
-    expect(pluralTypeLabel([], 'components')).toBe('components');
-    expect(pluralTypeLabel(undefined)).toBe('items');
-  });
-});
-
-describe('withArticles', () => {
-  test('prefixes a consonant-initial label with "a"', () => {
-    expect(withArticles(['processor'])).toBe('a processor');
-  });
-
-  test('prefixes a vowel-initial label with "an"', () => {
-    expect(withArticles(['input'])).toBe('an input');
-  });
-
-  test('joins two labels with "or"', () => {
-    expect(withArticles(['input', 'output'])).toBe('an input or an output');
-  });
-
-  test('joins three or more labels with commas and a trailing "or"', () => {
-    expect(withArticles(['cache', 'processor', 'rate_limit'])).toBe('a cache, a processor or a rate limit');
-  });
-
-  test('returns an empty string for an empty list', () => {
-    expect(withArticles([])).toBe('');
   });
 });

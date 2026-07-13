@@ -481,7 +481,6 @@ export const getConnectTemplate = ({
   if (existingYaml) {
     const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
 
-    // On merge or conversion failure, keep existing YAML.
     if (!mergedConfig) {
       return existingYaml;
     }
@@ -493,10 +492,22 @@ export const getConnectTemplate = ({
   return configToYaml(newConfigObject, spec);
 };
 
-type ParsedYamlConfig = {
+/** Root sections of a parsed pipeline config document. */
+export type ParsedYamlConfig = {
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   pipeline?: { processors?: Record<string, unknown>[] };
+  cache_resources?: unknown[];
+  rate_limit_resources?: unknown[];
+  // Named-resource inputs/outputs/processors (via `resource:` indirection), shown in the resource lane with ref links.
+  input_resources?: unknown[];
+  output_resources?: unknown[];
+  processor_resources?: unknown[];
+  buffer?: Record<string, unknown>;
+  metrics?: Record<string, unknown>;
+  tracer?: Record<string, unknown>;
+  logger?: Record<string, unknown>;
+  redpanda?: Record<string, unknown>;
 };
 
 type ParsedConfigComponents = {
@@ -583,7 +594,6 @@ function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] 
   return;
 }
 
-// The two pipeline sections a Redpanda connector can be patched into.
 type RedpandaSection = 'input' | 'output';
 
 // Strip commented-out placeholder lines for just-patched keys, so the user doesn't see
@@ -828,16 +838,14 @@ export function generateYamlFromWizardData(
   return yaml;
 }
 
-// Visual-editor mutations: pure yaml -> (yaml | null) transforms over a parsed Document, so
-// comments/formatting survive and YAML stays the source of truth. `null` on parse failure keeps
-// prior content.
+// Visual-editor mutations: pure yaml -> (yaml | null) transforms over a parsed Document so comments/
+// formatting survive; `null` on parse failure keeps prior content.
 
 export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
 
 /**
- * Addresses a visually editable component. Early kinds are top-level conveniences (with
- * tailored prune-on-delete); `path` addresses any component (incl. ones nested in
- * branch/switch/try/broker) by exact YAML location, carrying its type to load the schema.
+ * Addresses a visually editable component. Early kinds are top-level conveniences (with tailored
+ * prune-on-delete); `path` addresses any nested component by exact YAML location + schema type.
  */
 export type EditTarget =
   | { kind: 'input' }
@@ -874,11 +882,8 @@ function isEmptyMap(node: unknown): boolean {
   return Array.isArray(items) && items.length === 0;
 }
 
-// After a delete, drop now-empty TOP-LEVEL containers so the diagram falls back to its
-// placeholder (e.g. removing the last processor removes `pipeline`). Nested arrays (a branch's
-// `processors`, a `try` body, a switch's cases) are deliberately kept as `[]`: they render as
-// fillable groups, whereas deleting the key can hide surviving content (e.g. a check-only
-// switch case) or leave `- {}` cruft.
+// After a delete, drop now-empty TOP-LEVEL containers so the diagram falls back to its placeholder.
+// Nested arrays deliberately stay `[]` — deleting the key can hide surviving content or leave `- {}` cruft.
 function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
   if (target.kind === 'processor') {
     if (isEmptySeq(doc.getIn(['pipeline', 'processors']))) {
@@ -896,8 +901,7 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
     typeof target.path[1] === 'number' &&
     isEmptySeq(doc.get(target.path[0]))
   ) {
-    // input_resources/processor_resources/output_resources items are path targets, but their
-    // array is still a TOP-LEVEL container — drop it when emptied, like the branches above.
+    // *_resources items are path targets, but their array is still a top-level container — drop when emptied.
     doc.delete(target.path[0]);
   }
 }
@@ -958,9 +962,8 @@ export function setComponentAt(
   try {
     const doc = parseDocument(yaml);
     const path = editTargetPath(target);
-    // Only ever overwrite an existing node. A path that no longer resolves means the target went
-    // stale (external edit / undo): writing anyway would make setIn pad a sequence with `- null`
-    // (numeric tail) or inject a phantom component under a padded parent (numeric mid-segment).
+    // Only overwrite an existing node: writing to a stale path (external edit / undo) would make
+    // setIn pad a sequence with `- null` or inject a phantom component under a padded parent.
     if (doc.getIn(path) === undefined) {
       return null;
     }
@@ -983,8 +986,7 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
   }
 }
 
-// Number of items in the YAML sequence at `path` (0 if absent / not a sequence). Used to locate a
-// just-inserted item (e.g. an append lands at length-1) so the editor can select it.
+// Items in the sequence at `path` (0 if absent). Locates a just-inserted item (an append lands at length-1).
 export function seqLengthAt(yaml: string, path: (string | number)[]): number {
   try {
     const seq = parseDocument(yaml).getIn(path);
@@ -1011,7 +1013,6 @@ export function insertComponentAt(
       const clamped = Math.max(0, Math.min(index, seq.items.length));
       seq.items.splice(clamped, 0, doc.createNode(componentObject));
     } else if (seq === undefined || seq === null) {
-      // No array yet — create it with this lone item.
       doc.setIn(containerPath, [componentObject]);
     } else {
       // The container exists but isn't a sequence (malformed YAML) — refuse rather than clobber it.
@@ -1078,9 +1079,8 @@ export function buildInsertableComponent(
   }
 }
 
-// Resource references (cache/rate_limit): a `cache`/`rate_limit` processor's `resource:` must equal
-// a `*_resources` entry's `label:`. These helpers link by label — typed dropdown, create-and-link,
-// rename-with-cascade — so labels never drift out of sync.
+// Resource references: a `cache`/`rate_limit` processor's `resource:` must equal a `*_resources`
+// entry's `label:`. These helpers link by label so references never drift out of sync.
 
 export type ResourceKind = 'cache' | 'rate_limit';
 
@@ -1136,9 +1136,8 @@ function uniqueResourceLabel(existing: string[], base: string): string {
 }
 
 /**
- * Create a new resource of `kind` from a connector template and return the YAML plus
- * its (collision-safe) label, so the caller can immediately select it back into the
- * node's `resource:` field — create-and-link in one action.
+ * Create a new resource of `kind` from a connector template; returns the YAML plus its collision-safe
+ * label so the caller can immediately link it into the node's `resource:` field.
  */
 export function createResourceAndReturnLabel(
   yaml: string,
@@ -1165,9 +1164,8 @@ function enclosingComponentKey(path: readonly unknown[]): unknown {
   return isPair(parent) && isScalar(parent.key) ? parent.key.value : undefined;
 }
 
-// Visit every `resource: <label>` pair; with `kind`, only those inside a component of that
-// name (a `cache`/`rate_limit` processor form), so a cache rename can't touch a same-labelled
-// rate_limit reference (or an input/output `resource:` indirection).
+// Visit every `resource: <label>` pair; with `kind`, only those inside a `cache`/`rate_limit`
+// component, so a cache rename can't touch a same-labelled rate_limit reference.
 function visitResourceReferences(
   doc: Document.Parsed,
   label: string,
@@ -1186,9 +1184,8 @@ function visitResourceReferences(
 }
 
 /**
- * Repoint every `resource:` reference from `oldLabel` to `newLabel` across the document.
- * With `kind`, only references belonging to that resource kind are rewritten; without it (as in
- * tests), every matching `resource:` scalar is repointed.
+ * Repoint every `resource:` reference from `oldLabel` to `newLabel`. With `kind`, only references
+ * of that resource kind are rewritten; without it, every matching `resource:` scalar is.
  */
 export function renameResourceReferences(
   yaml: string,

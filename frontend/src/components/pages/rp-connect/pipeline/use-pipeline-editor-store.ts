@@ -64,8 +64,8 @@ type UiSlice = {
   recordEdit: (next: string) => void;
   // Commit the stacks + baseline after an undo/redo step.
   commitEditHistory: (next: { undo: string[]; redo: string[]; baseline: string }) => void;
-  // Flush the visual editor's currently-selected node's pending edits to the YAML — registered by
-  // the Visual lane, called by the page's Save so an in-progress node edit is included.
+  // Flushes the selected node's pending edits to the YAML; registered by the Visual lane, called by
+  // Save so an in-progress node edit is included.
   pendingEditCommit: (() => void) | null;
   setPendingEditCommit: (fn: (() => void) | null) => void;
   setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
@@ -109,8 +109,7 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
     }),
   resolveInitialYaml: (yaml) =>
     set((state) =>
-      // First resolution establishes the document baseline — reset the edit history so the initial
-      // template load isn't an undoable step. Subsequent calls only update the content.
+      // First resolution sets the baseline; reset the edit history so the template load isn't an undoable step.
       state.initialYaml === null
         ? { yamlContent: yaml, initialYaml: yaml, editUndoStack: [], editRedoStack: [], editBaseline: null }
         : { yamlContent: yaml }
@@ -142,8 +141,7 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
       if (next === s.editBaseline) {
         return {};
       }
-      // A real change (a visual edit, or an external YAML edit seen on lane return): push the old
-      // baseline as an undo step and clear the redo branch.
+      // Real change (visual edit, or external YAML edit seen on lane return): push the old baseline, clear redo.
       return { editUndoStack: [...s.editUndoStack, s.editBaseline], editRedoStack: [], editBaseline: next };
     }),
   commitEditHistory: ({ undo, redo, baseline }) =>

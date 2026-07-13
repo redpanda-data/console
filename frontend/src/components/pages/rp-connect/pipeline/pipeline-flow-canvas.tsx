@@ -40,6 +40,7 @@ import { flowEdgeTypes, flowNodeTypes, sectionAccent } from './pipeline-flow-can
 import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
 import { useResilientParse } from './use-resilient-parse';
 import { computeGraphLayout, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
+import { buildChildrenMap } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
@@ -49,7 +50,6 @@ const PAN_PADDING = 240;
 // RF's pan/zoom eases are d3-driven (JS), beyond the CSS reduced-motion rule — collapse them to instant.
 const animMs = (ms: number): number =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : ms;
-// Default interactive zoom-out floor for normal-sized graphs.
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
 // Floor for graphs too big to fit even at MIN_ZOOM — never below this, so it can't zoom out to a dot.
@@ -111,8 +111,7 @@ function miniMapNodeColor(node: Node): string {
   return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
 }
 
-// Overview minimap; its drawn world is exactly the pan-reachable region (see `world`), so the
-// viewport rect never leaves unreachable buffer. Click/drag re-centres.
+// Overview minimap; draws only the pan-reachable world (see `world`). Click/drag re-centres.
 function PipelineMiniMap({
   nodes,
   translateExtent,
@@ -146,9 +145,8 @@ function PipelineMiniMap({
     [translateExtent]
   );
 
-  // Draw only the pan-reachable world. Per axis: viewport smaller than extent → whole extent is
-  // reachable, so show it; else the axis is locked, so show the live visible window instead of
-  // unreachable buffer (RF pins an oversized viewport to an edge, not an assumed centre).
+  // Per axis: viewport smaller than extent → whole extent is reachable, show it; else the axis is
+  // locked, so show the live visible window (RF pins an oversized viewport to an edge).
   const canPanX = vw < ext.maxX - ext.minX;
   const canPanY = vh < ext.maxY - ext.minY;
   const world = {
@@ -160,8 +158,7 @@ function PipelineMiniMap({
   const worldW = Math.max(world.maxX - world.minX, 1);
   const worldH = Math.max(world.maxY - world.minY, 1);
 
-  // World fills the drawing area (frame minus MINIMAP_PAD); each axis scales independently so a
-  // clamp-forced aspect mismatch can't leave unreachable dead bands.
+  // Each axis scales independently so a clamp-forced aspect mismatch can't leave dead bands.
   const innerW = mapW - 2 * MINIMAP_PAD;
   const innerH = clampValue(innerW * (worldH / worldW), MINIMAP_MIN_INNER_H, MINIMAP_MAX_INNER_H);
   const mapH = innerH + 2 * MINIMAP_PAD;
@@ -247,8 +244,7 @@ function PipelineMiniMap({
   );
 }
 
-// Margin (px) between the revealed node and the canvas edge, and how long to wait for the
-// inspector rail's open animation to settle before measuring.
+// Reveal margin (px), and how long to wait for the inspector rail's open animation before measuring.
 const SELECTION_REVEAL_MARGIN = 32;
 const RAIL_SETTLE_MS = 240;
 
@@ -281,7 +277,6 @@ function focusDimNodes(
 // The graph fades back while it's showing the stale (last-good) layout, cueing that it's not live.
 const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
 
-// Positioning for a notice floated over the top-center of the canvas.
 const CANVAS_NOTICE_CLASS =
   'absolute top-3 left-1/2 z-20 -translate-x-1/2 px-3 py-1.5 text-sm shadow-sm backdrop-blur-sm';
 
@@ -328,8 +323,7 @@ function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
   }, [mode, ref]);
 }
 
-// Free-pan is suppressed while the zoom tool is armed — else a pan-drag ends in a click the zoom
-// tool acts on, jumping the view.
+// Free-pan is suppressed while the zoom tool is armed — else a pan-drag ends in a click that zooms.
 const canPanCanvas = (mode: ZoomMode): boolean => mode === null;
 
 // Spring-loaded: held Z → zoom-in, held Z + Option/Alt → zoom-out, nothing held → off.
@@ -413,9 +407,8 @@ function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: 
   return null;
 }
 
-// Frame the graph on first load: centered and zoomed to fit. Retries each frame (reading pane size
-// and node bounds fresh) until both are real, so it fires ASAP rather than waiting for a later
-// resize (which read as a "snap").
+// Frame the graph on first load: centered and zoomed to fit. Retries each frame until pane size and
+// node bounds are real, so it fires ASAP rather than waiting for a later resize (a visible "snap").
 function FitOnInit() {
   const nodeCount = useStore((s) => s.nodes.length);
   const storeApi = useStoreApi();
@@ -432,8 +425,7 @@ function FitOnInit() {
       const bounds = getNodesBounds(getNodes());
       if (width > 0 && height > 0 && bounds.width > 0 && bounds.height > 0) {
         doneRef.current = true;
-        // Let the initial fit zoom out below MIN_ZOOM for big graphs; small graphs stay capped so a
-        // few nodes aren't blown up.
+        // Big graphs may fit below MIN_ZOOM; small graphs stay capped so a few nodes aren't blown up.
         fitView({ padding: 0.2, minZoom: fitMinZoom(bounds.width, bounds.height, width, height), maxZoom: 1 });
         return;
       }
@@ -448,8 +440,7 @@ function FitOnInit() {
   return null;
 }
 
-// Keeps the interactive zoom-out floor in sync with graph size (see fitMinZoom). Lives inside the
-// provider for the pane dimensions.
+// Keeps the zoom-out floor in sync with graph size (see fitMinZoom); inside the provider for pane size.
 function MinZoomController({
   graphWidth,
   graphHeight,
@@ -483,7 +474,7 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
     }
     // Keep the current zoom (clamped to a readable band) so jumping doesn't lurch the scale.
     const zoom = Math.min(Math.max(getZoom(), 0.8), 1);
-    // Ease over ~600ms so the pan reads as a deliberate glide, not an instant jump.
+    // Long ease so the pan reads as a glide, not a jump.
     setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: animMs(600), zoom });
   }, [nodeId, token, getNodesBounds, setCenter, getZoom]);
   return null;
@@ -493,8 +484,7 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
 // the right). Once its open animation settles, nudge the viewport just enough to reveal a clipped node.
 function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: string; focusToken?: number }) {
   const { getNodesBounds, getViewport, setViewport } = useReactFlow();
-  // Re-runs as the canvas resizes during the rail animation; each change resets the settle
-  // timer, so the nudge fires once the pane width finally stops changing.
+  // Pane-width changes reset the settle timer, so the nudge fires once the rail stops resizing the canvas.
   const paneWidth = useStore((s) => s.width);
   // A palette "go to" centers via FocusNode; skip this nudge that cycle so the two don't compete.
   const lastFocusToken = useRef(focusToken);
@@ -546,8 +536,7 @@ function constructAccent(node?: Node): string {
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 type Point = { x: number; y: number };
 type MeasuredById = Map<string, { measured?: { width?: number; height?: number } }>;
-// The area is one rectangle over the `body` members; the `entry` marker sits just outside, reached by
-// an arm (see regionGeometry), so the box can't overflow into whatever shares the marker's column.
+// One rectangle over the `body` members; the `entry` marker sits outside, reached by an arm (see regionGeometry).
 type ScopeGeometry = { body: ScopeBounds; entry: ScopeBounds | null };
 
 function nodeRect(n: Node, measuredById: MeasuredById): ScopeBounds {
@@ -603,9 +592,8 @@ type ScopeRegion = {
   topPad: number;
 };
 
-// Past the browser's max paintable element size (~8k–16k device px) a filled div silently drops its
-// background, so a tall region's fill is painted as a stack of pieces capped well under the limit.
-// Exported so the render test can assert no piece exceeds it.
+// Browsers silently drop a filled div's background past ~8k–16k device px, so tall region fills are
+// painted as stacked pieces capped at this. Exported so the render test can assert the cap.
 export const MAX_REGION_PIECE_PX = 3000;
 
 type RegionGeometry = {
@@ -626,9 +614,8 @@ function entrySide(entry: ScopeBounds, body: ScopeBounds): 'left' | 'right' | un
   return entry.maxX <= body.minX ? 'left' : entry.minX >= body.maxX ? 'right' : undefined;
 }
 
-// The arm to the entry marker: its own row, stretched to meet the body when the marker sits clear
-// above/below it (an offset entry — e.g. a try marker between its body and the catch); otherwise
-// clamped to the body so a same-row marker's arm stays thin and can't reach into a sibling.
+// The arm to the entry marker at its own row: stretched to meet the body when the marker sits clear
+// above/below it; otherwise clamped to the body so it stays thin and can't reach into a sibling.
 function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: number): ScopeArm | undefined {
   const side = entrySide(entry, body);
   if (!side) {
@@ -709,9 +696,8 @@ export function regionGeometry(
   return { rects, path, bbox: { x: ox, y: oy, w: ox2 - ox, h: oy2 - oy }, anchor: { x: pb.minX, y: pb.minY } };
 }
 
-// One construct's enclosure: a faint dashed rectangle around its body with a thin arm out to the
-// entry marker. Box + label strengthen when the construct (or anything inside) is active.
-// Non-interactive, behind the nodes, in flow coordinates.
+// One construct's enclosure: a faint dashed rect + arm to the entry marker; strengthens when the
+// construct (or anything inside) is active. Non-interactive, behind the nodes, in flow coordinates.
 const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boolean }) => {
   const { body, entry, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
@@ -766,7 +752,6 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
           style={{ transition: 'stroke 200ms' }}
         />
       </svg>
-      {/* Label just above the body's top-left corner. */}
       <div className="pointer-events-none absolute" style={{ transform: `translate(${anchor.x}px, ${anchor.y}px)` }}>
         <span
           className="absolute bottom-full left-2 mb-0.5 rounded px-1.5 py-0.5 font-semibold text-caption-sm uppercase tracking-wide transition-opacity duration-200"
@@ -817,9 +802,8 @@ function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | nu
   };
 }
 
-// Faint enclosure boxes around every construct's sub-graph, emphasized when the construct (or
-// anything inside) is active. Drawn via `ViewportPortal`, never perturbing the nodes array (hover
-// stays cheap). Dagre can scatter members so a box may span a non-member card — accepted.
+// Faint enclosure boxes around each construct's sub-graph, emphasized when it (or anything inside) is
+// active. Drawn via `ViewportPortal` (hover stays cheap); a box may span a scattered non-member card.
 function ScopeRegions({
   hoveredId,
   selectedId,
@@ -833,12 +817,10 @@ function ScopeRegions({
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
   tryCatchPairs: ReadonlyMap<string, string>;
 }) {
-  // Measured sizes live on the store's stably-mutated nodeLookup, so subscribing to it alone won't
-  // re-render; `measuredKey` is a primitive digest that changes when cards measure, so boxes tighten
-  // from the layout estimate to the rendered size.
+  // The store's nodeLookup is stably mutated, so subscribing to it alone won't re-render;
+  // `measuredKey` is a primitive digest that changes when cards measure, so boxes tighten to rendered sizes.
   const nodeLookup = useStore((s) => s.nodeLookup);
-  // Only scoped cards affect region geometry, so digest just those below — not every node — keeping
-  // the per-store-change selector cheap.
+  // Only scoped cards affect region geometry, so the digest below covers just those — selector stays cheap.
   const scopedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const node of rfNodes) {
@@ -855,8 +837,7 @@ function ScopeRegions({
     return ids;
   }, [rfNodes, scopeOf]);
   const measuredKey = useStore((s) => {
-    // Integer digest of scoped cards' measured sizes (no per-frame string alloc); folds width+height
-    // so a reflow at constant height still retriggers the memo.
+    // Integer digest of measured sizes (no per-frame string alloc); folds width+height so any reflow retriggers.
     let h = 0;
     for (const id of scopedIds) {
       const m = s.nodeLookup.get(id)?.measured;
@@ -878,8 +859,7 @@ function ScopeRegions({
     // How many OTHER regions enclose each (its construct id is in their scope).
     const depthOf = (r: ScopeRegionDraft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
-    // Standoff scales with how deeply a region's own contents nest (0 if none), so each enclosing box
-    // stands one step off the inner ones and a construct with nothing nested hugs its nodes tightly.
+    // Standoff scales with inner nesting depth (0 if none), so each enclosing box stands one step off the inner ones.
     const innerDepth = (i: number) =>
       drafts.reduce((h, o, j) => (j !== i && drafts[i].scope.has(o.id) ? Math.max(h, depths[j] - depths[i]) : h), 0);
     return drafts.map((r, i) => {
@@ -891,8 +871,7 @@ function ScopeRegions({
   if (regions.length === 0) {
     return null;
   }
-  // Emphasized when the active node is the construct itself or anywhere in its sub-graph (incl. a
-  // merge dot, matched via owner id).
+  // Emphasized when the active node is the construct or anywhere in its sub-graph (merge dots match via owner id).
   const activeId = hoveredId ?? selectedId;
   const activeOwner = activeId
     ? (rfNodes.find((n) => n.id === activeId)?.data as FlowCardData | undefined)?.ownerId
@@ -928,7 +907,7 @@ type CanvasCallbacks = {
   previousIds: ReadonlySet<string>;
 };
 
-// Edit-mode action callbacks wired onto a node's data. Split out of `injectNodeData` to keep the branching simple.
+// Edit-mode action callbacks wired onto a node's data.
 function wireNodeActions(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
@@ -955,8 +934,7 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
     data.onToggle = () => cb.toggleCollapse(node.id);
   }
   if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
-    // Condition-chip and body clicks both report this node selected; the target kind picks whether
-    // to ring the condition row (case) or the whole card (component).
+    // The target kind picks whether to ring the condition row (case) or the whole card (component).
     if (data.caseEditTarget && cb.selectedTargetKind === 'switchCase') {
       data.conditionSelected = true;
     } else {
@@ -967,8 +945,7 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
   }
-  // A switch case's condition edit is attributed to its non-rendered case-wrapper node, so also
-  // mark the entry card standing in for it.
+  // A condition edit is attributed to the non-rendered case-wrapper node — also mark its stand-in entry card.
   if (cb.unsavedNodeIds?.has(node.id) || (data.caseOwnerId && cb.unsavedNodeIds?.has(data.caseOwnerId))) {
     data.unsaved = true;
   }
@@ -977,8 +954,7 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
     data.flashToken = cb.flashToken;
   }
   wireNodeActions(data, node, cb);
-  // A node new this render appears in place, not sliding from origin: drop the transform transition
-  // so it snaps, and let the card fade + grow in (`appeared`).
+  // New nodes appear in place: drop the transform transition so they snap, then fade + grow in (`appeared`).
   if (!cb.previousIds.has(node.id)) {
     data.appeared = true;
     return {
@@ -1058,8 +1034,7 @@ type DecorateEdgeOptions = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
 };
 
-// Reference edges are context lines, so they never fully dim — they stay at the "faint" tier even
-// when an unrelated node is selected. An active endpoint highlights them.
+// Reference edges are context lines: never below the "faint" tier, highlighted when an endpoint is active.
 function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined): Edge {
   const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
   return { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
@@ -1100,9 +1075,8 @@ export function decorateEdges(
   });
 }
 
-// What a click selects: the node itself if editable, else its nearest selectable ancestor.
-// Structural sub-nodes (switch cases, workflow stages) have no `editTarget`, so clicking one
-// selects the parent.
+// What a click selects: the node itself if editable, else the nearest selectable ancestor
+// (structural sub-nodes like switch cases have no `editTarget`).
 export function selectionTargetForNode(
   node: Node,
   nodes: Node[]
@@ -1117,8 +1091,7 @@ export function selectionTargetForNode(
   if (!(current && target)) {
     return null;
   }
-  // A case-entry node also carries its routing-condition target so the inspector can edit the
-  // condition alongside the component's config.
+  // A case-entry node also carries its routing-condition target so the inspector can edit the condition too.
   const caseTarget = (current.data as FlowCardData).caseEditTarget;
   return caseTarget ? { id: current.id, target, caseTarget } : { id: current.id, target };
 }
@@ -1179,26 +1152,13 @@ export function PipelineFlowCanvas({
   const [minZoom, setMinZoom] = useState(MIN_ZOOM);
   const wrapperRef = useRef<HTMLDivElement>(null);
   useZoomCursor(zoomMode, wrapperRef);
-  // Node ids committed last render; anything new this render "appears" in place and skips the
-  // reposition transition (so it doesn't fly from origin).
+  // Node ids committed last render — anything new this render "appears" in place (see injectNodeData).
   const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
   const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
   const { nodes, error, showingStale } = useResilientParse(debouncedYaml);
 
-  // A node's "scope" — itself plus all descendants — so selecting/hovering a container keeps its
-  // internal wiring (chains, fan/merge edges) lit and focuses its branch.
-  const childrenByParent = useMemo(() => {
-    const map = new Map<string | undefined, string[]>();
-    for (const node of nodes) {
-      const siblings = map.get(node.parentId);
-      if (siblings) {
-        siblings.push(node.id);
-      } else {
-        map.set(node.parentId, [node.id]);
-      }
-    }
-    return map;
-  }, [nodes]);
+  // A node's "scope" — itself plus all descendants — so selecting/hovering a container lights its whole branch.
+  const childrenByParent = useMemo(() => buildChildrenMap(nodes), [nodes]);
   const scopeOf = useCallback(
     (id: string | undefined): ReadonlySet<string> | undefined => {
       if (id === undefined) {
@@ -1208,8 +1168,8 @@ export function PipelineFlowCanvas({
       const queue = [id];
       while (queue.length > 0) {
         for (const child of childrenByParent.get(queue.pop() as string) ?? []) {
-          scope.add(child);
-          queue.push(child);
+          scope.add(child.id);
+          queue.push(child.id);
         }
       }
       return scope;
@@ -1229,8 +1189,7 @@ export function PipelineFlowCanvas({
     });
   }, []);
 
-  // Edit mode (nested inserts wired) shows the ghost "add" branches. Derived outside the layout memo
-  // so it keys on the stable boolean, not the callback's identity — else an ancestor re-creating
+  // Layout keys on this stable boolean, not the callback identity — else an ancestor re-creating
   // onSlotInsert would re-run the Dagre pass.
   const editable = Boolean(onSlotInsert);
 
@@ -1239,7 +1198,6 @@ export function PipelineFlowCanvas({
   const { layoutNodes, layoutEdges, translateExtent, contentWidth, contentHeight, legend } = useMemo(() => {
     const layout = computeGraphLayout(nodes, editable);
 
-    // Allow panning a margin past the content so an edge node can reach the middle.
     const margin = PAN_PADDING;
     const bounds = contentBounds(layout.rfNodes);
     const extent: [[number, number], [number, number]] = [
@@ -1264,8 +1222,7 @@ export function PipelineFlowCanvas({
     };
   }, [nodes, editable]);
 
-  // try marker → its fused catch marker, from the "on error" edge (id `error-<try>-<catch>`), so a
-  // try's scope region folds in its catch (its error handling reads as part of the same area).
+  // try marker → its fused catch marker (from the `error-<try>-<catch>` edge) so a try's region folds in its catch.
   const tryCatchPairs = useMemo(() => {
     const pairs = new Map<string, string>();
     for (const edge of layoutEdges) {
@@ -1276,9 +1233,8 @@ export function PipelineFlowCanvas({
     return pairs;
   }, [layoutEdges]);
 
-  // Cheap decoration memo: inject per-node selection/lint/flash data, then fade nodes outside a
-  // selected construct's scope. Keyed on decoration inputs only, so a click re-runs this, not the
-  // Dagre layout. Hover is excluded to stay off the cheap edges-only hover path.
+  // Cheap decoration memo, keyed on decoration inputs only — a click re-runs this, not the Dagre
+  // layout. Hover is excluded to stay on the cheap edges-only path.
   const rfNodes = useMemo(() => {
     const callbacks: CanvasCallbacks = {
       onAddConnector,
@@ -1322,9 +1278,8 @@ export function PipelineFlowCanvas({
     previousIdsRef.current = new Set(rfNodes.map((node) => node.id));
   }, [rfNodes]);
 
-  // Hover only restyles edges (its own cheap memo) so node objects stay referentially stable and the
-  // DOM under the cursor isn't rebuilt mid-hover — rebuilding looped mouseleave/mouseenter, flickering
-  // the cursor and eating clicks.
+  // Hover only restyles edges so node objects stay referentially stable — rebuilding the DOM under
+  // the cursor looped mouseleave/mouseenter, flickering the cursor and eating clicks.
   const rfEdges = useMemo(
     () =>
       decorateEdges(layoutEdges, {
@@ -1340,9 +1295,7 @@ export function PipelineFlowCanvas({
   if (rfNodes.length === 0) {
     return (
       <div className="relative h-full w-full">
-        {/* Persistent parse error with no last-good graph: the notice must stay (dismissing left an
-            unexplained frozen skeleton) and the copy points at the fix. Same Alert as StaleParseBanner
-            so the "can't visualize" affordance is consistent whether or not a fallback layout exists. */}
+        {/* Parse error with no last-good graph: keep the notice up (no dismiss) and point at the fix. */}
         {error ? (
           <InvalidConfigNotice className={CANVAS_NOTICE_CLASS}>
             Unable to visualize this pipeline — fix the YAML in the YAML tab.
@@ -1373,8 +1326,6 @@ export function PipelineFlowCanvas({
           nodesFocusable={false}
           nodeTypes={flowNodeTypes}
           onNodeClick={(_, node) => {
-            // Structural sub-nodes have no editTarget — clicking selects the nearest
-            // selectable ancestor (see selectionTargetForNode).
             const selection = selectionTargetForNode(node, rfNodes);
             if (selection) {
               onSelectNode?.(selection.id, selection.target, selection.caseTarget);
@@ -1387,8 +1338,7 @@ export function PipelineFlowCanvas({
           onPaneClick={() => onClearSelection?.()}
           panOnDrag={canPanCanvas(zoomMode)}
           panOnScroll={false}
-          // The wheel scrolls the embedded page; zoom is on the Z / Option+Z keys (see ZoomTool), the
-          // Controls buttons, and trackpad pinch.
+          // The wheel scrolls the embedded page; zoom is via Z / Option+Z (ZoomTool), the Controls, and pinch.
           preventScrolling={false}
           proOptions={{ hideAttribution: true }}
           translateExtent={translateExtent}

@@ -151,7 +151,7 @@ describe('NodeConfigForm — full schema', () => {
 
     const password = screen.getByDisplayValue('hunter2');
     expect(password).toHaveAttribute('type', 'password');
-    // The registry Input's built-in reveal toggle (label "Show password") replaces the old one-off.
+    // The reveal toggle is the registry Input's built-in one (label "Show password").
     expect(screen.getAllByRole('button', { name: 'Show password' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/reference a secret/i).length).toBeGreaterThan(0);
   });

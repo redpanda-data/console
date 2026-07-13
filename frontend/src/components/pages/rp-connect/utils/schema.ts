@@ -360,8 +360,7 @@ function generateObjectValue(
   return obj;
 }
 
-// Placeholder value for a primitive field, used to seed generated configs with the right shape for
-// YAML/Bloblang formatting (arrays wrap this in `[x]`, 2d arrays in `[[x]]`).
+// Placeholder for a primitive field, seeding generated configs with the right shape for YAML/Bloblang.
 function scalarPlaceholder(type: RawFieldSpec['type']): unknown {
   switch (type) {
     case 'int':
@@ -507,8 +506,7 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
 
 const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
 
-// Types whose value is a nested component edited on the canvas — every component type except the
-// wizard-only `custom`.
+// Types whose value is a nested component edited on the canvas (all except the wizard-only `custom`).
 const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
 
 export function fieldHasOptions(spec: RawFieldSpec): boolean {

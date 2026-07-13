@@ -561,7 +561,7 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport() });
 
-    // The pipeline name is the page title (level-1 heading); the generic "Pipeline view" heading was removed.
+    // The pipeline name is the page title (level-1 heading), not a generic "Pipeline view" heading.
     expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
   });

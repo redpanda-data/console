@@ -41,16 +41,11 @@ function nodeConfigSignatures(yaml: string): NodeSignatures {
   return { signatures, parentOf };
 }
 
-// Node ids in `next` whose signature has no counterpart left in `prev`'s signature multiset.
-// Ids are positional (`proc-0`, `proc-1`, …), so an insertion shifts every following node's id;
-// a node whose identical config merely MOVED is not a change — only signatures prev can't
-// account for (new or edited configs) are. Same-id matches consume their counterpart first so
-// an unmoved duplicate never starves its twin.
-//
-// KNOWN AMBIGUITY (accepted): without stable ids, "edited A into a copy of the B that was just
-// deleted" is indistinguishable from "deleted A" — the edited node matches B's old signature and
-// gets no marker. The markers err toward under-flagging; the page-level unsaved state (yaml !==
-// initialYaml) is the authoritative dirty signal.
+// Node ids in `next` whose signature has no counterpart left in `prev`'s multiset. Ids are positional
+// (`proc-0`, …), so a moved-but-identical config is not a change; same-id matches consume their
+// counterpart first so an unmoved duplicate never starves its twin. Known ambiguity (accepted):
+// "edited A into a copy of just-deleted B" reads as "deleted A" — markers err toward under-flagging,
+// and yaml !== initialYaml remains the authoritative dirty signal.
 function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>): Set<string> {
   const available = new Map<string, number>();
   for (const signature of prev.values()) {
@@ -82,10 +77,8 @@ function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>):
   return changed;
 }
 
-// Ids of nodes added or changed from `prevYaml` to `nextYaml`. Used for unsaved-change markers and
-// to briefly highlight the node(s) an undo/redo affected. A container's config embeds its children,
-// so editing a nested node also changes every ancestor's signature; we attribute the change only to
-// the deepest node(s) by dropping any changed node that is an ancestor of another changed node.
+// Ids of nodes added or changed between the two YAMLs (unsaved markers, undo/redo highlights).
+// A container's signature embeds its children, so attribute each change to the deepest node(s) only.
 export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
   const prev = nodeConfigSignatures(prevYaml);
   const next = nodeConfigSignatures(nextYaml);

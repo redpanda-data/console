@@ -19,7 +19,7 @@ import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
 import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
-import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { buildChildrenMap, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
 const SECTION_TITLES: Record<string, string> = {
   input: 'INPUT',
@@ -127,9 +127,9 @@ type RowProps = {
   unsavedNodeIds?: ReadonlySet<string>;
   onSelect: (highlightId: string, editableId?: string) => void;
   nav: TreeNav;
-  /** 1-based position among the row's rendered siblings (for aria-posinset). */
+  /** aria-posinset: 1-based position among rendered siblings. */
   posinset: number;
-  /** Number of rendered siblings at this level (for aria-setsize). */
+  /** aria-setsize: number of rendered siblings at this level. */
   setsize: number;
 };
 
@@ -285,12 +285,9 @@ type PipelineStructureTreeProps = {
 };
 
 /**
- * Compact, width-bounded outline of a pipeline (inputs, processors, branches, outputs, resources).
- * Shows only structure (icon + name) so deep nesting truncates in the narrow lane; rows drive the editor.
- *
- * ARIA tree pattern (flattened): every row is a focusable `treeitem` with aria-level/posinset/
- * setsize; a roving tabindex plus Arrow/Home/End/Enter/Space keys drive focus, expansion and
- * selection.
+ * Compact outline of a pipeline; shows only structure (icon + name) so deep nesting fits the narrow
+ * lane, and rows drive the editor. ARIA tree (flattened): every row is a focusable `treeitem` with
+ * aria-level/posinset/setsize; a roving tabindex + Arrow/Home/End/Enter/Space drive focus and selection.
  */
 export function PipelineStructureTree({
   configYaml,
@@ -300,22 +297,13 @@ export function PipelineStructureTree({
   onSelectNode,
   onAddConnector,
 }: PipelineStructureTreeProps) {
-  // Hold the last valid outline so the lane doesn't blank out mid-edit (see useResilientParse).
+  // Hold the last valid outline so the lane doesn't blank out mid-edit.
   const { nodes, error, showingStale } = useResilientParse(configYaml);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const maps = useMemo<NodeMaps>(() => {
-    const childMap = new Map<string | undefined, PipelineFlowNode[]>();
-    const byId = new Map<string, PipelineFlowNode>();
-    for (const node of nodes) {
-      byId.set(node.id, node);
-      const siblings = childMap.get(node.parentId);
-      if (siblings) {
-        siblings.push(node);
-      } else {
-        childMap.set(node.parentId, [node]);
-      }
-    }
+    const childMap = buildChildrenMap(nodes);
+    const byId = new Map<string, PipelineFlowNode>(nodes.map((node) => [node.id, node]));
     return { childrenOf: (id) => childMap.get(id) ?? [], byId };
   }, [nodes]);
 
@@ -375,12 +363,10 @@ export function PipelineStructureTree({
   const notice = invalidOutlineNotice(showingStale, error);
 
   return (
-    // Each non-empty section is its OWN labelled tree so role="tree" owns only treeitems —
-    // the visible headers, "empty" notes and Add buttons live between the trees, not inside
-    // one (a tree may own only treeitem/group children). Arrow keys still walk across sections.
+    // Each non-empty section is its own labelled tree — role="tree" may own only treeitem/group
+    // children, so headers, "empty" notes and Add rows live between trees. Arrows still cross sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
-      {/* Only a left margin: the container's `pr-2` supplies the matching right gap, so the banner
-          sits symmetrically instead of leaving extra room on the right. */}
+      {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
       {notice ? <InvalidConfigNotice className="ml-2 px-2.5 py-2 text-xs">{notice}</InvalidConfigNotice> : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;

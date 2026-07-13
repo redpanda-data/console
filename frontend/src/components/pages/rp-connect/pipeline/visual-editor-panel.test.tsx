@@ -21,7 +21,7 @@ vi.mock('./pipeline-flow-canvas', () => ({
       <button onClick={() => props.onSelectNode?.('input-0', { kind: 'input' })} type="button">
         select-input
       </button>
-      {/* Deselecting (clicking the empty canvas) — now also commits the selected node's edits. */}
+      {/* Deselecting (clicking the empty canvas) also commits the selected node's edits. */}
       <button onClick={() => props.onClearSelection?.()} type="button">
         deselect
       </button>
@@ -142,7 +142,7 @@ describe('VisualEditorPanel', () => {
     const { onYamlChange } = renderPanel();
 
     await user.click(screen.getByText('select-proc0'));
-    // Delete lives in the header's 3-dot menu now, then a confirm dialog.
+    // Delete lives in the header's 3-dot menu, behind a confirm dialog.
     await user.click(await screen.findByRole('button', { name: 'More actions' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
     await user.click(await screen.findByRole('button', { name: 'Remove' }));

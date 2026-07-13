@@ -11,31 +11,20 @@
 
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
-export const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, string> = {
-  input: 'Input',
-  processor: 'Processor',
-  output: 'Output',
-  resource: 'Resource',
-};
-
-// A node is reachable from the palette when it maps to an editable target (its own config).
-// Structural wrappers (bare switch cases, merge dots) carry no target and are skipped — their
-// editable entry is listed instead.
+// Palette-reachable nodes: ones with an editable target. Structural wrappers (bare switch cases,
+// merge dots) carry no target and are skipped.
 export function jumpableNodes(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
   return nodes.filter((n) => n.editTarget && n.section);
 }
 
-// Free text a node matches on: its VISIBLE fields only (connector name, user label, role). cmdk
-// fuzzy-matches the whole `value`, so internal node ids must stay out — they made typing "0" or
-// "section" match rows for no visible reason. Uniqueness (when two nodes share a name) comes from
-// a zero-width-space suffix the user can't type.
+// Match on visible fields only — cmdk fuzzy-matches the whole `value`, so internal node ids would
+// cause invisible matches. Duplicate names stay unique via a zero-width-space suffix the user can't type.
 export function searchValue(node: PipelineFlowNode, index: number): string {
   const visible = [node.label, node.labelText, node.section].filter(Boolean).join(' ');
   return `${visible}${'\u200B'.repeat(index + 1)}`;
 }
 
-// Meta values (topics, urls, …) stay searchable via cmdk's `keywords` — user-authored content,
-// unlike the synthetic ids.
+// Meta values (topics, urls, …) stay searchable via cmdk's `keywords` — user-authored, unlike node ids.
 export function searchKeywords(node: PipelineFlowNode): string[] | undefined {
   const keywords = node.meta?.map((m) => m.value).filter(Boolean);
   return keywords?.length ? keywords : undefined;

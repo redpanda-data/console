@@ -6,6 +6,7 @@ import {
   isConfigTextEmpty,
   mainFlowSequence,
   parsePipelineFlowTree,
+  SECTION_LABEL,
   shouldOfferTemplate,
 } from './pipeline-flow-parser';
 
@@ -1640,5 +1641,16 @@ describe('summarizeComponent', () => {
     ]);
     // All-noise config yields nothing rather than leaking a secret-ish field name.
     expect(summarizeComponent('mystery_creds', { api_key: 'x', region: 'us', tls: true })).toEqual([]);
+  });
+});
+
+describe('SECTION_LABEL', () => {
+  it('maps every section to a human label', () => {
+    expect(SECTION_LABEL).toEqual({
+      input: 'Input',
+      processor: 'Processor',
+      output: 'Output',
+      resource: 'Resource',
+    });
   });
 });

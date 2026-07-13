@@ -124,8 +124,7 @@ export const ChildItemsList = ({
   onSelect: (item: InspectorChildItem) => void;
   label: string;
 }) => (
-  // A heading, not a <label>: these rows are navigation buttons, so there's no single control for
-  // an htmlFor to associate with, and each button already carries its own accessible text.
+  // A heading, not a <label>: the rows are buttons with their own accessible text; nothing for htmlFor.
   <div className="flex flex-col gap-1.5">
     <Text className="font-medium" variant="bodyStrongMedium">
       {label}
@@ -141,21 +140,20 @@ export const ChildItemsList = ({
   </div>
 );
 
-// Resource-link context (existing labels + create-and-link action), provided by the inspector
-// so the form itself stays a pure config editor.
+// Resource-link context (existing labels + create-and-link), provided by the inspector so the form
+// stays a pure config editor.
 type ResourceFieldContextValue = {
   labels: Record<ResourceKind, string[]>;
   onCreateResource?: (kind: ResourceKind) => void;
-  // Kind of the component being edited, so a plainly-typed `resource:` string field is still
-  // recognised as a link.
+  // Kind of the edited component, so a plainly-typed `resource:` string field still reads as a link.
   componentResourceKind?: ResourceKind;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
 const CREATE_RESOURCE_VALUE = '__create_resource__';
 
-// Resolve which resource kind a field links to: by field type, or — for a field named `resource`
-// — the kind of the cache/rate_limit component it sits in (some schemas type it as a plain string).
+// Resource kind a field links to: by field type, or by the enclosing cache/rate_limit component for
+// a field named `resource` (some schemas type it as a plain string).
 function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: ResourceKind): ResourceKind | undefined {
   if (spec.type === 'cache' || spec.type === 'rate_limit') {
     return spec.type;
@@ -166,9 +164,8 @@ function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: Resourc
   return;
 }
 
-// A typed dropdown for a `resource:` link: pick an existing label or create-and-link a new one.
-// Never free text, so the reference can't be mistyped. An unknown value (stale link) is still
-// shown, flagged missing.
+// Dropdown for a `resource:` link — never free text, so the reference can't be mistyped; a stale
+// value is still shown, flagged missing.
 const ResourceReferenceSelect = ({
   kind,
   value = '',
@@ -419,15 +416,13 @@ function buildComponentEntry({
   if (data.label.trim()) {
     next.label = data.label.trim();
   } else if (requireLabel && typeof value.label === 'string' && value.label) {
-    // Clearing a resource's label would strand every `resource: <label>` reference —
-    // keep the saved label (the field shows an inline explanation).
+    // Clearing a resource's label would strand its `resource:` references — keep the saved label.
     next.label = value.label;
   }
 
   const original = value[componentName];
-  // A component whose value isn't a plain object — a `switch`/`try`/`catch`/`for_each` list, or a
-  // scalar. The object-field form can't model these, so preserve the value verbatim and only patch
-  // the label; rebuilding would write `{}` over the array and drop the children.
+  // A list/scalar-valued component (switch/try/catch/for_each): preserve the value verbatim and only
+  // patch the label — rebuilding would write `{}` over the array and drop the children.
   if (!(original && typeof original === 'object') || Array.isArray(original)) {
     next[componentName] = original ?? {};
     return next;
@@ -479,16 +474,14 @@ const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
     </Text>
   ) : null;
 
-// Field names that plausibly hold credentials — masked by default so a screen-share
-// doesn't leak them (the schema has no secret flag, so this is a name heuristic).
+// The schema has no secret flag, so mask plausibly-credential fields by name heuristic.
 const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/i;
 
 const isSecretField = (spec: RawFieldSpec): boolean =>
   spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
 
-// A masked credential input. `type="password"` gives the registry Input's built-in reveal toggle;
-// a `${…}` value is an interpolation, not a literal credential, so it's shown in the clear (and the
-// toggle drops away with type="text").
+// Masked credential input. `type="password"` gives the registry Input's reveal toggle; a `${…}`
+// interpolation isn't a literal credential, so it's shown in the clear.
 const SecretInput = (props: { id?: string; value: string; onChange: (value: unknown) => void; required?: boolean }) => (
   <Input
     aria-required={props.required || undefined}
@@ -555,9 +548,8 @@ const ScalarControl = ({
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
   }
-  // Numeric fields use a text input with numeric inputMode, not type="number": a number input
-  // blanks any value the browser can't parse (e.g. `1000$`), hiding it. Text keeps malformed
-  // values visible and fixable.
+  // Text input (numeric inputMode), not type="number": a number input blanks values the browser
+  // can't parse (e.g. `1000$`); text keeps them visible and fixable.
   const numericMode = spec.type === 'int' ? 'numeric' : 'decimal';
   return (
     <Input
@@ -676,8 +668,7 @@ const FieldGroup = ({
   </Collapsible>
 );
 
-// Render one field: a scalar, a scalar list, or a nested object sub-section
-// (recursing through its children). Complex fields are skipped (handled by raw).
+// Render one field: scalar, scalar list, or nested object group; complex fields go to the raw section.
 const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string[]; control: Control<FormValues> }) => {
   const here = [...path, spec.name];
   if (isScalarField(spec)) {
@@ -698,8 +689,7 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
 
 type FieldGroupKey = 'required' | 'optional' | 'advanced';
 
-// Presentation buckets for a form's fields, in display order. `advanced` wins over `required`, so a
-// field flagged advanced never sorts above the fold even when it's also required.
+// Display buckets; `advanced` wins over `required`, so an advanced+required field stays below the fold.
 const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
   if (spec.advanced) {
     return 'advanced';
@@ -754,8 +744,7 @@ type NodeConfigFormProps = {
   /** A control-flow component's direct children (cases / steps), shown as a clickable list. */
   childItems?: InspectorChildItem[];
   onSelectChild?: (item: InspectorChildItem) => void;
-  /** Reports the assembled config as the form changes (null when clean), so the inspector can
-      auto-commit on node-leave / save — no per-node Apply button. */
+  /** Reports the assembled config on change (null when clean) so the inspector can auto-commit on leave/save. */
   onConfigChange?: (config: Record<string, unknown> | null) => void;
   /** Resource nodes are referenced by label — the label field must not be cleared. */
   requireLabel?: boolean;
@@ -777,9 +766,8 @@ export function NodeConfigForm({
   const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
   const fields = spec.config?.children ?? [];
   const componentValue = value[componentName];
-  // A list-valued component (switch/try/catch/for_each): its value is an array edited on the canvas,
-  // not object fields. Rendering the schema fields here would mislead and saving would clobber the
-  // array — show a hint instead.
+  // A list-valued component (switch/try/catch/for_each) is edited on the canvas, not via object
+  // fields — rendering them would mislead and saving would clobber the array. Show a hint instead.
   const isListValued = Array.isArray(componentValue);
   const inner =
     componentValue && typeof componentValue === 'object' && !isListValued
@@ -787,8 +775,7 @@ export function NodeConfigForm({
       : {};
 
   const { required, optional, advanced } = groupFormFields(fields);
-  // Nested-component fields are their own canvas nodes, never inline controls — offered as a
-  // clickable "Steps" list when this node owns them, otherwise edited directly on the canvas.
+  // Nested-component fields are their own canvas nodes — offered as a clickable "Steps" list, never inline.
   const componentFields = fields.filter(isComponentField);
 
   // Leaves drive form defaults + assembly. Complex schema fields and unknown keys go to the
@@ -819,7 +806,6 @@ export function NodeConfigForm({
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
   const { dirtyFields, isDirty } = formState;
 
-  // Re-report the assembled config (null when clean) on every edit — see onConfigChange.
   const watched = useWatch({ control });
   // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; the config is rebuilt from the latest values/props read in the body.
   useEffect(() => {

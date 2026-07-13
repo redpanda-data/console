@@ -31,14 +31,10 @@ import type { EditTarget } from './yaml';
 // ============================================================================
 // Expanded canvas layout (left → right Dagre-laid-out DAG)
 // ----------------------------------------------------------------------------
-// The whole pipeline renders as one flat left→right DAG: input → processors → output. Control flow
-// (switch/branch/try-catch/parallel/…) is flattened into split → body → merge nodes rather than
-// nested containers; Dagre assigns ranks and routes edges, and resources sit in a row below as
-// dependencies. Card dimensions here must match the node components in pipeline-flow-canvas-nodes.
+// Card dimensions here must match the node components in pipeline-flow-canvas-nodes.
 // ============================================================================
 
-/** Leaf card width on the full canvas; the node component must match this. A touch wider
- * than the minimum so labeled cards and longer meta values aren't horizontally cramped. */
+/** Leaf card width on the full canvas; the node component must match this. */
 export const FLOW_CARD_WIDTH = 256;
 const FLOW_MAX_META_ROWS = 4;
 
@@ -47,14 +43,12 @@ type FlowDims = {
   leafBaseH: number;
   metaRowH: number;
   headerH: number;
-  // Collapsed container card height. Taller than the header so the spine (anchored
-  // ~SPINE_HANDLE_TOP from the top) lands near its centre and arrows look aligned.
+  // Collapsed container height — taller than the header so the spine handle lands near its centre.
   collapsedH: number;
   pad: number;
   stackGap: number;
   colGap: number;
-  // Routing-gutter inset on the side a container fans out (gs) / merges back / fans in (gt),
-  // plus extra vertical spacing between fanned children, so lines and arrows aren't cramped.
+  // Routing-gutter inset on a container's fan-out/fan-in sides + extra spacing between fanned children.
   fanGutter: number;
   fanGap: number;
 };
@@ -65,8 +59,7 @@ const FULL_DIMS: FlowDims = {
   metaRowH: 22,
   headerH: 48,
   collapsedH: 72,
-  // Inner inset on all sides of a container body — tight so children sit close under the
-  // header and the "+ add" row doesn't float far from the stack.
+  // Inner inset of a container body — tight so children sit close under the header.
   pad: 12,
   stackGap: 14,
   colGap: 72,
@@ -74,8 +67,7 @@ const FULL_DIMS: FlowDims = {
   fanGap: 20,
 };
 
-// Empty-state "Add input/output" cards are taller/more prominent than a leaf. Height is
-// 2× the spine-handle offset (SPINE_HANDLE_TOP = 36) so the arrow lands on its vertical center.
+// Empty-state "Add input/output" card height: 2× the spine-handle offset (36) so the arrow hits its center.
 const FLOW_PLACEHOLDER_LEAF_H = 72;
 // A `label:` badge renders on its own padded row beneath the full-card header.
 const FLOW_LABEL_ROW_H = 30;
@@ -83,8 +75,7 @@ const FLOW_LABEL_ROW_H = 30;
 const FLOW_LABEL_ROW_BOTTOM_PAD = 12;
 // The meta block's own vertical padding (rows counted at dims.metaRowH each).
 const FLOW_META_BLOCK_PAD = 12;
-// A switch case's routing condition row beneath the header (only on case-entry cards —
-// those carrying a `caseEditTarget`).
+// A switch case's routing-condition row beneath the header (only on cards carrying a `caseEditTarget`).
 const FLOW_CONDITION_ROW_H = 30;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
@@ -98,15 +89,12 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
       (node.missingSasl ? 1 : 0),
     FLOW_MAX_META_ROWS
   );
-  // Label badge and meta block are separately-padded rows below the header; sum them
-  // individually (not as one block) so the measured height tracks the rendered card.
+  // Label badge and meta block are separately-padded rows; sum individually to track the rendered card.
   let h = dims.leafBaseH;
-  // A case entry shows its routing condition on its own row beneath the header.
   if (node.caseEditTarget) {
     h += FLOW_CONDITION_ROW_H;
   }
   if (node.labelText) {
-    // When the label is the last row (no meta), it carries a bottom inset; mirror that here.
     h += FLOW_LABEL_ROW_H + (metaRows > 0 ? 0 : FLOW_LABEL_ROW_BOTTOM_PAD);
   }
   if (metaRows > 0) {
@@ -115,14 +103,12 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   return h;
 }
 
-// A parallel processor container (switch/parallel/group_by): its alternatives reconverge
-// (data flows back out and continues), unlike output fans which terminate at their sinks.
+// A parallel processor container's alternatives reconverge, unlike output fans which terminate at sinks.
 function reconverges(node: PipelineFlowNode): boolean {
   return node.childFlow === 'parallel' && node.section === 'processor';
 }
 
-// Which sides of a container carry routed edges: `out` is the `gs` source side
-// (entry / fan-out), `in` is the `gt` target side (merge-back / fan-in).
+// Which sides of a container carry routed edges: `out` = fan-out (entry), `in` = fan-in (merge-back).
 function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   return {
     out: node.childFlow === 'parallel' && node.section !== 'input',
@@ -131,15 +117,12 @@ function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
   };
 }
 
-// What an in-container "+" does: insert a component into a nested array (switch case /
-// branch / broker / fallback), or append a fresh case to a switch. Carried on `flowInsert`
-// nodes and handed to the editor.
+// What an in-container "+" does: insert into a nested array, or append a fresh case to a switch.
 export type FlowInsertPayload =
   | { kind: 'insert'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
   | { kind: 'addChild'; containerPath: (string | number)[]; section: 'processor' | 'output' };
 
-// Routing condition shown as a chip on the receiving card (not a floating edge label) so
-// fanned branches stay readable.
+// Routing condition rendered as a chip on the receiving card (not a floating edge label).
 function routingData(node: PipelineFlowNode) {
   return {
     ...(node.condition ? { condition: node.condition } : {}),
@@ -148,8 +131,7 @@ function routingData(node: PipelineFlowNode) {
   };
 }
 
-/** Where the top/bottom handles sit from a card's left edge — the x a vertical spine/
- *  reference cable plugs into. Must match the node component's handle offset. */
+/** X offset of a card's top/bottom handles from its left edge; must match the node component. */
 export const FLOW_SPINE_HANDLE_LEFT = 18;
 
 function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount: number) {
@@ -165,8 +147,7 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.missingSasl ? { missingSasl: true } : {}),
     ...(node.isCase ? { isCase: true } : {}),
     ...(node.editTarget ? { editTarget: node.editTarget } : {}),
-    // The switch-case edit target travels onto the case's entry card so its condition chip is
-    // clickable (selects the case → SwitchCaseEditor). Distinct from `editTarget` (component).
+    // Travels onto the case's entry card so its condition chip is clickable; distinct from `editTarget`.
     ...(node.caseEditTarget ? { caseEditTarget: node.caseEditTarget } : {}),
     ...(node.caseOwnerId ? { caseOwnerId: node.caseOwnerId } : {}),
     ...(node.insertSlot ? { insertSlot: node.insertSlot } : {}),
@@ -181,40 +162,31 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
 // ============================================================================
 // Graph layout (Dagre) — full horizontal canvas
 // ----------------------------------------------------------------------------
-// One left-to-right DAG with control flow fully flattened: each switch/branch/try/parallel becomes
-// a "split" node whose branches fan out as labelled edges and reconverge at a "merge" node. A flat
-// semantic graph goes to Dagre for ranks + edge routing, then maps to React Flow nodes/edges.
-// Editing affordances and the resource lane are placed after layout so they don't perturb ranks.
+// Control flow flattens into split → branch lanes → merge; Dagre ranks and routes the flat graph,
+// which then maps to React Flow. Inserts and the resource lane are placed post-layout (rank-neutral).
 // ============================================================================
 
 const GRAPH_SPLIT_W = FLOW_CARD_WIDTH;
 const GRAPH_SPLIT_H = 56;
-// A fan construct (switch / broker / parallel) hosts its "Add case / Add input" affordance as
-// a footer row INSIDE the card (edit mode) — reserve a row for it.
+// Footer row inside a fan construct's card for its "Add case / Add input" affordance (edit mode).
 const GRAPH_SPLIT_FOOTER_H = 34;
 const GRAPH_MERGE_W = 48;
 const GRAPH_MERGE_H = 32;
 const GRAPH_INSERT_W = 150;
 const GRAPH_INSERT_H = 24;
-// Dagre spacing: gap between ranks (horizontal) and between nodes in a rank (vertical).
-// Deliberately roomy so Dagre can route edges AROUND nodes (fewer lines crossing cards) and
-// on-edge condition labels sit in clear space between ranks.
+// Dagre spacing, deliberately roomy so edges route around nodes (not across cards) and on-edge
+// condition labels sit in clear space between ranks.
 const GRAPH_RANKSEP = 120;
-// Generous vertical spacing between stacked branches so routing-condition labels (which sit
-// on the fan-out edges) have room, and so adjacent control-flow constructs' scope-region boxes
-// sit far enough apart not to overlap.
+// Roomy so stacked branches' condition labels and adjacent scope-region boxes don't collide.
 const GRAPH_NODESEP = 84;
 const GRAPH_EDGESEP = 16;
 const GRAPH_MARGIN = 24;
-// Resource dependency lane: a horizontal bus just below the flow, with the resource cards
-// in a row beneath it. Cables drop from each user's bottom, along the bus, into the resource.
+// Resource dependency lane: a bus below the flow, resource cards beneath it (see placeResourceDependencies).
 const RES_BUS_GAP = 48;
 const RES_ROW_GAP = 32;
 const RES_BUS_STAGGER = 7;
-// Spacing between resource cards in the lane — tighter than a flow colGap so a
-// cluster of resources (common when a container is collapsed) doesn't spread far.
+// Spacing between resource cards — tighter than colGap so a cluster doesn't spread far.
 const RESOURCE_GAP = 28;
-// The bottom/top handle's x offset from a card's left edge (matches NodeHandles).
 const HANDLE_X = FLOW_SPINE_HANDLE_LEFT;
 
 type GraphEdgeType = 'flow' | 'conditional' | 'error';
@@ -225,8 +197,7 @@ type GraphNodeSpec = {
   node?: PipelineFlowNode;
   w: number;
   h: number;
-  /** For split (control-flow) markers: how many direct children (cases / steps / stages)
-      the construct contains, surfaced on the card as a descriptor. */
+  /** For split markers: direct child count (cases / steps), surfaced on the card as a descriptor. */
   childCount?: number;
   /** A fan construct's in-card "Add case / Add input" footer affordance (edit mode only). */
   footerAdd?: { payload: FlowInsertPayload; label: string };
@@ -238,16 +209,13 @@ type GraphEdgeSpec = {
   type: GraphEdgeType;
   label?: string;
   insertIndex?: number;
-  // A nested-insert affordance carried ON this edge — rendered as an on-line "+" that
-  // inserts into a control-flow body (a switch case, branch, try/catch, …).
+  // Nested-insert affordance rendered as an on-line "+" that inserts into a control-flow body.
   slot?: FlowInsertPayload;
-  // A clickable routing-condition label: clicking it selects the case to edit its
-  // condition (the SwitchCaseEditor). `selectId` is the node id reported as selected.
+  // Clickable routing-condition label that selects the case to edit; `selectId` is the reported node id.
   selectId?: string;
   selectTarget?: EditTarget;
 };
-// An editing affordance placed AFTER layout, just below its anchor node (so it never
-// affects Dagre's ranks). Rendered as a dashed "+ Add …" pill (edit mode only).
+// Placed after layout below its anchor node (never affects ranks); a dashed "+ Add …" pill (edit mode).
 type GraphInsertSpec = {
   id: string;
   anchorId: string;
@@ -263,8 +231,7 @@ type GraphCtx = {
   inserts: GraphInsertSpec[];
   childrenOf: (id: string) => PipelineFlowNode[];
   dims: FlowDims;
-  // Edit mode: node-based add affordances (ghost branches) are only emitted when true so
-  // read-only diagrams show nothing dangling. (On-edge "+" slots are view-safe already.)
+  // Node-based add affordances are only emitted in edit mode; on-edge "+" slots are view-safe already.
   editable: boolean;
 };
 
@@ -272,8 +239,7 @@ function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode): string {
   ctx.gnodes.push({ id: node.id, kind: 'card', node, w: ctx.dims.cardW, h: leafCardHeight(node, ctx.dims) });
   return node.id;
 }
-// A fan construct's in-card add affordance: "Add case" for a switch, "Add <input/output>" for a
-// broker/sequence/parallel. Computed at parse time (edit mode), rendered as a footer in the card.
+// In-card add affordance: "Add case" for a switch, "Add <input/output>" for a broker/sequence/parallel.
 function splitAddAction(
   node: PipelineFlowNode,
   childCount: number
@@ -300,9 +266,7 @@ function addGraphSplit(
     kind: 'split',
     node,
     w: GRAPH_SPLIT_W,
-    // A control-flow construct that is itself a switch-case ENTRY shows the case's routing
-    // condition on its own row beneath the header (like a leaf card); a fan construct hosts its
-    // add affordance as a footer row — reserve a row for each that's present.
+    // Reserve a row each for the case-condition (caseEditTarget) and the footer add affordance.
     h: GRAPH_SPLIT_H + (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0) + (footerAdd ? GRAPH_SPLIT_FOOTER_H : 0),
     childCount: ctx.childrenOf(node.id).length,
     ...(footerAdd ? { footerAdd } : {}),
@@ -336,19 +300,15 @@ function branchEdgeInfo(owner: PipelineFlowNode): { type: GraphEdgeType; label?:
   return { type: 'flow' };
 }
 
-// Whether a fan's direct children are structural wrappers to unwrap into a lane (a
-// switch's / group_by's cases) rather than items that are each their own lane.
+// Whether a fan's direct children are case wrappers to unwrap into lanes (switch/group_by cases).
 function fanUnwrapsChildren(node: PipelineFlowNode): boolean {
   return CASE_CONTAINER_LABELS.has(node.label) && node.section === 'processor';
 }
 
 type FanLane = { owner: PipelineFlowNode; bodySteps: PipelineFlowNode[] };
 
-// A switch case's body steps with the case's routing condition + edit target stamped onto the
-// FIRST step, so that step's card renders the condition chip (clickable to edit the case). For
-// an output switch the owner IS the first step, so this is idempotent; for a processor switch
-// the owner is the case wrapper and the first body processor inherits the chip. Returns a
-// shallow clone of the first step (same id → selection/edges/childrenOf still resolve).
+// Stamp the case's routing condition + edit target onto the FIRST body step so its card renders the
+// clickable condition chip. Shallow-clones that step (same id, so selection/edges still resolve).
 function caseEntrySteps(lane: FanLane): PipelineFlowNode[] {
   const [first, ...rest] = lane.bodySteps;
   const o = lane.owner;
@@ -374,22 +334,18 @@ function fanLaneList(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: Grap
   );
 }
 
-// A control-flow fan: a split (when data fans out) → each branch's sub-graph → a merge
-// (when branches reconverge). Branch = single copy/merge lane; input broker = merge only;
-// output fan = split only (sinks terminate).
+// A control-flow fan: split (fan-out) → branch sub-graphs → merge (reconverge). Input broker =
+// merge only; output fan = split only (sinks terminate).
 function emitFan(
   node: PipelineFlowNode,
   kids: PipelineFlowNode[],
   sides: { out: boolean; in: boolean },
   ctx: GraphCtx
 ): GraphSegment {
-  // The construct's "Add case / Add input" affordance renders as a footer INSIDE the fan card
-  // (edit mode only) — tied to the node, not a floating pill below it.
   const footerAdd = ctx.editable ? splitAddAction(node, kids.length) : undefined;
   const split = sides.out ? addGraphSplit(ctx, node, footerAdd) : undefined;
-  // A fan-in WITHOUT a split (an input broker/sequence) reconverges at the construct
-  // itself — render it as a LABELED hub (the broker), not a generic merge dot, so it's
-  // clear the inputs feed a broker. A reconverging processor fan keeps a plain merge dot.
+  // A fan-in without a split (an input broker) reconverges at the construct itself — render it as a
+  // labeled hub, not a generic merge dot. A reconverging processor fan keeps the plain merge dot.
   const merge = sides.in
     ? split
       ? addGraphMerge(ctx, `${node.id}-merge`)
@@ -399,20 +355,16 @@ function emitFan(
   const carriesCaseChips = CASE_CONTAINER_LABELS.has(node.label);
 
   for (const lane of lanes) {
-    // For switch/group_by cases the routing condition lives on the case's ENTRY card as a clickable
-    // chip (single source of truth, editable in place) — not as a floating edge label that duplicates
-    // it and crowds the fan. So push the condition + edit target onto the first body step and
-    // drop the edge label. An empty-bodied case (no card yet) keeps the edge label as a fallback.
+    // Case conditions live on the entry card as a clickable chip, not as an edge label — drop the
+    // label when a body exists. An empty-bodied case (no card yet) keeps the edge label as fallback.
     const carriesChip = carriesCaseChips && lane.bodySteps.length > 0;
     const body = emitSequence(carriesChip ? caseEntrySteps(lane) : lane.bodySteps, ctx);
     const info = branchEdgeInfo(lane.owner);
-    // The "add a step into this body" affordance rides ON the body's terminal edge as an
-    // on-line "+" (chain-style lanes only: a switch/group_by case).
+    // "Add a step into this body" rides the body's terminal edge as an on-line "+".
     const bodySlot = lane.owner.insertSlot;
     const appendSlot = (atEnd: boolean): FlowInsertPayload | undefined =>
       bodySlot ? { kind: 'insert', ...bodySlot, index: atEnd ? ctx.childrenOf(lane.owner.id).length : 0 } : undefined;
-    // The case edit target rides the fan-out edge ONLY when the chip can't host it (empty case);
-    // otherwise the entry card's chip owns selection/editing.
+    // The case edit target rides the fan-out edge only when there is no entry chip (empty case).
     const selectTarget = carriesChip ? undefined : lane.owner.caseEditTarget;
     const fanoutId = `fanout-${lane.owner.id}`;
     if (split) {
@@ -443,8 +395,7 @@ function emitFan(
   return { entry, exit };
 }
 
-// A sequential construct rendered as a leading marker node (try / catch / for_each / …)
-// followed by its body chain. The marker name conveys the construct (e.g. a loop body).
+// A sequential construct: a leading marker node (try / catch / for_each / …) then its body chain.
 function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx): GraphSegment {
   const head = addGraphSplit(ctx, node);
   const body = emitSequence(kids, ctx);
@@ -471,13 +422,11 @@ function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], c
   return { entry: head, exit: head };
 }
 
-// Insert-slot payload that appends a step at the end of a container's body (none if the container
-// has no insert slot of its own).
+// Insert payload appending a step at the end of a container's body (none without an insert slot).
 const endInsertSlot = (node: PipelineFlowNode, ctx: GraphCtx): FlowInsertPayload | undefined =>
   node.insertSlot ? { kind: 'insert', ...node.insertSlot, index: ctx.childrenOf(node.id).length } : undefined;
 
-// A try immediately followed by a catch: success path = try body, error path = catch body,
-// both converging at a merge — the canonical dead-letter pattern.
+// try then catch: success path = try body, error path = catch body, both converging at a merge.
 function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
   const tryHead = addGraphSplit(ctx, tryNode);
   const tryBody = emitSequence(ctx.childrenOf(tryNode.id), ctx);
@@ -530,9 +479,8 @@ function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
     return { entry: node.id, exit: node.id };
   }
   const kids = ctx.childrenOf(node.id);
-  // A `branch` operates on a copy and merges the result back, but visually it reads cleanest as a
-  // marker → body → continue: the branch node conveys the copy/merge, and its request/result maps
-  // are on the card (so no separate merge node or dashed copy/merge edges are drawn).
+  // A `branch` copies + merges back, but reads cleanest as marker → body → continue — the card
+  // conveys the copy/merge, so no separate merge node or dashed edges are drawn.
   if (node.branch) {
     return emitSequentialGroup(node, kids, ctx);
   }
@@ -546,15 +494,13 @@ function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
 const isTryStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'try';
 const isCatchStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'catch';
 
-// A top-level processor step's ACTUAL index into `pipeline.processors` — the splice index
-// mutations use. Rendered position drifts from it when unparseable entries (`- null`, `- {}`)
-// are skipped, so on-edge inserts must carry the YAML index, not a rendered count.
+// A top-level processor's ACTUAL index into `pipeline.processors`. Rendered position drifts when
+// unparseable entries are skipped, so on-edge inserts must carry the YAML index, not a rendered count.
 const topLevelProcessorIndex = (n?: PipelineFlowNode): number | undefined =>
   n?.editTarget?.kind === 'processor' ? n.editTarget.index : undefined;
 
-// Chain a list of steps with flow edges. At the top level the connecting edges carry the
-// processor-insert index so the spine "+" works. A try immediately followed by a catch is
-// fused into one success/error structure.
+// Chain steps with flow edges; top-level edges carry the processor-insert index for the spine "+".
+// A try immediately followed by a catch fuses into one success/error structure.
 function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false): GraphSegment {
   let entry: string | undefined;
   let prevExit: string | undefined;
@@ -575,8 +521,7 @@ function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false
         entry = seg.entry;
       }
       if (prevExit !== undefined) {
-        // Inserting on the edge INTO a processor splices right before it (its YAML index);
-        // on the edge into the output it lands right after the last processor.
+        // Insert on the edge into a processor splices before it; into the output, after the last processor.
         const insertIndex = topLevelProcessorIndex(step) ?? lastProcessorIndex + 1;
         addGraphEdge(ctx, {
           id: `flow-${prevExit}-${seg.entry}`,
@@ -609,13 +554,11 @@ function buildPipelineGraph(nodes: PipelineFlowNode[], editable: boolean): Graph
     editable,
   };
   emitSequence(mainFlowSequence(nodes), ctx, true);
-  // Resources are NOT in the Dagre flow graph — they're laid out below the flow and wired
-  // from each user's BOTTOM as dependency cables (see placeResourceDependencies).
+  // Resources are not in the Dagre graph — they're laid out below the flow (see placeResourceDependencies).
   return ctx;
 }
 
-// Smoothly route a polyline through a set of waypoints (the Dagre edge points, capped by
-// the real handle endpoints) using quadratic segments through midpoints.
+// Dagre keys multigraph edges by (v, w, name) — name is our edge id.
 function graphEdgePoints(
   edge: GraphEdgeSpec,
   laidOut: DagreGraph<GraphLabel, NodeLabel, EdgeLabel>
@@ -643,10 +586,8 @@ function refEdge(id: string, from: string, to: string, points: { x: number; y: n
   };
 }
 
-// Resources are shared DEPENDENCIES, not flow steps: lay them in a row below the flow,
-// each near its user's x, and drop a dashed cable out of each user's BOTTOM, along a bus
-// just below the flow, into the resource's TOP. This reads as "this node uses this
-// resource" — never out of the flow-output side.
+// Resources are shared dependencies, not flow steps: a row below the flow, each near its user's x,
+// wired by a dashed cable from the user's bottom along a bus into the resource's top.
 function placeResourceDependencies(
   nodes: PipelineFlowNode[],
   rfNodes: Node[],
@@ -680,8 +621,7 @@ function placeResourceDependencies(
     desiredX.set(resource.id, Math.min(desiredX.get(resource.id) ?? Number.POSITIVE_INFINITY, left));
   }
 
-  // Lay resources left→right (referenced ones at their user's x, then any unreferenced),
-  // de-overlapping so no two cards collide.
+  // Lay resources left→right (referenced ones at their user's x, then unreferenced), de-overlapped.
   const ordered = [
     ...resources
       .filter((r) => desiredX.has(r.id))
@@ -712,9 +652,8 @@ function placeResourceDependencies(
     bottom = Math.max(bottom, laneY + h);
   }
 
-  // Dependency cables: out of the user's bottom, JOG into the clear inter-rank gap nearest
-  // the resource (so the drop never crosses the nodes stacked in the user's column), down
-  // a staggered bus just below the flow, across to the resource, then into its top.
+  // Cables jog from the user's bottom into the inter-rank gap, drop to a staggered bus below the
+  // flow, run across, then enter the resource's top.
   refs.forEach((ref, i) => {
     const user = boxes.get(ref.userId);
     const rx = resLeft.get(ref.resourceId);
@@ -724,8 +663,7 @@ function placeResourceDependencies(
     const startX = user.x - user.w / 2 + HANDLE_X;
     const startY = user.y + user.h / 2;
     const endX = rx + HANDLE_X;
-    // Drop in the rank gap on whichever side faces the resource — gaps between ranks are
-    // node-free, so the vertical run is guaranteed clear of other cards.
+    // Drop in the rank gap facing the resource — rank gaps are node-free, so the run clears all cards.
     const toLeft = endX < user.x;
     const gapX = toLeft ? user.x - user.w / 2 - GRAPH_RANKSEP / 2 : user.x + user.w / 2 + GRAPH_RANKSEP / 2;
     const busY = bounds.maxY + RES_BUS_GAP + (i % 4) * RES_BUS_STAGGER;
@@ -743,8 +681,7 @@ function placeResourceDependencies(
   return { right, bottom };
 }
 
-// Place the editing affordances after layout: a dashed "+ Add …" pill just below its
-// control-flow node (close, so it clearly belongs to that node).
+// Place the "+ Add …" insert pills after layout, just below their anchor nodes.
 function placeGraphInserts(
   ctx: GraphCtx,
   rfNodes: Node[],
@@ -783,10 +720,8 @@ const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
   error: 'error',
 };
 
-// Forward longest-path rank for each graph node: distance (in edges) from the nearest source. A
-// node's rank is one past its LATEST-arriving predecessor, so nodes hug their predecessors (the
-// split) on the left rather than their successors (the merge) on the right. Memoised; the cycle
-// guard is defensive (the flow graph is a DAG — loops render as chained bodies, no loopback edge).
+// Forward longest-path rank (edge distance from the nearest source): nodes hug their predecessor
+// (the split) instead of being pulled right to the merge. The cycle guard is defensive — it's a DAG.
 function forwardRanks(gnodes: GraphNodeSpec[], gedges: GraphEdgeSpec[]): Map<string, number> {
   const predecessors = new Map<string, string[]>();
   for (const edge of gedges) {
@@ -845,9 +780,7 @@ export function computeGraphLayout(
   for (const gn of ctx.gnodes) {
     g.setNode(gn.id, { width: gn.w, height: gn.h });
   }
-  // SOURCE-align the layout: pin each node to its forward longest-path rank (distance from input)
-  // via per-edge `minlen`, so fanned cases sit just right of their split instead of being pulled
-  // right to the merge the way Dagre's successor-based rankers would place them.
+  // Source-align: pin each node to its forward longest-path rank via per-edge `minlen` (see forwardRanks).
   const ranks = forwardRanks(ctx.gnodes, ctx.gedges);
   for (const ge of ctx.gedges) {
     const minlen = Math.max(1, (ranks.get(ge.to) ?? 0) - (ranks.get(ge.from) ?? 0));
@@ -926,8 +859,7 @@ export function computeGraphLayout(
         ...(ge.insertIndex === undefined ? {} : { insertIndex: ge.insertIndex }),
         ...(ge.slot ? { slotPayload: ge.slot } : {}),
         ...(ge.selectId && ge.selectTarget ? { selectId: ge.selectId, selectTarget: ge.selectTarget } : {}),
-        // Condition labels ride the MIDPOINT of the (roomy) rank gap so they sit in clear space
-        // between the split and the target card — not poking into the card nor piling up at the split.
+        // Condition labels ride the rank-gap midpoint — clear of both the split and the target card.
         ...((ge.type === 'conditional' || ge.type === 'error') && ge.label ? { labelT: 0.5 } : {}),
       },
     });

@@ -52,8 +52,7 @@ const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
   <Text className="mt-2 font-semibold text-foreground text-xs uppercase tracking-wide">{children}</Text>
 );
 
-// DS-styled element map matching the inspector's type scale. All heading levels collapse to the same
-// compact label — these are short section titles, not a hierarchy.
+// All heading levels collapse to the same compact label — these are short section titles, not a hierarchy.
 const MARKDOWN_COMPONENTS: Components = {
   h1: MarkdownHeading,
   h2: MarkdownHeading,
@@ -124,8 +123,7 @@ function Row({
   onCommit: (component: ConnectComponentSpec) => void;
 }) {
   const category = component.categories?.[0];
-  // Fall back to the humanized type (cache / rate_limit / …) so same-named components of different
-  // kinds — e.g. the redis cache vs the redis rate-limit — are distinguishable in the list.
+  // Fall back to the humanized type so same-named components (redis cache vs redis rate-limit) stay distinguishable.
   const badgeLabel = category ? getCategoryDisplayName(category) : component.type.replace(/_/g, ' ');
   return (
     <CommandItem
@@ -152,8 +150,7 @@ function Row({
 // Facet tabs (Recent / Suggested / All / per-category) that narrow the browse list.
 type Tab = { id: string; label: string };
 
-// Right-hand preview of the highlighted row: full metadata (description, categories, version, docs).
-// Insertion is deferred to the footer Add action.
+// Right-hand preview of the highlighted row; insertion is deferred to the footer Add action.
 function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   if (!component) {
     return (
@@ -228,19 +225,19 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
 
 type ConnectCommandPaletteProps = {
   components?: ComponentList;
+  /** Pre-parsed specs appended to the catalog — the seam tests use to inject fixtures without a raw schema. */
   additionalComponents?: ExtendedConnectComponentSpec[];
-  /** Component types valid in the slot being filled — the palette only lists components of these types. */
+  /** Component types valid in the slot being filled; the palette lists only these. */
   allowedTypes?: ConnectComponentType[];
   onSelect: (connectionName: string, connectionType: ConnectComponentType) => void;
-  /** Dismisses the picker without adding anything (wired to the footer Cancel button). */
+  /** When provided, the footer shows a Cancel button wired to this. */
   onCancel?: () => void;
   searchPlaceholder?: string;
 };
 
 /**
- * Search-first add-node picker as a master/detail panel: tab-filtered list, metadata preview, and a footer
- * that defers insertion until commit. Matches across name, aliases, summary, description and categories;
- * locks to the slot's valid types; leads with recents and suggestions; keyboard-first.
+ * Search-first add-node picker as a master/detail panel: tab-filtered list, metadata preview, and a
+ * footer that defers insertion until commit. Matches name/aliases/summary/description/categories.
  */
 export const ConnectCommandPalette = ({
   components,
@@ -269,8 +266,7 @@ export const ConnectCommandPalette = ({
 
   const inScope = useMemo(() => allComponents.filter((c) => typeAllowed(c.type)), [allComponents, typeAllowed]);
   const byName = useMemo(() => new Map(inScope.map((c) => [c.name, c])), [inScope]);
-  // Keyed by CommandItem `value` (`type:name`) so a highlighted row resolves to its spec
-  // even when two types share a name (e.g. kafka in/out).
+  // Keyed by CommandItem `value` (`type:name`) since two types can share a name (e.g. kafka in/out).
   const byKey = useMemo(() => new Map(inScope.map((c) => [`${c.type}:${c.name}`, c])), [inScope]);
   const activeComponent = byKey.get(activeValue);
 
@@ -294,14 +290,13 @@ export const ConnectCommandPalette = ({
       inScope
         .map((component) => ({ component, rank: matchRank(component, q, searchableText(component)) }))
         .filter((r) => r.rank >= 0)
-        // Relevance first; ties broken by prominence.
         .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
         .map((r) => r.component)
     );
   }, [inScope, q]);
 
-  // When a type-locked search comes up empty, the component types (outside the slot's scope)
-  // that DO match the query — surfaced in the empty state so the miss isn't read as a gap.
+  // On a type-locked miss, the out-of-scope types that DO match — shown in the empty state so the
+  // miss isn't read as a gap.
   const outOfScopeTypes = useMemo(() => {
     if (!q || results.length > 0 || !allowedTypes || allowedTypes.length === 0) {
       return [];
@@ -326,8 +321,7 @@ export const ConnectCommandPalette = ({
     [allowedTypes, byName, recentComponents]
   );
 
-  // In-scope components grouped by category, powering the "All" and per-category tabs. A component
-  // appears under EVERY category it lists (not just the first), so it's found under each relevant tab.
+  // Grouped by category for the tabs; a component appears under EVERY category it lists, not just the first.
   const grouped = useMemo(() => {
     const groups = new Map<string, ConnectComponentSpec[]>();
     for (const component of inScope) {
@@ -382,7 +376,6 @@ export const ConnectCommandPalette = ({
   const defaultTab = suggested.length > 0 ? 'suggested' : 'all';
   const currentTab = tab && tabs.some((t) => t.id === tab) ? tab : defaultTab;
 
-  // Resolve the active tab to the rows it should render.
   const browseItems = useMemo(() => {
     if (currentTab === 'recent') {
       return recentComponents;
@@ -397,8 +390,7 @@ export const ConnectCommandPalette = ({
     return null; // "all" renders the grouped view, not a flat list.
   }, [currentTab, recentComponents, suggested, grouped]);
 
-  // Enter adds the highlighted component (fast keyboard path); a single click only previews,
-  // keeping insertion explicit, while double-click commits directly.
+  // Enter commits the highlighted component; a single click only previews, double-click commits.
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.nativeEvent.isComposing && activeComponent) {
       event.preventDefault();

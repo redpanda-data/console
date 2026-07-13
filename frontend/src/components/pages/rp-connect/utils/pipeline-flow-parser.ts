@@ -12,25 +12,16 @@
 import { type Document, type LineCounter, parseDocument, parse as parseYaml } from 'yaml';
 
 import { type NodeMetaEntry, summarizeComponent, truncate } from './pipeline-flow-meta';
-import { type EditTarget, firstKey, parseMultiInputs, type ResourceArrayKey } from './yaml';
+import {
+  type EditTarget,
+  firstKey,
+  type ParsedYamlConfig,
+  parseMultiInputs,
+  type ResourceArrayKey,
+  resourceArrayKey,
+  resourceKindForComponentName,
+} from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
-
-type ParsedYamlConfig = {
-  input?: Record<string, unknown>;
-  output?: Record<string, unknown>;
-  pipeline?: { processors?: Record<string, unknown>[] };
-  cache_resources?: unknown[];
-  rate_limit_resources?: unknown[];
-  // Named-resource inputs/outputs/processors (via `resource:` indirection), shown in the resource lane with ref links.
-  input_resources?: unknown[];
-  output_resources?: unknown[];
-  processor_resources?: unknown[];
-  buffer?: Record<string, unknown>;
-  metrics?: Record<string, unknown>;
-  tracer?: Record<string, unknown>;
-  logger?: Record<string, unknown>;
-  redpanda?: Record<string, unknown>;
-};
 
 const REDPANDA_COMPONENTS: ReadonlySet<string> = new Set(REDPANDA_TOPIC_AND_USER_COMPONENTS);
 
@@ -47,8 +38,7 @@ export type PipelineFlowNode = {
   collapsible?: boolean;
   missingTopic?: boolean;
   missingSasl?: boolean;
-  // Only on top-level editable nodes (input/output/top-level processor/array resource).
-  // Drives edit & delete; nested nodes have none and stay read-only.
+  // How this node is edited/deleted; nested components carry path-based targets.
   editTarget?: EditTarget;
   // Key config values surfaced on the canvas card.
   meta?: NodeMetaEntry[];
@@ -71,8 +61,7 @@ export type PipelineFlowNode = {
   resourceRefCandidates?: string[];
   // A `switch` case wrapper — structural sub-node (not editable); selecting it picks the parent.
   isCase?: boolean;
-  // Edit target for the case's routing condition (`{ check, … }`); see the chip-clickability note
-  // where this is forwarded to the entry card.
+  // Edit target for the case's routing condition (`{ check, … }`), forwarded to the case's entry card.
   caseEditTarget?: EditTarget;
   // Id of the (non-rendered) case-wrapper node a processor-switch case entry stands in for, so a
   // condition edit (which changes the wrapper's config) marks THIS entry card as unsaved.
@@ -89,6 +78,19 @@ export type PipelineFlowNode = {
   // resolve kind-aware (a cache ref never links to a same-labelled rate_limit).
   resourceKey?: string;
 };
+
+// Human label for a node's section (canvas card kind chips, command-palette rows).
+export const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, string> = {
+  input: 'Input',
+  processor: 'Processor',
+  output: 'Output',
+  resource: 'Resource',
+};
+
+// SECTION_LABEL lookup tolerant of untyped values — card data carries `section` as a bare string.
+export function sectionLabel(section?: string): string {
+  return SECTION_LABEL[section as NonNullable<PipelineFlowNode['section']>] ?? '';
+}
 
 type BranchContext = {
   section: 'input' | 'processor' | 'output';
@@ -166,8 +168,7 @@ function multiMemberSpecs(value: unknown): GroupChildSpec[] | undefined {
   if (!Array.isArray(items)) {
     return;
   }
-  // Skip null/scalar entries but keep each member's original index, so edit paths never land on a
-  // neighbour (mapping every element would emit a phantom leaf pointing at the null slot).
+  // Skip null/scalar entries but keep original indices so edit paths never land on a neighbour.
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
     if (item && typeof item === 'object') {
@@ -256,9 +257,8 @@ type OutputMemberSpec = {
   caseEditTarget?: EditTarget;
 };
 
-// Members of an output container (broker/switch/fallback), or undefined if `key` isn't one.
-// `path` points to the container object `{ key: value }`; each member's path is derived from
-// it so nesting composes (a fallback inside a switch case gets a deep, editable path).
+// Members of an output container (broker/switch/fallback), or undefined if `key` isn't one. Member
+// paths derive from `path` (the container object) so nesting composes into deep, editable paths.
 function outputContainerMembers(
   key: string,
   value: unknown,
@@ -280,8 +280,7 @@ function outputContainerMembers(
     if (!Array.isArray(cases)) {
       return [];
     }
-    // Keep the raw index for the edit path, but skip null/scalar case entries (trivially produced by
-    // hand-editing) rather than dereferencing them and crashing the whole parse — mirrors parseSwitchCases.
+    // Keep the raw index for the edit path but skip null/scalar case entries — mirrors parseSwitchCases.
     const members: OutputMemberSpec[] = [];
     for (const [i, c] of cases.entries()) {
       if (!c || typeof c !== 'object') {
@@ -432,10 +431,8 @@ const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 
 // A parseable processor entry paired with its ORIGINAL YAML index.
 type ProcessorEntry = [number, Record<string, unknown>];
 
-// A processor array's parseable entries WITH their original YAML indices. Unparseable
-// entries (`- null`, scalars mid-edit) are skipped for rendering, but each kept entry's
-// source index still feeds its editTarget path — an edit/delete must never land on a
-// neighbouring entry because the rendered positions were compacted.
+// A processor array's parseable entries with their ORIGINAL YAML indices: unparseable entries
+// (`- null`, mid-edit scalars) are skipped, but edit paths must never land on a neighbouring entry.
 function extractProcessorEntries(value: unknown): ProcessorEntry[] | undefined {
   if (!Array.isArray(value)) {
     return;
@@ -467,9 +464,8 @@ function indirectionResourceRef(componentName: string | undefined, componentValu
     : undefined;
 }
 
-// A resource ref may live in a non-`resource` field (e.g. a CDC input's `checkpoint_cache`).
-// Without the schema here we can't know field types, so collect every top-level string as a
-// candidate; the post-pass promotes those matching an actual resource label.
+// A resource ref may live in a non-`resource` field (e.g. `checkpoint_cache`). Without the schema we
+// can't know field types, so collect every top-level string; the post-pass promotes real matches.
 function extractRefCandidates(componentValue: unknown): string[] | undefined {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
@@ -548,8 +544,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
     }
     caseNum += 1;
     const caseRecord = caseObj as Record<string, unknown>;
-    // A case without a `processors` array (e.g. hand-written check-only) still renders —
-    // as an empty case with its condition and an add slot — never silently vanishes.
+    // A check-only case (no `processors` array) still renders as an empty case — never silently vanishes.
     const caseProcs = extractProcessorEntries(caseRecord.processors) ?? [];
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
     const caseLabel = `case ${caseNum}`;
@@ -563,8 +558,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       childFlow: 'sequential',
       ...caseRouting(caseRecord.check),
       isCase: true,
-      // The case object is editable for its `check` condition; its processors are their own
-      // nodes. Selecting the case opens the condition editor.
+      // The case object is editable for its `check` condition; its processors are their own nodes.
       editTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
       caseEditTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
       // Explicit so even an empty case (no children to derive from) is fillable.
@@ -641,8 +635,7 @@ function parseBranchingKeys(
   if (branchingKeys.length === 0) {
     return [];
   }
-  // Children parent off the group node; branching keys live inside the named config,
-  // so descend the path into that component name.
+  // Children parent off the group node; descend the path into the named config.
   const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix, path: [...ctx.path, componentName] };
   return branchingKeys.flatMap((key) => parseBranchingField(key, config[key], childCtx));
 }
@@ -654,8 +647,6 @@ function parseDirectArrayBranching(
 ): PipelineFlowNode[] {
   // The component's value array lives at [...ctx.path, componentName].
   const valuePath = [...ctx.path, componentName];
-  // `switch` and `group_by` are both arrays of `{ check, processors }` cases (routing vs grouping),
-  // so both render as case groups — not a flat processor array.
   if (CASE_CONTAINER_LABELS.has(componentName)) {
     const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
     const group = makeGroup(componentName, ctx);
@@ -665,8 +656,7 @@ function parseDirectArrayBranching(
   }
 
   const procArray = extractProcessorEntries(componentValue);
-  // try/catch/for_each hold a flat processor array — keep the group (with insert slot)
-  // even when empty so the first processor can be added.
+  // try/catch/for_each: keep the group (with insert slot) even when empty so a first processor can be added.
   if (procArray && DIRECT_ARRAY_PROC_CONTAINERS.has(componentName)) {
     const group = makeGroup(componentName, ctx);
     group.insertSlot = { containerPath: valuePath, accepts: 'processor' };
@@ -698,8 +688,7 @@ function parseComponentWithBranching(
   const config = componentValue as Record<string, unknown>;
   const childNodes = parseBranchingKeys(config, ctx, componentName);
   if (childNodes.length === 0) {
-    // An empty branch/while/parallel still accepts a child into its `processors` array —
-    // render as a fillable group, not a dead-end leaf.
+    // An empty branch/while/parallel still accepts children — render a fillable group, not a dead-end leaf.
     if (NESTED_PROC_CONTAINERS.has(componentName)) {
       const group = withBranchMeta(makeGroup(componentName, ctx), componentName, config);
       group.insertSlot = { containerPath: [...ctx.path, componentName, 'processors'], accepts: 'processor' };
@@ -771,9 +760,8 @@ const RESOURCE_YAML_KEYS = [
   'redpanda',
 ] as const;
 
-// Array resources addressed by the dedicated `resource` target (cache/rate-limit). Other
-// resources are editable too, but via path targets: input/output/processor resource arrays
-// (RESOURCE_KEY_COMPONENT_TYPE) and component-shaped singletons (SINGLETON_RESOURCE_COMPONENT_TYPE).
+// Array resources addressed by the dedicated `resource` target (cache/rate-limit). Other resources
+// are editable via path targets (RESOURCE_KEY_COMPONENT_TYPE / SINGLETON_RESOURCE_COMPONENT_TYPE).
 const EDITABLE_RESOURCE_KEYS: ReadonlySet<string> = new Set(['cache_resources', 'rate_limit_resources']);
 
 // input/output/processor resources hold a real component, inspectable via a path edit
@@ -784,17 +772,15 @@ const RESOURCE_KEY_COMPONENT_TYPE: Record<string, 'input' | 'processor' | 'outpu
   output_resources: 'output',
 };
 
-// Singleton root resources that ARE components (each wraps one impl, e.g. `buffer: { memory: … }`)
-// become editable via a path target carrying their component type. The remaining root blocks
-// (`logger`, `redpanda`) are plain config, not components, so they stay display-only.
+// Singleton root resources that ARE components (e.g. `buffer: { memory: … }`) get a path edit target;
+// `logger`/`redpanda` are plain config, not components, so they stay display-only.
 const SINGLETON_RESOURCE_COMPONENT_TYPE: Record<string, 'buffer' | 'metrics' | 'tracer'> = {
   buffer: 'buffer',
   metrics: 'metrics',
   tracer: 'tracer',
 };
 
-// Edit target for the i-th resource-array item: cache/rate-limit use the dedicated
-// `resource` target; input/output/processor resources use a path target (shared editing).
+// Edit target for the i-th resource-array item (dedicated `resource` target or path target, per above).
 function resourceItemEditTarget(key: string, index: number): EditTarget | undefined {
   if (EDITABLE_RESOURCE_KEYS.has(key)) {
     return { kind: 'resource', resourceKey: key as ResourceArrayKey, index };
@@ -836,8 +822,6 @@ function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): Pipeli
     if (Array.isArray(value)) {
       nodes.push(...parseArrayResource(value, key, sectionId));
     } else {
-      // A component-shaped singleton (buffer/metrics/tracer) gets an edit target + impl meta so it
-      // isn't an inert card; plain config blocks (logger/redpanda) remain display-only.
       const componentType = SINGLETON_RESOURCE_COMPONENT_TYPE[key];
       const valueObj = value as Record<string, unknown>;
       const implName = componentType ? firstKey(valueObj) : undefined;
@@ -869,10 +853,8 @@ type OutputNodeArgs = {
   config: ParsedYamlConfig;
 };
 
-// Build the node subtree for an output component. broker/switch/fallback become a fan-out
-// GROUP whose members recurse — so a fallback nested inside a switch case (or a broker, …) is
-// itself a branching container with per-member editable nodes and a grow affordance, not a
-// summary leaf. Anything else is an editable leaf.
+// Node subtree for an output component: broker/switch/fallback become a fan-out GROUP whose members
+// recurse (nested containers keep editable members + grow affordances); anything else is a leaf.
 function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
   const { obj, id, parentId, path, editTarget, routing, labelText, config } = args;
   const key = firstKey(obj);
@@ -969,8 +951,7 @@ function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig):
   if (parsed.length > 0) {
     nodes.push(...parsed);
   } else {
-    // No parseable component (absent, or unrenderable like `input: []`) — always keep the
-    // placeholder so the "Add input" affordance exists.
+    // No parseable component (absent or `input: []`) — keep the placeholder so "Add input" exists.
     nodes.push({ id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: sectionId });
   }
 }
@@ -1046,8 +1027,7 @@ export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTree
 
 /**
  * Parse YAML once into both the editable node tree AND the `yaml` Document whose `getIn` resolves an
- * `editTargetPath` to its YAML node (with ranges when a LineCounter is supplied). The tree is derived
- * from the same Document via `toJS`, so callers that need both (diff, lint) don't parse twice.
+ * `editTargetPath` (with ranges when a LineCounter is supplied), so diff/lint don't parse twice.
  */
 export function parseEditableNodes(
   configYaml: string,
@@ -1079,9 +1059,8 @@ export function isConfigTextEmpty(configYaml: string): boolean {
 }
 
 /**
- * Offer "Start from a template" ONLY for a genuinely blank config. Text that parses to no components
- * — invalid YAML, or valid YAML that lost its input/output/pipeline sections — is NOT empty: a
- * template there would clobber the user's work. Callers pass their already-parsed nodes to reuse them.
+ * Offer "Start from a template" ONLY for a genuinely blank config: text that parses to no components
+ * (invalid YAML, or lost sections) is NOT empty — a template there would clobber the user's work.
  */
 export function shouldOfferTemplate(configYaml: string, nodes: PipelineFlowNode[]): boolean {
   return isPipelineEmpty(nodes) && isConfigTextEmpty(configYaml);
@@ -1112,16 +1091,12 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
   annotateResourceRefs(nodes);
 }
 
-// The `*_resources` array a node's reference must resolve into, from the referencing
-// component itself: `cache`/`rate_limit` processors name their kind; a `resource:`
-// indirection resolves within its own section. Undefined = kind unknown (candidate-promoted
-// refs from arbitrary fields) — those match a resource of any kind.
+// The `*_resources` array a node's ref must resolve into: `cache`/`rate_limit` name their kind; a
+// `resource:` indirection uses its own section; undefined (candidate-promoted refs) matches any kind.
 function expectedResourceKey(node: PipelineFlowNode): string | undefined {
-  if (node.label === 'cache') {
-    return 'cache_resources';
-  }
-  if (node.label === 'rate_limit') {
-    return 'rate_limit_resources';
+  const kind = resourceKindForComponentName(node.label);
+  if (kind) {
+    return resourceArrayKey(kind);
   }
   if (node.label === 'resource' && node.section && node.section !== 'resource') {
     return `${node.section}_resources`;
@@ -1156,8 +1131,7 @@ export function buildResourceRefResolver(resources: PipelineFlowNode[]): Resourc
 // Resource references: promote field candidates, flag dangling links, and count usages via the kind-aware resolver.
 function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
   const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
-  // Promote a candidate resolving to a resource label into a real reference — catches refs in
-  // non-`resource` fields and on input/output nodes that carry no explicit `resource` field.
+  // Promote candidates that resolve to a real resource label — catches refs in non-`resource` fields.
   for (const node of nodes) {
     if (!node.resourceRef && node.resourceRefCandidates) {
       node.resourceRef = node.resourceRefCandidates.find((c) => resolve(node, c));
@@ -1185,9 +1159,7 @@ function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
 // ============================================================================
 // Shared data-flow model
 // ----------------------------------------------------------------------------
-// The canvas draws the flow (input → top-level processors → output; each group threads its
-// children: sequential chains, parallel fans out). These helpers supply the connections,
-// separate from layout positioning.
+// Helpers supplying the flow connections (input → processors → output), separate from layout.
 // ============================================================================
 
 export function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {

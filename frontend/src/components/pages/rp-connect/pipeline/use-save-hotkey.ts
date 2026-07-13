@@ -11,8 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 
-// A MODAL dialog (settings, discard-changes, …) is capturing input. Scoped to aria-modal so a
-// host-shell element or a non-modal popover (role="dialog") can't disable the shortcut.
+// Modal dialogs only — aria-modal scoping keeps non-modal role="dialog" elements from disabling the shortcut.
 const MODAL_DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]';
 
 type UseSaveHotkeyOptions = {
@@ -24,12 +23,9 @@ type UseSaveHotkeyOptions = {
 };
 
 /**
- * ⌘S / Ctrl+S saves the pipeline, overriding the browser's save-page dialog, from both the YAML and
- * Visual lanes. Plain ⌘S only — ⌘⇧S (save-as) keeps its browser behaviour — and the shortcut stands
- * down while a modal dialog is open so the press keeps its default behaviour there.
- *
- * The generic {@link useHotKey} isn't used here because it always `preventDefault`s on a match: this
- * handler must let ⌘⇧S through and must not swallow ⌘S while a modal is capturing input.
+ * ⌘S / Ctrl+S saves the pipeline, overriding the browser's save-page dialog.
+ * ⌘⇧S (save-as) keeps its browser behaviour, and the shortcut stands down while a modal dialog is open.
+ * The generic useHotKey is unsuitable: it always `preventDefault`s on a match, so it could do neither.
  */
 export function useSaveHotkey({ enabled, isSaving, onSave }: UseSaveHotkeyOptions) {
   // Ref so the listener sees the latest isSaving/onSave without re-registering on every render.
@@ -41,7 +37,6 @@ export function useSaveHotkey({ enabled, isSaving, onSave }: UseSaveHotkeyOption
       return;
     }
     const onKeyDown = (e: KeyboardEvent) => {
-      // Plain ⌘S/Ctrl+S only — ⌘⇧S (save-as) keeps its browser behaviour.
       if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 's') {
         return;
       }

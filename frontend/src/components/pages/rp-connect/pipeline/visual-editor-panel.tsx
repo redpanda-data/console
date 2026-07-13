@@ -75,23 +75,19 @@ const INSERTABLE_TYPES = ['processor', 'cache', 'rate_limit'] satisfies ConnectC
 // Stable empty set so the "no unsaved nodes" case doesn't churn the canvas layout memo.
 const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 
-// Reads the picker title for a typed slot, e.g. "Insert an output" inside a switch.
 const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
   input: 'an input',
   output: 'an output',
   processor: 'a processor',
 };
 
-// Where a chosen connector lands: a top-level spine slot (pipeline.processors) or a nested
-// container array (switch case, branch, broker, fallback).
+// Where a chosen connector lands: a top-level spine slot or a nested container array.
 type PendingInsert =
   | { context: 'spine'; index: number }
   | { context: 'slot'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
-  // Switch "add case": pick the first step, then wrap it as `{ check, output }` (output switch)
-  // or `{ check, processors: [step] }` (processor switch).
+  // Switch "add case": the picked step is wrapped as `{ check, output }` or `{ check, processors: [step] }`.
   | { context: 'switchCase'; containerPath: (string | number)[]; section: 'processor' | 'output' }
-  // "Create new resource" from a node's resource field: create the cache/rate_limit and link it
-  // to `target`'s `resource:` field.
+  // "Create new resource": create the cache/rate_limit and link it to `target`'s `resource:` field.
   | { context: 'resourceForNode'; kind: ResourceKind; target: EditTarget };
 
 type InsertParams = {
@@ -102,9 +98,8 @@ type InsertParams = {
   components: ConnectComponentSpec[];
 };
 
-// Routing-condition target for a node with a lint problem, so selecting the problem opens its
-// condition. Output switch: the node owns it; processor switch: the case wrapper owns it and this
-// node is the wrapper's first child.
+// Routing-condition target for a node: output switch — the node owns it; processor switch — the
+// case wrapper owns it and this node is the wrapper's first child.
 function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]): EditTarget | undefined {
   if (node?.caseEditTarget) {
     return node.caseEditTarget;
@@ -117,9 +112,8 @@ function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: Pipeli
   return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
 }
 
-// What a "jump to node" selects + recenters. A processor-switch case is a structural wrapper with
-// no rendered card, so resolve it to its first body step, carrying the case's condition target;
-// every other node jumps to itself. Null if unjumpable.
+// A processor-switch case has no rendered card, so jump to its first body step (carrying the
+// case's condition target); every other node jumps to itself. Null if unjumpable.
 function resolveJumpTarget(
   node: PipelineFlowNode,
   flowNodes: PipelineFlowNode[]
@@ -133,9 +127,8 @@ function resolveJumpTarget(
   return node.editTarget ? { id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget } : null;
 }
 
-// Direct children (cases / steps) of a control-flow node as clickable inspector items, each mapped
-// to the rendered child: an editable child is itself the entry (output switch leaf); otherwise the
-// case wrapper's first child is (processor switch). [] for leaf nodes.
+// Direct children (cases / steps) of a control-flow node as clickable inspector items; an
+// output-switch case is its own entry, a processor-switch case resolves to its first body step.
 function buildChildItems(
   selectedId: string,
   flowNodes: PipelineFlowNode[],
@@ -143,8 +136,6 @@ function buildChildItems(
 ): InspectorChildItem[] {
   const items: InspectorChildItem[] = [];
   for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
-    // A structural switch-case wrapper isn't navigable as a component: use its first body step as
-    // the entry and name the row by that node. An output-switch case is itself a leaf.
     const isCaseWrapper = child.editTarget?.kind === 'switchCase';
     const entry = isCaseWrapper ? (flowNodes.find((n) => n.parentId === child.id) ?? child) : child;
     if (!entry?.editTarget) {
@@ -169,9 +160,8 @@ function buildChildItems(
 // The next YAML plus the edit target of the node that was just added, so the caller can select it.
 type InsertResult = { yaml: string; selectTarget?: EditTarget };
 
-// Resolve the chosen connector + target to the next YAML (null if it couldn't be generated).
-// Caches/rate limits append to their top-level resource arrays (referenced, not nested); every
-// other component splices into the target container array.
+// Resolve the chosen connector + target to the next YAML (null on failure). Caches/rate limits
+// append to their top-level resource arrays; everything else splices into the target container.
 function buildInsertedYaml({
   yaml,
   connectionName,
@@ -179,8 +169,7 @@ function buildInsertedYaml({
   target,
   components,
 }: InsertParams): InsertResult | null {
-  // Wrap the chosen step in a new case (empty condition, edited afterwards) appended to the
-  // switch's cases; select the step, since its config is what the user fills in next.
+  // Append a new case (empty condition) wrapping the chosen step; select the step for configuring.
   if (target.context === 'switchCase') {
     if (connectionType !== target.section) {
       return null;
@@ -201,8 +190,7 @@ function buildInsertedYaml({
         : [...target.containerPath, caseIndex, 'processors', 0];
     return { yaml: next, selectTarget: { kind: 'path', path: stepPath, componentType: target.section } };
   }
-  // Create the cache/rate_limit resource and link it to the node's `resource:` in one commit, so
-  // it's never left unlinked. No re-select — the selected node just gains the link.
+  // Create the resource and link it to the node's `resource:` in one commit, so it's never left unlinked.
   if (target.context === 'resourceForNode') {
     if (connectionType !== target.kind) {
       return null;
@@ -253,7 +241,6 @@ function buildInsertedYaml({
   return null;
 }
 
-// Undo/redo tooltip shortcuts, per platform (⌘ on macOS, Ctrl elsewhere).
 const UNDO_SHORTCUT = formatShortcut(modKey(), 'Z');
 const REDO_SHORTCUT = formatShortcut(modKey(), shiftKey(), 'Z');
 
@@ -266,8 +253,7 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
   </span>
 );
 
-// Classify a canvas keydown, ignoring presses inside a text field or the Monaco editor (which have
-// their own undo / editing semantics).
+// Classify a canvas keydown; presses inside text fields / Monaco keep their own editing semantics.
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
 function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
@@ -279,8 +265,7 @@ function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   if (target?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
     return null;
   }
-  // `/` opens the command palette; ⌘K is taken by the outer app-shell search, so the canvas uses
-  // its own non-conflicting key.
+  // `/` opens the palette — ⌘K is taken by the outer app-shell search.
   if (e.key === '/' && !(e.metaKey || e.ctrlKey || e.altKey)) {
     return 'palette';
   }
@@ -303,15 +288,14 @@ function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-// Undo/redo for visual edits: mutations write YAML directly, so this keeps YAML snapshots for ⌘Z /
-// ⌘⇧Z. Lives in the store to survive lane switches; `recordEdit` no-ops on an unchanged round-trip
-// and folds an external (Monaco) edit into one step when seen on return.
+// Undo/redo via YAML snapshots (⌘Z / ⌘⇧Z), stored to survive lane switches; `recordEdit` no-ops on
+// unchanged round-trips and folds an external (Monaco) edit into one step when seen on return.
 function useEditHistory(
   yaml: string,
   onChange: (next: string) => void,
   onNavigate?: (from: string, to: string) => void,
-  // Runs before a history step is applied — discards the inspector's in-flight draft so it can't be
-  // re-committed against the now-shifted YAML (positional node ids move when a step is undone).
+  // Runs before a history step applies — discards the inspector's in-flight draft (positional node
+  // ids shift when a step is undone, so the draft can't safely re-commit).
   beforeApply?: () => void
 ) {
   const undoStack = usePipelineEditorStore((s) => s.editUndoStack);
@@ -373,10 +357,8 @@ type VisualEditorPanelProps = {
 };
 
 /**
- * The Visual lane: a full-size, pannable canvas that lays the pipeline out as a
- * left→right flow. In edit mode it overlays contextual actions — add
- * input/output, insert a step on the spine, and per-node edit/remove — all of
- * which mutate the canonical YAML.
+ * The Visual lane: a pannable canvas laying the pipeline out as a left→right flow. In edit mode,
+ * contextual actions (add input/output, insert steps, per-node edit/remove) mutate the canonical YAML.
  */
 export function VisualEditorPanel({
   mode,
@@ -399,10 +381,9 @@ export function VisualEditorPanel({
   // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
   const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
 
-  // Inspector edits auto-commit on leave / save (no per-node Apply): the inspector populates
-  // `commitRef` with the selected node's hooks, flushed before any selection change and on save.
-  // `commit` consumes drafts as it applies them, so flushing at multiple points never
-  // double-applies; edits made after a flush commit on the next.
+  // Inspector edits auto-commit on leave / save (no per-node Apply): `commitRef` holds the selected
+  // node's pending commit, flushed before selection changes and on save; a flush consumes the draft,
+  // so flushing at multiple points never double-applies.
   const commitRef = useRef<PendingNodeCommit | null>(null);
   const yamlRef = useRef(yamlContent);
   yamlRef.current = yamlContent;
@@ -432,8 +413,7 @@ export function VisualEditorPanel({
     return () => setPendingEditCommit(null);
   }, [commitPending, setPendingEditCommit]);
 
-  // Mirror the selection into the shared store so the YAML lane can reveal the same node (the lanes
-  // are separate component trees).
+  // Mirror the selection into the shared store so the YAML lane (a separate tree) can reveal the node.
   const setSelectedNodeId = usePipelineEditorStore((s) => s.setSelectedNodeId);
   useEffect(() => {
     setSelectedNodeId(selected?.id ?? null);
@@ -470,8 +450,7 @@ export function VisualEditorPanel({
 
   const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
-  // If an undo/redo or external edit removes the selected node entirely, close the inspector —
-  // leaving it open on an empty state (with a stale draft) invites edits that can't land.
+  // Close the inspector (dropping its stale draft) when an undo/redo or external edit removes the node.
   useEffect(() => {
     if (selected && getComponentAt(yamlContent, selected.target) === undefined) {
       commitRef.current?.discard();
@@ -479,8 +458,7 @@ export function VisualEditorPanel({
     }
   }, [selected, yamlContent]);
 
-  // Associate server lint hints with their nodes, so they show in context (badge on the node, full
-  // messages in the inspector).
+  // Map server lint hints to their nodes (badge on the node, full messages in the inspector).
   const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
   const lintMessagesByNode = useMemo(() => {
     const messages = new Map<string, string[]>();
@@ -493,15 +471,13 @@ export function VisualEditorPanel({
     return messages;
   }, [lintByNode]);
 
-  // Nodes whose config differs from the last-saved/loaded pipeline — flagged with an unsaved dot.
-  // View mode is read-only, so nothing is ever unsaved there.
+  // Nodes whose config differs from the last-saved pipeline (unsaved dot); view mode is never unsaved.
   const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
   const unsavedNodeIds = useMemo(
     () => (isEditing && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS),
     [isEditing, initialYaml, yamlContent]
   );
-  // The unsaved nodes as a jumpable list for the floating "unsaved" panel (only nodes with an
-  // edit target can be selected/recentered).
+  // Jumpable list for the floating "unsaved" panel — only nodes with an edit target can be selected.
   const unsavedNodeList = useMemo(
     () =>
       flowNodes
@@ -510,15 +486,12 @@ export function VisualEditorPanel({
     [flowNodes, unsavedNodeIds]
   );
 
-  // The selected control-flow node's children as a clickable inspector list, linking the high-level
-  // construct to each child's full config.
   const childItems = useMemo<InspectorChildItem[]>(
     () => (selected ? buildChildItems(selected.id, flowNodes, lintByNode) : []),
     [selected, flowNodes, lintByNode]
   );
 
-  // A flat problems list for the floating overview: hints that map to a node are
-  // clickable (select the node); the rest are listed inert.
+  // Flat problems list for the floating overview: node-mapped hints are clickable, the rest inert.
   const problems = useMemo<PipelineProblem[]>(() => {
     const all = lintHints ?? [];
     if (all.length === 0) {
@@ -551,8 +524,7 @@ export function VisualEditorPanel({
     return list;
   }, [lintHints, lintByNode, flowNodes]);
 
-  // Secrets referenced as ${secrets.X} that don't exist yet — surfaced as a banner
-  // with a quick-add flow, so a pasted/templated config is easy to complete.
+  // Secrets referenced as ${secrets.X} that don't exist yet — surfaced with a quick-add flow.
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: isEditing });
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
   const existingSecrets = useMemo(
@@ -569,8 +541,7 @@ export function VisualEditorPanel({
     return referenced.filter((name) => !existingSet.has(name));
   }, [isEditing, secretsResponse, yamlContent, existingSecrets]);
 
-  // Rename a missing secret to an existing one by rewriting the references in YAML (the visual lane
-  // has no text editor to patch).
+  // Rename a missing secret by rewriting references in the YAML (the visual lane has no text editor).
   const handleRenameSecretReferences = useCallback(
     (oldName: string, newName: string) => {
       const updated = yamlContent.replaceAll(`\${secrets.${oldName}}`, `\${secrets.${newName}}`);
@@ -581,8 +552,7 @@ export function VisualEditorPanel({
     [yamlContent, onYamlChange]
   );
 
-  // Deleting a node is confirmed first (it's destructive, even if ⌘Z can undo it):
-  // the trash action / Delete key stage the target, and the dialog commits the removal.
+  // Deletes are confirmed: the trash action / Delete key stage the target, the dialog commits it.
   const [pendingDelete, setPendingDelete] = useState<EditTarget | null>(null);
   const pendingDeleteName = useMemo(() => {
     if (!pendingDelete) {
@@ -592,8 +562,7 @@ export function VisualEditorPanel({
     return comp ? firstKey(comp) : undefined;
   }, [pendingDelete, yamlContent]);
 
-  // Deleting a resource that other nodes still reference (by label) leaves those references
-  // dangling — warn before confirming, so a shared cache/rate-limit isn't silently broken.
+  // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
   const pendingDeleteRefCount = useMemo(() => {
     if (pendingDelete?.kind !== 'resource') {
       return 0;
@@ -610,8 +579,7 @@ export function VisualEditorPanel({
       if (next !== null) {
         onYamlChange(next);
       } else {
-        // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. an anchor
-        // referenced elsewhere) — say so rather than silently keeping the node.
+        // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. a shared anchor) — say so.
         toast.error('Couldn’t remove this node — edit it in the YAML view instead.');
       }
     }
@@ -621,7 +589,6 @@ export function VisualEditorPanel({
     setPendingDelete(null);
   }, [pendingDelete, yamlContent, onYamlChange]);
 
-  // Canvas keyboard shortcuts (undo/redo, deselect, delete), dispatched via canvasKeyAction.
   useEffect(() => {
     const handlers: Record<CanvasKeyAction, (e: KeyboardEvent) => void> = {
       palette: (e) => {
@@ -649,9 +616,8 @@ export function VisualEditorPanel({
       },
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      // With one of the editor's own dialogs open, the canvas shortcuts stay inert (they'd stack the
-      // palette, stage a second delete, or mutate YAML under a staged insert). Checked against
-      // component state, not a role="dialog" query, so a host-shell dialog can't disable us.
+      // Shortcuts stay inert while one of the editor's own dialogs is open. Checked against component
+      // state, not a role="dialog" query, so a host-shell dialog can't disable us.
       if (pendingInsert || pendingDelete || isPaletteOpen || isSecretsDialogOpen) {
         return;
       }
@@ -673,14 +639,12 @@ export function VisualEditorPanel({
       }
       const result = buildInsertedYaml({ yaml: yamlContent, connectionName, connectionType, target, components });
       if (result === null) {
-        // The insert can fail if the slot's container vanished from the YAML (e.g. an undo while
-        // the picker was open) — say so rather than closing the dialog with nothing added.
+        // The slot's container can vanish (e.g. an undo while the picker was open) — say so.
         toast.error(`Couldn’t add ${connectionName} — the insert position no longer exists.`);
         return;
       }
       onYamlChange(result.yaml);
-      // Auto-select (open the inspector on) the node we just added, so it can be configured right
-      // away. Found by matching its edit target in the reparse.
+      // Auto-select the just-added node (matched by edit target in the reparse) so it can be configured.
       if (result.selectTarget) {
         const added = parsePipelineFlowTree(result.yaml).nodes.find(
           (n) => result.selectTarget && editTargetsEqual(n.editTarget, result.selectTarget)
@@ -693,9 +657,8 @@ export function VisualEditorPanel({
     [pendingInsert, components, yamlContent, onYamlChange]
   );
 
-  // In-container "+" affordances: open the picker filtered to the slot's type ("Add case" wraps the
-  // chosen first step as a case). Commit any pending inspector edit first — the insert builds on the
-  // current YAML and selects the new node, so the in-progress edit would otherwise be lost.
+  // In-container "+": open the picker filtered to the slot's type. Commit any pending inspector
+  // edit first — the insert builds on the current YAML, so the draft would otherwise be lost.
   const handleSlotInsert = useCallback(
     (payload: FlowInsertPayload) => {
       commitPending();
@@ -736,13 +699,11 @@ export function VisualEditorPanel({
     [onAddConnector]
   );
 
-  // "Create new resource" from a node's resource field: open the picker filtered to the resource
-  // kind; the pick is created and linked in one step.
+  // "Create new resource" from a node's resource field: the pick is created and linked in one step.
   const handleRequestCreateResource = useCallback(
     (kind: ResourceKind) => {
       if (selected) {
-        // Flush in-progress edits first (as other insert handlers do): the insert re-links the node
-        // on the current YAML, so an uncommitted draft would clobber it.
+        // Flush in-progress edits first — the insert re-links the node on the current YAML.
         commitPending();
         setPendingInsert({ context: 'resourceForNode', kind, target: selected.target });
       }
@@ -750,8 +711,7 @@ export function VisualEditorPanel({
     [selected, commitPending]
   );
 
-  // Command-palette "go to": select the node and recenter the canvas on it. Only nodes with an
-  // edit target are listed, so the target is always present.
+  // Command-palette "go to": select + recenter (only nodes with an edit target are listed).
   const handleJumpToNode = useCallback(
     (node: PipelineFlowNode) => {
       const jump = resolveJumpTarget(node, flowNodes);
@@ -773,9 +733,7 @@ export function VisualEditorPanel({
     [flowNodes, handleJumpToNode]
   );
 
-  // The slot dictates which component types the picker offers: a nested slot accepts
-  // exactly its kind; an output-switch case accepts outputs; a resource link accepts its
-  // resource kind; the top-level spine also offers cache/rate-limit resources.
+  // The slot dictates the picker's component types; the top-level spine also offers resources.
   let insertTypes: ConnectComponentType[] = INSERTABLE_TYPES;
   if (pendingInsert?.context === 'slot') {
     insertTypes = [pendingInsert.accepts];
@@ -785,8 +743,7 @@ export function VisualEditorPanel({
     insertTypes = [pendingInsert.kind];
   }
 
-  // Picker title/placeholder adapt to what's being added: a nested slot or switch case names its
-  // exact kind, so an output added inside a switch reads "Insert an output", not "Insert a step".
+  // Title/placeholder name the exact kind being added, e.g. "Insert an output" inside a switch.
   const isResourceInsert = pendingInsert?.context === 'resourceForNode';
   const slotKind =
     pendingInsert?.context === 'slot'
@@ -802,13 +759,11 @@ export function VisualEditorPanel({
   }
 
   return (
-    // reducedMotion="user" collapses the rail/flash animations for prefers-reduced-motion —
-    // the global CSS rule can't reach these JS-driven motion/react animations.
+    // reducedMotion="user": the global prefers-reduced-motion CSS can't reach JS-driven motion animations.
     <MotionConfig reducedMotion="user">
       <div className="flex h-full w-full">
         <div className="relative min-w-0 flex-1">
-          {/* Don't mount the canvas until the config is loaded — otherwise its parse debounce seeds
-            with the empty pre-hydration config and briefly renders (and fits) a placeholder graph. */}
+          {/* Don't mount the canvas pre-hydration — its parse debounce would briefly render a placeholder graph. */}
           {isLoading ? (
             <PipelineFlowSkeleton />
           ) : (
@@ -894,9 +849,8 @@ export function VisualEditorPanel({
           )}
         </div>
 
-        {/* Inspector rail, mounted only when a node is selected. Animate its width (the flex slot),
-          not a transform, so the canvas and its right-anchored minimap/zoom controls glide in
-          lockstep instead of snapping shut. */}
+        {/* Inspector rail. Animate its width (not a transform) so the canvas and its right-anchored
+          minimap/zoom controls glide in lockstep instead of snapping. */}
         <AnimatePresence>
           {selected ? (
             <motion.aside
@@ -907,8 +861,7 @@ export function VisualEditorPanel({
               key="node-inspector"
               transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
             >
-              {/* Fill the rail's width so the content never leaves a gap; min-width clips it instead
-                of reflowing while the width animates. */}
+              {/* min-width clips the content instead of reflowing it while the rail width animates. */}
               <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
                 <NodeInspector
                   caseTarget={selected.caseTarget}
@@ -923,7 +876,7 @@ export function VisualEditorPanel({
                   onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
                   onSelectChild={(item) => {
                     selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget });
-                    // Recenter on the child so the newly selected node is in view (like the palette jump).
+                    // Recenter so the newly selected child is in view.
                     setFocus((f) => ({ id: item.id, token: f.token + 1 }));
                   }}
                   readOnly={!isEditing}

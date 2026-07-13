@@ -253,8 +253,7 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          {/* self-center: the vertical Separator defaults to `self-stretch`, which with a fixed
-              height (h-6) top-aligns instead of centering in the row. */}
+          {/* self-center: the Separator's default self-stretch top-aligns a fixed h-6 in this row. */}
           <Separator className="mx-1 h-6 self-center" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
@@ -272,7 +271,6 @@ export function PipelineViewHeader({
   );
 }
 
-// "Edit settings" is anchored to the settings block below, away from Save.
 export function PipelineEditHeader({
   form,
   mode,
@@ -313,8 +311,7 @@ export function PipelineEditHeader({
               Edit settings
             </Button>
           </div>
-          {/* Relative so the unsaved-changes hint can sit BELOW the buttons (absolute) instead of
-              between Docs and Save — toggling it then never shifts the Docs button horizontally. */}
+          {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
           <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"
