@@ -967,9 +967,10 @@ export function setComponentAt(
   try {
     const doc = parseDocument(yaml);
     const path = editTargetPath(target);
-    // A stale index into a sequence would make setIn PAD the array with `- null` entries;
-    // refuse to write through a numeric tail that doesn't address an existing item.
-    if (typeof path.at(-1) === 'number' && doc.getIn(path) === undefined) {
+    // Only ever overwrite an existing node. A path that no longer resolves means the target went
+    // stale (external edit / undo): writing anyway would make setIn pad a sequence with `- null`
+    // (numeric tail) or inject a phantom component under a padded parent (numeric mid-segment).
+    if (doc.getIn(path) === undefined) {
       return null;
     }
     doc.setIn(path, componentObject);
@@ -1018,9 +1019,12 @@ export function insertComponentAt(
     if (isSeq(seq)) {
       const clamped = Math.max(0, Math.min(index, seq.items.length));
       seq.items.splice(clamped, 0, doc.createNode(componentObject));
-    } else {
+    } else if (seq === undefined || seq === null) {
       // No array yet — create it with this lone item.
       doc.setIn(containerPath, [componentObject]);
+    } else {
+      // The container exists but isn't a sequence (malformed YAML) — refuse rather than clobber it.
+      return null;
     }
     return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {

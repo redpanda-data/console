@@ -399,8 +399,10 @@ const InspectorBody = ({
         childItems={childItems}
         componentName={componentName}
         headerSlot={conditionSection}
-        // Re-key on the saved value so external changes (undo/redo, YAML lane) re-init the form.
-        key={JSON.stringify(component)}
+        // Re-key on node identity + saved value: identity remounts when the selection changes (so a
+        // sibling with byte-identical config can't inherit this form's dirty state), value remounts on
+        // external changes (undo/redo, YAML lane).
+        key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
         onSelectChild={onSelectChild}
@@ -427,7 +429,11 @@ const InspectorBody = ({
   return (
     <>
       {conditionSection}
-      <RawComponentEditor component={component} key={JSON.stringify(component)} onConfigChange={reportComponentDraft} />
+      <RawComponentEditor
+        component={component}
+        key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
+        onConfigChange={reportComponentDraft}
+      />
     </>
   );
 };

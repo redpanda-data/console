@@ -91,7 +91,7 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
   setYamlContent: (yamlContent) => set({ yamlContent }),
   patchComponent: (section, componentName, patch) => {
     const patched = tryPatchRedpandaYaml(get().yamlContent, section, componentName, patch);
-    if (patched === null) {
+    if (patched === undefined) {
       return false;
     }
     set({ yamlContent: patched });

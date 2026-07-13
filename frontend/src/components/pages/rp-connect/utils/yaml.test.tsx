@@ -1650,6 +1650,14 @@ output:
       expect(parsed.pipeline.processors[0].switch).toHaveLength(3);
       expect(parsed.pipeline.processors[0].switch.at(-1)).toEqual({ check: '', processors: [] });
     });
+
+    test('refuses to insert into a container that exists as a non-sequence (no clobbering)', () => {
+      // A `fallback` hand-authored as a map, not a list. Inserting must not overwrite it away.
+      const malformed = `output:
+  fallback:
+    stdout: {}`;
+      expect(insertComponentAt(malformed, ['output', 'fallback'], 0, { drop: {} })).toBeNull();
+    });
   });
 
   describe('resource references', () => {
