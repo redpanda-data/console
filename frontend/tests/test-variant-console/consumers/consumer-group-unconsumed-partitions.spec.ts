@@ -18,7 +18,7 @@ import { execRpk, getRedpandaContainerId } from '../../shared/rpk.utils';
  *   - Partition 1: offset deleted          → shows "—" for Group Offset and Lag
  *   - Partition 2: never consumed          → shows "—" for Group Offset and Lag
  *   - Edit / Delete buttons on rows 1 and 2 are disabled with tooltip
- *     "No committed offset".
+ *     "No committed offsets".
  */
 
 const TOPIC_NAME = `e2e-unconsumed-${Date.now()}`;
@@ -49,13 +49,16 @@ function rowByPartition(page: Page, partitionId: number) {
     .first();
 }
 
+/** Must match the disabled reason rendered by `group-details.tsx`. */
+const NO_COMMITTED_OFFSETS = 'No committed offsets';
+
 /**
- * Hover a partition's Edit button and assert it is disabled with the "no committed offset" tooltip.
+ * Hover a partition's Edit button and assert it is disabled with the "no committed offsets" tooltip.
  * Closes the tooltip afterwards so the next `getByRole('tooltip')` lookup stays unambiguous.
  */
 async function expectNoCommittedOffsetTooltip(page: Page, partitionId: number) {
   await page.getByTestId(`partition-edit-${partitionId}`).hover();
-  await expect(page.getByRole('tooltip')).toHaveText('No committed offset');
+  await expect(page.getByRole('tooltip')).toHaveText(NO_COMMITTED_OFFSETS);
 
   await page.mouse.move(0, 0);
   await expect(page.getByRole('tooltip')).toBeHidden();
