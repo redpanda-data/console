@@ -353,6 +353,37 @@ output:
     expect(screen.queryByTestId('pipeline-problems-list')).not.toBeInTheDocument();
   });
 
+  test("clicking a switch-condition problem selects the case's entry node, not just the condition", async () => {
+    const user = userEvent.setup();
+    const switchYaml = `input:
+  generate:
+    mapping: 'root = {}'
+pipeline:
+  processors:
+    - switch:
+        - check: 'this.region == "us'
+          processors:
+            - log:
+                message: hi
+output:
+  drop: {}`;
+    // Line 7 is the case's malformed `check` condition.
+    renderPanel({
+      yamlContent: switchYaml,
+      lintHints: [{ line: 7, column: 1, hint: 'expected end quote', lintType: 'config' }] as never,
+    });
+
+    await user.click(screen.getByTestId('pipeline-problems-chip'));
+    await user.click(screen.getByText('expected end quote'));
+
+    // The whole entry node opens in the inspector — not the condition-only editor ("Condition (check)"
+    // is unique to it). The condition stays editable via the embedded "Routing condition" section.
+    const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
+    expect(editor.value).toContain('message: hi');
+    expect(screen.queryByText('Condition (check)')).not.toBeInTheDocument();
+    expect(screen.getByText('Routing condition')).toBeInTheDocument();
+  });
+
   // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect secret reference, not a JS template
   const yamlWithSecretRef = 'input:\n  redpanda:\n    sasl:\n      - password: ${secrets.KAFKA_PASSWORD}\n';
 

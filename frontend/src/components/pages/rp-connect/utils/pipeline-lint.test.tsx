@@ -65,6 +65,32 @@ describe('mapLintHintsToNodes', () => {
     expect(mapLintHintsToNodes('', [hint(1, 'x')]).size).toBe(0);
   });
 
+  it("attaches a processor-switch `check` hint to the case's rendered entry node, not the wrapper", () => {
+    // Line 4 is the malformed routing condition; the case wrapper itself is never rendered.
+    const switchYaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.region == "us'
+          processors:
+            - mapping: 'root = this'
+output:
+  drop: {}`;
+    const byNode = mapLintHintsToNodes(switchYaml, [hint(4, 'expected end quote')]);
+    expect(byNode.get('proc-0-case-1-p0')?.map((h) => h.hint)).toEqual(['expected end quote']);
+    expect(byNode.has('proc-0-case-1')).toBe(false);
+  });
+
+  it('falls back to the case wrapper for an empty (check-only) processor-switch case', () => {
+    const switchYaml = `pipeline:
+  processors:
+    - switch:
+        - check: 'this.region == "us'
+output:
+  drop: {}`;
+    const byNode = mapLintHintsToNodes(switchYaml, [hint(4, 'expected end quote')]);
+    expect(byNode.has('proc-0-case-1')).toBe(true);
+  });
+
   it("attaches a lint hint in a switch case's `check` to the CASE node, not the enclosing switch", () => {
     // Line 6 is the (malformed) routing condition of the first output-switch case.
     const switchYaml = `pipeline:

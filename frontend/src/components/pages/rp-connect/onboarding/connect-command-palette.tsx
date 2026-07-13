@@ -286,13 +286,11 @@ export const ConnectCommandPalette = ({
     if (!q) {
       return [];
     }
-    return (
-      inScope
-        .map((component) => ({ component, rank: matchRank(component, q, searchableText(component)) }))
-        .filter((r) => r.rank >= 0)
-        .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
-        .map((r) => r.component)
-    );
+    return inScope
+      .map((component) => ({ component, rank: matchRank(component, q, searchableText(component)) }))
+      .filter((r) => r.rank >= 0)
+      .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
+      .map((r) => r.component);
   }, [inScope, q]);
 
   // On a type-locked miss, the out-of-scope types that DO match — shown in the empty state so the

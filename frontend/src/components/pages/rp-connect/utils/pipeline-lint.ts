@@ -37,16 +37,17 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
     ranges.push({ id, start, end, span: end - start });
   };
   for (const node of nodes) {
-    if (node.editTarget) {
+    // A switchCase target (processor-switch case wrapper) spans the same lines as its caseEditTarget
+    // and would win the enclosingNodeId tie — the case branch below attributes that range instead.
+    if (node.editTarget && node.editTarget.kind !== 'switchCase') {
       pushRange(node.id, editTargetPath(node.editTarget));
     }
     // Attribute a case's range (incl. its `check`) to the rendered case-entry node — the case itself
-    // (output switch) or the wrapper's first child (processor switch); its smaller span wins in enclosingNodeId.
+    // (output switch) or the wrapper's first child (processor switch) — so a condition error selects
+    // and outlines the entry card. An empty case falls back to the (unrendered) wrapper.
     if (node.caseEditTarget) {
       const entryId = node.kind === 'leaf' ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
-      if (entryId) {
-        pushRange(entryId, editTargetPath(node.caseEditTarget));
-      }
+      pushRange(entryId ?? node.id, editTargetPath(node.caseEditTarget));
     }
   }
   return ranges;
