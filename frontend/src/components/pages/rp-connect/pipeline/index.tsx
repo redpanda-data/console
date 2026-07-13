@@ -832,12 +832,15 @@ function SidebarPanel({
   );
 }
 
+// The visual editor builds on the diagram parsing/outline, so it also requires the diagrams flag
+// (and, like diagrams, only runs embedded in the Cloud UI).
+const isVisualEditorFeatureEnabled = (): boolean =>
+  isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
+
 export default function PipelinePage() {
   const { pipelineId } = usePipelineMode();
-  // With the visual editor enabled, open editing on the Visual lane by default. The visual editor
-  // builds on the diagram parsing/outline, so it also requires the diagrams flag.
-  const isVisualEditorEnabled =
-    isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
+  // Open editing on the Visual lane by default when the visual editor is enabled.
+  const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
   // Keyed by pipeline id so each pipeline gets a fresh editor store.
   return (
     <PipelineEditorProvider initialEditLane={isVisualEditorEnabled ? 'visual' : 'yaml'} key={pipelineId ?? 'create'}>
@@ -855,8 +858,7 @@ function PipelinePageContent() {
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
   const isServerlessMode = search.serverless === 'true';
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
-  // The visual editor builds on the diagram parsing/outline, so it also requires the diagrams flag.
-  const isVisualEditorEnabled = isFeatureFlagEnabled('enableRpcnVisualEditor') && isPipelineDiagramsEnabled;
+  const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
   // Actions are stable, so read them once via getState; values use selectors.

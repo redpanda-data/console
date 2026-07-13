@@ -1187,8 +1187,8 @@ function visitResourceReferences(
 
 /**
  * Repoint every `resource:` reference from `oldLabel` to `newLabel` across the document.
- * With `kind`, only references belonging to that resource kind are rewritten; without it,
- * every matching `resource:` scalar is (legacy behavior).
+ * With `kind`, only references belonging to that resource kind are rewritten; without it (as in
+ * tests), every matching `resource:` scalar is repointed.
  */
 export function renameResourceReferences(
   yaml: string,

@@ -217,39 +217,28 @@ type ContainerSlot =
   | { insertSlot: NonNullable<PipelineFlowNode['insertSlot']> }
   | { addChildSlot: NonNullable<PipelineFlowNode['addChildSlot']> };
 
-const EMPTY_OUTPUT_CONTAINERS: Record<string, ContainerSlot> = {
-  broker: { insertSlot: { containerPath: ['output', 'broker', 'outputs'], accepts: 'output' } },
-  fallback: { insertSlot: { containerPath: ['output', 'fallback'], accepts: 'output' } },
-  // A `switch` grows by appending a structural `{ check, output }` case.
-  switch: { addChildSlot: { containerPath: ['output', 'switch', 'cases'], section: 'output' } },
-};
-
 const EMPTY_INPUT_CONTAINERS: Record<string, ContainerSlot> = {
   broker: { insertSlot: { containerPath: ['input', 'broker', 'inputs'], accepts: 'input' } },
   sequence: { insertSlot: { containerPath: ['input', 'sequence', 'inputs'], accepts: 'input' } },
 };
 
-// Empty-container group for a top-level input/output, or null if not a recognised container.
-function emptySectionContainerGroup(
-  key: string,
-  section: 'input' | 'output',
-  sectionId: string,
-  labelText?: string
-): PipelineFlowNode[] | null {
-  const slot = section === 'output' ? EMPTY_OUTPUT_CONTAINERS[key] : EMPTY_INPUT_CONTAINERS[key];
+// Empty-container group for a top-level input, or null if not a recognised container. Empty output
+// containers don't need this — buildOutputNodes always returns a (possibly empty) member list.
+function emptyInputContainerGroup(key: string, sectionId: string, labelText?: string): PipelineFlowNode[] | null {
+  const slot = EMPTY_INPUT_CONTAINERS[key];
   if (!slot) {
     return null;
   }
   return [
     {
-      id: `${section}-${key}`,
+      id: `input-${key}`,
       kind: 'group',
       label: key,
-      section,
+      section: 'input',
       parentId: sectionId,
       collapsible: true,
       childFlow: 'parallel',
-      editTarget: section === 'output' ? { kind: 'output' } : { kind: 'input' },
+      editTarget: { kind: 'input' },
       ...(labelText ? { labelText } : {}),
       ...slot,
     },
@@ -390,7 +379,7 @@ function parseInputNodes(
     return groupNodes;
   }
 
-  const emptyContainer = emptySectionContainerGroup(inputKey, 'input', sectionId, extractLabel(inputObj));
+  const emptyContainer = emptyInputContainerGroup(inputKey, sectionId, extractLabel(inputObj));
   if (emptyContainer) {
     return emptyContainer;
   }

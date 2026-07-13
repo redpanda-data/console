@@ -435,14 +435,13 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
   ) : null;
 
 // A leaf component card. The whole card is the click target; editing happens in the inspector rail.
-const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: boolean }) => {
+const ComponentCard = ({ data }: { data: FlowCardData }) => {
   const kindLabel = SECTION_LABEL[data.section ?? ''] ?? '';
   const accent = SECTION_ACCENT[data.section ?? ''];
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
-        selectable && 'cursor-pointer',
+        'cursor-pointer overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
         cardRing(data)
       )}
     >
@@ -489,10 +488,7 @@ const ComponentCard = ({ data, selectable }: { data: FlowCardData; selectable?: 
 const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   const isPlaceholder = data.label === 'none';
   const ref = useStopPanOnControls();
-  // Leaves on the full canvas are selectable; placeholders aren't.
-  const selectable = !isPlaceholder;
-
-  const card = isPlaceholder ? <PlaceholderCard data={data} /> : <ComponentCard data={data} selectable={selectable} />;
+  const card = isPlaceholder ? <PlaceholderCard data={data} /> : <ComponentCard data={data} />;
 
   return (
     <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>

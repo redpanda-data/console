@@ -45,9 +45,6 @@ import {
 import type { EditTarget, ResourceKind } from '../utils/yaml';
 import { resourceKindForComponentName } from '../utils/yaml';
 
-// Re-exported for node-inspector, which imports ResourceKind from here.
-export type { ResourceKind } from '../utils/yaml';
-
 // A direct child (case / step) of a control-flow component, shown as a clickable row to its full config.
 export type InspectorChildItem = {
   id: string;
@@ -73,8 +70,15 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   return;
 };
 
-const childItemCondColor = (item: InspectorChildItem): string =>
-  item.isErrorPath ? 'text-destructive' : item.isDefault ? 'text-muted-foreground' : 'text-warning';
+const childItemCondColor = (item: InspectorChildItem): string => {
+  if (item.isErrorPath) {
+    return 'text-destructive';
+  }
+  if (item.isDefault) {
+    return 'text-muted-foreground';
+  }
+  return 'text-warning';
+};
 
 const ChildItemRow = ({
   item,
@@ -496,6 +500,33 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
   />
 );
 
+const OptionsSelect = ({
+  spec,
+  value,
+  onChange,
+  id,
+  required,
+}: {
+  spec: RawFieldSpec;
+  value: string | boolean;
+  onChange: (value: unknown) => void;
+  id?: string;
+  required?: boolean;
+}) => (
+  <Select onValueChange={onChange} value={String(value ?? '')}>
+    <SelectTrigger aria-label={spec.name} aria-required={required || undefined} id={id}>
+      <SelectValue placeholder={spec.defaultValue || 'Select…'} />
+    </SelectTrigger>
+    <SelectContent>
+      {spec.annotatedOptions?.map((option) => (
+        <SelectItem key={option.value} value={option.value}>
+          {option.value}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
+
 const ScalarControl = ({
   spec,
   value,
@@ -519,20 +550,7 @@ const ScalarControl = ({
     return <ResourceReferenceSelect id={id} kind={resourceKind} onChange={onChange} value={String(value ?? '')} />;
   }
   if (fieldHasOptions(spec)) {
-    return (
-      <Select onValueChange={onChange} value={String(value ?? '')}>
-        <SelectTrigger aria-label={spec.name} aria-required={required || undefined} id={id}>
-          <SelectValue placeholder={spec.defaultValue || 'Select…'} />
-        </SelectTrigger>
-        <SelectContent>
-          {spec.annotatedOptions?.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.value}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
+    return <OptionsSelect id={id} onChange={onChange} required={required} spec={spec} value={value} />;
   }
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
@@ -682,8 +700,15 @@ type FieldGroupKey = 'required' | 'optional' | 'advanced';
 
 // Presentation buckets for a form's fields, in display order. `advanced` wins over `required`, so a
 // field flagged advanced never sorts above the fold even when it's also required.
-const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey =>
-  spec.advanced ? 'advanced' : checkRequired(spec) ? 'required' : 'optional';
+const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
+  if (spec.advanced) {
+    return 'advanced';
+  }
+  if (checkRequired(spec)) {
+    return 'required';
+  }
+  return 'optional';
+};
 
 function groupFormFields(fields: RawFieldSpec[]): Record<FieldGroupKey, RawFieldSpec[]> {
   const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };

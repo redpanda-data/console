@@ -197,8 +197,8 @@ const GRAPH_MERGE_H = 32;
 const GRAPH_INSERT_W = 150;
 const GRAPH_INSERT_H = 24;
 // Dagre spacing: gap between ranks (horizontal) and between nodes in a rank (vertical).
-// Deliberately roomy (well above the original 64/38) so Dagre can route edges AROUND nodes
-// (fewer lines crossing cards) and on-edge condition labels sit in clear space between ranks.
+// Deliberately roomy so Dagre can route edges AROUND nodes (fewer lines crossing cards) and
+// on-edge condition labels sit in clear space between ranks.
 const GRAPH_RANKSEP = 120;
 // Generous vertical spacing between stacked branches so routing-condition labels (which sit
 // on the fan-out edges) have room, and so adjacent control-flow constructs' scope-region boxes
@@ -217,7 +217,7 @@ const RESOURCE_GAP = 28;
 // The bottom/top handle's x offset from a card's left edge (matches NodeHandles).
 const HANDLE_X = FLOW_SPINE_HANDLE_LEFT;
 
-type GraphEdgeType = 'flow' | 'conditional' | 'error' | 'reference';
+type GraphEdgeType = 'flow' | 'conditional' | 'error';
 
 type GraphNodeSpec = {
   id: string;
@@ -471,6 +471,11 @@ function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], c
   return { entry: head, exit: head };
 }
 
+// Insert-slot payload that appends a step at the end of a container's body (none if the container
+// has no insert slot of its own).
+const endInsertSlot = (node: PipelineFlowNode, ctx: GraphCtx): FlowInsertPayload | undefined =>
+  node.insertSlot ? { kind: 'insert', ...node.insertSlot, index: ctx.childrenOf(node.id).length } : undefined;
+
 // A try immediately followed by a catch: success path = try body, error path = catch body,
 // both converging at a merge — the canonical dead-letter pattern.
 function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
@@ -484,9 +489,7 @@ function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ct
   if (tryBody) {
     addGraphEdge(ctx, { id: `flow-${tryHead}-${tryBody.entry}`, from: tryHead, to: tryBody.entry, type: 'flow' });
   }
-  const trySlot: FlowInsertPayload | undefined = tryNode.insertSlot
-    ? { kind: 'insert', ...tryNode.insertSlot, index: ctx.childrenOf(tryNode.id).length }
-    : undefined;
+  const trySlot = endInsertSlot(tryNode, ctx);
   addGraphEdge(ctx, {
     id: `flow-${trySuccessFrom}-${merge}`,
     from: trySuccessFrom,
@@ -510,9 +513,7 @@ function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ct
       type: 'error',
     });
   }
-  const catchSlot: FlowInsertPayload | undefined = catchNode.insertSlot
-    ? { kind: 'insert', ...catchNode.insertSlot, index: ctx.childrenOf(catchNode.id).length }
-    : undefined;
+  const catchSlot = endInsertSlot(catchNode, ctx);
   addGraphEdge(ctx, {
     id: `flow-${catchSuccessFrom}-${merge}`,
     from: catchSuccessFrom,
@@ -529,10 +530,9 @@ function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
     return { entry: node.id, exit: node.id };
   }
   const kids = ctx.childrenOf(node.id);
-  // A `branch` operates on a copy and merges the result back, but visually it reads
-  // cleanest as a marker → body → continue (the branch node conveys the copy/merge; its
-  // request/result maps are on the card). No separate merge node, no dashed copy/merge
-  // edges — those produced redundant merges-in-a-row and a confusing dashed→solid flip.
+  // A `branch` operates on a copy and merges the result back, but visually it reads cleanest as a
+  // marker → body → continue: the branch node conveys the copy/merge, and its request/result maps
+  // are on the card (so no separate merge node or dashed copy/merge edges are drawn).
   if (node.branch) {
     return emitSequentialGroup(node, kids, ctx);
   }
@@ -781,7 +781,6 @@ const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
   flow: 'primary',
   conditional: 'primary',
   error: 'error',
-  reference: 'muted',
 };
 
 // Forward longest-path rank for each graph node: distance (in edges) from the nearest source. A
@@ -910,7 +909,7 @@ export function computeGraphLayout(
   for (const ge of ctx.gedges) {
     const points = graphEdgePoints(ge, g);
     const tone = GRAPH_EDGE_TONE[ge.type];
-    const dashed = ge.type === 'error' || ge.type === 'reference';
+    const dashed = ge.type === 'error';
     rfEdges.push({
       id: ge.id,
       source: ge.from,
