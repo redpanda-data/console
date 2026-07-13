@@ -9,20 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { ReactNode } from 'react';
 
-type DisabledReasonButtonProps = {
+type DisabledReasonButtonProps = Pick<ButtonProps, 'variant' | 'size' | 'className'> & {
   reason?: string;
   testId?: string;
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   children: ReactNode;
-  variant?: 'ghost' | 'outline' | 'link';
-  size?: 'icon-sm' | 'sm' | 'md';
   iconOnly?: boolean;
-  className?: string;
 };
 
 /**
@@ -77,7 +74,7 @@ export const DisabledReasonButton = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger render={trigger} />
-        <TooltipContent>{reason}</TooltipContent>
+        <TooltipContent role="tooltip">{reason}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

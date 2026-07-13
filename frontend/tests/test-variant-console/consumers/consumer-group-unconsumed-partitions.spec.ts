@@ -49,6 +49,18 @@ function rowByPartition(page: Page, partitionId: number) {
     .first();
 }
 
+/**
+ * Hover a partition's Edit button and assert it is disabled with the "no committed offset" tooltip.
+ * Closes the tooltip afterwards so the next `getByRole('tooltip')` lookup stays unambiguous.
+ */
+async function expectNoCommittedOffsetTooltip(page: Page, partitionId: number) {
+  await page.getByTestId(`partition-edit-${partitionId}`).hover();
+  await expect(page.getByRole('tooltip')).toHaveText('No committed offset');
+
+  await page.mouse.move(0, 0);
+  await expect(page.getByRole('tooltip')).toBeHidden();
+}
+
 test.describe('Consumer Group Details - Unconsumed Partitions', () => {
   test.beforeAll(async () => {
     const { exec } = await import('node:child_process');
@@ -87,13 +99,13 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
     await test.step('Navigate to consumer group details page', async () => {
       await page.goto(`/groups/${GROUP_NAME}`);
       // Wait for the group name heading to appear
-      await expect(page.getByText(GROUP_NAME).first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText(GROUP_NAME).first()).toBeVisible();
     });
 
     await test.step('Ensure the topic accordion is expanded', async () => {
       // With a single topic the accordion auto-expands, but click if collapsed
       const accordionButton = page.getByRole('button', { name: new RegExp(TOPIC_NAME) });
-      await accordionButton.waitFor({ state: 'visible', timeout: 15_000 });
+      await expect(accordionButton).toBeVisible();
 
       const isExpanded = await accordionButton.getAttribute('aria-expanded');
       if (isExpanded !== 'true') {
@@ -101,12 +113,12 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
       }
 
       // Wait for the data table to appear
-      await expect(page.getByRole('table').first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole('table').first()).toBeVisible();
     });
 
     await test.step('All 3 partitions are visible in the table', async () => {
       for (const partitionId of [0, 1, 2]) {
-        await expect(rowByPartition(page, partitionId)).toBeVisible({ timeout: 10_000 });
+        await expect(rowByPartition(page, partitionId)).toBeVisible();
       }
     });
 
@@ -120,35 +132,22 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
 
     await test.step('Partition 1 shows "—" for Group Offset (offset deleted)', async () => {
       const row = rowByPartition(page, 1);
-      await expect(row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`)).toHaveText('—', { timeout: 5000 });
-      await expect(row.locator(`td:nth-child(${COL.LAG + 1})`)).toHaveText('—', { timeout: 5000 });
+      await expect(row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`)).toHaveText('—');
+      await expect(row.locator(`td:nth-child(${COL.LAG + 1})`)).toHaveText('—');
     });
 
     await test.step('Partition 2 shows "—" for Group Offset (never consumed)', async () => {
       const row = rowByPartition(page, 2);
-      await expect(row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`)).toHaveText('—', { timeout: 5000 });
-      await expect(row.locator(`td:nth-child(${COL.LAG + 1})`)).toHaveText('—', { timeout: 5000 });
+      await expect(row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`)).toHaveText('—');
+      await expect(row.locator(`td:nth-child(${COL.LAG + 1})`)).toHaveText('—');
     });
 
     await test.step('Edit button on partition 1 (offset deleted) is disabled with tooltip', async () => {
-      const btn = page.getByTestId('partition-edit-1');
-      await expect(btn).toBeVisible({ timeout: 5000 });
-      await btn.hover();
-      // Registry (base-ui) tooltip renders a `[data-slot="tooltip-content"]` popup
-      // without role="tooltip", so match on the slot + text instead of the role.
-      await expect(
-        page.locator('[data-slot="tooltip-content"]').filter({ hasText: 'No committed offset' }).first()
-      ).toBeVisible({ timeout: 5000 });
-      await page.mouse.move(0, 0);
+      await expectNoCommittedOffsetTooltip(page, 1);
     });
 
     await test.step('Edit button on partition 2 (never consumed) is disabled with tooltip', async () => {
-      const btn = page.getByTestId('partition-edit-2');
-      await expect(btn).toBeVisible({ timeout: 5000 });
-      await btn.hover();
-      await expect(
-        page.locator('[data-slot="tooltip-content"]').filter({ hasText: 'No committed offset' }).first()
-      ).toBeVisible({ timeout: 5000 });
+      await expectNoCommittedOffsetTooltip(page, 2);
     });
   });
 });
