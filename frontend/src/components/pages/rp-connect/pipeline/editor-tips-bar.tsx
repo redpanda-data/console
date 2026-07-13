@@ -19,7 +19,6 @@ export type TipContext = 'yaml' | 'visual';
 
 type Tip = { id: string; content: ReactNode };
 
-// Small monospace key chip sized to sit inside a line of tip text.
 const Key = ({ children }: { children: ReactNode }) => (
   <Kbd size="xs" variant="filled">
     {children}

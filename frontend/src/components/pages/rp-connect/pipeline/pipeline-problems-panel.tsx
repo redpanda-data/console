@@ -109,7 +109,9 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
           <Text as="span" className="text-foreground text-xs" variant="bodySmall">
             Missing secret <span className="font-medium font-mono">{name}</span>
           </Text>
-          <span className="text-muted-foreground text-xs">Referenced by the pipeline but not created</span>
+          <Text as="span" className="text-muted-foreground text-xs" variant="bodySmall">
+            Referenced by the pipeline but not created
+          </Text>
         </span>
       </div>
     ))}

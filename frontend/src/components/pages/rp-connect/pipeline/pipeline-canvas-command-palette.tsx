@@ -82,7 +82,6 @@ export function CanvasCommandPalette({
     return list;
   }, [onViewSelectedInYaml, onUndo, onRedo, canUndo, canRedo]);
 
-  // Run an action / navigation, then close the palette.
   const pick = (run?: () => void) => {
     onOpenChange(false);
     run?.();

@@ -56,9 +56,14 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
               {node.label}
             </Text>
             {node.detail ? (
-              <span className="min-w-0 max-w-[45%] shrink truncate text-muted-foreground text-xs" title={node.detail}>
+              <Text
+                as="span"
+                className="min-w-0 max-w-[45%] shrink truncate text-muted-foreground text-xs"
+                title={node.detail}
+                variant="bodySmall"
+              >
                 {node.detail}
-              </span>
+              </Text>
             ) : null}
             <MousePointerClick className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
           </button>

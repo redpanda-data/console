@@ -606,12 +606,10 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   const keyPattern = keys.map(escapeRegExp).join('|');
   const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
 
-  // Find the section start (e.g. `input:`)
   const sectionRegex = new RegExp(`^${section}:`);
   const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
   if (sectionStart === -1) return yaml;
 
-  // Find the component within the section (e.g. `  kafka_franz:`)
   const componentRegex = new RegExp(`^  ${escapeRegExp(componentName)}:`);
   let componentStart = -1;
   for (let i = sectionStart + 1; i < lines.length; i++) {
