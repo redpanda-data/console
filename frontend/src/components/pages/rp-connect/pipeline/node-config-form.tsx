@@ -31,6 +31,7 @@ import { type Control, Controller, type FieldPath, useForm, useWatch } from 'rea
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ScrollShadow } from './scroll-shadow';
+import { getSecretSyntax } from '../types/constants';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import {
   checkRequired,
@@ -580,8 +581,7 @@ function numericHint(spec: RawFieldSpec, value: string | boolean): string | null
   return null;
 }
 
-// biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect secret reference, not a JS template
-const SECRET_REF_EXAMPLE = '${secrets.MY_SECRET}';
+const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
@@ -686,6 +686,23 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   return null;
 };
 
+type FieldGroupKey = 'required' | 'optional' | 'advanced';
+
+// Presentation buckets for a form's fields, in display order. `advanced` wins over `required`, so a
+// field flagged advanced never sorts above the fold even when it's also required.
+const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey =>
+  spec.advanced ? 'advanced' : checkRequired(spec) ? 'required' : 'optional';
+
+function groupFormFields(fields: RawFieldSpec[]): Record<FieldGroupKey, RawFieldSpec[]> {
+  const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };
+  for (const spec of fields) {
+    if (isFormField(spec)) {
+      groups[fieldGroupKey(spec)].push(spec);
+    }
+  }
+  return groups;
+}
+
 const SchemaFields = ({
   fields,
   path,
@@ -695,12 +712,8 @@ const SchemaFields = ({
   path: string[];
   control: Control<FormValues>;
 }) => {
-  const formFields = fields.filter(isFormField);
-  const ordered = [
-    ...formFields.filter((f) => checkRequired(f) && !f.advanced),
-    ...formFields.filter((f) => !(checkRequired(f) || f.advanced)),
-    ...formFields.filter((f) => f.advanced),
-  ];
+  const { required, optional, advanced } = groupFormFields(fields);
+  const ordered = [...required, ...optional, ...advanced];
   return (
     <>
       {ordered.map((f) => (
@@ -756,10 +769,7 @@ export function NodeConfigForm({
       ? (componentValue as Record<string, unknown>)
       : {};
 
-  const topFields = fields.filter(isFormField);
-  const required = topFields.filter((f) => checkRequired(f) && !f.advanced);
-  const optional = topFields.filter((f) => !(checkRequired(f) || f.advanced));
-  const advanced = topFields.filter((f) => f.advanced);
+  const { required, optional, advanced } = groupFormFields(fields);
   // Nested-component fields are their own canvas nodes, never inline controls — offered as a
   // clickable "Steps" list when this node owns them, otherwise edited directly on the canvas.
   const componentFields = fields.filter(isComponentField);

@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { type MutableRefObject, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { ChildItemsList, type InspectorChildItem, NodeConfigForm, type ResourceKind } from './node-config-form';
@@ -470,7 +471,7 @@ const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
     <div className="mb-1 flex items-center gap-1.5 text-destructive">
       <AlertCircle className="size-4 shrink-0" />
       <Text as="span" className="text-destructive" variant="bodyStrongMedium">
-        {hints.length === 1 ? '1 problem' : `${hints.length} problems`}
+        {pluralizeWithNumber(hints.length, 'problem')}
       </Text>
     </div>
     <ul className="flex flex-col gap-1">
@@ -758,7 +759,7 @@ const InspectorHeader = ({
     <div className="flex min-w-0 flex-col">
       <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
         {kindLabel}
-        {typeof usedByCount === 'number' ? ` · used by ${usedByCount} ${usedByCount === 1 ? 'node' : 'nodes'}` : ''}
+        {typeof usedByCount === 'number' ? ` · used by ${pluralizeWithNumber(usedByCount, 'node')}` : ''}
       </Text>
       <Text as="span" className="min-w-0 truncate font-semibold" title={componentName} variant="bodyStrongMedium">
         {componentName}

@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
-import { pluralizeWithNumber } from 'utils/string';
+import { pluralize, pluralizeWithNumber } from 'utils/string';
 
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
@@ -271,7 +271,7 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
   const extra = topics.length - shown.length;
   return (
     <div className="flex items-baseline gap-1.5 text-xs">
-      <span className="shrink-0 text-muted-foreground">{topics.length === 1 ? 'topic' : 'topics'}</span>
+      <span className="shrink-0 text-muted-foreground">{pluralize(topics.length, 'topic')}</span>
       <span className="flex min-w-0 flex-wrap gap-1">
         {shown.map((topic) => (
           <Badge className="max-w-full" key={topic} size="sm" title={topic} variant="neutral-inverted">
