@@ -48,3 +48,11 @@ export const executeQuery = SQLService.method.executeQuery;
  * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.GetSqlIdentity
  */
 export const getSqlIdentity = SQLService.method.getSqlIdentity;
+
+/**
+ * GetSqlConnectionInfo returns the connection endpoint clients use to reach
+ * Redpanda SQL: the advertised host and port.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.GetSqlConnectionInfo
+ */
+export const getSqlConnectionInfo = SQLService.method.getSqlConnectionInfo;

@@ -384,7 +384,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   }, [filteredRowCount, pageSize, pageIndex]);
 
   return (
-    <div className="flex min-h-0 flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           {title ? (
@@ -428,8 +428,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           <RefreshButton loading={isSearching} onClick={refresh} testId="log-refresh-button" />
         </div>
       </div>
-      <div className="relative min-h-0">
-        <div className="overflow-auto">
+      <div className="relative overflow-x-auto">
         <Table className="table-fixed" variant="simple">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -556,7 +555,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             })()}
           </TableBody>
         </Table>
-        </div>
       </div>
       {/* Hide DataTablePagination's "X of N row(s) selected." (no row selection) while keeping its layout slot. */}
       {filteredRowCount > 0 && (
