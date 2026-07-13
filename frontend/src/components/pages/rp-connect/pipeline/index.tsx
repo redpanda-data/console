@@ -120,17 +120,11 @@ function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null)
   if (type === 'output') {
     return 'Add an output';
   }
-  if (type) {
-    return `Add a ${type}`;
-  }
-  return;
+  return type ? `Add a ${type}` : undefined;
 }
 
 function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null): string | undefined {
-  if (type) {
-    return `Search ${type}s...`;
-  }
-  return;
+  return type ? `Search ${type}s...` : undefined;
 }
 
 // Tips to show beneath the editor for the active lane; read-only YAML and Monitor get none.

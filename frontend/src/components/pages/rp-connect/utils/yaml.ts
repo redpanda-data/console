@@ -83,11 +83,7 @@ const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectCo
   const newProcessor = Array.isArray(processorsArray) ? processorsArray[0] : undefined;
 
   if (newProcessor) {
-    if (Array.isArray(processors)) {
-      doc.setIn(['pipeline', 'processors'], [...processors, newProcessor]);
-    } else {
-      doc.setIn(['pipeline', 'processors'], [newProcessor]);
-    }
+    doc.setIn(['pipeline', 'processors'], Array.isArray(processors) ? [...processors, newProcessor] : [newProcessor]);
   }
 };
 
@@ -491,12 +487,7 @@ export const getConnectTemplate = ({
     }
 
     const yamlResult = configToYaml(mergedConfig, spec);
-
-    if (!yamlResult) {
-      return existingYaml;
-    }
-
-    return yamlResult;
+    return yamlResult || existingYaml;
   }
 
   return configToYaml(newConfigObject, spec);

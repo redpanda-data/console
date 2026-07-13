@@ -279,6 +279,5 @@ export function summarizeComponent(componentName: string, config: unknown): Node
     pushField(meta, record, key);
   }
 
-  const result = meta.length === 0 ? fallbackFields(record) : meta;
-  return result.slice(0, MAX_META);
+  return (meta.length === 0 ? fallbackFields(record) : meta).slice(0, MAX_META);
 }

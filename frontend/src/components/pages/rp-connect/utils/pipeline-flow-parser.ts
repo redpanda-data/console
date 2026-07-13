@@ -21,8 +21,7 @@ type ParsedYamlConfig = {
   pipeline?: { processors?: Record<string, unknown>[] };
   cache_resources?: unknown[];
   rate_limit_resources?: unknown[];
-  // Inputs/outputs/processors declared as named resources, referenced via `resource:`
-  // indirection. Rendered in the resource lane with reference links drawn to them.
+  // Named-resource inputs/outputs/processors (via `resource:` indirection), shown in the resource lane with ref links.
   input_resources?: unknown[];
   output_resources?: unknown[];
   processor_resources?: unknown[];
@@ -78,13 +77,11 @@ export type PipelineFlowNode = {
   // Id of the (non-rendered) case-wrapper node a processor-switch case entry stands in for, so a
   // condition edit (which changes the wrapper's config) marks THIS entry card as unsaved.
   caseOwnerId?: string;
-  // Container accepting new children: the array's YAML path and the component kind it holds.
-  // Drives in-container "+" (add a processor into a switch case, an input into a broker, …).
+  // Container accepting new children (array YAML path + kind it holds); drives the in-container "+".
   insertSlot?: { containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output' };
   // For a `switch`: path of its `cases`/value array + section, so we can append a fresh case.
   addChildSlot?: { containerPath: (string | number)[]; section: 'processor' | 'output' };
-  // References a `resource:` whose label has no matching `*_resources` entry — a dangling
-  // link. Drives an error badge + quick-fix.
+  // A `resource:` ref whose label has no matching `*_resources` entry (dangling); drives an error badge + quick-fix.
   danglingRef?: boolean;
   // For a resource node: how many components reference its label (for "Used by N").
   usedByCount?: number;
@@ -214,9 +211,8 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
 }
 
 // ── Empty container affordances ──────────────────────────────────────────
-// Containers normally derive their insert "+" from a child's path. With an empty array
-// there's no child, so emit the group with an explicit slot — otherwise a freshly-added
-// broker would be a dead-end leaf with no way to add its first member.
+// Containers normally derive their insert "+" from a child's path; an empty array has none,
+// so emit an explicit slot — else a freshly-added broker is a dead-end leaf.
 type ContainerSlot =
   | { insertSlot: NonNullable<PipelineFlowNode['insertSlot']> }
   | { addChildSlot: NonNullable<PipelineFlowNode['addChildSlot']> };
@@ -1168,8 +1164,7 @@ export function buildResourceRefResolver(resources: PipelineFlowNode[]): Resourc
   };
 }
 
-// Resource references: promote field candidates, flag dangling links, and count usages —
-// all through the kind-aware resolver.
+// Resource references: promote field candidates, flag dangling links, and count usages via the kind-aware resolver.
 function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
   const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
   // Promote a candidate resolving to a resource label into a real reference — catches refs in

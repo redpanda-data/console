@@ -164,8 +164,7 @@ export function NodeInspector({
   // reporting doesn't re-render. `component` applies at `target`; `condition` at `caseTarget`.
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
   const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
-  // Stable draft reporters — they sit in the editors' effect deps, so an inline arrow would re-fire
-  // the effect every render.
+  // Stable draft reporters — they sit in the editors' effect deps, so an inline arrow would re-fire it every render.
   const reportComponentDraft = useCallback((next: Record<string, unknown> | null) => {
     componentDraftRef.current = next;
   }, []);

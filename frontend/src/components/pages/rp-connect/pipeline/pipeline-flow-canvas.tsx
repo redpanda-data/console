@@ -268,15 +268,14 @@ function focusDimNodes(
   if (!focus) {
     return rfNodes;
   }
-  return rfNodes.map((node) => {
-    const inScope = nodeInScope(node, focus);
-    return inScope
+  return rfNodes.map((node) =>
+    nodeInScope(node, focus)
       ? node
       : {
           ...node,
           style: { ...(node.style as Record<string, unknown>), opacity: 0.3, transition: 'opacity 200ms ease' },
-        };
-  });
+        }
+  );
 }
 
 // The graph fades back while it's showing the stale (last-good) layout, cueing that it's not live.
@@ -303,13 +302,7 @@ type ZoomMode = 'in' | 'out' | null;
 const ZOOM_STEP = 1.5;
 
 function cursorForMode(mode: ZoomMode): string {
-  if (mode === 'in') {
-    return 'zoom-in';
-  }
-  if (mode === 'out') {
-    return 'zoom-out';
-  }
-  return '';
+  return mode === 'in' ? 'zoom-in' : mode === 'out' ? 'zoom-out' : '';
 }
 
 // Paint the magnifier cursor while the zoom tool is armed. Set inline on the container AND its pane:
@@ -341,10 +334,7 @@ const canPanCanvas = (mode: ZoomMode): boolean => mode === null;
 
 // Spring-loaded: held Z → zoom-in, held Z + Option/Alt → zoom-out, nothing held → off.
 function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
-  if (!zDown) {
-    return null;
-  }
-  return alt ? 'out' : 'in';
+  return zDown ? (alt ? 'out' : 'in') : null;
 }
 
 const isTypingTarget = (target: EventTarget | null): boolean =>
@@ -542,8 +532,7 @@ function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: 
   return null;
 }
 
-// Padding (px) between a construct's members and the region edge; extra per nesting level so an outer
-// region stands off from the inner ones.
+// Padding (px) between a construct's members and the region edge; extra per nesting level so outer regions stand off.
 const SCOPE_REGION_PAD = 6;
 const SCOPE_REGION_TOP_PAD = 6;
 const SCOPE_REGION_NEST_STEP = 4;
@@ -551,10 +540,7 @@ const SCOPE_REGION_NEST_STEP = 4;
 // The accent for a construct node; error/dead-letter paths (catch) get a distinct tone.
 function constructAccent(node?: Node): string {
   const d = node?.data as FlowCardData | undefined;
-  if (d?.isErrorPath) {
-    return 'var(--color-destructive)';
-  }
-  return sectionAccent(d?.section) ?? 'var(--color-primary)';
+  return d?.isErrorPath ? 'var(--color-destructive)' : (sectionAccent(d?.section) ?? 'var(--color-primary)');
 }
 
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
@@ -637,13 +623,7 @@ type ScopeArm = { side: 'left' | 'right'; outerX: number; top: number; bottom: n
 
 // Which side of the body the entry marker sits on (undefined if it overlaps the body horizontally).
 function entrySide(entry: ScopeBounds, body: ScopeBounds): 'left' | 'right' | undefined {
-  if (entry.maxX <= body.minX) {
-    return 'left';
-  }
-  if (entry.minX >= body.maxX) {
-    return 'right';
-  }
-  return;
+  return entry.maxX <= body.minX ? 'left' : entry.minX >= body.maxX ? 'right' : undefined;
 }
 
 // The arm to the entry marker: its own row, stretched to meet the body when the marker sits clear

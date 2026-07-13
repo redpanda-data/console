@@ -48,8 +48,7 @@ import { resourceKindForComponentName } from '../utils/yaml';
 // Re-exported for node-inspector, which imports ResourceKind from here.
 export type { ResourceKind } from '../utils/yaml';
 
-// A direct child (case / step) of a control-flow component, shown as a clickable row to jump
-// from the high-level construct to the child node's full config.
+// A direct child (case / step) of a control-flow component, shown as a clickable row to its full config.
 export type InspectorChildItem = {
   id: string;
   target: EditTarget;
@@ -74,15 +73,8 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   return;
 };
 
-const childItemCondColor = (item: InspectorChildItem): string => {
-  if (item.isErrorPath) {
-    return 'text-destructive';
-  }
-  if (item.isDefault) {
-    return 'text-muted-foreground';
-  }
-  return 'text-warning';
-};
+const childItemCondColor = (item: InspectorChildItem): string =>
+  item.isErrorPath ? 'text-destructive' : item.isDefault ? 'text-muted-foreground' : 'text-warning';
 
 const ChildItemRow = ({
   item,

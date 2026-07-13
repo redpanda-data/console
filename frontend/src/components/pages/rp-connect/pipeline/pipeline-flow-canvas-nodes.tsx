@@ -390,10 +390,7 @@ const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background'
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
 
 function cardRing(data: FlowCardData): string {
-  if (data.lintErrors?.length) {
-    return ERROR_RING;
-  }
-  return data.selected ? SELECTED_RING : '';
+  return data.lintErrors?.length ? ERROR_RING : data.selected ? SELECTED_RING : '';
 }
 
 // A brief double-pulse ring after an undo/redo touched a node — the `brand` token, distinct from
@@ -862,13 +859,7 @@ function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
 // Edge opacity tiers: dimmed (unrelated to the selection) < ghost (decorative) < faint (context
 // line) < full strength.
 function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
-  if (d?.dimmed) {
-    return 0.25;
-  }
-  if (d?.ghost) {
-    return 0.4;
-  }
-  return d?.faint ? 0.6 : 1;
+  return d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
 }
 
 // Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. No
