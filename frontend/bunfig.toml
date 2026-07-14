@@ -5,4 +5,8 @@ minimumReleaseAge = 259200 # 72h supply-chain publish delay
 minimumReleaseAgeExcludes = ["cnfast"]
 save = true
 saveTextLockfile = true
+
+# print must live under [install.lockfile]; under [install] it is ignored
+# and the yarn.lock Snyk mirror silently goes stale
+[install.lockfile]
 print = "yarn"

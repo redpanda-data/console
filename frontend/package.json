@@ -200,7 +200,7 @@
     "vitest-browser-react": "^2.2.0"
   },
   "overrides": {
-    "dompurify": "^3.4.0",
+    "dompurify": "^3.4.11",
     "prismjs": "^1.30.0",
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
