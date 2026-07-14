@@ -17,9 +17,9 @@ import { LoaderIcon } from 'components/icons';
  */
 export const RoutePending = () => (
   <div className="flex items-center justify-center py-12">
-    <div className="flex items-center gap-2 text-muted-foreground">
+    <output aria-label="Loading page" className="flex items-center gap-2 text-muted-foreground">
       <LoaderIcon className="h-4 w-4 animate-spin" />
       <span>Loading...</span>
-    </div>
+    </output>
   </div>
 );
