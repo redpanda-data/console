@@ -74,21 +74,23 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
   return;
 };
 
+// Append into the seq at `path` IN PLACE, creating it when absent — rebuilding an existing
+// array through toJSON()/setIn would strip comments and anchors off its current entries.
+const appendToSeq = (doc: Document.Parsed, path: string[], item: unknown): void => {
+  const node = doc.getIn(path);
+  if (isSeq(node)) {
+    node.add(doc.createNode(item));
+  } else {
+    doc.setIn(path, [item]);
+  }
+};
+
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
   const configObj = newConfigObject as Record<string, { processors?: unknown[] }>;
   const processorsArray = configObj?.pipeline?.processors;
   const newProcessor = Array.isArray(processorsArray) ? processorsArray[0] : undefined;
-  if (!newProcessor) {
-    return;
-  }
-
-  // Append to the existing seq in place — rebuilding the array from toJSON() would strip
-  // comments/anchors off the processors already there.
-  const processorsNode = doc.getIn(['pipeline', 'processors']);
-  if (isSeq(processorsNode)) {
-    processorsNode.add(doc.createNode(newProcessor));
-  } else {
-    doc.setIn(['pipeline', 'processors'], [newProcessor]);
+  if (newProcessor) {
+    appendToSeq(doc, ['pipeline', 'processors'], newProcessor);
   }
 };
 
@@ -104,8 +106,7 @@ const mergeResourceArray = (
     return;
   }
 
-  // Read labels through the doc (resolves aliases); the write below must not round-trip the
-  // node tree through JS.
+  // Read labels via toJS() so YAML aliases resolve.
   const existing = (doc.toJS() as Record<string, unknown> | null)?.[key];
   const existingLabels = (Array.isArray(existing) ? (existing as Record<string, unknown>[]) : [])
     .map((r) => r?.label)
@@ -114,14 +115,7 @@ const mergeResourceArray = (
     newResource.label = uniqueResourceLabel(existingLabels, newResource.label);
   }
 
-  // Append to the existing seq in place — rebuilding the array from toJSON() would strip
-  // comments/anchors off the resources already there.
-  const node = doc.getIn([key]);
-  if (isSeq(node)) {
-    node.add(doc.createNode(newResource));
-  } else {
-    doc.setIn([key], [newResource]);
-  }
+  appendToSeq(doc, [key], newResource);
 };
 
 const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -266,11 +260,20 @@ const addRootSpacing = (yamlString: string): string => {
   return processedLines.join('\n');
 };
 
+// Blank = empty/whitespace text or an empty root map — `{}` is what the yaml lib emits when the
+// last key is deleted. Comment-only text is NOT blank here: it merges, preserving the comments.
+const isBlankConfigText = (text: string): boolean => {
+  const trimmed = text.trim();
+  return trimmed === '' || trimmed === '{}';
+};
+
 export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: Partial<ConnectConfigObject>
 ): Document.Parsed | Partial<ConnectConfigObject> | undefined => {
-  if (!existingYaml.trim()) {
+  // Start fresh on a blank config — merging into a `{}` doc would inherit its flow-style root
+  // map and stringify the whole result as a `{ input: {…} }` one-liner.
+  if (isBlankConfigText(existingYaml)) {
     return newConfigObject;
   }
 
@@ -1034,7 +1037,10 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
     const doc = parseDocument(yaml);
     doc.deleteIn(editTargetPath(target));
     pruneEmptyContainers(doc, target);
-    return doc.toString(YAML_STRINGIFY_OPTIONS);
+    const out = doc.toString(YAML_STRINGIFY_OPTIONS);
+    // Deleting the last component leaves `{}` — normalize to a truly blank config so the
+    // editor and canvas fall back to their empty states.
+    return isBlankConfigText(out) ? '' : out;
   } catch {
     return null;
   }
@@ -1086,12 +1092,7 @@ export function appendResource(
 ): string | null {
   try {
     const doc = parseDocument(yaml);
-    const seq = doc.getIn([resourceKey]);
-    if (isSeq(seq)) {
-      seq.items.push(doc.createNode(resourceObject));
-    } else {
-      doc.setIn([resourceKey], [resourceObject]);
-    }
+    appendToSeq(doc, [resourceKey], resourceObject);
     return doc.toString(YAML_STRINGIFY_OPTIONS);
   } catch {
     return null;

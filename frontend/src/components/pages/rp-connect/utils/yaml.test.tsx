@@ -251,8 +251,6 @@ output:
       const mergedDoc = mergeConnectConfigs(existingYaml, result.config);
       const yaml = configToYaml(mergedDoc);
 
-      // Appending must not round-trip the existing entries through plain JS, which would strip
-      // their comments.
       expect(yaml).toContain('# keep me');
       const parsed = parseYaml(yaml) as { pipeline: { processors: unknown[] } };
       expect(parsed.pipeline.processors).toHaveLength(2);
@@ -280,6 +278,20 @@ output:
       expect(yaml).toContain('# keep me');
       const parsed = parseYaml(yaml) as { cache_resources: { label?: string }[] };
       expect(parsed.cache_resources).toHaveLength(2);
+    });
+  });
+
+  describe('merging into a blank {} document', () => {
+    test('treats {} as a fresh config instead of merging into its flow map', () => {
+      const mergedYaml = getConnectTemplate({
+        connectionName: 'redpanda',
+        connectionType: 'input',
+        components: Object.values(mockComponents),
+        existingYaml: '{}',
+      });
+
+      expect(mergedYaml).toMatch(/^input:$/m);
+      expect(mergedYaml).not.toContain('{ input');
     });
   });
 
@@ -325,8 +337,6 @@ output:
         existingYaml,
       });
 
-      // A scanner nests under input.<type>.scanner — with no input it must not be written as a
-      // bogus top-level `avro:` block. The existing YAML comes back untouched.
       expect(mergedYaml).toBe(existingYaml);
     });
   });
@@ -1958,6 +1968,28 @@ output_resources:
       const next = removeComponentAt(pipelineYaml, { kind: 'input' });
       const parsed = parseYaml(next as string) as Record<string, unknown>;
       expect(parsed.input).toBeUndefined();
+    });
+
+    test('returns a blank config when the only component is deleted', () => {
+      const next = removeComponentAt('input:\n  generate:\n    mapping: root = {}\n', { kind: 'input' });
+      expect(next).toBe('');
+    });
+
+    test('returns a blank config when the last processor of a processor-only pipeline is deleted', () => {
+      const next = removeComponentAt('pipeline:\n  processors:\n    - mapping: root = this\n', {
+        kind: 'processor',
+        index: 0,
+      });
+      expect(next).toBe('');
+    });
+
+    test('returns a blank config when the last resource is deleted', () => {
+      const next = removeComponentAt('cache_resources:\n  - label: c\n    memory: {}\n', {
+        kind: 'resource',
+        resourceKey: 'cache_resources',
+        index: 0,
+      });
+      expect(next).toBe('');
     });
   });
 

@@ -155,13 +155,8 @@ function memberMeta(key: string, value: unknown): NodeMetaEntry[] | undefined {
 }
 
 // Resolve a container member object (e.g. `{ aws_s3: {…} }`) to its display name + summary.
-function memberNameAndMeta(obj: unknown): { name: string; meta?: NodeMetaEntry[] } {
-  const key = firstKey(obj);
-  if (!key) {
-    return { name: 'input' };
-  }
-  const inner = obj && typeof obj === 'object' ? (obj as Record<string, unknown>)[key] : undefined;
-  return { name: key, meta: memberMeta(key, inner) };
+function memberNameAndMeta(key: string, obj: unknown): { name: string; meta?: NodeMetaEntry[] } {
+  return { name: key, meta: memberMeta(key, (obj as Record<string, unknown>)[key]) };
 }
 
 // Member specs (name + summary) for a `broker`/`sequence` input, from its `inputs` array.
@@ -177,8 +172,9 @@ function multiMemberSpecs(value: unknown): GroupChildSpec[] | undefined {
   // matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
-    if (item && typeof item === 'object' && firstKey(item)) {
-      specs.push({ index: i, ...memberNameAndMeta(item) });
+    const key = firstKey(item);
+    if (key) {
+      specs.push({ index: i, ...memberNameAndMeta(key, item) });
     }
   }
   return specs;
@@ -261,10 +257,21 @@ type OutputMemberSpec = {
   isDefault?: boolean;
   isErrorPath?: boolean;
   caseEditTarget?: EditTarget;
-  // Display ordinal for a switch case — a null-skipping counter (like parseSwitchCases), NOT the
-  // raw YAML index, so skipped entries don't leave label gaps ("case 1", "case 3").
+  // Display ordinal from enumerateSwitchCases — NOT the raw YAML index.
   caseNumber?: number;
 };
+
+// Switch cases enumerated for display: null/scalar entries are skipped without leaving ordinal
+// gaps ("case 1", "case 3"), while `index` keeps the raw YAML position so edit paths never shift.
+function enumerateSwitchCases(cases: unknown[]): { index: number; ordinal: number; record: Record<string, unknown> }[] {
+  const entries: { index: number; ordinal: number; record: Record<string, unknown> }[] = [];
+  for (const [i, c] of cases.entries()) {
+    if (c && typeof c === 'object') {
+      entries.push({ index: i, ordinal: entries.length + 1, record: c as Record<string, unknown> });
+    }
+  }
+  return entries;
+}
 
 // Members of an output container (broker/switch/fallback), or undefined if `key` isn't one. Member
 // paths derive from `path` (the container object) so nesting composes into deep, editable paths.
@@ -289,23 +296,13 @@ function outputContainerMembers(
     if (!Array.isArray(cases)) {
       return [];
     }
-    // Keep the raw index for the edit path but skip null/scalar case entries — mirrors parseSwitchCases.
-    const members: OutputMemberSpec[] = [];
-    let caseNum = 0;
-    for (const [i, c] of cases.entries()) {
-      if (!c || typeof c !== 'object') {
-        continue;
-      }
-      caseNum += 1;
-      const caseRecord = c as Record<string, unknown>;
-      members.push({
-        obj: caseRecord.output,
-        path: [...path, key, 'cases', i, 'output'],
-        ...caseRouting(caseRecord.check),
-        caseEditTarget: { kind: 'switchCase', path: [...path, key, 'cases', i] },
-        caseNumber: caseNum,
-      });
-    }
+    const members: OutputMemberSpec[] = enumerateSwitchCases(cases).map(({ index, ordinal, record }) => ({
+      obj: record.output,
+      path: [...path, key, 'cases', index, 'output'],
+      ...caseRouting(record.check),
+      caseEditTarget: { kind: 'switchCase', path: [...path, key, 'cases', index] },
+      caseNumber: ordinal,
+    }));
     return members;
   }
   if (key === 'broker') {
@@ -556,23 +553,14 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
 
 function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNode[] {
   const nodes: PipelineFlowNode[] = [];
-  // Label counter — skipped (null) cases shouldn't leave gaps ("case 1", "case 3"). Ids/paths keep
-  // the raw YAML index `ci`.
-  let caseNum = 0;
-  for (const [ci, caseObj] of cases.entries()) {
-    if (!caseObj || typeof caseObj !== 'object') {
-      continue;
-    }
-    caseNum += 1;
-    const caseRecord = caseObj as Record<string, unknown>;
+  for (const { index: ci, ordinal, record: caseRecord } of enumerateSwitchCases(cases)) {
     // A check-only case (no `processors` array) still renders as an empty case — never silently vanishes.
     const caseProcs = extractProcessorEntries(caseRecord.processors) ?? [];
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
-    const caseLabel = `case ${caseNum}`;
     nodes.push({
       id: caseId,
       kind: 'group',
-      label: caseLabel,
+      label: `case ${ordinal}`,
       section: ctx.section,
       parentId: ctx.idPrefix,
       collapsible: true,
@@ -870,8 +858,7 @@ type OutputNodeArgs = {
   editTarget: EditTarget;
   // Routing that selects this node (a switch case's check, a fallback tier's "on failure").
   routing?: Pick<OutputMemberSpec, 'condition' | 'isDefault' | 'isErrorPath' | 'caseEditTarget'>;
-  // Null-skipping display ordinal when this node is a switch case (labels an empty case).
-  caseNumber?: number;
+  caseNumber?: OutputMemberSpec['caseNumber'];
   labelText?: string;
   config: ParsedYamlConfig;
 };
@@ -1094,11 +1081,11 @@ export function isPipelineEmpty(nodes: PipelineFlowNode[]): boolean {
   return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
 }
 
-/** True when the config text is only whitespace and `#` comments — i.e. genuinely blank. */
+/** True when the config text is only whitespace, `#` comments, or an empty `{}` document — i.e. genuinely blank. */
 export function isConfigTextEmpty(configYaml: string): boolean {
   return configYaml.split('\n').every((line) => {
     const trimmed = line.trim();
-    return trimmed === '' || trimmed.startsWith('#');
+    return trimmed === '' || trimmed.startsWith('#') || trimmed === '{}';
   });
 }
 
