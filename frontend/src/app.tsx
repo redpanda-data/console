@@ -52,6 +52,7 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
+import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
 
@@ -67,6 +68,7 @@ const dataplaneTransport = createConnectTransport({
 // Create router instance
 const router = createRouter({
   routeTree,
+  ...routerDefaults,
   context: {
     basePath: getBasePath(),
     queryClient,

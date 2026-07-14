@@ -8,12 +8,13 @@ import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
-import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
+import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 
 import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
 import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
+import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from './tanstack-router.config';
 import path from 'node:path';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
@@ -143,6 +144,18 @@ export default defineConfig({
     // production diagnostics.
     removeConsole: ['log', 'warn'],
   },
+  splitChunks: {
+    preset: 'default',
+    cacheGroups: {
+      tanstack: {
+        test: TANSTACK_CHUNK_PATTERN,
+        name: 'lib-tanstack',
+        chunks: 'all',
+        priority: 10,
+        reuseExistingChunk: true,
+      },
+    },
+  },
   output: {
     distPath: {
       root: 'build',
@@ -192,14 +205,7 @@ export default defineConfig({
       };
 
       const plugins = [
-        TanStackRouterRspack({
-          target: 'react',
-          autoCodeSplitting: true,
-          routesDirectory: './src/routes',
-          generatedRouteTree: './src/routeTree.gen.ts',
-          quoteStyle: 'single',
-          semicolons: true,
-        }),
+        tanstackRouter(tanstackRouterConfig),
         new MonacoWebpackPlugin({
           languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf'],
           customLanguages: [

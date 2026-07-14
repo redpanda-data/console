@@ -51,6 +51,7 @@ import {
   type SetConfigArguments,
   setup,
 } from './config';
+import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
 import { installUISettingsSideEffects } from './state/ui';
@@ -137,6 +138,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     () =>
       createRouter({
         routeTree,
+        ...routerDefaults,
         context: {
           basePath,
           queryClient,
