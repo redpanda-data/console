@@ -173,10 +173,11 @@ function multiMemberSpecs(value: unknown): GroupChildSpec[] | undefined {
   if (!Array.isArray(items)) {
     return;
   }
-  // Skip null/scalar entries but keep original indices so edit paths never land on a neighbour.
+  // Skip entries with no component key (null/scalar, or reserved-only stubs like `- label: x`) —
+  // matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
-    if (item && typeof item === 'object') {
+    if (item && typeof item === 'object' && firstKey(item)) {
       specs.push({ index: i, ...memberNameAndMeta(item) });
     }
   }
@@ -260,6 +261,9 @@ type OutputMemberSpec = {
   isDefault?: boolean;
   isErrorPath?: boolean;
   caseEditTarget?: EditTarget;
+  // Display ordinal for a switch case — a null-skipping counter (like parseSwitchCases), NOT the
+  // raw YAML index, so skipped entries don't leave label gaps ("case 1", "case 3").
+  caseNumber?: number;
 };
 
 // Members of an output container (broker/switch/fallback), or undefined if `key` isn't one. Member
@@ -287,16 +291,19 @@ function outputContainerMembers(
     }
     // Keep the raw index for the edit path but skip null/scalar case entries — mirrors parseSwitchCases.
     const members: OutputMemberSpec[] = [];
+    let caseNum = 0;
     for (const [i, c] of cases.entries()) {
       if (!c || typeof c !== 'object') {
         continue;
       }
+      caseNum += 1;
       const caseRecord = c as Record<string, unknown>;
       members.push({
         obj: caseRecord.output,
         path: [...path, key, 'cases', i, 'output'],
         ...caseRouting(caseRecord.check),
         caseEditTarget: { kind: 'switchCase', path: [...path, key, 'cases', i] },
+        caseNumber: caseNum,
       });
     }
     return members;
@@ -863,6 +870,8 @@ type OutputNodeArgs = {
   editTarget: EditTarget;
   // Routing that selects this node (a switch case's check, a fallback tier's "on failure").
   routing?: Pick<OutputMemberSpec, 'condition' | 'isDefault' | 'isErrorPath' | 'caseEditTarget'>;
+  // Null-skipping display ordinal when this node is a switch case (labels an empty case).
+  caseNumber?: number;
   labelText?: string;
   config: ParsedYamlConfig;
 };
@@ -870,18 +879,17 @@ type OutputNodeArgs = {
 // Node subtree for an output component: broker/switch/fallback become a fan-out GROUP whose members
 // recurse (nested containers keep editable members + grow affordances); anything else is a leaf.
 function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
-  const { obj, id, parentId, path, editTarget, routing, labelText, config } = args;
+  const { obj, id, parentId, path, editTarget, routing, caseNumber, labelText, config } = args;
   const key = firstKey(obj);
   if (!key) {
     // A check-only switch case (no `output:` body yet) still renders as an empty, condition-editable
     // case — mirroring processor switches, so a case never silently vanishes from the canvas.
     if (routing?.caseEditTarget) {
-      const caseIndex = routing.caseEditTarget.kind === 'switchCase' ? routing.caseEditTarget.path.at(-1) : undefined;
       return [
         {
           id,
           kind: 'group',
-          label: typeof caseIndex === 'number' ? `case ${caseIndex + 1}` : 'case',
+          label: caseNumber === undefined ? 'case' : `case ${caseNumber}`,
           section: 'output',
           parentId,
           collapsible: true,
@@ -923,6 +931,7 @@ function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
           isErrorPath: member.isErrorPath,
           caseEditTarget: member.caseEditTarget,
         },
+        caseNumber: member.caseNumber,
         config,
       })
     );

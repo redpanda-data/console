@@ -75,15 +75,20 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
 };
 
 const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
-  const processorsNode = doc.getIn(['pipeline', 'processors']) as { toJSON?: () => unknown } | undefined;
-  const processors = (processorsNode?.toJSON?.() as unknown[]) || [];
-
   const configObj = newConfigObject as Record<string, { processors?: unknown[] }>;
   const processorsArray = configObj?.pipeline?.processors;
   const newProcessor = Array.isArray(processorsArray) ? processorsArray[0] : undefined;
+  if (!newProcessor) {
+    return;
+  }
 
-  if (newProcessor) {
-    doc.setIn(['pipeline', 'processors'], Array.isArray(processors) ? [...processors, newProcessor] : [newProcessor]);
+  // Append to the existing seq in place — rebuilding the array from toJSON() would strip
+  // comments/anchors off the processors already there.
+  const processorsNode = doc.getIn(['pipeline', 'processors']);
+  if (isSeq(processorsNode)) {
+    processorsNode.add(doc.createNode(newProcessor));
+  } else {
+    doc.setIn(['pipeline', 'processors'], [newProcessor]);
   }
 };
 
@@ -94,13 +99,14 @@ const mergeResourceArray = (
   newConfigObject: Partial<ConnectConfigObject>,
   key: ResourceArrayKey
 ): void => {
-  const node = doc.getIn([key]) as { toJSON?: () => unknown } | undefined;
-  const existing = (node?.toJSON?.() as unknown[]) || [];
   const newResource = (newConfigObject as Record<string, unknown[]>)?.[key]?.[0] as Record<string, unknown> | undefined;
   if (!newResource) {
     return;
   }
 
+  // Read labels through the doc (resolves aliases); the write below must not round-trip the
+  // node tree through JS.
+  const existing = (doc.toJS() as Record<string, unknown> | null)?.[key];
   const existingLabels = (Array.isArray(existing) ? (existing as Record<string, unknown>[]) : [])
     .map((r) => r?.label)
     .filter((l): l is string => typeof l === 'string' && l !== '');
@@ -108,7 +114,14 @@ const mergeResourceArray = (
     newResource.label = uniqueResourceLabel(existingLabels, newResource.label);
   }
 
-  doc.setIn([key], [...existing, newResource]);
+  // Append to the existing seq in place — rebuilding the array from toJSON() would strip
+  // comments/anchors off the resources already there.
+  const node = doc.getIn([key]);
+  if (isSeq(node)) {
+    node.add(doc.createNode(newResource));
+  } else {
+    doc.setIn([key], [newResource]);
+  }
 };
 
 const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
@@ -454,6 +467,17 @@ export const configToYaml = (
   }
 };
 
+const yamlHasInput = (yamlContent?: string): boolean => {
+  if (!yamlContent?.trim()) {
+    return false;
+  }
+  try {
+    return parseDocument(yamlContent).has('input');
+  } catch {
+    return false;
+  }
+};
+
 export const getConnectTemplate = ({
   connectionName,
   connectionType,
@@ -489,6 +513,19 @@ export const getConnectTemplate = ({
   }
 
   const { config: newConfigObject, spec } = result;
+
+  // A scanner isn't a root section — it nests under `input.<type>.scanner` (see mergeScanner).
+  // With no input to attach to, it would land as a bogus top-level block, so refuse instead.
+  if (spec.type === 'scanner' && !yamlHasInput(existingYaml)) {
+    toast.error(
+      formatToastErrorMessageGRPC({
+        error: new ConnectError('a scanner attaches to an input, and this config has none'),
+        action: 'add scanner',
+        entity: spec.name,
+      })
+    );
+    return existingYaml;
+  }
 
   if (existingYaml) {
     const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);

@@ -232,6 +232,67 @@ output:
     });
   });
 
+  describe('appending into existing arrays', () => {
+    test('preserves comments on existing processors when appending another', () => {
+      const existingYaml = `pipeline:
+  processors:
+    - mapping: root = this # keep me
+`;
+
+      const processorSpec = mockComponents.bloblangProcessor;
+      if (!processorSpec) {
+        throw new Error('bloblang processor not found');
+      }
+      const result = schemaToConfig(processorSpec, false);
+      if (!result) {
+        throw new Error('Failed to generate processor config');
+      }
+
+      const mergedDoc = mergeConnectConfigs(existingYaml, result.config);
+      const yaml = configToYaml(mergedDoc);
+
+      // Appending must not round-trip the existing entries through plain JS, which would strip
+      // their comments.
+      expect(yaml).toContain('# keep me');
+      const parsed = parseYaml(yaml) as { pipeline: { processors: unknown[] } };
+      expect(parsed.pipeline.processors).toHaveLength(2);
+    });
+
+    test('preserves comments on existing resources when appending another', () => {
+      const existingYaml = `cache_resources:
+  - label: existing_cache
+    memory:
+      default_ttl: 60s # keep me
+`;
+
+      const cacheSpec = mockComponents.memoryCache;
+      if (!cacheSpec) {
+        throw new Error('memory cache not found');
+      }
+      const result = schemaToConfig(cacheSpec, false);
+      if (!result) {
+        throw new Error('Failed to generate cache config');
+      }
+
+      const mergedDoc = mergeConnectConfigs(existingYaml, result.config);
+      const yaml = configToYaml(mergedDoc);
+
+      expect(yaml).toContain('# keep me');
+      const parsed = parseYaml(yaml) as { cache_resources: { label?: string }[] };
+      expect(parsed.cache_resources).toHaveLength(2);
+    });
+  });
+
+  describe('long value folding', () => {
+    test('does not fold long single-line values', () => {
+      const longValue = 'x'.repeat(200);
+      const yaml = configToYaml({ pipeline: { processors: [{ mapping: `root = "${longValue}"` }] } });
+
+      // lineWidth: 0 — the stringifier must not fold a >120-char scalar across lines.
+      expect(yaml).toContain(longValue);
+    });
+  });
+
   describe('scanner merging', () => {
     test('keeps the scanner name wrapper under input.<type>.scanner', () => {
       const existingYaml = `input:
@@ -251,6 +312,22 @@ output:
       const parsed = parseYaml(mergedYaml as string) as { input: { file: { scanner: Record<string, unknown> } } };
       // The scanner config must stay wrapped in its name — `scanner: { avro: {…} }`, not the bare fields.
       expect(Object.keys(parsed.input.file.scanner)).toEqual(['avro']);
+    });
+
+    test('refuses a scanner when the config has no input', () => {
+      const existingYaml = `output:
+  drop: {}`;
+
+      const mergedYaml = getConnectTemplate({
+        connectionName: 'avro',
+        connectionType: 'scanner',
+        components: Object.values(mockComponents),
+        existingYaml,
+      });
+
+      // A scanner nests under input.<type>.scanner — with no input it must not be written as a
+      // bogus top-level `avro:` block. The existing YAML comes back untouched.
+      expect(mergedYaml).toBe(existingYaml);
     });
   });
 });

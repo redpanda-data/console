@@ -176,6 +176,23 @@ input:
     });
   });
 
+  it('skips a broker input entry that has only reserved keys (no component yet)', () => {
+    const yaml = `
+input:
+  broker:
+    inputs:
+      - label: orphan
+      - generate:
+          mapping: root = {}
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    // A reserved-only stub (mid-edit `- label: x`) must not render a phantom placeholder leaf —
+    // matching parseMultiInputs — while the real sibling keeps its original YAML index.
+    const children = nodes.filter((n) => n.parentId === 'input-broker');
+    expect(children).toHaveLength(1);
+    expect(children[0]).toMatchObject({ id: 'input-broker-1', kind: 'leaf', label: 'generate' });
+  });
+
   it('parses sequence input with children', () => {
     const yaml = `
 input:
@@ -312,6 +329,22 @@ output:
     });
     expect(emptyCase?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     expect(emptyCase?.editTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+  });
+
+  it('labels a bodyless switch-output case with a null-skipping counter, not the raw YAML index', () => {
+    const yaml = `
+output:
+  switch:
+    cases:
+      - null
+      - check: 'this.region == "us"'
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    // The sole visible case is "case 1" — no "case 2" gap from the skipped null entry — while
+    // its edit path keeps the raw YAML index 1, mirroring processor switches.
+    const emptyCase = nodes.find((n) => n.isCase);
+    expect(emptyCase).toMatchObject({ kind: 'group', label: 'case 1' });
+    expect(emptyCase?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
   });
 
   it('parses fallback output with children', () => {
