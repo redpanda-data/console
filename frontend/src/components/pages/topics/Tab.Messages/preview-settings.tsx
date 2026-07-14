@@ -9,10 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Checkbox, Flex, Input, Popover } from '@redpanda-data/ui';
-import { arrayMoveMutable } from 'array-move';
-import { CloseIcon, MenuIcon, SettingsIcon } from 'components/icons';
-import React from 'react';
 import {
   DragDropContext,
   Draggable,
@@ -20,7 +16,11 @@ import {
   Droppable,
   type DropResult,
   type ResponderProvided,
-} from 'react-beautiful-dnd';
+} from '@hello-pangea/dnd';
+import { Box, Button, Checkbox, Flex, Input, Popover } from '@redpanda-data/ui';
+import { arrayMoveMutable } from 'array-move';
+import { CloseIcon, MenuIcon, SettingsIcon } from 'components/icons';
+import React from 'react';
 
 import { globHelp, PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
 import { usePreviewDisplayMode } from '../../../../hooks/use-preview-display-mode';

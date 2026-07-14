@@ -394,7 +394,7 @@ export const KnowledgeBaseDetailsPage = () => {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="max-w-md text-center">
-          <Text className="text-red-600">
+          <Text className="text-error">
             {knowledgeBaseError
               ? `Failed to load knowledge base: ${String(knowledgeBaseError)}`
               : 'Knowledge base not found'}
@@ -415,7 +415,6 @@ export const KnowledgeBaseDetailsPage = () => {
           </Text>
         )}
       </div>
-
       {/* Consumer Group Status Card */}
       <Card>
         <CardContent>
@@ -428,11 +427,13 @@ export const KnowledgeBaseDetailsPage = () => {
                 {consumerGroup?.state ? (
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="inline-flex cursor-help" type="button">
-                          <CircleHelp className="h-3.5 w-3.5 text-muted-foreground" />
-                        </button>
-                      </TooltipTrigger>
+                      <TooltipTrigger
+                        render={
+                          <button className="inline-flex cursor-help" type="button">
+                            <CircleHelp className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        }
+                      />
                       <TooltipContent className="max-w-xs">
                         <Text>{getConsumerGroupStateDescription(consumerGroup.state)}</Text>
                       </TooltipContent>
@@ -460,7 +461,6 @@ export const KnowledgeBaseDetailsPage = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Configuration and Playground Tabs */}
       <FormProvider {...form}>
         <Tabs defaultValue="configuration">

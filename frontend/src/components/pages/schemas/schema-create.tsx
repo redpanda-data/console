@@ -377,7 +377,6 @@ const SchemaPageButtons = (p: {
           </Button>
         </Alert>
       ) : null}
-
       <div className="mt-4 flex gap-4">
         <Button
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
@@ -467,7 +466,6 @@ const SchemaPageButtons = (p: {
           Cancel
         </Button>
       </div>
-
       <ValidationErrorsDialog
         onClose={() => {
           if (validationDialogResult) {
@@ -567,7 +565,6 @@ const SchemaEditor = (p: {
   return (
     <>
       <Heading level={2}>Subject Settings</Heading>
-
       {Boolean(isAddVersion) && (
         <Alert variant="info">
           <InfoIcon />
@@ -577,7 +574,6 @@ const SchemaEditor = (p: {
           </AlertDescription>
         </Alert>
       )}
-
       <div className="flex max-w-[650px] flex-col gap-8">
         {srContextsEnabled && !isAddVersion && (
           <Field data-invalid={!state.context || undefined}>
@@ -629,6 +625,12 @@ const SchemaEditor = (p: {
           <FieldLabel>Strategy</FieldLabel>
           <Select
             disabled={isAddVersion}
+            items={{
+              TOPIC: 'Topic Name',
+              RECORD_NAME: 'Record Name',
+              TOPIC_RECORD_NAME: 'Topic-Record Name',
+              CUSTOM: 'Custom',
+            }}
             onValueChange={(e) => {
               p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
             }}
@@ -753,11 +755,9 @@ const SchemaEditor = (p: {
             </div>
           )}
       </div>
-
       <Heading className="mt-8" level={2}>
         Schema definition
       </Heading>
-
       <div className="flex max-w-[1000px] flex-col gap-4">
         <Field>
           <FieldLabel>Format</FieldLabel>
@@ -765,7 +765,7 @@ const SchemaEditor = (p: {
             className="w-fit! divide-x divide-border p-0"
             data-testid="schema-create-format-radio"
             disabled={isAddVersion}
-            onValueChange={(e) => {
+            onValueChange={([e]) => {
               if (!e || state.format === e) {
                 return;
               }
@@ -773,9 +773,7 @@ const SchemaEditor = (p: {
               setPendingFormat(e);
               setSwitchFormatOpen(true);
             }}
-            transition={{ duration: 0 }}
-            type="single"
-            value={state.format}
+            value={[state.format]}
             variant="outline"
           >
             {formatOptions.map((opt) => (
@@ -802,9 +800,7 @@ const SchemaEditor = (p: {
             <span className="font-semibold">Normalize schema</span>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="h-4 w-4 cursor-help text-gray-500" />
-                </TooltipTrigger>
+                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-gray-500" />} />
                 <TooltipContent side="right">
                   When enabled, the schema will be normalized to a canonical form before registration, reducing
                   duplicate schema versions
@@ -845,7 +841,6 @@ const SchemaEditor = (p: {
         </Text>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </div>
-
       <SwitchSchemaFormatDialog
         onConfirm={() => {
           if (pendingFormat) {
@@ -919,6 +914,7 @@ const ReferencesEditor = (p: {
             <Field>
               <FieldLabel>Context</FieldLabel>
               <Select
+                items={p.contextSelectOptions}
                 onValueChange={(contextId) => {
                   p.onStateChange((prev) => ({
                     ...prev,

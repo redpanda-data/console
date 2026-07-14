@@ -11,12 +11,8 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 import { CollectionIcon } from 'components/icons';
-import { isFeatureFlagEnabled } from 'config';
 
-import TopicListLegacy from '../../components/pages/topics/topic-list';
-import TopicListNew from '../../components/pages/topics/topic-list-new';
-
-const TopicList = () => (isFeatureFlagEnabled('enableNewTopicPage') ? <TopicListNew /> : <TopicListLegacy />);
+import TopicList from '../../components/pages/topics/topic-list-new';
 
 export const Route = createFileRoute('/topics/')({
   staticData: {

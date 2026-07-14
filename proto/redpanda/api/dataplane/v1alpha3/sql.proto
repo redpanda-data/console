@@ -25,9 +25,7 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListCatalogsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListCatalogsResponse"}}
         }
       }
     };
@@ -48,9 +46,7 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTablesResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTablesResponse"}}
         }
       }
     };
@@ -72,27 +68,21 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.DescribeTableResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.DescribeTableResponse"}}
         }
       }
       responses: {
         key: "400"
         value: {
           description: "Catalog name is ambiguous (exists in multiple namespaces); provide catalog_namespace"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Catalog or table not found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -115,9 +105,50 @@ service SQLService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ExecuteQueryResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
+
+  // GetSqlIdentity returns the caller's SQL identity: the engine username it is
+  // connected as and whether it holds administrative (superuser) privileges.
+  // Clients use is_admin to gate write/DDL actions (e.g. creating tables) in
+  // the UI; the engine remains the source of truth and enforces privileges on
+  // execution regardless.
+  rpc GetSqlIdentity(GetSqlIdentityRequest) returns (GetSqlIdentityResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/identity"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get SQL identity"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetSqlIdentityResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_SQL
+    };
+  }
+
+  // GetSqlConnectionInfo returns the connection endpoint clients use to reach
+  // Redpanda SQL: the advertised host and port.
+  rpc GetSqlConnectionInfo(GetSqlConnectionInfoRequest) returns (GetSqlConnectionInfoResponse) {
+    option (google.api.http) = {get: "/v1alpha3/sql/connection-info"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get SQL connection info"
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetSqlConnectionInfoResponse"}}
         }
       }
     };
@@ -167,6 +198,9 @@ message Column {
   // Engine-reported type name (e.g. "integer", "double precision", "text");
   // array types carry a "[]" suffix (e.g. "text[]").
   string type = 2;
+  // Nested columns for a composite/struct (json) column, parsed from the
+  // engine's structural type. Empty for scalar columns.
+  repeated Column fields = 3;
 }
 
 // Value is a single cell. `null_value` distinguishes SQL NULL from an
@@ -293,4 +327,25 @@ message ExecuteQueryResponse {
   // True if the server row cap fired before the result set was
   // exhausted.
   bool truncated = 3;
+}
+
+message GetSqlIdentityRequest {}
+
+message GetSqlIdentityResponse {
+  // Engine username the caller is connected as (SQL `current_user`).
+  string current_user = 1;
+  // True when the caller holds administrative (superuser) privileges in the
+  // engine, i.e. may perform write/DDL actions. Sourced from
+  // `pg_roles.rolsuper`.
+  bool is_admin = 2;
+}
+
+message GetSqlConnectionInfoRequest {}
+
+message GetSqlConnectionInfoResponse {
+  // Advertised host clients use to reach the SQL endpoint. Empty when no
+  // endpoint is configured.
+  string host = 1;
+  // Port for the SQL endpoint, derived from the configured connection URL.
+  uint32 port = 2;
 }

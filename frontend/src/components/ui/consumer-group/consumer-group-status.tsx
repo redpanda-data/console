@@ -76,15 +76,15 @@ const getStateIcon = (state?: ConsumerGroupState | string): React.ReactNode => {
 
 	switch (normalizedState) {
 		case "stable":
-			return <Check className="h-4 w-4 text-green-600" />;
+			return <Check className="h-4 w-4 text-success" />;
 		case "completingrebalance":
-			return <Loader2 className="h-4 w-4 animate-spin text-blue-600" />;
+			return <Loader2 className="h-4 w-4 animate-spin text-informative" />;
 		case "preparingrebalance":
-			return <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />;
+			return <Loader2 className="h-4 w-4 animate-spin text-warning" />;
 		case "empty":
-			return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+			return <AlertCircle className="h-4 w-4 text-warning" />;
 		case "dead":
-			return <StopCircle className="h-4 w-4 text-red-600" />;
+			return <StopCircle className="h-4 w-4 text-error" />;
 		case "unknown":
 			return <Clock className="h-4 w-4 text-gray-600" />;
 		default:
@@ -122,7 +122,7 @@ export const ConsumerGroupStatus = React.memo<ConsumerGroupStatusProps>(
 			const itemCount = fallbackInfo.itemCount ?? 0;
 			return (
 				<div className="flex items-center gap-2">
-					<Check className="h-4 w-4 shrink-0 text-green-600" />
+					<Check className="h-4 w-4 shrink-0 text-success" />
 					<Text>
 						{itemCount} {itemCount === 1 ? itemLabel : `${itemLabel}s`}
 					</Text>
@@ -144,7 +144,7 @@ export const ConsumerGroupStatus = React.memo<ConsumerGroupStatusProps>(
 		if (hasError) {
 			return (
 				<div className="flex items-center gap-2">
-					<Loader2 className="h-4 w-4 shrink-0 animate-spin text-yellow-600" />
+					<Loader2 className="h-4 w-4 shrink-0 animate-spin text-warning" />
 					<Text variant="muted">Initializing...</Text>
 				</div>
 			);
@@ -156,7 +156,7 @@ export const ConsumerGroupStatus = React.memo<ConsumerGroupStatusProps>(
 			const itemCount = fallbackInfo.itemCount ?? 0;
 			return (
 				<div className="flex items-center gap-2">
-					<Check className="h-4 w-4 shrink-0 text-green-600" />
+					<Check className="h-4 w-4 shrink-0 text-success" />
 					<Text>
 						{itemCount} {itemCount === 1 ? itemLabel : `${itemLabel}s`}
 					</Text>

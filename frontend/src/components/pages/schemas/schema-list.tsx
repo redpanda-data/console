@@ -255,11 +255,13 @@ const SchemaList: FC = () => {
                 </Link>
                 {isSoftDeleted && (
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
-                        <ArchiveIcon aria-hidden="true" height={16} style={{ color: 'dimgrey' }} width={16} />
-                      </span>
-                    </TooltipTrigger>
+                    <TooltipTrigger
+                      render={
+                        <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
+                          <ArchiveIcon aria-hidden="true" height={16} style={{ color: 'dimgrey' }} width={16} />
+                        </span>
+                      }
+                    />
                     <TooltipContent>
                       This subject has been soft-deleted. It can be restored or permanently deleted.
                     </TooltipContent>
@@ -317,22 +319,24 @@ const SchemaList: FC = () => {
         enableSorting: false,
         cell: ({ row: { original: r } }) => (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Delete schema"
-                data-testid={`schema-list-delete-btn-${r.name}`}
-                disabled={api.userData?.canDeleteSchemas === false}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
-                }}
-                size="icon-sm"
-                variant="secondary-ghost"
-              >
-                <TrashIcon />
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="Delete schema"
+                  data-testid={`schema-list-delete-btn-${r.name}`}
+                  disabled={api.userData?.canDeleteSchemas === false}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
+                  }}
+                  size="icon-sm"
+                  variant="secondary-ghost"
+                >
+                  <TrashIcon />
+                </Button>
+              }
+            />
             {api.userData?.canDeleteSchemas === false && (
               <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
             )}
@@ -367,24 +371,26 @@ const SchemaList: FC = () => {
           <div className="flex items-center gap-1.5">
             {displayMode ?? <Skeleton variant="text" width="sm" />}
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label="Edit mode"
-                  data-testid="schema-list-edit-mode-btn"
-                  disabled={api.userData?.canManageSchemaRegistry === false}
-                  onClick={() =>
-                    isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                      ? appGlobal.historyPush(
-                          `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                        )
-                      : appGlobal.historyPush('/schema-registry/edit-mode')
-                  }
-                  size="icon-xs"
-                  variant="secondary-ghost"
-                >
-                  <EditIcon />
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Edit mode"
+                    data-testid="schema-list-edit-mode-btn"
+                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    onClick={() =>
+                      isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                        ? appGlobal.historyPush(
+                            `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                          )
+                        : appGlobal.historyPush('/schema-registry/edit-mode')
+                    }
+                    size="icon-xs"
+                    variant="secondary-ghost"
+                  >
+                    <EditIcon />
+                  </Button>
+                }
+              />
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
@@ -402,24 +408,26 @@ const SchemaList: FC = () => {
           <div className="flex items-center gap-1.5">
             {displayCompat ?? <Skeleton variant="text" width="sm" />}
             <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  aria-label="Edit compatibility"
-                  data-testid="schema-list-edit-compatibility-btn"
-                  disabled={api.userData?.canManageSchemaRegistry === false}
-                  onClick={() =>
-                    isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                      ? appGlobal.historyPush(
-                          `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                        )
-                      : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                  }
-                  size="icon-xs"
-                  variant="secondary-ghost"
-                >
-                  <EditIcon />
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label="Edit compatibility"
+                    data-testid="schema-list-edit-compatibility-btn"
+                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    onClick={() =>
+                      isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                        ? appGlobal.historyPush(
+                            `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                          )
+                        : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                    }
+                    size="icon-xs"
+                    variant="secondary-ghost"
+                  >
+                    <EditIcon />
+                  </Button>
+                }
+              />
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
@@ -427,7 +435,6 @@ const SchemaList: FC = () => {
           </div>
         </SmallStat>
       </div>
-
       {schemaRegistryContextsSupported && (
         <SchemaContextSelector
           contexts={derivedContexts}
@@ -438,31 +445,30 @@ const SchemaList: FC = () => {
           selectedContext={selectedContext}
         />
       )}
-
       <div className="my-4 flex items-center gap-2">
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              data-testid="schema-list-create-btn"
-              disabled={api.userData?.canCreateSchemas === false}
-              onClick={() =>
-                isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                  ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
-                  : appGlobal.historyPush('/schema-registry/create')
-              }
-              variant="primary"
-            >
-              Create new schema
-            </Button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <Button
+                data-testid="schema-list-create-btn"
+                disabled={api.userData?.canCreateSchemas === false}
+                onClick={() =>
+                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                    ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
+                    : appGlobal.historyPush('/schema-registry/create')
+                }
+                variant="primary"
+              >
+                Create new schema
+              </Button>
+            }
+          />
           {api.userData?.canCreateSchemas === false && (
             <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
           )}
         </Tooltip>
       </div>
-
       <RequestErrors />
-
       <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
         <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
           <DrawerHeader className="border-b">
@@ -503,7 +509,6 @@ const SchemaList: FC = () => {
           </div>
         </DrawerContent>
       </Drawer>
-
       {(() => {
         if (isLoading) {
           return (
@@ -544,17 +549,19 @@ const SchemaList: FC = () => {
                   />
                 </div>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      aria-label="Search help"
-                      className="inline-flex cursor-pointer items-center"
-                      data-testid="schema-search-help"
-                      onClick={() => setIsHelpSidebarOpen(true)}
-                      type="button"
-                    >
-                      <InfoIcon aria-hidden="true" />
-                    </button>
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        aria-label="Search help"
+                        className="inline-flex cursor-pointer items-center"
+                        data-testid="schema-search-help"
+                        onClick={() => setIsHelpSidebarOpen(true)}
+                        type="button"
+                      >
+                        <InfoIcon aria-hidden="true" />
+                      </button>
+                    }
+                  />
                   <TooltipContent side="top">Help with schema search</TooltipContent>
                 </Tooltip>
                 {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
@@ -572,7 +579,6 @@ const SchemaList: FC = () => {
                 <Label htmlFor="show-soft-deleted">Show soft-deleted</Label>
               </div>
             </div>
-
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -670,7 +676,6 @@ const SchemaList: FC = () => {
           </Section>
         );
       })()}
-
       <DeleteDialog
         onConfirm={() => {
           if (!deleteTarget) return;

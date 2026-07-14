@@ -111,7 +111,7 @@ type HistoryStreamOpts = {
   pipelineId: string;
   serverless: boolean;
   signal: AbortSignal;
-  messagesRef: React.RefObject<TopicMessage[]>;
+  messagesRef: React.RefObject<TopicMessage[] | null>;
   progressRef: React.MutableRefObject<SearchProgress>;
   setPhase: React.Dispatch<React.SetStateAction<string | null>>;
 };
@@ -285,8 +285,8 @@ type LiveStreamOpts = {
   abortController: AbortController;
   pipelineId: string;
   serverless: boolean;
-  isMountedRef: React.RefObject<boolean>;
-  pendingRef: React.RefObject<TopicMessage[]>;
+  isMountedRef: React.RefObject<boolean | null>;
+  pendingRef: React.RefObject<TopicMessage[] | null>;
   dispatch: React.Dispatch<LiveAction>;
 };
 

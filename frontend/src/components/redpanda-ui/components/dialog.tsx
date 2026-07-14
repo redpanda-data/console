@@ -1,3 +1,5 @@
+'use client';
+
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
@@ -5,60 +7,30 @@ import React from 'react';
 
 import { Button } from './button';
 import { useAnimatedAutoHeight } from '../lib/use-animated-auto-height';
+import { useMediaQuery } from '../lib/use-media-query';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { useScrollShadow } from '../lib/use-scroll-shadow';
-import {
-  asChildTrigger,
-  narrowOpenChange,
-  renderDescription,
-  renderWithDataState,
-  warnDeprecatedProp,
-} from '../lib/base-ui-compat';
-import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
-type DialogRootProps = Omit<React.ComponentProps<typeof DialogPrimitive.Root>, 'onOpenChange'> &
-  SharedProps & {
-    onOpenChange?: (open: boolean) => void;
-  };
+type DialogRootProps = DialogPrimitive.Root.Props & SharedProps;
 
-function Dialog({ testId, onOpenChange, ...props }: DialogRootProps) {
-  return (
-    <DialogPrimitive.Root
-      data-slot="dialog"
-      data-testid={testId}
-      onOpenChange={narrowOpenChange(onOpenChange)}
-      {...props}
-    />
-  );
+function Dialog({ testId, ...props }: DialogRootProps) {
+  return <DialogPrimitive.Root data-slot="dialog" data-testid={testId} {...props} />;
 }
 
-type DialogTriggerProps = React.ComponentProps<typeof DialogPrimitive.Trigger> & {
-  asChild?: boolean;
-};
-
-function DialogTrigger({ className, ...props }: DialogTriggerProps) {
-  return (
-    <DialogPrimitive.Trigger
-      className={cn('cursor-pointer', className)}
-      data-slot="dialog-trigger"
-      {...asChildTrigger(props)}
-    />
-  );
+function DialogTrigger({ className, ...props }: DialogPrimitive.Trigger.Props) {
+  return <DialogPrimitive.Trigger className={cn('cursor-pointer', className)} data-slot="dialog-trigger" {...props} />;
 }
 
-function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
-type DialogCloseProps = React.ComponentProps<typeof DialogPrimitive.Close> & {
-  asChild?: boolean;
-};
-
-function DialogClose({ ...props }: DialogCloseProps) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...asChildTrigger(props)} />;
+function DialogClose({ className, ...props }: DialogPrimitive.Close.Props) {
+  return <DialogPrimitive.Close className={cn('cursor-pointer', className)} data-slot="dialog-close" {...props} />;
 }
 
-function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Backdrop>) {
+function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
   return (
     <DialogPrimitive.Backdrop
       className={cn(
@@ -67,11 +39,12 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
         className
       )}
       data-slot="dialog-overlay"
-      render={renderWithDataState('div')}
       {...props}
     />
   );
 }
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 // `height` is intentionally omitted from the transition list — useAnimatedAutoHeight drives it.
 const dialogContentVariants = cva(
@@ -107,10 +80,13 @@ const dialogContentVariants = cva(
 );
 
 interface DialogContentProps
-  extends React.ComponentProps<typeof DialogPrimitive.Popup>,
+  extends DialogPrimitive.Popup.Props,
     VariantProps<typeof dialogContentVariants>,
-    SharedProps,
-    Pick<FixedPositionContentProps, 'container' | 'showOverlay' | 'onOpenAutoFocus'> {
+    SharedProps {
+  /** Container element for inline rendering (no portal to body). */
+  container?: HTMLElement;
+  /** When false, hides the overlay/backdrop. Defaults to `true`. */
+  showOverlay?: boolean;
   showCloseButton?: boolean;
 }
 
@@ -124,18 +100,13 @@ function DialogContent({
   height,
   testId,
   container,
-  onOpenAutoFocus,
   ...props
 }: DialogContentProps) {
-  warnDeprecatedProp(
-    'DialogContent',
-    'onOpenAutoFocus',
-    onOpenAutoFocus,
-    'Use `initialFocus` on Base UI `Dialog.Popup` instead.'
-  );
   const portalContainer = usePortalContainer();
+  // Skip the JS height animation under reduced motion (height snaps instantly).
+  const prefersReducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
   const isAutoHeight = !height || height === 'auto';
-  const setPopupRef = useAnimatedAutoHeight<HTMLDivElement>(isAutoHeight);
+  const setPopupRef = useAnimatedAutoHeight<HTMLDivElement>(isAutoHeight && !prefersReducedMotion);
   return (
     <DialogPortal container={container ?? portalContainer}>
       {showOverlay ? <DialogOverlay /> : null}
@@ -144,7 +115,6 @@ function DialogContent({
         data-slot="dialog-content"
         data-testid={testId}
         ref={setPopupRef}
-        render={renderWithDataState('div')}
         {...props}
       >
         {children}
@@ -220,19 +190,33 @@ const dialogFooterVariants = cva('flex shrink-0 p-4 [[data-slot=dialog-body]+&]:
   },
 });
 
-interface DialogFooterProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogFooterVariants> {}
+interface DialogFooterProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogFooterVariants> {
+  /** Render a built-in "Close" button that dismisses the dialog. Defaults to `false`. */
+  showCloseButton?: boolean;
+}
 
-function DialogFooter({ className, direction, justify, gap, ...props }: DialogFooterProps) {
+function DialogFooter({
+  className,
+  direction,
+  justify,
+  gap,
+  showCloseButton = false,
+  children,
+  ...props
+}: DialogFooterProps) {
   return (
     <div
       className={cn(dialogFooterVariants({ direction, justify, gap }), className)}
       data-slot="dialog-footer"
       {...props}
-    />
+    >
+      {children}
+      {showCloseButton ? <DialogPrimitive.Close render={<Button variant="outline">Close</Button>} /> : null}
+    </div>
   );
 }
 
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       className={cn('font-semibold text-lg leading-none tracking-tight', className)}
@@ -242,22 +226,13 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   );
 }
 
-function DialogDescription({
-  className,
-  children,
-  asChild,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description> & { asChild?: boolean }) {
-  // Render as <div> (not <p>) so block-level children don't trigger validateDOMNesting.
+function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
+      className={cn('text-muted-foreground text-sm', className)}
       data-slot="dialog-description"
-      render={renderDescription({
-        asChild,
-        children,
-        className: typeof className === 'string' ? className : undefined,
-        dataSlot: 'dialog-description',
-      })}
+      // Render as <div> (not Base UI's default <p>) so block-level children don't trigger validateDOMNesting.
+      render={<div />}
       {...props}
     />
   );
@@ -287,13 +262,17 @@ const dialogBodyContentVariants = cva('', {
   },
 });
 
+const dialogScrollShadow = 'pointer-events-none sticky z-10 h-0 transition-opacity duration-150';
+const dialogScrollShadowState = (visible: boolean) => (visible ? 'opacity-100' : 'opacity-0');
+
 interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyContentVariants> {
   /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
   scrollShadow?: boolean;
 }
 
 function DialogBody({ className, padding, spacing, scrollShadow = true, children, style, ...props }: DialogBodyProps) {
-  const { containerRef, topRef, bottomRef, edges } = useScrollShadow<HTMLDivElement>(scrollShadow);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const edges = useScrollShadow(containerRef, scrollShadow);
 
   return (
     <div
@@ -304,33 +283,15 @@ function DialogBody({ className, padding, spacing, scrollShadow = true, children
       {...props}
     >
       {scrollShadow ? (
-        <>
-          <div aria-hidden className="h-px shrink-0" ref={topRef} />
-          <div
-            aria-hidden
-            className={cn(
-              'pointer-events-none sticky top-0 z-10 h-0 transition-opacity duration-150',
-              edges.top ? 'opacity-100' : 'opacity-0'
-            )}
-          >
-            <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
-          </div>
-        </>
+        <div aria-hidden className={cn(dialogScrollShadow, 'top-0', dialogScrollShadowState(edges.start))}>
+          <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+        </div>
       ) : null}
       <div className={cn(dialogBodyContentVariants({ padding, spacing }))}>{children}</div>
       {scrollShadow ? (
-        <>
-          <div
-            aria-hidden
-            className={cn(
-              'pointer-events-none sticky bottom-0 z-10 h-0 transition-opacity duration-150',
-              edges.bottom ? 'opacity-100' : 'opacity-0'
-            )}
-          >
-            <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
-          </div>
-          <div aria-hidden className="h-px shrink-0" ref={bottomRef} />
-        </>
+        <div aria-hidden className={cn(dialogScrollShadow, 'bottom-0', dialogScrollShadowState(edges.end))}>
+          <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+        </div>
       ) : null}
     </div>
   );

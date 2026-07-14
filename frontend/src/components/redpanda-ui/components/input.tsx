@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: this is a complex component */
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -10,7 +11,7 @@ import { useGroup } from './group';
 import { cn, type SharedProps } from '../lib/utils';
 
 export const inputVariants = cva(
-  'placeholder:!text-muted-foreground !border-input flex w-full min-w-0 border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-foreground file:text-sm focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+  'placeholder:!text-muted-foreground !border-input focus-visible:!border-ring aria-invalid:!border-destructive flex w-full min-w-0 border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-foreground file:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
   {
     variants: {
       size: {
@@ -65,202 +66,175 @@ export interface InputProps
   containerClassName?: string;
 }
 
-function useInputState(value: InputProps['value'], defaultValue: InputProps['defaultValue']) {
-  const [internalValue, setInternalValue] = useState<string>(value?.toString() || defaultValue?.toString() || '');
+function useNumberInputHandlers(inputRef: React.RefObject<HTMLInputElement | null>, step: number) {
+  // Use the native setter + dispatch a real 'input' event so React fires a genuine ChangeEvent, not a fake object.
+  const setNativeValue = (newValue: string) => {
+    const input = inputRef.current;
+    if (!input) {
+      return;
+    }
+    const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    valueSetter?.call(input, newValue);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  const stepBy = (direction: 1 | -1) => {
+    const currentValue = Number.parseFloat(inputRef.current?.value ?? '') || 0;
+    setNativeValue((currentValue + direction * step).toString());
+  };
+
+  const increment = () => stepBy(1);
+  const decrement = () => stepBy(-1);
+
+  return { increment, decrement };
+}
+
+function Input({
+  className,
+  type,
+  showStepControls,
+  size,
+  variant,
+  testId,
+  children,
+  containerClassName,
+  readOnly,
+  ref,
+  ...props
+}: InputProps) {
+  const fieldCtx = useFieldContext();
   const [showPassword, setShowPassword] = useState(false);
+  const [startWidth, setStartWidth] = useState<number | undefined>();
+  const [endWidth, setEndWidth] = useState<number | undefined>();
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (value !== undefined) {
-      setInternalValue(value.toString());
-    }
-  }, [value]);
-
-  return { value: internalValue, setValue: setInternalValue, showPassword, setShowPassword };
-}
-
-function useNumberInputHandlers(
-  value: string,
-  setValue: React.Dispatch<React.SetStateAction<string>>,
-  step: number,
-  onChange?: React.ChangeEventHandler<HTMLInputElement>
-) {
-  const createChangeEvent = (newValue: string): React.ChangeEvent<HTMLInputElement> =>
-    ({
-      target: { value: newValue },
-    }) as React.ChangeEvent<HTMLInputElement>;
-
-  const increment = () => {
-    const currentValue = Number.parseFloat(value) || 0;
-    const newValue = (currentValue + step).toString();
-    setValue(newValue);
-    onChange?.(createChangeEvent(newValue));
-  };
-
-  const decrement = () => {
-    const currentValue = Number.parseFloat(value) || 0;
-    const newValue = (currentValue - step).toString();
-    setValue(newValue);
-    onChange?.(createChangeEvent(newValue));
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
-    onChange?.(e);
-  };
-
-  return { increment, decrement, handleInputChange };
-}
-
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      className,
-      type,
-      showStepControls,
-      size,
-      variant,
-      testId,
-      children,
-      containerClassName,
-      readOnly,
-      defaultValue,
-      ...props
+  const setRefs = React.useCallback(
+    (node: HTMLInputElement | null) => {
+      inputRef.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
     },
-    ref
-  ) => {
-    const { value, setValue, showPassword, setShowPassword } = useInputState(props.value, defaultValue);
-    const fieldCtx = useFieldContext();
-    const [startWidth, setStartWidth] = useState<number | undefined>();
-    const [endWidth, setEndWidth] = useState<number | undefined>();
+    [ref]
+  );
 
-    const isNumberInput = type === 'number';
-    const isPasswordInput = type === 'password';
-    const shouldShowControls = isNumberInput && showStepControls;
-    const step = props.step ? Number(props.step) : 1;
-    const inputVariant = isPasswordInput ? 'password' : variant;
-    const { position: groupPosition, attached: groupAttached } = useGroup();
-    const attached = groupAttached || isPasswordInput;
+  const isNumberInput = type === 'number';
+  const isPasswordInput = type === 'password';
+  const shouldShowControls = isNumberInput && showStepControls;
+  const step = props.step ? Number(props.step) : 1;
+  const inputVariant = isPasswordInput ? 'password' : variant;
+  const { position: groupPosition, attached: groupAttached } = useGroup();
+  const attached = groupAttached || isPasswordInput;
 
-    const { increment, decrement, handleInputChange } = useNumberInputHandlers(value, setValue, step, props.onChange);
+  const { increment, decrement } = useNumberInputHandlers(inputRef, step);
 
-    // Map input size to a button icon size that fits comfortably inside the input
-    // sm (h-8/32px) → icon-xs (24px), md (h-9/36px) → icon-sm (32px), lg (h-10/40px) → icon-sm (32px)
-    const passwordToggleSize = size === 'sm' ? ('icon-xs' as const) : ('icon-sm' as const);
+  // Map input size to a button icon size that fits inside the input (sm → icon-xs, md/lg → icon-sm).
+  const passwordToggleSize = size === 'sm' ? ('icon-xs' as const) : ('icon-sm' as const);
 
-    let positionClasses = 'rounded-md';
-    if (attached && groupPosition === 'first') {
-      positionClasses = 'rounded-r-none rounded-l-md border-r-0';
-    } else if (attached && groupPosition === 'last') {
-      positionClasses = 'rounded-r-md rounded-l-none border-l-0';
-    } else if (attached && groupPosition === 'middle') {
-      positionClasses = 'rounded-none border-r-0 border-l-0';
-    }
-
-    let inputType = type;
-    if (isPasswordInput) {
-      inputType = showPassword ? 'text' : 'password';
-    }
-
-    let layout: 'number' | 'password' | typeof variant = variant;
-    if (shouldShowControls) {
-      layout = 'number';
-    } else if (isPasswordInput) {
-      layout = 'password';
-    }
-
-    let inputValueProps: { defaultValue?: InputProps['defaultValue']; value?: InputProps['value'] };
-    if (isNumberInput) {
-      inputValueProps = { value };
-    } else if (props.value !== undefined) {
-      inputValueProps = { value: props.value };
-    } else {
-      inputValueProps = { defaultValue };
-    }
-
-    const inputElement = (
-      <input
-        {...props}
-        aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
-        aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
-        className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
-        data-slot="input"
-        {...(testId !== undefined && { 'data-testid': testId })}
-        onChange={isNumberInput ? handleInputChange : props.onChange}
-        readOnly={readOnly}
-        ref={ref}
-        step={isNumberInput ? step : undefined}
-        style={{
-          paddingLeft: startWidth ? startWidth + 16 : undefined,
-          paddingRight: endWidth ? endWidth + 16 : undefined,
-        }}
-        type={inputType}
-        {...inputValueProps}
-      />
-    );
-
-    return (
-      <InputContext.Provider
-        value={{
-          startWidth,
-          setStartWidth,
-          endWidth,
-          setEndWidth,
-        }}
-      >
-        <div
-          className={cn(
-            inputContainerVariants({
-              layout,
-            }),
-            containerClassName
-          )}
-        >
-          {inputElement}
-          {children}
-          {isPasswordInput ? (
-            <InputEnd className="pointer-events-auto">
-              <Button
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                aria-pressed={showPassword}
-                disabled={props.disabled || readOnly}
-                onClick={() => setShowPassword(!showPassword)}
-                size={passwordToggleSize}
-                type="button"
-                variant="ghost"
-              >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-              </Button>
-            </InputEnd>
-          ) : null}
-          {shouldShowControls ? (
-            <div className="flex flex-row gap-1">
-              <Button
-                aria-label="Increment value"
-                className={stepControlVariants({ size })}
-                disabled={props.disabled || readOnly}
-                onClick={increment}
-                type="button"
-                variant="outline"
-              >
-                <Plus />
-              </Button>
-              <Button
-                aria-label="Decrement value"
-                className={stepControlVariants({ size })}
-                disabled={props.disabled || readOnly}
-                onClick={decrement}
-                type="button"
-                variant="outline"
-              >
-                <Minus />
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </InputContext.Provider>
-    );
+  let positionClasses = 'rounded-md';
+  if (attached && groupPosition === 'first') {
+    positionClasses = 'rounded-r-none rounded-l-md border-r-0';
+  } else if (attached && groupPosition === 'last') {
+    positionClasses = 'rounded-r-md rounded-l-none border-l-0';
+  } else if (attached && groupPosition === 'middle') {
+    positionClasses = 'rounded-none border-r-0 border-l-0';
   }
-);
+
+  let inputType = type;
+  if (isPasswordInput) {
+    inputType = showPassword ? 'text' : 'password';
+  }
+
+  let layout: 'number' | 'password' | typeof variant = variant;
+  if (shouldShowControls) {
+    layout = 'number';
+  } else if (isPasswordInput) {
+    layout = 'password';
+  }
+
+  const inputElement = (
+    <input
+      {...props}
+      aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
+      aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
+      className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
+      data-slot="input"
+      {...(testId !== undefined && { 'data-testid': testId })}
+      readOnly={readOnly}
+      ref={setRefs}
+      step={isNumberInput ? step : undefined}
+      style={{
+        paddingLeft: startWidth ? startWidth + 16 : undefined,
+        paddingRight: endWidth ? endWidth + 16 : undefined,
+      }}
+      type={inputType}
+    />
+  );
+
+  return (
+    <InputContext.Provider
+      value={{
+        startWidth,
+        setStartWidth,
+        endWidth,
+        setEndWidth,
+      }}
+    >
+      <div
+        className={cn(
+          inputContainerVariants({
+            layout,
+          }),
+          containerClassName
+        )}
+      >
+        {inputElement}
+        {children}
+        {isPasswordInput ? (
+          <InputEnd className="pointer-events-auto">
+            <Button
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              disabled={props.disabled || readOnly}
+              onClick={() => setShowPassword(!showPassword)}
+              size={passwordToggleSize}
+              type="button"
+              variant="ghost"
+            >
+              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+            </Button>
+          </InputEnd>
+        ) : null}
+        {shouldShowControls ? (
+          <div className="flex flex-row gap-1">
+            <Button
+              aria-label="Increment value"
+              className={stepControlVariants({ size })}
+              disabled={props.disabled || readOnly}
+              onClick={increment}
+              type="button"
+              variant="outline"
+            >
+              <Plus />
+            </Button>
+            <Button
+              aria-label="Decrement value"
+              className={stepControlVariants({ size })}
+              disabled={props.disabled || readOnly}
+              onClick={decrement}
+              type="button"
+              variant="outline"
+            >
+              <Minus />
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </InputContext.Provider>
+  );
+}
 
 const inputEndClassNames = 'absolute inset-y-0 right-2 z-10 flex items-center pointer-events-none';
 
@@ -271,10 +245,10 @@ const InputContext = createContext<{
   endWidth: number | undefined;
 }>({
   setStartWidth: () => {
-    // Default no-op function
+    // no-op
   },
   setEndWidth: () => {
-    // Default no-op function
+    // no-op
   },
   startWidth: undefined,
   endWidth: undefined,
@@ -293,7 +267,18 @@ const InputStart = ({ children, className, ...props }: { children: React.ReactNo
   const startRef = React.useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    setStartWidth(startRef.current?.offsetWidth ?? 0);
+    const node = startRef.current;
+    if (!node) {
+      return;
+    }
+    setStartWidth(node.offsetWidth);
+    const observer = new ResizeObserver(() => {
+      setStartWidth(node.offsetWidth);
+    });
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
   }, [setStartWidth]);
 
   return (
@@ -312,7 +297,18 @@ const InputEnd = ({ children, className, ...props }: { children: React.ReactNode
   const endRef = React.useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    setEndWidth(endRef.current?.offsetWidth ?? 0);
+    const node = endRef.current;
+    if (!node) {
+      return;
+    }
+    setEndWidth(node.offsetWidth);
+    const observer = new ResizeObserver(() => {
+      setEndWidth(node.offsetWidth);
+    });
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
   }, [setEndWidth]);
 
   return (
@@ -321,7 +317,5 @@ const InputEnd = ({ children, className, ...props }: { children: React.ReactNode
     </span>
   );
 };
-
-Input.displayName = 'Input';
 
 export { Input, InputStart, InputEnd };

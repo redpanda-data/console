@@ -12,6 +12,7 @@
 import './headersEditor.scss';
 import { Button, Input } from '@redpanda-data/ui';
 import { PlusIcon, TrashIcon } from 'components/icons';
+import type { JSX } from 'react';
 
 type Header = {
   id: string;

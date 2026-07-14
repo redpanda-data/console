@@ -51,29 +51,33 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
           Context
         </Text>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex cursor-help">
-              <InfoIcon className="size-4 text-muted-foreground" />
-            </span>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <span className="inline-flex cursor-help">
+                <InfoIcon className="size-4 text-muted-foreground" />
+              </span>
+            }
+          />
           <TooltipContent side="top">
             Schema Registry contexts allow grouping subjects into isolated namespaces
           </TooltipContent>
         </Tooltip>
       </div>
       <Popover onOpenChange={setOpen} open={open}>
-        <PopoverTrigger asChild>
-          <Button
-            className="w-44 justify-between truncate"
-            data-testid="schema-context-selector"
-            variant="secondary-outline"
-          >
-            <Text as="span" className="truncate">
-              {selectedLabel}
-            </Text>
-            <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              className="w-44 justify-between truncate"
+              data-testid="schema-context-selector"
+              variant="secondary-outline"
+            >
+              <Text as="span" className="truncate">
+                {selectedLabel}
+              </Text>
+              <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
         <PopoverContent align="start" className="w-[280px] p-0">
           <Command size="full" variant="minimal">
             <CommandInput placeholder="Search contexts..." />

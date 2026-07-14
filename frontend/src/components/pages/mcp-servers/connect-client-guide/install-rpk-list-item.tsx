@@ -65,7 +65,11 @@ export const InstallRpkListItem = () => {
         <div>Install rpk:</div>
         <Label className="font-medium text-sm">Installation Method</Label>
         <div>
-          <Select onValueChange={setSelectedMethod} value={selectedMethod}>
+          <Select
+            items={installMethods.map((method) => ({ value: method.id, label: method.name }))}
+            onValueChange={setSelectedMethod}
+            value={selectedMethod}
+          >
             <SelectTrigger className="w-full max-w-md">
               <SelectValue />
             </SelectTrigger>

@@ -246,9 +246,7 @@ service TopicService {
         key: "201"
         value: {
           description: "Topic created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.Topic"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.Topic"}}
         }
       }
     };
@@ -267,9 +265,7 @@ service TopicService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTopicsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.ListTopicsResponse"}}
         }
       }
     };
@@ -295,9 +291,7 @@ service TopicService {
         key: "404"
         value: {
           description: "Requested topic does not exist"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -319,18 +313,14 @@ service TopicService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.GetTopicConfigurationsResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -353,18 +343,14 @@ service TopicService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.UpdateTopicConfigurationsResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -387,18 +373,14 @@ service TopicService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha1.SetTopicConfigurationsResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };

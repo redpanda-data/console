@@ -121,16 +121,18 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
         {tooltipMessage ? (
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Switch
-                    checked={isSelected}
-                    data-testid={`switch-${property.name}`}
-                    disabled={!isEditable}
-                    onCheckedChange={(checked) => onToggle(property.name, checked)}
-                  />
-                </div>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <div>
+                    <Switch
+                      checked={isSelected}
+                      data-testid={`switch-${property.name}`}
+                      disabled={!isEditable}
+                      onCheckedChange={(checked) => onToggle(property.name, checked)}
+                    />
+                  </div>
+                }
+              />
               <TooltipContent>
                 <Text>{tooltipMessage}</Text>
               </TooltipContent>
@@ -269,11 +271,13 @@ export const TopicConfigTab = () => {
             </Text>
           </div>
           <CardAction>
-            <CollapsibleTrigger asChild>
-              <Button className="w-fit p-0" data-testid="topic-config-toggle-button" size="sm" variant="ghost">
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
+            <CollapsibleTrigger
+              render={
+                <Button className="w-fit p-0" data-testid="topic-config-toggle-button" size="sm" variant="ghost">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              }
+            />
           </CardAction>
         </CardHeader>
 
@@ -293,7 +297,7 @@ export const TopicConfigTab = () => {
 
           {/* Full editable view when expanded */}
           <CollapsibleContent>
-            <Accordion className="space-y-2" defaultValue={CATEGORY_ORDER} type="multiple">
+            <Accordion className="space-y-2" defaultValue={CATEGORY_ORDER} multiple>
               {CATEGORY_ORDER.map((category) => {
                 const properties = propertiesByCategory.get(category);
                 if (!properties || properties.length === 0) {

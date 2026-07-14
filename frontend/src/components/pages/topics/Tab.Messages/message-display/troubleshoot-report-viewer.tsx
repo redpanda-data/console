@@ -9,10 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box, Grid, GridItem, Heading } from '@redpanda-data/ui';
-import { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
+import { Fragment, useState } from 'react';
 
 import type { Payload } from '../../../../../state/rest-interfaces';
+import { Alert, AlertDescription, AlertTitle } from '../../../../redpanda-ui/components/alert';
+import { Heading } from '../../../../redpanda-ui/components/typography';
 
 export const TroubleshootReportViewer = (props: { payload: Payload }) => {
   const report = props.payload.troubleshootReport;
@@ -26,18 +28,11 @@ export const TroubleshootReportViewer = (props: { payload: Payload }) => {
   }
 
   return (
-    <Box mb="4" mt="4">
+    <div className="my-4">
       <Heading as="h4">Deserialization Troubleshoot Report</Heading>
-      <Alert background="red.50" flexDirection="column" my={4} status="error" variant="subtle">
-        <AlertTitle
-          alignItems="center"
-          alignSelf="flex-start"
-          display="flex"
-          flexDirection="row"
-          fontWeight="normal"
-          pb="4"
-        >
-          <AlertIcon /> Errors were encountered when deserializing this message
+      <Alert className="mt-4" icon={<AlertTriangle />} variant="destructive">
+        <AlertTitle className="flex items-center font-normal [&]:line-clamp-none">
+          Errors were encountered when deserializing this message
           <button
             className="cursor-pointer border-none bg-transparent pl-2 font-medium text-primary underline underline-offset-4"
             onClick={() => setShow(!show)}
@@ -46,36 +41,19 @@ export const TroubleshootReportViewer = (props: { payload: Payload }) => {
             {show ? 'Hide' : 'Show'}
           </button>
         </AlertTitle>
-        <AlertDescription display={show ? undefined : 'none'} whiteSpace="pre-wrap">
-          <Grid columnGap="4" rowGap="1" templateColumns="auto 1fr">
-            {report.map((e) => (
-              <>
-                <GridItem
-                  fontWeight="bold"
-                  key={`${e.serdeName}-name`}
-                  pl="8"
-                  px="5"
-                  py="2"
-                  textTransform="capitalize"
-                  w="100%"
-                >
-                  {e.serdeName}
-                </GridItem>
-                <GridItem
-                  background="red.100"
-                  fontFamily="monospace"
-                  key={`${e.serdeName}-message`}
-                  px="5"
-                  py="2"
-                  w="100%"
-                >
-                  {e.message}
-                </GridItem>
-              </>
-            ))}
-          </Grid>
-        </AlertDescription>
+        {show ? (
+          <AlertDescription className="whitespace-pre-wrap">
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+              {report.map((e) => (
+                <Fragment key={e.serdeName}>
+                  <div className="w-full px-5 py-2 pl-8 font-bold capitalize">{e.serdeName}</div>
+                  <div className="w-full bg-background-error-subtle px-5 py-2 font-mono">{e.message}</div>
+                </Fragment>
+              ))}
+            </div>
+          </AlertDescription>
+        ) : null}
       </Alert>
-    </Box>
+    </div>
   );
 };

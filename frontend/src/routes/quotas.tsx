@@ -21,6 +21,11 @@ import { uiState } from '../state/ui-state';
 const quotasSearchSchema = z.object({
   page: fallback(z.number().int().min(0).optional(), 0),
   pageSize: fallback(z.number().int().min(10).max(100).optional(), 50),
+  sortField: fallback(
+    z.enum(['entityType', 'entityName', 'producerRate', 'consumerRate', 'controllerMutationRate']).optional(),
+    undefined
+  ),
+  sortDirection: fallback(z.enum(['asc', 'desc']).optional(), undefined),
 });
 
 export const Route = createFileRoute('/quotas')({

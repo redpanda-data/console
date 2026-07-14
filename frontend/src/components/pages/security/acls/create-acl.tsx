@@ -169,23 +169,25 @@ const ResourceTypeSelection = ({
       {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
         <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                className={
-                  rule.resourceType === resourceType
-                    ? 'bg-gray-900 text-white shadow-sm hover:bg-gray-800'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }
-                data-testid={`rt-${resourceType}-button-${ruleIndex}`}
-                disabled={disabled}
-                key={`rt-${resourceType}-button-${ruleIndex}`}
-                onClick={() => handleResourceTypeChange(rule.id, resourceType)}
-                size="sm"
-                variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
-              >
-                {name}
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  className={
+                    rule.resourceType === resourceType
+                      ? 'bg-gray-900 text-white shadow-sm hover:bg-gray-800'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }
+                  data-testid={`rt-${resourceType}-button-${ruleIndex}`}
+                  disabled={disabled}
+                  key={`rt-${resourceType}-button-${ruleIndex}`}
+                  onClick={() => handleResourceTypeChange(rule.id, resourceType)}
+                  size="sm"
+                  variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
+                >
+                  {name}
+                </Button>
+              }
+            />
             <TooltipContent hidden={!disabled}>
               <p className="max-w-xs">{tooltipText}</p>
             </TooltipContent>
@@ -276,7 +278,9 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                       {showSummary ? (
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
-                            allAllow ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            allAllow
+                              ? 'bg-background-success-subtle text-success'
+                              : 'bg-background-error-subtle text-error'
                           }`}
                         >
                           {allAllow ? 'Allow all' : 'Deny all'}
@@ -286,8 +290,8 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
                               op.value === OperationTypeAllow
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
+                                ? 'bg-background-success-subtle text-success'
+                                : 'bg-background-error-subtle text-error'
                             }`}
                             data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
                             key={op.name}
@@ -386,6 +390,11 @@ const AclRules = ({
                   <Label className="font-medium text-gray-700 text-sm">Selector</Label>
                   <div className="grid grid-cols-4 gap-3">
                     <Select
+                      items={{
+                        [ResourcePatternTypeAny]: `All ${getPluralResourceName(rule.resourceType)}`,
+                        [ResourcePatternTypeLiteral]: `${getResourceName(rule.resourceType)} names matching`,
+                        [ResourcePatternTypePrefix]: `${getResourceName(rule.resourceType)} names starting with`,
+                      }}
                       onValueChange={(value) =>
                         updateRule(rule.id, {
                           selectorType: value as ResourcePatternType,
@@ -424,7 +433,7 @@ const AclRules = ({
                           value={rule.selectorValue}
                         />
                         <p
-                          className={`text-red-600 text-sm ${!!rule.selectorValue.length && 'hidden'}`}
+                          className={`text-error text-sm ${!!rule.selectorValue.length && 'hidden'}`}
                           data-testid={`selector-value-error-${index}`}
                         >
                           {rule.selectorType === ResourcePatternTypeLiteral
@@ -518,7 +527,7 @@ const AclRules = ({
                           value={OperationTypeAllow}
                         >
                           <div className="flex items-center space-x-2">
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Check className="h-4 w-4 text-success" />
                             <span>Allow</span>
                           </div>
                         </SelectItem>
@@ -527,7 +536,7 @@ const AclRules = ({
                           value={OperationTypeDeny}
                         >
                           <div className="flex items-center space-x-2">
-                            <X className="h-4 w-4 text-red-600" />
+                            <X className="h-4 w-4 text-error" />
                             <span>Deny</span>
                           </div>
                         </SelectItem>
@@ -535,9 +544,7 @@ const AclRules = ({
                     </Select>
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                        </TooltipTrigger>
+                        <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
                         <TooltipContent>
                           <p className="max-w-xs">{getPermissionDescription(operation, rule.resourceType)}</p>
                         </TooltipContent>
@@ -604,9 +611,7 @@ const SharedConfiguration = ({
                 </Label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                    </TooltipTrigger>
+                    <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
                     <TooltipContent className="max-w-xs">
                       <div>
                         <p>
@@ -624,6 +629,11 @@ const SharedConfiguration = ({
               <div className="grid grid-cols-4 gap-3">
                 <Select
                   disabled={edit}
+                  items={{
+                    [RoleTypeUser]: 'User',
+                    [RoleTypeGroup]: 'Group',
+                    [RoleTypeRedpandaRole]: 'Redpanda role',
+                  }}
                   onValueChange={(value) => {
                     setPrincipalType(value);
                     // Update the principal to include the new type
@@ -659,7 +669,7 @@ const SharedConfiguration = ({
                     value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
                   />
                   {Boolean(principalError) && (
-                    <p className="text-red-600 text-sm" data-testid="principal-error">
+                    <p className="text-error text-sm" data-testid="principal-error">
                       {principalError}
                     </p>
                   )}
@@ -678,9 +688,7 @@ const SharedConfiguration = ({
               </Label>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 cursor-help text-gray-400" />
-                  </TooltipTrigger>
+                  <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
                   <TooltipContent className="max-w-xs">
                     <p>
                       The IP address or hostname from which the user is allowed or denied access. Use * to allow from
@@ -693,6 +701,10 @@ const SharedConfiguration = ({
             <div className="flex gap-3">
               <Select
                 disabled={edit}
+                items={{
+                  [HostTypeAllowAllHosts]: 'Allow all hosts',
+                  [HostTypeSpecificHost]: 'Specific IP addresses',
+                }}
                 onValueChange={(value) => {
                   setHostType(value as HostType);
                   if (value === HostTypeAllowAllHosts) {
@@ -1000,9 +1012,9 @@ export default function CreateACL({
   const getPermissionIcon = (value: string) => {
     switch (value) {
       case OperationTypeAllow:
-        return <Check className="h-4 w-4 text-green-600" />;
+        return <Check className="h-4 w-4 text-success" />;
       case OperationTypeDeny:
-        return <X className="h-4 w-4 text-red-600" />;
+        return <X className="h-4 w-4 text-error" />;
       default:
         return <Circle className="h-4 w-4 text-gray-400" />;
     }

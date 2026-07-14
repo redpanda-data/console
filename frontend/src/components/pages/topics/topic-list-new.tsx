@@ -120,7 +120,7 @@ const TopicList: FC = () => {
     api
       .deleteTopic(topicName)
       .then(() => {
-        toast.success('Topic Deleted', {
+        toast.success('Topic deleted', {
           description: `Topic "${topicName}" has been deleted.`,
         });
         setTopicToDelete(null);
@@ -269,16 +269,18 @@ const TopicList: FC = () => {
       meta: { align: 'right' as const, headWidth: 'fit' as const },
       cell: ({ row: { original: topic } }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              className="deleteButton"
-              data-testid={`topic-actions-trigger-${topic.name}`}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <MoreHorizontalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                className="deleteButton"
+                data-testid={`topic-actions-trigger-${topic.name}`}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </Button>
+            }
+          />
           <DropdownMenuContent>
             <DropdownMenuItem
               data-testid={`delete-topic-button-${topic.name}`}
@@ -509,11 +511,13 @@ const TopicHealthIcons = ({ topic }: { topic: ListTopicsResponse_Topic }) => {
     <TooltipProvider>
       {!!leaderlessPartitions && (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex text-destructive">
-              <AlertCircle aria-hidden="true" className="h-4 w-4" />
-            </span>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <span className="inline-flex text-destructive">
+                <AlertCircle aria-hidden="true" className="h-4 w-4" />
+              </span>
+            }
+          />
           <TooltipContent>
             {`This topic has ${leaderlessPartitions.length} ${leaderlessPartitions.length === 1 ? 'a leaderless partition' : 'leaderless partitions'}`}
           </TooltipContent>
@@ -521,11 +525,13 @@ const TopicHealthIcons = ({ topic }: { topic: ListTopicsResponse_Topic }) => {
       )}
       {!!underReplicatedPartitions && (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex text-warning">
-              <AlertTriangle aria-hidden="true" className="h-4 w-4" />
-            </span>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <span className="inline-flex text-warning">
+                <AlertTriangle aria-hidden="true" className="h-4 w-4" />
+              </span>
+            }
+          />
           <TooltipContent>
             {`This topic has ${underReplicatedPartitions.length} ${underReplicatedPartitions.length === 1 ? 'an under-replicated partition' : 'under-replicated partitions'}`}
           </TooltipContent>

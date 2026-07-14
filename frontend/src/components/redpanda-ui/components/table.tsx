@@ -90,43 +90,44 @@ function Table({ className, variant, size, testId, ...props }: TableProps) {
   );
 }
 
-function TableHeader({ className, ...props }: React.ComponentProps<'thead'> & SharedProps) {
-  const { testId, ...restProps } = props as React.ComponentProps<'thead'> & SharedProps;
+function TableHeader({ className, testId, ...props }: React.ComponentProps<'thead'> & SharedProps) {
   return (
-    <thead className={cn('[&_tr]:border-b', className)} data-slot="table-header" data-testid={testId} {...restProps} />
+    <thead className={cn('[&_tr]:border-b', className)} data-slot="table-header" data-testid={testId} {...props} />
   );
 }
 
-function TableBody({ className, ...props }: React.ComponentProps<'tbody'> & SharedProps) {
-  const { testId, ...restProps } = props as React.ComponentProps<'tbody'> & SharedProps;
+function TableBody({ className, testId, ...props }: React.ComponentProps<'tbody'> & SharedProps) {
   return (
     <tbody
       className={cn('[&_tr:hover]:bg-selected/10 [&_tr:last-child]:border-0', className)}
       data-slot="table-body"
       data-testid={testId}
-      {...restProps}
-    />
-  );
-}
-
-function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
-  return (
-    <tfoot
-      className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
-      data-slot="table-footer"
       {...props}
     />
   );
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<'tr'> & SharedProps) {
-  const { testId, ...restProps } = props as React.ComponentProps<'tr'> & SharedProps;
+function TableFooter({ className, testId, ...props }: React.ComponentProps<'tfoot'> & SharedProps) {
+  return (
+    <tfoot
+      className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
+      data-slot="table-footer"
+      data-testid={testId}
+      {...props}
+    />
+  );
+}
+
+function TableRow({ className, testId, ...props }: React.ComponentProps<'tr'> & SharedProps) {
   return (
     <tr
-      className={cn('border-b transition-colors data-[state=selected]:bg-primary/20', className)}
+      className={cn(
+        'border-b transition-colors has-aria-expanded:bg-muted/50 data-[state=selected]:bg-primary/20',
+        className
+      )}
       data-slot="table-row"
       data-testid={testId}
-      {...restProps}
+      {...props}
     />
   );
 }
@@ -163,7 +164,7 @@ function TableCell({ className, align, weight, truncate, testId, ...props }: Tab
   );
 }
 
-function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) {
+function TableCaption({ className, testId, ...props }: React.ComponentProps<'caption'> & SharedProps) {
   return (
     <caption
       className={cn(
@@ -171,6 +172,7 @@ function TableCaption({ className, ...props }: React.ComponentProps<'caption'>) 
         className
       )}
       data-slot="table-caption"
+      data-testid={testId}
       {...props}
     />
   );

@@ -42,7 +42,7 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
-import React, { Component, type FC, useRef, useState } from 'react';
+import React, { Component, type FC, type JSX, useRef, useState } from 'react';
 
 import { BandwidthSlider } from './bandwidth-slider';
 import { api } from '../../../../state/backend-api';
@@ -209,7 +209,7 @@ export const ThrottleDialog: FC<{
   const [newThrottleValue, setNewThrottleValue] = useState<number | null>(lastKnownMinThrottle ?? null);
 
   const toastFn = useToast();
-  const toastRef = useRef<ToastId>();
+  const toastRef = useRef<ToastId>(undefined);
 
   const throttleValue = newThrottleValue ?? 0;
   const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;

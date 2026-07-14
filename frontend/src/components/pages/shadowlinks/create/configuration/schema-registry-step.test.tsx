@@ -61,19 +61,19 @@ describe('SchemaRegistryStep', () => {
 
       const switchElement = screen.getByTestId('sr-enable-switch');
 
-      expect(switchElement).toHaveAttribute('data-state', 'unchecked');
+      expect(switchElement).toHaveAttribute('aria-checked', 'false');
 
       await user.click(switchElement);
 
       await waitFor(() => {
-        expect(switchElement).toHaveAttribute('data-state', 'checked');
+        expect(switchElement).toHaveAttribute('aria-checked', 'true');
         expect(formValues?.enableSchemaRegistrySync).toBe(true);
       });
 
       await user.click(switchElement);
 
       await waitFor(() => {
-        expect(switchElement).toHaveAttribute('data-state', 'unchecked');
+        expect(switchElement).toHaveAttribute('aria-checked', 'false');
         expect(formValues?.enableSchemaRegistrySync).toBe(false);
       });
     });

@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Code, CodeBlock, Empty, Flex, Result } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
+import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
 
 import TopicConfigurationEditor from './topic-configuration';
 import { appGlobal } from '../../../state/app-global';
@@ -33,7 +35,11 @@ export function TopicConfiguration(props: { topic: Topic }) {
     return renderKafkaError(props.topic.topicName, config.error);
   }
   if (config === null || config.configEntries.length === 0) {
-    return <Empty description="No config entries" />;
+    return (
+      <Empty>
+        <EmptyDescription>No config entries</EmptyDescription>
+      </Empty>
+    );
   }
 
   const entries = config.configEntries;
@@ -51,30 +57,26 @@ export function TopicConfiguration(props: { topic: Topic }) {
 
 function renderKafkaError(topicName: string, error: KafkaError) {
   return (
-    <Flex alignItems="center" flexDirection="column" my={8}>
-      <Flex flexDirection="column" maxWidth="4xl">
-        <Result
-          status="error"
-          subTitle={
-            <>
-              Redpanda Console received the following error while fetching the configuration for topic{' '}
-              <Code p={1}>{topicName}</Code> from Kafka:
-            </>
-          }
-          title="Kafka Error"
-        />
-        <Box m={8}>
-          <CodeBlock codeString={toJson(error, 4)} language="raw" />
-        </Box>
-        <Button
-          onClick={() => appGlobal.onRefresh()}
-          size="lg"
-          style={{ width: '12em', margin: '0', alignSelf: 'center' }}
-          variant="solid"
-        >
+    <div className="my-8 flex flex-col items-center">
+      <div className="flex w-full max-w-4xl flex-col">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <h2 className="font-semibold text-destructive text-xl">Kafka Error</h2>
+          <p className="text-muted-foreground">
+            Redpanda Console received the following error while fetching the configuration for topic{' '}
+            <code className="rounded bg-muted px-1 py-0.5 text-sm">{topicName}</code> from Kafka:
+          </p>
+        </div>
+        <div className="m-8">
+          <CodeBlock width="full">
+            <Pre>
+              <code>{toJson(error, 4)}</code>
+            </Pre>
+          </CodeBlock>
+        </div>
+        <Button className="w-48 self-center" onClick={() => appGlobal.onRefresh()} size="lg">
           Retry
         </Button>
-      </Flex>
-    </Flex>
+      </div>
+    </div>
   );
 }

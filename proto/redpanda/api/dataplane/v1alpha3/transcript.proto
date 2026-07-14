@@ -39,9 +39,7 @@ service TranscriptService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTranscriptsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListTranscriptsResponse"}}
         }
       }
     };
@@ -63,18 +61,14 @@ service TranscriptService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetTranscriptResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetTranscriptResponse"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };

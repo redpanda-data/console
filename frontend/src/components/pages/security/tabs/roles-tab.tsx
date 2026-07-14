@@ -80,16 +80,18 @@ const RolesTabOriginal: FC = () => {
       <Section>
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                data-testid="create-role-button"
-                disabled={createRoleDisabled}
-                onClick={() => appGlobal.historyPush('/security/roles/create')}
-                variant="outline"
-              >
-                Create role
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  data-testid="create-role-button"
+                  disabled={createRoleDisabled}
+                  onClick={() => appGlobal.historyPush('/security/roles/create')}
+                  variant="outline"
+                >
+                  Create role
+                </Button>
+              }
+            />
             {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
           </Tooltip>
         </TooltipProvider>

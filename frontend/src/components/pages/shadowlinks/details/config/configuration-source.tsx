@@ -160,7 +160,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       {/* Advanced Options Section */}
       <Card size="full" testId="advanced-options-card">
         <CardContent className="p-0">
-          <Accordion collapsible type="single">
+          <Accordion>
             <AccordionItem value="advanced">
               <AccordionTrigger className="py-4" testId="advanced-options-trigger">
                 <Heading level={3}>Advanced options</Heading>

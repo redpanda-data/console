@@ -43,7 +43,6 @@ import { Separator } from '../separator';
 import { Text } from '../typography';
 import { cn, type SharedProps } from '../../lib/utils';
 
-// Components
 interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement>, SharedProps {
   column: Column<TData, TValue>;
   title: string;
@@ -66,14 +65,16 @@ export function DataTableColumnHeader<TData, TValue>({
   return (
     <div className={cn('flex items-center gap-2', className)} data-testid={testId}>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="-ml-3 h-8 data-[state=open]:bg-accent" size="sm" variant="secondary-ghost">
-            <span>{title}</span>
-            {column.getIsSorted() === 'desc' && <ArrowDown />}
-            {column.getIsSorted() === 'asc' && <ArrowUp />}
-            {!column.getIsSorted() && <ChevronsUpDown />}
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button className="-ml-3 h-8 data-[popup-open]:bg-accent" size="sm" variant="secondary-ghost">
+              <span>{title}</span>
+              {column.getIsSorted() === 'desc' && <ArrowDown />}
+              {column.getIsSorted() === 'asc' && <ArrowUp />}
+              {!column.getIsSorted() && <ChevronsUpDown />}
+            </Button>
+          }
+        />
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <ArrowUp />
@@ -117,34 +118,36 @@ export function DataTableFacetedFilter<TData, TValue>({
 
   return (
     <Popover testId={testId}>
-      <PopoverTrigger asChild>
-        <Button className="h-8 border-dashed" size="sm" variant="outline">
-          {title}
-          {selectedValues?.size > 0 && (
-            <>
-              <Separator className="mx-2 h-4" orientation="vertical" />
-              <Badge className="rounded-sm px-1 font-normal lg:hidden" variant="secondary">
-                {selectedValues.size}
-              </Badge>
-              <div className="hidden gap-1 lg:flex">
-                {selectedValues.size > 2 ? (
-                  <Badge className="rounded-sm px-1 font-normal" variant="secondary">
-                    {selectedValues.size} selected
-                  </Badge>
-                ) : (
-                  options
-                    .filter((option) => selectedValues.has(option.value))
-                    .map((option) => (
-                      <Badge className="rounded-sm px-1 font-normal" key={option.value} variant="secondary">
-                        {option.label}
-                      </Badge>
-                    ))
-                )}
-              </div>
-            </>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button className="h-8 border-dashed" size="sm" variant="outline">
+            {title}
+            {selectedValues?.size > 0 && (
+              <>
+                <Separator className="mx-2 h-4" orientation="vertical" />
+                <Badge className="rounded-sm px-1 font-normal lg:hidden" variant="secondary">
+                  {selectedValues.size}
+                </Badge>
+                <div className="hidden gap-1 lg:flex">
+                  {selectedValues.size > 2 ? (
+                    <Badge className="rounded-sm px-1 font-normal" variant="secondary">
+                      {selectedValues.size} selected
+                    </Badge>
+                  ) : (
+                    options
+                      .filter((option) => selectedValues.has(option.value))
+                      .map((option) => (
+                        <Badge className="rounded-sm px-1 font-normal" key={option.value} variant="secondary">
+                          {option.label}
+                        </Badge>
+                      ))
+                  )}
+                </div>
+              </>
+            )}
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-[200px] p-0">
         <Command>
           <CommandInput placeholder={title} />
@@ -220,9 +223,12 @@ export function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   return (
     <div className="flex items-center justify-between px-2" data-testid={testId}>
-      <div className="flex-1 text-muted-foreground text-sm">
-        {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div>
+      {table.options.enableRowSelection !== false && (
+        <div className="flex-1 text-muted-foreground text-sm">
+          {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
+          selected.
+        </div>
+      )}
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
           <Text className="font-medium text-sm">Rows per page</Text>
@@ -298,12 +304,14 @@ export function DataTableViewOptions<TData>({ table, testId }: { table: Table<TD
   return (
     <div data-testid={testId}>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
-            <Settings2 />
-            View
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button className="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
+              <Settings2 />
+              View
+            </Button>
+          }
+        />
         <DropdownMenuContent align="end" className="w-[150px]">
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />

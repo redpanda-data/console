@@ -68,7 +68,7 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
   }
 
   if (providerId) {
-    // Annotated but no implementation registered — loud dev warning, graceful fallback.
+    // Annotated but no implementation registered: warn in dev, fall through to default render.
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
         `[AutoForm] Field "${field.key}" is annotated with data_provider="${providerId}" ` +
@@ -154,10 +154,8 @@ function SelectFieldFromProvider({
   const { options, isLoading, error: providerError } = provider();
 
   if (providerError) {
-    // `SelectTrigger` / `SelectValue` are Radix primitives that need a
-    // `Select.Root` context. Wrap them in a disabled `<Select>` so the
-    // failure state still renders as a coherent select-shaped control
-    // rather than throwing a Radix context error.
+    // SelectTrigger/SelectValue need Select.Root context, so wrap the failure
+    // state in a disabled <Select> rather than rendering them bare (Radix throws).
     return (
       <Select disabled value="">
         <SelectTrigger aria-label={fieldLabel} disabled id={id} testId={testIds.control}>
@@ -268,25 +266,13 @@ export const selectFieldDefinition: FieldTypeDefinition = {
   component: SelectFieldComponent,
 };
 
-/**
- * Second routing rule for the same `SelectFieldComponent`. Matches any
- * field annotated with `data_provider`, regardless of its underlying
- * proto type — a string field with `data_provider = AWS_REGIONS`
- * becomes a select populated from the hosting app's data-provider
- * registry. High priority so the annotation wins over the default
- * `string` / `password` / `email` matchers.
- *
- * The same component handles both rules; the routing split exists only
- * because static proto-enum selects and annotation-driven selects
- * match under different conditions.
- */
+// Routes any `data_provider`-annotated field to SelectFieldComponent regardless
+// of proto type. High priority so the annotation beats string/password/email matchers.
 export const dataProviderSelectFieldDefinition: FieldTypeDefinition = {
   name: 'dataProviderSelect',
   priority: 120,
   match: (field) => {
-    // Arrays / maps / objects keep their native renderers even when the
-    // parent field is annotated with a data provider. Support for
-    // array-of-strings multi-select from a data provider is a follow-up.
+    // Arrays/maps/objects keep their native renderers even when annotated.
     if (field.type !== 'string' && field.type !== 'number') {
       return false;
     }

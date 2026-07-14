@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
+import { Component, type JSX } from 'react';
 
 import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Button, Empty, VStack } from '@redpanda-data/ui';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import ReactMarkdown, { defaultUrlTransform as baseUriTransformer } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';

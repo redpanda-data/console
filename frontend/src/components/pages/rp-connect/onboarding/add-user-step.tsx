@@ -107,7 +107,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       hideTitle,
       className,
       inline = false,
-      ...motionProps
     },
     ref
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with dual auth methods requires conditional logic
@@ -431,15 +430,14 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                   {selectionMode === 'both' && (
                     <ToggleGroup
                       disabled={isPending}
-                      onValueChange={(value) => {
+                      onValueChange={([value]) => {
                         // Prevent deselection - ToggleGroup emits empty string when trying to deselect
                         if (!value) {
                           return;
                         }
                         handleUserSelectionTypeChange(value as CreatableSelectionType);
                       }}
-                      type="single"
-                      value={userSelectionType}
+                      value={[userSelectionType]}
                       variant="outline"
                     >
                       <ToggleGroupItem
@@ -543,7 +541,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                           <Text variant="small">
                             Edit the user's{' '}
                             <TanStackRouterLink
-                              className="text-blue-800"
+                              className="text-informative"
                               params={{ userName: existingUserSelected.name }}
                               rel="noopener noreferrer"
                               target="_blank"
@@ -865,7 +863,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     }
 
     return (
-      <Card size="full" {...motionProps} animated className={className} variant="ghost">
+      <Card className={className} size="full" variant="ghost">
         {!hideTitle && (
           <CardHeader className="max-w-2xl">
             <CardTitle>

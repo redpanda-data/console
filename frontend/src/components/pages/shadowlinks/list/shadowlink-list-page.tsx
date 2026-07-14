@@ -30,6 +30,7 @@ import {
   ShadowLinkEmptyStateCloud,
   ShadowLinkErrorState,
   ShadowLinkFeatureDisabledState,
+  ShadowLinkNoPermissionState,
   ShadowLinkUnavailableState,
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
@@ -122,7 +123,12 @@ export const ShadowLinkListPage = () => {
 
   // Show toast on error (except for feature-disabled or unavailable admin API errors)
   useEffect(() => {
-    if (error && error.code !== Code.FailedPrecondition && error.code !== Code.Unavailable) {
+    if (
+      error &&
+      error.code !== Code.FailedPrecondition &&
+      error.code !== Code.Unavailable &&
+      error.code !== Code.PermissionDenied
+    ) {
       toast.error('Failed to load shadowlinks', {
         description: error.message,
       });
@@ -146,6 +152,15 @@ export const ShadowLinkListPage = () => {
     return (
       <div className="my-2 flex justify-center gap-2">
         <ShadowLinkUnavailableState />
+      </div>
+    );
+  }
+
+  // No permission state
+  if (error?.code === Code.PermissionDenied) {
+    return (
+      <div className="my-2 flex justify-center gap-2">
+        <ShadowLinkNoPermissionState />
       </div>
     );
   }
@@ -207,19 +222,21 @@ export const ShadowLinkListPage = () => {
           </Button>
 
           <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <span className="inline-block">
-                <Button
-                  disabled={hasShadowLink}
-                  onClick={() => navigate({ to: '/shadowlinks/create' })}
-                  size="sm"
-                  variant="primary"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create shadow link
-                </Button>
-              </span>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <span className="inline-block">
+                  <Button
+                    disabled={hasShadowLink}
+                    onClick={() => navigate({ to: '/shadowlinks/create' })}
+                    size="sm"
+                    variant="primary"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create shadow link
+                  </Button>
+                </span>
+              }
+            />
             {Boolean(hasShadowLink) && (
               <TooltipContent>
                 <p>Only one shadowlink can be created at this time</p>

@@ -158,8 +158,8 @@ export const ToolHeader = ({
   };
 
   return (
-    <CollapsibleTrigger asChild>
-      <div
+    <CollapsibleTrigger
+      render={<div
         className={cn(
           "flex w-full cursor-pointer items-center justify-between gap-4 p-3",
           className
@@ -173,14 +173,14 @@ export const ToolHeader = ({
           </Text>
           {getStatusBadge(state)}
           {durationMs !== undefined && (state === 'output-available' || state === 'output-error') && (
-            <Text as="span" className="text-muted-foreground/50 text-[0.75rem]">
+            <Text as="span" className="text-muted-foreground/50 text-xs">
               {formatDuration(durationMs)}
             </Text>
           )}
         </div>
         <div className="flex items-center gap-2">
           {toolCallId && (
-            <Text as="span" className="text-muted-foreground/50 text-[0.75rem] font-mono">
+            <Text as="span" className="text-muted-foreground/50 text-xs font-mono">
               {toolCallId}
             </Text>
           )}
@@ -192,10 +192,9 @@ export const ToolHeader = ({
             onClick={(e) => e.stopPropagation()}
             title={toolCallId ? `Copy: ${displayName} (${toolCallId})` : `Copy: ${displayName}`}
           />
-          <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+          <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
         </div>
-      </div>
-    </CollapsibleTrigger>
+      </div>} />
   );
 };
 
@@ -207,7 +206,6 @@ export const ToolContent = ({ className, ...props }: ToolContentProps) => (
       "text-popover-foreground outline-none",
       className
     )}
-    transition={{ duration: 0 }}
     {...props}
   />
 );

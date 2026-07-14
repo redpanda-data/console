@@ -161,33 +161,37 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
         </div>
         <div className="flex items-center gap-1">
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Copy link to span"
-                className="h-6 w-6"
-                data-testid="transcript-details-copy-link"
-                onClick={handleCopyLink}
-                size="icon"
-                variant="ghost"
-              >
-                <Link2 className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="Copy link to span"
+                  className="h-6 w-6"
+                  data-testid="transcript-details-copy-link"
+                  onClick={handleCopyLink}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Link2 className="h-3 w-3" />
+                </Button>
+              }
+            />
             <TooltipContent>Copy link to span</TooltipContent>
           </Tooltip>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                aria-label="Expand to full view"
-                className="h-6 w-6"
-                data-testid="transcript-details-expand"
-                onClick={() => setIsDialogOpen(true)}
-                size="icon"
-                variant="ghost"
-              >
-                <Maximize2 className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="Expand to full view"
+                  className="h-6 w-6"
+                  data-testid="transcript-details-expand"
+                  onClick={() => setIsDialogOpen(true)}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </Button>
+              }
+            />
             <TooltipContent>Expand to full view</TooltipContent>
           </Tooltip>
           <Button
@@ -202,7 +206,6 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
           </Button>
         </div>
       </div>
-
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-auto">
         {!!isLoading && (
@@ -256,7 +259,6 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
           <div className="p-8 text-center text-muted-foreground">Span not found</div>
         )}
       </div>
-
       {/* Expanded Dialog */}
       <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
         <DialogContent size="xl">

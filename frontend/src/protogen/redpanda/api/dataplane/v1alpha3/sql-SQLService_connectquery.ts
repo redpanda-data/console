@@ -37,3 +37,22 @@ export const describeTable = SQLService.method.describeTable;
  * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.ExecuteQuery
  */
 export const executeQuery = SQLService.method.executeQuery;
+
+/**
+ * GetSqlIdentity returns the caller's SQL identity: the engine username it is
+ * connected as and whether it holds administrative (superuser) privileges.
+ * Clients use is_admin to gate write/DDL actions (e.g. creating tables) in
+ * the UI; the engine remains the source of truth and enforces privileges on
+ * execution regardless.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.GetSqlIdentity
+ */
+export const getSqlIdentity = SQLService.method.getSqlIdentity;
+
+/**
+ * GetSqlConnectionInfo returns the connection endpoint clients use to reach
+ * Redpanda SQL: the advertised host and port.
+ *
+ * @generated from rpc redpanda.api.dataplane.v1alpha3.SQLService.GetSqlConnectionInfo
+ */
+export const getSqlConnectionInfo = SQLService.method.getSqlConnectionInfo;

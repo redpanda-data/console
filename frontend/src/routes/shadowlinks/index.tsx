@@ -31,8 +31,13 @@ export const Route = createFileRoute('/shadowlinks/')({
     } catch (error) {
       if (
         error instanceof ConnectError &&
-        (error.code === Code.FailedPrecondition || error.code === Code.Unavailable)
+        (error.code === Code.FailedPrecondition ||
+          error.code === Code.Unavailable ||
+          error.code === Code.PermissionDenied)
       ) {
+        // The component renders dedicated states for these (feature disabled,
+        // admin API unavailable, no permission). Rethrowing here would fail the
+        // route and surface a raw error boundary instead of letting the page load.
         return;
       }
       throw error;

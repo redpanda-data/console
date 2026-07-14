@@ -81,18 +81,18 @@ const StatusIcon = ({ state }: { state: AIAgent_State }) => {
     [AIAgent_State.RUNNING]: {
       text: 'Running',
       icon: Check,
-      iconColor: 'text-green-600',
+      iconColor: 'text-success',
     },
     [AIAgent_State.STARTING]: {
       text: 'Starting',
       icon: Loader2,
-      iconColor: 'text-blue-600',
+      iconColor: 'text-informative',
       animate: true,
     },
     [AIAgent_State.STOPPING]: {
       text: 'Stopping',
       icon: Loader2,
-      iconColor: 'text-orange-600',
+      iconColor: 'text-warning',
       animate: true,
     },
     [AIAgent_State.STOPPED]: {
@@ -103,7 +103,7 @@ const StatusIcon = ({ state }: { state: AIAgent_State }) => {
     [AIAgent_State.ERROR]: {
       text: 'Error',
       icon: AlertCircle,
-      iconColor: 'text-red-600',
+      iconColor: 'text-error',
     },
     [AIAgent_State.UNSPECIFIED]: {
       text: 'Unknown',
@@ -113,7 +113,7 @@ const StatusIcon = ({ state }: { state: AIAgent_State }) => {
   }[state] || {
     text: 'Unknown',
     icon: AlertCircle,
-    iconColor: 'text-red-600',
+    iconColor: 'text-error',
   };
 
   const IconComponent = statusProps.icon;
@@ -192,11 +192,13 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
             ))}
             {allTools.length > 3 && (
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
-                    +{allTools.length - 3} more
-                  </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
+                      +{allTools.length - 3} more
+                    </span>
+                  }
+                />
                 <TooltipContent>
                   <div className="space-y-1">
                     {allTools.slice(3).map((toolName) => (
@@ -281,7 +283,7 @@ export const updatePageTitle = () => {
 const AIAgentsListPageContent = ({
   deleteHandlerRef,
 }: {
-  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef>;
+  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef | null>;
 }) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -447,7 +449,7 @@ const AIAgentsListPageContent = ({
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-red-600">
+                      <div className="flex items-center justify-center gap-2 text-error">
                         <AlertCircle className="h-4 w-4" />
                         Error loading AI agents: {error.message}
                       </div>

@@ -50,7 +50,7 @@ type ChatInputProps = {
   editingMessageId: string | null;
   agent: AIAgent;
   hasMessages: boolean;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   usage: UsageMetadata;
   onInputChange: (value: string) => void;
   onSubmit: (message: PromptInputMessage, event: React.FormEvent) => void;

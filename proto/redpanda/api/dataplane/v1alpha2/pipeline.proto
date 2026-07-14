@@ -130,9 +130,7 @@ service PipelineService {
         key: "201"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}}
         }
       }
     };
@@ -159,18 +157,14 @@ service PipelineService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -196,9 +190,7 @@ service PipelineService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListPipelinesResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.ListPipelinesResponse"}}
         }
       }
     };
@@ -230,9 +222,7 @@ service PipelineService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}}
         }
       }
     };
@@ -264,9 +254,7 @@ service PipelineService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -294,18 +282,14 @@ service PipelineService {
         key: "200"
         value: {
           description: "Stopped"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -333,18 +317,14 @@ service PipelineService {
         key: "200"
         value: {
           description: "Started"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.Pipeline"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -372,9 +352,7 @@ service PipelineService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelineServiceConfigSchemaResponse"}}
         }
       }
     };
@@ -399,9 +377,7 @@ service PipelineService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelinesForSecretResponse"}}
         }
       }
     };
@@ -426,9 +402,7 @@ service PipelineService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha2.GetPipelinesBySecretsResponse"}}
         }
       }
     };

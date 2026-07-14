@@ -14,7 +14,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
 import { Text } from 'components/redpanda-ui/components/typography';
-import { AlertCircle, Info, SearchX } from 'lucide-react';
+import { AlertCircle, Info, Lock, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
   <>
@@ -68,6 +68,22 @@ export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStat
           Create shadow link in Redpanda Cloud
         </Button>
       </div>
+    </CardContent>
+  </Card>
+);
+
+export const ShadowLinkNoPermissionState = () => (
+  <Card data-testid="shadowlink-no-permission-card" size="full">
+    <CardHeader>
+      <CardTitle>Shadowing</CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-3">
+      <ShadowingDescription />
+      <Alert icon={<Lock />} variant="warning">
+        <AlertDescription>
+          You don't have permission to view shadow links on this cluster. Contact an administrator if you need access.
+        </AlertDescription>
+      </Alert>
     </CardContent>
   </Card>
 );
@@ -150,7 +166,7 @@ type ShadowLinkLoadErrorStateProps = {
 
 export const ShadowLinkLoadErrorState = ({ errorMessage }: ShadowLinkLoadErrorStateProps) => (
   <div className="flex h-64 items-center justify-center">
-    <div className="flex items-center gap-2 text-red-600">
+    <div className="flex items-center gap-2 text-error">
       <AlertCircle className="h-6 w-6" />
       <Text>Error loading shadow link: {errorMessage}</Text>
     </div>

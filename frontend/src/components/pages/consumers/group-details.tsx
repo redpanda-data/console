@@ -34,7 +34,7 @@ import {
   TrashIcon,
   WarningIcon,
 } from 'components/icons';
-import React, { useMemo, useState } from 'react';
+import React, { type JSX, useMemo, useState } from 'react';
 
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
@@ -156,7 +156,12 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const editGroup = () => {
     const groupOffsets = group?.topicOffsets.flatMap((x) =>
       x.partitionOffsets.map(
-        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+        (p) =>
+          ({
+            topicName: x.topic,
+            partitionId: p.partitionId,
+            offset: p.groupOffset,
+          }) as GroupOffset
       )
     );
     if (!groupOffsets) {
@@ -170,7 +175,12 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const deleteGroup = () => {
     const groupOffsets = group?.topicOffsets.flatMap((x) =>
       x.partitionOffsets.map(
-        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+        (p) =>
+          ({
+            topicName: x.topic,
+            partitionId: p.partitionId,
+            offset: p.groupOffset,
+          }) as GroupOffset
       )
     );
     if (!groupOffsets) {

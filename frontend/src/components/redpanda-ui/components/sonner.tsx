@@ -5,7 +5,11 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
-const Toaster = ({ ...props }: ToasterProps & { theme?: 'light' | 'dark' | 'system' }) => {
+import { useTheme } from './theme-provider';
+import type { SharedProps } from '../lib/utils';
+
+const Toaster = ({ testId, ...props }: ToasterProps & SharedProps) => {
+  const { theme = 'system' } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -17,14 +21,16 @@ const Toaster = ({ ...props }: ToasterProps & { theme?: 'light' | 'dark' | 'syst
   return createPortal(
     <Sonner
       className="toaster group"
+      data-slot="toaster"
+      data-testid={testId}
       icons={{
         success: <CheckCircle className="h-4 w-4 text-success" />,
-        info: <Info className="h-4 w-4 text-info" />,
+        info: <Info className="h-4 w-4 text-informative" />,
         warning: <AlertTriangle className="h-4 w-4 text-warning" />,
         error: <XCircle className="h-4 w-4 text-destructive" />,
         loading: <Loader className="h-4 w-4 animate-spin text-muted-foreground" />,
       }}
-      theme={props.theme}
+      theme={props.theme ?? theme}
       toastOptions={{
         classNames: {
           toast:

@@ -5,7 +5,13 @@ import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { type RenderOptions, render } from '@testing-library/react';
-import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
+import React, {
+  type JSX,
+  type JSXElementConstructor,
+  type PropsWithChildren,
+  type ReactElement,
+  useState,
+} from 'react';
 import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';

@@ -1,11 +1,9 @@
 import { Radio as RadioGroupPrimitive } from '@base-ui/react/radio';
 import { Circle } from 'lucide-react';
-import { AnimatePresence, motion, type Transition } from 'motion/react';
-import { type ComponentProps, forwardRef, type HTMLAttributes } from 'react';
+import type { ComponentProps, HTMLAttributes } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, type CardProps, CardTitle } from './card';
 import { RadioGroup } from './radio-group';
-import { renderWithDataState } from '../lib/base-ui-compat';
 import { cn, type SharedProps } from '../lib/utils';
 
 export type ChoiceboxProps = ComponentProps<typeof RadioGroup> & SharedProps;
@@ -18,32 +16,22 @@ export type ChoiceboxItemProps = ComponentProps<typeof RadioGroupPrimitive.Root>
   SharedProps &
   Partial<Pick<CardProps, 'size'>>;
 
-export const ChoiceboxItem = forwardRef<HTMLButtonElement, ChoiceboxItemProps>(
-  ({ className, children, testId, size, ...props }, ref) => (
-    <RadioGroupPrimitive.Root
-      {...props}
-      className="group"
-      nativeButton
-      ref={ref}
-      render={renderWithDataState('button')}
+export const ChoiceboxItem = ({ className, children, testId, size, ...props }: ChoiceboxItemProps) => (
+  <RadioGroupPrimitive.Root {...props} className="group">
+    <Card
+      className={cn(
+        'flex cursor-pointer flex-row items-start justify-between rounded-md border-2 border-solid p-4 text-left shadow-none transition-all',
+        'group-data-[checked]:!border-selected',
+        'hover:shadow-elevated',
+        className
+      )}
+      data-testid={testId}
+      size={size}
     >
-      <Card
-        className={cn(
-          'flex cursor-pointer flex-row items-start justify-between rounded-md border-2 border-solid p-4 text-left shadow-none transition-all',
-          'group-data-[state=checked]:!border-selected',
-          'hover:shadow-elevated',
-          className
-        )}
-        data-testid={testId}
-        size={size}
-      >
-        {children}
-      </Card>
-    </RadioGroupPrimitive.Root>
-  )
+      {children}
+    </Card>
+  </RadioGroupPrimitive.Root>
 );
-
-ChoiceboxItem.displayName = 'ChoiceboxItem';
 
 export type ChoiceboxItemHeaderProps = ComponentProps<typeof CardHeader>;
 
@@ -75,38 +63,26 @@ export const ChoiceboxItemContent = ({ className, ...props }: ChoiceboxItemConte
   <CardContent
     className={cn(
       '!border-input flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border p-0 text-selected shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:ring-destructive/40',
-      'group-data-[state=checked]:!border-selected',
+      'group-data-[checked]:!border-selected',
       className
     )}
     {...props}
   />
 );
 
-export type ChoiceboxItemIndicatorProps = ComponentProps<typeof RadioGroupPrimitive.Indicator> & {
-  transition?: Transition;
-};
+export type ChoiceboxItemIndicatorProps = ComponentProps<typeof RadioGroupPrimitive.Indicator>;
 
-export const ChoiceboxItemIndicator = ({
-  className,
-  transition = { type: 'spring', stiffness: 200, damping: 16 },
-  ...props
-}: ChoiceboxItemIndicatorProps) => (
+export const ChoiceboxItemIndicator = ({ className, ...props }: ChoiceboxItemIndicatorProps) => (
   <RadioGroupPrimitive.Indicator
-    className={cn('flex items-center justify-center data-[unchecked]:hidden', className)}
+    className={cn(
+      'flex items-center justify-center transition-[opacity,transform] duration-150 ease-out',
+      'data-[starting-style]:scale-0 data-[starting-style]:opacity-0',
+      'data-[ending-style]:scale-0 data-[ending-style]:opacity-0',
+      className
+    )}
     data-slot="radio-group-indicator"
     {...props}
   >
-    <AnimatePresence>
-      <motion.div
-        animate={{ opacity: 1, scale: 1 }}
-        data-slot="radio-group-indicator-circle"
-        exit={{ opacity: 0, scale: 0 }}
-        initial={{ opacity: 0, scale: 0 }}
-        key="radio-group-indicator-circle"
-        transition={transition}
-      >
-        <Circle className="size-2.5 fill-current text-current" />
-      </motion.div>
-    </AnimatePresence>
+    <Circle className="size-2.5 fill-current text-current" data-slot="radio-group-indicator-circle" />
   </RadioGroupPrimitive.Indicator>
 );

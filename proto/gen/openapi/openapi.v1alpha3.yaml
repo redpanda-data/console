@@ -392,6 +392,13 @@ components:
     Column:
       description: Column descriptor for a table or query result.
       properties:
+        fields:
+          description: |-
+            Nested columns for a composite/struct (json) column, parsed from the
+            engine's structural type. Empty for scalar columns.
+          items:
+            $ref: '#/components/schemas/Column'
+          type: array
         name:
           type: string
         type:
@@ -623,6 +630,30 @@ components:
           items:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
+      type: object
+    GetSqlConnectionInfoResponse:
+      properties:
+        host:
+          description: |-
+            Advertised host clients use to reach the SQL endpoint. Empty when no
+            endpoint is configured.
+          type: string
+        port:
+          description: Port for the SQL endpoint, derived from the configured connection URL.
+          format: int64
+          type: integer
+      type: object
+    GetSqlIdentityResponse:
+      properties:
+        current_user:
+          description: Engine username the caller is connected as (SQL `current_user`).
+          type: string
+        is_admin:
+          description: |-
+            True when the caller holds administrative (superuser) privileges in the
+            engine, i.e. may perform write/DDL actions. Sourced from
+            `pg_roles.rolsuper`.
+          type: boolean
       type: object
     GetTraceHistogramResponse:
       description: GetTraceHistogramResponse is the response message for getting the trace histogram.
@@ -3257,6 +3288,44 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Describe table
+      tags:
+        - SQL
+  /v1alpha3/sql/connection-info:
+    get:
+      operationId: SQLService_GetSqlConnectionInfo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSqlConnectionInfoResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get SQL connection info
+      tags:
+        - SQL
+  /v1alpha3/sql/identity:
+    get:
+      operationId: SQLService_GetSqlIdentity
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSqlIdentityResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get SQL identity
       tags:
         - SQL
   /v1alpha3/sql/queries:

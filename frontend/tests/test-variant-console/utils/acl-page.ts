@@ -136,9 +136,9 @@ export class AclPage {
 
     // Verify the operation shows the correct permission icon
     if (permission === OperationTypeAllow) {
-      await expect(operationSelector.locator('svg.text-green-600')).toBeVisible();
+      await expect(operationSelector.locator('svg.text-success')).toBeVisible();
     } else if (permission === OperationTypeDeny) {
-      await expect(operationSelector.locator('svg.text-red-600')).toBeVisible();
+      await expect(operationSelector.locator('svg.text-error')).toBeVisible();
     }
   }
 
@@ -383,9 +383,9 @@ export class AclPage {
 
     // Verify the correct color class based on permission
     if (permission === OperationTypeAllow) {
-      await expect(summaryItem).toHaveClass(/bg-green-100 text-green-800/);
+      await expect(summaryItem).toHaveClass(/bg-background-success-subtle text-success/);
     } else if (permission === OperationTypeDeny) {
-      await expect(summaryItem).toHaveClass(/bg-red-100 text-red-800/);
+      await expect(summaryItem).toHaveClass(/bg-background-error-subtle text-error/);
     }
   }
 
@@ -440,9 +440,9 @@ export class AclPage {
 
     // Verify correct styling
     if (permission === OperationTypeAllow) {
-      await expect(detailOperationItem).toHaveClass(/bg-green-100 text-green-800/);
+      await expect(detailOperationItem).toHaveClass(/bg-background-success-subtle text-success/);
     } else if (permission === OperationTypeDeny) {
-      await expect(detailOperationItem).toHaveClass(/bg-red-100 text-red-800/);
+      await expect(detailOperationItem).toHaveClass(/bg-background-error-subtle text-error/);
     }
   }
 

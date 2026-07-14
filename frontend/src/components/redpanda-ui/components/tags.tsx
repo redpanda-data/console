@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/useSemanticElements: part of tags component */
 'use client';
 
 import { XIcon } from 'lucide-react';
@@ -13,7 +14,7 @@ import {
   useState,
 } from 'react';
 
-import { Button } from './button';
+import { buttonVariants } from './button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { cn, type SharedProps } from '../lib/utils';
@@ -32,7 +33,7 @@ const TagsContext = createContext<TagsContextType>({
   setValue: undefined,
   open: false,
   onOpenChange: () => {
-    // Default no-op function
+    // no-op
   },
   width: undefined,
   setWidth: undefined,
@@ -93,29 +94,33 @@ export const Tags = ({
     </TagsContext.Provider>
   );
 };
-export type TagsTriggerProps = ComponentProps<typeof Button> & { testId?: string };
+export type TagsTriggerProps = ComponentProps<'div'> & { testId?: string };
 export const TagsTrigger = ({ className, children, testId, ...props }: TagsTriggerProps) => {
   const { open, listboxId } = useTagsContext();
   return (
-    <PopoverTrigger asChild>
-      <Button
-        aria-controls={listboxId}
-        aria-expanded={open}
-        className={cn(
-          'h-auto w-full justify-between p-2 hover:bg-surface-inverse-hover active:bg-surface-default-hover',
-          className
-        )}
-        data-testid={testId}
-        role="combobox"
-        variant="outline"
-        {...props}
-      >
-        <div className="flex flex-wrap items-center gap-1">
-          {children}
-          <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
+    <PopoverTrigger
+      nativeButton={false}
+      render={
+        <div
+          aria-controls={listboxId}
+          aria-expanded={open}
+          className={cn(
+            buttonVariants({ variant: 'outline' }),
+            'h-auto w-full justify-between p-2 hover:bg-surface-inverse-hover active:bg-surface-default-hover',
+            className
+          )}
+          data-testid={testId}
+          role="combobox"
+          tabIndex={0}
+          {...props}
+        >
+          <div className="flex flex-wrap items-center gap-1">
+            {children}
+            <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
+          </div>
         </div>
-      </Button>
-    </PopoverTrigger>
+      }
+    />
   );
 };
 export type TagsValueProps = ComponentProps<'span'> & { testId?: string };

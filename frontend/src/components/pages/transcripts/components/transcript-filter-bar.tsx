@@ -198,12 +198,14 @@ const AttributeFilterPopover: FC<{
 
   return (
     <Popover onOpenChange={setIsOpen} open={isOpen}>
-      <PopoverTrigger asChild>
-        <Button className="h-8 gap-1.5" size="sm" variant="outline">
-          <Plus className="h-3.5 w-3.5" />
-          Attribute
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button className="h-8 gap-1.5" size="sm" variant="outline">
+            <Plus className="h-3.5 w-3.5" />
+            Attribute
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-80">
         <div className="flex flex-col gap-3">
           <Text className="font-medium" variant="small">
@@ -225,7 +227,11 @@ const AttributeFilterPopover: FC<{
           {/* Operator */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="attr-operator">Operator</Label>
-            <Select onValueChange={(v) => setOperator(v as AttributeOperator)} value={operator}>
+            <Select
+              items={OPERATOR_OPTIONS}
+              onValueChange={(v) => setOperator(v as AttributeOperator)}
+              value={operator}
+            >
               <SelectTrigger className="h-8" id="attr-operator">
                 <SelectValue />
               </SelectTrigger>
@@ -413,7 +419,7 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
         )}
 
         {/* Time range selector */}
-        <Select disabled={jumpedTo !== null} onValueChange={onTimeRangeChange} value={timeRange}>
+        <Select disabled={jumpedTo !== null} items={TIME_RANGES} onValueChange={onTimeRangeChange} value={timeRange}>
           <SelectTrigger className="h-8 w-[140px] text-xs">
             <SelectValue placeholder="Time range" />
           </SelectTrigger>

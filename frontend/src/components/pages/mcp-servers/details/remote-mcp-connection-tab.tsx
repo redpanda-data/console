@@ -75,7 +75,6 @@ export const RemoteMCPConnectionTab = () => {
           <RemoteMCPConnectClientGuide mcpServer={mcpServerData.mcpServer} />
         </CardContent>
       </Card>
-
       {/* Right Column */}
       <div className="space-y-4">
         {/* Connection Information Panel */}
@@ -95,12 +94,12 @@ export const RemoteMCPConnectionTab = () => {
                 <div className="w-full">
                   <DynamicCodeBlock code={mcpServerData?.mcpServer?.url || ''} lang="text" />
                 </div>
-                <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+                <div className="rounded-md border border-outline-informative bg-background-informative-subtle p-3">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-informative" />
                     <div className="space-y-2 text-sm">
-                      <Text className="font-medium text-blue-800 dark:text-blue-200">Authentication Required</Text>
-                      <Text className="text-blue-700 dark:text-blue-300">
+                      <Text className="font-medium text-informative">Authentication Required</Text>
+                      <Text className="text-informative">
                         This server requires a Redpanda Cloud M2M token for authentication.
                         <Link className="ml-1" href="/organization-iam?tab=service-accounts">
                           Create an M2M token here.
@@ -127,15 +126,17 @@ export const RemoteMCPConnectionTab = () => {
             <div className="grid grid-cols-2 gap-2">
               {AVAILABLE_LANGUAGES.map((language) => (
                 <Sheet key={language}>
-                  <SheetTrigger asChild>
-                    <Button
-                      className="mt-2 flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
-                      onClick={() => setSelectedLanguage(language)}
-                      variant="outline"
-                    >
-                      <img alt={language} src={getLanguageIcon(language)} />
-                    </Button>
-                  </SheetTrigger>
+                  <SheetTrigger
+                    render={
+                      <Button
+                        className="mt-2 flex h-16 flex-shrink-1 flex-col items-center justify-center hover:bg-muted/50"
+                        onClick={() => setSelectedLanguage(language)}
+                        variant="outline"
+                      >
+                        <img alt={language} src={getLanguageIcon(language)} />
+                      </Button>
+                    }
+                  />
                   <SheetContent className="w-full overflow-y-auto sm:max-w-2xl" side="right">
                     <SheetHeader>
                       <SheetTitle>{language.charAt(0).toUpperCase() + language.slice(1)} Connection Code</SheetTitle>
