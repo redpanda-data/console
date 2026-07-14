@@ -51,7 +51,7 @@ export const PropertyComponent = (props: { property: Property }) => {
   switch (def.type) {
     case 'STRING':
     case 'CLASS': {
-      const recValues = p.entry.value.recommended_values;
+      const recValues = p.entry.value.recommended_values ?? [];
       if (metadata?.component_type === 'RADIO_GROUP') {
         const options =
           metadata.recommended_values && metadata.recommended_values?.length > 0
