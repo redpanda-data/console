@@ -17,7 +17,7 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { Waypoints } from 'lucide-react';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
-import { useListComponentsQuery } from 'react-query/api/connect';
+import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
 import { z } from 'zod';
 
 import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
@@ -28,6 +28,8 @@ import { TopicSlotField } from './slot-fields/topic-slot';
 import { stitchTemplateYaml } from './template-deploy';
 import { applySchemaToSlots } from './template-schema';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { parseSchema } from '../utils/schema';
+import { enrichComponentsWithConfigSchema } from '../utils/schema-enrichment';
 
 const SECTION_LABELS: Record<TemplateSlotSection, string> = {
   source: 'Source',
@@ -142,10 +144,13 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     ref
   ) => {
     const { data: componentListResponse } = useListComponentsQuery();
-    const effectiveSlots = useMemo(
-      () => applySchemaToSlots(template, componentListResponse?.components),
-      [template, componentListResponse]
-    );
+    const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
+    const effectiveSlots = useMemo(() => {
+      const components = componentListResponse?.components
+        ? enrichComponentsWithConfigSchema(parseSchema(componentListResponse.components), schemaResponse?.configSchema)
+        : undefined;
+      return applySchemaToSlots(template, components);
+    }, [template, componentListResponse, schemaResponse]);
 
     const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
     const defaultValues = useMemo(() => defaultValuesFor(template, effectiveSlots), [template, effectiveSlots]);

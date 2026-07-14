@@ -4,6 +4,12 @@ import type { ComponentSpec, ComponentStatus, FieldSpec } from 'protogen/redpand
 export interface RawFieldSpec extends Omit<FieldSpec, 'children'> {
   comment?: string; // Keep for internal use (YAML generation)
   children?: RawFieldSpec[];
+  // Stamped by enrichComponentsWithConfigSchema from the raw config schema JSON, which carries
+  // signals the proto FieldSpec drops (is_secret entirely; required-ness for fields whose
+  // non-string default is lost in serialization). Both stay undefined when the dataplane's
+  // schema predates flag serialization (benthos < 4.59) — consumers then fall back to proto flags.
+  secret?: boolean;
+  requiredBySchema?: boolean;
 }
 
 export const CONNECT_COMPONENT_TYPE = [

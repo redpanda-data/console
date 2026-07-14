@@ -109,6 +109,7 @@ import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
+import { enrichComponentsWithConfigSchema } from '../utils/schema-enrichment';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
 import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
@@ -931,12 +932,16 @@ function PipelinePageContent() {
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
   const { data: componentListResponse } = useListComponentsQuery();
+  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
+  // The raw config schema carries per-field signals the proto drops (is_secret, exact required-ness).
   const components = useMemo(
-    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-    [componentListResponse]
+    () =>
+      componentListResponse?.components
+        ? enrichComponentsWithConfigSchema(parseSchema(componentListResponse.components), schemaResponse?.configSchema)
+        : [],
+    [componentListResponse, schemaResponse]
   );
 
-  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
   // Lets a successful save navigate away without tripping the unsaved-changes guard.

@@ -309,6 +309,9 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
   const scalars: Leaf[] = [];
   const arrays: Leaf[] = [];
   for (const f of fields) {
+    if (f.deprecated) {
+      continue;
+    }
     const path = [...base, f.name];
     const leaf: Leaf = { spec: f, path, key: path.join('/') };
     if (isScalarField(f)) {
@@ -474,11 +477,13 @@ const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
     </Text>
   ) : null;
 
-// The schema has no secret flag, so mask plausibly-credential fields by name heuristic.
+// Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
+// secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
+// like AWS session tokens and SAS tokens, and the heuristic is all we have on older dataplanes.
 const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/i;
 
 const isSecretField = (spec: RawFieldSpec): boolean =>
-  spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
+  spec.secret === true || (spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? ''));
 
 // Masked credential input. `type="password"` gives the registry Input's reveal toggle; a `${…}`
 // interpolation isn't a literal credential, so it's shown in the clear.
@@ -703,7 +708,8 @@ const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
 function groupFormFields(fields: RawFieldSpec[]): Record<FieldGroupKey, RawFieldSpec[]> {
   const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };
   for (const spec of fields) {
-    if (isFormField(spec)) {
+    // Deprecated fields are excluded from the form; existing values surface in the raw-YAML section.
+    if (isFormField(spec) && !spec.deprecated) {
       groups[fieldGroupKey(spec)].push(spec);
     }
   }
@@ -782,7 +788,9 @@ export function NodeConfigForm({
   // raw-YAML fallback; nested-component fields are preserved untouched (the form clones the config).
   const leaves = collectLeaves(fields);
   const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
-  const complexSchemaKeys = fields.filter((f) => f.name && !(isFormField(f) || isComponentField(f))).map((f) => f.name);
+  const complexSchemaKeys = fields
+    .filter((f) => f.name && (f.deprecated || !(isFormField(f) || isComponentField(f))))
+    .map((f) => f.name);
   const unknownKeys = Object.keys(inner).filter((k) => !schemaKeys.has(k));
   const rawKeys = [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
   const showRaw = rawKeys.length > 0;

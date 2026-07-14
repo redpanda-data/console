@@ -1,0 +1,122 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+
+/**
+ * Enriches proto-derived component specs with per-field signals only present in the raw config
+ * schema JSON served by GetPipelineServiceConfigSchema (benthos MarshalJSONSchema output):
+ *
+ * - `required` arrays: benthos computes required-ness knowing every default value, while the proto
+ *   FieldSpec only serializes string defaults — so a field whose int/bool/collection/empty-string
+ *   default was dropped is indistinguishable from a truly required field on the proto side.
+ * - `is_secret`: the proto FieldSpec has no secret field at all.
+ *
+ * The JSON-Schema shape walked here (per benthos internal/docs/json_schema.go):
+ *   definitions.<componentType>.allOf[].anyOf[].properties.<componentName> — an object node per
+ *   component; object nodes carry `properties` + `required`; array/2darray fields wrap their
+ *   element under `items` (twice for 2darray); map fields wrap under `patternProperties["."]`;
+ *   component-typed fields are `$ref`s (no children on the proto side either).
+ */
+
+type JsonSchemaNode = {
+  is_optional?: boolean;
+  is_secret?: boolean;
+  type?: string;
+  properties?: Record<string, JsonSchemaNode>;
+  items?: JsonSchemaNode;
+  patternProperties?: Record<string, JsonSchemaNode>;
+  required?: string[];
+  allOf?: JsonSchemaNode[];
+  anyOf?: JsonSchemaNode[];
+};
+
+// Unwrap array/map wrappers so the node's `properties` line up with the proto field's `children`.
+function unwrapStructural(node: JsonSchemaNode): JsonSchemaNode {
+  let current = node;
+  while (current.items) {
+    current = current.items;
+  }
+  return current.patternProperties?.['.'] ?? current;
+}
+
+function stampFields(fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode): RawFieldSpec[] | undefined {
+  if (!fields?.length) {
+    return fields;
+  }
+  const props = parent.properties ?? {};
+  const required = new Set(parent.required ?? []);
+  return fields.map((field) => {
+    const node = field.name ? props[field.name] : undefined;
+    if (!node) {
+      return field;
+    }
+    return {
+      ...field,
+      secret: node.is_secret === true,
+      requiredBySchema: required.has(field.name),
+      children: stampFields(field.children, unwrapStructural(node)),
+    };
+  });
+}
+
+function collectComponentNodes(definitions: Record<string, JsonSchemaNode>): Map<string, JsonSchemaNode> {
+  const nodes = new Map<string, JsonSchemaNode>();
+  for (const [componentType, definition] of Object.entries(definitions)) {
+    for (const branch of definition.allOf ?? []) {
+      for (const option of branch.anyOf ?? []) {
+        for (const [name, node] of Object.entries(option.properties ?? {})) {
+          nodes.set(`${componentType}:${name}`, node);
+        }
+      }
+    }
+  }
+  return nodes;
+}
+
+/**
+ * Returns specs with `secret` / `requiredBySchema` stamped onto every field the raw schema knows.
+ * Degrades to the input untouched when the schema is missing, unparsable, or predates per-field
+ * flag serialization (benthos < 4.59 emitted no `is_optional` — treat the whole document as
+ * unreliable rather than stamping `required: undefined` everywhere).
+ */
+export function enrichComponentsWithConfigSchema(
+  components: ConnectComponentSpec[],
+  configSchema: string | undefined
+): ConnectComponentSpec[] {
+  if (!configSchema?.includes('"is_optional"')) {
+    return components;
+  }
+  let definitions: Record<string, JsonSchemaNode> | undefined;
+  try {
+    definitions = (JSON.parse(configSchema) as { definitions?: Record<string, JsonSchemaNode> }).definitions;
+  } catch {
+    return components;
+  }
+  if (!definitions) {
+    return components;
+  }
+
+  const nodes = collectComponentNodes(definitions);
+  return components.map((component) => {
+    const node = nodes.get(`${component.type}:${component.name}`);
+    if (!(node && component.config)) {
+      return component;
+    }
+    return {
+      ...component,
+      config: {
+        ...component.config,
+        children: stampFields(component.config.children, node),
+      } as ConnectComponentSpec['config'],
+    };
+  });
+}

@@ -26,18 +26,33 @@ const componentList = schemaJson as unknown as ComponentList;
 // Bridge snapshot field names (is_optional/default/...) to proto FieldSpec names so we reuse the form's required-field logic.
 type SnapshotField = {
   is_optional?: boolean;
-  default?: string;
+  default?: unknown;
   is_advanced?: boolean;
   is_deprecated?: boolean;
   children?: SnapshotField[];
 };
+
+// benthos's required rule (jSchemaIsRequired): no default and not optional; objects follow children.
+// The snapshot has full default info, so we stamp requiredBySchema exactly like runtime enrichment does.
+const snapshotRequired = (f: SnapshotField): boolean => {
+  if (f.is_optional || 'default' in f) {
+    return false;
+  }
+  if (!f.children?.length) {
+    return true;
+  }
+  return f.children.some(snapshotRequired);
+};
+
 const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
   ({
     ...f,
     optional: f.is_optional,
-    defaultValue: f.default,
+    // Mirror the proto's loss: only string defaults survive serialization.
+    defaultValue: typeof f.default === 'string' ? f.default : undefined,
     advanced: f.is_advanced,
     deprecated: f.is_deprecated,
+    requiredBySchema: snapshotRequired(f),
     children: f.children?.map(toRawFieldSpec),
   }) as unknown as RawFieldSpec;
 

@@ -198,11 +198,10 @@ output:
       // topic IS required (no optional ancestor) → commented out
       expect(yaml).toContain('# topic: Required - string, must be manually set');
 
-      // metadata children are NOT required (parent metadata is optional) → normal keys, not comment-only lines
-      expect(yaml).toMatch(/^\s+include_prefixes:/m);
-      expect(yaml).toMatch(/^\s+include_patterns:/m);
-      expect(yaml).not.toContain('# include_prefixes: Required');
-      expect(yaml).not.toContain('# include_patterns: Required');
+      // metadata children are NOT required (parent metadata is optional) → with no serialized
+      // defaults they are omitted entirely rather than placeholder-filled or marked required.
+      expect(yaml).not.toContain('include_prefixes');
+      expect(yaml).not.toContain('include_patterns');
     });
 
     test('should preserve existing comments and add comments to merged component', () => {

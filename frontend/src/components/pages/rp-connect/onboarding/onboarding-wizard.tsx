@@ -11,7 +11,7 @@ import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useListComponentsQuery } from 'react-query/api/connect';
+import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
 import { useResetRpcnWizardStore, useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -31,6 +31,7 @@ import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, ConnectTilesListFormData, UserStepRef } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { parseSchema } from '../utils/schema';
+import { enrichComponentsWithConfigSchema } from '../utils/schema-enrichment';
 import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
 import { getConnectTemplate } from '../utils/yaml';
 
@@ -62,9 +63,14 @@ export const ConnectOnboardingWizard = ({
   const navigate = useNavigate();
 
   const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
+  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
+  // The raw config schema carries per-field signals the proto drops (is_secret, exact required-ness).
   const components = useMemo(
-    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-    [componentListResponse]
+    () =>
+      componentListResponse?.components
+        ? enrichComponentsWithConfigSchema(parseSchema(componentListResponse.components), schemaResponse?.configSchema)
+        : [],
+    [componentListResponse, schemaResponse]
   );
 
   const persistedInputConnectionName = useRpcnWizardStore(useShallow((state) => state.input?.connectionName));

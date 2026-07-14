@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
-import type { RawFieldSpec } from '../types/schema';
-import { checkRequired, findComponentByName, resolveFieldByPath } from '../utils/schema';
+import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import { checkRequired, resolveFieldByPath } from '../utils/schema';
 
 // Slot-level values win; schema only fills unset `description` / `required` /
 // `default`. Slots without `schemaField` (or with unresolvable paths) pass through.
-export function applySchemaToSlots(template: PipelineTemplate, componentList?: ComponentList): TemplateSlot[] {
-  if (!componentList) {
+// Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
+// backend-computed signal rather than the proto heuristic.
+export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]): TemplateSlot[] {
+  if (!components?.length) {
     return template.slots;
   }
 
-  const sourceComp = findComponentByName(componentList, template.source.component, template.source.type);
-  const sinkComp = findComponentByName(componentList, template.sink.component, template.sink.type);
+  const sourceComp = components.find((c) => c.type === template.source.type && c.name === template.source.component);
+  const sinkComp = components.find((c) => c.type === template.sink.type && c.name === template.sink.component);
 
   const componentForSection = (section: TemplateSlot['section']) => {
     if (section === 'source') {

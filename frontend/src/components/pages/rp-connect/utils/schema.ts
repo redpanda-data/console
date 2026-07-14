@@ -317,6 +317,11 @@ function shouldShowField(params: {
 }): boolean {
   const { spec, showAdvancedFields, componentName } = params;
 
+  // Deprecated fields never belong in a generated config.
+  if (spec.deprecated) {
+    return false;
+  }
+
   // Redpanda SASL: show when wizard has user data (even though it's advanced)
   if (isRedpandaComponent(componentName) && spec.name === 'sasl') {
     const userData = rpcnWizardStore.getUserData();
@@ -360,70 +365,34 @@ function generateObjectValue(
   return obj;
 }
 
-// Placeholder for a primitive field, seeding generated configs with the right shape for YAML/Bloblang.
-function scalarPlaceholder(type: RawFieldSpec['type']): unknown {
-  switch (type) {
-    case 'int':
-    case 'float':
-      return 0;
-    case 'bool':
-      return false;
-    case 'unknown':
-      return null;
-    default:
-      return '';
-  }
-}
-
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-function generateArrayValue(params: {
+// SASL arrays for redpanda/kafka_franz components are generated even when optional/advanced so
+// wizard-collected credentials land in the config.
+function generateSaslArrayValue(params: {
   spec: RawFieldSpec;
   showAdvancedFields: boolean;
   componentName: string | undefined;
-  ancestorOptional?: boolean;
 }): unknown[] | undefined {
   const { spec, showAdvancedFields, componentName } = params;
+  if (!spec.children) {
+    return;
+  }
   // Pass only this node's optionality (see generateObjectValue).
   const childAncestorOptional = spec.optional === true;
-  // Special case: SASL arrays for redpanda/kafka_franz components.
-  const isSaslArray = spec.name?.toLowerCase() === 'sasl';
-  if (isSaslArray && spec.children && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
-    const saslObj: Record<string, unknown> = {};
+  const saslObj: Record<string, unknown> = {};
 
-    for (const child of spec.children) {
-      const childValue = generateDefaultValue(child, {
-        showAdvancedFields,
-        componentName,
-        parentName: spec.name,
-        ancestorOptional: childAncestorOptional,
-      });
-      if (childValue !== undefined && child.name) {
-        saslObj[child.name] = childValue;
-      }
-    }
-
-    if (Object.keys(saslObj).length > 0) {
-      return [saslObj];
+  for (const child of spec.children) {
+    const childValue = generateDefaultValue(child, {
+      showAdvancedFields,
+      componentName,
+      parentName: spec.name,
+      ancestorOptional: childAncestorOptional,
+    });
+    if (childValue !== undefined && child.name) {
+      saslObj[child.name] = childValue;
     }
   }
 
-  // Object arrays: empty arrays are truthy, so guard on length.
-  if (spec.children && spec.children.length > 0) {
-    const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-    return obj && Object.keys(obj).length > 0 ? [obj] : [];
-  }
-
-  // Primitive arrays: return a placeholder element for proper YAML/Bloblang formatting.
-  return [scalarPlaceholder(spec.type)];
-}
-
-function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions): unknown {
-  const { showAdvancedFields, componentName } = options;
-  if (spec.type === 'object') {
-    const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-    return obj && Object.keys(obj).length > 0 ? obj : undefined;
-  }
-  return scalarPlaceholder(spec.type);
+  return Object.keys(saslObj).length > 0 ? [saslObj] : undefined;
 }
 
 type GenerateDefaultValueOptions = {
@@ -465,16 +434,28 @@ function convertDefaultValue(defaultValue: string, type: string, kind?: string):
 export const SENTINEL_REQUIRED_FIELD = '__REQUIRED_FIELD__';
 
 /**
- * Mirrors the backend's CheckRequired() with workarounds for proto serialization gaps.
- * Several branches exist because the backend drops defaults during serialization and we
- * can't distinguish "no default" from "lost default"; when in doubt we treat as not required.
+ * Whether a field must be set by the user.
+ *
+ * Preferred signal: `requiredBySchema`, stamped by enrichComponentsWithConfigSchema from the raw
+ * config schema's `required` arrays — the backend computes those knowing every default value
+ * (benthos: required ⇔ no default and not optional), so they are authoritative.
+ *
+ * Degraded fallback (unstamped specs — dataplane predating flag serialization, or a call site
+ * without the raw schema): trust the proto flags, but stay conservative about defaults. The proto
+ * only serializes string defaults, so a non-string field with an empty `defaultValue` is far more
+ * likely "default lost in serialization" than "required" (fleet-wide, only 3 scalar non-string
+ * fields are truly required). The known cost of this mode: string fields whose real default is ""
+ * are indistinguishable from required ones and show as required.
  */
 export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
-  if (spec.optional === true) {
+  // Deprecated fields are being phased out; never force one regardless of signals.
+  if (spec.deprecated === true) {
     return false;
   }
-  // Deprecated fields drop their defaults in the schema; never force a phased-out field.
-  if (spec.deprecated === true) {
+  if (spec.requiredBySchema !== undefined) {
+    return spec.requiredBySchema;
+  }
+  if (spec.optional === true) {
     return false;
   }
   // Non-scalar under an optional ancestor: a collection default ([]/{}) was likely lost in proto.
@@ -482,15 +463,11 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (ancestorOptional && spec.kind !== 'scalar') {
     return false;
   }
-  if (spec.defaultValue && spec.defaultValue !== '') {
+  if (spec.defaultValue) {
     return false;
   }
   // Non-string types lose their defaults in proto (0/false/[] → ""), so can't be deemed required.
   if (spec.type !== 'string') {
-    return false;
-  }
-  // optional unset but defaultValue present (even "") means the backend acknowledged a default.
-  if (spec.optional === undefined && spec.defaultValue !== undefined) {
     return false;
   }
   // Advanced non-scalar fields typically had defaults that were lost in serialization.
@@ -537,9 +514,14 @@ export function isScalarArrayField(spec: RawFieldSpec): boolean {
   return Boolean(spec.name) && spec.kind === 'array' && SCALAR_FIELD_TYPES.has(spec.type) && !fieldHasOptions(spec);
 }
 
-// A nested object with its own fields (e.g. `tls`, `batching`), rendered as a collapsible sub-section.
+// A nested object with its own fields (e.g. `tls`, `batching`), rendered as a collapsible
+// sub-section. benthos leaves `kind` empty on some object nodes (batching policies) — same thing.
 export function isObjectGroupField(spec: RawFieldSpec): boolean {
-  return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
+  return (
+    Boolean(spec.name) &&
+    (spec.kind === 'scalar' || (spec.kind === '' && spec.type === 'object')) &&
+    (spec.children?.length ?? 0) > 0
+  );
 }
 
 // A field whose value is itself a nested component. Edited as its own canvas node, never inline.
@@ -612,56 +594,53 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     return;
   }
 
+  const required = checkRequired(spec, ancestorOptional);
+
   // Objects build structure from children, so they never use the required sentinel.
-  if (checkRequired(spec, ancestorOptional) && spec.type !== 'object') {
+  if (required && spec.type !== 'object') {
     spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;
     return SENTINEL_REQUIRED_FIELD;
   }
-  // Skip empty-string defaults for object/array/map/2darray (placeholder) so we build the real structure.
-  if (
-    spec.defaultValue !== undefined &&
-    !(
-      spec.defaultValue === '' &&
-      (spec.type === 'object' || spec.kind === 'array' || spec.kind === 'map' || spec.kind === '2darray')
-    )
-  ) {
+
+  // A non-empty defaultValue survived serialization — use it (structured kinds arrive as JSON).
+  if (spec.defaultValue) {
     const converted = convertDefaultValue(spec.defaultValue, spec.type, spec.kind);
-    // undefined here (empty string for non-string) falls through to kind-based generation.
     if (converted !== undefined) {
       return converted;
     }
   }
 
-  let generatedValue: unknown;
-  switch (spec.kind) {
-    case 'scalar':
-      generatedValue = generateScalarValue(spec, options || {});
-      break;
-    case 'array': {
-      const arrayValue = generateArrayValue({
-        spec,
-        showAdvancedFields: showAdvancedFields ?? false,
-        componentName,
-        ancestorOptional,
-      });
-      generatedValue = arrayValue && arrayValue.length > 0 ? arrayValue : undefined;
-      break;
-    }
-    case '2darray':
-      // Array of arrays with a placeholder for proper YAML/Bloblang formatting.
-      if (spec.children) {
-        const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-        generatedValue = obj && Object.keys(obj).length > 0 ? [[obj]] : [[]];
-      } else {
-        generatedValue = [[scalarPlaceholder(spec.type)]];
-      }
-      break;
-    case 'map':
-      generatedValue = {};
-      break;
-    default:
-      generatedValue = undefined;
+  const isSaslArray = spec.kind === 'array' && spec.name?.toLowerCase() === 'sasl';
+  if (isSaslArray && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
+    return generateSaslArrayValue({ spec, showAdvancedFields: showAdvancedFields ?? false, componentName });
   }
 
-  return generatedValue;
+  // Object structure recursion. Some object nodes come with an empty kind — benthos leaves Kind
+  // unset on e.g. batching policies; treat that as scalar.
+  if (spec.type === 'object') {
+    if (spec.kind === 'scalar' || spec.kind === '') {
+      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+      return obj && Object.keys(obj).length > 0 ? obj : undefined;
+    }
+    // Collections of objects are only seeded when the field is required.
+    if (!required) {
+      return;
+    }
+    if (spec.kind === 'array') {
+      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+      return obj && Object.keys(obj).length > 0 ? [obj] : [];
+    }
+    if (spec.kind === '2darray') {
+      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+      return obj && Object.keys(obj).length > 0 ? [[obj]] : [[]];
+    }
+    if (spec.kind === 'map') {
+      return {};
+    }
+  }
+
+  // Everything else is a non-required field whose default didn't survive serialization (the proto
+  // only carries string defaults). Emit nothing so the engine's real default applies — zero-filling
+  // here used to flip semantics (e.g. auto_replay_nacks defaults to true but rendered as `false`).
+  return;
 }

@@ -156,6 +156,57 @@ describe('NodeConfigForm — full schema', () => {
     expect(screen.getAllByText(/reference a secret/i).length).toBeGreaterThan(0);
   });
 
+  test('masks fields flagged secret by the schema even when the name heuristic misses them', () => {
+    // credentials_json doesn't match SECRET_NAME_RE — only the enrichment stamp catches it.
+    const secretSpec = {
+      ...spec,
+      config: {
+        ...spec.config,
+        children: [
+          { name: 'credentials_json', type: 'string', kind: 'scalar', secret: true },
+          { name: 'project', type: 'string', kind: 'scalar' },
+        ],
+      },
+    } as unknown as ConnectComponentSpec;
+    render(
+      <NodeConfigForm
+        componentName="gcp_pubsub"
+        onConfigChange={vi.fn()}
+        spec={secretSpec}
+        value={{ gcp_pubsub: { credentials_json: 'top-secret', project: 'p1' } }}
+      />
+    );
+
+    expect(screen.getByDisplayValue('top-secret')).toHaveAttribute('type', 'password');
+    expect(screen.getByDisplayValue('p1')).toHaveAttribute('type', 'text');
+  });
+
+  test('deprecated fields are not rendered as form fields; existing values fall to raw YAML', () => {
+    const deprecatedSpec = {
+      ...spec,
+      config: {
+        ...spec.config,
+        children: [
+          { name: 'topic', type: 'string', kind: 'scalar' },
+          { name: 'round_robin_partitions', type: 'string', kind: 'scalar', deprecated: true },
+        ],
+      },
+    } as unknown as ConnectComponentSpec;
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onConfigChange={vi.fn()}
+        spec={deprecatedSpec}
+        value={{ kafka: { topic: 't', round_robin_partitions: 'legacy' } }}
+      />
+    );
+
+    // No form control for the deprecated field…
+    expect(screen.queryByLabelText('round_robin_partitions')).not.toBeInTheDocument();
+    // …but its existing value is preserved in the raw-YAML fallback section.
+    expect(screen.getByText('Other settings (YAML)')).toBeInTheDocument();
+  });
+
   test('keeps the saved label when a resource label field is cleared (references depend on it)', async () => {
     const user = userEvent.setup();
     const onConfigChange = vi.fn();
