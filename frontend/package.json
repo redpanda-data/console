@@ -69,6 +69,7 @@
     "@connectrpc/connect": "^2.1.0",
     "@connectrpc/connect-query": "^2.2.0",
     "@connectrpc/connect-web": "^2.1.0",
+    "@dagrejs/dagre": "^3.0.0",
     "@emotion/css": "^11.13.5",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",

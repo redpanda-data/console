@@ -23,6 +23,7 @@ import type {
   ConnectConfigObject,
   RawFieldSpec,
 } from '../types/schema';
+import { CONNECT_COMPONENT_TYPE } from '../types/schema';
 
 export function componentStatusToString(status: ComponentStatus): string {
   switch (status) {
@@ -359,6 +360,21 @@ function generateObjectValue(
   return obj;
 }
 
+// Placeholder for a primitive field, seeding generated configs with the right shape for YAML/Bloblang.
+function scalarPlaceholder(type: RawFieldSpec['type']): unknown {
+  switch (type) {
+    case 'int':
+    case 'float':
+      return 0;
+    case 'bool':
+      return false;
+    case 'unknown':
+      return null;
+    default:
+      return '';
+  }
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 function generateArrayValue(params: {
   spec: RawFieldSpec;
@@ -398,40 +414,16 @@ function generateArrayValue(params: {
   }
 
   // Primitive arrays: return a placeholder element for proper YAML/Bloblang formatting.
-  switch (spec.type) {
-    case 'string':
-      return [''];
-    case 'int':
-    case 'float':
-      return [0];
-    case 'bool':
-      return [false];
-    case 'unknown':
-      return [null];
-    default:
-      return [''];
-  }
+  return [scalarPlaceholder(spec.type)];
 }
 
 function generateScalarValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions): unknown {
   const { showAdvancedFields, componentName } = options;
-  switch (spec.type) {
-    case 'string':
-      return '';
-    case 'int':
-    case 'float':
-      return 0;
-    case 'bool':
-      return false;
-    case 'unknown':
-      return null;
-    case 'object': {
-      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-      return obj && Object.keys(obj).length > 0 ? obj : undefined;
-    }
-    default:
-      return '';
+  if (spec.type === 'object') {
+    const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+    return obj && Object.keys(obj).length > 0 ? obj : undefined;
   }
+  return scalarPlaceholder(spec.type);
 }
 
 type GenerateDefaultValueOptions = {
@@ -510,6 +502,55 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   }
   // Object: required if any child is required.
   return spec.children.some((c) => checkRequired(c));
+}
+
+const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
+
+// Types whose value is a nested component edited on the canvas (all except the wizard-only `custom`).
+const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
+
+export function fieldHasOptions(spec: RawFieldSpec): boolean {
+  return (spec.annotatedOptions?.length ?? 0) > 0;
+}
+
+// A scalar string that links to a cache/rate_limit resource by label rather than nesting a component.
+export function isResourceRefField(spec: RawFieldSpec): boolean {
+  return (
+    Boolean(spec.name) &&
+    spec.kind === 'scalar' &&
+    (spec.type === 'cache' || spec.type === 'rate_limit') &&
+    !(spec.children?.length ?? 0)
+  );
+}
+
+// A single editable value: a primitive, an enum select, or a resource reference (stored as a string).
+export function isScalarField(spec: RawFieldSpec): boolean {
+  return (
+    Boolean(spec.name) &&
+    spec.kind === 'scalar' &&
+    (SCALAR_FIELD_TYPES.has(spec.type) || fieldHasOptions(spec) || isResourceRefField(spec))
+  );
+}
+
+// A list of primitives (e.g. `topics: [a, b]`), edited one-per-line.
+export function isScalarArrayField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && spec.kind === 'array' && SCALAR_FIELD_TYPES.has(spec.type) && !fieldHasOptions(spec);
+}
+
+// A nested object with its own fields (e.g. `tls`, `batching`), rendered as a collapsible sub-section.
+export function isObjectGroupField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && spec.kind === 'scalar' && (spec.children?.length ?? 0) > 0;
+}
+
+// A field whose value is itself a nested component. Edited as its own canvas node, never inline.
+export function isComponentField(spec: RawFieldSpec): boolean {
+  return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
+}
+
+// Fields rendered as form controls; nested components and complex fields (object arrays, maps, …)
+// are excluded and fall back to the raw-YAML section.
+export function isFormField(spec: RawFieldSpec): boolean {
+  return !isComponentField(spec) && (isScalarField(spec) || isScalarArrayField(spec) || isObjectGroupField(spec));
 }
 
 function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
@@ -612,23 +653,7 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
         const obj = generateObjectValue(spec, showAdvancedFields, componentName);
         generatedValue = obj && Object.keys(obj).length > 0 ? [[obj]] : [[]];
       } else {
-        switch (spec.type) {
-          case 'string':
-            generatedValue = [['']];
-            break;
-          case 'int':
-          case 'float':
-            generatedValue = [[0]];
-            break;
-          case 'bool':
-            generatedValue = [[false]];
-            break;
-          case 'unknown':
-            generatedValue = [[null]];
-            break;
-          default:
-            generatedValue = [['']];
-        }
+        generatedValue = [[scalarPlaceholder(spec.type)]];
       }
       break;
     case 'map':

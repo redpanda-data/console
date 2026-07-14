@@ -66,6 +66,22 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
+// Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
+const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
+  <div className="flex flex-col gap-0.5 text-sm">
+    <span className="text-muted-foreground">Description</span>
+    <p
+      className={cn(
+        'max-w-prose whitespace-pre-wrap break-words text-foreground leading-relaxed',
+        clamp && 'line-clamp-2'
+      )}
+      title={text}
+    >
+      {text}
+    </p>
+  </div>
+);
+
 const ComputeUnitsMeta = ({ units }: { units: number }) => (
   <span className="flex items-center gap-1.5">
     <span className="font-medium text-foreground">{units}</span>
@@ -237,7 +253,8 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <Separator className="mx-1 h-6" orientation="vertical" />
+          {/* self-center: the Separator's default self-stretch top-aligns a fixed h-6 in this row. */}
+          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
@@ -248,19 +265,12 @@ export function PipelineViewHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? (
-          <DetailLine label="Description">
-            <p className="line-clamp-2 max-w-[66%] whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </DetailLine>
-        ) : null}
+        {description ? <DescriptionBlock clamp text={description} /> : null}
       </div>
     </header>
   );
 }
 
-// "Edit settings" is anchored to the settings block below, away from Save.
 export function PipelineEditHeader({
   form,
   mode,
@@ -269,6 +279,7 @@ export function PipelineEditHeader({
   onSave,
   onEditSettings,
   isSaving,
+  hasUnsavedChanges,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   mode: 'edit' | 'create';
@@ -277,6 +288,7 @@ export function PipelineEditHeader({
   onSave: () => void;
   onEditSettings: () => void;
   isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
@@ -295,8 +307,12 @@ export function PipelineEditHeader({
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
             {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
+            <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
+              Edit settings
+            </Button>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
+          <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"
               href={DOCS_URL}
@@ -311,6 +327,15 @@ export function PipelineEditHeader({
               Save
               {isSaving ? <Spinner /> : null}
             </Button>
+            {hasUnsavedChanges ? (
+              <span
+                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
+                title="You have unsaved changes"
+              >
+                <span aria-hidden className="size-2 rounded-full bg-warning" />
+                Unsaved changes
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -321,16 +346,7 @@ export function PipelineEditHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? (
-          <DetailLine label="Description">
-            <p className="max-w-[66%] whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </DetailLine>
-        ) : null}
-        <Button className="mt-1" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
-          Edit settings
-        </Button>
+        {description ? <DescriptionBlock text={description} /> : null}
       </div>
     </header>
   );
