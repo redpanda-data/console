@@ -82,7 +82,15 @@ func (p *SingleClientProvider) GetRedpandaAPIClient(ctx context.Context, opts ..
 		tlsCfg = nil
 	}
 
-	adminClient, err := rpadmin.NewAdminAPI(cfg.URLs, p.cfg.RPAdminAuth(), tlsCfg)
+	var rpadminOpts []rpadmin.Opt
+	if cfg.Timeout > 0 {
+		rpadminOpts = append(rpadminOpts, rpadmin.ClientTimeout(cfg.Timeout))
+	}
+	if cfg.MaxRetries > 0 {
+		rpadminOpts = append(rpadminOpts, rpadmin.MaxRetries(cfg.MaxRetries))
+	}
+
+	adminClient, err := rpadmin.NewClient(cfg.URLs, tlsCfg, p.cfg.RPAdminAuth(), false, rpadminOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create admin client: %w", err)
 	}
