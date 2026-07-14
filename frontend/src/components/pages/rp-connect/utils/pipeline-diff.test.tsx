@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { changedNodeIds } from './pipeline-diff';
+import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from './pipeline-diff';
 
 const base = `pipeline:
   processors:
@@ -78,5 +78,19 @@ output:
   it('never throws on malformed YAML', () => {
     expect(changedNodeIds('{{{', base)).toEqual(expect.any(Array));
     expect(changedNodeIds(base, '{{{')).toEqual([]);
+  });
+});
+
+describe('changedNodeIdsFromBaseline', () => {
+  it('matches changedNodeIds when diffing against pre-computed baseline signatures', () => {
+    const baseline = nodeConfigSignatures(base);
+    const next = base.replace('message: hi', 'message: bye');
+    // One baseline serves repeated diffs (the panel re-diffs every keystroke against a constant baseline).
+    expect(changedNodeIdsFromBaseline(baseline, next)).toEqual(changedNodeIds(base, next));
+    expect(changedNodeIdsFromBaseline(baseline, base)).toEqual([]);
+  });
+
+  it('handles a malformed-YAML baseline like changedNodeIds does', () => {
+    expect(changedNodeIdsFromBaseline(nodeConfigSignatures('{{{'), base)).toEqual(changedNodeIds('{{{', base));
   });
 });

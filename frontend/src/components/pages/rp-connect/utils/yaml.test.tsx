@@ -231,6 +231,28 @@ output:
       expect(mergedYaml).toContain('# topic: Required - string, must be manually set');
     });
   });
+
+  describe('scanner merging', () => {
+    test('keeps the scanner name wrapper under input.<type>.scanner', () => {
+      const existingYaml = `input:
+  file:
+    paths:
+      - ./data.avro
+output:
+  drop: {}`;
+
+      const mergedYaml = getConnectTemplate({
+        connectionName: 'avro',
+        connectionType: 'scanner',
+        components: Object.values(mockComponents),
+        existingYaml,
+      });
+
+      const parsed = parseYaml(mergedYaml as string) as { input: { file: { scanner: Record<string, unknown> } } };
+      // The scanner config must stay wrapped in its name — `scanner: { avro: {…} }`, not the bare fields.
+      expect(Object.keys(parsed.input.file.scanner)).toEqual(['avro']);
+    });
+  });
 });
 
 describe('parseConfigComponents', () => {
@@ -1324,6 +1346,23 @@ output:
     expect(extractConnectorTopics('   ', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
   });
 
+  test('resolves topics pulled in via a YAML merge anchor', () => {
+    // The flow parser resolves `<<:` merge keys, so this extractor must too — otherwise a
+    // component sharing config via an anchor reads as "missing topic" while the diagram shows it.
+    const yaml = `shared: &common
+  topics:
+    - anchored-topic
+input:
+  kafka_franz:
+    <<: *common
+    consumer_group: g
+output:
+  stdout: {}`;
+    const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
+    expect(result.parseError).toBe(false);
+    expect(result.topics).toEqual(['anchored-topic']);
+  });
+
   test('returns undefined topics when component has no topic config', () => {
     const yaml = `input:
   generate:
@@ -1748,6 +1787,79 @@ rate_limit_resources:
       expect(countResourceReferences(sharedLabelYaml, 'shared')).toBe(2);
       expect(countResourceReferences(sharedLabelYaml, 'shared', 'cache')).toBe(1);
       expect(countResourceReferences(sharedLabelYaml, 'shared', 'rate_limit')).toBe(1);
+    });
+
+    // Refs held in name-referencing fields (dedupe's `cache:`, a CDC input's `checkpoint_cache:`)
+    // must follow a rename too — leaving them behind strands the pipeline at deploy time.
+    const fieldRefYaml = `input:
+  mongodb_cdc:
+    url: mongodb://x
+    checkpoint_cache: my_cache
+pipeline:
+  processors:
+    - dedupe:
+        cache: my_cache
+        key: x
+output:
+  drop: {}
+cache_resources:
+  - label: my_cache
+    memory: {}`;
+
+    test('renameResourceReferences follows refs held in non-`resource` fields', () => {
+      const next = renameResourceReferences(fieldRefYaml, 'my_cache', 'renamed', 'cache') as string;
+      const parsed = parseYaml(next) as {
+        input: { mongodb_cdc: { checkpoint_cache: string; url: string } };
+        pipeline: { processors: [{ dedupe: { cache: string; key: string } }] };
+      };
+      expect(parsed.input.mongodb_cdc.checkpoint_cache).toBe('renamed');
+      expect(parsed.pipeline.processors[0].dedupe.cache).toBe('renamed');
+      // An unrelated field with a matching value must NOT be rewritten.
+      expect(parsed.input.mongodb_cdc.url).toBe('mongodb://x');
+    });
+
+    test('countResourceReferences counts refs held in non-`resource` fields', () => {
+      expect(countResourceReferences(fieldRefYaml, 'my_cache', 'cache')).toBe(2);
+    });
+
+    // `*_resources` items are referenced via `resource:` indirection components; renaming their
+    // label must cascade to those references (kind-scoped by section) just like cache/rate_limit.
+    const sectionResourceYaml = `input:
+  resource: src
+pipeline:
+  processors:
+    - resource: src
+output:
+  broker:
+    outputs:
+      - resource: src
+input_resources:
+  - label: src
+    generate:
+      mapping: 'root = {}'
+processor_resources:
+  - label: src
+    mapping: 'root = this'
+output_resources:
+  - label: src
+    drop: {}`;
+
+    test('renameResourceReferences scoped to a section kind rewrites only that section', () => {
+      const next = renameResourceReferences(sectionResourceYaml, 'src', 'renamed', 'input') as string;
+      const parsed = parseYaml(next) as {
+        input: { resource: string };
+        pipeline: { processors: [{ resource: string }] };
+        output: { broker: { outputs: [{ resource: string }] } };
+      };
+      expect(parsed.input.resource).toBe('renamed');
+      expect(parsed.pipeline.processors[0].resource).toBe('src');
+      expect(parsed.output.broker.outputs[0].resource).toBe('src');
+    });
+
+    test('countResourceReferences scopes to section kinds', () => {
+      expect(countResourceReferences(sectionResourceYaml, 'src', 'input')).toBe(1);
+      expect(countResourceReferences(sectionResourceYaml, 'src', 'processor')).toBe(1);
+      expect(countResourceReferences(sectionResourceYaml, 'src', 'output')).toBe(1);
     });
   });
 

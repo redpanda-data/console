@@ -135,13 +135,22 @@ const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConf
     return;
   }
 
+  // The scanner keeps its name wrapper — `scanner: { csv: {…} }` — writing only the inner
+  // fields would produce a malformed scanner config. A default-less spec yields an undefined
+  // inner config, which the YAML serializer would drop along with the key — normalize to `{}`.
   const scannerName = Object.keys(newConfigObject as Record<string, unknown>)[0];
-  const scannerConfig = (newConfigObject as Record<string, unknown>)[scannerName];
-
-  doc.setIn(['input', inputType, 'scanner'], scannerConfig);
+  if (!scannerName) {
+    return;
+  }
+  const scannerConfig = (newConfigObject as Record<string, unknown>)[scannerName] ?? {};
+  doc.setIn(['input', inputType, 'scanner'], { [scannerName]: scannerConfig });
 };
 
 type DetectedComponentType = 'processor' | 'cache' | 'rate_limit' | 'root' | 'scanner' | 'unknown';
+
+// Root config sections that mark a snippet as a root-level merge (and that a single-key snippet
+// must NOT be for the scanner heuristic below to apply).
+const ROOT_SECTION_KEYS = ['input', 'output', 'buffer', 'metrics', 'tracer'] as const;
 
 const detectComponentType = (
   newConfigObject: Partial<ConnectConfigObject>,
@@ -159,13 +168,7 @@ const detectComponentType = (
     return 'rate_limit';
   }
 
-  if (
-    newConfigObject.input ||
-    newConfigObject.output ||
-    newConfigObject.buffer ||
-    newConfigObject.metrics ||
-    newConfigObject.tracer
-  ) {
+  if (ROOT_SECTION_KEYS.some((key) => newConfigObject[key])) {
     return 'root';
   }
 
@@ -175,11 +178,7 @@ const detectComponentType = (
     keys.length === 1 &&
     doc?.has('input') &&
     keys[0] &&
-    keys[0] !== 'input' &&
-    keys[0] !== 'output' &&
-    keys[0] !== 'buffer' &&
-    keys[0] !== 'metrics' &&
-    keys[0] !== 'tracer'
+    !(ROOT_SECTION_KEYS as readonly string[]).includes(keys[0])
   ) {
     return 'scanner';
   }
@@ -346,6 +345,15 @@ function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
   }
 }
 
+// Merges APPEND the new component to its array, so field help-comments must target the LAST
+// entry — index 0 lands on a pre-existing component (or nothing) whenever the pipeline already
+// has one. A standalone doc has exactly one entry, so "last" is correct there too.
+function lastArrayIndex(doc: Document.Parsed | Document, path: string[]): string {
+  const node = doc.getIn(path) as { items?: unknown[] } | undefined;
+  const length = node?.items?.length ?? 0;
+  return String(length > 0 ? length - 1 : 0);
+}
+
 function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec): void {
   if (!componentSpec.config) {
     return;
@@ -363,17 +371,24 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
       configPath = [componentSpec.type, specName];
       break;
     case 'processor':
-      configPath = ['pipeline', 'processors', '0', specName];
+      configPath = ['pipeline', 'processors', lastArrayIndex(doc, ['pipeline', 'processors']), specName];
       break;
     case 'cache':
     case 'rate_limit': {
       const resourceKey = componentSpec.type === 'cache' ? 'cache_resources' : 'rate_limit_resources';
-      configPath = [resourceKey, '0', specName];
+      configPath = [resourceKey, lastArrayIndex(doc, [resourceKey]), specName];
       break;
     }
-    case 'scanner':
-      configPath = [specName];
+    case 'scanner': {
+      // A merged scanner lives at `input.<type>.scanner.<name>` (see mergeScanner); a bare
+      // `[specName]` never matched anything, so scanner help-comments were silently dropped.
+      const inputType = firstKey((doc.get('input') as { toJSON?: () => unknown } | undefined)?.toJSON?.());
+      if (!inputType) {
+        return;
+      }
+      configPath = ['input', inputType, 'scanner', specName];
       break;
+    }
     default:
       return;
   }
@@ -726,27 +741,32 @@ export function extractConnectorTopics(
     return { topics: undefined, parseError: false };
   }
 
-  let doc: Document.Parsed;
+  // `merge: true` resolves `<<: *anchor` keys, matching the flow parser and extractAllTopics —
+  // a component pulling `topics` from a shared anchor must not read as "missing topic" here.
+  // parseDocument collects structural errors instead of throwing, so malformed-but-parseable
+  // YAML still reads as "no topics" rather than a parse error (pinned by tests).
+  let parsed: unknown;
   try {
-    doc = parseDocument(yamlContent);
+    parsed = parseDocument(yamlContent, { merge: true }).toJS();
   } catch {
     return { topics: undefined, parseError: true };
   }
 
-  const topicsNode = doc.getIn([section, componentName, 'topics']);
-  // doc.getIn returns a YAMLSeq node, not a plain JS array — convert first.
-  const topics =
-    topicsNode != null && typeof topicsNode === 'object' && 'toJSON' in topicsNode
-      ? (topicsNode as { toJSON(): unknown }).toJSON()
-      : topicsNode;
-  if (Array.isArray(topics)) {
-    const filtered = topics.filter((t): t is string => typeof t === 'string' && t !== '');
+  const sectionObj = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[section] : undefined;
+  const component =
+    sectionObj && typeof sectionObj === 'object' ? (sectionObj as Record<string, unknown>)[componentName] : undefined;
+  if (!component || typeof component !== 'object' || Array.isArray(component)) {
+    return { topics: undefined, parseError: false };
+  }
+  const config = component as Record<string, unknown>;
+
+  if (Array.isArray(config.topics)) {
+    const filtered = config.topics.filter((t): t is string => typeof t === 'string' && t !== '');
     return { topics: filtered.length > 0 ? filtered : undefined, parseError: false };
   }
 
-  const topic = doc.getIn([section, componentName, 'topic']);
-  if (typeof topic === 'string' && topic !== '') {
-    return { topics: [topic], parseError: false };
+  if (typeof config.topic === 'string' && config.topic !== '') {
+    return { topics: [config.topic], parseError: false };
   }
 
   return { topics: undefined, parseError: false };
@@ -1107,6 +1127,40 @@ export function resourceTargetKind(target: EditTarget): ResourceKind | undefined
   return target.resourceKey === 'cache_resources' ? 'cache' : 'rate_limit';
 }
 
+// Resource kinds a reference can point at: cache/rate_limit plus the section-scoped `*_resources`
+// arrays reached through `resource:` indirection components.
+export type ResourceRefKind = ResourceKind | 'input' | 'processor' | 'output';
+
+/**
+ * The resource kind a FIELD NAME references by string value — dedupe's `cache:`, a CDC input's
+ * `checkpoint_cache:`, http's `rate_limit:`. Shared by the flow parser's candidate promotion and
+ * the rename/count visitors below so a ref recognised on the canvas is also followed on rename.
+ */
+export function resourceKindForFieldName(name: string): ResourceKind | undefined {
+  if (name === 'cache' || name.endsWith('_cache')) {
+    return 'cache';
+  }
+  if (name === 'rate_limit' || name.endsWith('_rate_limit')) {
+    return 'rate_limit';
+  }
+  return;
+}
+
+const PATH_RESOURCE_REF_KIND: Record<string, ResourceRefKind> = {
+  input_resources: 'input',
+  processor_resources: 'processor',
+  output_resources: 'output',
+};
+
+/** The ref kind of a `*_resources` item edited via a path target (input_resources → input, …). */
+export function pathResourceRefKind(target: EditTarget): ResourceRefKind | undefined {
+  if (target.kind !== 'path' || target.path.length !== 2) {
+    return;
+  }
+  const [key] = target.path;
+  return typeof key === 'string' ? PATH_RESOURCE_REF_KIND[key] : undefined;
+}
+
 /** Labels of every resource of a kind, in document order — the options for a reference dropdown. */
 export function listResourceLabels(yaml: string, kind: ResourceKind): string[] {
   try {
@@ -1157,26 +1211,60 @@ export function createResourceAndReturnLabel(
   return nextYaml === null ? null : { yaml: nextYaml, label };
 }
 
-// The component name enclosing a visited pair: for `- cache: { resource: x }` the pair's
-// containing map is the value of the `cache` pair, so `path.at(-2)` names the component.
-function enclosingComponentKey(path: readonly unknown[]): unknown {
-  const parent = path.at(-2);
-  return isPair(parent) && isScalar(parent.key) ? parent.key.value : undefined;
+// The kind a `resource:` pair references, from its nearest decisive ancestor key: inside a
+// `cache`/`rate_limit` component it is that component's own resource field; under `input(s)`/
+// `output(s)`/`processors` it is a section indirection running a `*_resources` entry.
+function resourcePairRefKind(path: readonly unknown[]): ResourceRefKind | undefined {
+  for (let i = path.length - 1; i >= 0; i -= 1) {
+    const ancestor = path[i];
+    if (!(isPair(ancestor) && isScalar(ancestor.key))) {
+      continue;
+    }
+    switch (ancestor.key.value) {
+      case 'cache':
+      case 'rate_limit':
+        return ancestor.key.value;
+      case 'input':
+      case 'inputs':
+        return 'input';
+      case 'output':
+      case 'outputs':
+        return 'output';
+      case 'processors':
+        return 'processor';
+      default:
+      // Not decisive (broker, cases, …) — keep walking up.
+    }
+  }
+  return;
 }
 
-// Visit every `resource: <label>` pair; with `kind`, only those inside a `cache`/`rate_limit`
-// component, so a cache rename can't touch a same-labelled rate_limit reference.
+// Visit every reference to a resource label: `resource:` pairs plus name-referencing fields
+// (`cache:`, `checkpoint_cache:`, `rate_limit:`). With `kind`, only references of that kind,
+// so a cache rename can't touch a same-labelled rate_limit or input resource reference.
 function visitResourceReferences(
   doc: Document.Parsed,
   label: string,
-  kind: ResourceKind | undefined,
+  kind: ResourceRefKind | undefined,
   onMatch: (value: { value: unknown }) => void
 ): void {
   visit(doc, {
     Pair(_, pair, path) {
-      const matches =
-        isScalar(pair.key) && pair.key.value === 'resource' && isScalar(pair.value) && pair.value.value === label;
-      if (matches && (!kind || enclosingComponentKey(path) === kind) && isScalar(pair.value)) {
+      if (!(isScalar(pair.key) && isScalar(pair.value) && pair.value.value === label)) {
+        return;
+      }
+      const key = pair.key.value;
+      const refKind =
+        key === 'resource'
+          ? resourcePairRefKind(path)
+          : typeof key === 'string'
+            ? resourceKindForFieldName(key)
+            : undefined;
+      // A non-`resource` field only counts as a reference when its NAME marks it as one.
+      if (key !== 'resource' && refKind === undefined) {
+        return;
+      }
+      if (!kind || refKind === kind) {
         onMatch(pair.value);
       }
     },
@@ -1184,14 +1272,14 @@ function visitResourceReferences(
 }
 
 /**
- * Repoint every `resource:` reference from `oldLabel` to `newLabel`. With `kind`, only references
- * of that resource kind are rewritten; without it, every matching `resource:` scalar is.
+ * Repoint every reference from `oldLabel` to `newLabel`. With `kind`, only references
+ * of that resource kind are rewritten; without it, every matching reference is.
  */
 export function renameResourceReferences(
   yaml: string,
   oldLabel: string,
   newLabel: string,
-  kind?: ResourceKind
+  kind?: ResourceRefKind
 ): string | null {
   if (oldLabel === '' || oldLabel === newLabel) {
     return yaml;
@@ -1208,10 +1296,10 @@ export function renameResourceReferences(
 }
 
 /**
- * Count how many components reference a resource label (via their `resource:` field).
- * With `kind`, only references belonging to that resource kind are counted.
+ * Count how many components reference a resource label (via `resource:` or a name-referencing
+ * field). With `kind`, only references belonging to that resource kind are counted.
  */
-export function countResourceReferences(yaml: string, label: string, kind?: ResourceKind): number {
+export function countResourceReferences(yaml: string, label: string, kind?: ResourceRefKind): number {
   if (!label) {
     return 0;
   }

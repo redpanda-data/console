@@ -265,6 +265,14 @@ export const ConnectCommandPalette = ({
   }, [allowedTypes]);
 
   const inScope = useMemo(() => allComponents.filter((c) => typeAllowed(c.type)), [allComponents, typeAllowed]);
+
+  // Searchable text is derived once per catalog rather than per keystroke: building it walks the
+  // alias table and joins the full description for every component, which is far too expensive to
+  // redo for hundreds of components on each character typed.
+  const searchIndex = useMemo(
+    () => new Map(allComponents.map((component) => [component, searchableText(component)])),
+    [allComponents]
+  );
   const byName = useMemo(() => new Map(inScope.map((c) => [c.name, c])), [inScope]);
   // Keyed by CommandItem `value` (`type:name`) since two types can share a name (e.g. kafka in/out).
   const byKey = useMemo(() => new Map(inScope.map((c) => [`${c.type}:${c.name}`, c])), [inScope]);
@@ -287,11 +295,14 @@ export const ConnectCommandPalette = ({
       return [];
     }
     return inScope
-      .map((component) => ({ component, rank: matchRank(component, q, searchableText(component)) }))
+      .map((component) => ({
+        component,
+        rank: matchRank(component, q, searchIndex.get(component) ?? searchableText(component)),
+      }))
       .filter((r) => r.rank >= 0)
       .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
       .map((r) => r.component);
-  }, [inScope, q]);
+  }, [inScope, q, searchIndex]);
 
   // On a type-locked miss, the out-of-scope types that DO match — shown in the empty state so the
   // miss isn't read as a gap.
@@ -301,12 +312,15 @@ export const ConnectCommandPalette = ({
     }
     const types = new Set<ConnectComponentType>();
     for (const component of allComponents) {
-      if (!typeAllowed(component.type) && matchRank(component, q, searchableText(component)) >= 0) {
+      if (
+        !typeAllowed(component.type) &&
+        matchRank(component, q, searchIndex.get(component) ?? searchableText(component)) >= 0
+      ) {
         types.add(component.type);
       }
     }
     return [...types].sort();
-  }, [q, results, allowedTypes, allComponents, typeAllowed]);
+  }, [q, results, allowedTypes, allComponents, typeAllowed, searchIndex]);
 
   // Browse facets (no query): recents + suggested + everything grouped by category.
   const recentComponents = useMemo(

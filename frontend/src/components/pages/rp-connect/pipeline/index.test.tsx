@@ -86,18 +86,34 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 
 type ContentChangeCallback = (e: { changes: Array<{ text: string }> }) => void;
 const contentChangeListeners: ContentChangeCallback[] = [];
+type CursorPositionCallback = (e: { position: { lineNumber: number; column: number } }) => void;
+const cursorPositionListeners: CursorPositionCallback[] = [];
 
 const mockEditorInstance = {
   getPosition: vi.fn(() => ({ lineNumber: 1, column: 4 })),
   getModel: vi.fn(() => ({
     getLineContent: vi.fn(() => '  /'),
+    // Large enough that node ranges from any test YAML are never clamped.
+    getLineCount: vi.fn(() => 1000),
+    getLineMaxColumn: vi.fn(() => 1),
   })),
   onDidChangeModelContent: vi.fn((cb: ContentChangeCallback) => {
     contentChangeListeners.push(cb);
     return { dispose: vi.fn() };
   }),
   // Cursor → structure-tree highlight sync subscribes to this.
-  onDidChangeCursorPosition: vi.fn(() => ({ dispose: vi.fn() })),
+  onDidChangeCursorPosition: vi.fn((cb: CursorPositionCallback) => {
+    cursorPositionListeners.push(cb);
+    return { dispose: vi.fn() };
+  }),
+  // Mirrors Monaco: setSelection places the cursor at the selection end and notifies
+  // cursor-position listeners synchronously, before the call returns.
+  setSelection: vi.fn((sel: { endLineNumber: number; endColumn: number }) => {
+    for (const cb of cursorPositionListeners) {
+      cb({ position: { lineNumber: sel.endLineNumber, column: sel.endColumn } });
+    }
+  }),
+  revealLineInCenterIfOutsideViewport: vi.fn(),
   executeEdits: vi.fn(),
   focus: vi.fn(),
   // Scroll API used by the read-only viewer's vertical overflow shadows.
@@ -281,6 +297,7 @@ describe('PipelinePage', () => {
     mockIsEmbedded.mockReturnValue(false);
     mockUsePipelineMode.mockReturnValue({ mode: 'create' });
     contentChangeListeners.length = 0;
+    cursorPositionListeners.length = 0;
   });
 
   // Lint panel — LintHintList has no tests of its own.
@@ -592,6 +609,45 @@ describe('PipelinePage', () => {
 
     await waitFor(() => expect(screen.getAllByRole('tree').length).toBeGreaterThan(0));
     expect(screen.queryByTestId('flow-canvas')).not.toBeInTheDocument();
+  });
+
+  it('keeps the clicked tree row highlighted while its YAML is revealed in the editor', async () => {
+    const user = userEvent.setup();
+    mockUsePipelineMode.mockReturnValue({ mode: 'create' });
+    mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enablePipelineDiagrams');
+    mockIsEmbedded.mockReturnValue(true);
+
+    render(<PipelinePage />, { transport: createTransport() });
+
+    // A processor switch whose last case closes the component: revealing the switch selects its
+    // whole line range, so the synchronous cursor event lands inside the nested `log` processor.
+    fireEvent.change(await screen.findByTestId('yaml-editor'), {
+      target: {
+        value: [
+          'input:',
+          '  stdin: {}',
+          'pipeline:',
+          '  processors:',
+          '    - switch:',
+          '        - check: this.type == "a"',
+          '          processors:',
+          '            - mapping: root = this',
+          '        - processors:',
+          '            - log:',
+          '                message: fallback',
+          'output:',
+          '  stdout: {}',
+        ].join('\n'),
+      },
+    });
+
+    const switchRow = await screen.findByRole('treeitem', { name: 'switch' });
+    await user.click(switchRow);
+
+    // The reveal ran, and the programmatic cursor move did not steal the explicit tree selection.
+    expect(mockEditorInstance.setSelection).toHaveBeenCalled();
+    expect(switchRow).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('treeitem', { name: 'log' })).toHaveAttribute('aria-selected', 'false');
   });
 
   it('offers a "Start from a template" entry in the sidebar visualizer while the pipeline is empty', async () => {

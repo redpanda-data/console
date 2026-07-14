@@ -45,6 +45,11 @@ export function useSaveHotkey({ enabled, isSaving, onSave }: UseSaveHotkeyOption
         return;
       }
       e.preventDefault();
+      // A held ⌘S auto-repeats keydown faster than `isSaving` re-renders (it flips on the
+      // mutation's isPending re-render) — only the first press may trigger a save.
+      if (e.repeat) {
+        return;
+      }
       if (!latest.current.isSaving) {
         latest.current.onSave();
       }

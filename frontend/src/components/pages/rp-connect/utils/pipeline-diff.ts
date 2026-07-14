@@ -12,14 +12,15 @@
 import { parseEditableNodes } from './pipeline-flow-parser';
 import { editTargetPath } from './yaml';
 
-type NodeSignatures = {
+export type NodeSignatures = {
   // Signature of each editable node's config, keyed by node id, for node-by-node comparison.
   signatures: Map<string, string>;
   // Every node's parent id (id -> parentId), used to attribute a change to the deepest node.
   parentOf: Map<string, string | undefined>;
 };
 
-function nodeConfigSignatures(yaml: string): NodeSignatures {
+// Exported so callers diffing many documents against one baseline can sign the baseline once.
+export function nodeConfigSignatures(yaml: string): NodeSignatures {
   const signatures = new Map<string, string>();
   const parentOf = new Map<string, string | undefined>();
   if (!yaml) {
@@ -77,12 +78,12 @@ function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>):
   return changed;
 }
 
-// Ids of nodes added or changed between the two YAMLs (unsaved markers, undo/redo highlights).
+// Ids of nodes added or changed relative to a pre-computed baseline (unsaved markers): the panel
+// re-diffs on every keystroke against a constant baseline, so the baseline is signed only once.
 // A container's signature embeds its children, so attribute each change to the deepest node(s) only.
-export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
-  const prev = nodeConfigSignatures(prevYaml);
+export function changedNodeIdsFromBaseline(baseline: NodeSignatures, nextYaml: string): string[] {
   const next = nodeConfigSignatures(nextYaml);
-  const changed = unmatchedNextIds(prev.signatures, next.signatures);
+  const changed = unmatchedNextIds(baseline.signatures, next.signatures);
   const isAncestorOfChanged = (id: string): boolean => {
     for (const other of changed) {
       if (other === id) {
@@ -97,4 +98,9 @@ export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
     return false;
   };
   return [...changed].filter((id) => !isAncestorOfChanged(id));
+}
+
+// Ids of nodes added or changed between the two YAMLs (undo/redo highlights, one-shot diffs).
+export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
+  return changedNodeIdsFromBaseline(nodeConfigSignatures(prevYaml), nextYaml);
 }

@@ -419,19 +419,86 @@ output:
     const user = userEvent.setup();
     const { onYamlChange } = renderPanel();
 
-    // Escape → the rail slides out and unmounts.
+    // Escape → the rail slides out and unmounts. (Blur first: the mock select button keeps focus
+    // after the click, and canvas shortcuts are suppressed while a control is focused.)
     await user.click(screen.getByText('select-input'));
     await screen.findByTestId('node-yaml');
+    screen.getByText('select-input').blur();
     await user.keyboard('{Escape}');
     await waitForElementToBeRemoved(() => screen.queryByTestId('node-yaml'));
 
     // Delete → asks to confirm, then removes the selected processor from the YAML.
     await user.click(screen.getByText('select-proc0'));
     await screen.findByTestId('node-yaml');
+    screen.getByText('select-proc0').blur();
     await user.keyboard('{Delete}');
     await user.click(await screen.findByRole('button', { name: 'Remove' }));
     expect(onYamlChange).toHaveBeenCalledTimes(1);
     expect(onYamlChange.mock.calls[0][0]).not.toContain('message: hi');
+  });
+
+  test('canvas shortcuts stay inert while an interactive control (e.g. a button) has focus', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    // The clicked mock button keeps focus, standing in for a toolbar button / Radix trigger.
+    await user.click(screen.getByText('select-proc0'));
+    await screen.findByTestId('node-yaml');
+
+    // Delete must not stage the node for removal, and `/` must not open the command palette.
+    await user.keyboard('{Delete}');
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument();
+    await user.keyboard('/');
+    expect(screen.queryByPlaceholderText('Search nodes and actions…')).not.toBeInTheDocument();
+
+    // Once focus leaves the control, the same keys work again.
+    screen.getByText('select-proc0').blur();
+    await user.keyboard('/');
+    expect(await screen.findByPlaceholderText('Search nodes and actions…')).toBeInTheDocument();
+  });
+
+  test('deselects when an external edit leaves a different component at the selected position', async () => {
+    const user = userEvent.setup();
+    // Edit targets are positional, so after a reorder `proc-0` resolves to a different component —
+    // the inspector must close rather than silently show (and edit) the wrong node.
+    const twoProcs = (first: string, second: string) => `pipeline:
+  processors:
+    - ${first}
+    - ${second}
+output:
+  drop: {}`;
+    const logProc = 'log:\n        message: hi';
+    const mappingProc = "mapping: 'root = this'";
+    const panelProps = {
+      componentList: {} as ComponentList,
+      components: [],
+      mode: 'edit' as const,
+      onYamlChange: vi.fn(),
+    };
+    const { rerender } = render(
+      <PipelineEditorProvider>
+        <VisualEditorPanel {...panelProps} yamlContent={twoProcs(logProc, mappingProc)} />
+      </PipelineEditorProvider>
+    );
+
+    await user.click(screen.getByText('select-proc0'));
+    expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('message: hi');
+
+    // An in-place edit keeps proc-0 a `log`, so the selection survives.
+    rerender(
+      <PipelineEditorProvider>
+        <VisualEditorPanel {...panelProps} yamlContent={twoProcs('log:\n        message: bye', mappingProc)} />
+      </PipelineEditorProvider>
+    );
+    expect(screen.getByTestId('node-yaml')).toBeInTheDocument();
+
+    // A reorder (e.g. undo of a head insert, YAML-lane edit) puts `mapping` at proc-0 → deselect.
+    rerender(
+      <PipelineEditorProvider>
+        <VisualEditorPanel {...panelProps} yamlContent={twoProcs(mappingProc, logProc)} />
+      </PipelineEditorProvider>
+    );
+    await waitForElementToBeRemoved(() => screen.queryByTestId('node-yaml'));
   });
 
   test('view mode inspector is read-only — no apply or remove actions', async () => {

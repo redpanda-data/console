@@ -18,8 +18,10 @@ import {
   type ParsedYamlConfig,
   parseMultiInputs,
   type ResourceArrayKey,
+  type ResourceKind,
   resourceArrayKey,
   resourceKindForComponentName,
+  resourceKindForFieldName,
 } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 
@@ -56,9 +58,12 @@ export type PipelineFlowNode = {
   branch?: { request: boolean; result: boolean };
   // Label of a resource this component references (cache/rate_limit `resource`).
   resourceRef?: string;
-  // String values that MIGHT be resource labels (non-`resource` fields). The post-pass promotes
-  // whichever matches a real resource label to `resourceRef`.
-  resourceRefCandidates?: string[];
+  // Kind of a candidate-promoted `resourceRef` (from its field name), so resolution stays
+  // kind-aware — a `checkpoint_cache` ref never links to a same-labelled rate_limit.
+  resourceRefKind?: ResourceKind;
+  // Name-referencing field values that MIGHT be resource labels (`cache:`, `checkpoint_cache:`, …).
+  // The post-pass promotes whichever matches a real resource label to `resourceRef`.
+  resourceRefCandidates?: ResourceRefCandidate[];
   // A `switch` case wrapper — structural sub-node (not editable); selecting it picks the parent.
   isCase?: boolean;
   // Edit target for the case's routing condition (`{ check, … }`), forwarded to the case's entry card.
@@ -464,16 +469,25 @@ function indirectionResourceRef(componentName: string | undefined, componentValu
     : undefined;
 }
 
-// A resource ref may live in a non-`resource` field (e.g. `checkpoint_cache`). Without the schema we
-// can't know field types, so collect every top-level string; the post-pass promotes real matches.
-function extractRefCandidates(componentValue: unknown): string[] | undefined {
+// A possible resource reference held in a name-referencing field, with the kind that name implies.
+export type ResourceRefCandidate = { label: string; kind: ResourceKind };
+
+// A resource ref may live in a non-`resource` field (e.g. `checkpoint_cache`). Only fields whose
+// NAME marks them as a reference are collected — a coincidental value match on an unrelated field
+// (e.g. `client_id` equal to a resource label) must not draw a dependency edge. The post-pass
+// promotes candidates that resolve to a real resource of the field's kind.
+function extractRefCandidates(componentValue: unknown): ResourceRefCandidate[] | undefined {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
   }
-  const values = Object.values(componentValue as Record<string, unknown>).filter(
-    (v): v is string => typeof v === 'string' && v !== ''
-  );
-  return values.length > 0 ? values : undefined;
+  const candidates: ResourceRefCandidate[] = [];
+  for (const [key, value] of Object.entries(componentValue as Record<string, unknown>)) {
+    const kind = resourceKindForFieldName(key);
+    if (kind && typeof value === 'string' && value !== '') {
+      candidates.push({ label: value, kind });
+    }
+  }
+  return candidates.length > 0 ? candidates : undefined;
 }
 
 // A Bloblang check referencing `errored()` — this branch handles failed messages (dead-letter).
@@ -859,6 +873,25 @@ function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
   const { obj, id, parentId, path, editTarget, routing, labelText, config } = args;
   const key = firstKey(obj);
   if (!key) {
+    // A check-only switch case (no `output:` body yet) still renders as an empty, condition-editable
+    // case — mirroring processor switches, so a case never silently vanishes from the canvas.
+    if (routing?.caseEditTarget) {
+      const caseIndex = routing.caseEditTarget.kind === 'switchCase' ? routing.caseEditTarget.path.at(-1) : undefined;
+      return [
+        {
+          id,
+          kind: 'group',
+          label: typeof caseIndex === 'number' ? `case ${caseIndex + 1}` : 'case',
+          section: 'output',
+          parentId,
+          collapsible: true,
+          childFlow: 'sequential',
+          ...routing,
+          isCase: true,
+          editTarget: routing.caseEditTarget,
+        },
+      ];
+    }
     return [];
   }
   const value = (obj as Record<string, unknown>)[key];
@@ -1033,12 +1066,14 @@ export function parseEditableNodes(
   configYaml: string,
   lineCounter?: LineCounter
 ): { doc: Document; nodes: PipelineFlowNode[] } {
-  const doc = parseDocument(configYaml, lineCounter ? { lineCounter } : undefined);
+  // `merge` must be enabled at PARSE time — as a toJS option it is silently ignored and
+  // `<<: *anchor` keys would survive unresolved, hiding anchored fields from this tree.
+  const doc = parseDocument(configYaml, { merge: true, ...(lineCounter ? { lineCounter } : {}) });
   if (!configYaml) {
     return { doc, nodes: emptyConfigNodes() };
   }
   try {
-    const config = (doc.toJS({ merge: true }) as ParsedYamlConfig | null) ?? {};
+    const config = (doc.toJS() as ParsedYamlConfig | null) ?? {};
     return { doc, nodes: buildFlowTree(config) };
   } catch {
     return { doc, nodes: [] };
@@ -1091,9 +1126,13 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
   annotateResourceRefs(nodes);
 }
 
-// The `*_resources` array a node's ref must resolve into: `cache`/`rate_limit` name their kind; a
-// `resource:` indirection uses its own section; undefined (candidate-promoted refs) matches any kind.
+// The `*_resources` array a node's ref must resolve into: a candidate-promoted ref carries the
+// kind its field name implies; `cache`/`rate_limit` name their kind; a `resource:` indirection
+// uses its own section.
 function expectedResourceKey(node: PipelineFlowNode): string | undefined {
+  if (node.resourceRefKind) {
+    return resourceArrayKey(node.resourceRefKind);
+  }
   const kind = resourceKindForComponentName(node.label);
   if (kind) {
     return resourceArrayKey(kind);
@@ -1131,10 +1170,20 @@ export function buildResourceRefResolver(resources: PipelineFlowNode[]): Resourc
 // Resource references: promote field candidates, flag dangling links, and count usages via the kind-aware resolver.
 function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
   const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
-  // Promote candidates that resolve to a real resource label — catches refs in non-`resource` fields.
+  // Promote candidates that resolve to a real resource label — catches refs in non-`resource`
+  // fields. `resourceRefKind` is set BEFORE probing so `resolve` matches kind-aware, and it stays
+  // set on success so later resolutions (usage counting, layout edges) agree on the target.
   for (const node of nodes) {
-    if (!node.resourceRef && node.resourceRefCandidates) {
-      node.resourceRef = node.resourceRefCandidates.find((c) => resolve(node, c));
+    if (node.resourceRef || !node.resourceRefCandidates) {
+      continue;
+    }
+    for (const candidate of node.resourceRefCandidates) {
+      node.resourceRefKind = candidate.kind;
+      if (resolve(node, candidate.label)) {
+        node.resourceRef = candidate.label;
+        break;
+      }
+      node.resourceRefKind = undefined;
     }
   }
   const usedBy = new Map<string, number>();

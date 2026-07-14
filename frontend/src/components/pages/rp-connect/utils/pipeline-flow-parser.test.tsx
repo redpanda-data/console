@@ -289,6 +289,31 @@ output:
     expect(leaf?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
   });
 
+  it('renders a check-only switch-output case as an empty, condition-editable case node', () => {
+    const yaml = `
+output:
+  switch:
+    cases:
+      - check: 'this.region == "eu"'
+        output:
+          drop: {}
+      - check: 'this.region == "us"'
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    // A case authored with only a `check` (no output body yet) must not vanish from the canvas —
+    // mirror processor switches, which render an empty case so it stays visible and editable.
+    const emptyCase = nodes.find((n) => n.id === 'output-switch-1');
+    expect(emptyCase).toMatchObject({
+      kind: 'group',
+      section: 'output',
+      parentId: 'output-switch',
+      condition: 'this.region == "us"',
+      isCase: true,
+    });
+    expect(emptyCase?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+    expect(emptyCase?.editTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+  });
+
   it('parses fallback output with children', () => {
     const yaml = `
 output:
@@ -1404,6 +1429,38 @@ cache_resources:
     expect(dedupeUser?.danglingRef).toBeUndefined();
     const resource = nodes.find((n) => n.section === 'resource' && n.labelText === 'dedupe');
     expect(resource?.usedByCount).toBe(2);
+  });
+
+  it('never promotes an unrelated string field that happens to match a resource label', () => {
+    // `client_id` is not a reference field — a coincidental value match must not draw an edge.
+    const yaml = `input:
+  kafka_franz:
+    client_id: prod
+    topics: [t]
+output:
+  drop: {}
+cache_resources:
+  - label: prod
+    memory: {}`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    expect(nodes.find((n) => n.id === 'input-0')?.resourceRef).toBeUndefined();
+    expect(nodes.find((n) => n.section === 'resource' && n.labelText === 'prod')?.usedByCount).toBe(0);
+  });
+
+  it('never links a checkpoint_cache candidate to a same-labelled rate_limit resource', () => {
+    // Candidates carry the kind their field name implies, so resolution stays kind-aware.
+    const yaml = `input:
+  mongodb_cdc:
+    url: mongodb://x
+    checkpoint_cache: shared
+output:
+  drop: {}
+rate_limit_resources:
+  - label: shared
+    local: { count: 1 }`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    expect(nodes.find((n) => n.id === 'input-0')?.resourceRef).toBeUndefined();
+    expect(nodes.find((n) => n.id === 'resource-rate_limit_resources-0')?.usedByCount).toBe(0);
   });
 
   it('never links a cache reference to a same-labelled rate_limit resource', () => {

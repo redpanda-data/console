@@ -46,7 +46,7 @@ import { usePipelineEditorStore } from './use-pipeline-editor-store';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
-import { changedNodeIds } from '../utils/pipeline-diff';
+import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from '../utils/pipeline-diff';
 import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
@@ -157,6 +157,12 @@ function buildChildItems(
   return items;
 }
 
+// The component's name (its single top-level key) at a target, or undefined when unresolvable.
+function componentNameAt(yaml: string, target: EditTarget): string | undefined {
+  const comp = getComponentAt(yaml, target);
+  return comp ? firstKey(comp) : undefined;
+}
+
 // The next YAML plus the edit target of the node that was just added, so the caller can select it.
 type InsertResult = { yaml: string; selectTarget?: EditTarget };
 
@@ -256,13 +262,19 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
 // Classify a canvas keydown; presses inside text fields / Monaco keep their own editing semantics.
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
+// Focused controls own their keys: text fields / Monaco keep editing semantics, and buttons, selects,
+// switches, menus (toolbar buttons, Radix triggers — all render as focusable controls) must not have
+// Delete open the confirm dialog or `/` open the palette while focused.
+const FOCUS_GUARD_SELECTOR =
+  'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], .monaco-editor';
+
 function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   // Another layer (a chip popover, a dialog) already handled this key.
   if (e.defaultPrevented) {
     return null;
   }
   const target = e.target as HTMLElement | null;
-  if (target?.closest('input, textarea, [contenteditable="true"], .monaco-editor')) {
+  if (target?.closest(FOCUS_GUARD_SELECTOR)) {
     return null;
   }
   // `/` opens the palette — ⌘K is taken by the outer app-shell search.
@@ -375,7 +387,14 @@ export function VisualEditorPanel({
   isLoading,
 }: VisualEditorPanelProps) {
   const isEditing = mode !== 'view';
-  const [selected, setSelected] = useState<{ id: string; target: EditTarget; caseTarget?: EditTarget } | null>(null);
+  // `name` snapshots the component's key at selection time: targets are positional, so a reorder can
+  // leave a different component at the same target — the name mismatch lets us detect that.
+  const [selected, setSelected] = useState<{
+    id: string;
+    target: EditTarget;
+    caseTarget?: EditTarget;
+    name?: string;
+  } | null>(null);
   const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
@@ -397,13 +416,22 @@ export function VisualEditorPanel({
       onYamlChange(next);
     }
   }, [onYamlChange]);
-  // Select a different node (or none), committing the current node's pending edits first.
+  // Select a different node (or none), committing the current node's pending edits first. The name
+  // is read pre-commit, which is safe: the commit rewrites a node in place and never reorders.
   const selectNode = useCallback(
     (next: { id: string; target: EditTarget; caseTarget?: EditTarget } | null) => {
       commitPending();
-      setSelected(next);
+      setSelected(next ? { ...next, name: componentNameAt(yamlRef.current, next.target) } : null);
     },
     [commitPending]
+  );
+  // Select AND recenter (palette jump, problems list, inspector child nav) — the node may be off-screen.
+  const selectAndReveal = useCallback(
+    (next: { id: string; target: EditTarget; caseTarget?: EditTarget }) => {
+      selectNode(next);
+      setFocus((f) => ({ id: next.id, token: f.token + 1 }));
+    },
+    [selectNode]
   );
 
   // Expose the flush so the page's pipeline Save commits the still-selected node before saving.
@@ -450,9 +478,14 @@ export function VisualEditorPanel({
 
   const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
-  // Close the inspector (dropping its stale draft) when an undo/redo or external edit removes the node.
+  // Close the inspector (dropping its stale draft) when an undo/redo or external edit removes the
+  // node — or reorders the document so a different component now sits at the positional target.
   useEffect(() => {
-    if (selected && getComponentAt(yamlContent, selected.target) === undefined) {
+    if (!selected) {
+      return;
+    }
+    const comp = getComponentAt(yamlContent, selected.target);
+    if (comp === undefined || (selected.name !== undefined && firstKey(comp) !== selected.name)) {
       commitRef.current?.discard();
       setSelected(null);
     }
@@ -472,10 +505,16 @@ export function VisualEditorPanel({
   }, [lintByNode]);
 
   // Nodes whose config differs from the last-saved pipeline (unsaved dot); view mode is never unsaved.
+  // The baseline is signed once per save — re-signing the constant initialYaml on every keystroke
+  // would double the diff's parse cost.
   const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
+  const baselineSignatures = useMemo(
+    () => (isEditing && initialYaml !== null ? nodeConfigSignatures(initialYaml) : null),
+    [isEditing, initialYaml]
+  );
   const unsavedNodeIds = useMemo(
-    () => (isEditing && initialYaml !== null ? new Set(changedNodeIds(initialYaml, yamlContent)) : EMPTY_NODE_IDS),
-    [isEditing, initialYaml, yamlContent]
+    () => (baselineSignatures ? new Set(changedNodeIdsFromBaseline(baselineSignatures, yamlContent)) : EMPTY_NODE_IDS),
+    [baselineSignatures, yamlContent]
   );
   // Jumpable list for the floating "unsaved" panel — only nodes with an edit target can be selected.
   const unsavedNodeList = useMemo(
@@ -554,13 +593,10 @@ export function VisualEditorPanel({
 
   // Deletes are confirmed: the trash action / Delete key stage the target, the dialog commits it.
   const [pendingDelete, setPendingDelete] = useState<EditTarget | null>(null);
-  const pendingDeleteName = useMemo(() => {
-    if (!pendingDelete) {
-      return;
-    }
-    const comp = getComponentAt(yamlContent, pendingDelete);
-    return comp ? firstKey(comp) : undefined;
-  }, [pendingDelete, yamlContent]);
+  const pendingDeleteName = useMemo(
+    () => (pendingDelete ? componentNameAt(yamlContent, pendingDelete) : undefined),
+    [pendingDelete, yamlContent]
+  );
 
   // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
   const pendingDeleteRefCount = useMemo(() => {
@@ -650,7 +686,12 @@ export function VisualEditorPanel({
           (n) => result.selectTarget && editTargetsEqual(n.editTarget, result.selectTarget)
         );
         if (added?.editTarget) {
-          setSelected({ id: added.id, target: added.editTarget, caseTarget: added.caseEditTarget });
+          setSelected({
+            id: added.id,
+            target: added.editTarget,
+            caseTarget: added.caseEditTarget,
+            name: componentNameAt(result.yaml, added.editTarget),
+          });
         }
       }
     },
@@ -715,13 +756,11 @@ export function VisualEditorPanel({
   const handleJumpToNode = useCallback(
     (node: PipelineFlowNode) => {
       const jump = resolveJumpTarget(node, flowNodes);
-      if (!jump) {
-        return;
+      if (jump) {
+        selectAndReveal(jump);
       }
-      selectNode({ id: jump.id, target: jump.target, caseTarget: jump.caseTarget });
-      setFocus((f) => ({ id: jump.id, token: f.token + 1 }));
     },
-    [flowNodes, selectNode]
+    [flowNodes, selectAndReveal]
   );
   const handleJumpToNodeId = useCallback(
     (nodeId: string) => {
@@ -820,11 +859,7 @@ export function VisualEditorPanel({
                 <PipelineProblemsPanel
                   missingSecrets={missingSecrets}
                   onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
-                  onSelectProblem={(id, target, caseTarget) => {
-                    // Select AND recenter — the offending node may be off-screen.
-                    selectNode({ id, target, caseTarget });
-                    setFocus((f) => ({ id, token: f.token + 1 }));
-                  }}
+                  onSelectProblem={(id, target, caseTarget) => selectAndReveal({ id, target, caseTarget })}
                   problems={problems}
                 />
                 <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
@@ -874,11 +909,7 @@ export function VisualEditorPanel({
                   onCreateResource={isEditing ? handleRequestCreateResource : undefined}
                   onDelete={isEditing ? setPendingDelete : undefined}
                   onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
-                  onSelectChild={(item) => {
-                    selectNode({ id: item.id, target: item.target, caseTarget: item.caseTarget });
-                    // Recenter so the newly selected child is in view.
-                    setFocus((f) => ({ id: item.id, token: f.token + 1 }));
-                  }}
+                  onSelectChild={selectAndReveal}
                   readOnly={!isEditing}
                   target={selected.target}
                   yaml={yamlContent}

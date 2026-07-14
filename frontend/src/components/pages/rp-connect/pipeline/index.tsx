@@ -676,6 +676,10 @@ function SidebarPanel({
   const nodeRangesRef = useRef(nodeRanges);
   nodeRangesRef.current = nodeRanges;
 
+  // While true, the cursor listener below skips its highlight sync — a programmatic reveal
+  // (which fires setSelection synchronously) must not overwrite the user's explicit tree selection.
+  const suppressCursorSyncRef = useRef(false);
+
   const revealNodeInEditor = useCallback(
     (nodeId?: string) => {
       const ed = editorInstance;
@@ -685,12 +689,19 @@ function SidebarPanel({
         return;
       }
       const endLine = Math.min(range.end, model.getLineCount());
-      ed.setSelection({
-        startLineNumber: range.start,
-        startColumn: 1,
-        endLineNumber: endLine,
-        endColumn: model.getLineMaxColumn(endLine),
-      });
+      // setSelection dispatches onDidChangeCursorPosition synchronously, so a same-tick flag
+      // is enough to keep it from re-deriving the highlight from the (possibly ancestor) range.
+      suppressCursorSyncRef.current = true;
+      try {
+        ed.setSelection({
+          startLineNumber: range.start,
+          startColumn: 1,
+          endLineNumber: endLine,
+          endColumn: model.getLineMaxColumn(endLine),
+        });
+      } finally {
+        suppressCursorSyncRef.current = false;
+      }
       ed.revealLineInCenterIfOutsideViewport(range.start);
       ed.focus();
     },
@@ -711,6 +722,11 @@ function SidebarPanel({
       return;
     }
     const sub = editorInstance.onDidChangeCursorPosition((e) => {
+      // Skip while a programmatic reveal is selecting an editable ancestor on the tree's behalf;
+      // syncing here would snap the highlight from the clicked child row to that ancestor.
+      if (suppressCursorSyncRef.current) {
+        return;
+      }
       setActiveNodeId(enclosingNodeId(e.position.lineNumber, nodeRangesRef.current));
     });
     return () => sub.dispose();

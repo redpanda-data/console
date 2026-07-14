@@ -67,6 +67,18 @@ describe('useSaveHotkey', () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
+  it('ignores auto-repeated keydowns from a held ⌘S', () => {
+    const onSave = vi.fn();
+    renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
+
+    pressSave();
+    // Holding the key fires repeats faster than isSaving can re-render — they must not re-save,
+    // but still preventDefault so the browser's save dialog can't open mid-hold.
+    const repeatEvent = pressSave({ repeat: true });
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(repeatEvent.defaultPrevented).toBe(true);
+  });
+
   it('swallows the shortcut but does not start a second save while one is in flight', () => {
     const onSave = vi.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: true, onSave }));

@@ -11,6 +11,7 @@
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -57,6 +58,7 @@ import {
   firstKey,
   getComponentAt,
   listResourceLabels,
+  pathResourceRefKind,
   type ResourceKind,
   renameResourceReferences,
   resourceArrayKey,
@@ -172,9 +174,15 @@ export function NodeInspector({
   const reportConditionDraft = useCallback((next: Record<string, unknown> | null) => {
     conditionDraftRef.current = next;
   }, []);
-  // The resource's original label, captured for the rename cascade when committing a resource edit.
+  // The resource's original label, captured for the rename cascade when committing a resource
+  // edit — for cache/rate_limit `resource` targets and `*_resources` items alike.
   const resourceLabel0 =
-    target?.kind === 'resource' && component && typeof component.label === 'string' ? component.label : undefined;
+    target &&
+    (resourceTargetKind(target) ?? pathResourceRefKind(target)) &&
+    component &&
+    typeof component.label === 'string'
+      ? component.label
+      : undefined;
 
   // Commit pending edits, condition before component — the condition replaces the whole case, so
   // written second it would clobber the component edit. Drafts are consumed as applied (re-call = no-op).
@@ -269,10 +277,12 @@ export function NodeInspector({
   // Delete lives in the header's 3-dot menu.
   const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
 
-  // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of the
-  // other kind must not inflate the count.
-  const resourceLabel = target.kind === 'resource' && typeof component.label === 'string' ? component.label : undefined;
-  const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceTargetKind(target)) : 0;
+  // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of
+  // another kind must not inflate the count. Covers cache/rate_limit `resource` targets and
+  // `*_resources` items (path targets) alike.
+  const resourceRefKind = resourceTargetKind(target) ?? pathResourceRefKind(target);
+  const resourceLabel = resourceRefKind && typeof component.label === 'string' ? component.label : undefined;
+  const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceRefKind) : 0;
 
   // Resource labels for the `resource:` dropdowns in this component's form.
   const resourceLabels: Record<ResourceKind, string[]> = {
@@ -402,7 +412,7 @@ const InspectorBody = ({
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
         onSelectChild={onSelectChild}
-        requireLabel={target.kind === 'resource'}
+        requireLabel={(resourceTargetKind(target) ?? pathResourceRefKind(target)) !== undefined}
         resourceLabels={resourceLabels}
         spec={spec}
         value={component}
@@ -465,24 +475,22 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   );
 };
 
-// Lint problems for the selected node, shown in context above its config.
+// Lint problems for the selected node, shown in context above its config. A registry Alert,
+// squared off (rounded-none, side borders dropped) to sit flush as an inspector banner.
 const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
-  <div className="shrink-0 border-destructive/30 border-b bg-destructive/5 px-4 py-3">
-    <div className="mb-1 flex items-center gap-1.5 text-destructive">
-      <AlertCircle className="size-4 shrink-0" />
-      <Text as="span" className="text-destructive" variant="bodyStrongMedium">
-        {pluralizeWithNumber(hints.length, 'problem')}
-      </Text>
-    </div>
-    <ul className="flex flex-col gap-1">
-      {hints.map((hint, i) => (
-        <li className="text-destructive text-xs" key={`${hint.line}-${hint.column}-${i}`}>
-          {hint.hint}
-          {hint.line > 0 ? <span className="text-destructive/70"> (line {hint.line})</span> : null}
-        </li>
-      ))}
-    </ul>
-  </div>
+  <Alert className="shrink-0 rounded-none border-x-0 border-t-0" icon={<AlertCircle />} variant="destructive">
+    <AlertTitle>{pluralizeWithNumber(hints.length, 'problem')}</AlertTitle>
+    <AlertDescription>
+      <ul className="flex flex-col gap-1">
+        {hints.map((hint, i) => (
+          <li className="text-xs" key={`${hint.line}-${hint.column}-${i}`}>
+            {hint.hint}
+            {hint.line > 0 ? <span className="text-muted-foreground"> (line {hint.line})</span> : null}
+          </li>
+        ))}
+      </ul>
+    </AlertDescription>
+  </Alert>
 );
 
 // Write a component-config draft at `target`, cascading a resource-label rename to every component
@@ -500,11 +508,12 @@ function applyComponentDraft(
     toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
     return null;
   }
-  if (target.kind === 'resource' && originalLabel) {
+  const refKind = resourceTargetKind(target) ?? pathResourceRefKind(target);
+  if (refKind && originalLabel) {
     const nextLabel = typeof config.label === 'string' ? config.label : undefined;
     if (nextLabel && nextLabel !== originalLabel) {
-      // Kind-scoped: renaming a cache must not rewrite a same-labelled rate limit's references.
-      return renameResourceReferences(applied, originalLabel, nextLabel, resourceTargetKind(target)) ?? applied;
+      // Kind-scoped: renaming a cache must not rewrite a same-labelled rate limit's (or input's) references.
+      return renameResourceReferences(applied, originalLabel, nextLabel, refKind) ?? applied;
     }
   }
   return applied;
@@ -692,17 +701,20 @@ const CaseConditionSection = ({
   );
 };
 
-// Banner for a dangling `resource:` reference, with a one-click fix that creates it under that label.
+// Banner for a dangling `resource:` reference, with a one-click fix that creates it under that
+// label. A registry Alert, squared off to sit flush as an inspector banner; the title reserves
+// right padding so it never runs under the absolutely-positioned action.
 const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate: () => void }) => (
-  <div className="flex shrink-0 items-center gap-2 border-warning/30 border-b bg-warning-subtle px-4 py-3">
-    <AlertCircle className="size-4 shrink-0 text-warning" />
-    <Text as="span" className="min-w-0 flex-1 text-warning" variant="bodySmall">
+  <Alert className="shrink-0 rounded-none border-x-0 border-t-0" icon={<AlertCircle />} variant="warning">
+    <AlertTitle className="pr-20 font-normal">
       Resource <span className="font-mono">{refLabel}</span> doesn't exist.
-    </Text>
-    <Button onClick={onCreate} size="sm" variant="outline">
-      Create it
-    </Button>
-  </div>
+    </AlertTitle>
+    <AlertAction>
+      <Button onClick={onCreate} size="sm" variant="outline">
+        Create it
+      </Button>
+    </AlertAction>
+  </Alert>
 );
 
 const EmptyHint = ({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) => (
@@ -810,13 +822,11 @@ const RawComponentEditor = ({
   component: Record<string, unknown>;
   onConfigChange?: (next: Record<string, unknown> | null) => void;
 }) => {
+  // No prop→state resync: the sole call site keys this editor on the component value, so a
+  // changed `component` always remounts a fresh instance (same contract as NodeConfigForm).
   const initial = useMemo(() => yamlStringify(component), [component]);
   const [draft, setDraft] = useState(initial);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setDraft(initial);
-  }, [initial]);
 
   // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
   // error reports nothing, so invalid YAML is never committed.
