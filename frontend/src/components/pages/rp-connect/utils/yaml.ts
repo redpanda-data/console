@@ -135,9 +135,8 @@ const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConf
     return;
   }
 
-  // The scanner keeps its name wrapper — `scanner: { csv: {…} }` — writing only the inner
-  // fields would produce a malformed scanner config. A default-less spec yields an undefined
-  // inner config, which the YAML serializer would drop along with the key — normalize to `{}`.
+  // Keep the scanner's name wrapper (`scanner: { csv: {…} }`). A default-less spec yields an
+  // undefined inner config, which the serializer would drop along with the key — normalize to {}.
   const scannerName = Object.keys(newConfigObject as Record<string, unknown>)[0];
   if (!scannerName) {
     return;
@@ -346,8 +345,7 @@ function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
 }
 
 // Merges APPEND the new component to its array, so field help-comments must target the LAST
-// entry — index 0 lands on a pre-existing component (or nothing) whenever the pipeline already
-// has one. A standalone doc has exactly one entry, so "last" is correct there too.
+// entry (a standalone doc has exactly one, so "last" holds there too).
 function lastArrayIndex(doc: Document.Parsed | Document, path: string[]): string {
   const node = doc.getIn(path) as { items?: unknown[] } | undefined;
   const length = node?.items?.length ?? 0;
@@ -380,8 +378,7 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
       break;
     }
     case 'scanner': {
-      // A merged scanner lives at `input.<type>.scanner.<name>` (see mergeScanner); a bare
-      // `[specName]` never matched anything, so scanner help-comments were silently dropped.
+      // A merged scanner lives at `input.<type>.scanner.<name>` (see mergeScanner).
       const inputType = firstKey((doc.get('input') as { toJSON?: () => unknown } | undefined)?.toJSON?.());
       if (!inputType) {
         return;
@@ -744,7 +741,7 @@ export function extractConnectorTopics(
   // `merge: true` resolves `<<: *anchor` keys, matching the flow parser and extractAllTopics —
   // a component pulling `topics` from a shared anchor must not read as "missing topic" here.
   // parseDocument collects structural errors instead of throwing, so malformed-but-parseable
-  // YAML still reads as "no topics" rather than a parse error (pinned by tests).
+  // YAML still reads as "no topics" rather than a parse error.
   let parsed: unknown;
   try {
     parsed = parseDocument(yamlContent, { merge: true }).toJS();
@@ -1159,6 +1156,11 @@ export function pathResourceRefKind(target: EditTarget): ResourceRefKind | undef
   }
   const [key] = target.path;
   return typeof key === 'string' ? PATH_RESOURCE_REF_KIND[key] : undefined;
+}
+
+/** The ref kind an edit target's component can be referenced by, across both target shapes. */
+export function resourceRefKindForTarget(target: EditTarget): ResourceRefKind | undefined {
+  return resourceTargetKind(target) ?? pathResourceRefKind(target);
 }
 
 /** Labels of every resource of a kind, in document order — the options for a reference dropdown. */

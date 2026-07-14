@@ -58,12 +58,11 @@ import {
   firstKey,
   getComponentAt,
   listResourceLabels,
-  pathResourceRefKind,
   type ResourceKind,
   renameResourceReferences,
   resourceArrayKey,
   resourceKindForComponentName,
-  resourceTargetKind,
+  resourceRefKindForTarget,
   setComponentAt,
   targetComponentType,
 } from '../utils/yaml';
@@ -177,10 +176,7 @@ export function NodeInspector({
   // The resource's original label, captured for the rename cascade when committing a resource
   // edit — for cache/rate_limit `resource` targets and `*_resources` items alike.
   const resourceLabel0 =
-    target &&
-    (resourceTargetKind(target) ?? pathResourceRefKind(target)) &&
-    component &&
-    typeof component.label === 'string'
+    target && resourceRefKindForTarget(target) && component && typeof component.label === 'string'
       ? component.label
       : undefined;
 
@@ -278,9 +274,8 @@ export function NodeInspector({
   const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
 
   // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of
-  // another kind must not inflate the count. Covers cache/rate_limit `resource` targets and
-  // `*_resources` items (path targets) alike.
-  const resourceRefKind = resourceTargetKind(target) ?? pathResourceRefKind(target);
+  // another kind must not inflate the count.
+  const resourceRefKind = resourceRefKindForTarget(target);
   const resourceLabel = resourceRefKind && typeof component.label === 'string' ? component.label : undefined;
   const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceRefKind) : 0;
 
@@ -412,7 +407,7 @@ const InspectorBody = ({
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
         onSelectChild={onSelectChild}
-        requireLabel={(resourceTargetKind(target) ?? pathResourceRefKind(target)) !== undefined}
+        requireLabel={resourceRefKindForTarget(target) !== undefined}
         resourceLabels={resourceLabels}
         spec={spec}
         value={component}
@@ -476,7 +471,7 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
 };
 
 // Lint problems for the selected node, shown in context above its config. A registry Alert,
-// squared off (rounded-none, side borders dropped) to sit flush as an inspector banner.
+// squared off to sit flush as an inspector banner.
 const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
   <Alert className="shrink-0 rounded-none border-x-0 border-t-0" icon={<AlertCircle />} variant="destructive">
     <AlertTitle>{pluralizeWithNumber(hints.length, 'problem')}</AlertTitle>
@@ -508,7 +503,7 @@ function applyComponentDraft(
     toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
     return null;
   }
-  const refKind = resourceTargetKind(target) ?? pathResourceRefKind(target);
+  const refKind = resourceRefKindForTarget(target);
   if (refKind && originalLabel) {
     const nextLabel = typeof config.label === 'string' ? config.label : undefined;
     if (nextLabel && nextLabel !== originalLabel) {

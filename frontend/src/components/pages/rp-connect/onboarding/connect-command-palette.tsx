@@ -266,9 +266,8 @@ export const ConnectCommandPalette = ({
 
   const inScope = useMemo(() => allComponents.filter((c) => typeAllowed(c.type)), [allComponents, typeAllowed]);
 
-  // Searchable text is derived once per catalog rather than per keystroke: building it walks the
-  // alias table and joins the full description for every component, which is far too expensive to
-  // redo for hundreds of components on each character typed.
+  // Searchable text is derived once per catalog: building it walks the alias table and joins each
+  // component's full description — too costly to redo per keystroke across hundreds of components.
   const searchIndex = useMemo(
     () => new Map(allComponents.map((component) => [component, searchableText(component)])),
     [allComponents]
@@ -297,7 +296,7 @@ export const ConnectCommandPalette = ({
     return inScope
       .map((component) => ({
         component,
-        rank: matchRank(component, q, searchIndex.get(component) ?? searchableText(component)),
+        rank: matchRank(component, q, searchIndex.get(component) ?? ''),
       }))
       .filter((r) => r.rank >= 0)
       .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
@@ -312,10 +311,7 @@ export const ConnectCommandPalette = ({
     }
     const types = new Set<ConnectComponentType>();
     for (const component of allComponents) {
-      if (
-        !typeAllowed(component.type) &&
-        matchRank(component, q, searchIndex.get(component) ?? searchableText(component)) >= 0
-      ) {
+      if (!typeAllowed(component.type) && matchRank(component, q, searchIndex.get(component) ?? '') >= 0) {
         types.add(component.type);
       }
     }
