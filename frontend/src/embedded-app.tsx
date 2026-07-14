@@ -44,6 +44,7 @@ import queryClient from 'query-client';
 import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { NotFoundPage } from './components/misc/not-found-page';
+import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -144,6 +145,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
         },
         basepath: basePath,
         defaultNotFoundComponent: NotFoundPage,
+        defaultPendingComponent: RoutePendingFallback,
       }),
     [basePath, dataplaneTransport]
   );
