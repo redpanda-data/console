@@ -30,11 +30,16 @@ import {
   listCatalogs,
   listTables,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql-SQLService_connectquery';
-import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
+import { LONG_LIVED_CACHE_STALE_TIME, MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
 
 type SqlQueryOptions = {
   enabled?: boolean;
 };
+
+// Catalogs, tables and identity only change through explicit actions (table
+// creation invalidates via useInvalidateSqlCatalog), so a long stale time is
+// safe — it stops the landing↔editor view switch from refetching all three
+// on every toggle.
 
 export const useListCatalogsQuery = (input?: MessageInit<ListCatalogsRequest>, options?: SqlQueryOptions) => {
   const request = create(ListCatalogsRequestSchema, {
@@ -44,6 +49,7 @@ export const useListCatalogsQuery = (input?: MessageInit<ListCatalogsRequest>, o
 
   return useQuery(listCatalogs, request, {
     enabled: options?.enabled !== false,
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
   });
 };
 
@@ -53,6 +59,7 @@ export const useGetSqlIdentityQuery = (options?: SqlQueryOptions) => {
   const request = create(GetSqlIdentityRequestSchema, {});
   return useQuery(getSqlIdentity, request, {
     enabled: options?.enabled !== false,
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
   });
 };
 
@@ -66,6 +73,7 @@ export const useListTablesQuery = (input?: MessageInit<ListTablesRequest>, optio
 
   return useQuery(listTables, request, {
     enabled: options?.enabled !== false && Boolean(input?.catalog),
+    staleTime: LONG_LIVED_CACHE_STALE_TIME,
   });
 };
 

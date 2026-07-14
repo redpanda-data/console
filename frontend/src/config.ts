@@ -163,6 +163,8 @@ export type SidebarItem = {
   icon?: JSX.Element;
   order: number;
   group?: string; // "Agentic AI" - for grouping related items
+  /** Sub-pages rendered by the host as an expandable list under the parent row (e.g. SQL → Studio). */
+  children?: Array<{ title: string; to: string }>;
 };
 
 export type Breadcrumb = {
@@ -368,6 +370,7 @@ function installUiStateSubscriptions(): () => void {
             icon: r.icon,
             order: i,
             group: r.group,
+            children: r.children?.map((child) => ({ title: child.title, to: child.path })),
           }) as SidebarItem
       );
 

@@ -11,15 +11,13 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { isEmbedded } from 'config';
-import { Database, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Database, Maximize2, Minimize2 } from 'lucide-react';
 import {
-  CatalogType,
   ExecuteQueryRequestSchema,
   type Column as SqlColumn,
   type Row as SqlRow,
@@ -27,21 +25,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
-import {
-  useExecuteQueryMutation,
-  useGetSqlIdentityQuery,
-  useInvalidateSqlCatalog,
-  useListCatalogsQuery,
-  useListTablesQuery,
-  useTopicIcebergQuery,
-} from 'react-query/api/sql';
+import { useExecuteQueryMutation, useInvalidateSqlCatalog, useTopicIcebergQuery } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
-import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
-import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { bridgeTopicForQuery, firstKeyword, isWriteKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isWriteKeyword, previewSql } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -58,6 +47,7 @@ import {
   type TableRef,
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
+import { useSqlCatalogs } from './use-sql-catalogs';
 
 // Start with a blank editor — the results pane prompts the caller to run a
 // query (or create a table from a topic when the catalog is empty) instead of
@@ -128,14 +118,6 @@ const setPageExpanded = (expanded: boolean) => {
   } else {
     root.removeAttribute(PAGE_EXPANDED_ATTR);
   }
-};
-
-// Standalone console renders its own breadcrumb/title header for the SQL route;
-// populate it the way other pages do (no-op visually when embedded, where the
-// host supplies the header).
-const setStudioPageHeader = () => {
-  uiState.pageTitle = 'SQL';
-  uiState.pageBreadcrumbs = [{ title: 'SQL', linkTo: '/sql', heading: 'SQL' }];
 };
 
 // Renders the workspace as a fixed overlay filling the area right of the
@@ -297,6 +279,52 @@ function setupOverlayLayout(
   };
 }
 
+// The studio header row: a back affordance to the SQL overview, the title, the
+// role badge and the fullscreen toggle. Split out so its conditionals stay off
+// SqlWorkspace's complexity budget.
+function StudioHeader({
+  mode,
+  toggleMode,
+  onBack,
+  sqlRole,
+}: {
+  mode: StudioMode;
+  toggleMode: () => void;
+  onBack: () => void;
+  sqlRole: SqlRole;
+}) {
+  return (
+    <div className={cn('flex h-[52px] shrink-0 items-center gap-2 px-1', mode === 'full' ? 'px-4' : 'mt-3')}>
+      <Button
+        aria-label="Back to SQL overview"
+        onClick={onBack}
+        size="icon-sm"
+        title="Back to overview"
+        variant="secondary-ghost"
+      >
+        <ArrowLeft />
+      </Button>
+      <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
+        <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Query</span>
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        <Badge size="sm" variant="simple">
+          {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
+        </Badge>
+        <Button
+          aria-label={mode === 'boxed' ? 'Enter fullscreen' : 'Exit fullscreen'}
+          onClick={toggleMode}
+          size="icon-sm"
+          title={mode === 'boxed' ? 'Fullscreen' : 'Exit fullscreen'}
+          variant="secondary-ghost"
+        >
+          {mode === 'boxed' ? <Maximize2 /> : <Minimize2 />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export type SqlWorkspaceProps = {
   /**
    * Effective role of the caller. When omitted it's derived from the
@@ -304,6 +332,14 @@ export type SqlWorkspaceProps = {
    * pass it explicitly to override the lookup in tests/storybook.
    */
   sqlRole?: SqlRole;
+  /** SQL to seed the editor's first tab with on mount (from a landing CTA). */
+  seedQuery?: string;
+  /** Run `seedQuery` once on mount — set when entering from a "run" CTA. */
+  autoRun?: boolean;
+  /** Open the add-topic wizard on mount — set when entering from "Add a topic". */
+  openWizardOnMount?: boolean;
+  /** Return to the standalone SQL overview/landing. */
+  onBack: () => void;
 };
 
 // Studio layout mode + the callback ref that wires it to the imperative overlay.
@@ -329,7 +365,6 @@ function useStudioMode(): {
       // Reflect the mode for the cloud-ui shell while the studio is mounted, and
       // clear it on unmount so it leaves no residue on other pages.
       setPageExpanded(modeRef.current === 'full');
-      setStudioPageHeader();
       const handle = setupOverlayLayout(el, () => modeRef.current);
       overlayCleanup.current = handle.teardown;
       overlayRelayout.current = handle.relayout;
@@ -359,17 +394,13 @@ function useStudioMode(): {
   return { attachOverlay, mode, toggleMode };
 }
 
-export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
-  const navigate = useNavigate();
-  // The route guard skips the redirect while endpoint compatibility is still
-  // loading; once it resolves, bounce clusters that genuinely lack SQLService.
-  const endpointsLoaded = useSupportedFeaturesStore((s) => s.endpointCompatibility !== null);
-  useEffect(() => {
-    if (endpointsLoaded && !isSupported(Feature.SQLService)) {
-      navigate({ to: '/', replace: true });
-    }
-  }, [endpointsLoaded, navigate]);
-
+export function SqlWorkspace({
+  sqlRole: sqlRoleProp,
+  seedQuery = INITIAL_QUERY,
+  autoRun = false,
+  openWizardOnMount = false,
+  onBack,
+}: SqlWorkspaceProps) {
   const [run, setRun] = useState<QueryRun>({ state: 'idle' });
   // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
   // is queried from the catalog tree; the lag itself comes from the
@@ -385,27 +416,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const latestRunToken = useRef(0);
   const { mode, toggleMode, attachOverlay } = useStudioMode();
 
-  const { data: catalogsData, isLoading } = useListCatalogsQuery();
+  const { isLoading, sqlRole, catalogs, completionCatalogs, hasTables, redpandaTablesData } =
+    useSqlCatalogs(sqlRoleProp);
   const executeQuery = useExecuteQueryMutation();
-
-  // Caller's effective role: an explicit prop wins (tests/storybook), otherwise
-  // derive it from the SQL identity — admin unlocks write/DDL affordances like
-  // the "Add a topic" button. Falls back to viewer until the lookup resolves.
-  const { data: identity } = useGetSqlIdentityQuery();
-  const sqlRole: SqlRole = sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
-
-  // Map proto catalogs to the tree view model. Tables/columns are filled in by
-  // the catalog-tree agent via ListTables/DescribeTable.
-  const catalogs = useMemo<Catalog[]>(() => {
-    // MVP surfaces only the Redpanda catalog; Iceberg catalog support lands later.
-    const list = (catalogsData?.catalogs ?? []).filter((c) => c.type === CatalogType.REDPANDA);
-    return list.map((c) => ({
-      name: c.name,
-      displayLabel: c.type === CatalogType.REDPANDA ? 'Redpanda Catalog' : c.name,
-      engine: c.type === CatalogType.REDPANDA ? 'redpanda' : 'iceberg',
-      namespaces: c.namespace ? [{ id: `${c.name}.${c.namespace}`, name: c.namespace, tables: [] }] : [],
-    }));
-  }, [catalogsData]);
 
   // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
   // signal (`redpanda.iceberg.mode`), independent of any lag metric. A topic that
@@ -452,50 +465,10 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     return { topic: bridgeTopic, translationLag, commitLag, totalLag: translationLag + commitLag };
   }, [bridgeTopic, bridgeTopicTiered, bridgeTxLag.data, bridgeCommitLag.data]);
 
-  // Redpanda-catalog tables, fetched up front so both the add-topic wizard and
-  // editor autocomplete (and the bridge indicator below) can resolve table refs.
-  const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
-  const { data: redpandaTablesData } = useListTablesQuery({ catalog: redpandaCatalogName });
-  const hasTables = (redpandaTablesData?.tables?.length ?? 0) > 0;
-
-  // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
-  // autocomplete can resolve table references — the bare catalog list seeds
-  // namespaces with empty `tables`.
-  const completionCatalogs = useMemo<Catalog[]>(
-    () =>
-      catalogs.map((catalog) => {
-        if (catalog.name !== redpandaCatalogName) {
-          return catalog;
-        }
-        const tablesByNamespace = new Map<string, TableRef[]>();
-        for (const t of redpandaTablesData?.tables ?? []) {
-          const list = tablesByNamespace.get(t.catalogNamespace) ?? [];
-          list.push({
-            id: `${catalog.name}.${t.catalogNamespace}.${t.name}`,
-            name: t.name,
-            namespaceName: t.catalogNamespace,
-            catalogName: catalog.name,
-            topicName: t.topic,
-          });
-          tablesByNamespace.set(t.catalogNamespace, list);
-        }
-        const namespaces = catalog.namespaces.map((ns) => ({
-          ...ns,
-          tables: tablesByNamespace.get(ns.name) ?? ns.tables,
-        }));
-        for (const [name, tables] of tablesByNamespace) {
-          if (!namespaces.some((ns) => ns.name === name)) {
-            namespaces.push({ id: `${catalog.name}.${name}`, name, tables });
-          }
-        }
-        return { ...catalog, namespaces };
-      }),
-    [catalogs, redpandaCatalogName, redpandaTablesData]
-  );
-
   const doRun = useCallback(
     (sql: string) => {
-      const token = (latestRunToken.current += 1);
+      latestRunToken.current += 1;
+      const token = latestRunToken.current;
       const kw = firstKeyword(sql);
       // Block writes/DDL/DCL on the first keyword; read-shaped statements
       // (SELECT/WITH/EXPLAIN/SHOW/…) pass and the server rejects what it can't run.
@@ -513,7 +486,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
         let hintAction = false;
         if (kw === 'CREATE') {
           title = 'Use the wizard to create tables';
-          message = "CREATE TABLE isn't run from the editor in this release.";
+          message = "CREATE TABLE isn't run from the studio in this release.";
           hint = 'Creating a table from a topic?';
           hintAction = true;
         } else if (kw === 'GRANT' || kw === 'REVOKE') {
@@ -555,17 +528,16 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   );
 
   const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
-    // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
-    // operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`.
-    const ref = `${catalog.name}=>${table.name}`;
-    const sql = `SELECT *\nFROM ${ref}\nLIMIT 100;`;
-    editorRef.current?.setQuery(sql, table.name);
+    editorRef.current?.setQuery(previewSql(catalog.name, table.name), table.name);
   }, []);
 
   // ---- Add-topic wizard ----
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(openWizardOnMount);
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
-  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  // The topic listing is the heaviest request on this page (it's the full
+  // cluster topic list) and only feeds the wizard's picker — fetch it when the
+  // wizard actually opens, not for every editor visit.
+  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true, enabled: wizardOpen });
   const invalidateSqlCatalog = useInvalidateSqlCatalog();
 
   // Topics already exposed as tables in the Redpanda catalog — excluded from
@@ -599,6 +571,18 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     setWizardError(undefined);
   }, []);
 
+  // Run the seed query once when the studio opens from a landing "run" CTA,
+  // through the editor's run path so it lands in the query history like any
+  // user-initiated run. The studio mounts fresh on each entry, so this fires
+  // exactly once per entry; the ref guards against strict-mode double-invoke.
+  const didAutoRun = useRef(false);
+  useEffect(() => {
+    if (!(didAutoRun.current || wizardOpen) && autoRun && seedQuery) {
+      didAutoRun.current = true;
+      editorRef.current?.run(seedQuery);
+    }
+  }, [autoRun, seedQuery, wizardOpen]);
+
   const onCreateTable = useCallback(
     ({ topic, tableName }: { topic: string; tableName: string }) => {
       setWizardError(undefined);
@@ -619,32 +603,12 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
 
   return (
     <div
-      // The registry's near-black dark theme renders borders at rgba(255,255,255,0.04)
-      // — effectively invisible. The SQL design uses visible grey dividers
-      // (grey-700/600/800), so re-point the border tokens to those registry grey
-      // scale values for this surface in dark mode only. Light mode is untouched.
-      className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      // Dark-mode border-token remap is inherited from the /sql layout route's
+      // wrapper (see routes/sql.tsx SQL_DARK_BORDERS) — defined once for both views.
+      className="flex h-full flex-col bg-background text-strong"
       ref={attachOverlay}
     >
-      <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', mode === 'full' ? 'px-4' : 'mt-3')}>
-        <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
-          <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" variant="simple">
-            {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
-          </Badge>
-          <Button
-            aria-label={mode === 'boxed' ? 'Enter fullscreen' : 'Exit fullscreen'}
-            onClick={toggleMode}
-            size="icon-sm"
-            title={mode === 'boxed' ? 'Fullscreen' : 'Exit fullscreen'}
-            variant="secondary-ghost"
-          >
-            {mode === 'boxed' ? <Maximize2 /> : <Minimize2 />}
-          </Button>
-        </div>
-      </div>
+      <StudioHeader mode={mode} onBack={onBack} sqlRole={sqlRole} toggleMode={toggleMode} />
 
       <div
         className={cn(
@@ -683,7 +647,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
                 defaultSize="42%"
                 minSize="15%"
               >
-                <SqlEditor catalogs={completionCatalogs} initialQuery={INITIAL_QUERY} onRun={doRun} ref={editorRef} />
+                <SqlEditor catalogs={completionCatalogs} initialQuery={seedQuery} onRun={doRun} ref={editorRef} />
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">

@@ -38,14 +38,20 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { isMacOS } from 'utils/platform';
-import { z } from 'zod';
 
+import { type HistoryEntry, loadHistory, pushHistory, saveHistory } from './sql-history';
 import type { Catalog, TableRef } from './sql-types';
 
 // Lets the workspace open a query in a new editor tab.
 export type SqlEditorHandle = {
   /** Open `sql` in a new tab named `name` (or "Query N") and focus it. */
   setQuery: (sql: string, name?: string) => void;
+  /**
+   * Execute `sql` through the editor's run path, so it is recorded in the
+   * query history exactly like a user-initiated run. Used by the workspace's
+   * auto-run entry from the landing page.
+   */
+  run: (sql: string) => void;
 };
 
 export type SqlEditorProps = {
@@ -56,41 +62,6 @@ export type SqlEditorProps = {
   /** SQL to seed the first tab with. */
   initialQuery?: string;
 };
-
-const HISTORY_KEY = 'rp_sql_history_v1';
-
-const HistoryEntrySchema = z.object({ sql: z.string(), at: z.number() });
-
-type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
-
-function loadHistory(): HistoryEntry[] {
-  if (typeof localStorage === 'undefined') {
-    return [];
-  }
-  try {
-    const raw: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
-    if (!Array.isArray(raw)) {
-      return [];
-    }
-    return raw.flatMap((entry) => {
-      const parsed = HistoryEntrySchema.safeParse(entry);
-      return parsed.success ? [parsed.data] : [];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(list: HistoryEntry[]): void {
-  if (typeof localStorage === 'undefined') {
-    return;
-  }
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 40)));
-  } catch {
-    // best-effort; ignore quota/serialization failures
-  }
-}
 
 type Tab = { id: number; name: string; sql: string };
 
@@ -342,6 +313,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
     // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
     // catalog/theme change, not per render).
     const runRef = useRef<() => void>(() => undefined);
+    const runTextRef = useRef<(text: string) => void>(() => undefined);
 
     const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
 
@@ -354,6 +326,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
           setActiveId(id);
           requestAnimationFrame(() => editorRef.current?.view?.focus());
         },
+        run: (sql: string) => runTextRef.current(sql),
       }),
       [nextTabId]
     );
@@ -367,12 +340,14 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
       if (!trimmed) {
         return;
       }
-      const entry: HistoryEntry = { sql: trimmed, at: Date.now() };
-      const nh = [entry, ...history.filter((h) => h.sql !== entry.sql)].slice(0, 40);
+      const nh = pushHistory(history, trimmed, Date.now());
       setHistory(nh);
       saveHistory(nh);
       runQuery(trimmed);
     };
+    // Latest runText, so the imperative handle (built once) records history
+    // against the current state instead of a stale closure.
+    runTextRef.current = runText;
 
     // Run the current selection if any, else the whole tab.
     const doRun = () => {

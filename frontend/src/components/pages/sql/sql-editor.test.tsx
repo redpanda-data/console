@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { createRef } from 'react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { SqlEditor } from './sql-editor';
+import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 
 // CodeMirror's layout/measure loop doesn't run in jsdom; the editor surface is
 // exercised manually/e2e.
@@ -98,5 +99,17 @@ describe('SqlEditor', () => {
     renderEditor();
     fireEvent.click(screen.getByRole('button', { name: 'History' }));
     expect(await screen.findByText('No queries yet')).toBeInTheDocument();
+  });
+
+  test('imperative run() executes and records history like a user run', async () => {
+    const onRun = vi.fn();
+    const ref = createRef<SqlEditorHandle>();
+    render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} ref={ref} />);
+
+    act(() => ref.current?.run('SELECT 42;'));
+    expect(onRun).toHaveBeenCalledWith('SELECT 42;');
+
+    fireEvent.click(screen.getByRole('button', { name: 'History' }));
+    expect(await screen.findByText('SELECT 42;', { selector: 'span' })).toBeInTheDocument();
   });
 });

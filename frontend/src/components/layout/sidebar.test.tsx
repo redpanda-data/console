@@ -60,6 +60,28 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
     expect(transcripts?.title).toBe('Transcripts');
   });
 
+  it('SQL item exposes a Studio sub-item when SQLService is supported', () => {
+    const compatibility: EndpointCompatibility = {
+      kafkaVersion: '3.6.0',
+      endpoints: [
+        {
+          endpoint: Feature.SQLService.endpoint,
+          method: Feature.SQLService.method,
+          isSupported: true,
+        },
+      ],
+    };
+
+    act(() => {
+      useSupportedFeaturesStore.getState().setEndpointCompatibility(compatibility);
+    });
+
+    const allItems = createGroupedSidebarItems().flatMap((g) => g.items);
+    const sql = allItems.find((item) => item.to === '/sql');
+    expect(sql).toBeDefined();
+    expect(sql?.children).toEqual([{ title: 'Studio', to: '/sql/studio' }]);
+  });
+
   it('store selector triggers re-render when endpointCompatibility changes', async () => {
     const selector = (s: { endpointCompatibility: EndpointCompatibility | null }) => s.endpointCompatibility;
     const { result, unmount } = renderHook(() => useSupportedFeaturesStore(selector));
