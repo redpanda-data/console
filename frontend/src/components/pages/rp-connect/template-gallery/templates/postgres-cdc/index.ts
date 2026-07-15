@@ -25,6 +25,18 @@ export const postgresCdcTemplate: PipelineTemplate = {
   slots: [
     dsnSlot('dsn', 'Postgres', 'POSTGRES_DSN', 'dsn'),
     {
+      id: 'schema',
+      section: 'source',
+      kind: 'string',
+      label: 'Schema',
+      description: 'Postgres schema the source tables live in.',
+      // Schema-required with no engine default; fall back to the conventional 'public'.
+      required: false,
+      placeholder: 'public',
+      defaultWhenBlank: () => 'public',
+      schemaField: 'schema',
+    },
+    {
       id: 'slotName',
       section: 'source',
       kind: 'string',
@@ -40,7 +52,9 @@ export const postgresCdcTemplate: PipelineTemplate = {
       section: 'source',
       kind: 'string',
       label: 'Source table',
-      placeholder: 'public.users',
+      description:
+        'Bare table name inside the schema above (no schema prefix). Add more in the YAML editor afterwards.',
+      placeholder: 'users',
       schemaField: 'tables',
     },
     targetTopicSlot,

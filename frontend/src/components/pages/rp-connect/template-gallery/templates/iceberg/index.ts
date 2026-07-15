@@ -61,6 +61,29 @@ export const icebergTemplate: PipelineTemplate = {
       required: true,
       schemaField: 'table',
     },
+    {
+      id: 'storageBucket',
+      section: 'sink',
+      kind: 'string',
+      label: 'S3 storage bucket',
+      // The engine requires exactly one storage backend (aws_s3 / gcp_cloud_storage /
+      // azure_blob_storage) — a one-of the schema can't express, so the schema alone
+      // wouldn't flag this as required. The template targets S3; other backends via YAML.
+      description: 'Bucket that holds the Iceberg data files. For GCS or Azure storage, edit the YAML afterwards.',
+      placeholder: 'my-iceberg-bucket',
+      required: true,
+      schemaField: 'storage.aws_s3.bucket',
+    },
+    {
+      id: 'storageRegion',
+      section: 'sink',
+      kind: 'string',
+      label: 'S3 bucket region',
+      description: 'Leave blank to resolve from the AWS environment.',
+      placeholder: 'us-east-1',
+      required: false,
+      schemaField: 'storage.aws_s3.region',
+    },
   ],
   baseYaml,
 };

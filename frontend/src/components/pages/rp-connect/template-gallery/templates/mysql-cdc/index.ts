@@ -29,8 +29,10 @@ export const mysqlCdcTemplate: PipelineTemplate = {
       section: 'source',
       kind: 'string',
       label: 'Source table',
-      description: 'Fully-qualified table to capture (e.g. mydb.users). Add more in the YAML editor afterwards.',
-      placeholder: 'mydb.users',
+      // The connector rejects dotted names (validate.go: ^[a-zA-Z0-9_$]+$); the database comes from the DSN.
+      description:
+        'Bare table name — no database prefix; the database comes from the DSN. Add more in the YAML editor afterwards.',
+      placeholder: 'users',
       required: true,
       schemaField: 'tables',
     },

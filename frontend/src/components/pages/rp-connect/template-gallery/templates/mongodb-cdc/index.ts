@@ -38,7 +38,8 @@ export const mongodbCdcTemplate: PipelineTemplate = {
       section: 'source',
       kind: 'string',
       label: 'Collection',
-      description: 'Source MongoDB collection name.',
+      description:
+        'Collection to stream changes from. The connector accepts several — add more in the YAML editor afterwards.',
       required: true,
       schemaField: 'collections',
     },

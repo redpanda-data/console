@@ -1,19 +1,23 @@
 input:
   mysql_cdc:
     # ── Connection (filled in from the form) ────────────────────────────────
-    dsn: ${slot.dsn}
-    tables:
+    dsn: ${slot.dsn}                       # format user:pass@tcp(host:3306)/database
+    tables:                                # BARE names, no `db.` prefix (database comes from the DSN)
       - ${slot.includedTable}
+    # flavor: mysql                        # use 'mariadb' for MariaDB clusters
+    # tls:
+    #   skip_cert_verify: true             # only for servers with self-signed certificates
 
     # ── Snapshot of existing rows before streaming changes ──────────────────
-    stream_snapshot: true                  # capture current rows on first run
-    # snapshot_max_batch_size: 0           # 0 = let the connector pick a safe size
+    stream_snapshot: false                 # required field — enable to seed existing data
+    # snapshot_max_batch_size: 1000        # only relevant while snapshotting
 
-    # ── Binlog tuning ───────────────────────────────────────────────────────
+    # ── Binlog tuning (benchmark-tuned batch) ───────────────────────────────
+    batching:
+      count: 5000
+      period: 1s
     checkpoint_limit: 1024                 # outstanding messages before backpressure
     checkpoint_cache: mysql_cdc_checkpoint # cache resource storing binlog position (defined below)
-    # heartbeat_interval: 5s
-    # flavor: mysql                        # use 'mariadb' for MariaDB clusters
 
     # ── Error handling ──────────────────────────────────────────────────────
     auto_replay_nacks: true                # re-deliver NACKed messages
@@ -24,12 +28,11 @@ output:
       - ${REDPANDA_BROKERS}
     topic: ${slot.targetTopic}
 
-    # ── Throughput defaults — tune for your workload ────────────────────────
-    max_in_flight: 64
+    # Engine defaults (max_in_flight 256, idempotent writes) are already tuned; batching happens
+    # on the CDC input.
     compression: snappy
-    idempotent_write: true
 
 cache_resources:
   # Persists the binlog position so restarts resume instead of re-snapshotting.
   - label: mysql_cdc_checkpoint
-    memory: {}                             # swap for file/redis to persist across restarts
+    memory: {}                             # swap for a persistent cache to resume across restarts
