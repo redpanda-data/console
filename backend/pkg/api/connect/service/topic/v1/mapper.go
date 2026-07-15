@@ -15,7 +15,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	common "github.com/redpanda-data/console/backend/pkg/api/connect/service/common/v1"
-	"github.com/redpanda-data/console/backend/pkg/console"
 	v1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1"
 )
 
@@ -171,39 +170,30 @@ func (k *mapper) updateTopicConfigsToKafka(req *v1.UpdateTopicConfigurationsRequ
 	return &kafkaReq, nil
 }
 
-func (k *mapper) topicSummariesToProto(summaries []*console.TopicSummary) []*v1.ListTopicsResponse_Topic {
-	topics := make([]*v1.ListTopicsResponse_Topic, len(summaries))
-	for i, summary := range summaries {
-		topics[i] = k.topicSummaryToProto(summary)
+func (k *mapper) kafkaMetadataToProto(metadata *kmsg.MetadataResponse) []*v1.ListTopicsResponse_Topic {
+	topics := make([]*v1.ListTopicsResponse_Topic, len(metadata.Topics))
+	for i, topicMetadata := range metadata.Topics {
+		topics[i] = k.kafkaTopicMetadataToProto(topicMetadata)
 	}
 
 	return topics
 }
 
-func (k *mapper) topicSummaryToProto(summary *console.TopicSummary) *v1.ListTopicsResponse_Topic {
-	return &v1.ListTopicsResponse_Topic{
-		Name:              summary.TopicName,
-		Internal:          summary.IsInternal,
-		PartitionCount:    int32(summary.PartitionCount),
-		ReplicationFactor: int32(summary.ReplicationFactor),
-		CleanupPolicy:     summary.CleanupPolicy,
-		LogDirSummary:     k.topicLogDirSummaryToProto(summary.LogDirSummary),
-	}
-}
-
-func (*mapper) topicLogDirSummaryToProto(summary console.TopicLogDirSummary) *v1.ListTopicsResponse_LogDirSummary {
-	replicaErrors := make([]*v1.ListTopicsResponse_ReplicaError, len(summary.ReplicaErrors))
-	for i, replicaError := range summary.ReplicaErrors {
-		replicaErrors[i] = &v1.ListTopicsResponse_ReplicaError{
-			BrokerId: replicaError.BrokerID,
-			Error:    replicaError.Error,
+func (*mapper) kafkaTopicMetadataToProto(topicMetadata kmsg.MetadataResponseTopic) *v1.ListTopicsResponse_Topic {
+	// We iterate through all partitions to figure out the replication factor,
+	// in case we get an error for the first partitions
+	replicationFactor := -1
+	for _, partition := range topicMetadata.Partitions {
+		if len(partition.Replicas) > replicationFactor {
+			replicationFactor = len(partition.Replicas)
 		}
 	}
 
-	return &v1.ListTopicsResponse_LogDirSummary{
-		TotalSizeBytes: summary.TotalSizeBytes,
-		ReplicaErrors:  replicaErrors,
-		Hint:           summary.Hint,
+	return &v1.ListTopicsResponse_Topic{
+		Name:              *topicMetadata.Topic,
+		Internal:          topicMetadata.IsInternal,
+		PartitionCount:    int32(len(topicMetadata.Partitions)),
+		ReplicationFactor: int32(replicationFactor),
 	}
 }
 

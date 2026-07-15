@@ -41,7 +41,7 @@ import {
 } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
-import type { ListTopicsResponse_Topic } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import type { ListTopicsResponse_Topic } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useListTopicsQuery } from 'react-query/api/topic';

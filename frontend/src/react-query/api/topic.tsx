@@ -7,12 +7,16 @@ import {
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import {
-  type ListTopicsRequest,
   ListTopicsRequestSchema,
   type ListTopicsResponse,
   TopicService,
+} from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/console/v1alpha1/topic-TopicService_connectquery';
+import {
+  type ListTopicsRequest as DataplaneListTopicsRequest,
+  ListTopicsRequestSchema as DataplaneListTopicsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
+import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   MAX_PAGE_SIZE,
   type MessageInit,
@@ -30,19 +34,25 @@ type ListTopicsExtraOptions = {
 };
 
 /**
- * Lists topics via the gRPC `TopicService.ListTopics` endpoint, returning the native gRPC topic
- * shape (`ListTopicsResponse_Topic`). Defaults to a single page of `MAX_PAGE_SIZE`; pass
- * `{ pageSize: -1 }` to disable server-side pagination and retrieve the full topic list.
+ * Lists topics via the Console `TopicService.ListTopics` endpoint. The Console service is used
+ * rather than the dataplane one because the topic list renders cleanup policy and on-disk size,
+ * which the public dataplane API deliberately does not expose.
+ *
+ * Takes the dataplane request shape, which the Console request wraps. Defaults to a single page of
+ * `MAX_PAGE_SIZE`; pass `{ pageSize: -1 }` to disable server-side pagination and retrieve the full
+ * topic list.
  */
 export const useListTopicsQuery = (
-  input?: MessageInit<ListTopicsRequest>,
-  options?: QueryOptions<GenMessage<ListTopicsRequest>, ListTopicsResponse>,
+  input?: MessageInit<DataplaneListTopicsRequest>,
+  options?: QueryOptions<GenMessage<DataplaneListTopicsRequest>, ListTopicsResponse>,
   { hideInternalTopics = false }: ListTopicsExtraOptions = {}
 ) => {
   const listTopicsRequest = create(ListTopicsRequestSchema, {
-    pageSize: MAX_PAGE_SIZE,
-    pageToken: '',
-    ...input,
+    request: create(DataplaneListTopicsRequestSchema, {
+      pageSize: MAX_PAGE_SIZE,
+      pageToken: '',
+      ...input,
+    }),
   });
 
   const listTopicsResult = useQuery(listTopics, listTopicsRequest, {

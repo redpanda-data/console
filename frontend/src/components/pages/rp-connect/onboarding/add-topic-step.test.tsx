@@ -12,8 +12,10 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError, createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
-import { CreateTopicResponseSchema, ListTopicsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { createTopic, listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
+import { ListTopicsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/console/v1alpha1/topic-TopicService_connectquery';
+import { CreateTopicResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { ComponentProps } from 'react';
 import { useRef } from 'react';
 import { render, screen, waitFor } from 'test-utils';

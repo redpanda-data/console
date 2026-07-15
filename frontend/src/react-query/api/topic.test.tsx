@@ -12,8 +12,8 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
-import { ListTopicsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
+import { ListTopicsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/console/v1alpha1/topic-TopicService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
 import { describe, expect, test } from 'vitest';
 
