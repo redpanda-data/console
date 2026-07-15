@@ -35,7 +35,10 @@ export function useEnrichedComponents(): {
     if (!componentListResponse?.components || isSchemaLoading) {
       return [];
     }
-    return enrichComponentsWithConfigSchema(parseSchema(componentListResponse.components), schemaResponse?.configSchema);
+    return enrichComponentsWithConfigSchema(
+      parseSchema(componentListResponse.components),
+      schemaResponse?.configSchema
+    );
   }, [componentListResponse, schemaResponse, isSchemaLoading]);
 
   return {

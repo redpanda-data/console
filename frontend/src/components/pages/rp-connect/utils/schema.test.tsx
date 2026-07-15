@@ -1330,4 +1330,26 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
     expect(stream?.codec).toBeUndefined();
     expect(stream?.max_buffer).toBeUndefined();
   });
+
+  test('aws_s3 output requires exactly bucket; object fields with defaulted children are omitted', () => {
+    const result = schemaToConfig(enrichedComponent('output', 'aws_s3'), false);
+    const config = result?.config as Record<string, any>;
+    const outputConfig = config?.output?.aws_s3;
+
+    // The schema's required array is exactly ["bucket"].
+    expect(outputConfig.bucket).toBe(SENTINEL_REQUIRED_FIELD);
+    // metadata/batching have no proto default either, but the schema knows their children are all
+    // defaulted — without the stamp the degraded ladder could not tell them apart from bucket.
+    expect(outputConfig.metadata).toBeUndefined();
+    expect(outputConfig.batching).toBeUndefined();
+    expect(outputConfig.path).not.toBe(SENTINEL_REQUIRED_FIELD);
+  });
+
+  test('mapping processor root scalar config becomes a required sentinel', () => {
+    // The root config node is never stamped (enrichment stamps children), so this exercises the
+    // degraded ladder: string scalar, no default, not optional → required.
+    const result = schemaToConfig(enrichedComponent('processor', 'mapping'), false);
+    const config = result?.config as Record<string, any>;
+    expect(config?.pipeline?.processors).toEqual([{ mapping: SENTINEL_REQUIRED_FIELD }]);
+  });
 });

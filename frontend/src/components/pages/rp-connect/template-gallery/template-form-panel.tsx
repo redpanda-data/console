@@ -17,7 +17,6 @@ import { Heading } from 'components/redpanda-ui/components/typography';
 import { Waypoints } from 'lucide-react';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
-import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
 import { z } from 'zod';
 
 import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
@@ -28,8 +27,7 @@ import { TopicSlotField } from './slot-fields/topic-slot';
 import { stitchTemplateYaml } from './template-deploy';
 import { applySchemaToSlots } from './template-schema';
 import { ConnectorLogo } from '../onboarding/connector-logo';
-import { parseSchema } from '../utils/schema';
-import { enrichComponentsWithConfigSchema } from '../utils/schema-enrichment';
+import { useEnrichedComponents } from '../utils/use-enriched-components';
 
 const SECTION_LABELS: Record<TemplateSlotSection, string> = {
   source: 'Source',
@@ -143,14 +141,13 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
     ref
   ) => {
-    const { data: componentListResponse } = useListComponentsQuery();
-    const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
-    const effectiveSlots = useMemo(() => {
-      const components = componentListResponse?.components
-        ? enrichComponentsWithConfigSchema(parseSchema(componentListResponse.components), schemaResponse?.configSchema)
-        : undefined;
-      return applySchemaToSlots(template, components);
-    }, [template, componentListResponse, schemaResponse]);
+    // Enriched specs stay empty until the config schema settles, so slot required-ness is never
+    // derived from proto flags alone; until then applySchemaToSlots falls back to hardcoded slots.
+    const { components } = useEnrichedComponents();
+    const effectiveSlots = useMemo(
+      () => applySchemaToSlots(template, components.length > 0 ? components : undefined),
+      [template, components]
+    );
 
     const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
     const defaultValues = useMemo(() => defaultValuesFor(template, effectiveSlots), [template, effectiveSlots]);
@@ -164,14 +161,14 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     // Schema-driven defaults can arrive after mount; reapply once per template, but only while pristine.
     const lastAppliedTemplateId = useRef<string | null>(null);
     useEffect(() => {
-      if (!componentListResponse || lastAppliedTemplateId.current === template.id) {
+      if (components.length === 0 || lastAppliedTemplateId.current === template.id) {
         return;
       }
       lastAppliedTemplateId.current = template.id;
       if (!form.formState.isDirty) {
         form.reset(defaultValues as FormValues);
       }
-    }, [componentListResponse, defaultValues, form, template.id]);
+    }, [components, defaultValues, form, template.id]);
 
     const stitchCurrentYaml = (values: FormValues): string => {
       const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;

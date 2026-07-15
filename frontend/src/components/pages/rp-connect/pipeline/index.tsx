@@ -61,7 +61,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
-import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
+import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
@@ -108,9 +108,8 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
-import { parseSchema } from '../utils/schema';
-import { enrichComponentsWithConfigSchema } from '../utils/schema-enrichment';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
+import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
 import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
 
