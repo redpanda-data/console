@@ -11,7 +11,7 @@
 
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
-import { checkRequired, resolveFieldByPath } from '../utils/schema';
+import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
 
 // Slot-level values win; schema only fills unset `description` / `required` /
 // `default`. Slots without `schemaField` (or with unresolvable paths) pass through.
@@ -22,8 +22,8 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
     return template.slots;
   }
 
-  const sourceComp = components.find((c) => c.type === template.source.type && c.name === template.source.component);
-  const sinkComp = components.find((c) => c.type === template.sink.type && c.name === template.sink.component);
+  const sourceComp = findConnectComponent(components, template.source.component, template.source.type);
+  const sinkComp = findConnectComponent(components, template.sink.component, template.sink.type);
 
   const componentForSection = (section: TemplateSlot['section']) => {
     if (section === 'source') {

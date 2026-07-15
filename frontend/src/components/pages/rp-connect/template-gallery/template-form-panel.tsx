@@ -141,9 +141,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
     ref
   ) => {
-    // Enriched specs stay empty until the config schema settles, so slot required-ness is never
-    // derived from proto flags alone; until then applySchemaToSlots falls back to hardcoded slots.
-    const { components } = useEnrichedComponents();
+    const { components, isLoading: isComponentsLoading } = useEnrichedComponents();
     const effectiveSlots = useMemo(
       () => applySchemaToSlots(template, components.length > 0 ? components : undefined),
       [template, components]
@@ -161,14 +159,16 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     // Schema-driven defaults can arrive after mount; reapply once per template, but only while pristine.
     const lastAppliedTemplateId = useRef<string | null>(null);
     useEffect(() => {
-      if (components.length === 0 || lastAppliedTemplateId.current === template.id) {
+      // Wait for the config schema too (isLoading), so the one-shot reset uses schema-exact
+      // required-ness/defaults rather than locking in values derived from proto flags alone.
+      if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
         return;
       }
       lastAppliedTemplateId.current = template.id;
       if (!form.formState.isDirty) {
         form.reset(defaultValues as FormValues);
       }
-    }, [components, defaultValues, form, template.id]);
+    }, [isComponentsLoading, components, defaultValues, form, template.id]);
 
     const stitchCurrentYaml = (values: FormValues): string => {
       const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;

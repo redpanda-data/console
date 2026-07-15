@@ -30,6 +30,8 @@ export const groundTruthComponents = groundTruthComponentsJson as unknown as Con
 /** Raw config schema JSON string, as served by GetPipelineServiceConfigSchema. */
 export const groundTruthConfigSchema = JSON.stringify(groundTruthConfigSchemaJson);
 
+// Local lookup (not utils/schema's findConnectComponent): this fixture is imported by
+// node-environment unit tests, and utils/schema transitively pulls in DOM-only modules (sonner).
 export function getGroundTruthComponent(type: ConnectComponentType, name: string): ConnectComponentSpec {
   const component = groundTruthComponents.find((c) => c.type === type && c.name === name);
   if (!component) {

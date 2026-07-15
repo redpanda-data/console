@@ -49,6 +49,7 @@ import { ChildItemsList, type InspectorChildItem, NodeConfigForm } from './node-
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
+import { findConnectComponent } from '../utils/schema';
 import {
   appendResource,
   buildInsertableComponent,
@@ -240,8 +241,7 @@ export function NodeInspector({
     if (!(target && componentName)) {
       return;
     }
-    const type = targetComponentType(target);
-    return components.find((c) => c.type === type && c.name === componentName);
+    return findConnectComponent(components, componentName, targetComponentType(target));
   }, [components, target, componentName]);
 
   if (!(target && component && componentName)) {

@@ -708,8 +708,8 @@ const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
 function groupFormFields(fields: RawFieldSpec[]): Record<FieldGroupKey, RawFieldSpec[]> {
   const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };
   for (const spec of fields) {
-    // Deprecated fields are excluded from the form; existing values surface in the raw-YAML section.
-    if (isFormField(spec) && !spec.deprecated) {
+    // isFormField excludes deprecated fields; their existing values surface in the raw-YAML section.
+    if (isFormField(spec)) {
       groups[fieldGroupKey(spec)].push(spec);
     }
   }

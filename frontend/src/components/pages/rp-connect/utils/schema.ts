@@ -365,34 +365,15 @@ function generateObjectValue(
   return obj;
 }
 
-// SASL arrays for redpanda/kafka_franz components are generated even when optional/advanced so
-// wizard-collected credentials land in the config.
-function generateSaslArrayValue(params: {
-  spec: RawFieldSpec;
-  showAdvancedFields: boolean;
-  componentName: string | undefined;
-}): unknown[] | undefined {
-  const { spec, showAdvancedFields, componentName } = params;
-  if (!spec.children) {
-    return;
-  }
-  // Pass only this node's optionality (see generateObjectValue).
-  const childAncestorOptional = spec.optional === true;
-  const saslObj: Record<string, unknown> = {};
-
-  for (const child of spec.children) {
-    const childValue = generateDefaultValue(child, {
-      showAdvancedFields,
-      componentName,
-      parentName: spec.name,
-      ancestorOptional: childAncestorOptional,
-    });
-    if (childValue !== undefined && child.name) {
-      saslObj[child.name] = childValue;
-    }
-  }
-
-  return Object.keys(saslObj).length > 0 ? [saslObj] : undefined;
+// Wraps the object's generated children in a single-element array (`[{...}]`), or nothing when
+// no child produced a value.
+function generateObjectArrayValue(
+  spec: RawFieldSpec,
+  showAdvancedFields: boolean | undefined,
+  componentName: string | undefined
+): unknown[] | undefined {
+  const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+  return obj && Object.keys(obj).length > 0 ? [obj] : undefined;
 }
 
 type GenerateDefaultValueOptions = {
@@ -529,10 +510,22 @@ export function isComponentField(spec: RawFieldSpec): boolean {
   return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
 }
 
-// Fields rendered as form controls; nested components and complex fields (object arrays, maps, …)
-// are excluded and fall back to the raw-YAML section.
+// Fields rendered as form controls; deprecated fields, nested components, and complex fields
+// (object arrays, maps, …) are excluded and fall back to the raw-YAML section.
 export function isFormField(spec: RawFieldSpec): boolean {
-  return !isComponentField(spec) && (isScalarField(spec) || isScalarArrayField(spec) || isObjectGroupField(spec));
+  return (
+    !(spec.deprecated || isComponentField(spec)) &&
+    (isScalarField(spec) || isScalarArrayField(spec) || isObjectGroupField(spec))
+  );
+}
+
+/** Finds a parsed component spec by name; `type` disambiguates names shared across types (e.g. `redpanda`). */
+export function findConnectComponent(
+  components: ConnectComponentSpec[],
+  name: string,
+  type?: ConnectComponentType
+): ConnectComponentSpec | undefined {
+  return components.find((c) => (type === undefined || c.type === type) && c.name === name);
 }
 
 function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
@@ -610,9 +603,11 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
     }
   }
 
+  // SASL arrays for redpanda/kafka_franz components are generated even when optional/advanced so
+  // wizard-collected credentials land in the config.
   const isSaslArray = spec.kind === 'array' && spec.name?.toLowerCase() === 'sasl';
   if (isSaslArray && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
-    return generateSaslArrayValue({ spec, showAdvancedFields: showAdvancedFields ?? false, componentName });
+    return generateObjectArrayValue(spec, showAdvancedFields, componentName);
   }
 
   // Object structure recursion. Some object nodes come with an empty kind — benthos leaves Kind
@@ -622,13 +617,15 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
       const obj = generateObjectValue(spec, showAdvancedFields, componentName);
       return obj && Object.keys(obj).length > 0 ? obj : undefined;
     }
-    // Collections of objects are only seeded when the field is required.
-    if (!required) {
+    // Collections of objects are only seeded when the field is required — except at the component
+    // root (name ''), which must always produce a type-correct value: inserting e.g. `switch`
+    // (root kind 'array') has to emit `[]`/`[{...}]`, never YAML null.
+    const isComponentRoot = !spec.name;
+    if (!(required || isComponentRoot)) {
       return;
     }
     if (spec.kind === 'array') {
-      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-      return obj && Object.keys(obj).length > 0 ? [obj] : [];
+      return generateObjectArrayValue(spec, showAdvancedFields, componentName) ?? [];
     }
     if (spec.kind === '2darray') {
       const obj = generateObjectValue(spec, showAdvancedFields, componentName);

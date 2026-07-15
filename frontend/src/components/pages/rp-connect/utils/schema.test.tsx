@@ -1352,4 +1352,60 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
     const config = result?.config as Record<string, any>;
     expect(config?.pipeline?.processors).toEqual([{ mapping: SENTINEL_REQUIRED_FIELD }]);
   });
+
+  test('root array-of-objects config (switch-like) always yields an array, never undefined', () => {
+    // A component whose root config is an array of objects (switch, group_by) can never be
+    // "required" — the root is never stamped and the proto ladder returns false for non-strings —
+    // but inserting it must still emit a type-correct value (`[]`/`[{…}]`), not YAML null.
+    const switchLike: ConnectComponentSpec = {
+      name: 'switch',
+      type: 'processor',
+      status: ComponentStatus.STABLE,
+      summary: '',
+      description: '',
+      categories: [],
+      version: '',
+      examples: [],
+      footnotes: '',
+      $typeName: 'redpanda.api.dataplane.v1.ComponentSpec',
+      config: create(FieldSpecSchema, {
+        name: '',
+        type: 'object',
+        kind: 'array',
+        children: [
+          // All case fields optional/defaulted (as enrichment stamps the real switch), so the
+          // seeded object is empty and the root collapses to [].
+          { name: 'check', type: 'string', kind: 'scalar', optional: true },
+          { name: 'fallthrough', type: 'bool', kind: 'scalar', defaultValue: '' },
+        ],
+      }),
+    };
+    const result = schemaToConfig(switchLike, false);
+    const config = result?.config as Record<string, any>;
+    expect(config?.pipeline?.processors).toEqual([{ switch: [] }]);
+  });
+
+  test('root array-of-objects config seeds a scaffold object when a case field is required', () => {
+    const withRequiredChild: ConnectComponentSpec = {
+      name: 'switch_like',
+      type: 'processor',
+      status: ComponentStatus.STABLE,
+      summary: '',
+      description: '',
+      categories: [],
+      version: '',
+      examples: [],
+      footnotes: '',
+      $typeName: 'redpanda.api.dataplane.v1.ComponentSpec',
+      config: create(FieldSpecSchema, {
+        name: '',
+        type: 'object',
+        kind: 'array',
+        children: [{ name: 'condition', type: 'string', kind: 'scalar' }],
+      }),
+    };
+    const result = schemaToConfig(withRequiredChild, false);
+    const config = result?.config as Record<string, any>;
+    expect(config?.pipeline?.processors).toEqual([{ switch_like: [{ condition: SENTINEL_REQUIRED_FIELD }] }]);
+  });
 });
