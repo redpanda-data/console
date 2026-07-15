@@ -78,8 +78,17 @@ export const ShadowLinkEditPage = () => {
   }
 
   // Use the unified edit hook that handles embedded/dataplane logic
-  const { formValues, isLoading, error, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
-    useEditShadowLink(name);
+  const {
+    formValues,
+    isLoading,
+    error,
+    isUpdating,
+    hasData,
+    isSchemaRegistryApiMode,
+    updateShadowLink,
+    dataplaneUpdate,
+    controlplaneUpdate,
+  } = useEditShadowLink(name);
 
   // Set up mutation callbacks
   useEffect(() => {
@@ -205,7 +214,7 @@ export const ShadowLinkEditPage = () => {
             <TabsContent value="all">
               <div className="space-y-4">
                 <SourceTab />
-                <ShadowingTab />
+                <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
                 <TopicConfigTab />
               </div>
             </TabsContent>
@@ -215,7 +224,7 @@ export const ShadowLinkEditPage = () => {
             </TabsContent>
 
             <TabsContent value="shadowing">
-              <ShadowingTab />
+              <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
             </TabsContent>
 
             <TabsContent value="topic-config">

@@ -24,8 +24,6 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
-  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
-  SchemaRegistrySyncOptionsSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
@@ -41,6 +39,7 @@ import { uiState } from 'state/ui-state';
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
 import { FormSchema, type FormValues, initialValues } from './model';
+import { buildSchemaRegistrySyncOptions } from './schema-registry-request';
 import { isEmbedded } from '../../../../config';
 import {
   ACLOperation,
@@ -173,15 +172,9 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ),
   });
 
-  // Build schema registry sync options (only set if enabled)
-  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
-    ? create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: {
-          case: 'shadowSchemaRegistryTopic',
-          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
-        },
-      })
-    : undefined;
+  // Build schema registry sync options (api mode via the redesigned section,
+  // topic mode via the legacy switch, otherwise unset)
+  const schemaRegistrySyncOptions = buildSchemaRegistrySyncOptions(values);
 
   // Build configurations
   const configurations = create(ShadowLinkConfigurationsSchema, {

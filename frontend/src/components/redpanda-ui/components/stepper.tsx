@@ -197,6 +197,23 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       Description,
       Panel: ({ children, render, ...props }) => {
         const { tracking } = useStepperProvider();
+        /**
+         * React invokes inline ref callbacks on every commit, so scrolling
+         * directly in the ref re-centered the panel on each re-render (e.g.
+         * typing in a field or switching an inner tab). Guard on node identity
+         * so the panel scrolls only when a new panel mounts — i.e. the active
+         * step actually changed.
+         */
+        const scrolledNodeRef = React.useRef<HTMLDivElement | null>(null);
+        const setPanelRef = React.useCallback(
+          (node: HTMLDivElement | null) => {
+            if (node && tracking && scrolledNodeRef.current !== node) {
+              scrolledNodeRef.current = node;
+              scrollIntoStepperPanel(node);
+            }
+          },
+          [tracking]
+        );
 
         return useRender({
           defaultTagName: 'div',
@@ -204,7 +221,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
           props: mergeProps<'div'>(
             {
               'data-component': 'stepper-step-panel',
-              ref: (node: HTMLDivElement | null) => scrollIntoStepperPanel(node, tracking),
+              ref: setPanelRef,
               children,
             } as useRender.ElementProps<'div'>,
             props
@@ -370,10 +387,8 @@ const classForSeparator = cva(
   }
 );
 
-function scrollIntoStepperPanel(node: HTMLDivElement | null, tracking?: boolean) {
-  if (tracking) {
-    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+function scrollIntoStepperPanel(node: HTMLDivElement) {
+  node.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 const useStepChildren = (children: React.ReactNode) => React.useMemo(() => extractChildren(children), [children]);

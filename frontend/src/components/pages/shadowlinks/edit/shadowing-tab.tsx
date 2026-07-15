@@ -11,14 +11,16 @@
 
 import { AclsStep } from '../create/configuration/acls-step';
 import { ConsumerOffsetStep } from '../create/configuration/consumer-offset-step';
-import { SchemaRegistryStep } from '../create/configuration/schema-registry-step';
+import { LegacySchemaRegistrySection } from '../create/configuration/schema-registry-step';
 import { TopicsStep } from '../create/configuration/topics-step';
 
-export const ShadowingTab = () => (
+export const ShadowingTab = ({ schemaRegistryApiMode = false }: { schemaRegistryApiMode?: boolean }) => (
   <div className="space-y-4">
     <TopicsStep />
     <AclsStep />
     <ConsumerOffsetStep />
-    <SchemaRegistryStep />
+    {/* Always the legacy switch: the edit request builder can't express the
+        version-gated API sync mode for now, only the create wizard can. */}
+    <LegacySchemaRegistrySection readOnlyApiMode={schemaRegistryApiMode} />
   </div>
 );
