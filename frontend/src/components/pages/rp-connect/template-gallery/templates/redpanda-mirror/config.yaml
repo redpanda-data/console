@@ -27,9 +27,5 @@ output:
       enabled: true                        # set false only for unencrypted destinations
 
     # ── Throughput defaults — tune for your workload ────────────────────────
-    batching:
-      count: 500
-      period: 1s
     max_in_flight: 64
     compression: snappy
-    # key: ${! @kafka_key }               # preserve source key for partitioning

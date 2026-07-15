@@ -13,9 +13,15 @@ input:
 
 output:
   iceberg:
-    # ── Catalog (filled in from the form) ───────────────────────────────────
-    catalog_uri: ${slot.catalogUri}
-    warehouse: ${slot.warehouse}
+    # ── REST catalog (filled in from the form) ──────────────────────────────
+    catalog:
+      url: ${slot.catalogUri}
+      warehouse: ${slot.warehouse}
+      # auth:                              # pick one method if your catalog needs it
+      #   oauth2:
+      #     server_uri: https://auth.example.com/oauth/token
+      #     client_id: my-client
+      #     client_secret: ${secrets.ICEBERG_CLIENT_SECRET}
     namespace: ${slot.namespace}
     table: ${slot.tableName}
 
@@ -23,10 +29,8 @@ output:
     batching:
       count: 1000
       period: 10s
-    # write_mode: append                   # append | overwrite
-    # partition_spec: ""                   # e.g. 'days(event_time)'
+    # row_operation: insert                # insert | upsert | delete
 
     # ── Schema handling ─────────────────────────────────────────────────────
     # schema_evolution:
     #   enabled: true                      # auto-add columns from incoming records
-    # mapping: ""                          # bloblang to reshape records before write

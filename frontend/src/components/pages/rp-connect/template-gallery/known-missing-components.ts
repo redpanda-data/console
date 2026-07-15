@@ -12,11 +12,7 @@
 /**
  * Components templates reference but are absent from the committed schema snapshot
  * (enterprise-only or pending a snapshot refresh). Schema regression tests skip these;
- * prune as components land in the snapshot.
+ * prune as components land in the snapshot. Currently empty: every template component
+ * exists in the snapshot, so all templates are fully validated.
  */
-export const KNOWN_MISSING_COMPONENTS: ReadonlySet<string> = new Set([
-  'aws_dynamodb_stream',
-  'oracle_cdc',
-  'sql_server_cdc',
-  'iceberg',
-]);
+export const KNOWN_MISSING_COMPONENTS: ReadonlySet<string> = new Set([]);
