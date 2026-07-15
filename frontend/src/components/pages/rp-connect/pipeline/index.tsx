@@ -931,17 +931,9 @@ function PipelinePageContent() {
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
-  const { data: componentListResponse } = useListComponentsQuery();
-  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
-  // The raw config schema carries per-field signals the proto drops (is_secret, exact required-ness).
-  const components = useMemo(
-    () =>
-      componentListResponse?.components
-        ? enrichComponentsWithConfigSchema(parseSchema(componentListResponse.components), schemaResponse?.configSchema)
-        : [],
-    [componentListResponse, schemaResponse]
-  );
+  const { components, componentList } = useEnrichedComponents();
 
+  const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
@@ -1230,7 +1222,7 @@ function PipelinePageContent() {
               ) : null}
               {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
                 <VisualEditorPanel
-                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  componentList={componentList ?? ({} as ComponentList)}
                   components={components}
                   lintHints={Object.values(lintHints)}
                   mode="view"
@@ -1241,7 +1233,7 @@ function PipelinePageContent() {
               ) : null}
               {mode !== 'view' && activeEditLane === 'visual' ? (
                 <VisualEditorPanel
-                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  componentList={componentList ?? ({} as ComponentList)}
                   components={components}
                   // Only edit mode waits on server hydration; create shows its empty state, not a skeleton.
                   isLoading={mode === 'edit' && initialYaml === null}
@@ -1435,7 +1427,7 @@ function PipelinePageContent() {
       </Dialog>
 
       <AddConnectorDialog
-        components={componentListResponse?.components ?? ({} as ComponentList)}
+        components={componentList ?? ({} as ComponentList)}
         connectorType={
           addConnectorType === 'resource'
             ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
