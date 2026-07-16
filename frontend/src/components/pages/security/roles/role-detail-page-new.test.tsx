@@ -64,7 +64,9 @@ describe('RoleDetailPageNew principal assignment', () => {
 
     await user.click(screen.getByRole('combobox'));
     await user.keyboard('person@email.com');
-    await user.keyboard('{Enter}');
+    // Click the create row rather than pressing Enter: the Enter branch only
+    // fires once the row has rendered, which lags under parallel test load.
+    await user.click(await screen.findByText('Create "person@email.com"'));
 
     expect(updateMembershipMock).toHaveBeenCalledTimes(1);
     expect(updateMembershipMock.mock.calls[0][0]).toMatchObject({
