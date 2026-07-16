@@ -76,6 +76,10 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.ShadowLinkService',
     method: 'POST',
   };
+  static readonly ShadowLinkSchemaRegistrySync: FeatureEntry = {
+    endpoint: '/api/shadow-links/schema-registry-sync',
+    method: 'GET',
+  };
   static readonly TracingService: FeatureEntry = {
     endpoint: 'redpanda.api.dataplane.v1alpha3.TracingService',
     method: 'POST',
@@ -99,6 +103,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
+      case Feature.ShadowLinkSchemaRegistrySync.endpoint:
       case Feature.TracingService.endpoint:
       case Feature.GetQuotas.endpoint:
       case Feature.SchemaRegistryContexts.endpoint:
@@ -119,7 +124,8 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
     f.endpoint.includes('.SecurityService') ||
     f.endpoint.includes('.SecretService') ||
     f.endpoint.includes('.MCPServerService') ||
-    f.endpoint.includes('.SQLService')
+    f.endpoint.includes('.SQLService') ||
+    f.endpoint === Feature.ShadowLinkSchemaRegistrySync.endpoint
   ) {
     return { supported: false };
   }
@@ -182,6 +188,7 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
     remoteMcpApi: compute(Feature.RemoteMcpService),
     schemaRegistryACLApi: compute(Feature.SchemaRegistryACLApi),
     shadowLinkService: compute(Feature.ShadowLinkService),
+    shadowLinkSchemaRegistrySync: compute(Feature.ShadowLinkSchemaRegistrySync),
     tracingService: compute(Feature.TracingService),
     schemaRegistryContexts: compute(Feature.SchemaRegistryContexts),
     sqlApi: compute(Feature.SQLService),
@@ -213,6 +220,7 @@ type SupportedFeaturesStore = {
   remoteMcpApi: boolean;
   schemaRegistryACLApi: boolean;
   shadowLinkService: boolean;
+  shadowLinkSchemaRegistrySync: boolean;
   tracingService: boolean;
   schemaRegistryContexts: boolean;
   sqlApi: boolean;
@@ -299,6 +307,9 @@ const Features = {
   },
   get shadowLinkService() {
     return useSupportedFeaturesStore.getState().shadowLinkService;
+  },
+  get shadowLinkSchemaRegistrySync() {
+    return useSupportedFeaturesStore.getState().shadowLinkSchemaRegistrySync;
   },
   get tracingService() {
     return useSupportedFeaturesStore.getState().tracingService;

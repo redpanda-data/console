@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Code } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -25,6 +26,7 @@ import { SourceTab } from './source-tab';
 import { TopicConfigTab } from './topic-config-tab';
 import { useEditShadowLink } from '../../../../react-query/api/shadowlink';
 import { FormSchema, type FormValues } from '../create/model';
+import { ShadowLinkLoadErrorState } from '../list/shadowlink-empty-state';
 
 /**
  * Map form field to its corresponding tab
@@ -76,8 +78,17 @@ export const ShadowLinkEditPage = () => {
   }
 
   // Use the unified edit hook that handles embedded/dataplane logic
-  const { formValues, isLoading, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
-    useEditShadowLink(name);
+  const {
+    formValues,
+    isLoading,
+    error,
+    isUpdating,
+    hasData,
+    isSchemaRegistryApiMode,
+    updateShadowLink,
+    dataplaneUpdate,
+    controlplaneUpdate,
+  } = useEditShadowLink(name);
 
   // Set up mutation callbacks
   useEffect(() => {
@@ -159,6 +170,12 @@ export const ShadowLinkEditPage = () => {
     ];
   }, [name]);
 
+  // Load errors (e.g. a timeout while Redpanda aggregates shadow link status
+  // on a large cluster) are not the same as a missing shadow link.
+  if (!(isLoading || hasData) && error && error.code !== Code.NotFound) {
+    return <ShadowLinkLoadErrorState errorMessage={error.message} />;
+  }
+
   if (!(isLoading || hasData)) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8">
@@ -197,7 +214,7 @@ export const ShadowLinkEditPage = () => {
             <TabsContent value="all">
               <div className="space-y-4">
                 <SourceTab />
-                <ShadowingTab />
+                <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
                 <TopicConfigTab />
               </div>
             </TabsContent>
@@ -207,7 +224,7 @@ export const ShadowLinkEditPage = () => {
             </TabsContent>
 
             <TabsContent value="shadowing">
-              <ShadowingTab />
+              <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
             </TabsContent>
 
             <TabsContent value="topic-config">

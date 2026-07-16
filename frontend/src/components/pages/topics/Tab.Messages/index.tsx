@@ -89,7 +89,7 @@ import { isServerless } from '../../../../config';
 import { useQueryStateWithCallback } from '../../../../hooks/use-query-state-with-callback';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from '../../../../state/app-global';
-import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
+import { DEFAULT_SORTING, useTopicSettingsStore } from '../../../../stores/topic-settings-store';
 import { IsDev } from '../../../../utils/env';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filter-helper';
 import { trimSlidingWindow } from '../../../../utils/message-table-helpers';
@@ -472,7 +472,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       getDefaultValue: () => getSorting(props.topic.topicName),
     },
     'sort',
-    sortingParser.withDefault([])
+    sortingParser.withDefault(DEFAULT_SORTING)
   );
 
   // Continuous pagination toggle state
@@ -572,11 +572,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       })
     : messages;
 
-  // For continuous pagination, just use the filtered messages directly
-  // We don't use placeholders as they cause page content to shift
+  // Continuous pagination disables header sorting, so the table's sorted row
+  // model can't impose newest-first there. Force it for the "Newest" fetch only
+  // (timestamp desc, then offset desc as a cross-partition tiebreak). Other
+  // origins keep the streamed order.
+  // In the normal paginated view the table sorts client-side via the default
+  // `sorting` state (DEFAULT_SORTING = timestamp desc, offset desc), so we pass
+  // the rows through untouched here.
   const filteredMessages =
     continuousPaginationEnabled && startOffset === PartitionOffsetOrigin.EndMinusResults
-      ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp)
+      ? [...baseFilteredMessages].sort((a, b) => b.timestamp - a.timestamp || b.offset - a.offset)
       : baseFilteredMessages;
 
   // Convert @computed activePreviewTags to useMemo

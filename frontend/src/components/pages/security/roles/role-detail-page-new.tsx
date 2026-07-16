@@ -119,10 +119,12 @@ export const RoleDetailPageNew = () => {
             <Combobox
               className="w-56"
               clearable={false}
+              creatable
+              createLabel="principal"
               disabled={isSubmitting}
               onChange={addMember}
               options={availablePrincipalOptions}
-              placeholder="Add a principal..."
+              placeholder="Select or type a principal..."
               testId="add-principal-combobox"
               value=""
             />

@@ -105,6 +105,9 @@ web_modules/
 .cache
 .parcel-cache
 
+# TanStack Router generated temp cache
+.tanstack/
+
 # Next.js build output
 .next
 out

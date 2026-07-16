@@ -631,6 +631,18 @@ components:
             $ref: '#/components/schemas/ConfigurationYAMLSchema'
           type: array
       type: object
+    GetSqlConnectionInfoResponse:
+      properties:
+        host:
+          description: |-
+            Advertised host clients use to reach the SQL endpoint. Empty when no
+            endpoint is configured.
+          type: string
+        port:
+          description: Port for the SQL endpoint, derived from the configured connection URL.
+          format: int64
+          type: integer
+      type: object
     GetSqlIdentityResponse:
       properties:
         current_user:
@@ -3276,6 +3288,25 @@ paths:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
       summary: Describe table
+      tags:
+        - SQL
+  /v1alpha3/sql/connection-info:
+    get:
+      operationId: SQLService_GetSqlConnectionInfo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSqlConnectionInfoResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get SQL connection info
       tags:
         - SQL
   /v1alpha3/sql/identity:
