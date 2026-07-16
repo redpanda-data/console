@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -62,9 +62,10 @@ describe('RoleDetailPageNew principal assignment', () => {
     const user = userEvent.setup();
     renderPage();
 
-    // type() targets the input directly. keyboard() would rely on ambient focus,
-    // which the popover's focus guards can steal once it opens.
-    await user.type(screen.getByRole('combobox'), 'person@email.com');
+    // Set the value in one change event rather than per-keystroke: the first
+    // character opens the popover, whose focus guards then take focus, so the
+    // remaining characters are dropped. The handler reads e.target.value whole.
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'person@email.com' } });
     await user.click(await screen.findByText('Create "person@email.com"'));
 
     expect(updateMembershipMock).toHaveBeenCalledTimes(1);
