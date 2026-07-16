@@ -27,18 +27,14 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
-import {
-  ListLayout,
-  ListLayoutFilters,
-  ListLayoutPagination,
-  ListLayoutSearchInput,
-} from 'components/redpanda-ui/components/list-layout';
+import { ListLayout, ListLayoutFilters, ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
 import { Search, UsersIcon, X } from 'lucide-react';
 import { parseAsArrayOf, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useLegacyListConsumerGroupsFullQuery } from 'react-query/api/consumer-group';
 
+import type { ColumnMeta } from './column-meta';
 import { appGlobal } from '../../../state/app-global';
 import type { GroupDescription } from '../../../state/rest-interfaces';
 import { setPageHeader } from '../../../state/ui-state';
@@ -47,14 +43,16 @@ import { BrokerList } from '../../misc/broker-list';
 import { ShortNum } from '../../misc/short-num';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Badge } from '../../redpanda-ui/components/badge';
+import { Button } from '../../redpanda-ui/components/button';
 import {
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTablePagination,
 } from '../../redpanda-ui/components/data-table';
+import { Input, InputEnd, InputStart } from '../../redpanda-ui/components/input';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
+import { Stat } from '../../redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
-import { Text } from '../../redpanda-ui/components/typography';
 import {
   ConsumerGroupStateCell,
   consumerGroupStateFilterOptions,
@@ -220,6 +218,8 @@ const GroupList: FC = () => {
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const groupIdFilter = (table.getColumn('groupId')?.getFilterValue() as string) ?? '';
+
   if (isError && error) {
     return (
       <Alert variant="destructive">
@@ -246,7 +246,7 @@ const GroupList: FC = () => {
       return table.getRowModel().rows.map((row) => (
         <TableRow key={row.id}>
           {row.getVisibleCells().map((cell) => {
-            const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
+            const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
             return (
               <TableCell align={meta?.align} key={cell.id} testId="data-table-cell">
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -259,7 +259,7 @@ const GroupList: FC = () => {
 
     const isFiltered = columnFilters.length > 0;
     return (
-      <TableRow className="hover:bg-transparent">
+      <TableRow>
         <TableCell colSpan={columns.length}>
           <Empty>
             <EmptyHeader>
@@ -282,46 +282,38 @@ const GroupList: FC = () => {
   return (
     <ListLayout className="my-4" data-testid="consumer-groups-table">
       <div className="flex flex-wrap gap-8">
-        <div className="flex flex-col gap-0.5">
-          <Text className="font-semibold text-2xl tabular-nums">{statistics.total}</Text>
-          <Text className="text-muted-foreground text-sm">Total groups</Text>
-        </div>
+        <Stat label="Total groups" mono size="lg" value={statistics.total} />
         {statistics.byState.map(({ state, count }) => (
-          <div className="flex flex-col gap-0.5" key={state}>
-            <Text className="font-semibold text-2xl tabular-nums">{count}</Text>
-            <Text className="text-muted-foreground text-sm">{state}</Text>
-          </div>
+          <Stat key={state} label={state} mono size="lg" value={count} />
         ))}
       </div>
 
       <ListLayoutFilters>
-        <div className="relative">
-          {!(table.getColumn('groupId')?.getFilterValue() as string) && (
-            <span
-              className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground"
-              data-testid="search-field-search-icon"
-            >
-              <Search className="h-4 w-4" />
-            </span>
+        <Input
+          containerClassName="w-full min-w-[140px] max-w-[300px] sm:w-[200px] lg:w-[250px]"
+          onChange={(e) => table.getColumn('groupId')?.setFilterValue(e.target.value || undefined)}
+          placeholder="Filter by group ID (regexp)..."
+          size="sm"
+          testId="search-field-input"
+          value={groupIdFilter}
+        >
+          <InputStart>
+            <Search className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
+          </InputStart>
+          {groupIdFilter !== '' && (
+            <InputEnd className="pointer-events-auto">
+              <Button
+                aria-label="Clear group ID filter"
+                data-testid="search-field-reset-icon"
+                onClick={() => table.getColumn('groupId')?.setFilterValue(undefined)}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <X />
+              </Button>
+            </InputEnd>
           )}
-          <ListLayoutSearchInput
-            className={(table.getColumn('groupId')?.getFilterValue() as string) ? 'pr-8' : 'pl-8'}
-            data-testid="search-field-input"
-            onChange={(e) => table.getColumn('groupId')?.setFilterValue(e.target.value || undefined)}
-            placeholder="Filter by group ID (regexp)..."
-            value={(table.getColumn('groupId')?.getFilterValue() as string) ?? ''}
-          />
-          {(table.getColumn('groupId')?.getFilterValue() as string) && (
-            <button
-              className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              data-testid="search-field-reset-icon"
-              onClick={() => table.getColumn('groupId')?.setFilterValue(undefined)}
-              type="button"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+        </Input>
         <DataTableFacetedFilter
           column={table.getColumn('state')}
           options={consumerGroupStateFilterOptions}
@@ -334,8 +326,7 @@ const GroupList: FC = () => {
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
-                const meta = header.column.columnDef.meta as Meta | undefined;
+                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
                 return (
                   <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}

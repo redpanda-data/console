@@ -21,8 +21,9 @@ import {
 } from '@tanstack/react-table';
 import { EditIcon, SkipIcon, TrashIcon } from 'components/icons';
 import { Search, X } from 'lucide-react';
-import { type ReactNode, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
+import type { ColumnMeta } from './column-meta';
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -40,7 +41,9 @@ import { Checkbox } from '../../redpanda-ui/components/checkbox';
 import { CopyButton } from '../../redpanda-ui/components/copy-button';
 import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../../redpanda-ui/components/empty';
-import { ListLayoutSearchInput } from '../../redpanda-ui/components/list-layout';
+import { Input, InputEnd, InputStart } from '../../redpanda-ui/components/input';
+import { Label } from '../../redpanda-ui/components/label';
+import { Stat } from '../../redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../redpanda-ui/components/tabs';
 import { Text } from '../../redpanda-ui/components/typography';
@@ -116,13 +119,6 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
   }
 }
 
-const StatItem = ({ label, value }: { label: ReactNode; value: ReactNode }) => (
-  <div className="flex flex-col gap-0.5">
-    <div className="font-semibold text-lg tabular-nums">{value}</div>
-    <Text className="text-muted-foreground text-sm">{label}</Text>
-  </div>
-);
-
 const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps) => {
   const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
   const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
@@ -148,6 +144,7 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const [quickSearch, setQuickSearch] = useState(search?.q ?? '');
   const showWithLagOnly = search?.withLag ?? false;
   const activeTab: GroupTab = search?.tab ?? 'topics';
+  const withLagCheckboxId = useId();
 
   const groupId2 = decodeURIComponent(groupId);
   const consumerGroupsSize = useApiStoreHook((s) => s.consumerGroups.size);
@@ -225,28 +222,29 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
       {/* Statistics Card */}
       {Boolean(uiSettings.consumerGroupDetails.showStatisticsBar) && (
         <Card className="gap-0 px-6 py-4" size="full" variant="standard">
-          <CardContent className="flex flex-wrap items-start gap-x-12 gap-y-4">
-            <StatItem label="State" value={<ConsumerGroupStateCell state={group.state} />} />
-            <StatItem label="Assigned Partitions" value={totalPartitions} />
-            <StatItem label="Protocol" value={group.protocol || '—'} />
-            <StatItem label="Protocol Type" value={group.protocolType || '—'} />
-            <StatItem
-              label={
+          <CardContent className="flex flex-wrap items-start justify-between gap-4">
+            <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
+            <Stat label="Assigned Partitions" mono value={totalPartitions} />
+            <Stat label="Protocol" value={group.protocol || '—'} />
+            <Stat label="Protocol Type" value={group.protocolType || '—'} />
+            <Stat
+              label="Coordinator ID"
+              mono
+              value={
                 <span className="inline-flex items-center gap-1">
-                  Coordinator ID
+                  {group.coordinatorId}
                   <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
                 </span>
               }
-              value={group.coordinatorId}
             />
-            <StatItem label="Total Lag" value={numberToThousandsString(group.lagSum)} />
+            <Stat label="Total Lag" mono value={numberToThousandsString(group.lagSum)} />
           </CardContent>
         </Card>
       )}
 
       {/* Main Card */}
       <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
-        <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
+        <TabsList className="w-fit" variant="underline">
           <TabsTrigger value="topics" variant="underline">
             Topics
           </TabsTrigger>
@@ -257,41 +255,43 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
 
         <TabsContent className="mt-4" value="topics">
           <div className="mb-6 flex items-center gap-4">
-            <div className="relative w-[300px]">
-              {!quickSearch && (
-                <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground">
-                  <Search className="h-4 w-4" />
-                </span>
+            <Input
+              containerClassName="w-[300px]"
+              onChange={(e) => {
+                setQuickSearch(e.target.value);
+                onSearchChange({ q: e.target.value });
+              }}
+              placeholder="Filter by member"
+              size="sm"
+              value={quickSearch}
+            >
+              <InputStart>
+                <Search className="size-4 text-muted-foreground" />
+              </InputStart>
+              {quickSearch !== '' && (
+                <InputEnd className="pointer-events-auto">
+                  <Button
+                    aria-label="Clear member filter"
+                    onClick={() => {
+                      setQuickSearch('');
+                      onSearchChange({ q: '' });
+                    }}
+                    size="icon-xs"
+                    variant="ghost"
+                  >
+                    <X />
+                  </Button>
+                </InputEnd>
               )}
-              <ListLayoutSearchInput
-                className={quickSearch ? 'pr-8' : 'pl-8'}
-                onChange={(e) => {
-                  setQuickSearch(e.target.value);
-                  onSearchChange({ q: e.target.value });
-                }}
-                placeholder="Filter by member"
-                value={quickSearch}
-              />
-              {quickSearch && (
-                <button
-                  className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => {
-                    setQuickSearch('');
-                    onSearchChange({ q: '' });
-                  }}
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
+            </Input>
+            <div className="flex items-center gap-2">
               <Checkbox
                 checked={showWithLagOnly}
+                id={withLagCheckboxId}
                 onCheckedChange={(checked) => onSearchChange({ withLag: checked === true })}
               />
-              Only show topics with lag
-            </label>
+              <Label htmlFor={withLagCheckboxId}>Only show topics with lag</Label>
+            </div>
           </div>
 
           <GroupByTopics
@@ -478,8 +478,7 @@ const PartitionTable = ({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
-                const meta = header.column.columnDef.meta as Meta | undefined;
+                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
                 return (
                   <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -493,7 +492,7 @@ const PartitionTable = ({
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => {
-                const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
+                const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
                 return (
                   <TableCell align={meta?.align} key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

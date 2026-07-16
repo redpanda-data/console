@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
+import { Button, type ButtonProps, buttonVariants } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { ReactNode } from 'react';
@@ -50,7 +50,9 @@ export const DisabledReasonButton = ({
   const trigger = iconOnly ? (
     <span
       className={cn(
-        'inline-flex h-8 w-8 cursor-not-allowed items-center justify-center text-muted-foreground opacity-50',
+        buttonVariants({ variant, size }),
+        'cursor-not-allowed text-muted-foreground opacity-50',
+        'hover:bg-transparent',
         className
       )}
       data-testid={testId}
