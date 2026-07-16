@@ -152,10 +152,7 @@ function FieldLabel({
 function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn(
-        'flex w-fit items-center gap-2 font-medium text-sm leading-snug group-data-[disabled=true]/field:opacity-50',
-        className
-      )}
+      className={cn('flex w-fit items-center gap-2 text-label group-data-[disabled=true]/field:opacity-50', className)}
       data-slot="field-label"
       {...props}
     />
@@ -167,7 +164,7 @@ function FieldDescription({ className, testId, ...props }: React.ComponentProps<
   return (
     <div
       className={cn(
-        'font-normal text-muted-foreground text-sm leading-normal group-has-[[data-orientation=horizontal]]/field:text-balance',
+        'text-body text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance',
         'nth-last-2:-mt-1 last:mt-0 [[data-variant=legend]+&]:-mt-1.5',
         '[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
         className

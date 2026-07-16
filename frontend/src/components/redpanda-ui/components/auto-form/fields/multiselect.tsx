@@ -87,7 +87,7 @@ function DataProviderMultiSelectComponent({ error, field, id, inputProps }: Auto
           </span>
         ) : null}
         <span>{option.label}</span>
-        {option.description ? <span className="text-muted-foreground text-xs">— {option.description}</span> : null}
+        {option.description ? <span className="text-body-sm text-muted-foreground">— {option.description}</span> : null}
       </span>
     );
     return {
