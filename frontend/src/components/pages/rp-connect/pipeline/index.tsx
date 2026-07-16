@@ -1130,10 +1130,9 @@ function PipelinePageContent() {
   );
 
   return (
-    // Definite viewport-bounded height (7rem = app header + pt-8; the footer intentionally sits below
-    // the fold) so a tall lane scrolls within the framed panel instead of stretching the page.
-    // overflow-x-clip (not hidden) blocks stray horizontal overflow but keeps overflow-y.
-    <div className="flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip">
+    // Viewport-bounded height (7rem = app header + pt-8) so a tall lane scrolls within the framed panel.
+    // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
+    <div className="-ml-3.5 flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5">
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
           onBack={handleCancel}
