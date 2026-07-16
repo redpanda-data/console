@@ -13,7 +13,6 @@ import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath, Handle,
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   AlertCircle,
@@ -119,7 +118,7 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
     tone = 'muted';
   }
   const cls = cn(
-    'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-caption-sm leading-none',
+    'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-2xs leading-none',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
     tone === 'muted' && 'border-warning/30 bg-warning/5 text-warning/80',
     tone === 'condition' && 'border-warning/40 bg-warning/10 text-warning',
@@ -162,7 +161,7 @@ const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boole
       )}
     >
       <Split className="size-3.5 shrink-0 opacity-80" />
-      <span className="shrink-0 font-semibold text-caption-sm uppercase tracking-wide opacity-70">{eyebrow}</span>
+      <span className="shrink-0 font-semibold text-2xs uppercase tracking-wide opacity-70">{eyebrow}</span>
       {data.condition ? (
         <span className="min-w-0 flex-1 truncate font-mono text-xs" title={data.condition}>
           {data.condition}
@@ -261,7 +260,7 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
             <span className="truncate font-mono">{topic}</span>
           </Badge>
         ))}
-        {extra > 0 ? <span className="self-center text-caption-sm text-muted-foreground">+{extra}</span> : null}
+        {extra > 0 ? <span className="self-center text-2xs text-muted-foreground">+{extra}</span> : null}
       </span>
     </div>
   );
@@ -344,9 +343,7 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   if (!onAdd) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm">
-        <Text as="span" className="text-sm" variant="bodyMedium">
-          No {section} configured
-        </Text>
+        <span className="text-body">No {section} configured</span>
       </div>
     );
   }
@@ -359,9 +356,7 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
       <span className="flex size-8 items-center justify-center rounded-full border border-current/40 bg-background/70 transition-colors group-hover:border-primary group-hover:bg-primary/10">
         <PlusIcon className="size-4" />
       </span>
-      <Text as="span" className="font-medium text-sm" variant="bodyStrongMedium">
-        Add {section}
-      </Text>
+      <span className="font-medium text-body">Add {section}</span>
     </button>
   );
 };
@@ -392,7 +387,7 @@ const FlashPulse = ({ token }: { token?: number }) => (
 const LintBadge = ({ errors }: { errors?: string[] }) =>
   errors && errors.length > 0 ? (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-caption-sm text-destructive"
+      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-2xs text-destructive"
       title={errors.join('\n')}
     >
       <AlertCircle className="size-3" />
@@ -431,14 +426,12 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
       {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
       <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
-          <Text
-            as="span"
-            className="shrink-0 uppercase tracking-wide"
+          <span
+            className="shrink-0 font-medium text-body-sm uppercase tracking-wide"
             style={accent ? { color: accent } : undefined}
-            variant="captionStrongMedium"
           >
             {kindLabel}
-          </Text>
+          </span>
           {/* Non-case condition info stays an inline chip; a switch case's condition uses the row above. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} />}
           <LintBadge errors={data.lintErrors} />
@@ -446,14 +439,9 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
           <LogoTile name={data.label} />
-          <Text
-            as="span"
-            className="min-w-0 flex-1 truncate font-semibold"
-            title={data.label}
-            variant="bodyStrongMedium"
-          >
+          <span className="min-w-0 flex-1 truncate font-semibold text-body" title={data.label}>
             {data.label}
-          </Text>
+          </span>
         </div>
       </div>
       {data.labelText ? (
@@ -562,7 +550,7 @@ const LinkLabel = ({
 }) => {
   const className = cn(
     // Condition labels are Bloblang code: mono, not uppercased, matching the card's condition chips.
-    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-caption-sm shadow-sm',
+    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-2xs shadow-sm',
     LINK_LABEL_STYLE[tone],
     // A condition label is clickable to edit its case — make that obvious.
     onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
@@ -665,23 +653,16 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
           <span className="flex min-w-0 flex-1 flex-col">
-            <Text
-              as="span"
-              className="truncate text-caption-sm uppercase leading-none tracking-wide"
+            <span
+              className="truncate font-medium text-caption uppercase leading-none tracking-wide"
               style={{ color: accent }}
               title={descriptor}
-              variant="captionStrongMedium"
             >
               {descriptor}
-            </Text>
-            <Text
-              as="span"
-              className="min-w-0 truncate font-semibold leading-tight"
-              title={data.label}
-              variant="bodyStrongMedium"
-            >
+            </span>
+            <span className="min-w-0 truncate font-semibold text-body leading-tight" title={data.label}>
               {data.label}
-            </Text>
+            </span>
           </span>
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />

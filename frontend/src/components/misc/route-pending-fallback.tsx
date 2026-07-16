@@ -10,7 +10,6 @@
  */
 
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Text } from 'components/redpanda-ui/components/typography';
 
 /**
  * Rendered by the router while a route loader is pending. Without it, slow
@@ -21,7 +20,7 @@ export const RoutePendingFallback = () => (
   <div className="flex h-64 items-center justify-center" data-testid="route-pending-fallback">
     <div className="flex items-center gap-2">
       <Spinner className="h-6 w-6" />
-      <Text>Loading...</Text>
+      <div className="text-body">Loading...</div>
     </div>
   </div>
 );

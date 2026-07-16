@@ -10,7 +10,6 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, KeyRound, MousePointerClick } from 'lucide-react';
 import { pluralizeWithNumber } from 'utils/string';
 
@@ -40,13 +39,9 @@ type PipelineProblemsPanelProps = {
 
 // Section heading in the expanded panel, shown only when more than one kind of issue is present.
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <Text
-    as="div"
-    className="px-2 pt-1.5 pb-0.5 text-muted-foreground uppercase tracking-wide"
-    variant="captionStrongMedium"
-  >
+  <div className="px-2 pt-1.5 pb-0.5 font-medium text-body-sm text-muted-foreground uppercase tracking-wide">
     {children}
-  </Text>
+  </div>
 );
 
 // One lint problem: clickable row that selects its node, or inert when it maps to no node.
@@ -55,9 +50,7 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
     <>
       <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
       <span className="flex min-w-0 flex-col">
-        <Text as="span" className="text-foreground text-xs" variant="bodySmall">
-          {problem.message}
-        </Text>
+        <span className="text-body-sm text-foreground">{problem.message}</span>
         {onSelect ? (
           <span className="flex items-center gap-1 text-muted-foreground text-xs">
             <MousePointerClick className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -86,9 +79,7 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
 const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: string[]; onAddSecrets?: () => void }) => (
   <div data-testid="pipeline-problems-secrets">
     <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
-      <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
-        Missing secrets
-      </Text>
+      <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Missing secrets</span>
       {onAddSecrets ? (
         <Button
           className="h-6 gap-1 px-2 text-xs"
@@ -106,12 +97,10 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
       <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left" key={`secret-${name}`}>
         <KeyRound className="mt-0.5 size-3.5 shrink-0 text-warning" />
         <span className="flex min-w-0 flex-col">
-          <Text as="span" className="text-foreground text-xs" variant="bodySmall">
+          <span className="text-body-sm text-foreground">
             Missing secret <span className="font-medium font-mono">{name}</span>
-          </Text>
-          <Text as="span" className="text-muted-foreground text-xs" variant="bodySmall">
-            Referenced by the pipeline but not created
-          </Text>
+          </span>
+          <span className="text-body-sm text-muted-foreground">Referenced by the pipeline but not created</span>
         </span>
       </div>
     ))}

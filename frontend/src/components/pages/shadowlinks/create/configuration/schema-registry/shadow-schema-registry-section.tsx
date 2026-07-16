@@ -12,7 +12,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -76,9 +75,9 @@ export const ShadowSchemaRegistrySection = () => {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <Text className="text-muted-foreground" data-testid="sr-mode-description" variant="small">
+            <div className="text-body-sm text-muted-foreground" data-testid="sr-mode-description">
               {MODE_DESCRIPTIONS[mode]}
-            </Text>
+            </div>
           </div>
 
           {mode === SCHEMA_REGISTRY_MODE.API && (

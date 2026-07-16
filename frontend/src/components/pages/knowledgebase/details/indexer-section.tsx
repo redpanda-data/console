@@ -25,7 +25,6 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpan
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
 import { extractSecretName, formatSecretTemplate } from '../../../ui/secret/secret-utils';
 import { TopicSelector } from '../../../ui/topic/topic-selector';
@@ -71,7 +70,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <TableOfContents className="h-4 w-4" />
-          <Text className="font-semibold">Indexer</Text>
+          <div className="font-semibold text-body">Indexer</div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">

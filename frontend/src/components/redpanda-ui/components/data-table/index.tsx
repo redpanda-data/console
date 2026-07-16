@@ -40,7 +40,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../select';
 import { Separator } from '../separator';
-import { Text } from '../typography';
 import { cn, type SharedProps } from '../../lib/utils';
 
 interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement>, SharedProps {
@@ -224,14 +223,14 @@ export function DataTablePagination<TData>({
   return (
     <div className="flex items-center justify-between px-2" data-testid={testId}>
       {table.options.enableRowSelection !== false && (
-        <div className="flex-1 text-muted-foreground text-sm">
+        <div className="flex-1 text-body text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
           selected.
         </div>
       )}
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
-          <Text className="font-medium text-sm">Rows per page</Text>
+          <div className="font-medium text-body">Rows per page</div>
           <Select
             onValueChange={(value) => {
               table.setPageSize(Number(value));
@@ -250,7 +249,7 @@ export function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+        <div className="flex w-[100px] items-center justify-center text-label">
           Page {table.getPageCount() === 0 ? 0 : table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>
         <div className="flex items-center space-x-2">

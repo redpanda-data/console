@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { Trace } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
@@ -119,9 +118,7 @@ export const TranscriptDetailsTabs: FC<Props> = ({ span, trace, value, onValueCh
               role="tab"
               type="button"
             >
-              <Text as="span" variant="small">
-                {tab.label}
-              </Text>
+              <span className="text-body-sm">{tab.label}</span>
               {activeTab === tab.id && <div className="absolute right-0 bottom-0 left-0 h-0.5 bg-foreground" />}
             </button>
           ))}

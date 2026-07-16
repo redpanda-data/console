@@ -9,16 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { Text } from 'components/redpanda-ui/components/typography';
 import type React from 'react';
 
 import type { UnifiedTLSSettings } from '../../model';
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">
-    <Text className="text-muted-foreground" testId={`${testId}-label`}>
+    <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
       {label}
-    </Text>
+    </div>
     <div className="text-right font-medium" data-testid={`${testId}-value`}>
       {value || '-'}
     </div>

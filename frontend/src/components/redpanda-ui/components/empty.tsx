@@ -60,21 +60,14 @@ function EmptyMedia({
 }
 
 function EmptyTitle({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
-  return (
-    <div
-      className={cn('font-medium text-lg tracking-tight', className)}
-      data-slot="empty-title"
-      data-testid={testId}
-      {...props}
-    />
-  );
+  return <div className={cn('text-heading-md', className)} data-slot="empty-title" data-testid={testId} {...props} />;
 }
 
 function EmptyDescription({ className, testId, ...props }: React.ComponentProps<'p'> & SharedProps) {
   return (
     <div
       className={cn(
-        'text-muted-foreground text-sm/relaxed [&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
+        'text-body text-muted-foreground leading-relaxed [&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
         className
       )}
       data-slot="empty-description"

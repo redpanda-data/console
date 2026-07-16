@@ -20,7 +20,6 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { InfoIcon } from 'lucide-react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -51,7 +50,7 @@ export const SourceConnectionSection = () => {
 
   return (
     <div className="space-y-4" data-testid="sr-source-connection-section">
-      <Text variant="label">Source connection</Text>
+      <div className="text-label">Source connection</div>
 
       <FormField
         control={control}
@@ -69,7 +68,7 @@ export const SourceConnectionSection = () => {
       />
 
       <div className="flex flex-col gap-2">
-        <Text variant="label">Authentication</Text>
+        <div className="text-label">Authentication</div>
         <Tabs onValueChange={handleAuthMethodChange} value={authMethod}>
           <TabsList>
             <TabsTrigger testId="sr-auth-none-tab" value={SR_AUTH_METHOD.NONE}>
@@ -81,9 +80,9 @@ export const SourceConnectionSection = () => {
           </TabsList>
         </Tabs>
         {authMethod === SR_AUTH_METHOD.NONE && (
-          <Text className="text-muted-foreground" data-testid="sr-auth-none-description" variant="small">
+          <div className="text-body-sm text-muted-foreground" data-testid="sr-auth-none-description">
             Requests are sent to the source Schema Registry without authentication.
-          </Text>
+          </div>
         )}
       </div>
 

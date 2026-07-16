@@ -40,7 +40,6 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Heading } from '../../../redpanda-ui/components/typography';
 
 type Role = {
   principalType: string;
@@ -176,9 +175,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
             ) : undefined
           }
         >
-          <Heading as="h2" level={4}>
-            Roles
-          </Heading>
+          <h2 className="text-heading-sm">Roles</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
           <Table>

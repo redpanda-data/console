@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RegexPatternsField } from 'components/ui/regex/regex-patterns-field';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
@@ -59,7 +58,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <TableOfContents className="h-4 w-4" />
-        <Text className="font-semibold">Indexer</Text>
+        <div className="font-semibold text-body">Indexer</div>
       </CardTitle>
     </CardHeader>
     <CardContent>

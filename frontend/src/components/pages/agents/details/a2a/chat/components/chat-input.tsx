@@ -35,7 +35,6 @@ import {
   PromptInputTools,
 } from 'components/ai-elements/prompt-input';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { HistoryIcon } from 'lucide-react';
 import type { AIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { memo, useMemo } from 'react';
@@ -141,9 +140,7 @@ const ChatInputComponent = ({
               variant="ghost"
             >
               <HistoryIcon className="size-3" />
-              <Text as="span" className="text-sm">
-                Clear context
-              </Text>
+              <span className="text-body">Clear context</span>
             </Button>
           </PromptInputTools>
           <div className="flex items-center gap-2">

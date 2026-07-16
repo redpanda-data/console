@@ -10,7 +10,6 @@
  */
 
 import type { ComponentName } from 'assets/connectors/component-logo-map';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -372,14 +371,12 @@ export function PipelineStructureTree({
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
         return (
           <div className="flex flex-col" key={section.id}>
-            <Text
-              as="div"
-              className="px-2 pb-1 text-muted-foreground uppercase tracking-wide"
+            <div
+              className="px-2 pb-1 font-medium text-body-sm text-muted-foreground uppercase tracking-wide"
               style={section.section ? { color: sectionAccent(section.section) } : undefined}
-              variant="captionStrongMedium"
             >
               {title}
-            </Text>
+            </div>
             {isEmptySection(section.id) ? (
               onAddConnector && (section.section === 'input' || section.section === 'output') ? (
                 <AddConnectorRow onAdd={onAddConnector} section={section.section} />

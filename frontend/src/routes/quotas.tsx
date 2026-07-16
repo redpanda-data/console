@@ -10,7 +10,6 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { ScaleIcon } from 'components/icons';
 import { useLayoutEffect } from 'react';
 import { z } from 'zod';
@@ -19,13 +18,13 @@ import QuotasList from '../components/pages/quotas/quotas-list';
 import { uiState } from '../state/ui-state';
 
 const quotasSearchSchema = z.object({
-  page: fallback(z.number().int().min(0).optional(), 0),
-  pageSize: fallback(z.number().int().min(10).max(100).optional(), 50),
-  sortField: fallback(
-    z.enum(['entityType', 'entityName', 'producerRate', 'consumerRate', 'controllerMutationRate']).optional(),
-    undefined
-  ),
-  sortDirection: fallback(z.enum(['asc', 'desc']).optional(), undefined),
+  page: z.number().int().min(0).optional().catch(0),
+  pageSize: z.number().int().min(10).max(100).optional().catch(50),
+  sortField: z
+    .enum(['entityType', 'entityName', 'producerRate', 'consumerRate', 'controllerMutationRate'])
+    .optional()
+    .catch(undefined),
+  sortDirection: z.enum(['asc', 'desc']).optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/quotas')({
@@ -33,7 +32,7 @@ export const Route = createFileRoute('/quotas')({
     title: 'Quotas',
     icon: ScaleIcon,
   },
-  validateSearch: zodValidator(quotasSearchSchema),
+  validateSearch: quotasSearchSchema,
   component: QuotasWrapper,
 });
 

@@ -13,7 +13,6 @@ import { getRouteApi } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id/');
 
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 
 import { AIAgentStateBadge } from './ai-agent-state-badge';
@@ -30,7 +29,7 @@ export const AIAgentDetailsHeader = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
-        <Heading level={1}>{aiAgentData.aiAgent.displayName}</Heading>
+        <h1 className="text-heading-xl">{aiAgentData.aiAgent.displayName}</h1>
         <AIAgentStateBadge />
         <AIAgentToggleButton />
       </div>

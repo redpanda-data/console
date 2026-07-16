@@ -36,7 +36,6 @@ import {
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Heading } from '../../../redpanda-ui/components/typography';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -130,9 +129,7 @@ export const RoleDetailPageNew = () => {
             />
           }
         >
-          <Heading as="h2" level={4}>
-            Principals
-          </Heading>
+          <h2 className="text-heading-sm">Principals</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
           <Table>

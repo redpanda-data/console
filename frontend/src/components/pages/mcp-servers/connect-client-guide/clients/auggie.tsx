@@ -10,7 +10,7 @@
  */
 
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 
 import AuggieLogo from '../../../../../assets/auggie.svg';
@@ -51,9 +51,9 @@ export const ClientAuggie = ({ mcpServer }: ClientAuggieProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="Auggie (Augment Code) CLI" className="h-4 w-4" src={AuggieLogo} /> Auggie (Augment Code CLI)
-              </Text>
+              </span>
               <span>and run the following command:</span>
             </div>
             <DynamicCodeBlock code={auggieCommand} lang="bash" />

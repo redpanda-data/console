@@ -2,7 +2,7 @@ import { type ComponentName, componentLogoMap } from 'assets/connectors/componen
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ChoiceboxItem } from 'components/redpanda-ui/components/choicebox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon, Waypoints } from 'lucide-react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
@@ -104,9 +104,7 @@ export const ConnectTile = ({
       <Tooltip>
         <TooltipTrigger render={content} />
         <TooltipContent className="max-w-sm">
-          <Text className="line-clamp-4 text-wrap" variant="small">
-            {component.summary}
-          </Text>
+          <div className="line-clamp-4 text-wrap text-body-sm">{component.summary}</div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

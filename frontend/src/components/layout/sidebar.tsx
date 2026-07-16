@@ -46,7 +46,6 @@ import { useSupportedFeaturesStore } from '../../state/supported-features';
 import { AppFeatures } from '../../utils/env';
 import { getUserInitials } from '../../utils/string';
 import { UserPreferencesDialog } from '../misc/user-preferences';
-import { Text } from '../redpanda-ui/components/typography';
 
 function SidebarLogo() {
   const { state, isMobile } = useSidebar();
@@ -131,12 +130,8 @@ const UserProfile = () => {
               {!isCollapsed && (
                 <>
                   <div className="grid flex-1 text-left leading-tight">
-                    <Text as="span" className="truncate" variant="label">
-                      {user.displayName}
-                    </Text>
-                    <Text as="span" className="truncate text-sidebar-foreground/60" variant="muted">
-                      Preferences
-                    </Text>
+                    <span className="truncate text-label">{user.displayName}</span>
+                    <span className="truncate text-body text-sidebar-foreground/60">Preferences</span>
                   </div>
                   <ChevronUp aria-hidden="true" className="ml-auto size-4" />
                 </>
@@ -147,12 +142,8 @@ const UserProfile = () => {
         <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
           <DropdownMenuLabel>
             <div className="flex flex-col">
-              <Text as="span" variant="small">
-                Signed in as
-              </Text>
-              <Text as="span" variant="muted">
-                {user.displayName}
-              </Text>
+              <span className="text-body-sm">Signed in as</span>
+              <span className="text-body text-muted-foreground">{user.displayName}</span>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

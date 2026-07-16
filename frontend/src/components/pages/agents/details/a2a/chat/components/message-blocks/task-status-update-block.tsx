@@ -12,7 +12,6 @@ import { Artifact, ArtifactContent, ArtifactHeader, ArtifactTitle } from 'compon
 import { Response } from 'components/ai-elements/response';
 import { TaskState } from 'components/ai-elements/task';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MoveRightIcon } from 'lucide-react';
 import { formatTokenCount } from 'utils/format-token-count';
 
@@ -74,42 +73,32 @@ export const TaskStatusUpdateBlock = ({
       <div className="flex flex-col gap-0.5">
         {Boolean(messageId) && (
           <div className="flex gap-1.5">
-            <Text as="span" className="font-bold" variant="small">
-              message_id:
-            </Text>
-            <Text as="span" className="font-mono text-muted-foreground" variant="small">
-              {messageId}
-            </Text>
+            <span className="font-bold text-body-sm">message_id:</span>
+            <span className="font-mono text-body-sm text-muted-foreground">{messageId}</span>
           </div>
         )}
         {Boolean(hasTokens) && (
           <div className="flex items-center gap-1.5">
-            <Text as="span" className="font-bold" variant="small">
-              tokens:
-            </Text>
+            <span className="font-bold text-body-sm">tokens:</span>
             <div className="flex items-center gap-2">
               {inputTokens && inputTokens > 0 && (
-                <Text as="span" className="flex items-center gap-1 text-muted-foreground" variant="small">
+                <span className="flex items-center gap-1 text-body-sm text-muted-foreground">
                   <ArrowUpIcon className="size-3" />
                   {formatTokenCount(inputTokens)}
-                </Text>
+                </span>
               )}
               {outputTokens && outputTokens > 0 && (
-                <Text as="span" className="flex items-center gap-1 text-muted-foreground" variant="small">
+                <span className="flex items-center gap-1 text-body-sm text-muted-foreground">
                   <ArrowDownIcon className="size-3" />
                   {formatTokenCount(outputTokens)}
-                </Text>
+                </span>
               )}
             </div>
           </div>
         )}
         <div className="flex gap-1.5">
-          <Text as="span" className="font-bold" variant="small">
-            time:
-          </Text>
-          <Text as="span" className="text-muted-foreground" variant="small">
-            {time}
-          </Text>
+          <span className="font-bold text-body-sm">time:</span>
+          <span className="text-body-sm text-muted-foreground">{time}</span>
         </div>
       </div>
     </div>
