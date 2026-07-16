@@ -82,4 +82,22 @@ describe('usePipelineLint', () => {
     const { result } = renderHook(() => usePipelineLint(SYNTAX_ERROR_YAML, {}, false));
     expect(result.current.lintHints).toEqual({});
   });
+
+  it('skips the server lint for blank content instead of surfacing "value is required"', () => {
+    // A disabled query stays isPending forever — the hook must not leak that as a lint spinner.
+    mockUseLintQuery.mockReturnValue(lintQueryResult({ isPending: true }));
+    for (const blank of ['', '   \n\t']) {
+      const { result } = renderHook(() => usePipelineLint(blank, {}, true));
+      expect(mockUseLintQuery).toHaveBeenLastCalledWith(blank, { enabled: false });
+      expect(result.current.lintHints).toEqual({});
+      expect(result.current.isLintPending).toBe(false);
+    }
+  });
+
+  it('still surfaces save-error hints on blank content (explicit save is real feedback)', () => {
+    mockUseLintQuery.mockReturnValue(lintQueryResult({ isPending: true }));
+    const saveError = { save0: hint('config_yaml: value is required') };
+    const { result } = renderHook(() => usePipelineLint('', saveError, true));
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual(['config_yaml: value is required']);
+  });
 });

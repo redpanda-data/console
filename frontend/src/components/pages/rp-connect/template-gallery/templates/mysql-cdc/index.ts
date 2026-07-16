@@ -28,12 +28,17 @@ export const mysqlCdcTemplate: PipelineTemplate = {
       id: 'includedTable',
       section: 'source',
       kind: 'string',
-      label: 'Source table',
-      // The connector rejects dotted names (validate.go: ^[a-zA-Z0-9_$]+$); the database comes from the DSN.
+      label: 'Source tables',
       description:
-        'Bare table name — no database prefix; the database comes from the DSN. Add more in the YAML editor afterwards.',
-      placeholder: 'users',
+        'Bare table names — no database prefix; the database comes from the DSN. Comma-separate multiple tables.',
+      placeholder: 'users, orders',
       required: true,
+      list: true,
+      // Mirrors the connector's own validation (mysql/validate.go) so rejects surface in the form.
+      entryPattern: {
+        regex: /^[a-zA-Z0-9_$]+$/,
+        message: 'Table names must be bare identifiers — no database prefix or dots.',
+      },
       schemaField: 'tables',
     },
     targetTopicSlot,

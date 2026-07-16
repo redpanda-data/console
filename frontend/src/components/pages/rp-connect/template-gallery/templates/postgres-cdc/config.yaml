@@ -13,11 +13,11 @@ input:
     # Enable to seed existing data; every snapshotted table must have a primary key.
     stream_snapshot: false
 
-    # ── Replication tuning (benchmark-tuned batch) ───────────────────────────
+    # ── Replication tuning (benchmark-tuned batch; other knobs at engine defaults) ──
     batching:
       count: 5000
       period: 1s
-    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # checkpoint_limit: 1024               # outstanding messages before backpressure
     # snapshot_batch_size: 1000            # only relevant while snapshotting
     # temporary_slot: false                # set true if you don't need durable slots
     # pg_standby_timeout: 10s
@@ -27,7 +27,7 @@ input:
     # include_transaction_markers: false
 
     # ── Error handling ──────────────────────────────────────────────────────
-    auto_replay_nacks: true                # re-deliver NACKed messages
+    # auto_replay_nacks: true              # default — re-deliver NACKed messages
 
 output:
   redpanda:

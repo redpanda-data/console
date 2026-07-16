@@ -241,10 +241,44 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     }
     const yaml = stitchTemplateYaml({
       template: postgres,
-      values: { dsn: 'PG_DSN', slotName: '', includedTable: 'public.users', targetTopic: 'orders' },
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: 'users', targetTopic: 'orders' },
       pipelineName: 'My Pipeline 1',
     });
     const doc = parseDocument(yaml);
     expect(doc.getIn(['input', 'postgres_cdc', 'slot_name'])).toBe('rpcn_my_pipeline_1');
+  });
+
+  test('list slots expand comma-separated values into one sequence item each', () => {
+    const postgres = PIPELINE_TEMPLATES.find((t) => t.id === 'postgres-cdc-to-redpanda');
+    expect(postgres).toBeDefined();
+    if (!postgres) {
+      return;
+    }
+    const yaml = stitchTemplateYaml({
+      template: postgres,
+      // Ragged whitespace and a trailing comma must not produce blank entries.
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: ' users,  orders ,invoices, ', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    expect(doc.getIn(['input', 'postgres_cdc', 'tables'])?.toJSON()).toEqual(['users', 'orders', 'invoices']);
+  });
+
+  test('a blank list slot still drops the whole sequence key', () => {
+    const mongodb = PIPELINE_TEMPLATES.find((t) => t.id === 'mongodb-cdc-to-redpanda');
+    expect(mongodb).toBeDefined();
+    if (!mongodb) {
+      return;
+    }
+    const yaml = stitchTemplateYaml({
+      template: mongodb,
+      values: { url: 'MONGODB_URL', database: 'mydb', collection: ' , ', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    // Only separators/whitespace → zero entries → the `collections:` key is dropped, not left as [].
+    expect(doc.getIn(['input', 'mongodb_cdc', 'collections'])).toBeUndefined();
   });
 });

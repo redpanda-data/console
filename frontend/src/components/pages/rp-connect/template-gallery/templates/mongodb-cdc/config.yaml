@@ -15,7 +15,7 @@ input:
     # snapshot_auto_bucket_sharding: true  # for MongoDB Atlas snapshots
 
     # ── Error handling ──────────────────────────────────────────────────────
-    auto_replay_nacks: true                # re-deliver NACKed messages
+    # auto_replay_nacks: true              # default — re-deliver NACKed messages
 
 output:
   redpanda:

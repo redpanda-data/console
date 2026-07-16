@@ -12,15 +12,15 @@ input:
     stream_snapshot: false                 # required field — enable to seed existing data
     # snapshot_max_batch_size: 1000        # only relevant while snapshotting
 
-    # ── Binlog tuning (benchmark-tuned batch) ───────────────────────────────
+    # ── Binlog tuning (benchmark-tuned batch; other knobs at engine defaults) ──
     batching:
       count: 5000
       period: 1s
-    checkpoint_limit: 1024                 # outstanding messages before backpressure
     checkpoint_cache: mysql_cdc_checkpoint # cache resource storing binlog position (defined below)
+    # checkpoint_limit: 1024               # outstanding messages before backpressure
 
     # ── Error handling ──────────────────────────────────────────────────────
-    auto_replay_nacks: true                # re-deliver NACKed messages
+    # auto_replay_nacks: true              # default — re-deliver NACKed messages
 
 output:
   redpanda:

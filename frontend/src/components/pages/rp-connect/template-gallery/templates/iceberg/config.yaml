@@ -39,6 +39,8 @@ output:
     # max_in_flight: 16                    # biggest throughput knob (default 4); with insert-only
     #                                      # data, 32 + input unordered_processing goes further
     # row_operation: insert                # insert | upsert | delete (keyed writes cap in-flight at 1)
+    # commit:
+    #   max_snapshot_age: 24h              # default — keep enabled so table metadata stays bounded
 
     # ── Schema handling ─────────────────────────────────────────────────────
     # schema_evolution:

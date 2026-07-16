@@ -66,16 +66,30 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
-const buildSchema = (slots: TemplateSlot[]) => {
+// Exported for tests: slot validation rules (required, list entries, entryPattern) live here.
+export const buildSchema = (slots: TemplateSlot[]) => {
   const shape: Record<string, z.ZodTypeAny> = {
     [PIPELINE_NAME_FIELD]: z.string().min(1, 'Pipeline name is required'),
   };
   for (const slot of slots) {
-    if (slot.required) {
-      shape[slot.id] = z.string().min(1, `${slot.label} is required`);
+    const isList = slot.kind === 'string' && slot.list;
+    const entryPattern = slot.kind === 'string' ? slot.entryPattern : undefined;
+
+    let field: z.ZodType<string>;
+    if (!slot.required) {
+      field = z.string();
+    } else if (isList) {
+      // Comma-separated multi-value: require at least one non-blank entry (",," must not pass).
+      field = z.string().refine((v) => v.split(',').some((part) => part.trim()), `${slot.label} is required`);
     } else {
-      shape[slot.id] = z.string().optional().default('');
+      field = z.string().min(1, `${slot.label} is required`);
     }
+    if (entryPattern) {
+      // Validate each trimmed entry; blanks are the required check's concern, not the pattern's.
+      const entriesOf = (v: string) => (isList ? v.split(',') : [v]).map((part) => part.trim()).filter(Boolean);
+      field = field.refine((v) => entriesOf(v).every((entry) => entryPattern.regex.test(entry)), entryPattern.message);
+    }
+    shape[slot.id] = slot.required ? field : field.optional().default('');
   }
   return z.object(shape);
 };
