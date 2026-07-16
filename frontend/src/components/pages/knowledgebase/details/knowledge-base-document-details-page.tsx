@@ -14,7 +14,6 @@ import { config } from 'config';
 
 import { Response } from '../../../ai-elements/response';
 import { Card, CardContent } from '../../../redpanda-ui/components/card';
-import { Heading, Text } from '../../../redpanda-ui/components/typography';
 
 export const KnowledgeBaseDocumentDetailsPage = () => {
   const location = useLocation();
@@ -25,7 +24,7 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <Heading level={1}>{documentName}</Heading>
+      <h1 className="text-heading-xl">{documentName}</h1>
 
       {/* Metadata Card */}
       <Card>
@@ -33,16 +32,12 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
           <div className="flex gap-8">
             {score !== undefined && (
               <div>
-                <Text className="mb-1 font-medium text-sm" variant="muted">
-                  Relevance Score
-                </Text>
-                <Text className="font-mono">{score.toFixed(3)}</Text>
+                <div className="mb-1 font-medium text-body text-muted-foreground">Relevance Score</div>
+                <div className="font-mono text-body">{score.toFixed(3)}</div>
               </div>
             )}
             <div>
-              <Text className="mb-1 font-medium text-sm" variant="muted">
-                Topic
-              </Text>
+              <div className="mb-1 font-medium text-body text-muted-foreground">Topic</div>
               <a
                 className="text-informative hover:text-informative hover:underline"
                 href={`/clusters/${config.clusterId}/topics/${encodeURIComponent(topic ?? '')}`}
@@ -51,10 +46,8 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
               </a>
             </div>
             <div>
-              <Text className="mb-1 font-medium text-sm" variant="muted">
-                Chunk ID
-              </Text>
-              <Text className="font-mono">{chunkId}</Text>
+              <div className="mb-1 font-medium text-body text-muted-foreground">Chunk ID</div>
+              <div className="font-mono text-body">{chunkId}</div>
             </div>
           </div>
         </CardContent>
@@ -63,9 +56,7 @@ export const KnowledgeBaseDocumentDetailsPage = () => {
       {/* Content Card */}
       <Card size="full">
         <CardContent className="space-y-4">
-          <Text className="font-medium text-sm" variant="muted">
-            Content
-          </Text>
+          <div className="font-medium text-body text-muted-foreground">Content</div>
           <Response className="whitespace-pre-wrap break-words">{content}</Response>
         </CardContent>
       </Card>

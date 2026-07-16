@@ -23,7 +23,7 @@ import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from 'components/redpanda-ui/components/item';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -134,7 +134,7 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
                 }
               />
               <TooltipContent>
-                <Text>{tooltipMessage}</Text>
+                <div className="text-body">{tooltipMessage}</div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -265,10 +265,10 @@ export const TopicConfigTab = () => {
         <CardHeader>
           <div className="space-y-2">
             <CardTitle>Topic properties shadowed</CardTitle>
-            <Text variant="muted">
+            <div className="text-body text-muted-foreground">
               Toggle replication on and off for specific topic configurations. When enabled, the configuration will be
               replicated to the shadow cluster.
-            </Text>
+            </div>
           </div>
           <CardAction>
             <CollapsibleTrigger
@@ -288,10 +288,10 @@ export const TopicConfigTab = () => {
           {/* Summary view when collapsed */}
           {!isOpen && (
             <div className="space-y-2">
-              <Text variant="small">
+              <div className="text-body-sm">
                 {topicProperties.length} {topicProperties.length === 1 ? 'property' : 'properties'} selected for
                 replication
-              </Text>
+              </div>
             </div>
           )}
 

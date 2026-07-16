@@ -22,7 +22,6 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Trash2 } from 'lucide-react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
@@ -59,7 +58,7 @@ export const ScopeSection = () => {
 
   return (
     <div className="space-y-4" data-testid="sr-scope-section">
-      <Text variant="label">Scope</Text>
+      <div className="text-label">Scope</div>
 
       <Tabs onValueChange={handleScopeModeChange} value={scopeMode}>
         <TabsList>
@@ -150,7 +149,9 @@ export const ScopeSection = () => {
                     <Label className="cursor-pointer font-medium" htmlFor="sr-dest-preserve">
                       Preserve source context names
                     </Label>
-                    <Text variant="muted">Schemas land in the same context they came from.</Text>
+                    <div className="text-body text-muted-foreground">
+                      Schemas land in the same context they came from.
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -159,9 +160,9 @@ export const ScopeSection = () => {
                     <Label className="cursor-pointer font-medium" htmlFor="sr-dest-map">
                       Map source contexts to explicit destination contexts
                     </Label>
-                    <Text variant="muted">
+                    <div className="text-body text-muted-foreground">
                       Every source context in scope must map to a distinct destination context to avoid collisions.
-                    </Text>
+                    </div>
                   </div>
                 </div>
               </RadioGroup>

@@ -10,7 +10,7 @@
  */
 
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 
 import CodexLogo from '../../../../../assets/codex.svg';
@@ -51,10 +51,10 @@ export const ClientCodex = ({ mcpServer }: ClientCodexProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>In</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="Codex" className="h-4 w-4" src={CodexLogo} />
                 Codex
-              </Text>
+              </span>
               <span>, add the MCP server using the following command:</span>
             </div>
             <DynamicCodeBlock code={codexMcpAddCommand} lang="bash" />

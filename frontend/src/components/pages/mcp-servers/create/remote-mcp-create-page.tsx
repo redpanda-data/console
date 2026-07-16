@@ -17,7 +17,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
 import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
 import {
@@ -360,8 +359,10 @@ export const RemoteMCPCreatePage: React.FC = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Create MCP Server</Heading>
-        <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
+        <h1 className="text-heading-xl">Create MCP Server</h1>
+        <div className="text-body text-muted-foreground">
+          Set up a new managed MCP server with custom tools and configurations.
+        </div>
       </header>
 
       <Stepper.Provider className="space-y-4" variant="horizontal">
@@ -446,7 +447,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                   {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <Text as="span">Creating...</Text>
+                      <span className="text-body">Creating...</span>
                     </div>
                   ) : (
                     'Create MCP Server'

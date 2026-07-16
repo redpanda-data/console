@@ -29,7 +29,6 @@ import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { COHERE_RERANKER_MODELS } from '../../../ui/ai/ai-constants';
 import { RerankerModelSelect } from '../../../ui/ai/reranker-model-select';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
@@ -139,7 +138,7 @@ export const RetrieverSection = ({ knowledgeBase, isEditMode }: RetrieverSection
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Shuffle className="h-4 w-4" />
-          <Text className="font-semibold">Retriever</Text>
+          <div className="font-semibold text-body">Retriever</div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">

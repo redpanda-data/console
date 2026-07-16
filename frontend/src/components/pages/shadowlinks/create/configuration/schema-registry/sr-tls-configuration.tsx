@@ -14,7 +14,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from 'components/redpanda-ui/components/dropzone';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Check, ChevronRight, Trash2, UploadCloud } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -153,9 +152,9 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
         )}
       </div>
       {uploadError && (
-        <Text className="text-destructive text-sm" data-testid={`sr-${certType}-upload-error`}>
+        <div className="text-body text-destructive" data-testid={`sr-${certType}-upload-error`}>
           {uploadError}
-        </Text>
+        </div>
       )}
     </div>
   );
@@ -220,9 +219,7 @@ function DisclosureRow({
                 <span className="font-medium text-sm">{label}</span>
                 {!open && badge}
               </div>
-              <Text className="mt-0.5 text-xs" variant="muted">
-                {description}
-              </Text>
+              <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>
             </div>
           </button>
         }
@@ -276,13 +273,13 @@ export const SrTlsConfiguration = () => {
 
       {useTls && (
         <>
-          <Text data-testid="sr-tls-intro" variant="muted">
+          <div className="text-body text-muted-foreground" data-testid="sr-tls-intro">
             The connection to the source Schema Registry is encrypted. By default, its certificate is verified using the
             system trust store. Upload a custom CA below if the source uses a private or self-signed CA.{' '}
             <a className="text-primary hover:underline" href={TLS_DOCS_URL} rel="noreferrer" target="_blank">
               Learn about TLS for shadow links
             </a>
-          </Text>
+          </div>
 
           <div className="flex flex-col gap-3" data-testid="sr-mtls-certificates-form">
             <DisclosureRow
@@ -330,9 +327,9 @@ export const SrTlsConfiguration = () => {
                     </FormItem>
                   )}
                 />
-                <Text className="text-xs" data-testid="sr-mtls-pair-hint" variant="muted">
+                <div className="text-body-sm text-muted-foreground" data-testid="sr-mtls-pair-hint">
                   Client certificate and private key must be provided together.
-                </Text>
+                </div>
               </div>
             </DisclosureRow>
           </div>

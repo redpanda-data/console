@@ -24,7 +24,6 @@ import { Field, FieldError, FieldLabel } from '../../../redpanda-ui/components/f
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Textarea } from '../../../redpanda-ui/components/textarea';
-import { Heading, Text } from '../../../redpanda-ui/components/typography';
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {
@@ -99,7 +98,7 @@ export const BasicInfoSection = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            <Text className="font-semibold">Knowledge Base Configuration</Text>
+            <div className="font-semibold text-body">Knowledge Base Configuration</div>
           </CardTitle>
           <div className="flex gap-2">
             {isEditMode ? (
@@ -176,14 +175,10 @@ export const BasicInfoSection = ({
 
           {Boolean(editableTags.length > 0 || isEditMode) && (
             <div className="flex flex-col gap-2 space-y-4">
-              <Heading className="font-medium text-sm" level={4}>
-                Tags
-              </Heading>
+              <h4 className="font-medium text-heading-xs">Tags</h4>
               <div className="space-y-2">
                 {isEditMode && hasDuplicateKeys(editableTags) && (
-                  <Text className="text-destructive" variant="small">
-                    Tags must have unique keys
-                  </Text>
+                  <div className="text-body-sm text-destructive">Tags must have unique keys</div>
                 )}
                 {editableTags.map((tag, index) => {
                   const duplicateKeys = isEditMode ? getDuplicateKeys(editableTags) : new Set();

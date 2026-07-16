@@ -14,7 +14,6 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 
 import type { UnifiedACLFilter, UnifiedNameFilter, UnifiedShadowLink } from '../../model';
 import {
@@ -65,7 +64,7 @@ const NameFilterSection = ({
 }) => (
   <Card size="full" testId={`${testId}-card`}>
     <CardHeader>
-      <Heading level={3}>{title}</Heading>
+      <h3 className="text-heading-md">{title}</h3>
     </CardHeader>
     <CardContent>
       {filters.length > 0 ? (
@@ -79,9 +78,9 @@ const NameFilterSection = ({
           ))}
         </ItemGroup>
       ) : (
-        <Text className="text-muted-foreground" testId={`no-${testId}`}>
+        <div className="text-body text-muted-foreground" data-testid={`no-${testId}`}>
           {emptyMessage}
-        </Text>
+        </div>
       )}
     </CardContent>
   </Card>
@@ -150,7 +149,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   return (
     <Card size="full" testId="acl-replication-card">
       <CardHeader>
-        <Heading level={3}>ACL replication</Heading>
+        <h3 className="text-heading-md">ACL replication</h3>
       </CardHeader>
       <CardContent>
         {hasAllACLs ? (
@@ -177,12 +176,12 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
 const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
   <Card size="full" testId="schema-registry-card">
     <CardHeader>
-      <Heading level={3}>Schema Registry</Heading>
+      <h3 className="text-heading-md">Schema Registry</h3>
     </CardHeader>
     <CardContent className="flex flex-row justify-between">
-      <Text className="mt-2 text-muted-foreground text-sm">
+      <div className="mt-2 text-body text-muted-foreground">
         Replicate the source cluster's _schema topic, which replaces the shadow cluster's Schema Registry.
-      </Text>
+      </div>
       <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'success-inverted' : 'neutral-inverted'}>
         {isEnabled ? 'Enabled' : 'Disabled'}
       </Badge>
@@ -207,9 +206,9 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
 
   return (
     <div className="flex flex-col gap-6">
-      <Heading level={2} testId="shadowing-title">
+      <h2 className="text-heading-lg" data-testid="shadowing-title">
         Shadowing
-      </Heading>
+      </h2>
 
       {/* Topic Replication Section */}
       <NameFilterSection

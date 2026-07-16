@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Button, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import {
   type Pipeline,
@@ -145,7 +145,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   return (
     <PageContent>
       <div className="my-2">
-        <UIText>
+        <div className="text-body">
           For help editing your pipeline, see our{' '}
           <UILink
             href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
@@ -171,7 +171,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
             connector catalog
           </UILink>
           .
-        </UIText>
+        </div>
       </div>
 
       <FormField errorText="Name cannot be empty" isInvalid={isNameEmpty} label="Pipeline name">

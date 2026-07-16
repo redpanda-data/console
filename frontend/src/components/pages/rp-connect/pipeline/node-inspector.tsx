@@ -23,7 +23,6 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import {
   AlertCircle,
@@ -606,12 +605,8 @@ const SwitchCaseEditor = ({
           <Split className="size-3.5" />
         </span>
         <div className="flex min-w-0 flex-col">
-          <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
-            Switch
-          </Text>
-          <Text as="span" className="font-semibold" variant="bodyStrongMedium">
-            Routing condition
-          </Text>
+          <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Switch</span>
+          <span className="font-semibold text-body">Routing condition</span>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
@@ -633,9 +628,9 @@ const SwitchCaseEditor = ({
           Condition (check)
         </Label>
         <CaseCheckInput check={check} id={inputId} readOnly={readOnly} setCheck={setCheck} />
-        <Text className="text-muted-foreground" variant="bodySmall">
+        <div className="text-body-sm text-muted-foreground">
           A Bloblang expression. Messages route to this case when it's true. Leave empty for the default (else) case.
-        </Text>
+        </div>
       </div>
     </div>
   );
@@ -687,10 +682,10 @@ const CaseConditionSection = ({
       <CaseCheckInput check={check} id={inputId} invalid={Boolean(error)} readOnly={readOnly} setCheck={setCheck} />
       {/* The field's own error, shown where it's fixed. Hidden once editing starts — they're addressing it. */}
       {error && !dirty ? (
-        <Text className="flex items-center gap-1 pt-1.5 text-destructive" variant="bodySmall">
+        <div className="flex items-center gap-1 pt-1.5 text-body-sm text-destructive">
           <AlertCircle className="size-3.5 shrink-0" />
           {error}
-        </Text>
+        </div>
       ) : null}
     </div>
   );
@@ -717,9 +712,7 @@ const EmptyHint = ({ icon: Icon, children }: { icon: LucideIcon; children: React
     <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
       <Icon className="size-3.5" />
     </span>
-    <Text as="span" className="text-muted-foreground" variant="bodySmall">
-      {children}
-    </Text>
+    <span className="text-body-sm text-muted-foreground">{children}</span>
   </li>
 );
 
@@ -729,12 +722,12 @@ const InspectorEmptyState = ({ readOnly }: { readOnly?: boolean }) => (
       <MousePointerSquareDashed className="size-7" />
     </div>
     <div className="flex max-w-[16rem] flex-col gap-1">
-      <Text variant="bodyStrongMedium">No node selected</Text>
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="font-medium text-body">No node selected</div>
+      <div className="text-body-sm text-muted-foreground">
         {readOnly
           ? 'Select a node on the canvas to inspect its configuration.'
           : 'Select a node on the canvas to view and edit its configuration.'}
-      </Text>
+      </div>
     </div>
     <ul className="flex flex-col gap-2.5 text-left">
       <EmptyHint icon={MousePointerClick}>Click any node to {readOnly ? 'inspect' : 'edit'} it</EmptyHint>
@@ -763,13 +756,13 @@ const InspectorHeader = ({
   <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
     <ConnectorLogo className="size-6 shrink-0" fallback={Box} name={componentName as ComponentName} />
     <div className="flex min-w-0 flex-col">
-      <Text as="span" className="text-muted-foreground uppercase tracking-wide" variant="captionStrongMedium">
+      <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">
         {kindLabel}
         {typeof usedByCount === 'number' ? ` · used by ${pluralizeWithNumber(usedByCount, 'node')}` : ''}
-      </Text>
-      <Text as="span" className="min-w-0 truncate font-semibold" title={componentName} variant="bodyStrongMedium">
+      </span>
+      <span className="min-w-0 truncate font-semibold text-body" title={componentName}>
         {componentName}
-      </Text>
+      </span>
     </div>
     <div className="ml-auto flex shrink-0 items-center gap-1">
       {docsUrl ? (
@@ -860,11 +853,7 @@ const RawComponentEditor = ({
             value={draft}
           />
         </div>
-        {error ? (
-          <Text className="shrink-0 text-destructive" variant="bodySmall">
-            {error}
-          </Text>
-        ) : null}
+        {error ? <div className="shrink-0 text-body-sm text-destructive">{error}</div> : null}
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ import {
 } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
-import { InlineCode, Text } from '../../../redpanda-ui/components/typography';
+import { InlineCode } from '../../../redpanda-ui/components/typography';
 
 const schema = z.object({
   principal: z.string().min(1, 'Principal is required'),
@@ -341,7 +341,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                           ))}
                         </div>
                         {PATTERN_TYPE_HELP[field.value] && (
-                          <Text className="mt-1 text-muted-foreground text-sm">{PATTERN_TYPE_HELP[field.value]}</Text>
+                          <div className="mt-1 text-body text-muted-foreground">{PATTERN_TYPE_HELP[field.value]}</div>
                         )}
                         <FormMessage />
                       </FormItem>

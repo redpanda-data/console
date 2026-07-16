@@ -10,7 +10,7 @@
  */
 
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 
 import WarpLogo from '../../../../../assets/warp.svg';
@@ -44,13 +44,11 @@ export const ClientWarp = ({ mcpServer }: ClientWarpProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="Warp" className="h-4 w-4" src={WarpLogo} /> Warp
-              </Text>
+              </span>
               <span>and go to</span>
-              <Text as="span" className="whitespace-nowrap font-bold">
-                Settings → AI → Manage MCP servers
-              </Text>
+              <span className="whitespace-nowrap font-bold text-body">Settings → AI → Manage MCP servers</span>
             </div>
           </ListItem>
           <ListItem>

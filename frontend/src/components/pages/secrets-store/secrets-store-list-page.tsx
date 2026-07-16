@@ -39,7 +39,7 @@ import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, CircleUser, Link, Loader2, Server, Waypoints, X } from 'lucide-react';
 import {
   ListSecretsFilterSchema,
@@ -108,7 +108,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
     {
       accessorKey: 'id',
       header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-      cell: ({ row }) => <Text className="font-medium">{row.getValue('id')}</Text>,
+      cell: ({ row }) => <div className="font-medium text-body">{row.getValue('id')}</div>,
     },
     {
       accessorKey: 'labels',
@@ -181,9 +181,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
                         <ListItem key={scope}>
                           <span className="inline-flex items-center gap-1.5">
                             {icon}
-                            <Text as="span" className="text-sm">
-                              {label}
-                            </Text>
+                            <span className="text-body">{label}</span>
                           </span>
                         </ListItem>
                       );
@@ -339,11 +337,11 @@ export const SecretsStoreListPage = () => {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <Heading level={1}>Secrets Store</Heading>
-          <Text variant="muted">
+          <h1 className="text-heading-xl">Secrets Store</h1>
+          <div className="text-body text-muted-foreground">
             This page lets you list, edit, and delete the secrets used in your dataplane. You can create secrets on this
             page and reference them when creating a new resource such as Redpanda Connect pipelines.
-          </Text>
+          </div>
         </header>
         <div className="mt-2 mb-4">
           <Button onClick={() => navigate({ to: '/secrets/create' })}>Create Secret</Button>

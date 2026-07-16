@@ -1,7 +1,6 @@
 import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
-import { Text } from 'components/redpanda-ui/components/typography';
 
 /**
  * Extracts lint hints from a ConnectError for display in LintResults component.
@@ -102,11 +101,11 @@ export function formatPipelineError(err: unknown): React.ReactNode {
       }
     }
   }
-  let desc = <Text as="span">{genDesc}</Text>;
+  let desc = <span className="text-body">{genDesc}</span>;
   if (details.length > 0) {
     desc = (
       <>
-        <Text as="span">{genDesc}</Text>
+        <span className="text-body">{genDesc}</span>
         <ul>
           {details.map((d) => (
             <li key={String(d)} style={{ listStylePosition: 'inside' }}>

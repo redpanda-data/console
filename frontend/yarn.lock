@@ -4388,7 +4388,7 @@
   dependencies:
     "@tanstack/query-devtools" "5.90.1"
 
-"@tanstack/react-router@>=1.43.2", "@tanstack/react-router@^1", "@tanstack/react-router@^1.170.0", "@tanstack/react-router@^1.170.17":
+"@tanstack/react-router@>=1.43.2", "@tanstack/react-router@^1", "@tanstack/react-router@^1.170.0", "@tanstack/react-router@^1.170.17", "@tanstack/react-router@^1.170.7":
   version "1.170.17"
   resolved "https://registry.npmjs.org/@tanstack/react-router/-/react-router-1.170.17.tgz"
   integrity sha512-ppLkjCfSMaeug9rmFRYzOd4TIqWV+yTE7tzIny7alJsSnM7w4lzEZm6eqCehG0SPetpZ0R3K+UnanSmBgOAVcQ==
@@ -6537,7 +6537,7 @@ cmdk@^1.1.1:
     "@radix-ui/react-id" "^1.1.0"
     "@radix-ui/react-primitive" "^2.0.2"
 
-cnfast@0.0.8:
+cnfast@^0.0.8:
   version "0.0.8"
   resolved "https://registry.npmjs.org/cnfast/-/cnfast-0.0.8.tgz"
   integrity sha512-EjXKMfGfdwtV4AcNSQ6AwQaVzpC1B7IxeiwA3FlhTXz+YFlMKVi4c1JX9tgD2QOlahQXjB8KUXrBaYG+3v871Q==
@@ -9728,7 +9728,7 @@ lru-cache@^11.0.0:
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.4.tgz"
   integrity sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg==
 
-lucide-react@^1.17.0:
+lucide-react@^1.16.0:
   version "1.17.0"
   resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-1.17.0.tgz"
   integrity sha512-9FA9evdox/JQL5PT57fdA1x/yg8T7knJ98+zjTL3UfKza6pflQUUh3XtaQIHKvnsJw1lmsEyHVlt5jchYxOQ5w==
@@ -13596,6 +13596,11 @@ tailwind-merge@^3.4.0:
   version "3.4.0"
   resolved "https://registry.npmjs.org/tailwind-merge/-/tailwind-merge-3.4.0.tgz"
   integrity sha512-uSaO4gnW+b3Y2aWoWfFpX62vn2sR3skfhbjsEnaBI81WD1wBLlHZe5sWf0AqjksNdYTbGBEd0UasQMT3SNV15g==
+
+tailwind-merge@^3.6.0:
+  version "3.6.0"
+  resolved "https://registry.npmjs.org/tailwind-merge/-/tailwind-merge-3.6.0.tgz"
+  integrity sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==
 
 tailwindcss@4.2.4, "tailwindcss@>=3.0.0 || insiders || >=4.0.0-alpha.20 || >=4.0.0-beta.1", tailwindcss@^4.2.4:
   version "4.2.4"
