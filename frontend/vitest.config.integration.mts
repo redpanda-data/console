@@ -6,6 +6,7 @@ import envCompatible from 'vite-plugin-env-compatible';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
+import { tanstackRouterConfig } from './tanstack-router.config';
 import { sharedAliases } from './vitest.shared.mts';
 
 const ENV_PREFIX = 'REACT_APP_';
@@ -80,14 +81,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
-      tanstackRouter({
-        target: 'react',
-        autoCodeSplitting: true,
-        routesDirectory: './src/routes',
-        generatedRouteTree: './src/routeTree.gen.ts',
-        quoteStyle: 'single',
-        semicolons: true,
-      }),
+      tanstackRouter(tanstackRouterConfig),
       react(),
       envCompatible({ prefix: ENV_PREFIX }),
       tsconfigPaths({

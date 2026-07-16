@@ -53,6 +53,7 @@ import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/d
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
+import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
 
@@ -68,6 +69,7 @@ const dataplaneTransport = createConnectTransport({
 // Create router instance
 const router = createRouter({
   routeTree,
+  ...routerDefaults,
   context: {
     basePath: getBasePath(),
     queryClient,
