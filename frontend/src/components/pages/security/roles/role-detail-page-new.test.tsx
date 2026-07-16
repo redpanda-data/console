@@ -62,10 +62,9 @@ describe('RoleDetailPageNew principal assignment', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('combobox'));
-    await user.keyboard('person@email.com');
-    // Click the create row rather than pressing Enter: the Enter branch only
-    // fires once the row has rendered, which lags under parallel test load.
+    // type() targets the input directly. keyboard() would rely on ambient focus,
+    // which the popover's focus guards can steal once it opens.
+    await user.type(screen.getByRole('combobox'), 'person@email.com');
     await user.click(await screen.findByText('Create "person@email.com"'));
 
     expect(updateMembershipMock).toHaveBeenCalledTimes(1);
