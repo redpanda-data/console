@@ -4388,7 +4388,7 @@
   dependencies:
     "@tanstack/query-devtools" "5.90.1"
 
-"@tanstack/react-router@>=1.43.2", "@tanstack/react-router@^1", "@tanstack/react-router@^1.170.0", "@tanstack/react-router@^1.170.17", "@tanstack/react-router@^1.170.7":
+"@tanstack/react-router@^1", "@tanstack/react-router@^1.170.0", "@tanstack/react-router@^1.170.17", "@tanstack/react-router@^1.170.7":
   version "1.170.17"
   resolved "https://registry.npmjs.org/@tanstack/react-router/-/react-router-1.170.17.tgz"
   integrity sha512-ppLkjCfSMaeug9rmFRYzOd4TIqWV+yTE7tzIny7alJsSnM7w4lzEZm6eqCehG0SPetpZ0R3K+UnanSmBgOAVcQ==
@@ -4530,11 +4530,6 @@
   version "1.162.0"
   resolved "https://registry.npmjs.org/@tanstack/virtual-file-routes/-/virtual-file-routes-1.162.0.tgz"
   integrity sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA==
-
-"@tanstack/zod-adapter@^1.167.0":
-  version "1.167.0"
-  resolved "https://registry.npmjs.org/@tanstack/zod-adapter/-/zod-adapter-1.167.0.tgz"
-  integrity sha512-5Wlm5teSu+pz3KKhfa1ESsiOJXbvV6ITr1vKOQKi9yEdtozp6VefEzxzafLLida97mnL2tmauva/njokQrG5CA==
 
 "@testing-library/dom@>=7.21.4", "@testing-library/dom@^10.0.0", "@testing-library/dom@^10.4.1":
   version "10.4.1"
@@ -14762,7 +14757,7 @@ zip-stream@^6.0.1:
   resolved "https://registry.npmjs.org/zod/-/zod-4.3.5.tgz"
   integrity sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==
 
-zod@^3.23.8, "zod@^3.24.0 || ^4.0.0", "zod@^3.25 || ^4", "zod@^3.25.76 || ^4.1.8", zod@^4.4.3:
+"zod@^3.24.0 || ^4.0.0", "zod@^3.25 || ^4", "zod@^3.25.76 || ^4.1.8", zod@^4.4.3:
   version "4.4.3"
   resolved "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz"
   integrity sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==

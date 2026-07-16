@@ -91,7 +91,6 @@
     "@tanstack/react-router": "^1.170.7",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
-    "@tanstack/zod-adapter": "^1.167.0",
     "@types/prismjs": "^1.26.5",
     "@uiw/react-codemirror": "^4.25.10",
     "@xyflow/react": "^12.9.2",
