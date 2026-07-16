@@ -15,7 +15,6 @@ import { Dropzone, DropzoneContent, DropzoneEmptyState } from 'components/redpan
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
@@ -278,9 +277,7 @@ function DisclosureRow({
                   </Badge>
                 )}
               </div>
-              <Text className="mt-0.5 text-xs" variant="muted">
-                {description}
-              </Text>
+              <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>
             </div>
           </button>
         }
@@ -327,9 +324,9 @@ function MtlsErrors({ errors }: { errors: FieldErrors<FormValues> }) {
   return (
     <div className="flex flex-col gap-1" data-testid="mtls-certificates-errors">
       {messages.map((msg) => (
-        <Text className="text-destructive text-sm" key={msg}>
+        <div className="text-body text-destructive" key={msg}>
           {msg}
-        </Text>
+        </div>
       ))}
     </div>
   );
@@ -421,9 +418,9 @@ export const MtlsConfiguration = () => {
       >
         <div className="flex flex-col gap-4">
           <MtlsCertFields embedded={isEmbedded()} useFilePath={useFilePathInputs} />
-          <Text className="text-xs" data-testid="tls-mtls-pair-hint" variant="muted">
+          <div className="text-body-sm text-muted-foreground" data-testid="tls-mtls-pair-hint">
             Client certificate and private key must be provided together.
-          </Text>
+          </div>
           <MtlsErrors errors={errors} />
         </div>
       </DisclosureRow>

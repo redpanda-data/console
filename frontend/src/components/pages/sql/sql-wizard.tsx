@@ -27,7 +27,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redp
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Progress } from 'components/redpanda-ui/components/progress';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
@@ -176,13 +176,13 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <Text className="text-muted-foreground text-sm">
+      <div className="text-body text-muted-foreground">
         Pick a Redpanda topic to expose as a SQL table. Tables are created in <InlineCode>{CATALOG_NAME}</InlineCode> —
         the catalog for Redpanda topics.
-      </Text>
+      </div>
       <Input onChange={(e) => setSearch(e.target.value)} placeholder="Search topics" value={search} />
       {visibleTopics.length === 0 ? (
-        <Text className="text-muted-foreground text-sm">No topics found.</Text>
+        <div className="text-body text-muted-foreground">No topics found.</div>
       ) : (
         <Choicebox
           aria-label="Topics"

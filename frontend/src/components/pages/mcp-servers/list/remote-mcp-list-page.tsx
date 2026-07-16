@@ -39,7 +39,6 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import React, { useCallback, useEffect } from 'react';
 import {
@@ -162,7 +161,7 @@ export const createColumns = (
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
+    cell: ({ row }) => <div className="font-medium text-body">{row.getValue('name')}</div>,
   },
   {
     accessorKey: 'tools',
@@ -198,14 +197,10 @@ export const createColumns = (
       return (
         <Tooltip>
           <TooltipTrigger
-            render={
-              <Text className="cursor-help font-mono text-muted-foreground" variant="small">
-                {truncatedUrl}
-              </Text>
-            }
+            render={<div className="cursor-help font-mono text-body-sm text-muted-foreground">{truncatedUrl}</div>}
           />
           <TooltipContent>
-            <Text>{url}</Text>
+            <div className="text-body">{url}</div>
           </TooltipContent>
         </Tooltip>
       );
@@ -378,8 +373,8 @@ const RemoteMCPListPageContent = ({
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <Heading level={1}>Remote MCP</Heading>
-          <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
+          <h1 className="text-heading-xl">Remote MCP</h1>
+          <div className="text-body text-muted-foreground">Manage your Model Context Protocol (MCP) servers.</div>
         </header>
         <div className="mb-4">
           <Button onClick={() => navigate({ to: '/mcp-servers/create' })}>Create MCP Server</Button>

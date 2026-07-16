@@ -21,7 +21,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Heading, InlineCode } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import {
   AlertCircle,
   ArrowLeft,
@@ -555,7 +555,7 @@ export const ConversationDetailPage = () => {
           <div>
             <div className="flex items-center gap-2">
               <MessageSquare className="size-4 text-muted-foreground" />
-              <Heading level={1}>Conversation</Heading>
+              <h1 className="text-heading-xl">Conversation</h1>
               <InlineCode>{conversationId}</InlineCode>
               {summary ? <ConversationStatusBadge status={summary.status} /> : null}
             </div>

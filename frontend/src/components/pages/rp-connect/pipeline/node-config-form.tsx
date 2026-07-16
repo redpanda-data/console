@@ -22,7 +22,6 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
@@ -96,18 +95,16 @@ const ChildItemRow = ({
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {condText ? (
-          <Text
-            as="span"
-            className={cn('truncate font-mono', childItemCondColor(item))}
+          <span
+            className={cn('truncate font-medium font-mono text-caption', childItemCondColor(item))}
             title={condText}
-            variant="captionStrongSmall"
           >
             {condText}
-          </Text>
+          </span>
         ) : null}
-        <Text as="span" className="truncate" title={item.name} variant="bodyStrongMedium">
+        <span className="truncate font-medium text-body" title={item.name}>
           {item.name}
-        </Text>
+        </span>
       </div>
       {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="error" /> : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
@@ -126,17 +123,13 @@ export const ChildItemsList = ({
 }) => (
   // A heading, not a <label>: the rows are buttons with their own accessible text; nothing for htmlFor.
   <div className="flex flex-col gap-1.5">
-    <Text className="font-medium" variant="bodyStrongMedium">
-      {label}
-    </Text>
+    <div className="font-medium text-body">{label}</div>
     <div className="flex flex-col gap-1.5">
       {items.map((item) => (
         <ChildItemRow item={item} key={item.id} onSelect={onSelect} />
       ))}
     </div>
-    <Text className="text-muted-foreground" variant="bodySmall">
-      Select one to open its full configuration.
-    </Text>
+    <div className="text-body-sm text-muted-foreground">Select one to open its full configuration.</div>
   </div>
 );
 
@@ -471,11 +464,7 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
 );
 
 const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
-  spec.description ? (
-    <Text className="text-muted-foreground" variant="bodySmall">
-      {spec.description}
-    </Text>
-  ) : null;
+  spec.description ? <div className="text-body-sm text-muted-foreground">{spec.description}</div> : null;
 
 // Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
 // secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
@@ -609,16 +598,12 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
               spec={leaf.spec}
               value={field.value as string | boolean}
             />
-            {hint ? (
-              <Text className="text-destructive" variant="bodySmall">
-                {hint}
-              </Text>
-            ) : null}
+            {hint ? <div className="text-body-sm text-destructive">{hint}</div> : null}
             {showSecretTip ? (
-              <Text className="text-muted-foreground" variant="bodySmall">
+              <div className="text-body-sm text-muted-foreground">
                 Tip: reference a secret (<span className="font-mono">{SECRET_REF_EXAMPLE}</span>) instead of a literal
                 value.
-              </Text>
+              </div>
             ) : null}
             <FieldDescription spec={leaf.spec} />
           </div>
@@ -664,7 +649,7 @@ const FieldGroup = ({
 }) => (
   <Collapsible className="rounded-md border border-border/60" defaultOpen={defaultOpen}>
     <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
-      <Text variant="bodyStrongMedium">{label}</Text>
+      <div className="font-medium text-body">{label}</div>
       <ChevronDown
         className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
       />
@@ -867,9 +852,9 @@ export function NodeConfigForm({
                     value={field.value}
                   />
                   {requireLabel && !field.value.trim() ? (
-                    <Text className="text-destructive" variant="bodySmall">
+                    <div className="text-body-sm text-destructive">
                       A resource needs a label — nodes reference it by name. The saved label is kept.
-                    </Text>
+                    </div>
                   ) : null}
                 </>
               )}
@@ -885,9 +870,9 @@ export function NodeConfigForm({
           ) : null}
           {isListValued && !hasChildList ? (
             <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
-              <Text className="text-muted-foreground" variant="bodySmall">
+              <div className="text-body-sm text-muted-foreground">
                 This component's items (cases / processors) are edited on the canvas — select one to edit it.
-              </Text>
+              </div>
             </div>
           ) : null}
 
@@ -935,9 +920,9 @@ export function NodeConfigForm({
                         />
                       </div>
                       {invalid ? (
-                        <Text className="text-destructive" variant="bodySmall">
+                        <div className="text-body-sm text-destructive">
                           Invalid YAML — these settings won't be saved until fixed.
-                        </Text>
+                        </div>
                       ) : null}
                     </div>
                   );

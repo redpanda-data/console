@@ -21,7 +21,7 @@ import {
   FieldSeparator,
   FieldSet,
 } from 'components/redpanda-ui/components/field';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { RerankerModelSelect } from 'components/ui/ai/reranker-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
@@ -43,7 +43,7 @@ export const RetrievalSection: React.FC<RetrievalSectionProps> = ({ form, availa
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Shuffle className="h-4 w-4" />
-        <Text className="font-semibold">Retrieval</Text>
+        <div className="font-semibold text-body">Retrieval</div>
       </CardTitle>
     </CardHeader>
     <CardContent>

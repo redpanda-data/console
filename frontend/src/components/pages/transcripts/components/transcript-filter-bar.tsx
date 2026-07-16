@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { Small, Text } from 'components/redpanda-ui/components/typography';
 import type { LucideIcon } from 'lucide-react';
 import { AlertCircle, ArrowLeft, Bot, Plus, RefreshCw, Sparkles, Wrench, X, Zap } from 'lucide-react';
 import type { FC } from 'react';
@@ -208,9 +207,7 @@ const AttributeFilterPopover: FC<{
       />
       <PopoverContent align="start" className="w-80">
         <div className="flex flex-col gap-3">
-          <Text className="font-medium" variant="small">
-            Add Attribute Filter
-          </Text>
+          <div className="font-medium text-body-sm">Add Attribute Filter</div>
 
           {/* Attribute Key */}
           <div className="flex flex-col gap-1.5">
@@ -415,7 +412,9 @@ export const TranscriptFilterBar: FC<TranscriptFilterBarProps> = ({
 
         {/* Jumped-to label */}
         {jumpedTo !== null && (
-          <Small className="rounded bg-muted px-2 py-1 text-muted-foreground">Viewing: {jumpedTo.label}</Small>
+          <small className="rounded bg-muted px-2 py-1 text-body-sm text-muted-foreground leading-none">
+            Viewing: {jumpedTo.label}
+          </small>
         )}
 
         {/* Time range selector */}

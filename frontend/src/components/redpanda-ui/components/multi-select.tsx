@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of multi select implementation */
-/** biome-ignore-all lint/a11y/noStaticElementInteractions: part of multi select implementation */
 'use client';
 
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
@@ -296,7 +294,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
 
             return el;
           })}
-          {renderRemain ? <span className="py-.5 text-muted-foreground text-xs leading-4">+{renderRemain}</span> : null}
+          {renderRemain ? <span className="py-.5 text-body-sm text-muted-foreground">+{renderRemain}</span> : null}
         </div>
       </TooltipProvider>
     );

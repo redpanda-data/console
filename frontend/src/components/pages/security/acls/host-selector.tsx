@@ -13,7 +13,6 @@ import { useNavigate } from '@tanstack/react-router';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Text } from '../../../redpanda-ui/components/typography';
 import type { AclDetail } from '../shared/acl-model';
 
 type HostSelectorProps = {
@@ -32,13 +31,13 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
           <CardTitle>Multiple hosts found</CardTitle>
         </CardHeader>
         <CardContent className={'flex flex-col gap-2'}>
-          <Text className="mb-4 text-gray-600" data-testid="host-selector-description">
+          <div className="mb-4 text-body text-gray-600" data-testid="host-selector-description">
             This{' '}
-            <Text as="span" className={'font-bold'} data-testid="host-selector-principal-name">
+            <span className="font-bold text-body" data-testid="host-selector-principal-name">
               {principalName}
-            </Text>{' '}
+            </span>{' '}
             principal has ACLs configured for multiple hosts. Select a host to view its ACL configuration.
-          </Text>
+          </div>
           <Table>
             <TableHeader>
               <TableRow>

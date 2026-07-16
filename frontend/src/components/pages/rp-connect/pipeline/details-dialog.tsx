@@ -17,7 +17,7 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import { InfoIcon, List } from 'lucide-react';
@@ -40,9 +40,7 @@ type DetailsDialogProps = {
 const EMPTY_PLACEHOLDER = '—';
 
 const SectionHeading = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <Heading className={className} level={3}>
-    {children}
-  </Heading>
+  <h3 className={cn('text-heading-md', className)}>{children}</h3>
 );
 
 type DetailRowProps = {
@@ -56,11 +54,7 @@ type DetailRowProps = {
 
 const renderLabel = (label: React.ReactNode) => {
   if (typeof label === 'string') {
-    return (
-      <Text className="w-32 shrink-0 pt-0.5 text-muted-foreground" variant="label">
-        {label}
-      </Text>
-    );
+    return <div className="w-32 shrink-0 pt-0.5 text-label text-muted-foreground">{label}</div>;
   }
   return <div className="w-32 shrink-0 pt-0.5">{label ?? null}</div>;
 };
@@ -72,11 +66,15 @@ const renderValue = (value: string | undefined, children: React.ReactNode | unde
   const hasValue = Boolean(value?.length);
   const displayValue = hasValue ? (value as string) : EMPTY_PLACEHOLDER;
   return (
-    <Text
-      className={cn(wrap ? 'whitespace-pre-wrap break-words' : 'truncate', hasValue ? '' : 'text-muted-foreground')}
+    <div
+      className={cn(
+        'text-body',
+        wrap ? 'whitespace-pre-wrap break-words' : 'truncate',
+        hasValue ? '' : 'text-muted-foreground'
+      )}
     >
       {displayValue}
-    </Text>
+    </div>
   );
 };
 
@@ -104,12 +102,12 @@ const DetailRow = ({ label, value, children, copyable = false, wrap = false }: D
 
 const ComputeUnitsLabel = () => (
   <Tooltip>
-    <Text className="flex items-center gap-1 text-muted-foreground" variant="label">
+    <div className="flex items-center gap-1 text-label text-muted-foreground">
       Compute units
       <TooltipTrigger>
         <InfoIcon className="-mt-0.5 size-3 cursor-pointer text-muted-foreground" />
       </TooltipTrigger>
-    </Text>
+    </div>
     <TooltipContent>One compute unit = 0.1 CPU and 400 MB memory</TooltipContent>
   </Tooltip>
 );
@@ -117,7 +115,7 @@ const ComputeUnitsLabel = () => (
 // Badges when populated; otherwise a muted dash to keep the row layout stable.
 const ReferenceList = ({ items }: { items: string[] }) => {
   if (items.length === 0) {
-    return <Text className="text-muted-foreground">{EMPTY_PLACEHOLDER}</Text>;
+    return <div className="text-body text-muted-foreground">{EMPTY_PLACEHOLDER}</div>;
   }
   return (
     <BadgeGroup
@@ -202,10 +200,10 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                   <Separator />
                   <section className="flex flex-col gap-3">
                     <SectionHeading className="text-destructive">Danger zone</SectionHeading>
-                    <Text className="text-muted-foreground text-sm">
+                    <div className="text-muted-foreground text-sm">
                       Deleting this pipeline is permanent and cannot be undone. Any secrets or resources used by this
                       pipeline will need to be cleaned up manually.
-                    </Text>
+                    </div>
                     <div>
                       <Button onClick={onRequestDelete} variant="destructive-outline">
                         Delete pipeline

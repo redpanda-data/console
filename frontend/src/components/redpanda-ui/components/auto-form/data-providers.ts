@@ -1,10 +1,3 @@
-/**
- * Data-provider registry for AutoForm dropdowns. AutoForm is RPC-agnostic:
- * each provider is a React hook returning `{ options, isLoading?, error? }`,
- * keyed by a string id mirroring the proto `DataProviderId` enum. Static vs
- * RPC-backed is the hosting app's concern; a CI test asserts id completeness.
- */
-
 import type React from 'react';
 
 export interface DataProviderOption {

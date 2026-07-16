@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
 import { ClientAuggie } from './clients/auggie';
@@ -122,7 +121,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
                       <img alt={clientInfo.alt} className="h-4 w-4" src={clientInfo.logo} />
-                      <Text>{clientInfo.name}</Text>
+                      <div className="text-body">{clientInfo.name}</div>
                     </div>
                   </SelectItem>
                 );

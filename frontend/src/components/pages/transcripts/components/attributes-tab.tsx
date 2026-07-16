@@ -10,7 +10,6 @@
  */
 
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import JSONBigIntFactory from 'json-bigint';
 import { Search } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
@@ -162,17 +161,17 @@ export const AttributesTab: FC<Props> = ({ span }) => {
         {filteredAttributes.map((attr) => (
           <ContentPanel key={attr.key}>
             <div className="space-y-0.5">
-              <Text className="break-all font-medium font-mono text-sm">{attr.key}</Text>
-              <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+              <div className="break-all font-medium font-mono text-body">{attr.key}</div>
+              <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
                 {attr.value}
-              </Text>
+              </div>
             </div>
           </ContentPanel>
         ))}
 
         {filteredAttributes.length === 0 && (
           <div className="p-8 text-center text-muted-foreground">
-            <Text variant="muted">No attributes match your search</Text>
+            <div className="text-body text-muted-foreground">No attributes match your search</div>
           </div>
         )}
       </div>

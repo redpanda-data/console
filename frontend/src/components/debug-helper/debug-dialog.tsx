@@ -35,7 +35,7 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import {
   AppWindow,
   Bug,
@@ -112,11 +112,7 @@ function useForceUpdate(): () => void {
 }
 
 function EmptyState({ children }: { children: React.ReactNode }) {
-  return (
-    <Text className="px-3 py-6 text-center text-muted-foreground" variant="bodySmall">
-      {children}
-    </Text>
-  );
+  return <div className="px-3 py-6 text-center text-body-sm text-muted-foreground">{children}</div>;
 }
 
 function DebugSection({
@@ -131,14 +127,8 @@ function DebugSection({
   return (
     <div className="overflow-hidden rounded-md border bg-card">
       <div className="border-b bg-muted/30 px-3 py-2">
-        <Text className="font-medium" variant="bodyStrongSmall">
-          {title}
-        </Text>
-        {description ? (
-          <Text className="text-muted-foreground" variant="bodySmall">
-            {description}
-          </Text>
-        ) : null}
+        <div className="font-medium text-body-sm">{title}</div>
+        {description ? <div className="text-body-sm text-muted-foreground">{description}</div> : null}
       </div>
       <div className="p-3">{children}</div>
     </div>
@@ -202,10 +192,10 @@ function ConnectConfigsTab() {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="text-body-sm text-muted-foreground">
         Pre-built Connect pipeline YAMLs for stress-testing the editor and validation. Click <strong>Copy YAML</strong>,
         then paste into the editor on the create or edit page.
-      </Text>
+      </div>
       <Input
         onChange={(e) => setFilter(e.target.value)}
         placeholder="Filter by name, tag, or description…"
@@ -265,9 +255,9 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
   const [renderThrow, setRenderThrow] = useState(false);
   return (
     <div className="flex flex-col gap-4">
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="text-body-sm text-muted-foreground">
         Trigger app-level side effects to verify toasts, error boundaries, and console output.
-      </Text>
+      </div>
 
       <DebugSection
         description="Fire each toast variant to verify rendering, stacking, and rich colors."
@@ -432,9 +422,7 @@ function StorageSection({
     <div className="overflow-hidden rounded-md border">
       <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
-          <Text className="truncate font-medium" variant="bodyStrongSmall">
-            {title}
-          </Text>
+          <div className="truncate font-medium text-body-sm">{title}</div>
           <Badge className="shrink-0" size="sm" variant="simple-outline">
             {storage.length} keys
           </Badge>
@@ -488,9 +476,9 @@ function StorageTab() {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="text-body-sm text-muted-foreground">
         Inspect or clear browser storage. Clearing will sign you out of preferences and reset feature toggles.
-      </Text>
+      </div>
       <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by key or value…" value={filter} />
       <StorageSection
         confirming={confirmingClear === 'local'}
@@ -528,9 +516,9 @@ function EnvironmentTab() {
   };
   return (
     <div className="flex flex-col gap-2.5">
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="text-body-sm text-muted-foreground">
         Snapshot of build, route, and runtime env. Useful when filing bugs.
-      </Text>
+      </div>
       <Table size="sm">
         <TableBody>
           {Object.entries(info).map(([k, v]) => (
@@ -578,11 +566,11 @@ function FeatureFlagsTab() {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="text-body-sm text-muted-foreground">
         Override <InlineCode>config.featureFlags</InlineCode> locally. Persists to <InlineCode>localStorage</InlineCode>{' '}
         and re-applies on reload. Most components only read flags during render, so a reload is recommended after
         toggling.
-      </Text>
+      </div>
       <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by flag name…" value={filter} />
       <div className="flex flex-wrap items-center gap-1.5">
         <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="xs" variant="primary">
@@ -628,10 +616,10 @@ function FeatureFlagsTab() {
                       </Badge>
                     )}
                   </div>
-                  <Text className="text-muted-foreground text-xs">
+                  <div className="text-body-sm text-muted-foreground">
                     default: <InlineCode>{String(defaultValue)}</InlineCode> · effective:{' '}
                     <InlineCode>{String(effectiveValue)}</InlineCode>
-                  </Text>
+                  </div>
                 </div>
                 {isOverridden && (
                   <Button
@@ -690,10 +678,10 @@ function SubTabs({ tabs }: { tabs: SubTab[] }) {
 function OverviewTab() {
   return (
     <div className="flex flex-col gap-4">
-      <Text className="text-muted-foreground" variant="bodySmall">
+      <div className="text-body-sm text-muted-foreground">
         A development-only toolbox for exercising Console's UI and inspecting local state. It ships in dev builds only
         and is never bundled into production.
-      </Text>
+      </div>
 
       <DebugSection title="What's inside">
         <ul className="flex flex-col gap-1.5">
@@ -808,9 +796,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
         <DialogFooter direction="row" justify="between">
           <span className="flex items-center gap-2">
-            <Text className="text-muted-foreground" variant="small">
-              toggle
-            </Text>
+            <div className="text-body-sm text-muted-foreground">toggle</div>
             <KbdGroup>
               <Kbd size="xs">⌃/⌘</Kbd>
               <Kbd size="xs">⇧</Kbd>

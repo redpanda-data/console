@@ -16,7 +16,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Text } from 'components/redpanda-ui/components/typography';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -24,8 +23,6 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
-  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
-  SchemaRegistrySyncOptionsSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
@@ -41,6 +38,7 @@ import { uiState } from 'state/ui-state';
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
 import { FormSchema, type FormValues, initialValues } from './model';
+import { buildSchemaRegistrySyncOptions } from './schema-registry-request';
 import { isEmbedded } from '../../../../config';
 import {
   ACLOperation,
@@ -173,15 +171,9 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ),
   });
 
-  // Build schema registry sync options (only set if enabled)
-  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
-    ? create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: {
-          case: 'shadowSchemaRegistryTopic',
-          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
-        },
-      })
-    : undefined;
+  // Build schema registry sync options (api mode via the redesigned section,
+  // topic mode via the legacy switch, otherwise unset)
+  const schemaRegistrySyncOptions = buildSchemaRegistrySyncOptions(values);
 
   // Build configurations
   const configurations = create(ShadowLinkConfigurationsSchema, {
@@ -252,10 +244,10 @@ export const ShadowLinkCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Text data-testid="shadowLink-create-page-description" variant="muted">
+      <div className="text-body text-muted-foreground" data-testid="shadowLink-create-page-description">
         Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
         preserved offsets and timestamps. Select the replicated content for this shadow link.
-      </Text>
+      </div>
 
       <Stepper.Provider className="flex flex-col space-y-4" variant="horizontal">
         {({ methods }) => (

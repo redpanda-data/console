@@ -68,7 +68,6 @@ import {
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-import { Text } from '../../redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from '../../ui/delete-resource-alert-dialog';
 
 const nameFilterFn = (row: Row<Topic>, columnId: string, filterValue: string) => {
@@ -414,8 +413,8 @@ const TopicList: FC = () => {
             ] as const
           ).map(({ label, value }) => (
             <div className="flex flex-col gap-0.5" key={label}>
-              <Text className="font-semibold text-2xl tabular-nums">{value}</Text>
-              <Text className="text-muted-foreground text-sm">{label}</Text>
+              <div className="font-semibold text-2xl tabular-nums">{value}</div>
+              <div className="text-body text-muted-foreground">{label}</div>
             </div>
           ))}
         </div>

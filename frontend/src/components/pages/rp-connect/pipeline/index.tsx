@@ -33,7 +33,6 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
@@ -568,7 +567,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
           />
         ) : (
           <>
-            <Heading level={3}>Logs</Heading>
+            <h3 className="text-heading-md">Logs</h3>
             <LogsTab pipeline={pipeline} />
           </>
         )}
@@ -618,9 +617,7 @@ function EditorPanel({
       <ResizablePanel collapsible defaultSize="30%">
         <div className="h-full overflow-auto p-4">
           <div className="mb-3 flex items-center gap-2">
-            <Heading className="text-muted-foreground" level={5}>
-              Lint issues
-            </Heading>
+            <h5 className="text-heading-xs text-muted-foreground">Lint issues</h5>
             {Object.keys(lintHints).length > 0 ? (
               <CountDot count={Object.keys(lintHints).length} variant="error" />
             ) : null}
@@ -791,9 +788,7 @@ function SidebarPanel({
           <div className="px-4 pb-4">
             <Separator className="mb-3" variant="subtle" />
             <div className="flex flex-col gap-2">
-              <Heading className="mb-2 text-muted-foreground" level={5}>
-                Variables
-              </Heading>
+              <h5 className="mb-2 text-heading-xs text-muted-foreground">Variables</h5>
               <div className="flex flex-wrap gap-2">
                 <Button
                   className="max-w-fit"

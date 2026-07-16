@@ -22,7 +22,6 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -77,9 +76,7 @@ export const UserPreferencesDialog: FC<{ isOpen: boolean; onClose: () => void }>
           </Tabs>
         </DialogBody>
         <DialogFooter>
-          <Text className="text-muted-foreground" variant="small">
-            Changes are saved automatically
-          </Text>
+          <div className="text-body-sm text-muted-foreground">Changes are saved automatically</div>
           <Button onClick={onClose} variant="ghost">
             Close
           </Button>

@@ -26,7 +26,6 @@ import React from 'react';
 
 import { Checkbox } from '../checkbox';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '../table';
-import { Text } from '../typography';
 import { cn } from '../../lib/utils';
 
 import { createInitialState, type DataTableInitialConfig, dataTableReducer } from './data-table-reducer';
@@ -322,7 +321,7 @@ export function DataTable<TData>({
               <TableCell className={cn('h-24', classNames?.loading)} colSpan={totalColumns}>
                 <div className="flex items-center justify-center gap-2">
                   <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                  <Text className="text-muted-foreground">{loadingText}</Text>
+                  <div className="text-body text-muted-foreground">{loadingText}</div>
                 </div>
               </TableCell>
             </TableRow>
@@ -332,7 +331,7 @@ export function DataTable<TData>({
             <TableRow>
               <TableCell className={cn('h-24', classNames?.empty)} colSpan={totalColumns}>
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <Text className="text-muted-foreground">{emptyText}</Text>
+                  <div className="text-body text-muted-foreground">{emptyText}</div>
                   {emptyAction}
                 </div>
               </TableCell>

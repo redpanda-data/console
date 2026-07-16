@@ -15,7 +15,6 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -78,8 +77,17 @@ export const ShadowLinkEditPage = () => {
   }
 
   // Use the unified edit hook that handles embedded/dataplane logic
-  const { formValues, isLoading, error, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
-    useEditShadowLink(name);
+  const {
+    formValues,
+    isLoading,
+    error,
+    isUpdating,
+    hasData,
+    isSchemaRegistryApiMode,
+    updateShadowLink,
+    dataplaneUpdate,
+    controlplaneUpdate,
+  } = useEditShadowLink(name);
 
   // Set up mutation callbacks
   useEffect(() => {
@@ -170,7 +178,7 @@ export const ShadowLinkEditPage = () => {
   if (!(isLoading || hasData)) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8">
-        <Text variant="large">Shadow link not found</Text>
+        <div className="text-base">Shadow link not found</div>
         <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="outline">
           Back to Shadow Links
         </Button>
@@ -180,9 +188,9 @@ export const ShadowLinkEditPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Text data-testid="shadowLink-edit-page-description" variant="muted">
+      <div className="text-body text-muted-foreground" data-testid="shadowLink-edit-page-description">
         Update shadow link configuration for disaster recovery replication.
-      </Text>
+      </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit, onValidationError)}>
@@ -205,7 +213,7 @@ export const ShadowLinkEditPage = () => {
             <TabsContent value="all">
               <div className="space-y-4">
                 <SourceTab />
-                <ShadowingTab />
+                <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
                 <TopicConfigTab />
               </div>
             </TabsContent>
@@ -215,7 +223,7 @@ export const ShadowLinkEditPage = () => {
             </TabsContent>
 
             <TabsContent value="shadowing">
-              <ShadowingTab />
+              <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
             </TabsContent>
 
             <TabsContent value="topic-config">

@@ -11,7 +11,7 @@
 
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
-import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Bot, Database, Workflow } from 'lucide-react';
 import {
   type ListResourcesResponse_Resource,
@@ -83,19 +83,19 @@ export const ResourceInUseAlert = ({ resources }: ResourceInUseAlertProps) => {
       <AlertCircle />
       <AlertTitle>Resource is in use</AlertTitle>
       <AlertDescription>
-        <Text>The secret that you are about to delete is still in use by the following:</Text>
+        <div className="text-body">The secret that you are about to delete is still in use by the following:</div>
         {Array.from(groupedResources.entries()).map(([type, resourceList]) => {
           const { label, icon } = getResourceTypeInfo(type);
           return (
             <div key={type}>
               <div className="flex items-center gap-2">
                 {icon}
-                <Text className="font-medium">{label}</Text>
+                <div className="font-medium text-body">{label}</div>
               </div>
               <List>
                 {resourceList.map((resource) => (
                   <ListItem key={resource.id}>
-                    <Text>{resource.displayName || resource.id}</Text>
+                    <div className="text-body">{resource.displayName || resource.id}</div>
                   </ListItem>
                 ))}
               </List>

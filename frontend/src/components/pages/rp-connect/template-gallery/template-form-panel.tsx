@@ -13,7 +13,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { Form, SimpleFormField } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { Waypoints } from 'lucide-react';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
@@ -256,9 +255,9 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
                 key={section}
               >
                 <div className="flex flex-wrap items-center gap-2.5 border-divider-default border-b pb-2.5">
-                  <Heading className="font-bold uppercase tracking-wider" id={`section-${section}`} level={5}>
+                  <h5 className="font-bold text-heading-xs uppercase tracking-wider" id={`section-${section}`}>
                     {SECTION_LABELS[section]}
-                  </Heading>
+                  </h5>
                   {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
                 </div>
                 {slots.map((slot) => {
