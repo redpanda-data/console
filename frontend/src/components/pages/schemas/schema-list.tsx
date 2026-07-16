@@ -43,9 +43,9 @@ import {
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
-import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
@@ -90,7 +90,6 @@ import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
-import { SmallStat } from '../../misc/small-stat';
 
 const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
@@ -520,85 +519,80 @@ const SchemaList: FC = () => {
   return (
     <PageContent key="b">
       {/* Statistics Bar */}
-      <div className="flex items-center gap-4" data-testid="schema-list-stats">
-        <SmallStat title={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}>
-          <div className="flex items-center gap-1.5">
-            {displayMode ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Edit mode"
-                    data-testid="schema-list-edit-mode-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
-                    onClick={() =>
-                      isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                        ? appGlobal.historyPush(
-                            `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                          )
-                        : appGlobal.historyPush('/schema-registry/edit-mode')
-                    }
-                    size="icon-xs"
-                    variant="secondary-ghost"
-                  >
-                    <EditIcon />
-                  </Button>
-                }
-              />
-              {api.userData?.canManageSchemaRegistry === false && (
-                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-              )}
-            </Tooltip>
-          </div>
-        </SmallStat>
-        <Separator className="h-[2ch]" orientation="vertical" />
-        <SmallStat
-          title={
+      <StatGroup className="w-fit" columns={2} gap="lg" testId="schema-list-stats">
+        <Stat
+          label={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}
+          testId="schema-list-mode-stat"
+          value={
+            <div className="flex items-center gap-1.5">
+              {displayMode ?? <Skeleton variant="text" width="sm" />}
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Edit mode"
+                      data-testid="schema-list-edit-mode-btn"
+                      disabled={api.userData?.canManageSchemaRegistry === false}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                            )
+                          : appGlobal.historyPush('/schema-registry/edit-mode')
+                      }
+                      size="icon-xs"
+                      variant="secondary-ghost"
+                    >
+                      <EditIcon />
+                    </Button>
+                  }
+                />
+                {api.userData?.canManageSchemaRegistry === false && (
+                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+                )}
+              </Tooltip>
+            </div>
+          }
+        />
+        <Stat
+          label={
             isNamedContext(selectedContext) && schemaRegistryContextsSupported
               ? 'Context compatibility'
               : 'Compatibility'
           }
-        >
-          <div className="flex items-center gap-1.5">
-            {displayCompat ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Edit compatibility"
-                    data-testid="schema-list-edit-compatibility-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
-                    onClick={() =>
-                      isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                        ? appGlobal.historyPush(
-                            `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                          )
-                        : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                    }
-                    size="icon-xs"
-                    variant="secondary-ghost"
-                  >
-                    <EditIcon />
-                  </Button>
-                }
-              />
-              {api.userData?.canManageSchemaRegistry === false && (
-                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-              )}
-            </Tooltip>
-          </div>
-        </SmallStat>
-      </div>
-      {schemaRegistryContextsSupported && (
-        <SchemaContextSelector
-          contexts={derivedContexts}
-          onContextChange={(ctx) => {
-            setSelectedContext(ctx);
-            setPageIndex(0);
-          }}
-          selectedContext={selectedContext}
+          testId="schema-list-compatibility-stat"
+          value={
+            <div className="flex items-center gap-1.5">
+              {displayCompat ?? <Skeleton variant="text" width="sm" />}
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Edit compatibility"
+                      data-testid="schema-list-edit-compatibility-btn"
+                      disabled={api.userData?.canManageSchemaRegistry === false}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                            )
+                          : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                      }
+                      size="icon-xs"
+                      variant="secondary-ghost"
+                    >
+                      <EditIcon />
+                    </Button>
+                  }
+                />
+                {api.userData?.canManageSchemaRegistry === false && (
+                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+                )}
+              </Tooltip>
+            </div>
+          }
         />
-      )}
+      </StatGroup>
       <RequestErrors />
       {isError ? (
         <Alert variant="destructive">
@@ -687,6 +681,16 @@ const SchemaList: FC = () => {
               />
             </div>
             {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
+            {schemaRegistryContextsSupported && (
+              <SchemaContextSelector
+                contexts={derivedContexts}
+                onContextChange={(ctx) => {
+                  setSelectedContext(ctx);
+                  setPageIndex(0);
+                }}
+                selectedContext={selectedContext}
+              />
+            )}
             <DataTableFacetedFilter
               column={table.getColumn('type')}
               options={SCHEMA_TYPE_FILTER_OPTIONS}
