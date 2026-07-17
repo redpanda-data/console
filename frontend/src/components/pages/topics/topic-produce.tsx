@@ -658,10 +658,14 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
         <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
           Produce
         </Button>
-        <Button asChild variant="outline">
-          <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName">
-            Go Back
-          </Link>
+        <Button
+          nativeButton={false}
+          render={
+            <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName" />
+          }
+          variant="outline"
+        >
+          Go Back
         </Button>
       </div>
     </form>
