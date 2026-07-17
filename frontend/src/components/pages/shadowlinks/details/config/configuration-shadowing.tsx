@@ -15,6 +15,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
 
+import { ConfigurationSchemaRegistry } from './configuration-schema-registry';
 import type { UnifiedACLFilter, UnifiedNameFilter, UnifiedShadowLink } from '../../model';
 import {
   getFilterTypeLabel,
@@ -172,23 +173,6 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   );
 };
 
-// Component to display Schema Registry sync status
-const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
-  <Card size="full" testId="schema-registry-card">
-    <CardHeader>
-      <h3 className="text-heading-md">Schema Registry</h3>
-    </CardHeader>
-    <CardContent className="flex flex-row justify-between">
-      <div className="mt-2 text-body text-muted-foreground">
-        Replicate the source cluster's _schema topic, which replaces the shadow cluster's Schema Registry.
-      </div>
-      <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'success-inverted' : 'neutral-inverted'}>
-        {isEnabled ? 'Enabled' : 'Disabled'}
-      </Badge>
-    </CardContent>
-  </Card>
-);
-
 export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
@@ -199,10 +183,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
   const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters || [];
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];
-
-  // Check if schema registry sync is enabled
-  const isSchemaRegistrySyncEnabled =
-    schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
 
   return (
     <div className="flex flex-col gap-6">
@@ -230,7 +210,7 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
       />
 
       {/* Schema Registry Section */}
-      <SchemaRegistrySection isEnabled={isSchemaRegistrySyncEnabled} />
+      <ConfigurationSchemaRegistry syncOptions={schemaRegistrySyncOptions} />
     </div>
   );
 };
