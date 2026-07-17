@@ -102,6 +102,16 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   };
 };
 
+// Names can repeat (e.g. two `redpanda` inputs), so suffix each occurrence for unique keys.
+const toKeyedNames = (names: string[]): { name: string; key: string }[] => {
+  const seen = new Map<string, number>();
+  return names.map((name) => {
+    const occurrence = seen.get(name) ?? 0;
+    seen.set(name, occurrence + 1);
+    return { name, key: `${name}-${occurrence}` };
+  });
+};
+
 const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> = {
   [Pipeline_State.COMPLETED]: 'success',
   [Pipeline_State.STARTING]: 'starting',
@@ -154,6 +164,7 @@ const PipelineListSkeleton = () => (
       </TableHeader>
       <TableBody>
         {Array.from({ length: 5 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
           <TableRow key={i}>
             <TableCell>
               <div className="flex flex-col gap-1">
@@ -364,7 +375,7 @@ const createColumns = ({
     header: 'Input',
     filterFn: createFilterFn('multiOption'),
     cell: ({ row }) => {
-      const inputs = row.getValue('inputs') as string[];
+      const inputs = toKeyedNames(row.getValue('inputs') as string[]);
       if (inputs.length === 0) {
         return null;
       }
@@ -375,13 +386,13 @@ const createColumns = ({
           renderOverflowContent={(overflow) => (
             <List>
               {inputs.slice(-overflow.length).map((o) => (
-                <ListItem key={o?.toString()}>{o}</ListItem>
+                <ListItem key={o.key}>{o.name}</ListItem>
               ))}
             </List>
           )}
         >
           {inputs.map((input) => (
-            <ComponentBadge key={input} name={input} />
+            <ComponentBadge key={input.key} name={input.name} />
           ))}
         </BadgeGroup>
       );
@@ -392,7 +403,7 @@ const createColumns = ({
     header: 'Processors',
     filterFn: createFilterFn('multiOption'),
     cell: ({ row }) => {
-      const processors = row.getValue('processors') as string[];
+      const processors = toKeyedNames(row.getValue('processors') as string[]);
       if (processors.length === 0) {
         return null;
       }
@@ -403,13 +414,13 @@ const createColumns = ({
           renderOverflowContent={(overflow) => (
             <List>
               {processors.slice(-overflow.length).map((o) => (
-                <ListItem key={o?.toString()}>{o}</ListItem>
+                <ListItem key={o.key}>{o.name}</ListItem>
               ))}
             </List>
           )}
         >
           {processors.map((p) => (
-            <ComponentBadge key={p} name={p} />
+            <ComponentBadge key={p.key} name={p.name} />
           ))}
         </BadgeGroup>
       );
@@ -420,7 +431,7 @@ const createColumns = ({
     header: 'Output',
     filterFn: createFilterFn('multiOption'),
     cell: ({ row }) => {
-      const outputs = row.getValue('outputs') as string[];
+      const outputs = toKeyedNames(row.getValue('outputs') as string[]);
       if (outputs.length === 0) {
         return null;
       }
@@ -431,13 +442,13 @@ const createColumns = ({
           renderOverflowContent={(overflow) => (
             <List>
               {outputs.slice(-overflow.length).map((o) => (
-                <ListItem key={o?.toString()}>{o}</ListItem>
+                <ListItem key={o.key}>{o.name}</ListItem>
               ))}
             </List>
           )}
         >
           {outputs.map((o) => (
-            <ComponentBadge key={o} name={o} />
+            <ComponentBadge key={o.key} name={o.name} />
           ))}
         </BadgeGroup>
       );
