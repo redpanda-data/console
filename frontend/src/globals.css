@@ -34,6 +34,19 @@
   --chakra-colors-chakra-border-color: var(--color-border);
 }
 
+/* The registry's vertical Separator ships `self-stretch`, which sizes it when it has no
+   height of its own. But `align-self: stretch` computes to `flex-start` once the cross
+   size is definite, so the fixed-height dividers inside filter chips (`h-4`) pin to the
+   top of the button and stop halfway down. Center those.
+   Scoped to a button's own children: every vertical Separator inside a button sets a
+   height, while the ones relying on stretch (data-table-filter's `h-7` row) never do,
+   so this can't collapse them to zero. Lives here (app entry CSS) rather than the
+   registry-synced component so it survives re-syncs — same reasoning as UX-1259 above.
+   Remove once the registry centers height-bearing vertical separators itself. */
+button > [data-slot="separator"][data-orientation="vertical"] {
+  align-self: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

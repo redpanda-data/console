@@ -44,7 +44,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
-            <Separator className="mr-2 h-4" orientation="vertical" />
+            <Separator className="mr-2 h-4 self-center" orientation="vertical" />
           </>
         ) : null}
         {isEmbedded() ? null : (
