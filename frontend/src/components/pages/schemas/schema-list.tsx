@@ -50,7 +50,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Text } from 'components/redpanda-ui/components/typography';
 import { SearchIcon } from 'lucide-react';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -162,7 +162,11 @@ const SchemaList: FC = () => {
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
   const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
+  const [compatibilityFilter, setCompatibilityFilter] = useQueryState(
+    'compatibility',
+    parseAsArrayOf(parseAsString).withDefault([])
+  );
   const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
   const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(10));
 
@@ -177,12 +181,28 @@ const SchemaList: FC = () => {
     [pagination, setPageIndex, setPageSize]
   );
 
+  // Faceted filter state lives in the URL, one param per column, so a filtered view
+  // survives a reload and can be shared — same as the search, context and page params.
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const filters: ColumnFiltersState = [];
+    if (typeFilter.length > 0) {
+      filters.push({ id: 'type', value: typeFilter });
+    }
+    if (compatibilityFilter.length > 0) {
+      filters.push({ id: 'compatibility', value: compatibilityFilter });
+    }
+    return filters;
+  }, [typeFilter, compatibilityFilter]);
+
   const handleColumnFiltersChange = useCallback(
     (updater: Updater<ColumnFiltersState>) => {
-      setColumnFilters((prev) => (typeof updater === 'function' ? updater(prev) : updater));
+      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+      const valuesFor = (id: string) => (next.find((filter) => filter.id === id)?.value as string[] | undefined) ?? [];
+      setTypeFilter(valuesFor('type'));
+      setCompatibilityFilter(valuesFor('compatibility'));
       setPageIndex(0);
     },
-    [setPageIndex]
+    [columnFilters, setTypeFilter, setCompatibilityFilter, setPageIndex]
   );
 
   // Parse schema ID from search query
