@@ -18,7 +18,6 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { Edit, Save } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -143,11 +142,11 @@ export const AIAgentIntegrationsTab = () => {
         <CardHeader className="flex flex-row items-center justify-between border-b p-4 dark:border-border [.border-b]:pb-4">
           <div className="space-y-1">
             <CardTitle>
-              <Text className="font-semibold">Microsoft Teams</Text>
+              <div className="font-semibold text-body">Microsoft Teams</div>
             </CardTitle>
-            <Text className="text-muted-foreground text-sm">
+            <div className="text-body text-muted-foreground">
               Connect this agent to Microsoft Teams to enable conversational interactions through a Teams bot.
-            </Text>
+            </div>
           </div>
           <div className="flex gap-2">
             {isEditing ? (
@@ -173,7 +172,7 @@ export const AIAgentIntegrationsTab = () => {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="teams-enabled">Enable Teams Integration</Label>
-              <Text className="text-muted-foreground text-sm">Activate the Microsoft Teams bridge for this agent</Text>
+              <div className="text-body text-muted-foreground">Activate the Microsoft Teams bridge for this agent</div>
             </div>
             {isEditing ? (
               <Switch
@@ -182,7 +181,7 @@ export const AIAgentIntegrationsTab = () => {
                 onCheckedChange={(checked) => updateField({ enabled: checked })}
               />
             ) : (
-              <Text className="font-medium text-sm">{displayState.enabled ? 'Enabled' : 'Disabled'}</Text>
+              <div className="font-medium text-body">{displayState.enabled ? 'Enabled' : 'Disabled'}</div>
             )}
           </div>
 
@@ -199,7 +198,7 @@ export const AIAgentIntegrationsTab = () => {
                 />
               ) : (
                 <div className="flex h-10 items-center rounded-md border border-border bg-muted px-3 py-2">
-                  <Text className="truncate">{displayState.botAppId || '-'}</Text>
+                  <div className="truncate text-body">{displayState.botAppId || '-'}</div>
                 </div>
               )}
             </div>
@@ -215,7 +214,7 @@ export const AIAgentIntegrationsTab = () => {
                 />
               ) : (
                 <div className="flex h-10 items-center rounded-md border border-border bg-muted px-3 py-2">
-                  <Text className="truncate">{displayState.botTenantId || '-'}</Text>
+                  <div className="truncate text-body">{displayState.botTenantId || '-'}</div>
                 </div>
               )}
             </div>
@@ -237,7 +236,7 @@ export const AIAgentIntegrationsTab = () => {
               </div>
             ) : (
               <div className="flex h-10 items-center rounded-md border border-border bg-muted px-3 py-2">
-                <Text className="truncate">{displayState.botAppSecretName || '-'}</Text>
+                <div className="truncate text-body">{displayState.botAppSecretName || '-'}</div>
               </div>
             )}
           </div>
@@ -246,9 +245,9 @@ export const AIAgentIntegrationsTab = () => {
           {Boolean(agent.teamsBridgeEndpoint) && (
             <div className="space-y-2">
               <Label>Messaging Endpoint</Label>
-              <Text className="text-muted-foreground text-sm">
+              <div className="text-body text-muted-foreground">
                 Configure this URL as the messaging endpoint in your Azure Bot registration.
-              </Text>
+              </div>
               <DynamicCodeBlock code={agent.teamsBridgeEndpoint ?? ''} lang="text" />
             </div>
           )}

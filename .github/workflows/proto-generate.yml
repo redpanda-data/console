@@ -52,5 +52,9 @@ jobs:
           path: build
           key: proto-tools-${{ runner.os }}-go${{ hashFiles('backend/go.mod') }}-${{ hashFiles('taskfiles/proto.yaml') }}
 
+      - name: Download Go modules
+        run: go mod download
+        working-directory: backend
+
       - name: Generate protos
         run: task proto:generate

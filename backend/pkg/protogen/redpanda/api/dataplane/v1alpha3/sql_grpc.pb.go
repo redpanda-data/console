@@ -20,11 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SQLService_ListCatalogs_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.SQLService/ListCatalogs"
-	SQLService_ListTables_FullMethodName     = "/redpanda.api.dataplane.v1alpha3.SQLService/ListTables"
-	SQLService_DescribeTable_FullMethodName  = "/redpanda.api.dataplane.v1alpha3.SQLService/DescribeTable"
-	SQLService_ExecuteQuery_FullMethodName   = "/redpanda.api.dataplane.v1alpha3.SQLService/ExecuteQuery"
-	SQLService_GetSqlIdentity_FullMethodName = "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlIdentity"
+	SQLService_ListCatalogs_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.SQLService/ListCatalogs"
+	SQLService_ListTables_FullMethodName           = "/redpanda.api.dataplane.v1alpha3.SQLService/ListTables"
+	SQLService_DescribeTable_FullMethodName        = "/redpanda.api.dataplane.v1alpha3.SQLService/DescribeTable"
+	SQLService_ExecuteQuery_FullMethodName         = "/redpanda.api.dataplane.v1alpha3.SQLService/ExecuteQuery"
+	SQLService_GetSqlIdentity_FullMethodName       = "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlIdentity"
+	SQLService_GetSqlConnectionInfo_FullMethodName = "/redpanda.api.dataplane.v1alpha3.SQLService/GetSqlConnectionInfo"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -54,6 +55,9 @@ type SQLServiceClient interface {
 	// the UI; the engine remains the source of truth and enforces privileges on
 	// execution regardless.
 	GetSqlIdentity(ctx context.Context, in *GetSqlIdentityRequest, opts ...grpc.CallOption) (*GetSqlIdentityResponse, error)
+	// GetSqlConnectionInfo returns the connection endpoint clients use to reach
+	// Redpanda SQL: the advertised host and port.
+	GetSqlConnectionInfo(ctx context.Context, in *GetSqlConnectionInfoRequest, opts ...grpc.CallOption) (*GetSqlConnectionInfoResponse, error)
 }
 
 type sQLServiceClient struct {
@@ -114,6 +118,16 @@ func (c *sQLServiceClient) GetSqlIdentity(ctx context.Context, in *GetSqlIdentit
 	return out, nil
 }
 
+func (c *sQLServiceClient) GetSqlConnectionInfo(ctx context.Context, in *GetSqlConnectionInfoRequest, opts ...grpc.CallOption) (*GetSqlConnectionInfoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSqlConnectionInfoResponse)
+	err := c.cc.Invoke(ctx, SQLService_GetSqlConnectionInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SQLServiceServer is the server API for SQLService service.
 // All implementations must embed UnimplementedSQLServiceServer
 // for forward compatibility.
@@ -141,6 +155,9 @@ type SQLServiceServer interface {
 	// the UI; the engine remains the source of truth and enforces privileges on
 	// execution regardless.
 	GetSqlIdentity(context.Context, *GetSqlIdentityRequest) (*GetSqlIdentityResponse, error)
+	// GetSqlConnectionInfo returns the connection endpoint clients use to reach
+	// Redpanda SQL: the advertised host and port.
+	GetSqlConnectionInfo(context.Context, *GetSqlConnectionInfoRequest) (*GetSqlConnectionInfoResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }
 
@@ -165,6 +182,9 @@ func (UnimplementedSQLServiceServer) ExecuteQuery(context.Context, *ExecuteQuery
 }
 func (UnimplementedSQLServiceServer) GetSqlIdentity(context.Context, *GetSqlIdentityRequest) (*GetSqlIdentityResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSqlIdentity not implemented")
+}
+func (UnimplementedSQLServiceServer) GetSqlConnectionInfo(context.Context, *GetSqlConnectionInfoRequest) (*GetSqlConnectionInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSqlConnectionInfo not implemented")
 }
 func (UnimplementedSQLServiceServer) mustEmbedUnimplementedSQLServiceServer() {}
 func (UnimplementedSQLServiceServer) testEmbeddedByValue()                    {}
@@ -277,6 +297,24 @@ func _SQLService_GetSqlIdentity_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_GetSqlConnectionInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSqlConnectionInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).GetSqlConnectionInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_GetSqlConnectionInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).GetSqlConnectionInfo(ctx, req.(*GetSqlConnectionInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SQLService_ServiceDesc is the grpc.ServiceDesc for SQLService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -303,6 +341,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSqlIdentity",
 			Handler:    _SQLService_GetSqlIdentity_Handler,
+		},
+		{
+			MethodName: "GetSqlConnectionInfo",
+			Handler:    _SQLService_GetSqlConnectionInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

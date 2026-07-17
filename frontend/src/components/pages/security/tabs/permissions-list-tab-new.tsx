@@ -77,7 +77,6 @@ import {
 } from '../../../redpanda-ui/components/dropdown-menu';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { type PrincipalPermissionGroup, usePrincipalPermissions } from '../hooks/use-principal-permissions';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
@@ -511,17 +510,17 @@ export const PermissionsListTabNew: FC = () => {
     <>
       <SecurityTabsNav />
       <ListLayout className="my-4">
-        <Text className="text-muted-foreground text-sm sm:text-base">
+        <div className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp
             short="Unified view of all principal permissions across your cluster."
             title="Permissions"
           >
-            <Text>
+            <div className="text-body">
               A unified view of all principal permissions across your cluster, including direct ACLs and those inherited
               from role bindings. Inherited ACLs are read-only here and must be edited on the respective role page.
-            </Text>
+            </div>
           </DescriptionWithHelp>
-        </Text>
+        </div>
 
         <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
           <ListLayoutSearchInput

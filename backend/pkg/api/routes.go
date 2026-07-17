@@ -521,7 +521,6 @@ func (api *API) routes() *chi.Mux {
 		api.Cfg.REST.StripPrefix)
 
 	baseRouter.Use(recoverer.Wrap)
-	baseRouter.Use(chimiddleware.RealIP)
 	baseRouter.Use(basePath.Wrap)
 	baseRouter.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, _ string) bool {

@@ -17,7 +17,6 @@ import {
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
 import { type MotionProps, motion } from 'motion/react';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
@@ -429,7 +428,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
         {!hideTitle && (
           <CardHeader className="max-w-2xl">
             <CardTitle>
-              <Heading level={2}>Read or write data from a topic</Heading>
+              <h2 className="text-heading-lg">Read or write data from a topic</h2>
             </CardTitle>
             <CardDescription className="mt-4">
               Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients

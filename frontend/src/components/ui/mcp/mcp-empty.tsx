@@ -1,5 +1,4 @@
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
-import { Text } from 'components/redpanda-ui/components/typography';
 
 type MCPEmptyProps = {
 	children?: React.ReactNode;
@@ -16,7 +15,7 @@ export const MCPEmpty = ({
 			data-testid={dataTestId}
 		>
 			<MCPIcon className="mb-4 h-12 w-12 text-muted-foreground opacity-50" />
-			<Text className="mb-2 font-medium">No MCP Servers Available</Text>
+			<div className="text-body mb-2 font-medium">No MCP Servers Available</div>
 			{children}
 		</div>
 	);

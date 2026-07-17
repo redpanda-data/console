@@ -23,7 +23,6 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Progress } from 'components/redpanda-ui/components/progress';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { DynamicJSONForm } from 'components/ui/json/dynamic-json-form';
 import type { JSONSchemaType, JSONValue } from 'components/ui/json/json-utils';
@@ -429,7 +428,7 @@ export const RemoteMCPInspectorTab = () => {
         <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
-            <Text className="font-semibold">Tools</Text>
+            <div className="font-semibold text-body">Tools</div>
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
@@ -498,9 +497,9 @@ export const RemoteMCPInspectorTab = () => {
                     />
                   ))
                 : !(isLoadingTools || isRefetchingTools || toolsError) && (
-                    <Text className="py-8 text-center text-muted-foreground" variant="small">
+                    <div className="py-8 text-center text-body-sm text-muted-foreground">
                       No tools available on this MCP server.
-                    </Text>
+                    </div>
                   )}
             </div>
           )}
@@ -519,7 +518,7 @@ export const RemoteMCPInspectorTab = () => {
                     getComponentTypeFromToolName(selectedTool)
                   }
                 />
-                <Text className="font-semibold">{selectedTool}</Text>
+                <div className="font-semibold text-body">{selectedTool}</div>
               </CardTitle>
             </CardHeader>
             <div className="relative flex flex-1 flex-col">
@@ -608,12 +607,9 @@ export const RemoteMCPInspectorTab = () => {
                               key={field}
                             >
                               <div className="flex items-start">
-                                <Text className="text-error" variant="small">
-                                  <Text as="span" className="font-medium">
-                                    {field}:
-                                  </Text>{' '}
-                                  {error}
-                                </Text>
+                                <div className="text-body-sm text-error">
+                                  <span className="font-medium text-body">{field}:</span> {error}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -632,9 +628,9 @@ export const RemoteMCPInspectorTab = () => {
                                   normalizeProgressPercent(streamProgress?.progress, streamProgress?.total) ?? null
                                 }
                               />
-                              <Text className="text-muted-foreground" variant="small">
+                              <div className="text-body-sm text-muted-foreground">
                                 {streamProgress?.statusMessage ?? streamProgress?.status ?? 'Running tool...'}
-                              </Text>
+                              </div>
                             </div>
                           )}
                           <div className="flex flex-col space-y-3">
@@ -704,11 +700,11 @@ export const RemoteMCPInspectorTab = () => {
         ) : (
           <CardContent className="flex flex-1 items-center justify-center px-4 pb-4">
             <div className="text-center">
-              <Text className="text-muted-foreground">
+              <div className="text-body text-muted-foreground">
                 {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
                   ? 'Server is starting...'
                   : 'Select a tool from the panel to test it'}
-              </Text>
+              </div>
             </div>
           </CardContent>
         )}

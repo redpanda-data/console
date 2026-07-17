@@ -10,7 +10,6 @@
  */
 
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
-import { Text } from 'components/redpanda-ui/components/typography';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
@@ -92,13 +91,9 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Tool Description */}
       {!!toolData.description && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            DESCRIPTION
-          </Text>
+          <div className="text-label uppercase tracking-wide">DESCRIPTION</div>
           <ContentPanel className="bg-muted/20">
-            <Text className="text-sm leading-relaxed" variant="muted">
-              {toolData.description}
-            </Text>
+            <div className="text-body text-muted-foreground leading-relaxed">{toolData.description}</div>
           </ContentPanel>
         </div>
       )}
@@ -106,9 +101,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Arguments */}
       {!!toolData.hasArguments && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            ARGUMENTS
-          </Text>
+          <div className="text-label uppercase tracking-wide">ARGUMENTS</div>
           <ToolEventCard
             callId={toolData.callId}
             content={
@@ -126,9 +119,7 @@ export const ToolCallTab: FC<Props> = ({ span }) => {
       {/* Result */}
       {!!toolData.hasResult && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            RESPONSE
-          </Text>
+          <div className="text-label uppercase tracking-wide">RESPONSE</div>
           <ToolEventCard
             callId={toolData.callId}
             content={

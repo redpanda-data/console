@@ -21,7 +21,7 @@ import {
 } from 'components/redpanda-ui/components/alert-dialog';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
 type DeleteShadowLinkDialogProps = {
@@ -62,10 +62,12 @@ export const DeleteShadowLinkDialog = ({
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete Shadowlink</AlertDialogTitle>
           <AlertDialogDescription className="space-y-4">
-            <Text>
+            <div className="text-body">
               You are about to delete <InlineCode>{shadowLinkName}</InlineCode>
-            </Text>
-            <Text>This action will cause data loss. To confirm, type "delete" into the confirmation box below.</Text>
+            </div>
+            <div className="text-body">
+              This action will cause data loss. To confirm, type "delete" into the confirmation box below.
+            </div>
             <Input
               className="mt-4"
               onChange={(e) => setConfirmationText(e.target.value)}

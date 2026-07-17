@@ -13,7 +13,6 @@ import AnthropicLogo from 'assets/anthropic.svg';
 import ApiGenericLogo from 'assets/api-generic.svg';
 import GeminiLogo from 'assets/gemini.svg';
 import OpenAILogo from 'assets/openai.svg';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 
 /**
@@ -262,9 +261,7 @@ export const AIAgentModel = ({ model, providerType, className, showLogo = true, 
   return (
     <div className={cn('flex items-center gap-2', className)}>
       {showLogo && providerInfo ? <img alt={providerInfo.label} className={logoSize} src={providerInfo.icon} /> : null}
-      <Text className="font-mono" variant={size === 'sm' ? 'small' : 'body'}>
-        {model}
-      </Text>
+      <div className={cn(size === 'sm' ? 'text-body-sm' : 'text-body', 'font-mono')}>{model}</div>
     </div>
   );
 };

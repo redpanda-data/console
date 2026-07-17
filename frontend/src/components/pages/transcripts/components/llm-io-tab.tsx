@@ -14,7 +14,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, HelpCircle, MessageSquare, User, Wrench } from 'lucide-react';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
@@ -105,9 +104,7 @@ const HistoryMessageItem: FC<{ message: Message }> = ({ message }) => {
       {/* Role header */}
       <div className="flex items-center gap-1.5">
         {createElement(messageIcon, { className: 'h-3 w-3 text-muted-foreground' })}
-        <Text className="font-medium capitalize" variant="muted">
-          {message.role}
-        </Text>
+        <div className="font-medium text-body text-muted-foreground capitalize">{message.role}</div>
       </div>
 
       {/* Text content */}
@@ -116,9 +113,9 @@ const HistoryMessageItem: FC<{ message: Message }> = ({ message }) => {
           {isJson ? (
             <DynamicCodeBlock code={formatJsonContent(message.content)} lang="json" />
           ) : (
-            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+            <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
               {message.content}
-            </Text>
+            </div>
           )}
         </div>
       ) : null}
@@ -153,9 +150,7 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
-        <Text as="div" className="uppercase tracking-wide" variant="label">
-          INPUT
-        </Text>
+        <div className="text-label uppercase tracking-wide">INPUT</div>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger render={<HelpCircle className="h-3 w-3 text-muted-foreground/50" />} />
@@ -168,9 +163,9 @@ const InputSection: FC<{ input: string; lastInputMessage?: Message }> = ({ input
       </div>
       <ContentPanel spacing>
         {!!input && (
-          <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+          <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
             {input}
-          </Text>
+          </div>
         )}
 
         {/* Tool responses in input */}
@@ -203,9 +198,7 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
-        <Text as="div" className="uppercase tracking-wide" variant="label">
-          OUTPUT
-        </Text>
+        <div className="text-label uppercase tracking-wide">OUTPUT</div>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger render={<HelpCircle className="h-3 w-3 text-muted-foreground/50" />} />
@@ -217,9 +210,9 @@ const OutputSection: FC<{ output: string; lastOutputMessage?: Message }> = ({ ou
       </div>
       <ContentPanel spacing>
         {!!output && (
-          <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+          <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
             {output}
-          </Text>
+          </div>
         )}
 
         {/* Tool calls in output (LLM making tool calls) */}
@@ -577,12 +570,10 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
       {/* Model Info & Token Counts */}
       {!!llmData.model && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            MODEL
-          </Text>
+          <div className="text-label uppercase tracking-wide">MODEL</div>
           <div>
             <Badge variant="neutral-inverted">
-              <Text variant="small">{llmData.model}</Text>
+              <div className="text-body-sm">{llmData.model}</div>
             </Badge>
           </div>
         </div>
@@ -590,24 +581,20 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
       {/* Token Counts */}
       {llmData.inputTokens > 0 && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            TOKEN USAGE
-          </Text>
+          <div className="text-label uppercase tracking-wide">TOKEN USAGE</div>
           <ContentPanel className="bg-muted/20">
             <div className="flex items-center justify-between">
               <div className="space-x-3">
-                <Text variant="muted">
+                <div className="text-body text-muted-foreground">
                   Input:{' '}
                   <span className="font-medium font-mono text-foreground">{llmData.inputTokens.toLocaleString()}</span>
-                </Text>
-                <Text variant="muted">
+                </div>
+                <div className="text-body text-muted-foreground">
                   Output:{' '}
                   <span className="font-medium font-mono text-foreground">{llmData.outputTokens.toLocaleString()}</span>
-                </Text>
+                </div>
               </div>
-              <Text className="font-medium" variant="muted">
-                {totalTokens.toLocaleString()} total
-              </Text>
+              <div className="font-medium text-body text-muted-foreground">{totalTokens.toLocaleString()} total</div>
             </div>
           </ContentPanel>
         </div>
@@ -628,14 +615,12 @@ export const LLMIOTab: FC<Props> = ({ span }) => {
                 ) : (
                   <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 )}
-                <Text as="span" variant="label">
-                  CONVERSATION HISTORY
-                </Text>
+                <span className="text-label">CONVERSATION HISTORY</span>
                 {historyMessageCount > 0 && (
                   <Badge className="h-4 bg-muted/50 px-1.5" variant="outline">
-                    <Text variant="small">
+                    <div className="text-body-sm">
                       {historyMessageCount} {historyMessageCount === 1 ? 'message' : 'messages'}
-                    </Text>
+                    </div>
                   </Badge>
                 )}
               </div>

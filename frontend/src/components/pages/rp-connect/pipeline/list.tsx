@@ -42,7 +42,7 @@ import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/com
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Link, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -696,14 +696,14 @@ const PipelineListPageContent = () => {
 
 const RedpandaConnectContent = () => (
   <div className="flex flex-col gap-4">
-    <Text>
+    <div className="text-body">
       Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
       real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
       connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
       <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
         Learn more
       </Link>
-    </Text>
+    </div>
     <PipelineListPageContent />
   </div>
 );
@@ -720,7 +720,7 @@ export const PipelineListPage = () => {
         {showKafkaConnectLoadingHint ? (
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Spinner />
-            <Text variant="muted">Checking for Kafka Connect availability...</Text>
+            <div className="text-body text-muted-foreground">Checking for Kafka Connect availability...</div>
           </div>
         ) : null}
         <RedpandaConnectContent />
@@ -730,10 +730,10 @@ export const PipelineListPage = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <Text>
+      <div className="text-body">
         There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and Kafka
         Connect.
-      </Text>
+      </div>
       <Tabs defaultValue="redpanda-connect">
         <TabsList variant="underline">
           <TabsTrigger value="redpanda-connect" variant="underline">
@@ -749,7 +749,7 @@ export const PipelineListPage = () => {
           </TabsContent>
           <TabsContent value="kafka-connect">
             <div className="flex flex-col gap-6">
-              <Text>
+              <div className="text-body">
                 Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
                 different data systems.{' '}
                 <Link
@@ -759,7 +759,7 @@ export const PipelineListPage = () => {
                 >
                   Learn more
                 </Link>
-              </Text>
+              </div>
               <TabKafkaConnect />
             </div>
           </TabsContent>

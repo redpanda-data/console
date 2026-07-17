@@ -13,7 +13,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
@@ -155,7 +154,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           data-testid="template-gallery-empty"
         >
           <Search aria-hidden className="h-6 w-6 text-muted-foreground" />
-          <Text variant="bodyStrongMedium">No templates match your search</Text>
+          <div className="font-medium text-body">No templates match your search</div>
           {hasFiltersActive ? (
             <Button onClick={clearFilters} size="sm" variant="outline">
               Clear filters
@@ -177,9 +176,9 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
                 data-testid={`template-gallery-category-${category}`}
                 key={category}
               >
-                <Heading id={`gallery-category-${category}`} level={4}>
+                <h4 className="text-heading-sm" id={`gallery-category-${category}`}>
                   {TEMPLATE_CATEGORY_LABELS[category]}
-                </Heading>
+                </h4>
                 <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
                   {inCategory.map((template) => (
                     <TemplateTile key={template.id} onSelect={onSelect} template={template} />

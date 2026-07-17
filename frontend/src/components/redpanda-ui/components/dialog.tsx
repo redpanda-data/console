@@ -219,7 +219,7 @@ function DialogFooter({
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
-      className={cn('font-semibold text-lg leading-none tracking-tight', className)}
+      className={cn('text-heading-md leading-none', className)}
       data-slot="dialog-title"
       {...props}
     />
@@ -229,7 +229,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
 function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="dialog-description"
       // Render as <div> (not Base UI's default <p>) so block-level children don't trigger validateDOMNesting.
       render={<div />}
@@ -262,13 +262,17 @@ const dialogBodyContentVariants = cva('', {
   },
 });
 
+const dialogScrollShadow = 'pointer-events-none sticky z-10 h-0 transition-opacity duration-150';
+const dialogScrollShadowState = (visible: boolean) => (visible ? 'opacity-100' : 'opacity-0');
+
 interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyContentVariants> {
   /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
   scrollShadow?: boolean;
 }
 
 function DialogBody({ className, padding, spacing, scrollShadow = true, children, style, ...props }: DialogBodyProps) {
-  const { containerRef, topRef, bottomRef, edges } = useScrollShadow<HTMLDivElement>(scrollShadow);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const edges = useScrollShadow(containerRef, scrollShadow);
 
   return (
     <div
@@ -279,33 +283,15 @@ function DialogBody({ className, padding, spacing, scrollShadow = true, children
       {...props}
     >
       {scrollShadow ? (
-        <>
-          <div aria-hidden className="h-px shrink-0" ref={topRef} />
-          <div
-            aria-hidden
-            className={cn(
-              'pointer-events-none sticky top-0 z-10 h-0 transition-opacity duration-150',
-              edges.top ? 'opacity-100' : 'opacity-0'
-            )}
-          >
-            <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
-          </div>
-        </>
+        <div aria-hidden className={cn(dialogScrollShadow, 'top-0', dialogScrollShadowState(edges.start))}>
+          <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+        </div>
       ) : null}
       <div className={cn(dialogBodyContentVariants({ padding, spacing }))}>{children}</div>
       {scrollShadow ? (
-        <>
-          <div
-            aria-hidden
-            className={cn(
-              'pointer-events-none sticky bottom-0 z-10 h-0 transition-opacity duration-150',
-              edges.bottom ? 'opacity-100' : 'opacity-0'
-            )}
-          >
-            <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
-          </div>
-          <div aria-hidden className="h-px shrink-0" ref={bottomRef} />
-        </>
+        <div aria-hidden className={cn(dialogScrollShadow, 'bottom-0', dialogScrollShadowState(edges.end))}>
+          <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+        </div>
       ) : null}
     </div>
   );

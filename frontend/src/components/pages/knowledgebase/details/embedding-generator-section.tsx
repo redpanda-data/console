@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/c
 import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpanda-ui/components/field';
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
-import { Heading, Link, Text } from '../../../redpanda-ui/components/typography';
+import { Link } from '../../../redpanda-ui/components/typography';
 import { COHERE_MODELS, OPENAI_MODELS } from '../../../ui/ai/ai-constants';
 import { EmbeddingModelSelect } from '../../../ui/ai/embedding-model-select';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
@@ -110,7 +110,7 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Combine className="h-4 w-4" />
-          <Text className="font-semibold">Embedding Generator</Text>
+          <div className="font-semibold text-body">Embedding Generator</div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
@@ -204,9 +204,9 @@ export const EmbeddingGeneratorSection = ({ knowledgeBase, isEditMode }: Embeddi
             </>
           ) : (
             <>
-              <Heading level={3}>
+              <h3 className="text-heading-md">
                 {embeddingGen?.provider?.provider.case === 'openai' ? 'OpenAI' : 'Cohere'} Configuration
-              </Heading>
+              </h3>
               <FormItem>
                 <FormLabel>Model</FormLabel>
                 <div className="relative">

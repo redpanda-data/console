@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import { RefreshButton } from 'components/ui/refresh-button';
 import type { FC } from 'react';
@@ -73,7 +72,7 @@ const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, has
   }
 
   if (!hasData) {
-    return <Text className="text-muted-foreground">Throughput metrics not available</Text>;
+    return <div className="text-body text-muted-foreground">Throughput metrics not available</div>;
   }
 
   return (
@@ -209,7 +208,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <Heading level={3}>Throughput</Heading>
+        <h3 className="text-heading-md">Throughput</h3>
         <div className="flex items-center gap-1">
           <Select
             items={TIME_RANGES}

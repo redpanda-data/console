@@ -21,7 +21,6 @@ import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import {
   ConsumerGroupStatus,
   getConsumerGroupStateDescription,
@@ -394,11 +393,11 @@ export const KnowledgeBaseDetailsPage = () => {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="max-w-md text-center">
-          <Text className="text-error">
+          <div className="text-body text-error">
             {knowledgeBaseError
               ? `Failed to load knowledge base: ${String(knowledgeBaseError)}`
               : 'Knowledge base not found'}
-          </Text>
+          </div>
         </div>
       </div>
     );
@@ -408,11 +407,9 @@ export const KnowledgeBaseDetailsPage = () => {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div>
-        <Heading level={1}>{knowledgeBase.displayName}</Heading>
+        <h1 className="text-heading-xl">{knowledgeBase.displayName}</h1>
         {Boolean(knowledgeBase.description) && (
-          <Text className="mt-2" variant="muted">
-            {knowledgeBase.description}
-          </Text>
+          <div className="mt-2 text-body text-muted-foreground">{knowledgeBase.description}</div>
         )}
       </div>
       {/* Consumer Group Status Card */}
@@ -421,9 +418,7 @@ export const KnowledgeBaseDetailsPage = () => {
           <div className="flex gap-8">
             <div>
               <div className="mb-1 flex items-center gap-1">
-                <Text className="font-medium text-sm" variant="muted">
-                  Indexer Status
-                </Text>
+                <div className="font-medium text-body text-muted-foreground">Indexer Status</div>
                 {consumerGroup?.state ? (
                   <TooltipProvider>
                     <Tooltip>
@@ -435,7 +430,7 @@ export const KnowledgeBaseDetailsPage = () => {
                         }
                       />
                       <TooltipContent className="max-w-xs">
-                        <Text>{getConsumerGroupStateDescription(consumerGroup.state)}</Text>
+                        <div className="text-body">{getConsumerGroupStateDescription(consumerGroup.state)}</div>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -453,9 +448,7 @@ export const KnowledgeBaseDetailsPage = () => {
             </div>
 
             <div>
-              <Text className="mb-1 font-medium text-sm" variant="muted">
-                Consumer Lag
-              </Text>
+              <div className="mb-1 font-medium text-body text-muted-foreground">Consumer Lag</div>
               <ConsumerLag consumerGroupId={`${knowledgeBase.id}-indexer`} enabled={!!knowledgeBase.indexer} />
             </div>
           </div>

@@ -51,7 +51,7 @@
     "@a2a-js/sdk": "^0.3.13",
     "@base-ui/react": "^1.5.0",
     "@buf/redpandadata_cloud.connectrpc_query-es": "^2.2.0-20251128173054-b9f9fc6e5a70.1",
-    "@buf/redpandadata_common.bufbuild_es": "^2.11.0-20260316210807-5d899910f714.1",
+    "@buf/redpandadata_common.bufbuild_es": "^2.11.0-20260323171043-6e06f84ad823.1",
     "@bufbuild/cel": "^0.4.0",
     "@bufbuild/protobuf": "^2.12.0",
     "@bufbuild/protoc-gen-es": "^2.10.0",
@@ -69,6 +69,7 @@
     "@connectrpc/connect": "^2.1.0",
     "@connectrpc/connect-query": "^2.2.0",
     "@connectrpc/connect-web": "^2.1.0",
+    "@dagrejs/dagre": "^3.0.0",
     "@emotion/css": "^11.13.5",
     "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
@@ -87,10 +88,9 @@
     "@stepperize/react": "^5.1.9",
     "@tanstack/react-form": "^1.12.3",
     "@tanstack/react-query": "^5.99.2",
-    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-router": "^1.170.7",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
-    "@tanstack/zod-adapter": "^1.167.0",
     "@types/prismjs": "^1.26.5",
     "@uiw/react-codemirror": "^4.25.10",
     "@xyflow/react": "^12.9.2",
@@ -98,7 +98,7 @@
     "array-move": "^4.0.0",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
-    "cnfast": "0.0.8",
+    "cnfast": "^0.0.8",
     "date-fns": "^4.3.0",
     "dexie": "^4.2.1",
     "dotenv": "^17.2.3",
@@ -108,7 +108,7 @@
     "js-base64": "^3.7.8",
     "json-bigint": "^1.0.0",
     "lottie-react": "^2.4.1",
-    "lucide-react": "^1.17.0",
+    "lucide-react": "^1.16.0",
     "monaco-editor": "^0.54.0",
     "monaco-editor-webpack-plugin": "^7.1.1",
     "monaco-yaml": "^5.5.0",
@@ -138,12 +138,13 @@
     "sql-formatter": "^15.8.1",
     "stacktrace-js": "^2.0.2",
     "streamdown": "^2.5.0",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.2.4",
     "tokenlens": "^1.3.1",
     "use-stick-to-bottom": "^1.1.1",
     "vaul": "^1.1.2",
     "yaml": "^2.8.3",
-    "zod": "^4.3.6",
+    "zod": "^4.4.3",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
@@ -165,7 +166,7 @@
     "@tailwindcss/vite": "4.2.4",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-router-devtools": "^1.167.0",
-    "@tanstack/router-plugin": "^1.168.18",
+    "@tanstack/router-plugin": "^1.168.19",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -200,20 +201,23 @@
     "vitest-browser-react": "^2.2.0"
   },
   "overrides": {
-    "dompurify": "^3.4.0",
+    "dompurify": "^3.4.11",
     "prismjs": "^1.30.0",
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "undici": "^7.28.0",
+    "ws": "^8.21.0"
   },
   "resolutions": {
     "baseline-browser-mapping": "2.10.33",
     "memoize-one": "^6.0.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
-  },
-  "patchedDependencies": {
-    "@tanstack/react-router@1.170.15": "patches/@tanstack%2Freact-router@1.170.15.patch"
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.1",
+    "undici": "^7.28.0",
+    "ws": "^8.21.0"
   }
 }

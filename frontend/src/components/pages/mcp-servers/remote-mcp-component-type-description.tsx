@@ -1,4 +1,4 @@
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { ExternalLink } from 'lucide-react';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 
@@ -39,7 +39,7 @@ const getComponentTypeDocumentationUrl = (componentType: MCPServer_Tool_Componen
 };
 
 export const RemoteMCPComponentTypeDescription = ({ componentType }: RemoteMCPComponentTypeDescriptionProps) => (
-  <Text variant="muted">
+  <div className="text-body text-muted-foreground">
     {getComponentTypeDescription(componentType ?? MCPServer_Tool_ComponentType.UNSPECIFIED)}{' '}
     {componentType !== undefined && (
       <Link
@@ -51,5 +51,5 @@ export const RemoteMCPComponentTypeDescription = ({ componentType }: RemoteMCPCo
         Learn more <ExternalLink className="h-3 w-3" />
       </Link>
     )}
-  </Text>
+  </div>
 );

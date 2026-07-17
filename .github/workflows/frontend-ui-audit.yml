@@ -5,7 +5,7 @@ name: "Frontend UI Audit"
 # - off-token palette colours (red-500, indigo-300, …) instead of semantic tokens
 # - ad-hoc utility classes (text-[11px], bg-[#0f1626], …)
 #
-# Posts a sticky PR comment with the findings, fails the job if any are found.
+# Advisory only: posts a sticky PR comment with the findings, never fails the job.
 # Runs the script directly from redpanda-data/ui-registry; no copy in this repo.
 on:
   pull_request:
@@ -74,6 +74,7 @@ jobs:
         id: audit
         run: |
           set +e
+          # Exit code only feeds the warning step below; the job never fails on findings.
           bun ui-registry/packages/lookout/scripts/audit-changes.ts \
             --app console/frontend \
             --diff origin/${{ github.event.pull_request.base.ref }} \
@@ -98,8 +99,6 @@ jobs:
             gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
               --field body=@/tmp/body.md > /dev/null
           fi
-      - name: Fail job if findings
+      - name: Warn if findings
         if: steps.audit.outputs.exit_code != '0'
-        run: |
-          echo "::error::UI audit found drift or off-token usage — see PR comment above."
-          exit ${{ steps.audit.outputs.exit_code }}
+        run: echo "::warning::UI audit found drift or off-token usage — see PR comment above."

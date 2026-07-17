@@ -300,6 +300,7 @@ describe('ShadowLinkEditPage', () => {
       error: null,
       isUpdating: false,
       hasData: true,
+      isSchemaRegistryApiMode: false,
       updateShadowLink: mockUpdateShadowLink,
       dataplaneUpdate: {
         isPending: false,

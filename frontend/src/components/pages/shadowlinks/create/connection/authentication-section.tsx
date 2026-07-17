@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
 import { ExternalLink, InfoIcon } from 'lucide-react';
@@ -116,7 +115,7 @@ export const AuthenticationSection = () => {
       </CardHeader>
 
       <div className="flex flex-col gap-2">
-        <Text variant="label">Authentication method</Text>
+        <div className="text-label">Authentication method</div>
         <Tabs onValueChange={handleAuthMethodChange} value={authMethod}>
           <TabsList>
             <TabsTrigger data-testid="auth-method-none" value={AUTH_METHOD.NONE}>
@@ -130,9 +129,7 @@ export const AuthenticationSection = () => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <Text className="text-muted-foreground" variant="small">
-          {AUTH_METHOD_DESCRIPTIONS[authMethod]}
-        </Text>
+        <div className="text-body-sm text-muted-foreground">{AUTH_METHOD_DESCRIPTIONS[authMethod]}</div>
       </div>
 
       {showCredentials ? (

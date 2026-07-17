@@ -16,7 +16,6 @@ import {
 } from 'react-hook-form';
 
 import { Label } from './label';
-import { Heading, Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
 const Form = FormProvider;
@@ -204,7 +203,7 @@ function FormDescription({ className, ...props }: React.ComponentProps<'div'>) {
 
   return (
     <div
-      className={cn('text-muted-foreground text-xs', className)}
+      className={cn('text-body-sm text-muted-foreground', className)}
       data-slot="form-description"
       id={formDescriptionId}
       {...props}
@@ -221,7 +220,7 @@ function FormMessage({ className, ...props }: React.ComponentProps<'div'>) {
   }
 
   return (
-    <div className={cn('text-destructive text-sm', className)} data-slot="form-message" id={formMessageId} {...props}>
+    <div className={cn('text-body text-destructive', className)} data-slot="form-message" id={formMessageId} {...props}>
       {body}
     </div>
   );
@@ -266,12 +265,8 @@ function FormSection({
     >
       {title || description ? (
         <div className="mb-4">
-          {title ? (
-            <Heading className="font-medium text-lg" level={3}>
-              {title}
-            </Heading>
-          ) : null}
-          {description ? <Text className="mt-1 text-muted-foreground text-sm">{description}</Text> : null}
+          {title ? <h3 className="text-heading-md">{title}</h3> : null}
+          {description ? <div className="mt-1 text-body text-muted-foreground">{description}</div> : null}
         </div>
       ) : null}
       {children}
@@ -314,13 +309,9 @@ function SimpleFormField<
               {label}
             </FormLabel>
           ) : null}
-          {description && descriptionPosition === 'top' ? (
-            <FormDescription className="leading-snug">{description}</FormDescription>
-          ) : null}
+          {description && descriptionPosition === 'top' ? <FormDescription>{description}</FormDescription> : null}
           <FormControl>{children(field)}</FormControl>
-          {description && descriptionPosition === 'bottom' ? (
-            <FormDescription className="leading-snug">{description}</FormDescription>
-          ) : null}
+          {description && descriptionPosition === 'bottom' ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />
         </FormItem>
       )}

@@ -1,4 +1,3 @@
-// Single entry point for all proto imports within auto-form.
 export {
   getProtoJsonSchema,
   isProtoMapEntries,

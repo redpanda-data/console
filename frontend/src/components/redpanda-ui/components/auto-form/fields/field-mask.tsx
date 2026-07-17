@@ -2,7 +2,6 @@
 
 import { useFieldTestIds } from './shared';
 import { Textarea } from '../../textarea';
-import { Text } from '../../typography';
 import type { AutoFormFieldProps } from '../core-types';
 import { FIELD_MASK_PATH_SPLIT_PATTERN, getFieldUiConfig } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
@@ -34,9 +33,7 @@ function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormField
         value={textValue}
       />
       {allowedPaths?.length ? (
-        <Text className="text-muted-foreground" variant="small">
-          Allowed paths: {allowedPaths.join(', ')}
-        </Text>
+        <div className="text-body-sm text-muted-foreground">Allowed paths: {allowedPaths.join(', ')}</div>
       ) : null}
     </div>
   );

@@ -71,7 +71,7 @@ export function MarkdownEditorTabs({
       <TabsList>
         <TabsTrigger value="editor" className="gap-1.5">
           Editor
-          <Badge variant="outline" className="px-1 py-0 text-caption-sm font-normal">
+          <Badge variant="outline" className="px-1 py-0 text-2xs font-normal">
             Markdown
           </Badge>
         </TabsTrigger>
@@ -158,7 +158,7 @@ export function MarkdownEditor({
         <TabsList className="mb-2">
           <TabsTrigger value="editor" className="gap-1.5">
             Editor
-            <Badge variant="outline" className="px-1 py-0 text-caption-sm font-normal">
+            <Badge variant="outline" className="px-1 py-0 text-2xs font-normal">
               Markdown
             </Badge>
           </TabsTrigger>

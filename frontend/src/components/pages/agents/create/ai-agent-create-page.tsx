@@ -21,7 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 import { SubagentConfigSection } from 'components/ui/ai-agent/subagent-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
@@ -418,7 +417,7 @@ export const AIAgentCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Create AI Agent</Heading>
+        <h1 className="text-heading-xl">Create AI Agent</h1>
       </header>
 
       <form
@@ -435,7 +434,7 @@ export const AIAgentCreatePage = () => {
               <Card size="full">
                 <CardHeader>
                   <CardTitle>Basic Information</CardTitle>
-                  <Text variant="muted">Configure the basic details of your agent</Text>
+                  <div className="text-body text-muted-foreground">Configure the basic details of your agent</div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -497,7 +496,7 @@ export const AIAgentCreatePage = () => {
               <Card size="full">
                 <CardHeader>
                   <CardTitle>LLM Provider Configuration</CardTitle>
-                  <Text variant="muted">Configure the AI model and authentication</Text>
+                  <div className="text-body text-muted-foreground">Configure the AI model and authentication</div>
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
@@ -525,7 +524,7 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>System Prompt</CardTitle>
-                <Text variant="muted">Define the agent's behavior and instructions</Text>
+                <div className="text-body text-muted-foreground">Define the agent's behavior and instructions</div>
               </CardHeader>
               <CardContent>
                 <Field data-invalid={!!form.formState.errors.systemPrompt}>
@@ -550,7 +549,7 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>MCP Tools</CardTitle>
-                <Text variant="muted">Select MCP servers to enable tools for this agent</Text>
+                <div className="text-body text-muted-foreground">Select MCP servers to enable tools for this agent</div>
               </CardHeader>
               <CardContent>
                 <Field data-invalid={!!form.formState.errors.selectedMcpServers}>
@@ -567,9 +566,9 @@ export const AIAgentCreatePage = () => {
                         />
                       ) : (
                         <MCPEmpty data-testid="mcp-servers-empty-state">
-                          <Text className="mb-4 text-center" variant="muted">
+                          <div className="mb-4 text-center text-body text-muted-foreground">
                             Create MCP servers first to enable additional tools for your AI agent
-                          </Text>
+                          </div>
                         </MCPEmpty>
                       )
                     }
@@ -585,10 +584,10 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>Subagents (Optional)</CardTitle>
-                <Text variant="muted">
+                <div className="text-body text-muted-foreground">
                   Configure specialized subagents that inherit the provider and model from the parent agent. Each
                   subagent has its own system prompt and can access a subset of MCP servers.
-                </Text>
+                </div>
               </CardHeader>
               <CardContent>
                 <SubagentConfigSection availableMcpServers={availableMcpServers} control={form.control} />
@@ -599,7 +598,7 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>Service Account</CardTitle>
-                <Text variant="muted">Create a service account for agent authentication</Text>
+                <div className="text-body text-muted-foreground">Create a service account for agent authentication</div>
               </CardHeader>
               <CardContent>
                 <Field data-invalid={!!form.formState.errors.serviceAccountName}>
@@ -644,7 +643,7 @@ export const AIAgentCreatePage = () => {
                 {isCreateAgentPending || isCreateServiceAccountPending || isCreateSecretPending ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <Text as="span">Creating...</Text>
+                    <span className="text-body">Creating...</span>
                   </div>
                 ) : (
                   'Create Agent'
