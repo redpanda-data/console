@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Command,
@@ -19,7 +18,6 @@ import {
   CommandList,
 } from 'components/redpanda-ui/components/command';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
-import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon, ChevronDownIcon, InfoIcon } from 'lucide-react';
@@ -103,18 +101,6 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <span className="inline-flex cursor-help">
-              <InfoIcon className="size-4 text-muted-foreground" />
-            </span>
-          }
-        />
-        <TooltipContent side="top">
-          Schema Registry contexts allow grouping subjects into isolated namespaces
-        </TooltipContent>
-      </Tooltip>
     </div>
   );
 };
