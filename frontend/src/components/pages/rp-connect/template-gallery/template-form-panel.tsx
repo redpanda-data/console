@@ -174,6 +174,8 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     useEffect(() => {
       // Wait for the config schema too (isLoading), so the one-shot reset uses schema-exact
       // required-ness/defaults rather than locking in values derived from proto flags alone.
+      // If that query hangs forever the reset never fires (errors settle isLoading) and the
+      // form stays on its first-render defaults — degraded but usable.
       if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
         return;
       }

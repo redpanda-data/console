@@ -10,7 +10,7 @@
  */
 
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
-import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import type { ConnectComponentSpec } from '../types/schema';
 import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
 
 // Slot-level values win; schema only fills unset `description` / `required` /
@@ -48,7 +48,7 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
     const merged: TemplateSlot = {
       ...slot,
       description: slot.description ?? (field.description || undefined),
-      required: slot.required ?? checkRequired(field as unknown as RawFieldSpec),
+      required: slot.required ?? checkRequired(field),
     };
 
     if (merged.kind !== 'secret' && !merged.default && field.defaultValue) {

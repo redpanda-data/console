@@ -12,7 +12,6 @@
 /**
  * Components templates reference but are absent from the committed schema snapshot
  * (enterprise-only or pending a snapshot refresh). Schema regression tests skip these;
- * prune as components land in the snapshot. Currently empty: every template component
- * exists in the snapshot, so all templates are fully validated.
+ * prune as components land in the snapshot.
  */
 export const KNOWN_MISSING_COMPONENTS: ReadonlySet<string> = new Set([]);

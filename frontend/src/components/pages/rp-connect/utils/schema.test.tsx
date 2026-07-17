@@ -593,7 +593,7 @@ describe('generateDefaultValue', () => {
         componentName: 'http_client',
       });
 
-      // e.g. auto_replay_nacks defaults to true — zero-filling `false` here flipped semantics.
+      // e.g. auto_replay_nacks defaults to true — a zero-filled `false` would flip semantics.
       expect(result).toBeUndefined();
     });
   });

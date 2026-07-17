@@ -112,10 +112,9 @@ export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTem
         if (resolved === null) {
           continue;
         }
+        // No explicit style: the serializer quotes any entry that would parse as a non-string.
         for (const entry of splitListValue(resolved)) {
-          const scalar = new Scalar(entry);
-          scalar.type = Scalar.PLAIN;
-          items.push(scalar);
+          items.push(new Scalar(entry));
         }
       }
       if (changed) {

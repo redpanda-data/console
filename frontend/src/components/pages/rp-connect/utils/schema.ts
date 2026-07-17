@@ -3,7 +3,6 @@ import {
   type ComponentList,
   type ComponentSpec,
   ComponentStatus,
-  type FieldSpec,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { toast } from 'sonner';
 import { rpcnWizardStore } from 'state/rpcn-wizard-store';
@@ -82,12 +81,15 @@ export function findComponentByName(
   return;
 }
 
-/** Walks a dotted field path (e.g. `tls.cert_file`) through a FieldSpec children tree. */
-export function resolveFieldByPath(root: FieldSpec | undefined, path: string): FieldSpec | undefined {
+/**
+ * Walks a dotted field path (e.g. `tls.cert_file`) through a field-spec children tree.
+ * Plain proto FieldSpec trees are accepted too (structurally assignable to RawFieldSpec).
+ */
+export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string): RawFieldSpec | undefined {
   if (!(root && path)) {
     return;
   }
-  let current: FieldSpec | undefined = root;
+  let current: RawFieldSpec | undefined = root;
   for (const segment of path.split('.')) {
     current = current?.children?.find((c) => c.name === segment);
     if (!current) {
@@ -638,6 +640,6 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
 
   // Everything else is a non-required field whose default didn't survive serialization (the proto
   // only carries string defaults). Emit nothing so the engine's real default applies — zero-filling
-  // here used to flip semantics (e.g. auto_replay_nacks defaults to true but rendered as `false`).
+  // flips semantics (e.g. auto_replay_nacks defaults to true; a generated `false` overrides it).
   return;
 }
