@@ -20,7 +20,7 @@ import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-d
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Code, Link as LinkIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useGetMCPCodeSnippetQuery, useGetMCPServerQuery } from 'react-query/api/remote-mcp';
@@ -68,7 +68,7 @@ export const RemoteMCPConnectionTab = () => {
         <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <MCPIcon className="h-4 w-4" />
-            <Text className="font-semibold">Client Setup Guide</Text>
+            <div className="font-semibold text-body">Client Setup Guide</div>
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
@@ -82,7 +82,7 @@ export const RemoteMCPConnectionTab = () => {
           <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
             <CardTitle className="flex items-center gap-2">
               <LinkIcon className="h-4 w-4" />
-              <Text className="font-semibold">Connection Information</Text>
+              <div className="font-semibold text-body">Connection Information</div>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -98,14 +98,14 @@ export const RemoteMCPConnectionTab = () => {
                   <div className="flex items-start gap-2">
                     <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-informative" />
                     <div className="space-y-2 text-sm">
-                      <Text className="font-medium text-informative">Authentication Required</Text>
-                      <Text className="text-informative">
+                      <div className="font-medium text-body text-informative">Authentication Required</div>
+                      <div className="text-body text-informative">
                         This server requires a Redpanda Cloud M2M token for authentication.
                         <Link className="ml-1" href="/organization-iam?tab=service-accounts">
                           Create an M2M token here.
                         </Link>
                         &nbsp;You can test the server directly using the MCP Inspector tab without setting up a client.
-                      </Text>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -119,7 +119,7 @@ export const RemoteMCPConnectionTab = () => {
           <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
             <CardTitle className="flex items-center gap-2">
               <Code className="h-4 w-4" />
-              <Text className="font-semibold">Code Examples</Text>
+              <div className="font-semibold text-body">Code Examples</div>
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">

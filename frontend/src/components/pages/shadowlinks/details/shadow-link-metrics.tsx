@@ -11,7 +11,6 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
@@ -50,7 +49,7 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
     return (
       <Card testId="shadow-link-metrics-error">
         <CardContent className="pt-6">
-          <Text className="text-destructive">Failed to load metrics: {error.message}</Text>
+          <div className="text-body text-destructive">Failed to load metrics: {error.message}</div>
         </CardContent>
       </Card>
     );
@@ -62,12 +61,12 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       <Card className="group" testId="shadow-link-metric-state">
         <CardContent className="relative pt-6">
           <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <Text className="text-muted-foreground text-sm" testId="metric-label-state">
+          <div className="text-body text-muted-foreground" data-testid="metric-label-state">
             State
-          </Text>
-          <Text className="mt-2 font-semibold text-2xl" testId="metric-value-state">
+          </div>
+          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-state">
             {getStateDisplay(shadowLink.state)}
-          </Text>
+          </div>
         </CardContent>
       </Card>
 
@@ -75,12 +74,12 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       <Card className="group" testId="shadow-link-metric-replicated">
         <CardContent className="relative pt-6">
           <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <Text className="text-muted-foreground text-sm" testId="metric-label-replicated">
+          <div className="text-body text-muted-foreground" data-testid="metric-label-replicated">
             Replicated topics
-          </Text>
-          <Text className="mt-2 font-semibold text-2xl" testId="metric-value-replicated">
+          </div>
+          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-replicated">
             {metricsData?.totalTopicsReplicated?.toString() ?? '-'}
-          </Text>
+          </div>
         </CardContent>
       </Card>
 
@@ -88,12 +87,12 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       <Card className="group" testId="shadow-link-metric-failedover">
         <CardContent className="relative pt-6">
           <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <Text className="text-muted-foreground text-sm" testId="metric-label-failedover">
+          <div className="text-body text-muted-foreground" data-testid="metric-label-failedover">
             Failed over topics
-          </Text>
-          <Text className="mt-2 font-semibold text-2xl" testId="metric-value-failedover">
+          </div>
+          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-failedover">
             {metricsData?.failedOverTopics?.toString() ?? '-'}
-          </Text>
+          </div>
         </CardContent>
       </Card>
 
@@ -101,12 +100,12 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
       <Card className="group" testId="shadow-link-metric-error">
         <CardContent className="relative pt-6">
           <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <Text className="text-muted-foreground text-sm" testId="metric-label-error">
+          <div className="text-body text-muted-foreground" data-testid="metric-label-error">
             Errored topics
-          </Text>
-          <Text className="mt-2 font-semibold text-2xl" testId="metric-value-error">
+          </div>
+          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-error">
             {metricsData?.errorTopics?.toString() ?? '-'}
-          </Text>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -4,7 +4,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Combobox, type ComboboxOption } from 'components/redpanda-ui/components/combobox';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Braces, FileEdit, SpellCheck, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -520,10 +519,10 @@ export const DynamicJSONForm = ({
             {Object.entries(propSchema.properties).map(([key, subSchema]) => (
               <div key={key}>
                 <div className="mb-1 flex items-center gap-2">
-                  <Text className="text-sm" variant="label">
+                  <div className="text-label">
                     {key}
                     {propSchema.required?.includes(key) && <span className="ml-1 text-error">*</span>}
-                  </Text>
+                  </div>
                   <Badge className="px-1 py-0 text-xs" variant="outline">
                     {(subSchema as JSONSchemaType).type || 'unknown'}
                   </Badge>
@@ -557,9 +556,7 @@ export const DynamicJSONForm = ({
           return (
             <div className="space-y-4">
               {propSchema.description && (
-                <Text className="text-muted-foreground" variant="small">
-                  {propSchema.description}
-                </Text>
+                <div className="text-body-sm text-muted-foreground">{propSchema.description}</div>
               )}
 
               <div className="space-y-4">
@@ -575,9 +572,9 @@ export const DynamicJSONForm = ({
                   return (
                     <div className="rounded-lg border border-border bg-card p-4" key={index}>
                       <div className="mb-3 flex items-center justify-between">
-                        <Heading className="text-sm" level={4}>
+                        <h4 className="text-heading-xs">
                           {itemDisplayName} #{index + 1}
-                        </Heading>
+                        </h4>
                         <Button
                           className={arrayValue.length <= 1 ? 'invisible' : ''}
                           disabled={arrayValue.length <= 1}
@@ -597,9 +594,7 @@ export const DynamicJSONForm = ({
                           ? Object.entries(propSchema.items.properties).map(([key, subSchema]) => (
                               <div className="space-y-1" key={key}>
                                 <div className="flex items-center gap-2">
-                                  <Text className="text-sm" variant="label">
-                                    {key}
-                                  </Text>
+                                  <div className="text-label">{key}</div>
                                   <Badge className="px-1 py-0 text-xs" variant="outline">
                                     {(subSchema as JSONSchemaType).type || 'unknown'}
                                   </Badge>

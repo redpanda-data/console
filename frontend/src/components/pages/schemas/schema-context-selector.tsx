@@ -21,9 +21,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { CheckIcon, InfoIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 
@@ -47,16 +46,32 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
   const selectedLabel = contexts.find((c) => c.id === selectedContext)?.label ?? 'All';
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="mt-2 flex flex-col gap-1.5">
+      <div className="flex items-center gap-1.5">
+        <span className="font-medium text-body-sm">Context</span>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span className="inline-flex cursor-help">
+                <InfoIcon className="size-4 text-muted-foreground" />
+              </span>
+            }
+          />
+          <TooltipContent side="top">
+            Schema Registry contexts allow grouping subjects into isolated namespaces
+          </TooltipContent>
+        </Tooltip>
+      </div>
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={
-            <Button className="h-8 border-dashed" data-testid="schema-context-selector" size="sm" variant="outline">
-              Context
-              <Separator className="h-4" orientation="vertical" />
-              <Badge className="max-w-32 truncate rounded-sm px-1 font-normal" variant="secondary">
-                {selectedLabel}
-              </Badge>
+            <Button
+              className="w-44 justify-between truncate"
+              data-testid="schema-context-selector"
+              variant="secondary-outline"
+            >
+              <span className="truncate text-body">{selectedLabel}</span>
+              <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
             </Button>
           }
         />
@@ -79,12 +94,8 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
                     className={cn('mt-0.5 size-4 shrink-0', selectedContext === ctx.id ? 'opacity-100' : 'opacity-0')}
                   />
                   <div className="flex flex-col">
-                    <Text as="span" variant="body">
-                      {ctx.label}
-                    </Text>
-                    <Text as="span" className="text-muted-foreground" variant="captionMedium">
-                      {pluralize(ctx.subjectCount, 'subject')}
-                    </Text>
+                    <span className="text-body">{ctx.label}</span>
+                    <span className="text-body-sm text-muted-foreground">{pluralize(ctx.subjectCount, 'subject')}</span>
                   </div>
                 </CommandItem>
               ))}

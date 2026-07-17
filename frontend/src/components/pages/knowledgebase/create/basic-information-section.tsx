@@ -21,7 +21,6 @@ import {
 } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Settings } from 'lucide-react';
 import {
@@ -51,7 +50,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Settings className="h-4 w-4" />
-        <Text className="font-semibold">Basic Information</Text>
+        <div className="font-semibold text-body">Basic Information</div>
       </CardTitle>
     </CardHeader>
     <CardContent>

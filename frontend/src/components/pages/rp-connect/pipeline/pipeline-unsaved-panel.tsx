@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Text } from 'components/redpanda-ui/components/typography';
 import { MousePointerClick } from 'lucide-react';
 
 import { FloatingChipPanel } from './floating-chip-panel';
@@ -52,18 +51,14 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
             type="button"
           >
             <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
-            <Text as="span" className="min-w-0 truncate text-foreground text-xs" variant="bodySmall">
-              {node.label}
-            </Text>
+            <span className="min-w-0 truncate text-body-sm text-foreground">{node.label}</span>
             {node.detail ? (
-              <Text
-                as="span"
-                className="min-w-0 max-w-[45%] shrink truncate text-muted-foreground text-xs"
+              <span
+                className="min-w-0 max-w-[45%] shrink truncate text-body-sm text-muted-foreground"
                 title={node.detail}
-                variant="bodySmall"
               >
                 {node.detail}
-              </Text>
+              </span>
             ) : null}
             <MousePointerClick className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
           </button>

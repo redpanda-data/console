@@ -12,7 +12,7 @@ import {
 } from 'components/redpanda-ui/components/command';
 import { DialogFooter } from 'components/redpanda-ui/components/dialog';
 import { ScrollableTabsList, Tabs, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { ExternalLink, Waypoints } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -49,7 +49,7 @@ function ComponentIcon({ component, className = 'size-5' }: { component: Connect
 
 // Compact section title matching the inspector's small-label style.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
-  <Text className="mt-2 font-semibold text-foreground text-xs uppercase tracking-wide">{children}</Text>
+  <div className="mt-2 font-semibold text-foreground text-xs uppercase tracking-wide">{children}</div>
 );
 
 // All heading levels collapse to the same compact label — these are short section titles, not a hierarchy.
@@ -60,7 +60,7 @@ const MARKDOWN_COMPONENTS: Components = {
   h4: MarkdownHeading,
   h5: MarkdownHeading,
   h6: MarkdownHeading,
-  p: ({ children }) => <Text className="text-foreground text-sm leading-relaxed">{children}</Text>,
+  p: ({ children }) => <div className="text-foreground text-sm leading-relaxed">{children}</div>,
   a: ({ href, children }) => (
     <Link href={href} rel="noopener noreferrer" target="_blank">
       {children}
@@ -155,9 +155,9 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   if (!component) {
     return (
       <div className="hidden flex-1 items-center justify-center p-8 text-center md:flex">
-        <Text className="max-w-[28ch] text-muted-foreground text-sm">
+        <div className="max-w-[28ch] text-muted-foreground text-sm">
           Select a component to see its description, categories, and documentation, then add it to your pipeline.
-        </Text>
+        </div>
       </div>
     );
   }
@@ -185,13 +185,13 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
         </div>
       </div>
 
-      {summary ? <Text className="text-foreground text-sm leading-relaxed">{summary}</Text> : null}
+      {summary ? <div className="text-foreground text-sm leading-relaxed">{summary}</div> : null}
 
       {showDescription ? <FormattedDescription markdown={descriptionMd} /> : null}
 
       {categories.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          <Text className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Categories</Text>
+          <div className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Categories</div>
           <BadgeGroup
             gap="md"
             maxVisible={6}
@@ -420,7 +420,7 @@ export const ConnectCommandPalette = ({
         <CommandInput onValueChange={setQuery} placeholder={searchPlaceholder ?? 'Search components…'} value={query} />
         {q ? (
           <div className="flex h-10 shrink-0 items-center border-b px-3">
-            <Text className="text-muted-foreground text-xs">{pluralizeWithNumber(results.length, 'result')}</Text>
+            <div className="text-muted-foreground text-xs">{pluralizeWithNumber(results.length, 'result')}</div>
           </div>
         ) : (
           <div className="min-w-0 shrink-0">
@@ -492,7 +492,7 @@ export const ConnectCommandPalette = ({
               <span className="truncate font-medium font-mono text-sm">{activeComponent.name}</span>
             </>
           ) : (
-            <Text className="text-muted-foreground text-sm">Select a component to add</Text>
+            <div className="text-muted-foreground text-sm">Select a component to add</div>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">

@@ -1,5 +1,3 @@
-// Kept opaque so the registry needn't depend on a proto package; consumers cast
-// the resolved scopes back to their concrete enum (e.g. dataplane Secret `Scope`).
 type Scope = number;
 
 const SCOPE_MAP: Record<string, Scope> = {

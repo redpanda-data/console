@@ -27,7 +27,6 @@ import { api, rolesApi } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
-import { Heading } from '../../../redpanda-ui/components/typography';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 
@@ -73,9 +72,7 @@ const UserDetailsPage = ({ userName }: UserDetailsPageProps) => {
 
   return (
     <div>
-      <Heading className="pt-4 pb-3 font-semibold text-xl" level={2}>
-        User: {userName}
-      </Heading>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">User: {userName}</h2>
       <div className="flex flex-col gap-4">
         <UserInformationCard
           onEditPassword={() => {

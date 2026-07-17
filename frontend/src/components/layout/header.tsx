@@ -11,7 +11,6 @@
 
 import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
 import { Link, useLocation, useMatches, useMatchRoute } from '@tanstack/react-router';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
@@ -126,12 +125,14 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
             )}
             <div className="flex items-center">
               {pageTitle ? (
-                <Heading
-                  className={cn('mr-2', lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
-                  level={1}
+                <h1
+                  className={cn(
+                    'mr-2 text-heading-xl',
+                    lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap'
+                  )}
                 >
                   {pageTitle}
-                </Heading>
+                </h1>
               ) : null}
               {lastBreadcrumb?.options?.canBeCopied ? (
                 <CopyButton content={lastBreadcrumb.title} variant="ghost" />

@@ -39,7 +39,6 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -157,7 +156,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-      cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
+      cell: ({ row }) => <div className="font-medium text-body">{row.getValue('name')}</div>,
     },
     {
       id: 'tools',
@@ -202,9 +201,9 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
                 <TooltipContent>
                   <div className="space-y-1">
                     {allTools.slice(3).map((toolName) => (
-                      <Text key={toolName} variant="small">
+                      <div className="text-body-sm" key={toolName}>
                         • {toolName}
-                      </Text>
+                      </div>
                     ))}
                   </div>
                 </TooltipContent>
@@ -409,8 +408,10 @@ const AIAgentsListPageContent = ({
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <Heading level={1}>AI Agents</Heading>
-          <Text variant="muted">Manage your AI agents with custom configurations and LLM providers.</Text>
+          <h1 className="text-heading-xl">AI Agents</h1>
+          <div className="text-body text-muted-foreground">
+            Manage your AI agents with custom configurations and LLM providers.
+          </div>
         </header>
         <div className="mb-4">
           <Button onClick={() => navigate({ to: '/agents/create' })}>Create AI Agent</Button>

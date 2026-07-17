@@ -22,7 +22,6 @@ import {
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -238,14 +237,14 @@ function EditSchemaMode({
         {contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-mode-context-name">
             <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            <Text className="font-bold text-lg">
+            <div className="font-bold text-lg">
               Editing mode for context: <span className="text-muted-foreground">{contextName}</span>
-            </Text>
+            </div>
           </div>
         )}
-        <Text data-testid="edit-mode-description">
+        <div className="text-body" data-testid="edit-mode-description">
           Mode controls whether the Schema Registry accepts new schema registrations and under what conditions.
-        </Text>
+        </div>
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
@@ -301,10 +300,10 @@ function EditSchemaMode({
       </div>
       {subjectName && schema && (
         <div className="flex-1">
-          <Text className="whitespace-pre-wrap break-words font-bold text-lg" data-testid="edit-mode-subject-name">
+          <div className="whitespace-pre-wrap break-words font-bold text-lg" data-testid="edit-mode-subject-name">
             {subjectName}
-          </Text>
-          <Text className="mt-8 mb-4 font-bold text-lg">Schema</Text>
+          </div>
+          <div className="mt-8 mb-4 font-bold text-lg">Schema</div>
           <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
         </div>
       )}

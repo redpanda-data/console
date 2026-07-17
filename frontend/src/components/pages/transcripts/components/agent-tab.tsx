@@ -11,7 +11,6 @@
 
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
 import type { FC } from 'react';
 import { useMemo } from 'react';
@@ -75,13 +74,9 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Name */}
       {!!agentData.agentName && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            AGENT NAME
-          </Text>
+          <div className="text-label uppercase tracking-wide">AGENT NAME</div>
           <ContentPanel>
-            <Text className="font-medium" variant="muted">
-              {agentData.agentName}
-            </Text>
+            <div className="font-medium text-body text-muted-foreground">{agentData.agentName}</div>
           </ContentPanel>
         </div>
       )}
@@ -89,13 +84,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Description */}
       {!!agentData.agentDescription && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            DESCRIPTION
-          </Text>
+          <div className="text-label uppercase tracking-wide">DESCRIPTION</div>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words text-sm leading-relaxed" variant="muted">
+            <div className="whitespace-pre-wrap break-words text-body text-muted-foreground leading-relaxed">
               {agentData.agentDescription}
-            </Text>
+            </div>
           </ContentPanel>
         </div>
       )}
@@ -103,13 +96,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Input */}
       {!!agentData.agentInput && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            INPUT
-          </Text>
+          <div className="text-label uppercase tracking-wide">INPUT</div>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+            <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
               {agentData.agentInput}
-            </Text>
+            </div>
           </ContentPanel>
         </div>
       )}
@@ -117,13 +108,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent Output */}
       {!!agentData.agentOutput && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            OUTPUT
-          </Text>
+          <div className="text-label uppercase tracking-wide">OUTPUT</div>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+            <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
               {agentData.agentOutput}
-            </Text>
+            </div>
           </ContentPanel>
         </div>
       )}
@@ -131,13 +120,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Agent ID */}
       {!!agentData.agentId && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            AGENT ID
-          </Text>
+          <div className="text-label uppercase tracking-wide">AGENT ID</div>
           <ContentPanel>
-            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+            <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
               {agentData.agentId}
-            </Text>
+            </div>
           </ContentPanel>
         </div>
       )}
@@ -145,12 +132,10 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Model */}
       {!!agentData.model && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            MODEL
-          </Text>
+          <div className="text-label uppercase tracking-wide">MODEL</div>
           <div>
             <Badge variant="neutral-inverted">
-              <Text variant="small">{agentData.model}</Text>
+              <div className="text-body-sm">{agentData.model}</div>
             </Badge>
           </div>
         </div>
@@ -159,28 +144,24 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Token Usage Summary */}
       {agentData.inputTokens > 0 && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            TOKEN USAGE
-          </Text>
+          <div className="text-label uppercase tracking-wide">TOKEN USAGE</div>
           <ContentPanel className="bg-muted/20">
             <div className="flex items-center justify-between">
               <div className="space-x-3">
-                <Text variant="muted">
+                <div className="text-body text-muted-foreground">
                   Input:{' '}
                   <span className="font-medium font-mono text-foreground">
                     {agentData.inputTokens.toLocaleString()}
                   </span>
-                </Text>
-                <Text variant="muted">
+                </div>
+                <div className="text-body text-muted-foreground">
                   Output:{' '}
                   <span className="font-medium font-mono text-foreground">
                     {agentData.outputTokens.toLocaleString()}
                   </span>
-                </Text>
+                </div>
               </div>
-              <Text className="font-medium" variant="muted">
-                {totalTokens.toLocaleString()} total
-              </Text>
+              <div className="font-medium text-body text-muted-foreground">{totalTokens.toLocaleString()} total</div>
             </div>
           </ContentPanel>
         </div>
@@ -189,13 +170,11 @@ export const AgentTab: FC<Props> = ({ span }) => {
       {/* Conversation ID */}
       {!!agentData.conversationId && (
         <div className="space-y-1.5">
-          <Text as="div" className="uppercase tracking-wide" variant="label">
-            CONVERSATION ID
-          </Text>
+          <div className="text-label uppercase tracking-wide">CONVERSATION ID</div>
           <ContentPanel className="flex items-center justify-between">
-            <Text className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed" variant="muted">
+            <div className="whitespace-pre-wrap break-words font-mono text-body text-muted-foreground leading-relaxed">
               {agentData.conversationId}
-            </Text>
+            </div>
             <CopyButton content={agentData.conversationId} size="sm" variant="ghost" />
           </ContentPanel>
         </div>

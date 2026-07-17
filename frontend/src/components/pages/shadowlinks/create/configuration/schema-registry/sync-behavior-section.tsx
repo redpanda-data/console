@@ -26,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
@@ -69,10 +68,10 @@ export const SyncBehaviorSection = () => {
             />
             <div className="flex-1">
               <span className="font-medium text-sm">Sync behavior</span>
-              <Text className="mt-0.5 text-xs" variant="muted">
+              <div className="mt-0.5 text-body-sm text-muted-foreground">
                 Polling intervals, rate limits, and how to handle unsupported schema features. Cluster defaults apply if
                 unset.
-              </Text>
+              </div>
             </div>
           </button>
         }

@@ -21,7 +21,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Link2, Maximize2, X } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { Span } from 'protogen/redpanda/otel/v1/trace_pb';
@@ -146,16 +146,12 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
           {!!isIncomplete && (
             <>
               <AlertCircle className="h-4 w-4 text-warning" />
-              <Text className="text-muted-foreground" variant="small">
-                Incomplete Transcript
-              </Text>
+              <div className="text-body-sm text-muted-foreground">Incomplete Transcript</div>
             </>
           )}
           {!isIncomplete && (
             <Badge className="h-4 border-border bg-muted/50 px-1 py-0 text-muted-foreground" variant="outline">
-              <Text as="span" variant="small">
-                {spanKind}
-              </Text>
+              <span className="text-body-sm">{spanKind}</span>
             </Badge>
           )}
         </div>
@@ -222,29 +218,25 @@ export const TranscriptDetailsSheet: FC<Props> = ({ traceId, spanId, isOpen, onC
               <div className="flex items-start gap-2">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                 <div>
-                  <Text as="p" className="font-medium text-warning" variant="small">
-                    Waiting for root span
-                  </Text>
-                  <Text as="p" className="mt-1" variant="muted">
+                  <p className="font-medium text-body-sm text-warning">Waiting for root span</p>
+                  <p className="mt-1 text-body text-muted-foreground">
                     The parent span for this transcript hasn't been received yet. Child spans are displayed in the
                     transcript list. The root span will appear once the operation completes.
-                  </Text>
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Text as="div" className="uppercase tracking-wide" variant="label">
-                Transcript Info
-              </Text>
+              <div className="text-label uppercase tracking-wide">Transcript Info</div>
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <Text variant="muted">Transcript ID</Text>
+                  <div className="text-body text-muted-foreground">Transcript ID</div>
                   <InlineCode>{trace?.traceId?.slice(0, 8)}...</InlineCode>
                 </div>
                 <div className="flex justify-between">
-                  <Text variant="muted">Received Spans</Text>
-                  <Text variant="small">{trace?.summary?.spanCount || 0}</Text>
+                  <div className="text-body text-muted-foreground">Received Spans</div>
+                  <div className="text-body-sm">{trace?.summary?.spanCount || 0}</div>
                 </div>
               </div>
             </div>

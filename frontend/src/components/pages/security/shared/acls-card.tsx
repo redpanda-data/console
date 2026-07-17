@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { KeyRoundIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -315,9 +314,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
             </div>
           }
         >
-          <Heading as="h2" level={4}>
-            ACLs
-          </Heading>
+          <h2 className="text-heading-sm">ACLs</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
           <Table>

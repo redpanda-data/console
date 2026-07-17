@@ -13,7 +13,6 @@ import { getRouteApi } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/mcp-servers/$id');
 
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { McpServerStateBadge } from 'components/ui/mcp/mcp-server-state-badge';
 import { useGetMCPServerQuery } from 'react-query/api/remote-mcp';
 
@@ -30,11 +29,11 @@ export const RemoteMCPDetailsHeader = () => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-4">
-        <Heading level={1}>{mcpServerData.mcpServer.displayName}</Heading>
+        <h1 className="text-heading-xl">{mcpServerData.mcpServer.displayName}</h1>
         <McpServerStateBadge />
         <RemoteMCPToggleButton />
       </div>
-      <Text variant="lead">{mcpServerData.mcpServer.description}</Text>
+      <div className="text-lead text-muted-foreground">{mcpServerData.mcpServer.description}</div>
     </div>
   );
 };

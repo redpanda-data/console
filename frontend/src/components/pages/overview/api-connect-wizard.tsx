@@ -6,7 +6,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
@@ -100,7 +99,7 @@ const HowToConnectComponent = ({ topicName, username, saslMechanism }: HowToConn
     <Card size="full">
       <CardHeader className="mb-2">
         <CardTitle>
-          <Heading level={2}>Connect to your cluster</Heading>
+          <h2 className="text-heading-lg">Connect to your cluster</h2>
         </CardTitle>
         <CardDescription>
           Follow the instructions below to connect to your cluster using the {capitalizeFirst(connectionName ?? '')}{' '}

@@ -20,7 +20,6 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from 'components/redpanda-ui/components/sheet';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { StringArrayInput } from 'components/ui/common/string-array-input';
 import {
   AlertCircle,
@@ -314,9 +313,9 @@ export const AIAgentCardTab = () => {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                <Text className="font-semibold">Agent Card</Text>
+                <div className="font-semibold text-body">Agent Card</div>
               </CardTitle>
-              <Text className="text-muted-foreground text-sm">
+              <div className="text-body text-muted-foreground">
                 Configure optional metadata exposed through{' '}
                 <a
                   className="underline hover:text-foreground"
@@ -327,7 +326,7 @@ export const AIAgentCardTab = () => {
                   A2A protocol
                 </a>{' '}
                 for agent discovery and interoperability.
-              </Text>
+              </div>
             </div>
             <div className="flex gap-2">
               {isEditing ? (
@@ -352,10 +351,10 @@ export const AIAgentCardTab = () => {
             {/* Identity Section */}
             <div className="space-y-4">
               <div>
-                <Text className="font-medium">Identity</Text>
-                <Text className="text-muted-foreground text-sm">
+                <div className="font-medium text-body">Identity</div>
+                <div className="text-body text-muted-foreground">
                   Visual branding and documentation for agent discovery interfaces
-                </Text>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -370,7 +369,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text className="truncate">{displayCard.iconUrl}</Text>
+                      <div className="truncate text-body">{displayCard.iconUrl}</div>
                     </div>
                   )}
                 </div>
@@ -386,7 +385,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text className="truncate">{displayCard.documentationUrl}</Text>
+                      <div className="truncate text-body">{displayCard.documentationUrl}</div>
                     </div>
                   )}
                 </div>
@@ -396,10 +395,10 @@ export const AIAgentCardTab = () => {
             {/* Provider Information */}
             <div className="space-y-4">
               <div>
-                <Text className="font-medium">Provider</Text>
-                <Text className="text-muted-foreground text-sm">
+                <div className="font-medium text-body">Provider</div>
+                <div className="text-body text-muted-foreground">
                   Organization that publishes and maintains this agent
-                </Text>
+                </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -413,7 +412,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>{displayCard.provider?.organization}</Text>
+                      <div className="text-body">{displayCard.provider?.organization}</div>
                     </div>
                   )}
                 </div>
@@ -429,7 +428,7 @@ export const AIAgentCardTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text className="truncate">{displayCard.provider?.url}</Text>
+                      <div className="truncate text-body">{displayCard.provider?.url}</div>
                     </div>
                   )}
                 </div>
@@ -439,15 +438,15 @@ export const AIAgentCardTab = () => {
             {/* Skills Section */}
             <div className="space-y-4">
               <div>
-                <Text className="font-medium">Capabilities</Text>
-                <Text className="text-muted-foreground text-sm">
+                <div className="font-medium text-body">Capabilities</div>
+                <div className="text-body text-muted-foreground">
                   Skills that describe what this agent can do for capability-based discovery
-                </Text>
+                </div>
               </div>
 
               {displayCard.skills.length === 0 && !isEditing ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
-                  <Text variant="muted">No skills configured</Text>
+                  <div className="text-body text-muted-foreground">No skills configured</div>
                 </div>
               ) : (
                 displayCard.skills.length > 0 && (
@@ -456,8 +455,8 @@ export const AIAgentCardTab = () => {
                       <div className="rounded-lg border p-4" key={skill.id || `skill-${skill.name}-${index}`}>
                         <div className="mb-4 flex items-start justify-between">
                           <div className="flex-1">
-                            <Text className="font-medium">{skill.name || `Skill ${index + 1}`}</Text>
-                            {Boolean(skill.id) && <Text className="text-muted-foreground text-sm">ID: {skill.id}</Text>}
+                            <div className="font-medium text-body">{skill.name || `Skill ${index + 1}`}</div>
+                            {Boolean(skill.id) && <div className="text-body text-muted-foreground">ID: {skill.id}</div>}
                           </div>
                           {Boolean(isEditing) && (
                             <Button onClick={() => removeSkill(index)} size="sm" variant="ghost">
@@ -544,14 +543,14 @@ export const AIAgentCardTab = () => {
                               {Boolean(skill.description) && (
                                 <div className="space-y-1">
                                   <Label>Description</Label>
-                                  <Text className="text-muted-foreground text-sm">{skill.description}</Text>
+                                  <div className="text-body text-muted-foreground">{skill.description}</div>
                                 </div>
                               )}
                               <div className="space-y-1">
                                 <Label className="text-xs">Tags</Label>
-                                <Text className="text-sm">
+                                <div className="text-body">
                                   {skill.tags.length > 0 ? skill.tags.join(', ') : 'None'}
-                                </Text>
+                                </div>
                               </div>
                               {skill.examples.length > 0 && (
                                 <div className="space-y-2">
@@ -563,7 +562,7 @@ export const AIAgentCardTab = () => {
                                         // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for examples
                                         key={`view-example-${exampleIndex}`}
                                       >
-                                        <Text className="whitespace-pre-wrap text-sm">{example}</Text>
+                                        <div className="whitespace-pre-wrap text-body">{example}</div>
                                       </div>
                                     ))}
                                   </div>
@@ -596,9 +595,9 @@ export const AIAgentCardTab = () => {
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <LinkIcon className="h-4 w-4" />
-                <Text className="font-semibold">Connect</Text>
+                <div className="font-semibold text-body">Connect</div>
               </CardTitle>
-              <Text className="text-muted-foreground text-sm">Use client SDKs to connect to the agent.</Text>
+              <div className="text-body text-muted-foreground">Use client SDKs to connect to the agent.</div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 px-4 pb-4">
@@ -607,7 +606,7 @@ export const AIAgentCardTab = () => {
               {agent.url ? (
                 <DynamicCodeBlock code={agent.url} lang="text" />
               ) : (
-                <Text variant="muted">URL not available</Text>
+                <div className="text-body text-muted-foreground">URL not available</div>
               )}
             </div>
 
@@ -615,14 +614,14 @@ export const AIAgentCardTab = () => {
               <div className="flex gap-2">
                 <AlertCircle className="h-4 w-4 flex-shrink-0 text-informative" />
                 <div className="flex-1 space-y-1">
-                  <Text className="font-semibold text-informative text-sm">Authentication Required</Text>
-                  <Text className="text-informative text-sm">
+                  <div className="font-semibold text-body text-informative">Authentication Required</div>
+                  <div className="text-body text-informative">
                     This agent requires a Redpanda Cloud M2M token for authentication.{' '}
                     <a className="underline" href="/organization-iam?tab=service-accounts">
                       Create an M2M token
                     </a>{' '}
                     to connect.
-                  </Text>
+                  </div>
                 </div>
               </div>
             </div>
@@ -656,7 +655,7 @@ export const AIAgentCardTab = () => {
                         <div className="mt-4">
                           {isLoadingCodeSnippet ? (
                             <div className="flex items-center justify-center p-8">
-                              <Text variant="muted">Loading code snippet...</Text>
+                              <div className="text-body text-muted-foreground">Loading code snippet...</div>
                             </div>
                           ) : (
                             <Markdown showLineNumbers>

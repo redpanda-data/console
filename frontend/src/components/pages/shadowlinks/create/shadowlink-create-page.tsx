@@ -16,7 +16,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Text } from 'components/redpanda-ui/components/typography';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -245,10 +244,10 @@ export const ShadowLinkCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Text data-testid="shadowLink-create-page-description" variant="muted">
+      <div className="text-body text-muted-foreground" data-testid="shadowLink-create-page-description">
         Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
         preserved offsets and timestamps. Select the replicated content for this shadow link.
-      </Text>
+      </div>
 
       <Stepper.Provider className="flex flex-col space-y-4" variant="horizontal">
         {({ methods }) => (

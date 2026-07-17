@@ -13,7 +13,6 @@ import React from 'react';
 import { useLegacyConsumerGroupDetailsQuery } from 'react-query/api/consumer-group';
 
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
-import { Text } from '../../redpanda-ui/components/typography';
 
 type ConsumerLagProps = {
   consumerGroupId: string;
@@ -58,11 +57,7 @@ export const ConsumerLag = React.memo<ConsumerLagProps>(({ consumerGroupId, enab
   }
 
   if (!consumerGroup) {
-    return (
-      <Text className="text-xl" variant="muted">
-        -
-      </Text>
-    );
+    return <div className="text-xl text-muted-foreground">-</div>;
   }
 
   const lagValue = consumerGroup.lagSum ?? 0;
@@ -70,9 +65,7 @@ export const ConsumerLag = React.memo<ConsumerLagProps>(({ consumerGroupId, enab
   return (
     <div className="flex items-baseline gap-2">
       <span className="font-semibold text-xl">{formatNumber(lagValue)}</span>
-      <Text className="text-sm" variant="muted">
-        messages
-      </Text>
+      <div className="text-body text-muted-foreground">messages</div>
     </div>
   );
 });

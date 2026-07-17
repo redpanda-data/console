@@ -10,7 +10,6 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, ChevronRight, CornerDownRight, Wrench } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
@@ -78,9 +77,7 @@ export const ToolEventCard: FC<ToolEventCardProps> = ({ content, toolName, type,
             <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
           )}
           <Wrench aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <Text className="min-w-0 truncate font-medium" variant="muted">
-            {toolName}
-          </Text>
+          <div className="min-w-0 truncate font-medium text-body text-muted-foreground">{toolName}</div>
         </div>
         {/* Row 2: Type + Call ID + Size */}
         <div className="flex items-center gap-1.5 pl-[18px] text-muted-foreground text-xs">
@@ -108,9 +105,7 @@ export const ToolEventCard: FC<ToolEventCardProps> = ({ content, toolName, type,
           onClick={() => setIsExpanded(true)}
           variant="ghost"
         >
-          <Text as="p" className="line-clamp-3 break-all font-mono text-sm leading-relaxed" variant="muted">
-            {preview}
-          </Text>
+          <p className="line-clamp-3 break-all font-mono text-muted-foreground text-sm leading-relaxed">{preview}</p>
         </Button>
       ) : null}
 

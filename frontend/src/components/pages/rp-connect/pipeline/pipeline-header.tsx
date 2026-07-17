@@ -19,7 +19,7 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, List, ListItem } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -231,9 +231,9 @@ export function PipelineViewHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <BackButton onClick={onBack} />
-          <Heading className="min-w-0 truncate" level={1} title={name}>
+          <h1 className="min-w-0 truncate text-heading-xl" title={name}>
             {name}
-          </Heading>
+          </h1>
           <Button
             aria-label="View pipeline details"
             icon={<Info className="size-4!" />}

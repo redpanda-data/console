@@ -13,7 +13,7 @@ import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui
 import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import type { FiltersState } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -335,11 +335,11 @@ export const ConnectTiles = memo(
           {!hideHeader && (
             <CardHeader className="bg-background">
               <CardTitle>
-                <Heading level={2}>{title ?? 'Select a connector'}</Heading>
+                <h2 className="text-heading-lg">{title ?? 'Select a connector'}</h2>
               </CardTitle>
               <CardDescription className="mt-4">
                 {description ?? (
-                  <Text>
+                  <div className="text-body">
                     Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
                     that drive real-time analytics and actionable business insights. Integrate data across systems with
                     hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
@@ -351,7 +351,7 @@ export const ConnectTiles = memo(
                     >
                       Learn more
                     </Link>
-                  </Text>
+                  </div>
                 )}
               </CardDescription>
             </CardHeader>
@@ -421,10 +421,12 @@ export const ConnectTiles = memo(
                       if (hasNoResults) {
                         content = (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                            <Text className="mt-1 text-muted-foreground text-sm">
+                            <div className="text-body text-muted-foreground">
+                              No connections found matching your filters
+                            </div>
+                            <div className="mt-1 text-muted-foreground text-sm">
                               Try adjusting your search or category filters
-                            </Text>
+                            </div>
                           </div>
                         );
                       } else if (showSkeleton) {

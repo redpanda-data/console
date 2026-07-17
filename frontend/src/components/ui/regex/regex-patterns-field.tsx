@@ -12,7 +12,6 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -73,7 +72,7 @@ export const RegexPatternsField = ({
   return (
     <div className="flex flex-col gap-2">
       <FieldLabel>{label}</FieldLabel>
-      <Text className="text-muted-foreground text-sm">{helperText}</Text>
+      <div className="text-body text-muted-foreground">{helperText}</div>
 
       {patterns.map((pattern, idx) => {
         const validation = validationStates[idx] || validateRegex(pattern);
@@ -104,7 +103,7 @@ export const RegexPatternsField = ({
                 )}
               </div>
               {!validation.valid && pattern && (
-                <Text className="mt-1 text-destructive text-xs">{validation.error}</Text>
+                <div className="text-body-sm mt-1 text-destructive">{validation.error}</div>
               )}
             </div>
 

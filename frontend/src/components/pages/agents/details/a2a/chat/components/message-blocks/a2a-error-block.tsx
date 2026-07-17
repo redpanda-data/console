@@ -11,7 +11,6 @@
 
 import type { JSONRPCError } from '@a2a-js/sdk';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircleIcon } from 'lucide-react';
 
 import { lookupErrorMeta, type ParsedError } from '../../utils/parse-a2a-error';
@@ -49,15 +48,9 @@ export const A2AErrorBlock = ({ error, timestamp }: A2AErrorBlockProps) => {
       <AlertTitle>{parsed.title}</AlertTitle>
       <AlertDescription>
         <div className="flex flex-col gap-2">
-          <Text className="text-destructive/90" variant="body">
-            {parsed.message}
-          </Text>
+          <div className="text-body text-destructive/90">{parsed.message}</div>
 
-          {parsed.hint ? (
-            <Text className="text-destructive/80" variant="small">
-              {parsed.hint}
-            </Text>
-          ) : null}
+          {parsed.hint ? <div className="text-body-sm text-destructive/80">{parsed.hint}</div> : null}
 
           <div className="mt-1 flex flex-col gap-1 rounded border border-destructive/20 bg-destructive/5 p-3 font-mono text-xs">
             <div className="flex gap-2">

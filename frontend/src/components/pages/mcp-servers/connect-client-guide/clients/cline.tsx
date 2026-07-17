@@ -10,7 +10,7 @@
  */
 
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Server, Settings } from 'lucide-react';
 
@@ -45,29 +45,29 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="Cline" className="h-4 w-4" src={ClineLogo} />
                 Cline extension
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
-              <Text>Click on</Text>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <div className="text-body">Click on</div>
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <Server className="h-4 w-4" />
                 MCP Servers
-              </Text>
-              <Text>section at the bottom of the prompt window</Text>
+              </span>
+              <div className="text-body">section at the bottom of the prompt window</div>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <Settings className="h-4 w-4" />
                 Configure MCP Servers
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
@@ -78,10 +78,7 @@ export const ClientCline = ({ mcpServer }: ClientClineProps) => {
             <DynamicCodeBlock code={clineConfigJson} lang="json" />
           </ListItem>
           <ListItem>
-            Press{' '}
-            <Text as="span" className="font-bold">
-              Done
-            </Text>
+            Press <span className="font-bold text-body">Done</span>
           </ListItem>
           <ListItem>
             <div className="flex items-center gap-2">

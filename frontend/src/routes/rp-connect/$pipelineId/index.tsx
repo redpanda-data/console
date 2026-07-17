@@ -10,7 +10,6 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
@@ -21,15 +20,15 @@ import RpConnectPipelinesDetails from '../../../components/pages/rp-connect/pipe
 const PipelinePage = lazy(() => import('../../../components/pages/rp-connect/pipeline'));
 
 const searchSchema = z.object({
-  pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
-  page: fallback(z.number().int().nonnegative().optional(), 0),
+  pageSize: z.number().int().positive().optional().catch(DEFAULT_TABLE_PAGE_SIZE),
+  page: z.number().int().nonnegative().optional().catch(0),
 });
 
 export const Route = createFileRoute('/rp-connect/$pipelineId/')({
   staticData: {
     title: 'Pipeline Details',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   component: PipelineDetailsRoute,
 });
 

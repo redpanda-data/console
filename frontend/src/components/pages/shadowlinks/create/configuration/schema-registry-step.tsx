@@ -11,7 +11,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { FormControl, FormDescription, FormField, FormItem } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useSupportedFeaturesStore } from 'state/supported-features';
@@ -36,10 +35,10 @@ export const LegacySchemaRegistrySection = ({ readOnlyApiMode = false }: { readO
           <CardTitle>Shadow Schema Registry</CardTitle>
         </CardHeader>
         <CardContent>
-          <Text data-testid="sr-api-mode-readonly" variant="muted">
+          <div className="text-body text-muted-foreground" data-testid="sr-api-mode-readonly">
             This shadow link syncs Schema Registry schemas over the Schema Registry API. That configuration can't be
             edited here. Use rpk or the Admin API to change it.
-          </Text>
+          </div>
         </CardContent>
       </Card>
     );

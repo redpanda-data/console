@@ -11,7 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 
 import VSCodeLogo from '../../../../../assets/vscode.svg';
@@ -70,9 +70,9 @@ export const ClientVscode = ({ mcpServer, enableMcpDiscovery = true }: ClientVsc
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click the button below to add MCP server to</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="VSCode" className="h-4 w-4" src={VSCodeLogo} /> VSCode
-              </Text>
+              </span>
             </div>
             <Button className="mt-2" onClick={handleAddToVSCode} variant="outline">
               <img alt="VSCode" className="h-4 w-4" src={VSCodeLogo} />
