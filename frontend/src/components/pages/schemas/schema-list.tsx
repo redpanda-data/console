@@ -627,29 +627,29 @@ const SchemaList: FC = () => {
               titleTestId="schema-help-title"
             >
               <section aria-labelledby="filtering-heading" className="space-y-3">
-                <h3 className="font-semibold text-foreground" id="filtering-heading">
+                <h3 className="text-foreground text-heading-sm" id="filtering-heading">
                   Filtering schemas
                 </h3>
-                <p className="text-base text-muted-foreground leading-relaxed">
+                <p className="text-body text-muted-foreground">
                   There are two ways to filter schemas, and they work a little differently.
                 </p>
               </section>
 
               <div className="space-y-4 pl-4">
                 <section aria-labelledby="schema-id-heading" className="space-y-2">
-                  <h3 className="font-semibold text-base text-foreground" id="schema-id-heading">
+                  <h3 className="text-foreground text-heading-sm" id="schema-id-heading">
                     Schema ID
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-body text-muted-foreground">
                     If a number matches a schema ID, the results include all subjects referencing that schema.
                   </p>
                 </section>
 
                 <section aria-labelledby="subject-name-heading" className="space-y-2">
-                  <h3 className="font-semibold text-base text-foreground" id="subject-name-heading">
+                  <h3 className="text-foreground text-heading-sm" id="subject-name-heading">
                     Subject name
                   </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-body text-muted-foreground">
                     To search subject names, enter that specific name or a regex.
                   </p>
                 </section>
