@@ -48,7 +48,6 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -333,7 +332,7 @@ const SchemaList: FC = () => {
                   to="/schema-registry/subjects/$subjectName"
                 >
                   {isAllContext && parsed.context !== 'default' && (
-                    <span className="text-gray-400">:.{parsed.context}:</span>
+                    <span className="text-muted-foreground">:.{parsed.context}:</span>
                   )}
                   {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
                 </Link>
@@ -342,7 +341,7 @@ const SchemaList: FC = () => {
                     <TooltipTrigger
                       render={
                         <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
-                          <ArchiveIcon aria-hidden="true" height={16} style={{ color: 'dimgrey' }} width={16} />
+                          <ArchiveIcon aria-hidden="true" className="text-muted-foreground" height={16} width={16} />
                         </span>
                       }
                     />
@@ -510,7 +509,7 @@ const SchemaList: FC = () => {
 
     if (table.getRowModel().rows.length) {
       return table.getRowModel().rows.map((row) => (
-        <TableRow className={row.original.isSoftDeleted ? 'text-gray-400' : ''} key={row.id}>
+        <TableRow className={row.original.isSoftDeleted ? 'text-muted-foreground' : ''} key={row.id}>
           {row.getVisibleCells().map((cell) => {
             const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
             return (
@@ -620,7 +619,7 @@ const SchemaList: FC = () => {
         </Alert>
       ) : (
         <ListLayout className="my-4" data-testid="schema-list-table">
-          <Text className="text-muted-foreground text-sm sm:text-base">
+          <div className="text-muted-foreground text-sm sm:text-base">
             <DescriptionWithHelp
               short="Subjects and versions for the schemas that validate your topic records."
               testId="schema-search-help"
@@ -628,35 +627,35 @@ const SchemaList: FC = () => {
               titleTestId="schema-help-title"
             >
               <section aria-labelledby="filtering-heading" className="space-y-3">
-                <h3 className="font-semibold text-gray-900" id="filtering-heading">
+                <h3 className="font-semibold text-foreground" id="filtering-heading">
                   Filtering schemas
                 </h3>
-                <p className="text-base text-gray-600 leading-relaxed">
+                <p className="text-base text-muted-foreground leading-relaxed">
                   There are two ways to filter schemas, and they work a little differently.
                 </p>
               </section>
 
               <div className="space-y-4 pl-4">
                 <section aria-labelledby="schema-id-heading" className="space-y-2">
-                  <h3 className="font-semibold text-base text-gray-900" id="schema-id-heading">
+                  <h3 className="font-semibold text-base text-foreground" id="schema-id-heading">
                     Schema ID
                   </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     If a number matches a schema ID, the results include all subjects referencing that schema.
                   </p>
                 </section>
 
                 <section aria-labelledby="subject-name-heading" className="space-y-2">
-                  <h3 className="font-semibold text-base text-gray-900" id="subject-name-heading">
+                  <h3 className="font-semibold text-base text-foreground" id="subject-name-heading">
                     Subject name
                   </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     To search subject names, enter that specific name or a regex.
                   </p>
                 </section>
               </div>
             </DescriptionWithHelp>
-          </Text>
+          </div>
           <ListLayoutFilters
             actions={
               <Tooltip>
