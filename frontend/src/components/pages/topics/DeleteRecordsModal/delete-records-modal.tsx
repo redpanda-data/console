@@ -38,6 +38,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type JSX, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -53,6 +54,19 @@ type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
 const DIGITS_ONLY_REGEX = /^\d*$/;
+
+const { Stepper } = defineStepper(
+  { id: 'partitions', title: 'Select partitions' },
+  { id: 'offset', title: 'Choose offset' }
+);
+
+const createInitialWizardState = () => ({
+  partitionOption: null as PartitionOption,
+  specifiedPartition: null as null | number,
+  offsetOption: null as OffsetOption,
+  specifiedOffset: 0,
+  timestamp: Date.now(),
+});
 
 function TrashIcon() {
   return (
@@ -110,7 +124,7 @@ function DeleteOption({
           <ChoiceboxItemIndicator />
         </ChoiceboxItemContent>
       </ChoiceboxItem>
-      {isSelected && children ? <div className="mt-3">{children}</div> : null}
+      {isSelected && children ? <div className="mt-2 border-l-2 border-l-selected py-2 pl-5">{children}</div> : null}
     </div>
   );
 }
@@ -139,6 +153,9 @@ function SelectPartitionStep({
           const option = v as PartitionOption;
           if (option === 'allPartitions') {
             onSpecificPartitionSelected(null);
+          } else if (option === 'specificPartition' && specificPartition === null) {
+            // Preselect the first partition so the dropdown isn't empty and the user can proceed.
+            onSpecificPartitionSelected(partitions[0] ?? null);
           }
           onPartitionOptionSelected(option);
         }}
@@ -162,7 +179,7 @@ function SelectPartitionStep({
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose Partition…">
-                {(raw) => (raw === undefined || raw === '' ? 'Choose Partition…' : `Partition ${raw}`)}
+                {(raw) => (raw === undefined || raw === null || raw === '' ? 'Choose Partition…' : `Partition ${raw}`)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -251,15 +268,9 @@ const ManualOffsetContent = ({
   partitionInfo: PartitionInfo;
   onOffsetSpecified: (v: number) => void;
 }) => {
-  const [sliderValue, setSliderValue] = useState(0);
   const topicPartitionErrors = useApiStoreHook((s) => s.topicPartitionErrors.get(topicName));
   const topicWatermarksErrors = useApiStoreHook((s) => s.topicWatermarksErrors.get(topicName));
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topicName));
-
-  const updateOffsetFromSlider = (v: number) => {
-    setSliderValue(v);
-    onOffsetSpecified(v);
-  };
 
   if (topicPartitionErrors || topicWatermarksErrors) {
     const partitionErrors = topicPartitionErrors?.map(({ partitionError }) => (
@@ -303,41 +314,72 @@ const ManualOffsetContent = ({
     );
   }
 
+  return <ManualOffsetSlider key={partition.id} onOffsetSpecified={onOffsetSpecified} partition={partition} />;
+};
+
+const ManualOffsetSlider = ({
+  partition,
+  onOffsetSpecified,
+}: {
+  partition: Partition;
+  onOffsetSpecified: (v: number) => void;
+}) => {
   const { marks, min, max } = getMarks(partition);
+  // Default to the partition's low watermark — offset 0 is below the valid range.
+  const [sliderValue, setSliderValue] = useState(min);
+
+  // Report the low-watermark default to the parent so submitting without moving the
+  // slider uses a valid in-range value instead of 0.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: report the initial default once on mount
+  useEffect(() => {
+    onOffsetSpecified(min);
+  }, []);
+
+  const updateOffsetFromSlider = (v: number) => {
+    setSliderValue(v);
+    onOffsetSpecified(v);
+  };
+
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex-1">
+    <div className="flex items-start gap-4">
+      <div className="flex-1 pt-2">
         <Slider max={max} min={min} onValueChange={([v]) => updateOffsetFromSlider(v)} value={sliderValue} />
         {marks ? (
-          <div className="mt-1 flex justify-between">
+          <div className="mt-2 flex justify-between">
             {Object.values(marks).map((label) => (
-              <span className="text-caption" key={label}>
+              <span className="text-caption text-muted-foreground" key={label}>
                 {label}
               </span>
             ))}
           </div>
         ) : null}
       </div>
-      <Input
-        className="max-w-[124px]"
-        onBlur={() => {
-          if (sliderValue < min) {
-            updateOffsetFromSlider(min);
-          } else if (sliderValue > max) {
-            updateOffsetFromSlider(max);
-          } else {
-            updateOffsetFromSlider(sliderValue);
-          }
-        }}
-        onChange={(e) => {
-          const { value } = e.target;
-          if (!DIGITS_ONLY_REGEX.test(value)) {
-            return;
-          }
-          updateOffsetFromSlider(Number(value));
-        }}
-        value={sliderValue}
-      />
+      <div className="flex w-28 shrink-0 flex-col gap-1">
+        <label className="text-caption text-muted-foreground" htmlFor="manual-offset-input">
+          Offset
+        </label>
+        <Input
+          className="w-full"
+          id="manual-offset-input"
+          onBlur={() => {
+            if (sliderValue < min) {
+              updateOffsetFromSlider(min);
+            } else if (sliderValue > max) {
+              updateOffsetFromSlider(max);
+            } else {
+              updateOffsetFromSlider(sliderValue);
+            }
+          }}
+          onChange={(e) => {
+            const { value } = e.target;
+            if (!DIGITS_ONLY_REGEX.test(value)) {
+              return;
+            }
+            updateOffsetFromSlider(Number(value));
+          }}
+          value={sliderValue}
+        />
+      </div>
     </div>
   );
 };
@@ -403,23 +445,25 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     }
   }, [topic?.topicName]);
 
-  const [wizardState, setWizardState] = useState(() => ({
-    partitionOption: null as PartitionOption,
-    specifiedPartition: null as null | number,
-    offsetOption: null as OffsetOption,
-    step: 1 as 1 | 2,
-    specifiedOffset: 0,
-    timestamp: Date.now(),
-  }));
-  const { partitionOption, specifiedPartition, offsetOption, step, specifiedOffset, timestamp } = wizardState;
-  const setPartitionOption = (v: PartitionOption) => setWizardState((prev) => ({ ...prev, partitionOption: v }));
+  const [wizardState, setWizardState] = useState(createInitialWizardState);
+  const { partitionOption, specifiedPartition, offsetOption, specifiedOffset, timestamp } = wizardState;
+  // Reset the offset choice whenever the partition selection changes — the available
+  // offset options differ between all-partitions and a specific partition.
+  const setPartitionOption = (v: PartitionOption) =>
+    setWizardState((prev) => ({ ...prev, partitionOption: v, offsetOption: null }));
   const setSpecifiedPartition = (v: null | number) => setWizardState((prev) => ({ ...prev, specifiedPartition: v }));
   const setOffsetOption = (v: OffsetOption) => setWizardState((prev) => ({ ...prev, offsetOption: v }));
-  const setStep = (v: 1 | 2) => setWizardState((prev) => ({ ...prev, step: v }));
   const setSpecifiedOffset = (v: number) => setWizardState((prev) => ({ ...prev, specifiedOffset: v }));
   const setTimestamp = (v: number) => setWizardState((prev) => ({ ...prev, timestamp: v }));
   const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  const handleClose = () => {
+    setWizardState(createInitialWizardState());
+    setOkButtonLoading(false);
+    setErrors([]);
+    onCancel();
+  };
 
   const hasErrors = errors.length > 0;
   const isAllPartitions = partitionOption === 'allPartitions';
@@ -450,38 +494,25 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     return null;
   }
 
-  const isOkButtonDisabled = () => {
+  const isPrimaryDisabled = (isOffsetStep: boolean) => {
     if (hasErrors) {
       return false;
     }
 
-    if (step === 1) {
-      return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
-    }
-
-    if (step === 2) {
+    if (isOffsetStep) {
       return offsetOption === null || (isTimestamp && timestamp === null);
     }
 
-    return offsetOption === null;
+    return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  const onOk = () => {
+  const submitDelete = () => {
     if (!topic) {
       return;
     }
 
     const topicName = topic.topicName;
-
-    if (hasErrors) {
-      onFinish();
-    }
-
-    if (step === 1) {
-      setStep(2);
-      return;
-    }
 
     setOkButtonLoading(true);
 
@@ -521,21 +552,18 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     return 'allPartitions';
   };
 
-  const okButtonLabel = (() => {
+  const getPrimaryLabel = (isLast: boolean) => {
     if (hasErrors) {
       return 'Ok';
     }
-    if (step === 1) {
-      return 'Choose End Offset';
-    }
-    return 'Delete Records';
-  })();
+    return isLast ? 'Delete Records' : 'Choose End Offset';
+  };
 
   return (
     <Dialog
       onOpenChange={(open) => {
         if (!open) {
-          onCancel();
+          handleClose();
         }
       }}
       open={visible}
@@ -544,54 +572,89 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         <DialogHeader>
           <DialogTitle>Delete records in topic</DialogTitle>
         </DialogHeader>
-        <DialogBody>
-          {hasErrors ? (
-            <Alert variant="destructive">
-              <AlertDescription>
-                <div className="flex flex-col gap-4">
-                  <p className="text-body">
-                    Errors occurred while processing your request. Contact your Kafka administrator.
-                  </p>
-                  <List>
-                    {errors.map((e) => (
-                      <ListItem key={e}>{e}</ListItem>
-                    ))}
-                  </List>
-                </div>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          {!hasErrors && step === 1 ? (
-            <SelectPartitionStep
-              onPartitionOptionSelected={setPartitionOption}
-              onPartitionSpecified={setSpecifiedPartition}
-              partitions={range(0, topic.partitionCount)}
-              selectedPartitionOption={partitionOption}
-              specificPartition={specifiedPartition}
-            />
-          ) : null}
-          {!hasErrors && step === 2 && partitionOption !== null ? (
-            <SelectOffsetStep
-              offsetOption={offsetOption}
-              onOffsetOptionSelected={setOffsetOption}
-              onOffsetSpecified={setSpecifiedOffset}
-              onTimestampChanged={setTimestamp}
-              partitionInfo={getPartitionInfo()}
-              timestamp={timestamp}
-              topicName={topic.topicName}
-            />
-          ) : null}
-        </DialogBody>
-        <DialogFooter>
-          <Button
-            disabled={isOkButtonDisabled()}
-            isLoading={okButtonLoading}
-            onClick={onOk}
-            variant={hasErrors ? 'secondary' : 'destructive'}
-          >
-            {okButtonLabel}
-          </Button>
-        </DialogFooter>
+        <Stepper.Provider className="contents" variant="horizontal">
+          {({ methods }) => {
+            const isOffsetStep = methods.current.id === 'offset';
+            return (
+              <>
+                <DialogBody>
+                  {hasErrors ? (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        <div className="flex flex-col gap-4">
+                          <p className="text-body">
+                            Errors occurred while processing your request. Contact your Kafka administrator.
+                          </p>
+                          <List>
+                            {errors.map((e) => (
+                              <ListItem key={e}>{e}</ListItem>
+                            ))}
+                          </List>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-6">
+                      <Stepper.Navigation>
+                        <Stepper.Step of="partitions">
+                          <Stepper.Title>Select partitions</Stepper.Title>
+                        </Stepper.Step>
+                        <Stepper.Step of="offset">
+                          <Stepper.Title>Choose offset</Stepper.Title>
+                        </Stepper.Step>
+                      </Stepper.Navigation>
+                      {isOffsetStep ? null : (
+                        <SelectPartitionStep
+                          onPartitionOptionSelected={setPartitionOption}
+                          onPartitionSpecified={setSpecifiedPartition}
+                          partitions={range(0, topic.partitionCount)}
+                          selectedPartitionOption={partitionOption}
+                          specificPartition={specifiedPartition}
+                        />
+                      )}
+                      {isOffsetStep && partitionOption !== null ? (
+                        <SelectOffsetStep
+                          offsetOption={offsetOption}
+                          onOffsetOptionSelected={setOffsetOption}
+                          onOffsetSpecified={setSpecifiedOffset}
+                          onTimestampChanged={setTimestamp}
+                          partitionInfo={getPartitionInfo()}
+                          timestamp={timestamp}
+                          topicName={topic.topicName}
+                        />
+                      ) : null}
+                    </div>
+                  )}
+                </DialogBody>
+                <DialogFooter>
+                  {hasErrors || methods.isFirst ? null : (
+                    <Button disabled={okButtonLoading} onClick={() => methods.prev()} variant="secondary">
+                      Back
+                    </Button>
+                  )}
+                  <Button
+                    disabled={isPrimaryDisabled(isOffsetStep)}
+                    isLoading={okButtonLoading}
+                    onClick={() => {
+                      if (hasErrors) {
+                        onFinish();
+                        return;
+                      }
+                      if (methods.isLast) {
+                        submitDelete();
+                        return;
+                      }
+                      methods.next();
+                    }}
+                    variant={hasErrors ? 'secondary' : 'destructive'}
+                  >
+                    {getPrimaryLabel(methods.isLast)}
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          }}
+        </Stepper.Provider>
       </DialogContent>
     </Dialog>
   );
