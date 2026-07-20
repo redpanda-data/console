@@ -5,7 +5,6 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import type React from 'react';
 
-import { Heading } from './typography';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
@@ -152,15 +151,20 @@ type SheetTitleProps = Omit<SheetPrimitive.Title.Props, 'className'> & {
   level?: 1 | 2 | 3 | 4;
 };
 
+// Maps a sheet title level (1–4) to its heading utility class (literals so Tailwind can scan them).
+const SHEET_HEADING_CLASS = {
+  1: 'text-heading-xl',
+  2: 'text-heading-lg',
+  3: 'text-heading-md',
+  4: 'text-heading-sm',
+} as const;
+
 function SheetTitle({ className, level = 2, children, ...props }: SheetTitleProps) {
+  const SheetHeadingTag = `h${level}` as const;
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      render={
-        <Heading className={className} level={level}>
-          {children}
-        </Heading>
-      }
+      render={<SheetHeadingTag className={cn(SHEET_HEADING_CLASS[level], className)}>{children}</SheetHeadingTag>}
       {...props}
     />
   );
@@ -171,7 +175,7 @@ type SheetDescriptionProps = SheetPrimitive.Description.Props;
 function SheetDescription({ className, ...props }: SheetDescriptionProps) {
   return (
     <SheetPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="sheet-description"
       {...props}
     />

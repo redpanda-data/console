@@ -19,7 +19,6 @@ import {
 } from 'components/redpanda-ui/components/accordion';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
 
@@ -32,9 +31,9 @@ export type ConfigurationSourceProps = {
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">
-    <Text className="text-muted-foreground" testId={`${testId}-label`}>
+    <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
       {label}
-    </Text>
+    </div>
     <div className="text-right font-medium" data-testid={`${testId}-value`}>
       {value || '-'}
     </div>
@@ -66,39 +65,41 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
 
   return (
     <div className="flex flex-col gap-6">
-      <Heading level={2} testId="shadowing-title">
+      <h2 className="text-heading-lg" data-testid="shadowing-title">
         Source
-      </Heading>
+      </h2>
       {/* Name Section */}
       <Card size="full" testId="source-name-card">
         <CardHeader>
-          <Heading level={3}>Name</Heading>
+          <h3 className="text-heading-md">Name</h3>
         </CardHeader>
         <CardContent>
-          <Text testId="shadow-link-name">{shadowLink.name}</Text>
+          <div className="text-body" data-testid="shadow-link-name">
+            {shadowLink.name}
+          </div>
         </CardContent>
       </Card>
 
       {/* Source Cluster Section */}
       <Card size="full" testId="source-cluster-card">
         <CardHeader>
-          <Heading level={3}>Source cluster</Heading>
+          <h3 className="text-heading-md">Source cluster</h3>
         </CardHeader>
         <CardContent>
           <div>
             <div className="flex items-start justify-between border-b py-3">
-              <Text className="text-muted-foreground" testId="bootstrap-servers-label">
+              <div className="text-body text-muted-foreground" data-testid="bootstrap-servers-label">
                 Bootstrap server URLs
-              </Text>
+              </div>
               <div className="flex flex-col items-end gap-1" data-testid="bootstrap-servers-value">
                 {clientOptions?.bootstrapServers && clientOptions.bootstrapServers.length > 0 ? (
                   clientOptions.bootstrapServers.map((server) => (
-                    <Text className="font-medium" key={server}>
+                    <div className="font-medium text-body" key={server}>
                       {server}
-                    </Text>
+                    </div>
                   ))
                 ) : (
-                  <Text className="font-medium">-</Text>
+                  <div className="font-medium text-body">-</div>
                 )}
               </div>
             </div>
@@ -127,7 +128,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       {/* Authentication Section */}
       <Card size="full" testId="authentication-card">
         <CardHeader>
-          <Heading level={3}>Authentication</Heading>
+          <h3 className="text-heading-md">Authentication</h3>
         </CardHeader>
         <CardContent>
           <div>
@@ -163,7 +164,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
           <Accordion>
             <AccordionItem value="advanced">
               <AccordionTrigger className="py-4" testId="advanced-options-trigger">
-                <Heading level={3}>Advanced options</Heading>
+                <h3 className="text-heading-md">Advanced options</h3>
               </AccordionTrigger>
               <AccordionContent className="px-6 pb-4" testId="advanced-options-content">
                 <div>

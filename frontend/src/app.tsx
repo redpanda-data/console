@@ -51,6 +51,7 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
+import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
@@ -75,6 +76,7 @@ const router = createRouter({
   basepath: getBasePath(),
   trailingSlash: 'never',
   defaultNotFoundComponent: NotFoundPage,
+  defaultPendingComponent: RoutePendingFallback,
 });
 
 declare global {

@@ -26,7 +26,7 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Braces,
@@ -249,7 +249,7 @@ function CellContent({
         collisionAvoidance={TRACK_AND_CLIP}
         container={container ?? undefined}
       >
-        <Text className="whitespace-pre-wrap break-all font-mono text-xs">{s}</Text>
+        <div className="whitespace-pre-wrap break-all font-mono text-body-sm">{s}</div>
       </PopoverContent>
     </Popover>
   );
@@ -321,7 +321,7 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       renderHeaderCell: () => (
         <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
           <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
-          <span className="inline-flex items-center gap-1 font-normal text-caption-sm text-muted-foreground uppercase tracking-wide">
+          <span className="inline-flex items-center gap-1 font-normal text-2xs text-muted-foreground uppercase tracking-wide">
             {c.short}
           </span>
         </span>

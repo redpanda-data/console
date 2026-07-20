@@ -15,7 +15,6 @@ import { MessageSchema } from './message-schema';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { numberToThousandsString } from '../../../../../utils/tsx-utils';
 import { prettyBytes, titleCase } from '../../../../../utils/utils';
-import { Text } from '../../../../redpanda-ui/components/typography';
 
 export const MessageMetaData = (props: { msg: TopicMessage }) => {
   const msg = props.msg;
@@ -39,8 +38,8 @@ export const MessageMetaData = (props: { msg: TopicMessage }) => {
     <div className="my-6 flex gap-10">
       {Object.entries(data).map(([k, v]) => (
         <div className="flex flex-col gap-[0.4em]" key={k}>
-          <Text className="font-semibold text-base">{k}</Text>
-          <Text className="text-sm">{v}</Text>
+          <div className="font-semibold text-base">{k}</div>
+          <div className="text-body">{v}</div>
         </div>
       ))}
     </div>

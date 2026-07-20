@@ -10,7 +10,7 @@
  */
 
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Cable, FileJson, Plus, Send } from 'lucide-react';
 
@@ -44,44 +44,44 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Open</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="Manus" className="h-4 w-4" src={ManusLogo} />
                 Manus
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
-              <Text>Go to</Text>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <div className="text-body">Go to</div>
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <Cable className="h-4 w-4" /> Connect Apps
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Select</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <Plus className="h-4 w-4" />
                 Add Connectors
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Choose</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <Plus className="h-4 w-4" />
                 Custom MCP
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Select</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <FileJson className="h-4 w-4" /> Import by JSON
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>
@@ -92,18 +92,15 @@ export const ClientManus = ({ mcpServer }: ClientManusProps) => {
           </ListItem>
           <ListItem>
             <div className="flex items-center gap-2">
-              Click{' '}
-              <Text as="span" className="font-bold">
-                Import
-              </Text>
+              Click <span className="font-bold text-body">Import</span>
             </div>
           </ListItem>
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <Send className="h-4 w-4" /> Try it out
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>

@@ -39,7 +39,6 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import {
   MarkdownEditor,
@@ -318,16 +317,18 @@ const MCPServersSection = ({
             MCP Servers
           </Link>
         </CardTitle>
-        <Text variant="muted">MCP Servers provide tools to the agent.</Text>
+        <div className="text-body text-muted-foreground">MCP Servers provide tools to the agent.</div>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <div className="space-y-4">
-          {Boolean(isEditing) && <Text variant="muted">Select MCP servers to enable tools for this agent.</Text>}
+          {Boolean(isEditing) && (
+            <div className="text-body text-muted-foreground">Select MCP servers to enable tools for this agent.</div>
+          )}
           {hasNoServers ? (
             <MCPEmpty>
-              <Text className="mb-4 text-center" variant="muted">
+              <div className="mb-4 text-center text-body text-muted-foreground">
                 Create MCP servers first to enable additional tools for your AI agent.
-              </Text>
+              </div>
             </MCPEmpty>
           ) : (
             <MCPServerCardList
@@ -621,21 +622,21 @@ export const AIAgentConfigurationTab = () => {
             rows={2}
             value={subagent.description}
           />
-          <Text className="text-muted-foreground text-sm" variant="muted">
+          <div className="text-body text-muted-foreground">
             Used by the parent agent to decide when to invoke this subagent. Also used for context management - the
             parent provides context when starting the subagent, which maintains its own context.
-          </Text>
+          </div>
         </>
       );
     }
     if (subagent.description) {
       return (
         <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-          <Text>{subagent.description}</Text>
+          <div className="text-body">{subagent.description}</div>
         </div>
       );
     }
-    return <Text variant="muted">No description</Text>;
+    return <div className="text-body text-muted-foreground">No description</div>;
   };
 
   const renderSubagentMcpServers = (
@@ -655,7 +656,7 @@ export const AIAgentConfigurationTab = () => {
           />
         );
       }
-      return <Text variant="muted">No MCP servers available</Text>;
+      return <div className="text-body text-muted-foreground">No MCP servers available</div>;
     }
     if (subagent.selectedMcpServers.length > 0) {
       return (
@@ -668,7 +669,7 @@ export const AIAgentConfigurationTab = () => {
         </div>
       );
     }
-    return <Text variant="muted">No MCP servers selected</Text>;
+    return <div className="text-body text-muted-foreground">No MCP servers selected</div>;
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with many conditionals - already refactored with helper functions
@@ -905,7 +906,7 @@ export const AIAgentConfigurationTab = () => {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  <Text className="font-semibold">Basic Information</Text>
+                  <div className="font-semibold text-body">Basic Information</div>
                 </CardTitle>
                 <div className="flex gap-2">
                   {isEditing ? (
@@ -951,7 +952,7 @@ export const AIAgentConfigurationTab = () => {
                     />
                   ) : (
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>{displayData.displayName}</Text>
+                      <div className="text-body">{displayData.displayName}</div>
                     </div>
                   )}
                 </div>
@@ -965,7 +966,7 @@ export const AIAgentConfigurationTab = () => {
                     />
                   ) : (
                     <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>{displayData.description || 'No description'}</Text>
+                      <div className="text-body">{displayData.description || 'No description'}</div>
                     </div>
                   )}
                 </div>
@@ -1023,7 +1024,7 @@ export const AIAgentConfigurationTab = () => {
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex w-full items-center gap-2">
                 <Settings className="h-4 w-4" />
-                <Text className="font-semibold">System Prompt</Text>
+                <div className="font-semibold text-body">System Prompt</div>
                 {isEditing && (
                   <MarkdownEditorTabs className="ml-auto" mode={systemPromptMode} onModeChange={setSystemPromptMode} />
                 )}
@@ -1058,17 +1059,17 @@ export const AIAgentConfigurationTab = () => {
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                <Text className="font-semibold">Subagents (Optional)</Text>
+                <div className="font-semibold text-body">Subagents (Optional)</div>
               </CardTitle>
-              <Text variant="muted">
+              <div className="text-body text-muted-foreground">
                 Specialized subagents that inherit the provider and model from the parent agent. Each subagent has its
                 own system prompt and can access a subset of MCP servers.
-              </Text>
+              </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <div className="space-y-4">
                 {displayData.subagents.length === 0 ? (
-                  <Text variant="muted">No subagents configured</Text>
+                  <div className="text-body text-muted-foreground">No subagents configured</div>
                 ) : (
                   <Accordion
                     onValueChange={([value]) => setExpandedSubagent(value as string | undefined)}
@@ -1088,7 +1089,7 @@ export const AIAgentConfigurationTab = () => {
                         // biome-ignore lint/suspicious/noArrayIndexKey: Using index as key for subagent items
                         <AccordionItem key={`subagent-${index}`} value={`subagent-${index}`}>
                           <AccordionTrigger>
-                            <Text className="font-medium">{subagent.name || `Subagent ${index + 1}`}</Text>
+                            <div className="font-medium text-body">{subagent.name || `Subagent ${index + 1}`}</div>
                           </AccordionTrigger>
                           <AccordionContent>
                             <div className="space-y-4 pt-4">
@@ -1104,7 +1105,7 @@ export const AIAgentConfigurationTab = () => {
                                   />
                                 ) : (
                                   <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                                    <Text>{subagent.name}</Text>
+                                    <div className="text-body">{subagent.name}</div>
                                   </div>
                                 )}
                               </div>
@@ -1179,12 +1180,12 @@ export const AIAgentConfigurationTab = () => {
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4" />
-                  <Text className="font-semibold">Service Account</Text>
+                  <div className="font-semibold text-body">Service Account</div>
                 </CardTitle>
-                <Text variant="muted">
+                <div className="text-body text-muted-foreground">
                   The service account is used by the agent to authenticate to other systems within the Redpanda Cloud
                   Platform (for example, MCP servers, Redpanda broker).
-                </Text>
+                </div>
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <ServiceAccountSection serviceAccountId={agent.tags[CLOUD_MANAGED_TAG_KEYS.SERVICE_ACCOUNT_ID]} />
@@ -1200,7 +1201,7 @@ export const AIAgentConfigurationTab = () => {
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                <Text className="font-semibold">Resources</Text>
+                <div className="font-semibold text-body">Resources</div>
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
@@ -1227,7 +1228,7 @@ export const AIAgentConfigurationTab = () => {
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                <Text className="font-semibold">LLM Configuration</Text>
+                <div className="font-semibold text-body">LLM Configuration</div>
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
@@ -1399,7 +1400,7 @@ export const AIAgentConfigurationTab = () => {
                         <SelectContent>
                           {isLoadingProviders ? (
                             <div className="p-2">
-                              <Text variant="muted">Loading models...</Text>
+                              <div className="text-body text-muted-foreground">Loading models...</div>
                             </div>
                           ) : filteredModels.length > 0 ? (
                             <SelectGroup>
@@ -1437,7 +1438,7 @@ export const AIAgentConfigurationTab = () => {
                             </SelectGroup>
                           ) : (
                             <div className="p-2">
-                              <Text variant="muted">No models available</Text>
+                              <div className="text-body text-muted-foreground">No models available</div>
                             </div>
                           )}
                         </SelectContent>
@@ -1471,7 +1472,9 @@ export const AIAgentConfigurationTab = () => {
                         placeholder="https://api.example.com/v1"
                         value={displayData.baseUrl}
                       />
-                      <Text variant="muted">API endpoint URL for your OpenAI-compatible service</Text>
+                      <div className="text-body text-muted-foreground">
+                        API endpoint URL for your OpenAI-compatible service
+                      </div>
                     </div>
                   )}
 
@@ -1479,7 +1482,7 @@ export const AIAgentConfigurationTab = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="maxIterations">Max Iterations</Label>
-                      <Text className="font-medium text-sm">{displayData.maxIterations}</Text>
+                      <div className="font-medium text-body">{displayData.maxIterations}</div>
                     </div>
                     <Slider
                       max={100}
@@ -1503,12 +1506,12 @@ export const AIAgentConfigurationTab = () => {
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : (
-                        <Text>
+                        <div className="text-body">
                           {agent.provider?.provider.case === 'openai' && 'OpenAI'}
                           {agent.provider?.provider.case === 'anthropic' && 'Anthropic'}
                           {agent.provider?.provider.case === 'google' && 'Google'}
                           {agent.provider?.provider.case === 'openaiCompatible' && 'OpenAI Compatible'}
-                        </Text>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1523,7 +1526,7 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label>API Token</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text>{displayData.apiKeySecret || 'No secret configured'}</Text>
+                        <div className="text-body">{displayData.apiKeySecret || 'No secret configured'}</div>
                       </div>
                     </div>
                   )}
@@ -1531,14 +1534,14 @@ export const AIAgentConfigurationTab = () => {
                     <div className="space-y-2">
                       <Label>Base URL</Label>
                       <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                        <Text>{displayData.baseUrl}</Text>
+                        <div className="text-body">{displayData.baseUrl}</div>
                       </div>
                     </div>
                   )}
                   <div className="space-y-2">
                     <Label>Max Iterations</Label>
                     <div className="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                      <Text>{displayData.maxIterations}</Text>
+                      <div className="text-body">{displayData.maxIterations}</div>
                     </div>
                   </div>
                 </div>

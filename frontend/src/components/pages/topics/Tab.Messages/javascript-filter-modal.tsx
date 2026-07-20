@@ -20,7 +20,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
-import { Heading, InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 import { useState } from 'react';
 
@@ -48,7 +48,7 @@ const JavascriptFilterModal: FC<{
           <DialogTitle>JavaScript filtering</DialogTitle>
         </DialogHeader>
         <DialogBody spacing="lg">
-          <Text variant="muted">Write JavaScript code to filter your records.</Text>
+          <div className="text-body text-muted-foreground">Write JavaScript code to filter your records.</div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="add-javascript-filter-name">Filter display name</Label>
@@ -92,9 +92,7 @@ const JavascriptFilterModal: FC<{
             </div>
 
             <div className="flex flex-col gap-3">
-              <Heading as="h3" level={4}>
-                Examples
-              </Heading>
+              <h3 className="text-heading-sm">Examples</h3>
               <List>
                 <ListItem>
                   <InlineCode>value != null</InlineCode> skips records without value.

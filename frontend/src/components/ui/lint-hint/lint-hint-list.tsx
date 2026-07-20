@@ -10,7 +10,6 @@
 
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckCircleIcon } from 'components/icons';
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
@@ -29,7 +28,7 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
     return (
       <div className={cn('flex items-center gap-2 py-4 text-muted-foreground', className)}>
         <CheckCircleIcon className="size-4 text-success" />
-        <Text className="text-muted-foreground text-sm">No issues found</Text>
+        <div className="text-body text-muted-foreground">No issues found</div>
       </div>
     );
   }
@@ -43,9 +42,9 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
           <div className="flex min-w-0 flex-col gap-1" key={toolName}>
             {/* Type label heads its message so each hint reads as one group. */}
             {hint.lintType && (
-              <Text className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+              <div className="text-body-sm font-medium text-muted-foreground uppercase tracking-wide">
                 {hint.lintType}
-              </Text>
+              </div>
             )}
             {/* min-w-0 + wrapping the inner <pre> keep long lint messages from stretching the page. */}
             <SimpleCodeBlock

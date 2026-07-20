@@ -20,7 +20,6 @@ import {
   FieldSet,
 } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
 import { Database } from 'lucide-react';
@@ -39,7 +38,7 @@ export const VectorDatabaseSection: React.FC<VectorDatabaseSectionProps> = ({ fo
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Database className="h-4 w-4" />
-        <Text className="font-semibold">Vector Database</Text>
+        <div className="font-semibold text-body">Vector Database</div>
       </CardTitle>
     </CardHeader>
     <CardContent>

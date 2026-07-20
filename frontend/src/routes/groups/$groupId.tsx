@@ -10,16 +10,15 @@
  */
 
 import { createFileRoute, useNavigate, useParams, useSearch } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { useCallback } from 'react';
 import { z } from 'zod';
 
 import GroupDetails from '../../components/pages/consumers/group-details';
 
 const searchSchema = z.object({
-  q: fallback(z.string().optional(), undefined),
-  withLag: fallback(z.coerce.boolean().optional(), false),
-  tab: fallback(z.enum(['topics', 'acl']).optional(), 'topics'),
+  q: z.string().optional().catch(undefined),
+  withLag: z.coerce.boolean().optional().catch(false),
+  tab: z.enum(['topics', 'acl']).optional().catch('topics'),
 });
 
 export type GroupSearchParams = z.infer<typeof searchSchema>;
@@ -28,7 +27,7 @@ export const Route = createFileRoute('/groups/$groupId')({
   staticData: {
     title: 'Consumer Group Details',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   component: GroupDetailsWrapper,
 });
 

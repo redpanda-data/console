@@ -50,7 +50,6 @@ import {
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
@@ -272,20 +271,20 @@ export const RolesTabNew: FC = () => {
     <>
       <SecurityTabsNav />
       <ListLayout className="my-4">
-        <Text className="text-muted-foreground text-sm sm:text-base">
+        <div className="text-muted-foreground text-sm sm:text-base">
           <NullFallbackBoundary>
             <div className="mb-4">
               <FeatureLicenseNotification featureName="rbac" />
             </div>
           </NullFallbackBoundary>
           <DescriptionWithHelp short="Groups of ACLs that can be assigned to principals." title="Roles">
-            <Text>
+            <div className="text-body">
               Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents
               any entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user,
               OIDC identity, or mTLS client).
-            </Text>
+            </div>
           </DescriptionWithHelp>{' '}
-        </Text>
+        </div>
 
         <ListLayoutFilters
           actions={

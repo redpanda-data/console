@@ -12,7 +12,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { Command } from 'lucide-react';
 
@@ -62,9 +62,9 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Click the button below to add MCP server to</span>
-              <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+              <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                 <img alt="Cursor" className="h-4 w-4" src={CursorLogo} /> Cursor
-              </Text>
+              </span>
             </div>
             <Button className="mt-2" onClick={handleAddToCursor} variant="outline">
               <img alt="Cursor" className="h-4 w-4" src={CursorLogo} />
@@ -86,9 +86,9 @@ export const ClientCursor = ({ mcpServer }: ClientCursorProps) => {
                 /<Kbd>Ctrl</Kbd> + <Kbd>Shift</Kbd> + <Kbd>P</Kbd>
               </div>
               <span>to open the</span>
-              <Text as="span" className="font-bold">
+              <span className="font-bold text-body">
                 Command Palette → Settings → Cursor Settings → MCP → Add a Custom MCP Server
-              </Text>
+              </span>
             </div>
           </ListItem>
           <ListItem>

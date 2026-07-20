@@ -13,7 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { NotFoundContent } from 'components/misc/not-found-content';
 import { GetMCPServerRequestSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import { getMCPServer } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
@@ -22,7 +21,7 @@ import { z } from 'zod';
 import { RemoteMCPDetailsPage } from '../../components/pages/mcp-servers/details/remote-mcp-details-page';
 
 const searchSchema = z.object({
-  tab: fallback(z.string().optional(), undefined),
+  tab: z.string().optional().catch(undefined),
 });
 
 function MCPServerNotFound() {
@@ -41,7 +40,7 @@ export const Route = createFileRoute('/mcp-servers/$id')({
   staticData: {
     title: 'Remote MCP Details',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   loader: async ({ context: { queryClient, dataplaneTransport }, params: { id } }) => {
     try {
       await queryClient.ensureQueryData(

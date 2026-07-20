@@ -1,0 +1,991 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Kbd } from 'components/redpanda-ui/components/kbd';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
+import { Redo2, TriangleAlert, Undo2 } from 'lucide-react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useListSecretsQuery } from 'react-query/api/secret';
+import { toast } from 'sonner';
+import { formatShortcut, modKey, shiftKey } from 'utils/shortcuts';
+import { pluralizeWithNumber } from 'utils/string';
+
+import type { InspectorChildItem } from './node-config-form';
+import { NodeInspector, type PendingNodeCommit } from './node-inspector';
+import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
+import { PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
+import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
+import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
+import { TemplateGalleryCta } from './template-cta';
+import { usePipelineEditorStore } from './use-pipeline-editor-store';
+import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
+import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
+import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from '../utils/pipeline-diff';
+import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
+import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
+import { mapLintHintsToNodes } from '../utils/pipeline-lint';
+import {
+  appendResource,
+  buildInsertableComponent,
+  countResourceReferences,
+  createResourceAndReturnLabel,
+  type EditTarget,
+  editTargetsEqual,
+  firstKey,
+  getComponentAt,
+  insertComponentAt,
+  type ResourceArrayKey,
+  type ResourceKind,
+  removeComponentAt,
+  resourceArrayKey,
+  resourceTargetKind,
+  seqLengthAt,
+  setComponentAt,
+} from '../utils/yaml';
+
+// Types the insert (+) picker offers: pipeline steps plus the resources they reference.
+const INSERTABLE_TYPES = ['processor', 'cache', 'rate_limit'] satisfies ConnectComponentType[];
+
+// Stable empty set so the "no unsaved nodes" case doesn't churn the canvas layout memo.
+const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
+
+const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
+  input: 'an input',
+  output: 'an output',
+  processor: 'a processor',
+};
+
+// Where a chosen connector lands: a top-level spine slot or a nested container array.
+type PendingInsert =
+  | { context: 'spine'; index: number }
+  | { context: 'slot'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
+  // Switch "add case": the picked step is wrapped as `{ check, output }` or `{ check, processors: [step] }`.
+  | { context: 'switchCase'; containerPath: (string | number)[]; section: 'processor' | 'output' }
+  // "Create new resource": create the cache/rate_limit and link it to `target`'s `resource:` field.
+  | { context: 'resourceForNode'; kind: ResourceKind; target: EditTarget };
+
+type InsertParams = {
+  yaml: string;
+  connectionName: string;
+  connectionType: ConnectComponentType;
+  target: PendingInsert;
+  components: ConnectComponentSpec[];
+};
+
+// Routing-condition target for a node: output switch — the node owns it; processor switch — the
+// case wrapper owns it and this node is the wrapper's first child.
+function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]): EditTarget | undefined {
+  if (node?.caseEditTarget) {
+    return node.caseEditTarget;
+  }
+  if (!node?.parentId) {
+    return;
+  }
+  const parent = flowNodes.find((n) => n.id === node.parentId);
+  const firstChild = flowNodes.find((n) => n.parentId === node.parentId);
+  return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
+}
+
+// A processor-switch case has no rendered card, so jump to its first body step (carrying the
+// case's condition target); every other node jumps to itself. Null if unjumpable.
+function resolveJumpTarget(
+  node: PipelineFlowNode,
+  flowNodes: PipelineFlowNode[]
+): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
+  if (node.editTarget?.kind === 'switchCase') {
+    const entry = flowNodes.find((n) => n.parentId === node.id);
+    if (entry?.editTarget) {
+      return { id: entry.id, target: entry.editTarget, caseTarget: node.caseEditTarget };
+    }
+  }
+  return node.editTarget ? { id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget } : null;
+}
+
+// Direct children (cases / steps) of a control-flow node as clickable inspector items; an
+// output-switch case is its own entry, a processor-switch case resolves to its first body step.
+function buildChildItems(
+  selectedId: string,
+  flowNodes: PipelineFlowNode[],
+  lintByNode: Map<string, LintHint[]>
+): InspectorChildItem[] {
+  const items: InspectorChildItem[] = [];
+  for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
+    const isCaseWrapper = child.editTarget?.kind === 'switchCase';
+    const entry = isCaseWrapper ? (flowNodes.find((n) => n.parentId === child.id) ?? child) : child;
+    if (!entry?.editTarget) {
+      continue;
+    }
+    const wrapperLint = child.id === entry.id ? 0 : (lintByNode.get(child.id)?.length ?? 0);
+    const lintCount = (lintByNode.get(entry.id)?.length ?? 0) + wrapperLint;
+    items.push({
+      id: entry.id,
+      target: entry.editTarget,
+      caseTarget: child.caseEditTarget ?? entry.caseEditTarget,
+      name: entry.label,
+      condition: child.condition ?? entry.condition,
+      isDefault: child.isDefault ?? entry.isDefault,
+      isErrorPath: child.isErrorPath ?? entry.isErrorPath,
+      lintCount: lintCount || undefined,
+    });
+  }
+  return items;
+}
+
+// The component's name (its single top-level key) at a target, or undefined when unresolvable.
+function componentNameAt(yaml: string, target: EditTarget): string | undefined {
+  const comp = getComponentAt(yaml, target);
+  return comp ? firstKey(comp) : undefined;
+}
+
+// The next YAML plus the edit target of the node that was just added, so the caller can select it.
+type InsertResult = { yaml: string; selectTarget?: EditTarget };
+
+// Resolve the chosen connector + target to the next YAML (null on failure). Caches/rate limits
+// append to their top-level resource arrays; everything else splices into the target container.
+function buildInsertedYaml({
+  yaml,
+  connectionName,
+  connectionType,
+  target,
+  components,
+}: InsertParams): InsertResult | null {
+  // Append a new case (empty condition) wrapping the chosen step; select the step for configuring.
+  if (target.context === 'switchCase') {
+    if (connectionType !== target.section) {
+      return null;
+    }
+    const step = buildInsertableComponent(connectionName, target.section, components);
+    if (!step) {
+      return null;
+    }
+    const wrapped = target.section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
+    const next = insertComponentAt(yaml, target.containerPath, Number.MAX_SAFE_INTEGER, wrapped);
+    if (next === null) {
+      return null;
+    }
+    const caseIndex = seqLengthAt(next, target.containerPath) - 1;
+    const stepPath =
+      target.section === 'output'
+        ? [...target.containerPath, caseIndex, 'output']
+        : [...target.containerPath, caseIndex, 'processors', 0];
+    return { yaml: next, selectTarget: { kind: 'path', path: stepPath, componentType: target.section } };
+  }
+  // Create the resource and link it to the node's `resource:` in one commit, so it's never left unlinked.
+  if (target.context === 'resourceForNode') {
+    if (connectionType !== target.kind) {
+      return null;
+    }
+    const created = createResourceAndReturnLabel(yaml, target.kind, connectionName, components);
+    if (!created) {
+      return null;
+    }
+    const comp = getComponentAt(created.yaml, target.target);
+    const name = comp ? firstKey(comp) : undefined;
+    const inner = name ? comp?.[name] : undefined;
+    if (comp && name && inner && typeof inner === 'object' && !Array.isArray(inner)) {
+      (inner as Record<string, unknown>).resource = created.label;
+      return { yaml: setComponentAt(created.yaml, target.target, comp) ?? created.yaml };
+    }
+    return { yaml: created.yaml };
+  }
+  if (connectionType === 'cache' || connectionType === 'rate_limit') {
+    const resource = buildInsertableComponent(connectionName, connectionType, components);
+    const resourceKey: ResourceArrayKey = resourceArrayKey(connectionType);
+    if (!resource) {
+      return null;
+    }
+    const next = appendResource(yaml, resourceKey, resource);
+    return next === null
+      ? null
+      : { yaml: next, selectTarget: { kind: 'resource', resourceKey, index: seqLengthAt(next, [resourceKey]) - 1 } };
+  }
+  if (connectionType === 'processor' || connectionType === 'input' || connectionType === 'output') {
+    const component = buildInsertableComponent(connectionName, connectionType, components);
+    if (!component) {
+      return null;
+    }
+    // Spine or slot insert — both carry an index; the spine targets the top-level processors array.
+    const containerPath = target.context === 'slot' ? target.containerPath : ['pipeline', 'processors'];
+    const next = insertComponentAt(yaml, containerPath, target.index, component);
+    if (next === null) {
+      return null;
+    }
+    // insertComponentAt clamps the index to the array length; mirror that to locate the new node.
+    const insertedIndex = Math.min(target.index, seqLengthAt(next, containerPath) - 1);
+    const selectTarget: EditTarget =
+      target.context === 'slot'
+        ? { kind: 'path', path: [...containerPath, insertedIndex], componentType: target.accepts }
+        : { kind: 'processor', index: insertedIndex };
+    return { yaml: next, selectTarget };
+  }
+  return null;
+}
+
+const UNDO_SHORTCUT = formatShortcut(modKey(), 'Z');
+const REDO_SHORTCUT = formatShortcut(modKey(), shiftKey(), 'Z');
+
+const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
+  <span className="flex items-center gap-2">
+    {label}
+    <Kbd size="xs" variant="filled">
+      {keys}
+    </Kbd>
+  </span>
+);
+
+// Classify a canvas keydown; presses inside text fields / Monaco keep their own editing semantics.
+type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
+
+// Focused controls own their keys: text fields / Monaco keep editing semantics, and buttons, selects,
+// switches, menus (toolbar buttons, Radix triggers — all render as focusable controls) must not have
+// Delete open the confirm dialog or `/` open the palette while focused.
+const FOCUS_GUARD_SELECTOR =
+  'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], .monaco-editor';
+
+function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
+  // Another layer (a chip popover, a dialog) already handled this key.
+  if (e.defaultPrevented) {
+    return null;
+  }
+  const target = e.target as HTMLElement | null;
+  if (target?.closest(FOCUS_GUARD_SELECTOR)) {
+    return null;
+  }
+  // `/` opens the palette — ⌘K is taken by the outer app-shell search.
+  if (e.key === '/' && !(e.metaKey || e.ctrlKey || e.altKey)) {
+    return 'palette';
+  }
+  if (e.key === 'Escape') {
+    return 'deselect';
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    return 'delete';
+  }
+  if (!(e.metaKey || e.ctrlKey)) {
+    return null;
+  }
+  const key = e.key.toLowerCase();
+  if (key === 'y' || (key === 'z' && e.shiftKey)) {
+    return 'redo';
+  }
+  if (key === 'z') {
+    return 'undo';
+  }
+  return null;
+}
+
+// Undo/redo via YAML snapshots (⌘Z / ⌘⇧Z), stored to survive lane switches; `recordEdit` no-ops on
+// unchanged round-trips and folds an external (Monaco) edit into one step when seen on return.
+function useEditHistory(
+  yaml: string,
+  onChange: (next: string) => void,
+  onNavigate?: (from: string, to: string) => void,
+  // Runs before a history step applies — discards the inspector's in-flight draft (positional node
+  // ids shift when a step is undone, so the draft can't safely re-commit).
+  beforeApply?: () => void
+) {
+  const undoStack = usePipelineEditorStore((s) => s.editUndoStack);
+  const redoStack = usePipelineEditorStore((s) => s.editRedoStack);
+  const baseline = usePipelineEditorStore((s) => s.editBaseline);
+  const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
+  const commitEditHistory = usePipelineEditorStore((s) => s.commitEditHistory);
+
+  // Observe every document state; recordEdit pushes an undo step only on a real change.
+  useEffect(() => {
+    recordEdit(yaml);
+  }, [yaml, recordEdit]);
+
+  const undo = useCallback(() => {
+    if (undoStack.length === 0 || baseline === null) {
+      return;
+    }
+    beforeApply?.();
+    const target = undoStack.at(-1) as string;
+    commitEditHistory({ undo: undoStack.slice(0, -1), redo: [baseline, ...redoStack], baseline: target });
+    onChange(target);
+    onNavigate?.(baseline, target);
+  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate, beforeApply]);
+
+  const redo = useCallback(() => {
+    if (redoStack.length === 0 || baseline === null) {
+      return;
+    }
+    beforeApply?.();
+    const target = redoStack[0];
+    commitEditHistory({ undo: [...undoStack, baseline], redo: redoStack.slice(1), baseline: target });
+    onChange(target);
+    onNavigate?.(baseline, target);
+  }, [undoStack, redoStack, baseline, commitEditHistory, onChange, onNavigate, beforeApply]);
+
+  return { undo, redo, canUndo: undoStack.length > 0, canRedo: redoStack.length > 0 };
+}
+
+type VisualEditorPanelProps = {
+  mode: 'view' | 'edit' | 'create';
+  yamlContent: string;
+  onYamlChange: (yaml: string) => void;
+  /** Parsed component specs, used to generate templates for inserted components. */
+  components: ConnectComponentSpec[];
+  /** Raw component list for the connector picker. */
+  componentList: ComponentList;
+  /** Server lint hints, surfaced in context on the nodes they map to. */
+  lintHints?: LintHint[];
+  /** Reused page flows (edit mode only): add input/output placeholders, redpanda setup hints. */
+  onAddConnector?: (type: ConnectComponentType | 'resource') => void;
+  onAddTopic?: (section: string, componentName: string) => void;
+  onAddSasl?: (section: string, componentName: string) => void;
+  /** Open the template gallery (edit mode); shows a floating entry point when empty. */
+  onBrowseTemplates?: () => void;
+  /** Switch to the YAML lane and reveal the given node there (inspector "View in YAML"). */
+  onNavigateToYaml?: (nodeId: string) => void;
+  /** The pipeline config is still loading — the canvas shows a skeleton until it's ready. */
+  isLoading?: boolean;
+};
+
+/**
+ * The Visual lane: a pannable canvas laying the pipeline out as a left→right flow. In edit mode,
+ * contextual actions (add input/output, insert steps, per-node edit/remove) mutate the canonical YAML.
+ */
+export function VisualEditorPanel({
+  mode,
+  yamlContent,
+  onYamlChange,
+  components,
+  componentList,
+  lintHints,
+  onAddConnector,
+  onAddTopic,
+  onAddSasl,
+  onBrowseTemplates,
+  onNavigateToYaml,
+  isLoading,
+}: VisualEditorPanelProps) {
+  const isEditing = mode !== 'view';
+  // `name` snapshots the component's key at selection time: targets are positional, so a reorder can
+  // leave a different component at the same target — the name mismatch lets us detect that.
+  const [selected, setSelected] = useState<{
+    id: string;
+    target: EditTarget;
+    caseTarget?: EditTarget;
+    name?: string;
+  } | null>(null);
+  const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
+  const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
+
+  // Inspector edits auto-commit on leave / save (no per-node Apply): `commitRef` holds the selected
+  // node's pending commit, flushed before selection changes and on save; a flush consumes the draft,
+  // so flushing at multiple points never double-applies.
+  const commitRef = useRef<PendingNodeCommit | null>(null);
+  const yamlRef = useRef(yamlContent);
+  yamlRef.current = yamlContent;
+  const commitPending = useCallback(() => {
+    const pending = commitRef.current;
+    if (!pending) {
+      return;
+    }
+    const next = pending.commit(yamlRef.current);
+    if (next !== yamlRef.current) {
+      onYamlChange(next);
+    }
+  }, [onYamlChange]);
+  // Select a different node (or none), committing the current node's pending edits first. The name
+  // is read pre-commit, which is safe: the commit rewrites a node in place and never reorders.
+  const selectNode = useCallback(
+    (next: { id: string; target: EditTarget; caseTarget?: EditTarget } | null) => {
+      commitPending();
+      setSelected(next ? { ...next, name: componentNameAt(yamlRef.current, next.target) } : null);
+    },
+    [commitPending]
+  );
+  // Select AND recenter (palette jump, problems list, inspector child nav) — the node may be off-screen.
+  const selectAndReveal = useCallback(
+    (next: { id: string; target: EditTarget; caseTarget?: EditTarget }) => {
+      selectNode(next);
+      setFocus((f) => ({ id: next.id, token: f.token + 1 }));
+    },
+    [selectNode]
+  );
+
+  // Expose the flush so the page's pipeline Save commits the still-selected node before saving.
+  const setPendingEditCommit = usePipelineEditorStore((s) => s.setPendingEditCommit);
+  useEffect(() => {
+    setPendingEditCommit(commitPending);
+    return () => setPendingEditCommit(null);
+  }, [commitPending, setPendingEditCommit]);
+
+  // Mirror the selection into the shared store so the YAML lane (a separate tree) can reveal the node.
+  const setSelectedNodeId = usePipelineEditorStore((s) => s.setSelectedNodeId);
+  useEffect(() => {
+    setSelectedNodeId(selected?.id ?? null);
+  }, [selected, setSelectedNodeId]);
+
+  // Briefly pulse the node(s) an undo/redo touched, so the change is easy to spot.
+  const [flash, setFlash] = useState<{ ids: ReadonlySet<string>; token: number }>({ ids: new Set(), token: 0 });
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleNavigate = useCallback((from: string, to: string) => {
+    const ids = changedNodeIds(from, to);
+    if (ids.length === 0) {
+      return;
+    }
+    setFlash((f) => ({ ids: new Set(ids), token: f.token + 1 }));
+    if (flashTimer.current) {
+      clearTimeout(flashTimer.current);
+    }
+    flashTimer.current = setTimeout(() => setFlash((f) => ({ ids: new Set(), token: f.token })), 1400);
+  }, []);
+  useEffect(() => () => clearTimeout(flashTimer.current ?? undefined), []);
+
+  const discardPendingEdit = useCallback(() => {
+    commitRef.current?.discard();
+  }, []);
+  const { undo, redo, canUndo, canRedo } = useEditHistory(
+    yamlContent,
+    onYamlChange,
+    handleNavigate,
+    discardPendingEdit
+  );
+
+  const parsedFlow = useMemo(() => parsePipelineFlowTree(yamlContent), [yamlContent]);
+  const flowNodes = parsedFlow.nodes;
+
+  const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
+
+  // Close the inspector (dropping its stale draft) when an undo/redo or external edit removes the
+  // node — or reorders the document so a different component now sits at the positional target.
+  useEffect(() => {
+    if (!selected) {
+      return;
+    }
+    const comp = getComponentAt(yamlContent, selected.target);
+    if (comp === undefined || (selected.name !== undefined && firstKey(comp) !== selected.name)) {
+      commitRef.current?.discard();
+      setSelected(null);
+    }
+  }, [selected, yamlContent]);
+
+  // Map server lint hints to their nodes (badge on the node, full messages in the inspector).
+  const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
+  const lintMessagesByNode = useMemo(() => {
+    const messages = new Map<string, string[]>();
+    for (const [id, hints] of lintByNode) {
+      messages.set(
+        id,
+        hints.map((h) => h.hint)
+      );
+    }
+    return messages;
+  }, [lintByNode]);
+
+  // Nodes whose config differs from the last-saved pipeline (unsaved dot); view mode is never unsaved.
+  // The baseline is signed once per save — re-signing the constant initialYaml on every keystroke
+  // would double the diff's parse cost.
+  const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
+  const baselineSignatures = useMemo(
+    () => (isEditing && initialYaml !== null ? nodeConfigSignatures(initialYaml) : null),
+    [isEditing, initialYaml]
+  );
+  const unsavedNodeIds = useMemo(
+    () => (baselineSignatures ? new Set(changedNodeIdsFromBaseline(baselineSignatures, yamlContent)) : EMPTY_NODE_IDS),
+    [baselineSignatures, yamlContent]
+  );
+  // Jumpable list for the floating "unsaved" panel — only nodes with an edit target can be selected.
+  const unsavedNodeList = useMemo(
+    () =>
+      flowNodes
+        .filter((n) => unsavedNodeIds.has(n.id) && n.editTarget)
+        .map((n) => ({ id: n.id, label: n.label, detail: n.labelText })),
+    [flowNodes, unsavedNodeIds]
+  );
+
+  const childItems = useMemo<InspectorChildItem[]>(
+    () => (selected ? buildChildItems(selected.id, flowNodes, lintByNode) : []),
+    [selected, flowNodes, lintByNode]
+  );
+
+  // Flat problems list for the floating overview: node-mapped hints are clickable, the rest inert.
+  const problems = useMemo<PipelineProblem[]>(() => {
+    const all = lintHints ?? [];
+    if (all.length === 0) {
+      return [];
+    }
+    const nodesById = new Map(flowNodes.map((n) => [n.id, n]));
+    const mapped = new Set<LintHint>();
+    const list: PipelineProblem[] = [];
+    for (const [nodeId, hints] of lintByNode) {
+      const node = nodesById.get(nodeId);
+      const caseTarget = caseTargetForNode(node, flowNodes);
+      for (const hint of hints) {
+        mapped.add(hint);
+        list.push({
+          key: `${nodeId}-${hint.line}-${hint.hint}`,
+          message: hint.hint,
+          line: hint.line || undefined,
+          nodeId,
+          nodeLabel: node?.label,
+          target: node?.editTarget,
+          caseTarget,
+        });
+      }
+    }
+    for (const hint of all) {
+      if (!mapped.has(hint)) {
+        list.push({ key: `unmapped-${hint.line}-${hint.hint}`, message: hint.hint, line: hint.line || undefined });
+      }
+    }
+    return list;
+  }, [lintHints, lintByNode, flowNodes]);
+
+  // Secrets referenced as ${secrets.X} that don't exist yet — surfaced with a quick-add flow.
+  const { data: secretsResponse } = useListSecretsQuery({}, { enabled: isEditing });
+  const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
+  const existingSecrets = useMemo(
+    () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '').filter(Boolean) : []),
+    [secretsResponse]
+  );
+  const missingSecrets = useMemo(() => {
+    // Only warn once the secrets list has actually loaded.
+    if (!(isEditing && secretsResponse)) {
+      return [];
+    }
+    const referenced = getUniqueSecretNames(extractSecretReferences(yamlContent));
+    const existingSet = new Set(existingSecrets);
+    return referenced.filter((name) => !existingSet.has(name));
+  }, [isEditing, secretsResponse, yamlContent, existingSecrets]);
+
+  // Rename a missing secret by rewriting references in the YAML (the visual lane has no text editor).
+  const handleRenameSecretReferences = useCallback(
+    (oldName: string, newName: string) => {
+      const updated = yamlContent.replaceAll(`\${secrets.${oldName}}`, `\${secrets.${newName}}`);
+      if (updated !== yamlContent) {
+        onYamlChange(updated);
+      }
+    },
+    [yamlContent, onYamlChange]
+  );
+
+  // Deletes are confirmed: the trash action / Delete key stage the target, the dialog commits it.
+  const [pendingDelete, setPendingDelete] = useState<EditTarget | null>(null);
+  const pendingDeleteName = useMemo(
+    () => (pendingDelete ? componentNameAt(yamlContent, pendingDelete) : undefined),
+    [pendingDelete, yamlContent]
+  );
+
+  // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
+  const pendingDeleteRefCount = useMemo(() => {
+    if (pendingDelete?.kind !== 'resource') {
+      return 0;
+    }
+    const comp = getComponentAt(yamlContent, pendingDelete);
+    const label = comp && typeof comp.label === 'string' ? comp.label : undefined;
+    // Kind-scoped: a same-labelled resource of the other kind must not inflate the warning.
+    return label ? countResourceReferences(yamlContent, label, resourceTargetKind(pendingDelete)) : 0;
+  }, [pendingDelete, yamlContent]);
+
+  const confirmDeleteNode = useCallback(() => {
+    if (pendingDelete) {
+      const next = removeComponentAt(yamlContent, pendingDelete);
+      if (next !== null) {
+        onYamlChange(next);
+      } else {
+        // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. a shared anchor) — say so.
+        toast.error('Couldn’t remove this node — edit it in the YAML view instead.');
+      }
+    }
+    // Deleting discards any pending edit for the node (don't commit it).
+    commitRef.current?.discard();
+    setSelected(null);
+    setPendingDelete(null);
+  }, [pendingDelete, yamlContent, onYamlChange]);
+
+  useEffect(() => {
+    const handlers: Record<CanvasKeyAction, (e: KeyboardEvent) => void> = {
+      palette: (e) => {
+        e.preventDefault();
+        setIsPaletteOpen(true);
+      },
+      deselect: () => selectNode(null),
+      delete: (e) => {
+        if (isEditing && selected) {
+          e.preventDefault();
+          setPendingDelete(selected.target);
+        }
+      },
+      undo: (e) => {
+        if (isEditing) {
+          e.preventDefault();
+          undo();
+        }
+      },
+      redo: (e) => {
+        if (isEditing) {
+          e.preventDefault();
+          redo();
+        }
+      },
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Shortcuts stay inert while one of the editor's own dialogs is open. Checked against component
+      // state, not a role="dialog" query, so a host-shell dialog can't disable us.
+      if (pendingInsert || pendingDelete || isPaletteOpen || isSecretsDialogOpen) {
+        return;
+      }
+      const action = canvasKeyAction(e);
+      if (action) {
+        handlers[action](e);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isEditing, undo, redo, selected, selectNode, pendingInsert, pendingDelete, isPaletteOpen, isSecretsDialogOpen]);
+
+  const handleInsertSelected = useCallback(
+    (connectionName: string, connectionType: ConnectComponentType) => {
+      const target = pendingInsert;
+      setPendingInsert(null);
+      if (target === null) {
+        return;
+      }
+      const result = buildInsertedYaml({ yaml: yamlContent, connectionName, connectionType, target, components });
+      if (result === null) {
+        // The slot's container can vanish (e.g. an undo while the picker was open) — say so.
+        toast.error(`Couldn’t add ${connectionName} — the insert position no longer exists.`);
+        return;
+      }
+      onYamlChange(result.yaml);
+      // Auto-select the just-added node (matched by edit target in the reparse) so it can be configured.
+      if (result.selectTarget) {
+        const added = parsePipelineFlowTree(result.yaml).nodes.find(
+          (n) => result.selectTarget && editTargetsEqual(n.editTarget, result.selectTarget)
+        );
+        if (added?.editTarget) {
+          setSelected({
+            id: added.id,
+            target: added.editTarget,
+            caseTarget: added.caseEditTarget,
+            name: componentNameAt(result.yaml, added.editTarget),
+          });
+        }
+      }
+    },
+    [pendingInsert, components, yamlContent, onYamlChange]
+  );
+
+  // In-container "+": open the picker filtered to the slot's type. Commit any pending inspector
+  // edit first — the insert builds on the current YAML, so the draft would otherwise be lost.
+  const handleSlotInsert = useCallback(
+    (payload: FlowInsertPayload) => {
+      commitPending();
+      if (payload.kind === 'addChild') {
+        setPendingInsert({
+          context: 'switchCase',
+          containerPath: payload.containerPath,
+          section: payload.section,
+        });
+        return;
+      }
+      setPendingInsert({
+        context: 'slot',
+        containerPath: payload.containerPath,
+        accepts: payload.accepts,
+        index: payload.index,
+      });
+    },
+    [commitPending]
+  );
+
+  // Stable canvas callbacks — inline arrows here would change identity every render and
+  // defeat the canvas's Dagre-layout memo (which keys on these props).
+  const handleCanvasSelectNode = useCallback(
+    (id: string, target: EditTarget, caseTarget?: EditTarget) => selectNode({ id, target, caseTarget }),
+    [selectNode]
+  );
+  const handleClearSelection = useCallback(() => selectNode(null), [selectNode]);
+  const handleSpineInsert = useCallback(
+    (index: number) => {
+      commitPending();
+      setPendingInsert({ context: 'spine', index });
+    },
+    [commitPending]
+  );
+  const handleAddConnectorSection = useCallback(
+    (section: string) => onAddConnector?.(section as ConnectComponentType),
+    [onAddConnector]
+  );
+
+  // "Create new resource" from a node's resource field: the pick is created and linked in one step.
+  const handleRequestCreateResource = useCallback(
+    (kind: ResourceKind) => {
+      if (selected) {
+        // Flush in-progress edits first — the insert re-links the node on the current YAML.
+        commitPending();
+        setPendingInsert({ context: 'resourceForNode', kind, target: selected.target });
+      }
+    },
+    [selected, commitPending]
+  );
+
+  // Command-palette "go to": select + recenter (only nodes with an edit target are listed).
+  const handleJumpToNode = useCallback(
+    (node: PipelineFlowNode) => {
+      const jump = resolveJumpTarget(node, flowNodes);
+      if (jump) {
+        selectAndReveal(jump);
+      }
+    },
+    [flowNodes, selectAndReveal]
+  );
+  const handleJumpToNodeId = useCallback(
+    (nodeId: string) => {
+      const node = flowNodes.find((n) => n.id === nodeId);
+      if (node) {
+        handleJumpToNode(node);
+      }
+    },
+    [flowNodes, handleJumpToNode]
+  );
+
+  // The slot dictates the picker's component types; the top-level spine also offers resources.
+  let insertTypes: ConnectComponentType[] = INSERTABLE_TYPES;
+  if (pendingInsert?.context === 'slot') {
+    insertTypes = [pendingInsert.accepts];
+  } else if (pendingInsert?.context === 'switchCase') {
+    insertTypes = [pendingInsert.section];
+  } else if (pendingInsert?.context === 'resourceForNode') {
+    insertTypes = [pendingInsert.kind];
+  }
+
+  // Title/placeholder name the exact kind being added, e.g. "Insert an output" inside a switch.
+  const isResourceInsert = pendingInsert?.context === 'resourceForNode';
+  const slotKind =
+    pendingInsert?.context === 'slot'
+      ? pendingInsert.accepts
+      : pendingInsert?.context === 'switchCase'
+        ? pendingInsert.section
+        : undefined;
+  let insertTitle = 'Insert a step or resource';
+  if (isResourceInsert) {
+    insertTitle = `Add ${pendingInsert.kind === 'cache' ? 'cache' : 'rate limit'} resource`;
+  } else if (slotKind) {
+    insertTitle = `Insert ${INSERT_KIND_LABEL[slotKind]}`;
+  }
+
+  return (
+    // reducedMotion="user": the global prefers-reduced-motion CSS can't reach JS-driven motion animations.
+    <MotionConfig reducedMotion="user">
+      <div className="flex h-full w-full">
+        <div className="relative min-w-0 flex-1">
+          {/* Don't mount the canvas pre-hydration — its parse debounce would briefly render a placeholder graph. */}
+          {isLoading ? (
+            <PipelineFlowSkeleton />
+          ) : (
+            <>
+              <PipelineFlowCanvas
+                configYaml={yamlContent}
+                flashNodeIds={flash.ids}
+                flashToken={flash.token}
+                focusNodeId={focus.id || undefined}
+                focusToken={focus.token}
+                lintErrorsByNode={lintMessagesByNode}
+                onAddConnector={isEditing && onAddConnector ? handleAddConnectorSection : undefined}
+                onAddSasl={isEditing ? onAddSasl : undefined}
+                onAddTopic={isEditing ? onAddTopic : undefined}
+                onClearSelection={handleClearSelection}
+                onInsert={isEditing ? handleSpineInsert : undefined}
+                onSelectNode={handleCanvasSelectNode}
+                onSlotInsert={isEditing ? handleSlotInsert : undefined}
+                selectedNodeId={selected?.id}
+                selectedTargetKind={selected?.target.kind}
+                unsavedNodeIds={unsavedNodeIds}
+              />
+              {isEditing ? (
+                <TooltipProvider>
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
+                            <Undo2 />
+                          </Button>
+                        }
+                      />
+                      <TooltipContent>
+                        <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
+                            <Redo2 />
+                          </Button>
+                        }
+                      />
+                      <TooltipContent>
+                        <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
+              ) : null}
+              <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
+                <PipelineProblemsPanel
+                  missingSecrets={missingSecrets}
+                  onAddSecrets={isEditing ? () => setIsSecretsDialogOpen(true) : undefined}
+                  onSelectProblem={(id, target, caseTarget) => selectAndReveal({ id, target, caseTarget })}
+                  problems={problems}
+                />
+                <PipelineUnsavedPanel nodes={unsavedNodeList} onSelect={handleJumpToNodeId} />
+              </div>
+              {onBrowseTemplates ? (
+                <TemplateGalleryCta
+                  className="right-auto bottom-6 left-1/2 w-80 max-w-[calc(100%-2rem)] -translate-x-1/2"
+                  hint={
+                    <>
+                      or press{' '}
+                      <Kbd size="xs" variant="filled">
+                        /
+                      </Kbd>{' '}
+                      to search nodes &amp; actions
+                    </>
+                  }
+                  onBrowseTemplates={onBrowseTemplates}
+                  show={isEditing && offerTemplate}
+                />
+              ) : null}
+            </>
+          )}
+        </div>
+
+        {/* Inspector rail. Animate its width (not a transform) so the canvas and its right-anchored
+          minimap/zoom controls glide in lockstep instead of snapping. */}
+        <AnimatePresence>
+          {selected ? (
+            <motion.aside
+              animate={{ width: 384, opacity: 1 }}
+              className="relative shrink-0 overflow-hidden border-border border-l bg-background"
+              exit={{ width: 0, opacity: 0 }}
+              initial={{ width: 0, opacity: 0 }}
+              key="node-inspector"
+              transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+            >
+              {/* min-width clips the content instead of reflowing it while the rail width animates. */}
+              <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
+                <NodeInspector
+                  caseTarget={selected.caseTarget}
+                  childItems={childItems}
+                  commitRef={isEditing ? commitRef : undefined}
+                  components={components}
+                  lintHints={lintByNode.get(selected.id)}
+                  onApply={onYamlChange}
+                  onClose={() => selectNode(null)}
+                  onCreateResource={isEditing ? handleRequestCreateResource : undefined}
+                  onDelete={isEditing ? setPendingDelete : undefined}
+                  onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+                  onSelectChild={selectAndReveal}
+                  readOnly={!isEditing}
+                  target={selected.target}
+                  yaml={yamlContent}
+                />
+              </div>
+            </motion.aside>
+          ) : null}
+        </AnimatePresence>
+
+        <AddConnectorDialog
+          components={componentList}
+          connectorType={insertTypes}
+          isOpen={pendingInsert !== null}
+          onAddConnector={handleInsertSelected}
+          onCloseAddConnector={() => setPendingInsert(null)}
+          searchPlaceholder={
+            isResourceInsert ? 'Search caches, rate limits…' : slotKind ? `Search ${slotKind}s…` : 'Search components…'
+          }
+          title={insertTitle}
+        />
+
+        <AddSecretsDialog
+          existingSecrets={existingSecrets}
+          isOpen={isSecretsDialogOpen}
+          missingSecrets={missingSecrets}
+          onClose={() => setIsSecretsDialogOpen(false)}
+          onSecretsCreated={() => setIsSecretsDialogOpen(false)}
+          onUpdateEditorContent={handleRenameSecretReferences}
+        />
+
+        <CanvasCommandPalette
+          canRedo={canRedo}
+          canUndo={canUndo}
+          nodes={flowNodes}
+          onJumpToNode={handleJumpToNode}
+          onOpenChange={setIsPaletteOpen}
+          onRedo={isEditing ? redo : undefined}
+          onUndo={isEditing ? undo : undefined}
+          onViewSelectedInYaml={selected && onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+          open={isPaletteOpen}
+        />
+
+        <AlertDialog onOpenChange={(open) => (open ? undefined : setPendingDelete(null))} open={pendingDelete !== null}>
+          <AlertDialogContent>
+            <AlertDialogHeader className="text-left">
+              <AlertDialogTitle>Remove this node?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingDeleteName ? (
+                  <>
+                    This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You
+                    can undo it with {UNDO_SHORTCUT}.
+                  </>
+                ) : (
+                  <>This removes the node from the pipeline. You can undo it with {UNDO_SHORTCUT}.</>
+                )}
+              </AlertDialogDescription>
+              {pendingDeleteRefCount > 0 ? (
+                <Alert className="mt-1" icon={<TriangleAlert />} variant="warning">
+                  <AlertDescription>
+                    <span>
+                      This resource is still referenced by{' '}
+                      <span className="font-semibold">{pluralizeWithNumber(pendingDeleteRefCount, 'node')}</span>.
+                      Removing it leaves {pendingDeleteRefCount === 1 ? 'that reference' : 'those references'} pointing
+                      at a missing resource.
+                    </span>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
+              <AlertDialogAction onClick={confirmDeleteNode} render={<Button variant="destructive">Remove</Button>} />
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </MotionConfig>
+  );
+}

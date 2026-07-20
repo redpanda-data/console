@@ -10,22 +10,21 @@
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { z } from 'zod';
 
 import { ConnectOnboardingWizard } from '../../components/pages/rp-connect/onboarding/onboarding-wizard';
 
 const searchSchema = z.object({
-  step: fallback(z.string().optional(), undefined),
-  serverless: fallback(z.string().optional(), undefined),
+  step: z.string().optional().catch(undefined),
+  serverless: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/rp-connect/wizard')({
   staticData: {
     title: 'Connect Wizard',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   beforeLoad: ({ search }) => {
     // Tier 1: enablePipelineDiagrams → redirect to pipeline editor, skip wizard entirely
     // Tier 2/3: render wizard (enableRpcnTiles check happens inside the wizard's PipelinePage embed)

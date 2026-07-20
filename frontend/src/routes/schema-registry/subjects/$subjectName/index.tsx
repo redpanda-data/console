@@ -10,20 +10,19 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
 import SchemaDetailsView from '../../../../components/pages/schemas/schema-details';
 
 const searchSchema = z.object({
-  version: fallback(z.string().optional(), undefined),
+  version: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/schema-registry/subjects/$subjectName/')({
   staticData: {
     title: 'Schema Details',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   component: SchemaDetailsWrapper,
 });
 

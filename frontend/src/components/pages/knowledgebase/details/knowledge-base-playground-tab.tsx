@@ -25,7 +25,6 @@ import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Textarea } from '../../../redpanda-ui/components/textarea';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { JSONView } from '../../../ui/json/json-view';
 
 type PlaygroundTabProps = {
@@ -197,7 +196,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Search className="h-4 w-4" />
-          <Text className="font-semibold">Playground</Text>
+          <div className="font-semibold text-body">Playground</div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
@@ -274,9 +273,7 @@ export const PlaygroundTab = React.memo<PlaygroundTabProps>(({ knowledgeBase }) 
           {/* Loading skeleton */}
           {isQueryLoading && retrievalResults.length === 0 && (
             <div className="flex flex-col gap-2">
-              <Text as="div" variant="small">
-                Results
-              </Text>
+              <div className="text-body-sm">Results</div>
               <Skeleton className="h-[250px] w-full rounded-xl" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />

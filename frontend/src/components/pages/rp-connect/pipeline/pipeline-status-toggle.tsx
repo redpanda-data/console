@@ -164,7 +164,7 @@ export function PipelineStatusToggle({
           </DialogBody>
           <DialogFooter>
             <Button onClick={() => setIsStopConfirmOpen(false)} variant="ghost">
-              Cancel
+              {isStarting ? 'Keep starting' : 'Cancel'}
             </Button>
             <Button
               disabled={isStopPending}

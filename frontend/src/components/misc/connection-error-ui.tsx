@@ -14,7 +14,6 @@ import type { FC } from 'react';
 
 import { AlertIcon, RefreshIcon } from '../icons';
 import { Button } from '../redpanda-ui/components/button';
-import { Heading, Text } from '../redpanda-ui/components/typography';
 
 type ConnectionErrorUIProps = {
   error: ConnectError;
@@ -56,12 +55,8 @@ export const ConnectionErrorUI: FC<ConnectionErrorUIProps> = ({ error, onRetry }
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-background-error-subtle">
             <AlertIcon className="h-6 w-6 text-error" />
           </div>
-          <Heading className="mb-2 text-neutral-900" level={3}>
-            {title}
-          </Heading>
-          <Text className="mb-6 text-neutral-600" variant="small">
-            {description}
-          </Text>
+          <h3 className="mb-2 text-heading-md text-neutral-900">{title}</h3>
+          <div className="mb-6 text-body-sm text-neutral-600">{description}</div>
           <Button onClick={onRetry}>
             <RefreshIcon className="mr-2 h-4 w-4" />
             Try Again

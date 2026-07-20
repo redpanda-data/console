@@ -5,7 +5,6 @@ import { FormProvider, type Resolver, type UseFormReturn, useForm } from 'react-
 
 import { Alert, AlertDescription, AlertTitle } from '../alert';
 import { TooltipProvider } from '../tooltip';
-import { Heading, Text } from '../typography';
 
 import type { SchemaProvider } from './core-types';
 import {
@@ -322,11 +321,9 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
                   className="space-y-1 border-border/60 border-b pb-4"
                   data-testid={`${testIdPrefix}-root-header`}
                 >
-                  {protoMessageUi.title ? <Heading level={2}>{protoMessageUi.title}</Heading> : null}
+                  {protoMessageUi.title ? <h2 className="text-heading-lg">{protoMessageUi.title}</h2> : null}
                   {protoMessageUi.description ? (
-                    <Text className="text-muted-foreground" variant="small">
-                      {protoMessageUi.description}
-                    </Text>
+                    <div className="text-body-sm text-muted-foreground">{protoMessageUi.description}</div>
                   ) : null}
                 </header>
               ) : null}

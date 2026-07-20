@@ -75,7 +75,6 @@ import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { TagsValue } from '../../../redpanda-ui/components/tags';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { type FlatAclEntry, type RoleAclGroup, useUserPermissions } from '../hooks/use-principal-permissions';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
@@ -351,12 +350,12 @@ export const UsersTabNew: FC = () => {
       <SecurityTabsNav />
       <CreateUserDialog key={createDialogKey} onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen} />
       <ListLayout className="my-4">
-        <Text className="text-muted-foreground text-sm sm:text-base">
+        <div className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp short="SASL-SCRAM user accounts managed by your cluster." title="Users">
             These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication
             identities (for example, OIDC, mTLS) on the Permissions List page.
           </DescriptionWithHelp>
-        </Text>
+        </div>
 
         <ListLayoutFilters
           actions={

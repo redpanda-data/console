@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 
 export type EmbeddingModel = {
   name: string;
@@ -76,10 +75,8 @@ export const EmbeddingModelSelect = ({ value, onValueChange, models, placeholder
           {models.openai.map((model) => (
             <SelectItem key={model.name} value={model.name}>
               <div className="flex flex-col gap-0.5">
-                <Text className="font-medium">{model.name}</Text>
-                <Text className="text-xs" variant="muted">
-                  {model.description}
-                </Text>
+                <div className="text-body font-medium">{model.name}</div>
+                <div className="text-body-sm text-muted-foreground">{model.description}</div>
               </div>
             </SelectItem>
           ))}
@@ -94,10 +91,8 @@ export const EmbeddingModelSelect = ({ value, onValueChange, models, placeholder
           {models.cohere.map((model) => (
             <SelectItem key={model.name} value={model.name}>
               <div className="flex flex-col gap-0.5">
-                <Text className="font-medium">{model.name}</Text>
-                <Text className="text-xs" variant="muted">
-                  {model.description}
-                </Text>
+                <div className="text-body font-medium">{model.name}</div>
+                <div className="text-body-sm text-muted-foreground">{model.description}</div>
               </div>
             </SelectItem>
           ))}

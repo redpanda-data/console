@@ -10,7 +10,6 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
 import { z } from 'zod';
@@ -20,14 +19,14 @@ import RpConnectPipelinesCreate from '../../components/pages/rp-connect/pipeline
 const PipelinePage = lazy(() => import('../../components/pages/rp-connect/pipeline'));
 
 const searchSchema = z.object({
-  serverless: fallback(z.string().optional(), undefined),
+  serverless: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/rp-connect/create')({
   staticData: {
     title: 'Create Pipeline',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   component: CreatePipelineRoute,
 });
 

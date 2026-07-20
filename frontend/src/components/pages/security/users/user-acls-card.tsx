@@ -16,7 +16,6 @@ import { useState } from 'react';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { type AclDetail, getRuleDataTestId, parsePrincipal } from '../shared/acl-model';
 import { OperationsBadge } from '../shared/operations-badge';
 
@@ -119,7 +118,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
           </CardAction>
         </CardHeader>
         <CardContent>
-          <Text>No ACLs assigned to this user.</Text>
+          <div className="text-body">No ACLs assigned to this user.</div>
         </CardContent>
       </Card>
     );

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useState } from 'react';
 
@@ -80,10 +80,10 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
-                <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                   <img alt="Gemini" className="h-4 w-4" src={GeminiLogo} />
                   Gemini
-                </Text>
+                </span>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
               <Label className="font-medium text-sm">Scope</Label>
@@ -104,9 +104,9 @@ export const ClientGemini = ({ mcpServer }: ClientGeminiProps) => {
                   </SelectContent>
                 </Select>
               </div>
-              <Text className="text-muted-foreground" variant="small">
+              <div className="text-body-sm text-muted-foreground">
                 {SCOPE_OPTIONS.find((option) => option.value === selectedScope)?.description}
-              </Text>
+              </div>
             </div>
           </ListItem>
           <ListItem>

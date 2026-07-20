@@ -11,7 +11,6 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldError } from 'components/redpanda-ui/components/field';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { Plus } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -55,11 +54,11 @@ export const ToolsStep: React.FC<ToolsStepProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <Heading level={2}>Tools Configuration</Heading>
-        <Text variant="muted">
+        <h2 className="text-heading-lg">Tools Configuration</h2>
+        <div className="text-body text-muted-foreground">
           Define the tools that your MCP server will provide. Each tool requires a name, component type, and YAML
           configuration.
-        </Text>
+        </div>
       </div>
 
       <div className={`grid grid-cols-1 gap-6 ${hasSecretWarnings ? 'xl:grid-cols-3' : ''}`}>

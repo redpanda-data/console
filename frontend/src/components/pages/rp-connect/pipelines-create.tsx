@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
@@ -127,7 +127,7 @@ const RpConnectPipelinesCreateContent = () => {
   return (
     <PageContent>
       <div className="my-2">
-        <UIText>
+        <div className="text-body">
           For help creating your pipeline, see our{' '}
           <UILink
             href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
@@ -153,7 +153,7 @@ const RpConnectPipelinesCreateContent = () => {
             connector catalog
           </UILink>
           .
-        </UIText>
+        </div>
       </div>
 
       <Flex flexDirection="column" gap={3}>
@@ -459,7 +459,7 @@ export const PipelineEditor = (p: {
                 <Alert variant="destructive">
                   <AlertCircle size={16} />
                   <AlertDescription>
-                    <UIText>
+                    <div className="text-body">
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
                       <UILink
                         href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
@@ -469,7 +469,7 @@ export const PipelineEditor = (p: {
                         see our quickstart documentation
                       </UILink>
                       .
-                    </UIText>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
