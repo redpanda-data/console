@@ -47,7 +47,7 @@ describe('ConfigurationSchemaRegistry', () => {
       />
     );
 
-    expect(screen.getByTestId('schema-registry-mode-badge')).toHaveTextContent('_schemas topic');
+    expect(screen.getByTestId('schema-registry-mode-badge')).toHaveTextContent('Redpanda');
     expect(screen.getByTestId('schema-registry-status-badge')).toHaveTextContent('Enabled');
     expect(screen.getByTestId('schema-registry-topic-description')).toHaveTextContent(
       "Replicate the source cluster's _schemas topic, which replaces the shadow cluster's Schema Registry."
@@ -85,7 +85,7 @@ describe('ConfigurationSchemaRegistry', () => {
       paused: false,
     });
 
-    expect(screen.getByTestId('schema-registry-mode-badge')).toHaveTextContent('Sync over API');
+    expect(screen.getByTestId('schema-registry-mode-badge')).toHaveTextContent('Other');
     expect(screen.getByTestId('schema-registry-status-badge')).toHaveTextContent('Enabled');
     expect(screen.getByTestId('sr-config-source-url-value')).toHaveTextContent(
       'https://psrc-x1234.us-east-1.aws.confluent.cloud'
@@ -170,7 +170,7 @@ describe('ConfigurationSchemaRegistry', () => {
       paused: true,
     });
 
-    expect(screen.getByTestId('schema-registry-mode-badge')).toHaveTextContent('Sync over API');
+    expect(screen.getByTestId('schema-registry-mode-badge')).toHaveTextContent('Other');
     expect(screen.getByTestId('schema-registry-status-badge')).toHaveTextContent('Paused');
   });
 

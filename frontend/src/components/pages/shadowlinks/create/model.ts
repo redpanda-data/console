@@ -78,6 +78,24 @@ const schemaRegistrySchema = z.object({
     ca: srCertificateSchema.optional(),
     clientCert: srCertificateSchema.optional(),
     clientKey: srCertificateSchema.optional(),
+    // The API never returns the stored client key, only its fingerprint. On
+    // edit these mark a key that exists server-side; sending an empty key in
+    // the update keeps it.
+    existingKeyConfigured: z.boolean(),
+    existingKeyFingerprint: z.string(),
+    // TLS configured as certificate file paths (e.g. via rpk). Console can't
+    // edit these; they are round-tripped verbatim.
+    filePaths: z
+      .object({
+        caPath: z.string(),
+        keyPath: z.string(),
+        certPath: z.string(),
+      })
+      .optional(),
+    // TLSSettings.do_not_set_sni_hostname, round-tripped so rebuilding the
+    // message doesn't silently reset it. No UI; only rpk/API-created links
+    // set it.
+    doNotSetSniHostname: z.boolean(),
   }),
   scopeMode: z.enum(['all', 'specify']),
   contexts: z.array(z.string()),
@@ -97,138 +115,158 @@ const schemaRegistrySchema = z.object({
     maxSourceRequestRate: z.string(),
     unsupportedSchemaFeatures: z.enum(['fail', 'remove']),
   }),
+  // No UI: hydrated on edit and round-tripped so a message rebuild doesn't
+  // silently unpause a paused sync. Create always sends false.
+  paused: z.boolean(),
 });
 
 export type SchemaRegistryFormValues = z.infer<typeof schemaRegistrySchema>;
 
+// The key side of the mTLS pair is satisfied by a fresh upload or by a key
+// already stored server-side (edit flow).
+export const hasSrClientKeyMaterial = (mtls: SchemaRegistryFormValues['mtls']): boolean =>
+  hasSrCertificate(mtls.clientKey) || mtls.existingKeyConfigured;
+
 // Form schema with validation
-export const FormSchema = z
-  .object({
-    // Basic info
-    name: z.string().min(1, 'Shadow link name is required'),
+const formSchemaShape = z.object({
+  // Basic info
+  name: z.string().min(1, 'Shadow link name is required'),
 
-    // Source cluster connection
-    bootstrapServers: z
-      .array(
-        z.object({
-          value: z
-            .string()
-            .trim()
-            .min(1, 'at least one server url is required')
-            .regex(/^[a-zA-Z0-9.-]+:\d+$/, 'Must be in format host:port (e.g., localhost:9092)'),
-        })
-      )
-      .min(1, 'At least one bootstrap server is required'),
-
-    // SASL authentication
-    authMethod: z.enum([AUTH_METHOD.NONE, AUTH_METHOD.SCRAM, AUTH_METHOD.PLAIN]),
-    scramCredentials: z
-      .object({
-        username: z.string(),
-        password: z.string(),
-        mechanism: z.enum(ScramMechanism),
-      })
-      .optional(),
-    plainCredentials: z
-      .object({
-        username: z.string(),
-        password: z.string(),
-      })
-      .optional(),
-    advanceClientOptions: z.object({
-      metadataMaxAgeMs: z.number(),
-      connectionTimeoutMs: z.number(),
-      retryBackoffMs: z.number(),
-      fetchWaitMaxMs: z.number(),
-      fetchMinBytes: z.number(),
-      fetchMaxBytes: z.number(),
-      fetchPartitionMaxBytes: z.number(),
-    }),
-    // TLS configuration
-    useTls: z.boolean(),
-
-    // mTLS configuration (optional - determined by presence of certificates)
-    mtlsMode: z.enum([TLS_MODE.FILE_PATH, TLS_MODE.PEM]),
-    mtls: z.object({
-      ca: z
-        .object({
-          filePath: z.string().optional(),
-          pemContent: z.string().optional(),
-          fileName: z.string().optional(),
-        })
-        .optional(),
-      clientCert: z
-        .object({
-          filePath: z.string().optional(),
-          pemContent: z.string().optional(),
-          fileName: z.string().optional(),
-        })
-        .optional(),
-      clientKey: z
-        .object({
-          filePath: z.string().optional(),
-          pemContent: z.string().optional(),
-          fileName: z.string().optional(),
-        })
-        .optional(),
-    }),
-
-    // Topic selection
-    topicsMode: z.enum(['all', 'specify']),
-    topics: z.array(
+  // Source cluster connection
+  bootstrapServers: z
+    .array(
       z.object({
-        patternType: z.enum(PatternType),
-        filterType: z.enum(FilterType),
-        name: z.string().trim().min(1, 'name is required'),
+        value: z
+          .string()
+          .trim()
+          .min(1, 'at least one server url is required')
+          .regex(/^[a-zA-Z0-9.-]+:\d+$/, 'Must be in format host:port (e.g., localhost:9092)'),
       })
-    ),
-    // Topic properties
-    topicProperties: z.array(z.string()).optional(),
-    excludeDefault: z.boolean(),
+    )
+    .min(1, 'At least one bootstrap server is required'),
 
-    // Consumer offset sync
-    enableConsumerOffsetSync: z.boolean(),
-    consumersMode: z.enum(['all', 'specify']),
-    consumers: z.array(
-      z.object({
-        patternType: z.enum(PatternType),
-        filterType: z.enum(FilterType),
-        name: z.string().trim().min(1, 'name is required'),
+  // SASL authentication
+  authMethod: z.enum([AUTH_METHOD.NONE, AUTH_METHOD.SCRAM, AUTH_METHOD.PLAIN]),
+  scramCredentials: z
+    .object({
+      username: z.string(),
+      password: z.string(),
+      mechanism: z.enum(ScramMechanism),
+    })
+    .optional(),
+  plainCredentials: z
+    .object({
+      username: z.string(),
+      password: z.string(),
+    })
+    .optional(),
+  advanceClientOptions: z.object({
+    metadataMaxAgeMs: z.number(),
+    connectionTimeoutMs: z.number(),
+    retryBackoffMs: z.number(),
+    fetchWaitMaxMs: z.number(),
+    fetchMinBytes: z.number(),
+    fetchMaxBytes: z.number(),
+    fetchPartitionMaxBytes: z.number(),
+  }),
+  // TLS configuration
+  useTls: z.boolean(),
+
+  // mTLS configuration (optional - determined by presence of certificates)
+  mtlsMode: z.enum([TLS_MODE.FILE_PATH, TLS_MODE.PEM]),
+  mtls: z.object({
+    ca: z
+      .object({
+        filePath: z.string().optional(),
+        pemContent: z.string().optional(),
+        fileName: z.string().optional(),
       })
-    ),
-
-    // ACL filters
-    aclsMode: z.enum(['all', 'specify']),
-    aclFilters: z
-      .array(
-        z.object({
-          // Resource filter
-          resourceType: z.enum(ACLResource).optional(),
-          resourcePattern: z.enum(ACLPattern).optional(),
-          resourceName: z.string().optional(),
-
-          // Access filter
-          principal: z.string().optional(),
-          operation: z.enum(ACLOperation).optional(),
-          permissionType: z.enum(ACLPermissionType).optional(),
-          host: z.string().optional(),
-        })
-      )
       .optional(),
+    clientCert: z
+      .object({
+        filePath: z.string().optional(),
+        pemContent: z.string().optional(),
+        fileName: z.string().optional(),
+      })
+      .optional(),
+    clientKey: z
+      .object({
+        filePath: z.string().optional(),
+        pemContent: z.string().optional(),
+        fileName: z.string().optional(),
+      })
+      .optional(),
+  }),
 
-    // Schema Registry sync (legacy switch; mirrored to schemaRegistry.mode by
-    // the redesigned section so the topic-mode request path stays unchanged)
-    enableSchemaRegistrySync: z.boolean(),
+  // Topic selection
+  topicsMode: z.enum(['all', 'specify']),
+  topics: z.array(
+    z.object({
+      patternType: z.enum(PatternType),
+      filterType: z.enum(FilterType),
+      name: z.string().trim().min(1, 'name is required'),
+    })
+  ),
+  // Topic properties
+  topicProperties: z.array(z.string()).optional(),
+  excludeDefault: z.boolean(),
 
-    // Redesigned Schema Registry section (version-gated on the connected
-    // cluster's shadowLinkSchemaRegistrySync feature)
-    schemaRegistry: schemaRegistrySchema,
-  })
-  .superRefine((data, ctx) => {
-    refineAuthCredentials(data, ctx);
-    refineMtlsConsistency(data, ctx);
-    refineShadowSchemaRegistry(data.schemaRegistry, ctx);
-  });
+  // Consumer offset sync
+  enableConsumerOffsetSync: z.boolean(),
+  consumersMode: z.enum(['all', 'specify']),
+  consumers: z.array(
+    z.object({
+      patternType: z.enum(PatternType),
+      filterType: z.enum(FilterType),
+      name: z.string().trim().min(1, 'name is required'),
+    })
+  ),
+
+  // ACL filters
+  aclsMode: z.enum(['all', 'specify']),
+  aclFilters: z
+    .array(
+      z.object({
+        // Resource filter
+        resourceType: z.enum(ACLResource).optional(),
+        resourcePattern: z.enum(ACLPattern).optional(),
+        resourceName: z.string().optional(),
+
+        // Access filter
+        principal: z.string().optional(),
+        operation: z.enum(ACLOperation).optional(),
+        permissionType: z.enum(ACLPermissionType).optional(),
+        host: z.string().optional(),
+      })
+    )
+    .optional(),
+
+  // Schema Registry sync (legacy switch; mirrored to schemaRegistry.mode by
+  // the redesigned section so the topic-mode request path stays unchanged)
+  enableSchemaRegistrySync: z.boolean(),
+
+  // Redesigned Schema Registry section (version-gated on the connected
+  // cluster's shadowLinkSchemaRegistrySync feature)
+  schemaRegistry: schemaRegistrySchema,
+});
+
+export const FormSchema = formSchemaShape.superRefine((data, ctx) => {
+  refineAuthCredentials(data, ctx);
+  refineMtlsConsistency(data, ctx);
+  refineShadowSchemaRegistry(data.schemaRegistry, ctx);
+});
+
+/**
+ * Edit-page variant used while the Schema Registry feature gate is closed:
+ * the redesigned SR section isn't rendered there, so an api-mode link's
+ * hydrated slice (e.g. its never-returned basic-auth password) must not block
+ * saving the rest of the form. The SR slice itself stays untouched in that
+ * state, so the update builder emits no SR mask for it.
+ */
+export const FormSchemaWithoutSchemaRegistryRules = formSchemaShape.superRefine((data, ctx) => {
+  refineAuthCredentials(data, ctx);
+  refineMtlsConsistency(data, ctx);
+});
 
 const refineAuthCredentials = (
   data: {
@@ -310,8 +348,15 @@ const refineMtlsConsistency = (
   }
 };
 
-const SR_DURATION_REGEX = /^(\d+)(ms|s|m|h)$/;
-const SR_DURATION_UNIT_SECONDS: Record<string, number> = { ms: 0.001, s: 1, m: 60, h: 3600 };
+const SR_DURATION_REGEX = /^(\d+)(ns|us|ms|s|m|h)$/;
+const SR_DURATION_UNIT_SECONDS: Record<string, number> = {
+  ns: 0.000_000_001,
+  us: 0.000_001,
+  ms: 0.001,
+  s: 1,
+  m: 60,
+  h: 3600,
+};
 const SR_POSITIVE_INT_REGEX = /^[1-9]\d*$/;
 // google.protobuf.Duration and int32 upper bounds: past these the request
 // fails at serialization.
@@ -419,13 +464,14 @@ const addSrBasicAuthIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx
 // Client key and cert are individually optional, but if one is provided both
 // must be. Skipped when TLS is off: the mTLS UI is hidden and the request
 // builder omits TLS settings, so leftover uploads must not block the wizard
-// invisibly.
+// invisibly. Also skipped for file-path TLS (rpk-created links): those
+// settings are read-only and round-tripped verbatim.
 const addSrMtlsPairIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
-  if (!sr.useTls) {
+  if (!sr.useTls || sr.mtls.filePaths) {
     return;
   }
 
-  const hasClientKey = hasSrCertificate(sr.mtls.clientKey);
+  const hasClientKey = hasSrClientKeyMaterial(sr.mtls);
   const hasClientCert = hasSrCertificate(sr.mtls.clientCert);
 
   if (hasClientKey && !hasClientCert) {
@@ -440,6 +486,17 @@ const addSrMtlsPairIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx)
     ctx.addIssue({
       code: 'custom',
       message: 'Client private key is required when client certificate is provided',
+      path: ['schemaRegistry', 'mtls', 'clientKey'],
+    });
+  }
+
+  // A cert uploaded this session (hydrated certs carry no fileName) cannot
+  // pair with the key stored server-side. Require the matching key upload.
+  const certReplaced = hasClientCert && Boolean(sr.mtls.clientCert?.fileName);
+  if (certReplaced && sr.mtls.existingKeyConfigured && !hasSrCertificate(sr.mtls.clientKey)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Upload the matching private key when replacing the client certificate',
       path: ['schemaRegistry', 'mtls', 'clientKey'],
     });
   }
@@ -646,6 +703,10 @@ export const initialValues: FormValues = {
       ca: undefined,
       clientCert: undefined,
       clientKey: undefined,
+      existingKeyConfigured: false,
+      existingKeyFingerprint: '',
+      filePaths: undefined,
+      doNotSetSniHostname: false,
     },
     scopeMode: 'all',
     contexts: [],
@@ -658,5 +719,6 @@ export const initialValues: FormValues = {
       maxSourceRequestRate: '',
       unsupportedSchemaFeatures: 'fail',
     },
+    paused: false,
   },
 };

@@ -28,7 +28,7 @@ import { describe, expect, test } from 'vitest';
 
 import { buildControlplaneUpdateRequest, buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
-import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
+import { AUTH_METHOD, initialValues, SCHEMA_REGISTRY_MODE, TLS_MODE } from '../create/model';
 
 // Base form values for testing
 const baseFormValues: FormValues = {
@@ -471,5 +471,41 @@ describe('buildDataplaneUpdateRequest', () => {
 
       expect(result.updateMask?.paths).toEqual([]);
     });
+  });
+});
+
+describe('schema registry api mode through both builders', () => {
+  const apiFormValues = (): FormValues => ({
+    ...baseFormValues,
+    schemaRegistry: {
+      ...initialValues.schemaRegistry,
+      mode: SCHEMA_REGISTRY_MODE.API,
+      sourceUrl: 'http://sr.example.com',
+      useTls: false,
+      paused: true,
+    },
+  });
+
+  test('controlplane request carries the api oneof with the stripped mask path', () => {
+    const request = buildControlplaneUpdateRequest('test-id-123', apiFormValues(), baseFormValues);
+
+    expect(request.updateMask?.paths).toEqual(['schema_registry_sync_options']);
+    const mode = request.shadowLink?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
+    expect(mode?.case).toBe('shadowSchemaRegistryApi');
+    if (mode?.case === 'shadowSchemaRegistryApi') {
+      expect(mode.value.sourceUrl).toBe('http://sr.example.com');
+      expect(mode.value.paused).toBe(true);
+    }
+  });
+
+  test('dataplane request carries the api oneof with the prefixed mask path', () => {
+    const request = buildDataplaneUpdateRequest('test-shadow-link', apiFormValues(), createBaseShadowLink());
+
+    expect(request.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
+    const mode = request.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
+    expect(mode?.case).toBe('shadowSchemaRegistryApi');
+    if (mode?.case === 'shadowSchemaRegistryApi') {
+      expect(mode.value.paused).toBe(true);
+    }
   });
 });

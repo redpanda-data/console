@@ -19,8 +19,8 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
-import { mapSchemaRegistrySyncOptions } from './schema-registry';
-import { AUTH_METHOD, type FormValues, initialValues, TLS_MODE } from '../create/model';
+import { mapSchemaRegistrySyncOptions, mapSchemaRegistrySyncOptionsToFormValues } from './schema-registry';
+import { AUTH_METHOD, type FormValues, TLS_MODE } from '../create/model';
 import {
   mapControlplaneStateToUnified,
   type UnifiedAuthenticationConfiguration,
@@ -428,18 +428,8 @@ const buildControlplaneACLsValues = (
  */
 const buildControlplaneSchemaRegistryValues = (
   shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> => {
-  const schemaRegistrySyncOptions = shadowLink.schemaRegistrySyncOptions;
-  const isEnabled = schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
-
-  return {
-    enableSchemaRegistrySync: isEnabled,
-    // The edit flow only exposes the legacy switch for now; the redesigned section's
-    // fields stay at their defaults. Deep-copy so callers can't mutate the
-    // shared module-level initialValues through the returned reference.
-    schemaRegistry: structuredClone(initialValues.schemaRegistry),
-  };
-};
+): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> =>
+  mapSchemaRegistrySyncOptionsToFormValues(shadowLink.schemaRegistrySyncOptions);
 
 /**
  * Build form values from controlplane shadow link data

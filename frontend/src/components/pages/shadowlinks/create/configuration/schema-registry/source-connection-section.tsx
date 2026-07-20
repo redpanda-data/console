@@ -20,11 +20,26 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
+import { isEmbedded } from 'config';
 import { InfoIcon } from 'lucide-react';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
+import { useListSecretsQuery } from 'react-query/api/secret';
 
 import { SrTlsConfiguration } from './sr-tls-configuration';
+import { extractSecretId, toSecretReference } from '../../connection/secret-reference';
 import { type FormValues, SR_AUTH_METHOD } from '../../model';
+
+const SR_PASSWORD_SECRET_TEXT: SecretSelectorCustomText = {
+  dialogDescription:
+    'Create a new secret for your Schema Registry HTTP Basic password. The secret will be stored securely.',
+  secretNamePlaceholder: 'e.g., SCHEMA_REGISTRY_PASSWORD',
+  secretValuePlaceholder: 'Enter password...',
+  secretValueDescription: 'Your Schema Registry HTTP Basic password',
+  emptyStateDescription: 'Create a secret to securely store your Schema Registry password',
+};
 
 const InfoTooltip = ({ content }: { content: string }) => (
   <TooltipProvider>
@@ -40,6 +55,17 @@ const InfoTooltip = ({ content }: { content: string }) => (
 export const SourceConnectionSection = () => {
   const { control, setValue } = useFormContext<FormValues>();
   const authMethod = useWatch({ control, name: 'schemaRegistry.authMethod' });
+
+  // Fetch secrets for SecretSelector (embedded mode only)
+  const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
+  const availableSecrets = useMemo(() => {
+    if (!secretsData?.secrets) {
+      return [];
+    }
+    return secretsData.secrets
+      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => Boolean(secret?.id))
+      .map((secret) => ({ id: secret.id, name: secret.id }));
+  }, [secretsData]);
 
   const handleAuthMethodChange = (next: string) => {
     if (next !== SR_AUTH_METHOD.NONE && next !== SR_AUTH_METHOD.BASIC) {
@@ -115,7 +141,21 @@ export const SourceConnectionSection = () => {
                   <InfoTooltip content="For Confluent Cloud, this is the API secret." />
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} testId="sr-basic-password-input" type="password" />
+                  {isEmbedded() ? (
+                    <SecretSelector
+                      availableSecrets={availableSecrets}
+                      customText={SR_PASSWORD_SECRET_TEXT}
+                      minValueLength={1}
+                      onChange={(secretId) => {
+                        field.onChange(secretId ? toSecretReference(secretId) : '');
+                      }}
+                      placeholder="Select or create password secret"
+                      scopes={[Scope.REDPANDA_CLUSTER]}
+                      value={extractSecretId(field.value)}
+                    />
+                  ) : (
+                    <Input {...field} testId="sr-basic-password-input" type="password" />
+                  )}
                 </FormControl>
                 <FormMessage />
               </FormItem>

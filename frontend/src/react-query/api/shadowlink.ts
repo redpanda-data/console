@@ -394,7 +394,6 @@ export const useEditShadowLink = (
   error: ConnectError | null;
   isUpdating: boolean;
   hasData: boolean;
-  isSchemaRegistryApiMode: boolean;
   updateShadowLink: (values: FormValues) => Promise<unknown>;
   dataplaneUpdate: ReturnType<typeof useUpdateShadowLinkMutation>;
   controlplaneUpdate: ReturnType<typeof useControlplaneUpdateShadowLinkMutation>;
@@ -446,23 +445,12 @@ export const useEditShadowLink = (
   // Check if data is available based on mode
   const hasData = embedded ? !!controlplaneShadowLink : !!shadowLink;
 
-  // Detect API mode from whichever source the edit form is built from. The
-  // create wizard cannot produce API-mode links in embedded mode, but the
-  // controlplane proto models the case, so links created via rpk/cloud API can
-  // carry it — without this check their API config could be overwritten with
-  // topic mode from the edit form.
-  const schemaRegistryShadowingMode = embedded
-    ? controlplaneShadowLink?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode
-    : shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
-  const isSchemaRegistryApiMode = schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryApi';
-
   return {
     formValues,
     isLoading: embedded ? controlplaneQuery.isLoading : dataplaneQuery.isLoading,
     error: embedded ? controlplaneQuery.error : dataplaneQuery.error,
     isUpdating: embedded ? controlplaneUpdate.isPending : dataplaneUpdate.isPending,
     hasData,
-    isSchemaRegistryApiMode,
     updateShadowLink: submitUpdate,
     dataplaneUpdate,
     controlplaneUpdate,
