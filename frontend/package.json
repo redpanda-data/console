@@ -161,7 +161,7 @@
     "@rsbuild/plugin-svgr": "2.0.3",
     "@rsbuild/plugin-tailwindcss": "2.0.2",
     "@rsbuild/plugin-yaml": "1.0.5",
-    "@rsdoctor/rspack-plugin": "1.5.12",
+    "@rsdoctor/rspack-plugin": "1.6.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "4.2.4",
     "@tanstack/react-query-devtools": "^5.90.2",
@@ -179,10 +179,10 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@typescript/native-preview": "^7.0.0-dev.20260108.1",
     "@vitejs/plugin-react": "^5.1.2",
-    "@vitest/browser": "^4.1.4",
-    "@vitest/browser-playwright": "^4.1.4",
-    "@vitest/coverage-v8": "^4.1.4",
-    "@vitest/ui": "^4.1.4",
+    "@vitest/browser": "^4.1.10",
+    "@vitest/browser-playwright": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/ui": "^4.1.10",
     "babel-plugin-react-compiler": "^1.0.0",
     "baseline-browser-mapping": "2.10.33",
     "happy-dom": "^20.8.9",
@@ -197,7 +197,7 @@
     "ultracite": "6.4.2",
     "vite-plugin-env-compatible": "^2.0.1",
     "vite-tsconfig-paths": "^6.0.3",
-    "vitest": "^4.1.4",
+    "vitest": "^4.1.10",
     "vitest-browser-react": "^2.2.0"
   },
   "overrides": {
@@ -209,7 +209,8 @@
     "@types/react-dom": "^19.2.3",
     "esbuild": "^0.28.1",
     "undici": "^7.28.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.0",
+    "launch-editor": "^2.14.1"
   },
   "resolutions": {
     "baseline-browser-mapping": "2.10.33",
@@ -218,6 +219,7 @@
     "@types/react-dom": "^19.2.3",
     "esbuild": "^0.28.1",
     "undici": "^7.28.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.0",
+    "launch-editor": "^2.14.1"
   }
 }
