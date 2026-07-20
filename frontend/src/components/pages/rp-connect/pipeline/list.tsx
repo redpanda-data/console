@@ -102,7 +102,14 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   };
 };
 
-// Names can repeat (e.g. two `redpanda` inputs), so suffix each occurrence for unique keys.
+/**
+ * Pairs each name with a unique React key by suffixing its occurrence index,
+ * since component names can repeat (e.g. two `redpanda` inputs).
+ *
+ * @param names - Component names, possibly containing duplicates.
+ * @returns One entry per input name, e.g. `["redpanda", "redpanda"]` →
+ *   `[{ name: "redpanda", key: "redpanda-0" }, { name: "redpanda", key: "redpanda-1" }]`.
+ */
 const toKeyedNames = (names: string[]): { name: string; key: string }[] => {
   const seen = new Map<string, number>();
   return names.map((name) => {
