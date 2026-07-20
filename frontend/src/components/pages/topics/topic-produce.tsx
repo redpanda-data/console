@@ -47,7 +47,6 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
-import { Heading, Text } from '../../redpanda-ui/components/typography';
 
 type EncodingOption = {
   value: PayloadEncoding | 'base64';
@@ -88,12 +87,12 @@ const encodingOptions: EncodingOption[] = [
 ];
 
 const protoBufInfoElement = (
-  <Text variant="small">
+  <p className="text-body-sm">
     Protobuf schemas can define multiple types. Specify which type you want to use for this message.{' '}
     <a href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
       Learn more here.
     </a>
-  </Text>
+  </p>
 );
 
 function encodingToLanguage(encoding: PayloadEncoding) {
@@ -674,7 +673,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
 export const TopicProducePage: FC<{ topicName: string }> = ({ topicName }) => {
   useEffect(() => {
-    setPageHeader('Produce', [
+    setPageHeader('Produce Kafka record', [
       { title: 'Topics', linkTo: '/topics' },
       { title: substringWithEllipsis(topicName, 50), linkTo: `/topics/${topicName}` },
       { title: 'Produce record', linkTo: `/topics/${topicName}/produce-record` },
@@ -695,8 +694,7 @@ export const TopicProducePage: FC<{ topicName: string }> = ({ topicName }) => {
 
   return (
     <div className="flex flex-col gap-2">
-      <Heading level={1}>Produce Kafka record</Heading>
-      <Text variant="lead">This will produce a single record to the topic.</Text>
+      <p className="text-lead text-muted-foreground">This will produce a single record to the topic.</p>
       <div className="mt-6">
         <PublishTopicForm topicName={topicName} />
       </div>

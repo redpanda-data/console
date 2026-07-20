@@ -38,7 +38,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type JSX, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -81,7 +81,7 @@ function DeleteRecordsIntro({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-4">
       <TrashIcon />
-      <Text variant="muted">{children}</Text>
+      <p className="text-body text-muted-foreground">{children}</p>
     </div>
   );
 }
@@ -311,9 +311,9 @@ const ManualOffsetContent = ({
         {marks ? (
           <div className="mt-1 flex justify-between">
             {Object.values(marks).map((label) => (
-              <Text key={label} variant="captionMedium">
+              <span className="text-caption" key={label}>
                 {label}
-              </Text>
+              </span>
             ))}
           </div>
         ) : null}
@@ -549,7 +549,9 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             <Alert variant="destructive">
               <AlertDescription>
                 <div className="flex flex-col gap-4">
-                  <Text>Errors occurred while processing your request. Contact your Kafka administrator.</Text>
+                  <p className="text-body">
+                    Errors occurred while processing your request. Contact your Kafka administrator.
+                  </p>
                   <List>
                     {errors.map((e) => (
                       <ListItem key={e}>{e}</ListItem>
