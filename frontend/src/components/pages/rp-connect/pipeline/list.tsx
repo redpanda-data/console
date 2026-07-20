@@ -66,6 +66,7 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
+import { docsLinks } from 'utils/docs-links';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { TabKafkaConnect } from '../../connect/overview';
@@ -700,7 +701,7 @@ const RedpandaConnectContent = () => (
       Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive
       real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt
       connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.{' '}
-      <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
+      <Link href={docsLinks.cloud.connectAbout} rel="noopener noreferrer" target="_blank">
         Learn more
       </Link>
     </div>
@@ -752,11 +753,7 @@ export const PipelineListPage = () => {
               <div className="text-body">
                 Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
                 different data systems.{' '}
-                <Link
-                  href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
+                <Link href={docsLinks.cloud.managedConnectors} rel="noopener noreferrer" target="_blank">
                   Learn more
                 </Link>
               </div>

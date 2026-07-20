@@ -12,6 +12,7 @@
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Link } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
@@ -29,7 +30,7 @@ export const SchemaNotConfiguredPage: FC = () => (
             connection credentials in the Redpanda Console config.
           </EmptyDescription>
         </EmptyHeader>
-        <Link href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+        <Link href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
           Redpanda Console Config Documentation
         </Link>
       </Empty>

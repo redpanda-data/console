@@ -30,6 +30,7 @@ import { useGetTraceHistogramQuery, useGetTraceQuery, useListTracesQuery } from 
 import { ONE_MINUTE } from 'react-query/react-query.utils';
 import { appGlobal } from 'state/app-global';
 import { uiState } from 'state/ui-state';
+import { docsLinks } from 'utils/docs-links';
 import { pluralize } from 'utils/string';
 import { getTimeRanges } from 'utils/time-range';
 import { z } from 'zod';
@@ -766,11 +767,7 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
         <div className="text-body text-muted-foreground">
           Trace and debug AI requests across your agentic dataplane — view LLM calls, tool invocations, and spans from
           agents, gateways, and services.{' '}
-          <Link
-            href="https://docs.redpanda.com/redpanda-cloud/ai-agents/observability"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <Link href={docsLinks.agentic.monitor} rel="noopener noreferrer" target="_blank">
             Learn more
           </Link>
         </div>

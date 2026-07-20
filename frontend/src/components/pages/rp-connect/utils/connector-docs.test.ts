@@ -16,31 +16,31 @@ import { getConnectorDocsUrl } from './connector-docs';
 describe('getConnectorDocsUrl', () => {
   it('builds correct URL for input connectors', () => {
     expect(getConnectorDocsUrl('input', 'aws_cloudwatch_logs')).toBe(
-      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/inputs/aws_cloudwatch_logs/'
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/aws_cloudwatch_logs/'
     );
   });
 
   it('builds correct URL for output connectors', () => {
     expect(getConnectorDocsUrl('output', 'redpanda')).toBe(
-      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/outputs/redpanda/'
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/redpanda/'
     );
   });
 
   it('builds correct URL for processor connectors', () => {
     expect(getConnectorDocsUrl('processor', 'mapping')).toBe(
-      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/processors/mapping/'
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/mapping/'
     );
   });
 
   it('builds correct URL for cache resources', () => {
     expect(getConnectorDocsUrl('cache', 'memory')).toBe(
-      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/caches/memory/'
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/caches/memory/'
     );
   });
 
   it('builds correct URL for rate limit resources', () => {
     expect(getConnectorDocsUrl('rate_limit', 'local')).toBe(
-      'https://docs.redpanda.com/redpanda-cloud/develop/connect/components/rate_limits/local/'
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/rate_limits/local/'
     );
   });
 

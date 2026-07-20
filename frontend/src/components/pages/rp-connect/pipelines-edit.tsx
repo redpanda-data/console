@@ -20,6 +20,7 @@ import {
   PipelineUpdateSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
@@ -147,27 +148,15 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
       <div className="my-2">
         <div className="text-body">
           For help editing your pipeline, see our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectQuickstart} rel="noopener noreferrer" target="_blank">
             quickstart documentation
           </UILink>
           , our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectCookbooks} rel="noopener noreferrer" target="_blank">
             library of examples
           </UILink>
           , or our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectComponentCatalog} rel="noopener noreferrer" target="_blank">
             connector catalog
           </UILink>
           .

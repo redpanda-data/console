@@ -39,6 +39,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { Link } from 'components/redpanda-ui/components/typography';
 import { ArrowDown, ArrowUp, ChevronsUpDown, InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import {
   clampPageIndex,
@@ -258,7 +259,7 @@ const QuotasList = () => {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Link href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+              <Link href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
                 <Button variant="primary">Redpanda Console documentation for roles and permissions</Button>
               </Link>
             </EmptyContent>

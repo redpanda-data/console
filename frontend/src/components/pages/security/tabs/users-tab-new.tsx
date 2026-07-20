@@ -47,6 +47,7 @@ import { KeyRoundIcon, ShieldIcon, Trash2Icon, UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 import { pluralize } from 'utils/string';
 
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
@@ -326,11 +327,7 @@ export const UsersTabNew: FC = () => {
                   </TooltipProvider>
                   <Button
                     render={
-                      <a
-                        href="https://docs.redpanda.com/current/manage/kubernetes/security/authentication/k-authentication/#scram"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <a href={docsLinks.selfManaged.scramAuthentication} rel="noopener noreferrer" target="_blank">
                         Read the docs →
                       </a>
                     }
