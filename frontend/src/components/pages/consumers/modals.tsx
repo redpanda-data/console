@@ -60,7 +60,7 @@ import { RadioGroup, RadioGroupItem } from '../../redpanda-ui/components/radio-g
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-import { InlineCode, Text as UiText } from '../../redpanda-ui/components/typography';
+import { InlineCode } from '../../redpanda-ui/components/typography';
 
 const ALL_SENTINEL = '__all__';
 
@@ -186,11 +186,11 @@ export class EditOffsetsModal extends Component<{
             <DialogTitle>Edit consumer group</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <UiText>
+            <p className="text-body">
               You are editing a group with {this.offsetsByTopic.length}{' '}
               {this.offsetsByTopic.length === 1 ? 'topic' : 'topics'} and {offsets.length}{' '}
               {offsets.length === 1 ? 'partition' : 'partitions'}.
-            </UiText>
+            </p>
 
             {/* Content */}
             <div className="mt-8">
@@ -278,7 +278,7 @@ export class EditOffsetsModal extends Component<{
           </div>
         </div>
 
-        <UiText className="text-muted-foreground text-sm">
+        <p className="text-body text-muted-foreground">
           {
             (
               {
@@ -290,7 +290,7 @@ export class EditOffsetsModal extends Component<{
               } as Record<EditOptions, string>
             )[this.state.selectedOption]
           }
-        </UiText>
+        </p>
 
         {this.state.selectedOption === 'time' && (
           <div className="mt-2 flex max-w-[300px] flex-col gap-1">
@@ -959,38 +959,38 @@ export const DeleteOffsetsModal = (props: {
           <div className="flex flex-col gap-1 text-sm">
             {mode === 'group' && (
               <>
-                <UiText>
+                <p>
                   <span className="font-bold">Name:</span> {group.groupId}
-                </UiText>
-                <UiText>
+                </p>
+                <p>
                   <span className="font-bold">Partitions:</span> {activeOffsets.length}
-                </UiText>
-                <UiText>
+                </p>
+                <p>
                   <span className="font-bold">Topics:</span> {offsetsByTopic.length}
-                </UiText>
-                <UiText>Are you sure?</UiText>
+                </p>
+                <p>Are you sure?</p>
               </>
             )}
 
             {mode === 'topic' && (
               <>
-                <UiText>
+                <p>
                   Topic: <InlineCode>{offsetsByTopic[0]?.topicName}</InlineCode>
-                </UiText>
-                <UiText className="font-semibold">
+                </p>
+                <p className="font-semibold">
                   {activeOffsets.length} {singlePartition ? 'Partition' : 'Partitions'}
-                </UiText>
+                </p>
               </>
             )}
 
             {mode === 'partition' && (
               <>
-                <UiText>
+                <p>
                   Topic: <InlineCode>{offsetsByTopic[0]?.topicName}</InlineCode>
-                </UiText>
-                <UiText>
+                </p>
+                <p>
                   Partition: <InlineCode>{offsetsByTopic[0]?.items[0].partitionId}</InlineCode>
-                </UiText>
+                </p>
               </>
             )}
           </div>

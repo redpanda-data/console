@@ -46,7 +46,6 @@ import { Label } from '../../redpanda-ui/components/label';
 import { Stat } from '../../redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../redpanda-ui/components/tabs';
-import { Text } from '../../redpanda-ui/components/typography';
 import { ConsumerGroupStateCell } from '../../ui/consumer-group/consumer-group-state-cell';
 import { DisabledReasonButton } from '../../ui/disabled-reason-button';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -599,7 +598,7 @@ const GroupByTopics = (groupProps: {
         <AccordionItem key={entry.topicName} value={entry.topicName}>
           <AccordionTrigger className="px-4 py-3">
             <div className="flex flex-col gap-1 text-start">
-              <Text className="font-semibold text-lg">{entry.topicName}</Text>
+              <span className="font-semibold text-lg">{entry.topicName}</span>
               <div className="flex items-center gap-4 font-normal text-muted-foreground text-sm">
                 <span>Lag: {numberToThousandsString(entry.totalLagAll)}</span>
                 <span>Assigned partitions: {entry.partitionsAssigned}</span>
