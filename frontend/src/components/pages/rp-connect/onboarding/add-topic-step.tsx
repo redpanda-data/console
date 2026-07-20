@@ -291,8 +291,11 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
         <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
           <div className="flex flex-col gap-2">
             <FormLabel>Topic name</FormLabel>
+            {/* Only offer what the mode can actually do — "choose an existing topic" with no picker reads as broken. */}
             <FormDescription>
-              Choose an existing topic to read or write data from, or create a new topic.
+              {selectionMode === 'new'
+                ? 'Enter a name for the new topic.'
+                : 'Choose an existing topic to read or write data from, or create a new topic.'}
             </FormDescription>
             <div className="flex flex-col items-start gap-2">
               {selectionMode === 'both' && (
