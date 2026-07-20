@@ -615,14 +615,18 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
   // Object structure recursion. Some object nodes come with an empty kind — benthos leaves Kind
   // unset on e.g. batching policies; treat that as scalar.
   if (spec.type === 'object') {
+    // The component root (name '') must always produce a type-correct value: inserting `switch`
+    // (root kind 'array') has to emit `[]`/`[{...}]`, and a field-less component like `drop` has
+    // to emit `{}` — returning undefined would drop the component key from the YAML entirely.
+    const isComponentRoot = !spec.name;
     if (spec.kind === 'scalar' || spec.kind === '') {
       const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-      return obj && Object.keys(obj).length > 0 ? obj : undefined;
+      if (obj && Object.keys(obj).length > 0) {
+        return obj;
+      }
+      return isComponentRoot ? {} : undefined;
     }
-    // Collections of objects are only seeded when the field is required — except at the component
-    // root (name ''), which must always produce a type-correct value: inserting e.g. `switch`
-    // (root kind 'array') has to emit `[]`/`[{...}]`, never YAML null.
-    const isComponentRoot = !spec.name;
+    // Collections of objects are only seeded when the field is required or at the component root.
     if (!(required || isComponentRoot)) {
       return;
     }

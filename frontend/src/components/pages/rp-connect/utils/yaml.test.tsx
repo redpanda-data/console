@@ -1998,5 +1998,26 @@ output_resources:
       expect(target.kind).toBe('processor');
       expect(buildInsertableComponent('does_not_exist', 'processor', [])).toBeUndefined();
     });
+
+    test('keeps the component key for a field-less component (drop output)', () => {
+      // drop has no config fields; the generated object must still carry `drop: {}` — without it
+      // the insert writes an output with only a label, which renders as an empty placeholder.
+      const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
+      expect(step?.drop).toEqual({});
+    });
+  });
+
+  describe('field-less component templates', () => {
+    test('getConnectTemplate emits the component key for drop', () => {
+      const yaml = getConnectTemplate({
+        connectionName: 'drop',
+        connectionType: 'output',
+        components: Object.values(mockComponents),
+        existingYaml: '',
+      });
+
+      const parsed = parseYaml(yaml as string) as { output?: Record<string, unknown> };
+      expect(parsed.output?.drop).toEqual({});
+    });
   });
 });

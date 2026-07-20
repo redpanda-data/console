@@ -289,6 +289,33 @@ describe('generateDefaultValue', () => {
     });
   });
 
+  describe('Field-less component roots', () => {
+    test('returns {} for a component root with no children so the component key survives (e.g. drop)', () => {
+      // Production shape: the config root FieldSpec arrives with name '' and no children.
+      const spec = {
+        name: '',
+        type: 'object',
+        kind: 'scalar',
+        optional: false,
+        children: [],
+      };
+
+      expect(generateDefaultValue(spec as RawFieldSpec, {})).toEqual({});
+    });
+
+    test('still omits an empty non-root object field', () => {
+      const spec = {
+        name: 'metadata',
+        type: 'object',
+        kind: 'scalar',
+        optional: true,
+        children: [],
+      };
+
+      expect(generateDefaultValue(spec as RawFieldSpec, {})).toBeUndefined();
+    });
+  });
+
   describe('Comment generation', () => {
     test('required fields get descriptive comment', () => {
       const spec = {
