@@ -2,7 +2,6 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ArrowDown, ArrowUp, ArrowUpRight, Minus } from 'lucide-react';
 import React from 'react';
 
-import { Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
 export const statValueVariants = cva('leading-none', {
@@ -78,7 +77,7 @@ export interface StatProps
 
 // Mirrors `labelStrongXSmall` typography so a linked label is visually identical to a plain one.
 const LABEL_LINK_CLASSNAME =
-  'inline-flex items-center gap-1 font-semibold text-muted-foreground text-xs uppercase leading-4 tracking-normal transition-colors hover:text-foreground';
+  'inline-flex items-center gap-1 font-semibold text-body-sm text-muted-foreground uppercase transition-colors hover:text-foreground';
 
 export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
   ({ className, label, value, sublabel, size, tone, mono, delta, labelLink, testId, ...props }, ref) => {
@@ -95,9 +94,9 @@ export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
         </>
       )
     ) : (
-      <Text as="span" className="text-muted-foreground uppercase" data-slot="stat-label" variant="labelStrongXSmall">
+      <span className="font-semibold text-body-sm text-muted-foreground uppercase" data-slot="stat-label">
         {label}
-      </Text>
+      </span>
     );
 
     return (
