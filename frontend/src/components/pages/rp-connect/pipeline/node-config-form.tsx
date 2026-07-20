@@ -487,6 +487,11 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
   />
 );
 
+// A select can't be cleared by deleting text the way inputs can, so without an explicit unset
+// item a value (often seeded by the insert template) is stuck in the YAML forever. Maps to ''
+// which the save path treats as "remove the key". Sentinel because '' can't be an item value.
+const UNSET_OPTION = '__unset__';
+
 const OptionsSelect = ({
   spec,
   value,
@@ -500,11 +505,18 @@ const OptionsSelect = ({
   id?: string;
   required?: boolean;
 }) => (
-  <Select onValueChange={onChange} value={String(value ?? '')}>
+  <Select onValueChange={(next) => onChange(next === UNSET_OPTION ? '' : next)} value={String(value ?? '')}>
     <SelectTrigger aria-label={spec.name} aria-required={required || undefined} id={id}>
       <SelectValue placeholder={spec.defaultValue || 'Select…'} />
     </SelectTrigger>
     <SelectContent>
+      {required ? null : (
+        <SelectItem key={UNSET_OPTION} value={UNSET_OPTION}>
+          <span className="text-muted-foreground">
+            {spec.defaultValue ? `Default (${spec.defaultValue})` : 'Not set'}
+          </span>
+        </SelectItem>
+      )}
       {spec.annotatedOptions?.map((option) => (
         <SelectItem key={option.value} value={option.value}>
           {option.value}
@@ -675,6 +687,24 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
     );
   }
   return null;
+};
+
+// "Optional" only means something in contrast to required fields above it — with none, the label
+// reads as "nothing here matters", which lint errors then contradict; render the fields plainly.
+const OptionalFieldsSection = ({
+  fields,
+  hasRequired,
+  control,
+}: {
+  fields: RawFieldSpec[];
+  hasRequired: boolean;
+  control: Control<FormValues>;
+}) => {
+  if (fields.length === 0) {
+    return null;
+  }
+  const rendered = fields.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />);
+  return hasRequired ? <FieldGroup label="Optional">{rendered}</FieldGroup> : rendered;
 };
 
 type FieldGroupKey = 'required' | 'optional' | 'advanced';
@@ -878,13 +908,9 @@ export function NodeConfigForm({
 
           {isListValued ? null : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
 
-          {!isListValued && optional.length > 0 ? (
-            <FieldGroup label="Optional">
-              {optional.map((f) => (
-                <SchemaField control={control} key={f.name} path={[]} spec={f} />
-              ))}
-            </FieldGroup>
-          ) : null}
+          {isListValued ? null : (
+            <OptionalFieldsSection control={control} fields={optional} hasRequired={required.length > 0} />
+          )}
 
           {!isListValued && advanced.length > 0 ? (
             <FieldGroup defaultOpen={false} label="Advanced">

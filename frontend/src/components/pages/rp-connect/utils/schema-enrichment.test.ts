@@ -106,3 +106,46 @@ describe('enrichComponentsWithConfigSchema', () => {
     expect(addresses.requiredBySchema).toBeUndefined();
   });
 });
+
+describe('lint-required overrides', () => {
+  // Mirrors the production redpanda input: its schema flags every field optional because runtime
+  // lints ("either topics or regexp_topics_include must be specified", "a consumer group is
+  // mandatory when not using explicit topic partitions") carry the real requirements.
+  const redpandaInput = {
+    name: 'redpanda',
+    type: 'input',
+    config: {
+      name: '',
+      type: 'object',
+      kind: 'scalar',
+      children: [
+        { name: 'topics', type: 'string', kind: 'array', optional: true },
+        { name: 'consumer_group', type: 'string', kind: 'scalar', optional: true },
+        { name: 'seed_brokers', type: 'string', kind: 'array', optional: true },
+      ],
+    },
+  } as unknown as (typeof groundTruthComponents)[number];
+
+  const fieldOf = (result: (typeof groundTruthComponents)[number], name: string) =>
+    result.config?.children?.find((c) => c.name === name) as RawFieldSpec;
+
+  test('stamps the lint-enforced fields required even without a usable schema', () => {
+    // The degraded path (no raw schema at all — e.g. older dataplanes) must still apply them.
+    const [result] = enrichComponentsWithConfigSchema([redpandaInput], undefined);
+    expect(fieldOf(result, 'topics').requiredBySchema).toBe(true);
+    expect(fieldOf(result, 'consumer_group').requiredBySchema).toBe(true);
+    expect(fieldOf(result, 'seed_brokers').requiredBySchema).toBeUndefined();
+  });
+
+  test('wins over schema stamping (the schema calls these fields optional)', () => {
+    const [result] = enrichComponentsWithConfigSchema([redpandaInput], groundTruthConfigSchema);
+    expect(fieldOf(result, 'topics').requiredBySchema).toBe(true);
+    expect(fieldOf(result, 'consumer_group').requiredBySchema).toBe(true);
+  });
+
+  test('leaves non-curated components alone', () => {
+    const [result] = enrichComponentsWithConfigSchema([getGroundTruthComponent('input', 'kafka')], undefined);
+    const topics = result.config?.children?.find((c) => c.name === 'topics') as RawFieldSpec;
+    expect(topics.requiredBySchema).toBeUndefined();
+  });
+});

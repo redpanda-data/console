@@ -339,3 +339,69 @@ describe('NodeConfigForm — list-valued components (switch/try/…)', () => {
     expect(screen.getByText(/edited on the canvas/i)).toBeInTheDocument();
   });
 });
+
+describe('NodeConfigForm — all-optional components', () => {
+  // Mirrors an unstamped redpanda-style input where the schema marks every field optional.
+  const allOptionalSpec = {
+    name: 'redpanda',
+    type: 'input',
+    config: {
+      name: '',
+      type: 'object',
+      kind: 'scalar',
+      children: [
+        { name: 'topics', type: 'string', kind: 'array', optional: true },
+        { name: 'consumer_group', type: 'string', kind: 'scalar', optional: true },
+      ],
+    },
+  } as unknown as ConnectComponentSpec;
+
+  test('renders fields plainly instead of burying everything under an "Optional" group', () => {
+    render(<NodeConfigForm componentName="redpanda" spec={allOptionalSpec} value={{ redpanda: {} }} />);
+    expect(screen.getByText('topics')).toBeInTheDocument();
+    expect(screen.getByText('consumer_group')).toBeInTheDocument();
+    // With no required fields to contrast against, the "Optional" label only misleads.
+    expect(screen.queryByText('Optional')).toBeNull();
+  });
+});
+
+describe('NodeConfigForm — enum (select) fields', () => {
+  const enumSpec = {
+    name: 'redpanda',
+    type: 'input',
+    config: {
+      name: '',
+      type: 'object',
+      kind: 'scalar',
+      children: [
+        {
+          name: 'transaction_isolation_level',
+          type: 'string',
+          kind: 'scalar',
+          optional: false,
+          defaultValue: 'read_uncommitted',
+          annotatedOptions: [{ value: 'read_uncommitted' }, { value: 'read_committed' }],
+        },
+      ],
+    },
+  } as unknown as ConnectComponentSpec;
+
+  test('a set enum value can be unset, removing the key from the config', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    render(
+      <NodeConfigForm
+        componentName="redpanda"
+        onConfigChange={onConfigChange}
+        spec={enumSpec}
+        value={{ redpanda: { transaction_isolation_level: 'read_committed' } }}
+      />
+    );
+
+    await user.click(screen.getByRole('combobox', { name: 'transaction_isolation_level' }));
+    await user.click(await screen.findByText('Default (read_uncommitted)'));
+
+    const next = lastReported(onConfigChange) as { redpanda: Record<string, unknown> };
+    expect(next.redpanda).not.toHaveProperty('transaction_isolation_level');
+  });
+});

@@ -82,13 +82,40 @@ function collectComponentNodes(definitions: Record<string, JsonSchemaNode>): Map
   return nodes;
 }
 
-/**
- * Returns specs with `secret` / `requiredBySchema` stamped onto every field the raw schema knows.
- * Degrades to the input untouched when the schema is missing, unparsable, or predates per-field
- * flag serialization (benthos < 4.59 emitted no `is_optional` — treat the whole document as
- * unreliable rather than stamping `required: undefined` everywhere).
- */
-export function enrichComponentsWithConfigSchema(
+// Fields the engine's schema can't mark required because a runtime lint enforces a conditional
+// rule instead — e.g. the redpanda input lints "either topics or regexp_topics_include must be
+// specified" and "a consumer group is mandatory when not using explicit topic partitions", yet
+// its schema flags both fields optional. The common case is unconditional in practice, so the
+// console surfaces them as required rather than burying a pipeline's primary knobs under
+// "Optional" while lint demands them. Keyed `type:name`, listing top-level field names.
+const LINT_REQUIRED_FIELDS: Record<string, readonly string[]> = {
+  'input:redpanda': ['topics', 'consumer_group'],
+};
+
+// Stamps `requiredBySchema: true` on the curated fields. Runs even when the raw schema is
+// missing or too old to stamp from (the flags are console knowledge, not schema knowledge).
+function applyLintRequiredFields(components: ConnectComponentSpec[]): ConnectComponentSpec[] {
+  return components.map((component) => {
+    const fieldNames = LINT_REQUIRED_FIELDS[`${component.type}:${component.name}`];
+    if (!(fieldNames && component.config?.children)) {
+      return component;
+    }
+    return {
+      ...component,
+      config: {
+        ...component.config,
+        children: component.config.children.map((field) =>
+          fieldNames.includes(field.name) ? { ...field, requiredBySchema: true } : field
+        ),
+      } as ConnectComponentSpec['config'],
+    };
+  });
+}
+
+// Stamps from the raw schema; returns the input untouched when the schema is missing, unparsable,
+// or predates per-field flag serialization (benthos < 4.59 emitted no `is_optional` — treat the
+// whole document as unreliable rather than stamping `required: undefined` everywhere).
+function stampFromConfigSchema(
   components: ConnectComponentSpec[],
   configSchema: string | undefined
 ): ConnectComponentSpec[] {
@@ -119,4 +146,16 @@ export function enrichComponentsWithConfigSchema(
       } as ConnectComponentSpec['config'],
     };
   });
+}
+
+/**
+ * Returns specs with `secret` / `requiredBySchema` stamped onto every field the raw schema knows,
+ * then overlays the curated lint-required flags (which win — they exist precisely because the
+ * schema calls those fields optional).
+ */
+export function enrichComponentsWithConfigSchema(
+  components: ConnectComponentSpec[],
+  configSchema: string | undefined
+): ConnectComponentSpec[] {
+  return applyLintRequiredFields(stampFromConfigSchema(components, configSchema));
 }
