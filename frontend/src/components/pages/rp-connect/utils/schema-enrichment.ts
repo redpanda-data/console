@@ -113,13 +113,16 @@ function applyLintRequiredFields(components: ConnectComponentSpec[]): ConnectCom
 }
 
 // Stamps from the raw schema; returns the input untouched when the schema is missing, unparsable,
-// or predates per-field flag serialization (benthos < 4.59 emitted no `is_optional` — treat the
-// whole document as unreliable rather than stamping `required: undefined` everywhere).
+// or carries no signal. `required` arrays are the load-bearing signal and benthos has emitted them
+// (computed knowing every default) far longer than the per-field flags (`is_optional`/`is_secret`,
+// 4.59+) — so a mid-generation document still fixes required-ness even though it can't flag
+// secrets (the name heuristic still covers those). A document with no `required` keys at all
+// predates the arrays; stamping `requiredBySchema: false` everywhere from it would be a lie.
 function stampFromConfigSchema(
   components: ConnectComponentSpec[],
   configSchema: string | undefined
 ): ConnectComponentSpec[] {
-  if (!configSchema?.includes('"is_optional"')) {
+  if (!configSchema?.includes('"required"')) {
     return components;
   }
   let definitions: Record<string, JsonSchemaNode> | undefined;

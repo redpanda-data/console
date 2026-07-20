@@ -83,13 +83,30 @@ describe('enrichComponentsWithConfigSchema', () => {
     }
   });
 
-  test('pre-4.59 schema (no is_optional keys anywhere) is treated as absent', () => {
+  test('an ancient schema with no required arrays at all is treated as absent', () => {
+    // Stamping requiredBySchema=false everywhere from a document that never emitted the arrays
+    // would erase genuinely required fields.
     const legacySchema = JSON.stringify({
       definitions: { input: { allOf: [{ anyOf: [{ properties: { kafka: { properties: {} } } }] }] } },
     });
     const [result] = enrichComponentsWithConfigSchema([getGroundTruthComponent('input', 'kafka')], legacySchema);
     const addresses = result.config?.children?.find((c) => c.name === 'addresses') as RawFieldSpec;
     expect(addresses.requiredBySchema).toBeUndefined();
+  });
+
+  test('a mid-generation schema (required arrays, no per-field flags) still stamps required-ness', () => {
+    // Live dataplanes commonly serve this format: `required` arrays but no is_optional/is_secret.
+    // Without stamping, string fields whose "" default was lost in the proto all show as required.
+    const withoutFlags = JSON.stringify(JSON.parse(groundTruthConfigSchema), (key, value) =>
+      key === 'is_optional' || key === 'is_secret' ? undefined : value
+    );
+    const [result] = enrichComponentsWithConfigSchema([getGroundTruthComponent('input', 'kafka')], withoutFlags);
+    const field = (name: string) => result.config?.children?.find((c) => c.name === name) as RawFieldSpec;
+    expect(field('addresses').requiredBySchema).toBe(true);
+    expect(field('topics').requiredBySchema).toBe(true);
+    // The proto shows an empty default for these; only the required arrays reveal they're optional.
+    expect(field('consumer_group').requiredBySchema).toBe(false);
+    expect(field('rack_id').requiredBySchema).toBe(false);
   });
 
   test('components missing from the schema pass through unstamped', () => {

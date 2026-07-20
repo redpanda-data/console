@@ -365,6 +365,126 @@ describe('NodeConfigForm — all-optional components', () => {
   });
 });
 
+describe('NodeConfigForm — field-anchored lint errors', () => {
+  test('renders the message under its field and hides it while the field is being edited', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        fieldErrors={new Map([['topic', ['topic must not be empty']]])}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+
+    expect(screen.getByText('topic must not be empty')).toBeInTheDocument();
+
+    // Typing in the field means the user is addressing it — the stale message gets out of the way.
+    await user.type(screen.getByDisplayValue('t'), 'opic-name');
+    expect(screen.queryByText('topic must not be empty')).not.toBeInTheDocument();
+  });
+
+  test('opens the Advanced group when it hides an errored field', () => {
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        fieldErrors={new Map([['client_id', ['invalid client id']]])}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+    // client_id is an advanced field — visible without manually expanding the group.
+    expect(screen.getByText('invalid client id')).toBeInTheDocument();
+    expect(screen.getByText('client_id')).toBeInTheDocument();
+  });
+});
+
+describe('NodeConfigForm — field-level commit', () => {
+  test('commits on field blur and marks the form clean on success', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    const onCommitField = vi.fn(() => true);
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onCommitField={onCommitField}
+        onConfigChange={onConfigChange}
+        spec={spec}
+        value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }}
+      />
+    );
+
+    await user.type(screen.getByDisplayValue('orig'), '-2');
+    expect(lastReported(onConfigChange)).not.toBeNull();
+
+    // Leaving the field (tab away) flushes the draft — no node deselect needed.
+    await user.tab();
+    expect(onCommitField).toHaveBeenCalled();
+    // The commit landed, so the form is clean again (reports null) but keeps the typed value.
+    expect(lastReported(onConfigChange)).toBeNull();
+    expect(screen.getByDisplayValue('orig-2')).toBeInTheDocument();
+  });
+
+  test('keeps the draft pending when the commit fails', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    const onCommitField = vi.fn(() => false);
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onCommitField={onCommitField}
+        onConfigChange={onConfigChange}
+        spec={spec}
+        value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }}
+      />
+    );
+
+    await user.type(screen.getByDisplayValue('orig'), '-2');
+    await user.tab();
+    expect(onCommitField).toHaveBeenCalled();
+    // Write failed: the draft must survive so the node-leave flush can retry it.
+    expect(lastReported(onConfigChange)).not.toBeNull();
+  });
+
+  test('shows an Apply affordance while dirty and commits through it', async () => {
+    const user = userEvent.setup();
+    const onCommitField = vi.fn(() => true);
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onCommitField={onCommitField}
+        spec={spec}
+        value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
+    await user.type(screen.getByDisplayValue('orig'), '-2');
+    const apply = screen.getByRole('button', { name: 'Apply' });
+    await user.click(apply);
+    expect(onCommitField).toHaveBeenCalled();
+    // Clean again — the pending-edits footer goes away.
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
+  });
+
+  test('re-syncs a clean form in place when the saved value changes externally', () => {
+    const { rerender } = render(
+      <NodeConfigForm componentName="kafka" spec={spec} value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }} />
+    );
+    expect(screen.getByDisplayValue('orig')).toBeInTheDocument();
+
+    // e.g. the Topic dialog wrote into this component while its inspector is open.
+    rerender(
+      <NodeConfigForm
+        componentName="kafka"
+        spec={spec}
+        value={{ kafka: { topic: 'from-dialog', addresses: ['a:9092'] } }}
+      />
+    );
+    expect(screen.getByDisplayValue('from-dialog')).toBeInTheDocument();
+  });
+});
+
 describe('NodeConfigForm — enum (select) fields', () => {
   const enumSpec = {
     name: 'redpanda',

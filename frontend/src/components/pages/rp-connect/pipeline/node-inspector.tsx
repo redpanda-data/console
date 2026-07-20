@@ -44,7 +44,8 @@ import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
-import { ChildItemsList, type InspectorChildItem, NodeConfigForm } from './node-config-form';
+import { type FieldLintErrors, mapLintHintsToFields, type UnmappedLintHint } from './lint-field-mapping';
+import { ChildItemsList, formFieldKeys, type InspectorChildItem, NodeConfigForm } from './node-config-form';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
@@ -107,6 +108,10 @@ type NodeInspectorProps = {
   onSelectChild?: (item: InspectorChildItem) => void;
   /** The selected node's pending-edit hooks; the panel flushes them on node-leave / save — no per-node Apply button. */
   commitRef?: MutableRefObject<PendingNodeCommit | null>;
+  /** Flush pending edits into the YAML immediately (field-blur / Apply commits, not just node-leave). */
+  onRequestCommit?: () => void;
+  /** Bumped on undo/redo so the form remounts (drops now-stale edit state) instead of resyncing in place. */
+  resetToken?: number;
 };
 
 /** The inspector's pending-edit hooks, registered into the panel's `commitRef`. */
@@ -157,6 +162,8 @@ export function NodeInspector({
   childItems,
   onSelectChild,
   commitRef,
+  onRequestCommit,
+  resetToken,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   // The routing condition for a case-entry node, read from its switch case.
@@ -242,6 +249,29 @@ export function NodeInspector({
     }
     return findConnectComponent(components, componentName, targetComponentType(target));
   }, [components, target, componentName]);
+
+  // Anchor the node's lint hints to the form fields they're about; the banner keeps only the rest.
+  // With no schema form (raw editor / member list) fieldKeys is empty, so everything stays bannered.
+  const fieldKeys = useMemo(() => (spec ? formFieldKeys(spec) : new Set<string>()), [spec]);
+  const lintMapping = useMemo(() => {
+    if (!(target && componentName && lintHints?.length)) {
+      return {
+        byField: new Map<string, string[]>() as FieldLintErrors,
+        unmapped: (lintHints ?? []).map((hint) => ({ hint })),
+      };
+    }
+    return mapLintHintsToFields({ yaml, target, componentName, hints: lintHints, fieldKeys });
+  }, [yaml, target, componentName, lintHints, fieldKeys]);
+
+  // Flush the draft immediately (field blur / Apply); reports whether the write landed — the
+  // panel's flush consumes the draft on success, so a surviving draft means it failed.
+  const commitField = useCallback((): boolean => {
+    if (!onRequestCommit) {
+      return false;
+    }
+    onRequestCommit();
+    return componentDraftRef.current === null;
+  }, [onRequestCommit]);
 
   if (!(target && component && componentName)) {
     return <InspectorEmptyState readOnly={readOnly} />;
@@ -334,7 +364,8 @@ export function NodeInspector({
         onOpenInYaml={onOpenInYaml}
         usedByCount={resourceLabel ? usedByCount : undefined}
       />
-      {lintHints && lintHints.length > 0 ? <InspectorLintErrors hints={lintHints} /> : null}
+      {/* Field-anchored problems render under their fields; the banner keeps only what didn't map. */}
+      {lintMapping.unmapped.length > 0 ? <InspectorLintErrors hints={lintMapping.unmapped} /> : null}
       {danglingRef && !readOnly ? (
         <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
       ) : null}
@@ -343,10 +374,13 @@ export function NodeInspector({
         component={component}
         componentName={componentName}
         conditionSection={conditionSection}
+        fieldErrors={lintMapping.byField}
+        onCommitField={readOnly || !onRequestCommit ? undefined : commitField}
         onCreateResource={onCreateResource}
         onSelectChild={onSelectChild}
         readOnly={readOnly}
         reportComponentDraft={reportComponentDraft}
+        resetToken={resetToken}
         resourceLabels={resourceLabels}
         spec={spec}
         target={target}
@@ -369,6 +403,9 @@ type InspectorBodyProps = {
   onCreateResource?: (kind: ResourceKind) => void;
   resourceLabels: Record<ResourceKind, string[]>;
   reportComponentDraft: (next: Record<string, unknown> | null) => void;
+  fieldErrors?: FieldLintErrors;
+  onCommitField?: () => boolean;
+  resetToken?: number;
 };
 
 // Case-condition section (if any) plus the most specific of: schema form, read-only view, child list, raw YAML.
@@ -385,6 +422,9 @@ const InspectorBody = ({
   onCreateResource,
   resourceLabels,
   reportComponentDraft,
+  fieldErrors,
+  onCommitField,
+  resetToken,
 }: InspectorBodyProps) => {
   if (readOnly) {
     return (
@@ -399,10 +439,14 @@ const InspectorBody = ({
       <NodeConfigForm
         childItems={childItems}
         componentName={componentName}
+        fieldErrors={fieldErrors}
         headerSlot={conditionSection}
-        // Re-key on node identity + saved value: identity remounts on selection change (a sibling with
-        // identical config can't inherit dirty state); value remounts on undo/redo or YAML-lane edits.
-        key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
+        // Re-key on node identity + the undo/redo token: identity remounts on selection change (a
+        // sibling with identical config can't inherit dirty state); the token remounts on undo/redo,
+        // dropping stale edit state. Same-node saved-value changes (field-blur commits, Topic/User
+        // dialogs) re-sync IN PLACE inside the form, so focus and scroll survive a commit.
+        key={`${JSON.stringify(editTargetPath(target))}:${resetToken ?? 0}`}
+        onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
         onSelectChild={onSelectChild}
@@ -469,17 +513,18 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   );
 };
 
-// Lint problems for the selected node, shown in context above its config. A registry Alert,
-// squared off to sit flush as an inspector banner.
-const InspectorLintErrors = ({ hints }: { hints: LintHint[] }) => (
+// Lint problems for the selected node that didn't anchor to a form field, shown above its config.
+// No line numbers — there are none to see in this view; when the problem's line resolved to a
+// known (unrendered) field, its name is shown instead. A registry Alert, squared off to sit flush.
+const InspectorLintErrors = ({ hints }: { hints: UnmappedLintHint[] }) => (
   <Alert className="shrink-0 rounded-none border-x-0 border-t-0" icon={<AlertCircle />} variant="destructive">
     <AlertTitle>{pluralizeWithNumber(hints.length, 'problem')}</AlertTitle>
     <AlertDescription>
       <ul className="flex flex-col gap-1">
-        {hints.map((hint, i) => (
+        {hints.map(({ hint, fieldLabel }, i) => (
           <li className="text-xs" key={`${hint.line}-${hint.column}-${i}`}>
             {hint.hint}
-            {hint.line > 0 ? <span className="text-muted-foreground"> (line {hint.line})</span> : null}
+            {fieldLabel ? <span className="text-muted-foreground"> ({fieldLabel})</span> : null}
           </li>
         ))}
       </ul>

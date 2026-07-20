@@ -450,7 +450,11 @@ export function VisualEditorPanel({
   // Briefly pulse the node(s) an undo/redo touched, so the change is easy to spot.
   const [flash, setFlash] = useState<{ ids: ReadonlySet<string>; token: number }>({ ids: new Set(), token: 0 });
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped on undo/redo so the inspector form remounts to the restored YAML instead of keeping
+  // (now stale) in-place edit state. Same-node commits/resyncs deliberately do NOT bump it.
+  const [formEpoch, setFormEpoch] = useState(0);
   const handleNavigate = useCallback((from: string, to: string) => {
+    setFormEpoch((e) => e + 1);
     const ids = changedNodeIds(from, to);
     if (ids.length === 0) {
       return;
@@ -909,8 +913,10 @@ export function VisualEditorPanel({
                   onCreateResource={isEditing ? handleRequestCreateResource : undefined}
                   onDelete={isEditing ? setPendingDelete : undefined}
                   onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+                  onRequestCommit={isEditing ? commitPending : undefined}
                   onSelectChild={selectAndReveal}
                   readOnly={!isEditing}
+                  resetToken={formEpoch}
                   target={selected.target}
                   yaml={yamlContent}
                 />

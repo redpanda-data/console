@@ -225,6 +225,24 @@ describe('VisualEditorPanel', () => {
     expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
   });
 
+  test('a schema-form field commits on blur, without leaving the node', async () => {
+    const user = userEvent.setup();
+    render(<CacheHarness />);
+    const yamlOnCanvas = () => screen.getByTestId('flow-canvas').getAttribute('data-configyaml') ?? '';
+
+    await user.click(screen.getByText('select-cache-resource'));
+    const ttl = await screen.findByDisplayValue('5m');
+    await user.clear(ttl);
+    await user.type(ttl, '10m');
+
+    // Tab out of the FIELD (the node stays selected): the edit lands in the YAML immediately,
+    // so the canvas card and lint can react while the inspector is still open.
+    await user.tab();
+    expect(yamlOnCanvas()).toContain('10m');
+    // The form is still mounted with the committed value — no remount, no lost state.
+    expect(screen.getByDisplayValue('10m')).toBeInTheDocument();
+  });
+
   test('undo reverts an auto-committed change and redo re-applies it', async () => {
     const user = userEvent.setup();
     render(<CacheHarness />);
