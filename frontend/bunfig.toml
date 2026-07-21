@@ -2,7 +2,15 @@
 minimumReleaseAge = 259200 # 72h supply-chain publish delay
 # Temporary: cnfast@0.0.8 (the `cn` migration) was published 2026-06-22, below
 # the 72h gate; remove from this list once it ages past the gate (~2026-06-25).
-minimumReleaseAgeExcludes = ["cnfast"]
+# Temporary: the redpandadata/cloud SDK was bumped to commit 4c8ec47 (published
+# 2026-07-17) to pick up the Schema Registry "Sync over API" controlplane case;
+# both cloud artifacts are still inside the 72h gate. Remove once they age past
+# it (~2026-07-20).
+minimumReleaseAgeExcludes = [
+  "cnfast",
+  "@buf/redpandadata_cloud.connectrpc_query-es",
+  "@buf/redpandadata_cloud.bufbuild_es",
+]
 save = true
 saveTextLockfile = true
 

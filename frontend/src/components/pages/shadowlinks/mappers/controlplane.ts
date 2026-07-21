@@ -19,13 +19,13 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
+import { mapSchemaRegistrySyncOptions } from './schema-registry';
 import { AUTH_METHOD, type FormValues, initialValues, TLS_MODE } from '../create/model';
 import {
   mapControlplaneStateToUnified,
   type UnifiedAuthenticationConfiguration,
   type UnifiedClientOptions,
   type UnifiedConsumerOffsetSyncOptions,
-  type UnifiedSchemaRegistrySyncOptions,
   type UnifiedSecuritySyncOptions,
   type UnifiedShadowLink,
   type UnifiedShadowLinkConfigurations,
@@ -174,24 +174,6 @@ function mapControlplaneSecuritySyncOptions(
 }
 
 /**
- * Map controlplane schema registry sync options to unified type
- */
-function mapControlplaneSchemaRegistrySyncOptions(
-  options: ControlplaneShadowLink['schemaRegistrySyncOptions']
-): UnifiedSchemaRegistrySyncOptions | undefined {
-  if (!options) {
-    return;
-  }
-
-  return {
-    schemaRegistryShadowingMode:
-      options.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic'
-        ? { case: 'shadowSchemaRegistryTopic', value: {} }
-        : { case: undefined },
-  };
-}
-
-/**
  * Map controlplane configurations to unified configurations
  */
 function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShadowLinkConfigurations | undefined {
@@ -204,7 +186,7 @@ function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShado
     topicMetadataSyncOptions: mapControlplaneTopicMetadataSyncOptions(sl.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapControlplaneConsumerOffsetSyncOptions(sl.consumerOffsetSyncOptions),
     securitySyncOptions: mapControlplaneSecuritySyncOptions(sl.securitySyncOptions),
-    schemaRegistrySyncOptions: mapControlplaneSchemaRegistrySyncOptions(sl.schemaRegistrySyncOptions),
+    schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(sl.schemaRegistrySyncOptions),
   };
 }
 
@@ -218,7 +200,6 @@ export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedS
     name: sl.name,
     id: sl.id,
     state: mapControlplaneStateToUnified(sl.state),
-    resourceGroupId: sl.resourceGroupId,
     shadowRedpandaId: sl.shadowRedpandaId,
     createdAt: sl.createdAt ? timestampDate(sl.createdAt) : undefined,
     updatedAt: sl.updatedAt ? timestampDate(sl.updatedAt) : undefined,

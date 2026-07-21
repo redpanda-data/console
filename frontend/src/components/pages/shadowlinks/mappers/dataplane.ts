@@ -20,7 +20,6 @@ import type {
   AuthenticationConfiguration,
   ConsumerOffsetSyncOptions,
   NameFilter,
-  SchemaRegistrySyncOptions,
   SecuritySettingsSyncOptions,
   ShadowLinkClientOptions,
   ShadowLinkConfigurations,
@@ -30,6 +29,7 @@ import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import type { TLSSettings } from 'protogen/redpanda/core/common/v1/tls_pb';
 
+import { mapSchemaRegistrySyncOptions, mapTLSSettings } from './schema-registry';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 import {
@@ -37,56 +37,15 @@ import {
   type UnifiedAuthenticationConfiguration,
   type UnifiedClientOptions,
   type UnifiedConsumerOffsetSyncOptions,
-  type UnifiedSchemaRegistrySyncOptions,
   type UnifiedSecuritySyncOptions,
   type UnifiedShadowLink,
   type UnifiedShadowLinkConfigurations,
-  type UnifiedTLSSettings,
   type UnifiedTopicMetadataSyncOptions,
 } from '../model';
 
 // ============================================================================
 // Dataplane → UnifiedShadowLink Mappers
 // ============================================================================
-
-/**
- * Map dataplane TLS settings to unified type
- */
-function mapDataplaneTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLSSettings | undefined {
-  if (!tlsSettings) {
-    return;
-  }
-
-  let tlsSettingsValue: UnifiedTLSSettings['tlsSettings'];
-
-  if (tlsSettings.tlsSettings?.case === 'tlsFileSettings') {
-    const fileSettings = tlsSettings.tlsSettings.value;
-    tlsSettingsValue = {
-      case: 'tlsFileSettings',
-      value: {
-        caPath: fileSettings.caPath,
-        keyPath: fileSettings.keyPath,
-        certPath: fileSettings.certPath,
-      },
-    };
-  } else if (tlsSettings.tlsSettings?.case === 'tlsPemSettings') {
-    const pemSettings = tlsSettings.tlsSettings.value;
-    tlsSettingsValue = {
-      case: 'tlsPemSettings',
-      value: {
-        ca: pemSettings.ca,
-        key: pemSettings.key,
-        cert: pemSettings.cert,
-        keyFingerprint: pemSettings.keyFingerprint,
-      },
-    };
-  }
-
-  return {
-    enabled: tlsSettings.enabled,
-    tlsSettings: tlsSettingsValue,
-  };
-}
 
 /**
  * Map dataplane authentication configuration to unified type
@@ -129,7 +88,7 @@ function mapDataplaneClientOptions(
     bootstrapServers: clientOptions.bootstrapServers,
     clientId: clientOptions.clientId,
     sourceClusterId: clientOptions.sourceClusterId,
-    tlsSettings: mapDataplaneTLSSettings(clientOptions.tlsSettings),
+    tlsSettings: mapTLSSettings(clientOptions.tlsSettings),
     authenticationConfiguration: mapDataplaneAuthConfig(clientOptions.authenticationConfiguration),
     metadataMaxAgeMs: clientOptions.metadataMaxAgeMs,
     connectionTimeoutMs: clientOptions.connectionTimeoutMs,
@@ -220,24 +179,6 @@ function mapDataplaneSecuritySyncOptions(
 }
 
 /**
- * Map dataplane schema registry sync options to unified type
- */
-function mapDataplaneSchemaRegistrySyncOptions(
-  options: SchemaRegistrySyncOptions | undefined
-): UnifiedSchemaRegistrySyncOptions | undefined {
-  if (!options) {
-    return;
-  }
-
-  return {
-    schemaRegistryShadowingMode:
-      options.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic'
-        ? { case: 'shadowSchemaRegistryTopic', value: {} }
-        : { case: undefined },
-  };
-}
-
-/**
  * Map dataplane configurations to unified configurations
  */
 function mapDataplaneConfigurations(
@@ -252,7 +193,7 @@ function mapDataplaneConfigurations(
     topicMetadataSyncOptions: mapDataplaneTopicMetadataSyncOptions(config.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapDataplaneConsumerOffsetSyncOptions(config.consumerOffsetSyncOptions),
     securitySyncOptions: mapDataplaneSecuritySyncOptions(config.securitySyncOptions),
-    schemaRegistrySyncOptions: mapDataplaneSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
+    schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
   };
 }
 

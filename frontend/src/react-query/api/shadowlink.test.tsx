@@ -54,7 +54,7 @@ import {
   useControlplaneDeleteShadowLinkMutation,
   useControlplaneGetShadowLinkByNameQuery,
 } from './controlplane/shadowlink';
-import { useDeleteShadowLinkUnified, useGetShadowLinkUnified } from './shadowlink';
+import { useDeleteShadowLinkUnified, useEditShadowLink, useGetShadowLinkUnified } from './shadowlink';
 
 const mockIsEmbedded = vi.mocked(isEmbedded);
 const mockUseControlplaneGetShadowLinkByNameQuery = vi.mocked(useControlplaneGetShadowLinkByNameQuery);
@@ -78,7 +78,6 @@ const createMockControlplaneResponse = () => ({
   id: 'cp-id-456',
   name: 'test-shadow-link',
   state: 5, // ACTIVE in controlplane
-  resourceGroupId: 'rg-123',
   shadowRedpandaId: 'sr-456',
   createdAt: timestampFromDate(new Date('2025-01-01T00:00:00Z')),
   updatedAt: timestampFromDate(new Date('2025-01-02T00:00:00Z')),
@@ -139,7 +138,6 @@ describe('useGetShadowLinkUnified', () => {
     expect(result.current.error).toBeNull();
 
     // Verify controlplane fields are NOT set
-    expect(result.current.data?.resourceGroupId).toBeUndefined();
     expect(result.current.data?.shadowRedpandaId).toBeUndefined();
   });
 
@@ -191,7 +189,6 @@ describe('useGetShadowLinkUnified', () => {
     expect(result.current.data?.name).toBe('test-shadow-link');
 
     // Verify controlplane overrides are applied
-    expect(result.current.data?.resourceGroupId).toBe('rg-123');
     expect(result.current.data?.shadowRedpandaId).toBe('sr-456');
     expect(result.current.data?.createdAt).toEqual(new Date('2025-01-01T00:00:00Z'));
     expect(result.current.data?.updatedAt).toEqual(new Date('2025-01-02T00:00:00Z'));
@@ -223,7 +220,6 @@ describe('useGetShadowLinkUnified', () => {
       state: UnifiedShadowLinkState.ACTIVE,
       tasksStatus: [],
       syncedShadowTopicProperties: [],
-      resourceGroupId: 'rg-123',
       shadowRedpandaId: 'sr-456',
     };
     mockFromControlplaneShadowLink.mockReturnValue(partialUnifiedData);
@@ -267,11 +263,72 @@ describe('useGetShadowLinkUnified', () => {
     // Verify partial data from controlplane fallback
     expect(result.current.data?.name).toBe('test-shadow-link');
     expect(result.current.data?.id).toBe('cp-id-456');
-    expect(result.current.data?.resourceGroupId).toBe('rg-123');
     expect(result.current.data?.shadowRedpandaId).toBe('sr-456');
 
     // No combined error since we have data from controlplane fallback
     expect(result.current.error).toBeNull();
+  });
+});
+
+describe('useEditShadowLink', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const renderEditHook = () => {
+    // Dataplane transport exists but is never queried in embedded mode
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getShadowLink, () => create(GetShadowLinkResponseSchema, {}));
+    });
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+    return renderHook(() => useEditShadowLink('test-shadow-link'), { wrapper });
+  };
+
+  test('detects API mode from controlplane data in embedded mode', async () => {
+    mockIsEmbedded.mockReturnValue(true);
+    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
+      data: {
+        ...createMockControlplaneResponse(),
+        schemaRegistrySyncOptions: {
+          schemaRegistryShadowingMode: {
+            case: 'shadowSchemaRegistryApi',
+            value: { sourceUrl: 'https://sr.example.com' },
+          },
+        },
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    const { result } = renderEditHook();
+
+    await waitFor(() => {
+      expect(result.current.hasData).toBe(true);
+    });
+    expect(result.current.isSchemaRegistryApiMode).toBe(true);
+  });
+
+  test('does not flag API mode for a topic-mode controlplane link in embedded mode', async () => {
+    mockIsEmbedded.mockReturnValue(true);
+    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
+      data: {
+        ...createMockControlplaneResponse(),
+        schemaRegistrySyncOptions: {
+          schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
+        },
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    const { result } = renderEditHook();
+
+    await waitFor(() => {
+      expect(result.current.hasData).toBe(true);
+    });
+    expect(result.current.isSchemaRegistryApiMode).toBe(false);
   });
 });
 
