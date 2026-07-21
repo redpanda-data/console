@@ -1,25 +1,22 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
 import { create } from '@bufbuild/protobuf';
-import {
-  Alert,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  FormControl,
-  Grid,
-  GridItem,
-  Heading,
-  HStack,
-  IconButton,
-  Input,
-  SectionHeading,
-  Text,
-  useToast,
-} from '@redpanda-data/ui';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
-import { TrashIcon } from 'components/icons';
+import type React from 'react';
 import { type FC, useEffect, useState } from 'react';
-import { Controller, type SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { setMonacoTheme } from '../../../config';
 import {
@@ -34,12 +31,22 @@ import {
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import { uiState } from '../../../state/ui-state';
-import { Label } from '../../../utils/tsx-utils';
+import { setPageHeader, uiState } from '../../../state/ui-state';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
 import KowlEditor from '../../misc/kowl-editor';
-import { SingleSelect } from '../../misc/select';
-import { PageComponent, type PageInitHelper } from '../page';
+import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
+import { Button } from '../../redpanda-ui/components/button';
+import {
+  Field,
+  FieldError,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+} from '../../redpanda-ui/components/field';
+import { Input } from '../../redpanda-ui/components/input';
+import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 
 type EncodingOption = {
   value: PayloadEncoding | 'base64';
@@ -80,12 +87,12 @@ const encodingOptions: EncodingOption[] = [
 ];
 
 const protoBufInfoElement = (
-  <Text>
+  <p className="text-body-sm">
     Protobuf schemas can define multiple types. Specify which type you want to use for this message.{' '}
     <a href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
       Learn more here.
     </a>
-  </Text>
+  </p>
 );
 
 function encodingToLanguage(encoding: PayloadEncoding) {
@@ -104,25 +111,66 @@ function encodingToLanguage(encoding: PayloadEncoding) {
   return;
 }
 
-type PayloadOptions = {
-  encoding: PayloadEncoding;
-  data: string;
+// Numeric-valued select wrapper bridging the registry Select (string values) with
+// react-hook-form fields that hold numeric enums (partition, compression, encoding, version).
+function NumberSelect({
+  value,
+  onChange,
+  options,
+  testId,
+  placeholder,
+}: {
+  value: number | undefined;
+  onChange: (value: number) => void;
+  options: { label: React.ReactNode; value: number }[];
+  testId?: string;
+  placeholder?: string;
+}) {
+  return (
+    <Select onValueChange={(raw) => onChange(Number(raw))} value={value === undefined ? undefined : String(value)}>
+      <SelectTrigger testId={testId}>
+        <SelectValue placeholder={placeholder}>
+          {(raw) => options.find((o) => String(o.value) === raw)?.label ?? placeholder}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={String(o.value)} value={String(o.value)}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
-  // Schema name
-  schemaName?: string;
-  schemaVersion?: number;
-  schemaId?: number;
+const payloadOptionsSchema = z.object({
+  encoding: z.nativeEnum(PayloadEncoding),
+  data: z.string(),
+  schemaName: z.string().optional(),
+  schemaVersion: z.number().optional(),
+  schemaId: z.number().optional(),
+  protobufIndex: z.number().optional(),
+});
 
-  protobufIndex?: number; // if encoding is protobuf, we also need an index
-};
+const produceRecordSchema = z
+  .object({
+    partition: z.number(),
+    compressionType: z.nativeEnum(CompressionType),
+    headers: z.array(z.object({ key: z.string(), value: z.string() })),
+    key: payloadOptionsSchema,
+    value: payloadOptionsSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (data.key.encoding === PayloadEncoding.BINARY && !isValidBase64(data.key.data)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid Base64 format', path: ['key', 'data'] });
+    }
+    if (data.value.encoding === PayloadEncoding.BINARY && !isValidBase64(data.value.data)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid Base64 format', path: ['value', 'data'] });
+    }
+  });
 
-type Inputs = {
-  partition: number;
-  compressionType: CompressionType;
-  headers: { key: string; value: string }[];
-  key: PayloadOptions;
-  value: PayloadOptions;
-};
+type Inputs = z.infer<typeof produceRecordSchema>;
 
 const persistCompressionType = (compressionType: CompressionType) => {
   uiState.topicSettings.produceRecordCompression = compressionType;
@@ -130,8 +178,6 @@ const persistCompressionType = (compressionType: CompressionType) => {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
-  const toast = useToast();
-
   const {
     control,
     register,
@@ -139,8 +185,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     handleSubmit,
     setError,
     formState: { isSubmitting, errors },
-    clearErrors,
   } = useForm<Inputs>({
+    resolver: zodResolver(produceRecordSchema),
+    mode: 'onChange',
     defaultValues: {
       partition: -1,
       compressionType: uiState.topicSettings.produceRecordCompression,
@@ -156,36 +203,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'headers',
-  });
-
   const keyPayloadOptions = useWatch({ control, name: 'key' });
   const valuePayloadOptions = useWatch({ control, name: 'value' });
 
   const [isKeyExpanded, setKeyExpanded] = useState(false);
-  useEffect(() => {
-    if (keyPayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(keyPayloadOptions.data)) {
-      setError('key.data', {
-        type: 'manual',
-        message: 'Invalid Base64 format',
-      });
-    } else {
-      clearErrors('key.data');
-    }
-  }, [keyPayloadOptions.encoding, keyPayloadOptions.data, setError, clearErrors]);
-
-  useEffect(() => {
-    if (valuePayloadOptions.encoding === PayloadEncoding.BINARY && !isValidBase64(valuePayloadOptions.data)) {
-      setError('value.data', {
-        type: 'manual',
-        message: 'Invalid Base64 format',
-      });
-    } else {
-      clearErrors('value.data');
-    }
-  }, [valuePayloadOptions.encoding, valuePayloadOptions.data, setError, clearErrors]);
 
   const showKeySchemaSelection =
     keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF;
@@ -199,10 +220,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       value: value.number as CompressionType,
     }));
 
+  const topics = useApiStoreHook((s) => s.topics);
   const availablePartitions = (() => {
     const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
 
-    const count = api.topics?.first((t) => t.topicName === topicName)?.partitionCount;
+    const count = topics?.first((t) => t.topicName === topicName)?.partitionCount;
     if (count === undefined) {
       // topic not found
       return partitions;
@@ -220,14 +242,8 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     return partitions;
   })();
 
-  useEffect(() => {
-    // Fetch schema subjects list if not already loaded
-    if (!api.schemaSubjects) {
-      api.refreshSchemaSubjects();
-    }
-  }, []);
-
-  const availableValues = api.schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
+  const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
+  const availableValues = schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
 
   const keySchemaName = useWatch({ control, name: 'key.schemaName' });
   const valueSchemaName = useWatch({ control, name: 'value.schemaName' });
@@ -298,7 +314,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
         }
       }
 
-      req.key.index = data.key.protobufIndex;
+      if (data.key.protobufIndex !== undefined) {
+        req.key.index = data.key.protobufIndex;
+      }
     }
 
     // Value
@@ -331,7 +349,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
         }
       }
 
-      req.value.index = data.value.protobufIndex;
+      if (data.value.protobufIndex !== undefined) {
+        req.value.index = data.value.protobufIndex;
+      }
     }
 
     const result = await api.publishMessage(req).catch((err) => {
@@ -341,364 +361,343 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     });
 
     if (result) {
-      toast({
-        status: 'success',
-        description: (
-          <>
-            Record published on partition <span className="codeBox">{result.partitionId}</span> with offset{' '}
-            <span className="codeBox">{Number(result.offset)}</span>
-          </>
-        ),
-        duration: 3000,
-      });
+      toast.success(`Record published on partition ${result.partitionId} with offset ${Number(result.offset)}`);
       appGlobal.historyPush(`/topics/${encodeURIComponent(topicName)}`);
     }
   };
 
-  const filteredEncodingOptions = encodingOptions.filter((x) => x.value !== PayloadEncoding.AVRO);
+  const filteredEncodingOptions = encodingOptions
+    .filter((x) => x.value !== PayloadEncoding.AVRO)
+    .map((x) => ({ label: x.label, value: x.value as number }));
+
+  const schemaNameOptions = availableValues.map((schema) => ({ label: schema.name, value: schema.name }));
+
+  const sortedKeyVersions =
+    keySchemaDetail?.versions
+      .slice()
+      .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+      .map(({ version }) => ({ label: version, value: version })) ?? [];
+
+  const sortedValueVersions =
+    valueSchemaDetail?.versions
+      .slice()
+      .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+      .map(({ version }) => ({ label: version, value: version })) ?? [];
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <Grid flexDirection="column" gap={6} width={['100%', '100%', 600]}>
-        <Flex flexDirection="row" gap={4}>
-          <Box flexGrow={1}>
-            <Label text="Partition">
-              <Controller
-                control={control}
-                name="partition"
-                render={({ field: { onChange, value } }) => (
-                  <SingleSelect<number> onChange={onChange} options={availablePartitions} value={value} />
-                )}
-              />
-            </Label>
-          </Box>
-          <Box flexGrow={1}>
-            <Label text="Compression Type">
-              <Controller
-                control={control}
-                name="compressionType"
-                render={({ field: { onChange, value } }) => (
-                  <SingleSelect<CompressionType> onChange={onChange} options={compressionTypes} value={value} />
-                )}
-              />
-            </Label>
-          </Box>
-        </Flex>
+    <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex flex-row gap-4">
+        <Controller
+          control={control}
+          name="partition"
+          render={({ field }) => (
+            <Field className="flex-1">
+              <FieldLabel htmlFor="partition">Partition</FieldLabel>
+              <NumberSelect onChange={field.onChange} options={availablePartitions} value={field.value} />
+            </Field>
+          )}
+        />
+        <Controller
+          control={control}
+          name="compressionType"
+          render={({ field }) => (
+            <Field className="flex-1">
+              <FieldLabel htmlFor="compressionType">Compression Type</FieldLabel>
+              <NumberSelect onChange={field.onChange} options={compressionTypes} value={field.value} />
+            </Field>
+          )}
+        />
+      </div>
 
-        <Divider />
+      <FieldSeparator />
 
-        <Flex flexDirection="column" gap={4}>
-          <SectionHeading>Headers</SectionHeading>
+      <FieldSet>
+        <FieldLegend>Headers</FieldLegend>
+        <Controller
+          control={control}
+          name="headers"
+          render={({ field }) => (
+            <KeyValueField
+              addButtonLabel="Add row"
+              onChange={field.onChange}
+              testId="produce-headers"
+              value={field.value}
+            />
+          )}
+        />
+      </FieldSet>
 
-          {fields.map((field, index) => (
-            <HStack key={field.id} spacing={2}>
-              <FormControl>
-                <Input {...register(`headers.${index}.key`)} placeholder="Key" />
-              </FormControl>
-              <FormControl>
-                <Input {...register(`headers.${index}.value`)} placeholder="Value" />
-              </FormControl>
-              <IconButton
-                aria-label="Remove item"
-                icon={<TrashIcon />}
-                onClick={() => remove(index)}
-                variant="outline"
-              />
-            </HStack>
-          ))}
+      <FieldSeparator />
 
-          <Box>
-            <Button onClick={() => append({ key: '', value: '' })} size="sm" type="button" variant="outline">
-              Add row
-            </Button>
-          </Box>
-        </Flex>
+      <FieldSet>
+        <FieldLegend>Key</FieldLegend>
+        <div className="grid grid-cols-5 gap-2">
+          <Controller
+            control={control}
+            name="key.encoding"
+            render={({ field }) => (
+              <Field className="col-span-2">
+                <FieldLabel htmlFor="key.encoding">Type</FieldLabel>
+                <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
+              </Field>
+            )}
+          />
+          {Boolean(showKeySchemaSelection) && (
+            <Controller
+              control={control}
+              name="key.schemaName"
+              render={({ field }) => (
+                <Field className="col-span-2">
+                  <FieldLabel htmlFor="key.schemaName">Schema</FieldLabel>
+                  <Select
+                    onValueChange={(newVal) => {
+                      field.onChange(newVal);
 
-        <Divider />
+                      if (newVal) {
+                        // Fetch schema details to get available versions
+                        api
+                          .refreshSchemaDetails(newVal)
+                          .then(() => {
+                            const detail = api.schemaDetails.get(newVal);
+                            if (detail?.latestActiveVersion) {
+                              setValue('key.schemaVersion', detail.latestActiveVersion);
+                            }
+                          })
+                          .catch(() => {
+                            // Error handling managed by API layer
+                          });
+                      }
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schemaNameOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+          )}
+          {Boolean(showKeySchemaSelection) && (
+            <Controller
+              control={control}
+              name="key.schemaVersion"
+              render={({ field }) => (
+                <Field className="col-span-1">
+                  <FieldLabel htmlFor="key.schemaVersion">Version</FieldLabel>
+                  <NumberSelect onChange={field.onChange} options={sortedKeyVersions} value={field.value} />
+                </Field>
+              )}
+            />
+          )}
+        </div>
 
-        <Flex flexDirection="column" gap={4}>
-          <SectionHeading>Key</SectionHeading>
-          <Grid gap={2} templateColumns="repeat(5, 1fr)">
-            <GridItem colSpan={2}>
-              <Label text="Type">
+        {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
+          <Field>
+            <FieldLabel htmlFor="key.protobufIndex">Index</FieldLabel>
+            {protoBufInfoElement}
+            <Input id="key.protobufIndex" type="number" {...register('key.protobufIndex', { valueAsNumber: true })} />
+          </Field>
+        )}
+
+        {keyPayloadOptions.encoding !== PayloadEncoding.NULL && (
+          <Field data-invalid={!!errors.key?.data}>
+            <FieldLabel>Data</FieldLabel>
+            <div data-testid="produce-key-editor">
+              {isKeyExpanded ? (
                 <Controller
                   control={control}
-                  name="key.encoding"
+                  name="key.data"
                   render={({ field: { onChange, value } }) => (
-                    <SingleSelect<PayloadEncoding | 'base64'>
+                    <KowlEditor
+                      height={300}
+                      language={encodingToLanguage(keyPayloadOptions?.encoding)}
                       onChange={onChange}
-                      options={filteredEncodingOptions}
+                      onMount={setMonacoTheme}
                       value={value}
                     />
                   )}
                 />
-              </Label>
-            </GridItem>
-            <GridItem colSpan={2}>
-              {Boolean(showKeySchemaSelection) && (
-                <Label text="Schema">
-                  <Controller
-                    control={control}
-                    name="key.schemaName"
-                    render={({ field: { onChange, value } }) => (
-                      <SingleSelect<string | undefined>
-                        onChange={(newVal) => {
-                          onChange(newVal);
-
-                          if (newVal) {
-                            // Fetch schema details to get available versions
-                            api
-                              .refreshSchemaDetails(newVal)
-                              .then(() => {
-                                const detail = api.schemaDetails.get(newVal);
-                                if (detail?.latestActiveVersion) {
-                                  setValue('key.schemaVersion', detail.latestActiveVersion);
-                                }
-                              })
-                              .catch(() => {
-                                // Error handling managed by API layer
-                              });
-                          }
-                        }}
-                        options={availableValues.map((schema) => ({
-                          key: schema.name,
-                          value: schema.name,
-                        }))}
-                        value={value}
-                      />
-                    )}
-                  />
-                </Label>
+              ) : (
+                <Controller
+                  control={control}
+                  name="key.data"
+                  render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
+                />
               )}
-            </GridItem>
-            <GridItem colSpan={1}>
-              {Boolean(showKeySchemaSelection) && (
-                <Label text="Version">
-                  <Controller
-                    control={control}
-                    name="key.schemaVersion"
-                    render={({ field: { onChange, value } }) => {
-                      const schemaDetail = keySchemaDetail;
-                      return (
-                        <SingleSelect<number | undefined>
-                          onChange={onChange}
-                          options={
-                            schemaDetail?.versions
-                              .slice()
-                              .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                              .map(({ version }) => ({
-                                label: version,
-                                value: version,
-                              })) ?? []
-                          }
-                          value={value}
-                        />
-                      );
-                    }}
-                  />
-                </Label>
+              <Button className="mt-1 px-0" onClick={() => setKeyExpanded(!isKeyExpanded)} size="sm" variant="link">
+                {isKeyExpanded ? 'Collapse' : 'Expand'}
+              </Button>
+            </div>
+            {Boolean(errors.key?.data) && <FieldError>{errors.key?.data?.message}</FieldError>}
+          </Field>
+        )}
+      </FieldSet>
+
+      <FieldSeparator />
+
+      <FieldSet>
+        <FieldLegend>Value</FieldLegend>
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-5 gap-2">
+            <Controller
+              control={control}
+              name="value.encoding"
+              render={({ field }) => (
+                <Field className="col-span-2">
+                  <FieldLabel htmlFor="value.encoding">Type</FieldLabel>
+                  <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
+                </Field>
               )}
-            </GridItem>
-          </Grid>
+            />
+            {Boolean(showValueSchemaSelection) && (
+              <Controller
+                control={control}
+                name="value.schemaName"
+                render={({ field }) => (
+                  <Field className="col-span-2">
+                    <FieldLabel htmlFor="value.schemaName">Schema</FieldLabel>
+                    <Select
+                      onValueChange={(newVal) => {
+                        field.onChange(newVal);
 
-          {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
-            <Label text="Index">
-              {protoBufInfoElement}
-              <Input my={2} type="number" {...register('key.protobufIndex')} />
-            </Label>
-          )}
-
-          {keyPayloadOptions.encoding !== PayloadEncoding.NULL && (
-            <Label text="Data">
-              <Box data-testid="produce-key-editor">
-                {isKeyExpanded ? (
-                  <Controller
-                    control={control}
-                    name="key.data"
-                    render={({ field: { onChange, value } }) => (
-                      <KowlEditor
-                        height={300}
-                        language={encodingToLanguage(keyPayloadOptions?.encoding)}
-                        onChange={onChange}
-                        onMount={setMonacoTheme}
-                        value={value}
-                      />
-                    )}
-                  />
-                ) : (
-                  <Controller
-                    control={control}
-                    name="key.data"
-                    render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
-                  />
-                )}
-                <Button mt={1} onClick={() => setKeyExpanded(!isKeyExpanded)} px={0} size="sm" variant="link">
-                  {isKeyExpanded ? 'Collapse' : 'Expand'}
-                </Button>
-              </Box>
-            </Label>
-          )}
-          {Boolean(errors?.key?.data) && <Text color="red.500">{errors?.key?.data?.message}</Text>}
-        </Flex>
-
-        <Divider />
-
-        <Flex flexDirection="column" gap={4}>
-          <SectionHeading>Value</SectionHeading>
-          <Flex flexDirection="column" gap={2}>
-            <Grid gap={2} templateColumns="repeat(5, 1fr)">
-              <GridItem colSpan={2}>
-                <Label text="Type">
-                  <Controller
-                    control={control}
-                    name="value.encoding"
-                    render={({ field: { onChange, value } }) => (
-                      <SingleSelect<PayloadEncoding | 'base64'>
-                        onChange={onChange}
-                        options={filteredEncodingOptions}
-                        value={value}
-                      />
-                    )}
-                  />
-                </Label>
-              </GridItem>
-              <GridItem colSpan={2}>
-                {Boolean(showValueSchemaSelection) && (
-                  <Label text="Schema">
-                    <Controller
-                      control={control}
-                      name="value.schemaName"
-                      render={({ field: { onChange, value } }) => (
-                        <SingleSelect<string | undefined>
-                          onChange={(newVal) => {
-                            onChange(newVal);
-
-                            if (newVal) {
-                              // Fetch schema details to get available versions
-                              api.refreshSchemaDetails(newVal).then(() => {
-                                const detail = api.schemaDetails.get(newVal);
-                                if (detail?.latestActiveVersion) {
-                                  setValue('value.schemaVersion', detail.latestActiveVersion);
-                                }
-                              });
+                        if (newVal) {
+                          // Fetch schema details to get available versions
+                          api.refreshSchemaDetails(newVal).then(() => {
+                            const detail = api.schemaDetails.get(newVal);
+                            if (detail?.latestActiveVersion) {
+                              setValue('value.schemaVersion', detail.latestActiveVersion);
                             }
-                          }}
-                          options={availableValues.map((schema) => ({
-                            key: schema.name,
-                            value: schema.name,
-                          }))}
-                          value={value}
-                        />
-                      )}
-                    />
-                  </Label>
-                )}
-              </GridItem>
-              <GridItem colSpan={1}>
-                {Boolean(showValueSchemaSelection) && (
-                  <Label text="Version">
-                    <Controller
-                      control={control}
-                      name="value.schemaVersion"
-                      render={({ field: { onChange, value } }) => {
-                        const schemaDetail = valueSchemaDetail;
-                        return (
-                          <SingleSelect<number | undefined>
-                            onChange={onChange}
-                            options={
-                              schemaDetail?.versions
-                                .slice()
-                                .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-                                .map(({ version }) => ({
-                                  label: version,
-                                  value: version,
-                                })) ?? []
-                            }
-                            value={value}
-                          />
-                        );
+                          });
+                        }
                       }}
-                    />
-                  </Label>
+                      value={field.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schemaNameOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
                 )}
-              </GridItem>
-            </Grid>
-
-            {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
-              <Label text="Index">
-                {protoBufInfoElement}
-                <Input my={2} type="number" {...register('value.protobufIndex')} />
-              </Label>
+              />
             )}
-
-            {valuePayloadOptions.encoding !== PayloadEncoding.NULL && (
-              <Label text="Data">
-                <Box data-testid="produce-value-editor">
-                  <Controller
-                    control={control}
-                    name="value.data"
-                    render={({ field: { onChange, value } }) => (
-                      <KowlEditor
-                        data-testid="produce-message-value"
-                        height={300}
-                        language={encodingToLanguage(valuePayloadOptions?.encoding)}
-                        onChange={onChange}
-                        onMount={setMonacoTheme}
-                        value={value}
-                      />
-                    )}
-                  />
-                </Box>
-              </Label>
+            {Boolean(showValueSchemaSelection) && (
+              <Controller
+                control={control}
+                name="value.schemaVersion"
+                render={({ field }) => (
+                  <Field className="col-span-1">
+                    <FieldLabel htmlFor="value.schemaVersion">Version</FieldLabel>
+                    <NumberSelect onChange={field.onChange} options={sortedValueVersions} value={field.value} />
+                  </Field>
+                )}
+              />
             )}
-            {Boolean(errors?.value?.data) && <Text color="red.500">{errors?.value?.data?.message}</Text>}
-            <input {...register('value.data')} data-testid="valueData" />
-          </Flex>
-        </Flex>
+          </div>
 
-        {!!errors?.root?.serverError && <Alert status="error">{errors.root.serverError.message}</Alert>}
+          {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
+            <Field>
+              <FieldLabel htmlFor="value.protobufIndex">Index</FieldLabel>
+              {protoBufInfoElement}
+              <Input
+                id="value.protobufIndex"
+                type="number"
+                {...register('value.protobufIndex', { valueAsNumber: true })}
+              />
+            </Field>
+          )}
 
-        <Flex alignItems="center" gap={4}>
-          <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
-            Produce
-          </Button>
-          <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName">
-            Go Back
-          </Link>
-        </Flex>
-      </Grid>
+          {valuePayloadOptions.encoding !== PayloadEncoding.NULL && (
+            <Field data-invalid={!!errors.value?.data}>
+              <FieldLabel>Data</FieldLabel>
+              <div data-testid="produce-value-editor">
+                <Controller
+                  control={control}
+                  name="value.data"
+                  render={({ field: { onChange, value } }) => (
+                    <KowlEditor
+                      data-testid="produce-message-value"
+                      height={300}
+                      language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                      onChange={onChange}
+                      onMount={setMonacoTheme}
+                      value={value}
+                    />
+                  )}
+                />
+              </div>
+              {Boolean(errors.value?.data) && <FieldError>{errors.value?.data?.message}</FieldError>}
+              <input {...register('value.data')} data-testid="valueData" />
+            </Field>
+          )}
+        </div>
+      </FieldSet>
+
+      {!!errors?.root?.serverError && (
+        <Alert variant="destructive">
+          <AlertDescription>{errors.root.serverError.message}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex items-center gap-4">
+        <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
+          Produce
+        </Button>
+        <Button
+          nativeButton={false}
+          render={
+            <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName" />
+          }
+          variant="outline"
+        >
+          Go Back
+        </Button>
+      </div>
     </form>
   );
 };
 
-export class TopicProducePage extends PageComponent<{ topicName: string }> {
-  initPage(p: PageInitHelper): void {
-    const topicName = this.props.topicName;
-    p.title = 'Produce';
-    p.addBreadcrumb('Topics', '/topics');
-    p.addBreadcrumb(substringWithEllipsis(topicName, 50), `/topics/${topicName}`);
+export const TopicProducePage: FC<{ topicName: string }> = ({ topicName }) => {
+  useEffect(() => {
+    setPageHeader('Produce Kafka record', [
+      { title: 'Topics', linkTo: '/topics' },
+      { title: substringWithEllipsis(topicName, 50), linkTo: `/topics/${topicName}` },
+      { title: 'Produce record', linkTo: `/topics/${topicName}/produce-record` },
+    ]);
+  }, [topicName]);
 
-    p.addBreadcrumb('Produce record', '/produce-record');
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
+  useEffect(() => {
+    api.refreshSchemaSubjects();
+    api.refreshTopics();
+  }, []);
 
-  refreshData(force?: boolean) {
-    api.refreshSchemaSubjects(force);
-  }
+  useEffect(() => {
+    appGlobal.onRefresh = () => {
+      api.refreshSchemaSubjects(true);
+      api.refreshTopics(true);
+    };
+  }, []);
 
-  render() {
-    return (
-      <Box>
-        <Heading as="h1" noOfLines={1} py={2}>
-          Produce Kafka record
-        </Heading>
-        <Text fontSize="lg">This will produce a single record to the topic.</Text>
-
-        <Box my={6}>
-          <PublishTopicForm topicName={this.props.topicName} />
-        </Box>
-      </Box>
-    );
-  }
-}
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-lead text-muted-foreground">This will produce a single record to the topic.</p>
+      <div className="mt-6">
+        <PublishTopicForm topicName={topicName} />
+      </div>
+    </div>
+  );
+};

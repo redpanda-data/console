@@ -22,5 +22,5 @@ export const Route = createFileRoute('/topics/$topicName/produce-record')({
 
 function TopicProduceWrapper() {
   const { topicName } = useParams({ from: '/topics/$topicName/produce-record' });
-  return <TopicProducePage matchedPath={`/topics/${topicName}/produce-record`} topicName={topicName} />;
+  return <TopicProducePage topicName={topicName} />;
 }
