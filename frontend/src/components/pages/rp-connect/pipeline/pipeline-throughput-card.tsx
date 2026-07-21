@@ -11,8 +11,6 @@
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
   type ChartConfig,
   ChartContainer,
@@ -28,9 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshButton } from 'components/ui/refresh-button';
 import type { FC } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
@@ -41,9 +38,10 @@ import {
   type MergedPoint,
   mergeTimeSeries,
 } from 'utils/pipeline-throughput.utils';
-import { calculateTimeRange, getTimeRanges, type TimeRange } from 'utils/time-range';
+import { calculateTimeRange, getEvenlySpacedTimeTicks, getTimeRanges, type TimeRange } from 'utils/time-range';
 
-const TIME_RANGES = getTimeRanges(24 * 60 * 60 * 1000);
+// Cap at 12h: the range-query backend can't serve a wider window at its default resolution (Prometheus' 11k-point limit).
+const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
 
 const chartConfig = {
   ingress: { label: 'Ingress', color: 'var(--color-primary)' },
@@ -56,9 +54,11 @@ type ThroughputContentProps = {
   hasData: boolean;
   chartData: MergedPoint[];
   id: string;
+  // Full selected window [start, end] in ms, so the axis spans it even when data is sparse.
+  domain: [number, number];
 };
 
-const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, hasData, chartData, id }) => {
+const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, hasData, chartData, id, domain }) => {
   if (isLoading) {
     return <ChartSkeleton className="h-40 w-full" variant="area" />;
   }
@@ -72,7 +72,7 @@ const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, has
   }
 
   if (!hasData) {
-    return <Text className="text-muted-foreground">Throughput metrics not available</Text>;
+    return <div className="text-body text-muted-foreground">Throughput metrics not available</div>;
   }
 
   return (
@@ -92,9 +92,13 @@ const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, has
         <XAxis
           axisLine={false}
           dataKey="timestamp"
+          domain={domain}
+          scale="time"
           tickFormatter={formatChartTimestamp}
           tickLine={false}
           tickMargin={8}
+          ticks={getEvenlySpacedTimeTicks(domain[0], domain[1])}
+          type="number"
         />
         <YAxis axisLine={false} tickLine={false} tickMargin={8} width={40} />
         <ChartTooltip
@@ -192,40 +196,47 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
     [ingressData, egressData]
   );
 
-  // isPending stays true when enabled:false (query will never run), so only
-  // treat enabled queries as "still loading" to avoid an infinite skeleton.
+  // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
   const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
   const isError = isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
+  // Anchor the axis to the full selected window, not just the data extent.
+  const domain: [number, number] = [timeRange.start.getTime(), timeRange.end.getTime()];
+
   return (
-    <Card size="full" variant="outlined">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Throughput</CardTitle>
-          <div className="flex items-center gap-1">
-            <Button disabled={isFetching} onClick={handleRefresh} size="icon" variant="ghost">
-              <RefreshCcw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
-            </Button>
-            <Select onValueChange={(v) => setSelectedTimeRange(v as TimeRange)} value={selectedTimeRange}>
-              <SelectTrigger size="sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {TIME_RANGES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-heading-md">Throughput</h3>
+        <div className="flex items-center gap-1">
+          <Select
+            items={TIME_RANGES}
+            onValueChange={(v) => setSelectedTimeRange(v as TimeRange)}
+            value={selectedTimeRange}
+          >
+            <SelectTrigger size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {TIME_RANGES.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <RefreshButton loading={isFetching} onClick={handleRefresh} />
         </div>
-      </CardHeader>
-      <CardContent className="mt-4">
-        <ThroughputContent chartData={chartData} hasData={hasData} id={id} isError={isError} isLoading={isLoading} />
-      </CardContent>
-    </Card>
+      </div>
+      <ThroughputContent
+        chartData={chartData}
+        domain={domain}
+        hasData={hasData}
+        id={id}
+        isError={isError}
+        isLoading={isLoading}
+      />
+    </section>
   );
 };

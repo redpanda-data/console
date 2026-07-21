@@ -13,27 +13,34 @@ import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useRouter, useSearch } from '@tanstack/react-router';
-import { isSystemTag } from 'components/constants';
-import { ArrowBigUpIcon, CommandIcon } from 'components/icons';
-import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
+import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
+import { getUserTagEntries, isSystemTag } from 'components/constants';
+import { ArrowLeftIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
-import { Kbd } from 'components/redpanda-ui/components/kbd';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
+import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
-import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { useHotKey } from 'hooks/use-hot-key';
+import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
+import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
@@ -42,6 +49,7 @@ import {
   UpdatePipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
+  type ComponentList,
   CreatePipelineRequestSchema as CreatePipelineRequestSchemaDataPlane,
   type Pipeline,
   Pipeline_ServiceAccountSchema,
@@ -50,38 +58,35 @@ import {
   PipelineUpdateSchema,
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
-import {
-  useGetPipelineServiceConfigSchemaQuery,
-  useLintPipelineConfigQuery,
-  useListComponentsQuery,
-} from 'react-query/api/connect';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
+import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
   useGetPipelineQuery,
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
-import type { ImperativePanelHandle } from 'react-resizable-panels';
 import { toast } from 'sonner';
-import {
-  useOnboardingUserDataStore,
-  useOnboardingWizardDataStore,
-  useOnboardingYamlContentStore,
-} from 'state/onboarding-wizard-store';
-import { isMacOS } from 'utils/platform';
+import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { ConfigDialog } from './config-dialog';
 import { DetailsDialog } from './details-dialog';
+import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
-import { PipelineFlowDiagram } from './pipeline-flow-diagram';
+import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
+import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
-import { Toolbar } from './toolbar';
+import { ScrollShadow } from './scroll-shadow';
+import { TemplateGalleryCta } from './template-cta';
+import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
+import { usePipelineLint } from './use-pipeline-lint';
+import { useSaveHotkey } from './use-save-hotkey';
 import { useSlashCommand } from './use-slash-command';
+import { VisualEditorPanel } from './visual-editor-panel';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddConnectorsCard } from '../onboarding/add-connectors-card';
@@ -89,16 +94,51 @@ import { AddTopicStep } from '../onboarding/add-topic-step';
 import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
+import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
 import type { ConnectComponentType } from '../types/schema';
-import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard';
+import type {
+  AddTopicFormData,
+  AddUserFormData,
+  BaseStepRef,
+  ServiceAccountSubmissionData,
+  UserStepRef,
+} from '../types/wizard';
+import { navigateToConnectClusters } from '../utils/navigation';
+import { changedNodeIds } from '../utils/pipeline-diff';
+import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
+import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
 import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { getConnectTemplate, type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yaml';
+import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
 
-// ---------------------------------------------------------------------------
-// Schema + types
-// ---------------------------------------------------------------------------
+function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
+  if (type === 'input') {
+    return 'Add an input';
+  }
+  if (type === 'output') {
+    return 'Add an output';
+  }
+  return type ? `Add a ${type}` : undefined;
+}
+
+function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null): string | undefined {
+  return type ? `Search ${type}s...` : undefined;
+}
+
+// Tips to show beneath the editor for the active lane; read-only YAML and Monitor get none.
+function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
+  if (isView) {
+    return viewLane === 'visual' ? 'visual' : null;
+  }
+  return editLane === 'visual' ? 'visual' : 'yaml';
+}
+
+// Stable empty set for the "nothing unsaved" / view-mode case so highlights don't churn renders.
+const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
+
+// How many effect re-runs (editor mount, ranges catch-up) a reveal request survives unresolved.
+const MAX_REVEAL_ATTEMPTS = 5;
 
 const pipelineFormSchema = z.object({
   name: z
@@ -121,11 +161,7 @@ const pipelineFormSchema = z.object({
     }, 'Duplicate tag keys are not allowed'),
 });
 
-type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
-
-// ---------------------------------------------------------------------------
-// Pure helpers
-// ---------------------------------------------------------------------------
+export type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
 
 function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
   const userTags: Record<string, string> = {};
@@ -152,7 +188,7 @@ function buildCreateRequest(opts: {
   userTags: Record<string, string>;
   yamlContent: string;
 }) {
-  const userData = useOnboardingUserDataStore.getState();
+  const userData = useRpcnWizardStore.getState();
   const tags: Record<string, string> = {
     __redpanda_cloud_pipeline_type: 'pipeline',
   };
@@ -195,46 +231,24 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Hooks
-// ---------------------------------------------------------------------------
-
-function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
-  const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
-  const { data: lintResponse, isPending: isLintPending } = useLintPipelineConfigQuery(debouncedYamlContent, {
-    enabled,
-  });
-
-  const lintHints = useMemo(() => {
-    const merged: Record<string, LintHint> = {};
-    for (const [key, hint] of Object.entries(errorLintHints)) {
-      merged[`error_${key}`] = hint;
-    }
-    if (lintResponse) {
-      for (const [idx, hint] of Object.entries(lintResponse.lintHints || [])) {
-        merged[`lint_hint_${idx}`] = hint;
-      }
-    }
-    return merged;
-  }, [errorLintHints, lintResponse]);
-
-  return { lintHints, isLintPending };
-}
-
 function usePipelineSave({
   form,
-  yamlContent,
+  editorStore,
   mode,
   pipelineId,
   pipeline,
   isPipelineDiagramsEnabled,
+  onBeforeSaveNavigate,
 }: {
   form: UseFormReturn<PipelineFormValues>;
-  yamlContent: string;
+  /** The editor store — read fresh at save time (after flushing pending visual edits). */
+  editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
   mode: string;
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
+  /** Called right before a successful save navigates away, so the guard doesn't block it. */
+  onBeforeSaveNavigate?: () => void;
 }) {
   const navigate = useNavigate();
   const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
@@ -246,16 +260,24 @@ function usePipelineSave({
 
   const clearWizardStore = useCallback(() => {
     if (!isPipelineDiagramsEnabled) {
-      useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: '' });
+      useRpcnWizardStore.getState().setYamlContent({ yamlContent: '' });
     }
-    useOnboardingWizardDataStore.getState().setWizardData({ input: undefined, output: undefined });
+    useRpcnWizardStore.getState().setWizardData({ input: undefined, output: undefined });
   }, [isPipelineDiagramsEnabled]);
 
   const handleSave = useCallback(async () => {
     const isValid = await form.trigger();
     if (!isValid) {
+      // Settings live in the header/dialog, so surface why the save was blocked.
+      const fieldErrors = form.formState.errors;
+      const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
+      toast.error(typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.');
       return;
     }
+
+    // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
+    editorStore.getState().pendingEditCommit?.();
+    const yamlContent = editorStore.getState().yamlContent;
 
     const { name, description, computeUnits, tags: formTags } = form.getValues();
     const userTags = buildUserTags(formTags);
@@ -275,6 +297,7 @@ function usePipelineSave({
           toast.success('Pipeline created');
           warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
           const newPipelineId = response.response?.pipeline?.id;
+          onBeforeSaveNavigate?.();
           navigate({ to: newPipelineId ? `/rp-connect/${newPipelineId}` : '/connect-clusters' });
         },
         onError: (err) => onError(err, 'create'),
@@ -302,12 +325,24 @@ function usePipelineSave({
           setErrorLintHints({});
           toast.success('Pipeline updated');
           warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
+          onBeforeSaveNavigate?.();
           navigate({ to: `/rp-connect/${pipelineId}` });
         },
         onError: (err) => onError(err, 'update'),
       });
     }
-  }, [form, yamlContent, mode, pipelineId, createMutation, updateMutation, navigate, clearWizardStore, pipeline]);
+  }, [
+    form,
+    editorStore,
+    mode,
+    pipelineId,
+    createMutation,
+    updateMutation,
+    navigate,
+    clearWizardStore,
+    pipeline,
+    onBeforeSaveNavigate,
+  ]);
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -315,7 +350,7 @@ function usePipelineSave({
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           toast.success('Pipeline deleted');
-          navigate({ to: '/connect-clusters' });
+          navigateToConnectClusters(navigate);
         },
         onError: (err) => {
           toast.error(
@@ -338,103 +373,81 @@ function usePipelineSave({
   };
 }
 
-function useDiagramDialogs(yamlContent: string, handleConnectorYamlChange: (yaml: string) => void) {
-  const [topicDialogTarget, setTopicDialogTarget] = useState<{
-    section: 'input' | 'output';
-    componentName: string;
-  } | null>(null);
-  const [userDialogTarget, setUserDialogTarget] = useState<{
-    section: 'input' | 'output';
-    componentName: string;
-  } | null>(null);
-  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
-  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
+type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
+
+function useDiagramDialogs(
+  yamlContent: string,
+  patchComponent: (section: 'input' | 'output', componentName: string, patch: RedpandaSetupResultLike) => boolean,
+  focusEditorEnd: () => void
+) {
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
-  const handleAddTopic = useCallback((section: string, componentName: string) => {
-    setTopicDialogTarget({ section: section as 'input' | 'output', componentName });
-  }, []);
-
-  const handleAddSasl = useCallback((section: string, componentName: string) => {
-    setUserDialogTarget({ section: section as 'input' | 'output', componentName });
-  }, []);
-
-  const handleTopicSubmit = useCallback(async () => {
-    const ref = topicStepRef.current;
-    if (!(ref && topicDialogTarget)) {
-      return;
-    }
-    setIsTopicSubmitting(true);
-    const result = await ref.triggerSubmit();
-    if (result.success && result.data?.topicName) {
-      const patched = tryPatchRedpandaYaml(yamlContent, topicDialogTarget.section, topicDialogTarget.componentName, {
-        topicName: result.data.topicName,
-      });
-      if (patched) {
-        handleConnectorYamlChange(patched);
+  const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
+    ref: topicStepRef,
+    onSuccess: (data, target) => {
+      if (data.topicName && patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
+        focusEditorEnd();
       }
-      setTopicDialogTarget(null);
-    }
-    setIsTopicSubmitting(false);
-  }, [topicDialogTarget, yamlContent, handleConnectorYamlChange]);
+    },
+  });
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: handles service-account vs SASL branching from AddUserStep result
-  const handleUserSubmit = useCallback(async () => {
-    const ref = userStepRef.current;
-    if (!(ref && userDialogTarget)) {
-      return;
-    }
-    setIsUserSubmitting(true);
-    const result = await ref.triggerSubmit();
-    if (result.success && result.data) {
-      const data = result.data;
+  const userDialog = useRefFormDialog<AddUserFormData | ServiceAccountSubmissionData, DiagramDialogTarget>({
+    ref: userStepRef,
+    onSuccess: (data, target) => {
       let setupResult: RedpandaSetupResultLike = {};
       if ('authMethod' in data && data.authMethod === 'service-account') {
         setupResult = {
           authMethod: 'service-account',
-          serviceAccountSecretName: data.serviceAccountSecretName,
+          serviceAccountSecretName: (data as ServiceAccountSubmissionData).serviceAccountSecretName,
         };
       } else if ('username' in data) {
         setupResult = {
           authMethod: 'sasl',
-          username: data.username,
-          saslMechanism: data.saslMechanism,
+          username: (data as AddUserFormData).username,
+          saslMechanism: (data as AddUserFormData).saslMechanism,
         };
       }
-      const patched = tryPatchRedpandaYaml(
-        yamlContent,
-        userDialogTarget.section,
-        userDialogTarget.componentName,
-        setupResult
-      );
-      if (patched) {
-        handleConnectorYamlChange(patched);
+      if (patchComponent(target.section, target.componentName, setupResult)) {
+        focusEditorEnd();
       }
-      setUserDialogTarget(null);
-    }
-    setIsUserSubmitting(false);
-  }, [userDialogTarget, yamlContent, handleConnectorYamlChange]);
+    },
+  });
+
+  const [connectorTopics, setConnectorTopics] = useState<string[] | undefined>();
+
+  const openTopicDialog = topicDialog.open;
+  const openUserDialog = userDialog.open;
 
   return {
-    topicDialogTarget,
-    setTopicDialogTarget,
-    userDialogTarget,
-    setUserDialogTarget,
+    topicDialog,
+    userDialog,
     topicStepRef,
     userStepRef,
-    isTopicSubmitting,
-    isUserSubmitting,
-    handleAddTopic,
-    handleAddSasl,
-    handleTopicSubmit,
-    handleUserSubmit,
+    connectorTopics,
+    handleAddTopic: useCallback(
+      (section: string, componentName: string) => {
+        openTopicDialog({ section: section as 'input' | 'output', componentName });
+      },
+      [openTopicDialog]
+    ),
+    handleAddSasl: useCallback(
+      (section: string, componentName: string) => {
+        const { topics, parseError } = extractConnectorTopics(
+          yamlContent,
+          section as 'input' | 'output',
+          componentName
+        );
+        if (parseError) {
+          toast.error('Failed to parse pipeline YAML');
+        }
+        setConnectorTopics(topics);
+        openUserDialog({ section: section as 'input' | 'output', componentName });
+      },
+      [openUserDialog, yamlContent]
+    ),
   };
 }
-
-// ---------------------------------------------------------------------------
-// Render components
-// ---------------------------------------------------------------------------
 
 function EditorSkeleton() {
   return (
@@ -450,101 +463,161 @@ function EditorSkeleton() {
   );
 }
 
+/** Read-only YAML viewer for the view page — reuses the editor with editing cues suppressed. */
+function YamlViewPanel({
+  configYaml,
+  schema,
+}: {
+  configYaml: string;
+  schema: ReturnType<typeof parseYamlEditorSchema>;
+}) {
+  // Top/bottom shadows from Monaco's scroll position (it virtualizes, so onDidScrollChange is the only signal).
+  const [overflow, setOverflow] = useState({ top: false, bottom: false });
+  // Mount-time listener disposables, torn down on unmount so the editor + listener graph can be GC'd.
+  const scrollSyncSubscriptions = useRef<ReturnType<editor.IStandaloneCodeEditor['onDidScrollChange']>[]>([]);
+  // Register the read-only viewer as the active editor so sidebar/Visual selection can reveal lines here too.
+  const setEditorInstance = usePipelineEditorStore((s) => s.setEditorInstance);
+  const handleMount = useCallback(
+    (instance: editor.IStandaloneCodeEditor) => {
+      const sync = () => {
+        const scrollTop = instance.getScrollTop();
+        const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
+        setOverflow({ top: scrollTop > 1, bottom: scrollTop < maxY - 1 });
+      };
+      scrollSyncSubscriptions.current = [
+        instance.onDidScrollChange(sync),
+        instance.onDidContentSizeChange(sync),
+        instance.onDidLayoutChange(sync),
+      ];
+      sync();
+      setEditorInstance(instance);
+    },
+    [setEditorInstance]
+  );
+  useEffect(
+    function disposeScrollSyncListeners() {
+      return () => {
+        for (const subscription of scrollSyncSubscriptions.current) {
+          subscription.dispose();
+        }
+        scrollSyncSubscriptions.current = [];
+        setEditorInstance(null);
+      };
+    },
+    [setEditorInstance]
+  );
+
+  const edge =
+    'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
+  return (
+    <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
+      {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
+      <div className="absolute inset-0">
+        <YamlEditor
+          onEditorMount={handleMount}
+          options={{
+            readOnly: true,
+            domReadOnly: true,
+            renderLineHighlight: 'none',
+            mouseStyle: 'default',
+            padding: { top: 0 },
+            scrollbar: { alwaysConsumeMouseWheel: false, useShadows: false },
+          }}
+          schema={schema}
+          transparentBackground
+          value={configYaml}
+        />
+      </div>
+      <div aria-hidden className={cn(edge, 'top-0 bg-gradient-to-b', overflow.top ? 'opacity-100' : 'opacity-0')} />
+      <div
+        aria-hidden
+        className={cn(edge, 'bottom-0 bg-gradient-to-t', overflow.bottom ? 'opacity-100' : 'opacity-0')}
+      />
+    </div>
+  );
+}
+
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
     );
   }
+  const showThroughput =
+    isEmbedded() &&
+    (isServerless()
+      ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
+      : isFeatureFlagEnabled('enableDataplaneObservability'));
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      {isEmbedded() &&
-        (isServerless()
-          ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
-          : isFeatureFlagEnabled('enableDataplaneObservability')) && (
+    <div className="flex h-full flex-col overflow-auto p-6">
+      {showThroughput ? (
+        <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
-        )}
-      <Card size="full" variant="outlined">
-        <CardContent className="pt-6">
-          {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-            <LogExplorer
-              enableLiveView={pipeline.state === Pipeline_State.RUNNING}
-              pipeline={pipeline}
-              serverless={isServerless()}
-            />
-          ) : (
+          <Separator className="my-8" variant="subtle" />
+        </>
+      ) : null}
+      <section className="flex flex-col gap-4">
+        {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
+          // Title renders inline in the explorer's control row to line up with the table.
+          <LogExplorer
+            enableLiveView={pipeline.state === Pipeline_State.RUNNING}
+            pipeline={pipeline}
+            serverless={isServerless()}
+            title="Logs"
+          />
+        ) : (
+          <>
+            <h3 className="text-heading-md">Logs</h3>
             <LogsTab pipeline={pipeline} />
-          )}
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </section>
     </div>
   );
 }
 
 function EditorPanel({
   isServerlessInitializing,
-  slashTipVisible,
-  onDismissSlashTip,
   yamlContent,
   onYamlChange,
   onEditorMount,
   yamlEditorSchema,
   lintHints,
   isLintPending,
-  lintPanelRef,
 }: {
   isServerlessInitializing: boolean;
-  slashTipVisible: boolean;
-  onDismissSlashTip: () => void;
   yamlContent: string;
   onYamlChange: (val: string) => void;
   onEditorMount: (editorRef: editor.IStandaloneCodeEditor) => void;
   yamlEditorSchema: ReturnType<typeof parseYamlEditorSchema>;
   lintHints: Record<string, LintHint>;
   isLintPending: boolean;
-  lintPanelRef: RefObject<ImperativePanelHandle>;
 }) {
   return (
-    <ResizablePanelGroup direction="vertical">
-      <ResizablePanel defaultSize={70} minSize={30}>
+    <ResizablePanelGroup orientation="vertical">
+      <ResizablePanel defaultSize="70%" minSize="30%">
         <div className="relative h-full">
           {isServerlessInitializing ? (
             <EditorSkeleton />
           ) : (
-            <>
-              {slashTipVisible ? (
-                <div className="absolute inset-x-0 top-0 z-10 rounded-t-lg">
-                  <Banner className="absolute inset-x-0 top-0" height="2rem" variant="accent">
-                    <BannerContent>
-                      Tip: use{' '}
-                      <Kbd size="xs" variant="filled">
-                        /
-                      </Kbd>{' '}
-                      to insert variables
-                    </BannerContent>
-                    <BannerClose onClick={onDismissSlashTip} variant="ghost" />
-                  </Banner>
-                </div>
-              ) : null}
+            // Out of flow so Monaco can't feed its width up the layout and latch the page wide.
+            <div className="absolute inset-0">
               <YamlEditor
                 onChange={(val) => onYamlChange(val || '')}
                 onEditorMount={onEditorMount}
-                options={slashTipVisible ? { padding: { top: 32 } } : undefined}
                 schema={yamlEditorSchema}
                 transparentBackground
                 value={yamlContent}
               />
-            </>
+            </div>
           )}
         </div>
       </ResizablePanel>
       <ResizableHandle withHandle />
-      <ResizablePanel collapsible defaultSize={30} ref={lintPanelRef}>
+      <ResizablePanel collapsible defaultSize="30%">
         <div className="h-full overflow-auto p-4">
-          <div className="flex items-center gap-2">
-            <Heading className="text-muted-foreground" level={4}>
-              Lint issues
-            </Heading>
+          <div className="mb-3 flex items-center gap-2">
+            <h5 className="text-heading-xs text-muted-foreground">Lint issues</h5>
             {Object.keys(lintHints).length > 0 ? (
               <CountDot count={Object.keys(lintHints).length} variant="error" />
             ) : null}
@@ -556,34 +629,151 @@ function EditorPanel({
   );
 }
 
+function useShouldOfferTemplate(yamlContent: string): boolean {
+  return useMemo(() => shouldOfferTemplate(yamlContent, parsePipelineFlowTree(yamlContent).nodes), [yamlContent]);
+}
+
 function SidebarPanel({
   mode,
   yamlContent,
   isPipelineDiagramsEnabled,
+  errorNodeIds,
+  unsavedNodeIds,
   onAddConnector,
-  onAddTopic,
-  onAddSasl,
+  onBrowseTemplates,
   onOpenCommandMenu,
 }: {
   mode: string;
   yamlContent: string;
   isPipelineDiagramsEnabled: boolean;
+  errorNodeIds?: ReadonlySet<string>;
+  unsavedNodeIds?: ReadonlySet<string>;
   onAddConnector: (type: ConnectComponentType | 'resource') => void;
-  onAddTopic: (section: string, componentName: string) => void;
-  onAddSasl: (section: string, componentName: string) => void;
-  onOpenCommandMenu: () => void;
+  onBrowseTemplates?: () => void;
+  onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
 }) {
+  // View mode is read-only; only wire add handlers otherwise.
+  const canEdit = mode !== 'view';
+  // The full-document parses below tolerate stale YAML — defer it off the per-keystroke critical path.
+  const deferredYaml = useDeferredValue(yamlContent);
+  const offerTemplate = useShouldOfferTemplate(deferredYaml);
+  const showStructureTree = isPipelineDiagramsEnabled;
+
+  // Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node.
+  const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
+  const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
+  const nodeRanges = useMemo(() => {
+    try {
+      return nodeLineRanges(deferredYaml);
+    } catch {
+      return [];
+    }
+  }, [deferredYaml]);
+  // Latest ranges for the long-lived cursor listener, without re-subscribing per keystroke.
+  const nodeRangesRef = useRef(nodeRanges);
+  nodeRangesRef.current = nodeRanges;
+
+  // While true, the cursor listener below skips its highlight sync — a programmatic reveal
+  // (which fires setSelection synchronously) must not overwrite the user's explicit tree selection.
+  const suppressCursorSyncRef = useRef(false);
+
+  const revealNodeInEditor = useCallback(
+    (nodeId?: string) => {
+      const ed = editorInstance;
+      const range = nodeId ? nodeRanges.find((r) => r.id === nodeId) : undefined;
+      const model = ed?.getModel();
+      if (!(ed && range && model)) {
+        return;
+      }
+      const endLine = Math.min(range.end, model.getLineCount());
+      // setSelection dispatches onDidChangeCursorPosition synchronously, so a same-tick flag
+      // is enough to keep it from re-deriving the highlight from the (possibly ancestor) range.
+      suppressCursorSyncRef.current = true;
+      try {
+        ed.setSelection({
+          startLineNumber: range.start,
+          startColumn: 1,
+          endLineNumber: endLine,
+          endColumn: model.getLineMaxColumn(endLine),
+        });
+      } finally {
+        suppressCursorSyncRef.current = false;
+      }
+      ed.revealLineInCenterIfOutsideViewport(range.start);
+      ed.focus();
+    },
+    [editorInstance, nodeRanges]
+  );
+
+  const handleSelectNode = useCallback(
+    (highlightId: string, editableId?: string) => {
+      setActiveNodeId(highlightId);
+      revealNodeInEditor(editableId);
+    },
+    [revealNodeInEditor]
+  );
+
+  // Editor cursor → highlight the most specific node enclosing the caret line.
+  useEffect(() => {
+    if (!editorInstance) {
+      return;
+    }
+    const sub = editorInstance.onDidChangeCursorPosition((e) => {
+      // Skip while a programmatic reveal is selecting an editable ancestor on the tree's behalf;
+      // syncing here would snap the highlight from the clicked child row to that ancestor.
+      if (suppressCursorSyncRef.current) {
+        return;
+      }
+      setActiveNodeId(enclosingNodeId(e.position.lineNumber, nodeRangesRef.current));
+    });
+    return () => sub.dispose();
+  }, [editorInstance]);
+
+  // Pending reveal request from the Visual lane: honour once editor + ranges mount, then clear (fires once).
+  const revealNodeId = usePipelineEditorStore((s) => s.revealNodeId);
+  const requestRevealNode = usePipelineEditorStore((s) => s.requestRevealNode);
+  const revealAttemptRef = useRef<{ id: string | null; count: number }>({ id: null, count: 0 });
+  useEffect(() => {
+    if (!revealNodeId) {
+      revealAttemptRef.current = { id: null, count: 0 };
+      return;
+    }
+    if (revealAttemptRef.current.id !== revealNodeId) {
+      revealAttemptRef.current = { id: revealNodeId, count: 0 };
+    }
+    const range = nodeRanges.find((r) => r.id === revealNodeId);
+    if (editorInstance?.getModel() && range) {
+      setActiveNodeId(revealNodeId);
+      revealNodeInEditor(revealNodeId);
+      requestRevealNode(null);
+      return;
+    }
+    // Bounded retry: drop the request so an id that never resolves can't fire a surprise jump later.
+    revealAttemptRef.current.count += 1;
+    if (revealAttemptRef.current.count > MAX_REVEAL_ATTEMPTS) {
+      requestRevealNode(null);
+    }
+  }, [revealNodeId, editorInstance, nodeRanges, revealNodeInEditor, requestRevealNode]);
+  const showTemplateCta = showStructureTree && canEdit && Boolean(onBrowseTemplates) && offerTemplate;
+
   return (
-    <div className="flex w-[300px] shrink-0 flex-col border-border! border-r">
-      <div className="min-h-0 flex-1">
-        {isPipelineDiagramsEnabled ? (
-          <PipelineFlowDiagram
-            configYaml={yamlContent}
-            hideZoomControls
-            onAddConnector={mode !== 'view' ? (type) => onAddConnector(type as ConnectComponentType) : undefined}
-            onAddSasl={mode !== 'view' ? onAddSasl : undefined}
-            onAddTopic={mode !== 'view' ? onAddTopic : undefined}
-          />
+    <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
+      {/* Relative so the template entry point can float pinned at the bottom with an enter/exit animation. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <ScrollShadow className="h-full overflow-x-hidden">
+          {showStructureTree ? (
+            <PipelineStructureTree
+              configYaml={deferredYaml}
+              errorNodeIds={errorNodeIds}
+              onAddConnector={canEdit ? (section) => onAddConnector(section as ConnectComponentType) : undefined}
+              onSelectNode={handleSelectNode}
+              selectedNodeId={activeNodeId}
+              unsavedNodeIds={unsavedNodeIds}
+            />
+          ) : null}
+        </ScrollShadow>
+        {showStructureTree && onBrowseTemplates ? (
+          <TemplateGalleryCta onBrowseTemplates={onBrowseTemplates} show={showTemplateCta} />
         ) : null}
       </div>
       {mode !== 'view' && (
@@ -598,23 +788,49 @@ function SidebarPanel({
           <div className="px-4 pb-4">
             <Separator className="mb-3" variant="subtle" />
             <div className="flex flex-col gap-2">
-              <Heading className="mb-2 text-muted-foreground" level={5}>
-                Variables
-              </Heading>
-              <Button
-                className="max-w-fit"
-                icon={
-                  <Kbd variant="ghost">
-                    {isMacOS() ? <CommandIcon /> : 'Ctrl'}
-                    <ArrowBigUpIcon />P
-                  </Kbd>
-                }
-                onClick={onOpenCommandMenu}
-                size="xs"
-                variant="outline"
-              >
-                Insert
-              </Button>
+              <h5 className="mb-2 text-heading-xs text-muted-foreground">Variables</h5>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('variables')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <Zap />
+                  Variables
+                </Button>
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('secrets')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <KeyRound />
+                  Secrets
+                </Button>
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('topics')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <LayoutGrid />
+                  Topics
+                </Button>
+                <Button
+                  className="max-w-fit"
+                  icon={<Plus />}
+                  onClick={() => onOpenCommandMenu('users')}
+                  size="xs"
+                  variant="outline"
+                >
+                  <User />
+                  Users
+                </Button>
+              </div>
             </div>
           </div>
         </>
@@ -623,11 +839,24 @@ function SidebarPanel({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main page component
-// ---------------------------------------------------------------------------
+// The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
+// embedded Cloud UI.
+const isVisualEditorFeatureEnabled = (): boolean =>
+  isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
 export default function PipelinePage() {
+  const { pipelineId } = usePipelineMode();
+  const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
+  // Keyed by pipeline id so each pipeline gets a fresh editor store.
+  return (
+    <PipelineEditorProvider initialEditLane={isVisualEditorEnabled ? 'visual' : 'yaml'} key={pipelineId ?? 'create'}>
+      <PipelinePageContent />
+    </PipelineEditorProvider>
+  );
+}
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: top-level page wiring across many concerns
+function PipelinePageContent() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
   const router = useRouter();
@@ -635,37 +864,62 @@ export default function PipelinePage() {
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
   const isServerlessMode = search.serverless === 'true';
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
+  const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
-  const [editorInstance, setEditorInstance] = useState<null | editor.IStandaloneCodeEditor>(null);
-  const [yamlContent, setYamlContent] = useState('');
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
-  const [isViewConfigDialogOpen, setIsViewConfigDialogOpen] = useState(false);
-  const [addConnectorType, setAddConnectorType] = useState<ConnectComponentType | 'resource' | null>(null);
-  const [slashTipVisible, setSlashTipVisible] = useState(isSlashMenuEnabled && mode !== 'view');
-  const lintPanelRef = useRef<ImperativePanelHandle>(null);
+  // Actions are stable, so read them once via getState; values use selectors.
+  const editorStore = usePipelineEditorStoreApi();
+  const {
+    setYamlContent,
+    patchComponent,
+    setEditorInstance,
+    hydrateFromServer,
+    resolveInitialYaml,
+    setAllowNavigation,
+    setActiveViewLane,
+    setActiveEditLane,
+    requestRevealNode,
+    setCommandMenuFilter,
+    setAddConnectorType,
+    setIsConfigDialogOpen,
+    setIsViewConfigDialogOpen,
+    setIsDeleteAlertOpen,
+    setIsTemplateDialogOpen,
+  } = editorStore.getState();
+
+  const yamlContent = usePipelineEditorStore((s) => s.yamlContent);
+  const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
+  const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
+  const hydratedPipelineId = usePipelineEditorStore((s) => s.hydratedPipelineId);
+  const activeViewLane = usePipelineEditorStore((s) => s.activeViewLane);
+  const activeEditLane = usePipelineEditorStore((s) => s.activeEditLane);
+  const selectedNodeId = usePipelineEditorStore((s) => s.selectedNodeId);
+  const commandMenuFilter = usePipelineEditorStore((s) => s.commandMenuFilter);
+  const addConnectorType = usePipelineEditorStore((s) => s.addConnectorType);
+  const isConfigDialogOpen = usePipelineEditorStore((s) => s.isConfigDialogOpen);
+  const isViewConfigDialogOpen = usePipelineEditorStore((s) => s.isViewConfigDialogOpen);
+  const isDeleteAlertOpen = usePipelineEditorStore((s) => s.isDeleteAlertOpen);
+  const isTemplateDialogOpen = usePipelineEditorStore((s) => s.isTemplateDialogOpen);
+  const tipsContext = tipsContextForLane(mode === 'view', activeViewLane, activeEditLane);
 
   const form = useForm<PipelineFormValues>({
-    resolver: zodResolver(pipelineFormSchema),
-    mode: 'onChange',
+    resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
+    mode: 'onSubmit',
     defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
   });
 
-  // --- Slash command + keyboard shortcut ---
-
-  const handleSlashOpen = useCallback(() => setIsCommandMenuOpen(false), []);
+  const handleSlashOpen = useCallback(() => setCommandMenuFilter(null), [setCommandMenuFilter]);
   const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
 
-  const handleCommandMenuOpen = useCallback(() => {
-    slashCommand.close();
-    setIsCommandMenuOpen(true);
-  }, [slashCommand]);
+  const handleCommandMenuOpen = useCallback(
+    (filter: 'all' | 'variables' | 'secrets' | 'topics' | 'users' = 'all') => {
+      slashCommand.close();
+      setCommandMenuFilter(filter);
+    },
+    [slashCommand, setCommandMenuFilter]
+  );
 
-  useHotKey({ key: 'p', modifiers: ['meta', 'shift'], enabled: mode !== 'view', onTrigger: handleCommandMenuOpen });
-
-  // --- Data queries ---
-
-  const { data: pipelineResponse, isLoading: isPipelineLoading } = useGetPipelineQuery(
+  const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
     { enabled: mode !== 'create' && !!pipelineId }
   );
@@ -680,60 +934,96 @@ export default function PipelinePage() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
-  const pipelineName = useWatch({ control: form.control, name: 'name' });
-
-  // --- Extracted hooks ---
+  // Lets a successful save navigate away without tripping the unsaved-changes guard.
+  const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
   const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
-    usePipelineSave({ form, yamlContent, mode, pipelineId, pipeline, isPipelineDiagramsEnabled });
+    usePipelineSave({
+      form,
+      editorStore,
+      mode,
+      pipelineId,
+      pipeline,
+      isPipelineDiagramsEnabled,
+      onBeforeSaveNavigate: markNavigationAllowed,
+    });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
-  // --- YAML change handlers ---
+  // Guard against losing unsaved edits when navigating away from the editor (edit or create).
+  const yamlDirty = initialYaml !== null && yamlContent !== initialYaml;
+  const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
 
-  const handleYamlChange = useCallback(
-    (value: string) => {
-      clearErrorLintHints();
-      setYamlContent(value);
-      if (mode === 'create' && !isPipelineDiagramsEnabled) {
-        useOnboardingYamlContentStore.getState().setYamlContent({ yamlContent: value });
-      }
-    },
-    [mode, isPipelineDiagramsEnabled, clearErrorLintHints]
+  // Guard-time dirty check: flush any in-progress inspector draft into the store first (the
+  // rendered `hasUnsavedChanges` above can't see a pending draft), then re-read fresh state.
+  const checkUnsavedChanges = useCallback(() => {
+    if (mode === 'view') {
+      return false;
+    }
+    editorStore.getState().pendingEditCommit?.();
+    const { yamlContent: yaml, initialYaml: baseline } = editorStore.getState();
+    return form.formState.isDirty || (baseline !== null && yaml !== baseline);
+  }, [mode, editorStore, form]);
+
+  // Structure-tree highlights (lint + unsaved). Deferred YAML keeps the parses off the keystroke path.
+  const deferredYamlContent = useDeferredValue(yamlContent);
+  const errorNodeIds = useMemo(
+    () => new Set(mapLintHintsToNodes(deferredYamlContent, Object.values(lintHints)).keys()),
+    [deferredYamlContent, lintHints]
   );
+  const unsavedNodeIds = useMemo(
+    () =>
+      mode !== 'view' && initialYaml !== null
+        ? new Set(changedNodeIds(initialYaml, deferredYamlContent))
+        : EMPTY_NODE_IDS,
+    [mode, initialYaml, deferredYamlContent]
+  );
+  const blocker = useBlocker({
+    shouldBlockFn: () => checkUnsavedChanges() && !editorStore.getState().allowNavigation,
+    enableBeforeUnload: () => checkUnsavedChanges(),
+    withResolver: true,
+  });
+  // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).
+  useEffect(() => {
+    setAllowNavigation(false);
+  }, [mode, setAllowNavigation]);
 
-  const handleConnectorYamlChange = useCallback(
-    (yaml: string) => {
-      handleYamlChange(yaml);
-      setTimeout(() => {
-        if (editorInstance) {
-          const model = editorInstance.getModel();
-          if (model) {
-            const lastLine = model.getLineCount();
-            const lastColumn = model.getLineMaxColumn(lastLine);
-            editorInstance.setPosition({ lineNumber: lastLine, column: lastColumn });
-            editorInstance.revealLine(lastLine);
-          }
-          editorInstance.focus();
+  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes.
+  useSaveHotkey({ enabled: mode !== 'view', isSaving, onSave: handleSave });
+
+  // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
+  useEffect(
+    () =>
+      editorStore.subscribe((state, prev) => {
+        if (state.yamlContent === prev.yamlContent) {
+          return;
         }
-      }, 0);
-    },
-    [handleYamlChange, editorInstance]
+        clearErrorLintHints();
+        if (mode === 'create' && !isPipelineDiagramsEnabled) {
+          useRpcnWizardStore.getState().setYamlContent({ yamlContent: state.yamlContent });
+        }
+      }),
+    [editorStore, clearErrorLintHints, mode, isPipelineDiagramsEnabled]
   );
 
-  const {
-    topicDialogTarget,
-    setTopicDialogTarget,
-    userDialogTarget,
-    setUserDialogTarget,
-    topicStepRef,
-    userStepRef,
-    isTopicSubmitting,
-    isUserSubmitting,
-    handleAddTopic,
-    handleAddSasl,
-    handleTopicSubmit,
-    handleUserSubmit,
-  } = useDiagramDialogs(yamlContent, handleConnectorYamlChange);
+  // Move the caret to the end after a programmatic edit so the user sees the change.
+  const focusEditorEnd = useCallback(() => {
+    setTimeout(() => {
+      const ed = editorStore.getState().editorInstance;
+      if (!ed) {
+        return;
+      }
+      const model = ed.getModel();
+      if (model) {
+        const lastLine = model.getLineCount();
+        ed.setPosition({ lineNumber: lastLine, column: model.getLineMaxColumn(lastLine) });
+        ed.revealLine(lastLine);
+      }
+      ed.focus();
+    }, 0);
+  }, [editorStore]);
+
+  const { topicDialog, userDialog, topicStepRef, userStepRef, connectorTopics, handleAddTopic, handleAddSasl } =
+    useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -746,124 +1036,292 @@ export default function PipelinePage() {
         existingYaml: yamlContent,
       });
       if (newYaml) {
-        handleConnectorYamlChange(newYaml);
+        setYamlContent(newYaml);
+        focusEditorEnd();
       }
     },
-    [components, yamlContent, handleConnectorYamlChange]
+    [components, yamlContent, setYamlContent, focusEditorEnd, setAddConnectorType]
   );
 
-  // --- Hydration (edit mode) ---
-
-  const [hydratedPipelineId, setHydratedPipelineId] = useState<string | null>(null);
-  if (pipeline && mode === 'edit' && pipeline.id !== hydratedPipelineId) {
-    setHydratedPipelineId(pipeline.id);
-    setYamlContent(pipeline.configYaml);
-  }
-
+  // Hydrate from the loaded pipeline once per id, so re-renders don't clobber edits.
   useEffect(() => {
-    if (pipeline && mode === 'edit') {
-      form.reset({
-        name: pipeline.displayName,
-        description: pipeline.description || '',
-        computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
-        tags: Object.entries(pipeline.tags)
-          .filter(([k]) => !isSystemTag(k))
-          .map(([key, value]) => ({ key, value })),
-      });
+    if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
+      hydrateFromServer(pipeline.id, pipeline.configYaml);
     }
+  }, [pipeline, mode, hydratedPipelineId, hydrateFromServer]);
+
+  // Populate the form from the loaded pipeline. The query polls, so a DIRTY form is never reset
+  // (would clobber edits) — but a clean form re-syncs when the payload changes (concurrent rename).
+  const formResetSnapshotRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!(pipeline && mode === 'edit')) {
+      return;
+    }
+    const values = {
+      name: pipeline.displayName,
+      description: pipeline.description || '',
+      computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
+      tags: getUserTagEntries(pipeline.tags),
+    };
+    const snapshot = `${pipeline.id}\n${JSON.stringify(values)}`;
+    if (snapshot === formResetSnapshotRef.current || form.formState.isDirty) {
+      return;
+    }
+    formResetSnapshotRef.current = snapshot;
+    form.reset(values);
   }, [pipeline, mode, form]);
+
+  const handleInitialYamlResolved = useCallback((yaml: string) => resolveInitialYaml(yaml), [resolveInitialYaml]);
 
   const { isInitializing: isServerlessInitializing } = useCreateModeInitialYaml({
     enabled: mode === 'create',
     isServerlessMode,
     components,
     isPipelineDiagramsEnabled,
-    onResolved: setYamlContent,
+    onResolved: handleInitialYamlResolved,
   });
 
-  // --- Navigation ---
+  // Create + diagrams: useCreateModeInitialYaml bails, so seed the baseline here or the unsaved-changes
+  // guard never arms. Serverless resolves its own baseline later; seeding '' first would read false-dirty.
+  useEffect(() => {
+    if (mode === 'create' && isPipelineDiagramsEnabled && !isServerlessMode && initialYaml === null) {
+      resolveInitialYaml(yamlContent);
+    }
+  }, [mode, isPipelineDiagramsEnabled, isServerlessMode, initialYaml, yamlContent, resolveInitialYaml]);
 
   const handleCancel = useCallback(() => {
     if (mode === 'create') {
       clearWizardStore();
     }
-    if (mode === 'view') {
-      navigate({ to: '/connect-clusters' });
-    } else {
-      router.history.back();
+    // Route through `navigate` (not history.back) so the unsaved-changes blocker intercepts.
+    if (mode === 'edit' && pipelineId) {
+      navigate({ to: `/rp-connect/${pipelineId}` });
+      return;
     }
-  }, [mode, clearWizardStore, navigate, router]);
+    if (mode === 'view') {
+      navigateToConnectClusters(navigate);
+      return;
+    }
+    if (router.history.canGoBack()) {
+      router.history.back();
+    } else {
+      navigateToConnectClusters(navigate);
+    }
+  }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
-  const handleNameChange = useCallback((name: string) => form.setValue('name', name, { shouldValidate: true }), [form]);
+  // Visual lanes take the full canvas, so the YAML/diagram sidebar is hidden.
+  const isViewVisualLane = mode === 'view' && activeViewLane === 'visual';
+  const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
+  const showSidebar = !(isViewVisualLane || isEditVisualLane);
 
-  // --- Render ---
+  // Open the YAML lane and reveal a node: explicit id, else the selected node. Routes per mode.
+  const goToYamlNode = useCallback(
+    (nodeId?: string) => {
+      const target = nodeId ?? selectedNodeId;
+      if (target) {
+        requestRevealNode(target);
+      }
+      if (mode === 'view') {
+        setActiveViewLane('configuration');
+      } else {
+        // Commit the selected node's in-progress edit before unmounting the Visual lane,
+        // otherwise the lane switch discards it (no commit-on-unmount).
+        editorStore.getState().pendingEditCommit?.();
+        setActiveEditLane('yaml');
+      }
+    },
+    [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane, editorStore]
+  );
 
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-4',
-        mode === 'view' ? 'h-full min-h-[calc(100dvh-10rem)]' : 'h-[calc(100dvh-10rem)]'
-      )}
-    >
-      <Toolbar
-        defaultEditing={mode === 'create'}
-        isLoading={isPipelineLoading}
-        isSaving={isSaving}
-        mode={mode}
-        nameError={form.formState.errors.name?.message}
-        onCancel={handleCancel}
-        onEditConfig={() => setIsConfigDialogOpen(true)}
-        onNameChange={handleNameChange}
-        onSave={handleSave}
-        onViewConfig={() => setIsViewConfigDialogOpen(true)}
-        pipelineId={pipelineId}
-        pipelineName={pipelineName}
-        pipelineState={pipeline?.state}
-      />
-      <div className="flex min-h-0 flex-1 rounded-lg border border-border!">
-        <SidebarPanel
-          isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
-          mode={mode}
-          onAddConnector={(type) => setAddConnectorType(type)}
-          onAddSasl={handleAddSasl}
-          onAddTopic={handleAddTopic}
-          onOpenCommandMenu={handleCommandMenuOpen}
-          yamlContent={yamlContent}
+    // Definite viewport-bounded height (7rem = app header + pt-8; the footer intentionally sits below
+    // the fold) so a tall lane scrolls within the framed panel instead of stretching the page.
+    // overflow-x-clip (not hidden) blocks stray horizontal overflow but keeps overflow-y.
+    <div className="flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip">
+      {mode === 'view' && pipeline ? (
+        <PipelineViewHeader
+          onBack={handleCancel}
+          onViewDetails={() => setIsViewConfigDialogOpen(true)}
+          pipeline={pipeline}
         />
-        <div className="min-w-0 flex-1">
-          {mode === 'view' ? (
-            <ViewModePanel pipeline={pipeline} />
-          ) : (
-            <EditorPanel
-              isLintPending={isLintPending}
-              isServerlessInitializing={isServerlessInitializing}
-              lintHints={lintHints}
-              lintPanelRef={lintPanelRef}
-              onDismissSlashTip={() => setSlashTipVisible(false)}
-              onEditorMount={setEditorInstance}
-              onYamlChange={handleYamlChange}
-              slashTipVisible={slashTipVisible}
-              yamlContent={yamlContent}
-              yamlEditorSchema={yamlEditorSchema}
-            />
-          )}
+      ) : null}
+      {mode === 'view' && !pipeline ? (
+        <div className="flex items-center gap-2">
+          <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Button>
+          <Skeleton variant="text" width="md" />
         </div>
+      ) : null}
+      {mode !== 'view' ? (
+        <PipelineEditHeader
+          form={form}
+          hasUnsavedChanges={hasUnsavedChanges}
+          isSaving={isSaving}
+          mode={mode as 'create' | 'edit'}
+          onBack={handleCancel}
+          onEditSettings={() => setIsConfigDialogOpen(true)}
+          onSave={handleSave}
+          url={pipeline?.url}
+        />
+      ) : null}
+      {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+        {/* Framed panel: the lane tabs sit flush at the top, their underline as the internal divider. */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border!">
+          {mode === 'view' && pipeline ? (
+            <Tabs value={activeViewLane}>
+              {/* Full-width list (so the underline divider spans) with content-width triggers so tabs pack left. */}
+              <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+                <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
+                  Monitor
+                </TabsTrigger>
+                <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
+                  YAML
+                </TabsTrigger>
+                {isVisualEditorEnabled ? (
+                  <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
+                    Visual
+                  </TabsTrigger>
+                ) : null}
+              </TabsList>
+            </Tabs>
+          ) : null}
+          {mode !== 'view' && isVisualEditorEnabled ? (
+            <Tabs value={activeEditLane}>
+              <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+                <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
+                  YAML
+                </TabsTrigger>
+                <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
+                  Visual
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : null}
+          {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
+          <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+            {showSidebar ? (
+              <SidebarPanel
+                errorNodeIds={errorNodeIds}
+                isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
+                mode={mode}
+                onAddConnector={(type) => setAddConnectorType(type)}
+                onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
+                onOpenCommandMenu={handleCommandMenuOpen}
+                unsavedNodeIds={unsavedNodeIds}
+                yamlContent={yamlContent}
+              />
+            ) : null}
+            <div className="min-w-0 flex-1">
+              {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
+              {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
+                <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
+              ) : null}
+              {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
+                <VisualEditorPanel
+                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  components={components}
+                  lintHints={Object.values(lintHints)}
+                  mode="view"
+                  onNavigateToYaml={goToYamlNode}
+                  onYamlChange={setYamlContent}
+                  yamlContent={pipeline.configYaml}
+                />
+              ) : null}
+              {mode !== 'view' && activeEditLane === 'visual' ? (
+                <VisualEditorPanel
+                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  components={components}
+                  // Only edit mode waits on server hydration; create shows its empty state, not a skeleton.
+                  isLoading={mode === 'edit' && initialYaml === null}
+                  lintHints={Object.values(lintHints)}
+                  mode={mode}
+                  onAddConnector={(type) => setAddConnectorType(type)}
+                  onAddSasl={handleAddSasl}
+                  onAddTopic={handleAddTopic}
+                  onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
+                  onNavigateToYaml={goToYamlNode}
+                  onYamlChange={setYamlContent}
+                  yamlContent={yamlContent}
+                />
+              ) : null}
+              {mode === 'view' || activeEditLane === 'visual' ? null : (
+                <EditorPanel
+                  isLintPending={isLintPending}
+                  isServerlessInitializing={isServerlessInitializing}
+                  lintHints={lintHints}
+                  onEditorMount={setEditorInstance}
+                  onYamlChange={setYamlContent}
+                  yamlContent={yamlContent}
+                  yamlEditorSchema={yamlEditorSchema}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+        {tipsContext ? (
+          <EditorTipsBar context={tipsContext} readOnly={mode === 'view'} slashMenuEnabled={isSlashMenuEnabled} />
+        ) : null}
       </div>
 
       <ConfigDialog form={form} mode={mode} onOpenChange={setIsConfigDialogOpen} open={isConfigDialogOpen} />
 
       <DetailsDialog
-        isDeleting={isDeleting}
-        onDelete={handleDelete}
         onOpenChange={setIsViewConfigDialogOpen}
+        onRequestDelete={
+          pipeline
+            ? () => {
+                // Close the details dialog first so the two don't stack.
+                setIsViewConfigDialogOpen(false);
+                setIsDeleteAlertOpen(true);
+              }
+            : undefined
+        }
         open={isViewConfigDialogOpen}
         pipeline={pipeline}
       />
 
+      {pipeline ? (
+        <DeleteResourceAlertDialog
+          isDeleting={isDeleting}
+          onDelete={handleDelete}
+          onOpenChange={setIsDeleteAlertOpen}
+          open={isDeleteAlertOpen}
+          resourceId={pipeline.id}
+          resourceName={pipeline.displayName || 'this pipeline'}
+          resourceType="Pipeline"
+        />
+      ) : null}
+
+      <Dialog onOpenChange={(open) => (open ? undefined : blocker.reset?.())} open={blocker.status === 'blocked'}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            You have unsaved changes to this pipeline. If you leave now, your changes will be lost.
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={() => blocker.reset?.()} variant="ghost">
+              Keep editing
+            </Button>
+            <Button onClick={() => blocker.proceed?.()} variant="primary">
+              Leave without saving
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <PipelineCommandMenu
         editorInstance={editorInstance}
-        onOpenChange={setIsCommandMenuOpen}
-        open={isCommandMenuOpen}
+        initialFilter={commandMenuFilter ?? undefined}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCommandMenuFilter(null);
+          }
+        }}
+        open={commandMenuFilter !== null}
         yamlContent={yamlContent}
       />
 
@@ -886,67 +1344,117 @@ export default function PipelinePage() {
       <Dialog
         onOpenChange={(open) => {
           if (!open) {
-            setTopicDialogTarget(null);
+            topicDialog.close();
           }
         }}
-        open={topicDialogTarget !== null}
+        open={topicDialog.isOpen}
       >
-        <DialogContent size="xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
+            <DialogDescription>
+              This component requires a Redpanda topic for logging the data. Select an existing topic, or create a new
+              one.
+            </DialogDescription>
           </DialogHeader>
-          <AddTopicStep hideTitle ref={topicStepRef} />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button disabled={isTopicSubmitting} onClick={() => setTopicDialogTarget(null)} variant="secondary-ghost">
+          <DialogBody>
+            <AddTopicStep hideTitle inline ref={topicStepRef} />
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={topicDialog.close} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button disabled={isTopicSubmitting} onClick={handleTopicSubmit}>
-              {isTopicSubmitting ? <Spinner /> : 'Add'}
+            <Button
+              disabled={topicDialog.isSubmitting}
+              icon={topicDialog.isSubmitting ? <Spinner /> : undefined}
+              onClick={topicDialog.submit}
+            >
+              Add
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog
         onOpenChange={(open) => {
           if (!open) {
-            setUserDialogTarget(null);
+            userDialog.close();
           }
         }}
-        open={userDialogTarget !== null}
+        open={userDialog.isOpen}
       >
-        <DialogContent size="xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
+            <DialogDescription>
+              Select or create a user for this connector. ACLs will be configured automatically for the topic when
+              creating a new user.
+            </DialogDescription>
           </DialogHeader>
-          <AddUserStep
-            hideTitle
-            ref={userStepRef}
-            showConsumerGroupFields={userDialogTarget?.section === 'input'}
-            topicName={undefined}
-          />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button disabled={isUserSubmitting} onClick={() => setUserDialogTarget(null)} variant="secondary-ghost">
+          <DialogBody>
+            {connectorTopics && connectorTopics.length > 1 && (
+              <Alert variant="warning">
+                <AlertTitle>Multiple topics configured</AlertTitle>
+                <AlertDescription>
+                  This connector uses multiple topics ({connectorTopics.join(', ')}). You will need to configure topic
+                  ACLs for this user manually in the Security settings.
+                </AlertDescription>
+              </Alert>
+            )}
+            <AddUserStep
+              hideTitle
+              inline
+              ref={userStepRef}
+              showConsumerGroupFields={userDialog.target?.section === 'input'}
+              topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
+            />
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={userDialog.close} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button disabled={isUserSubmitting} onClick={handleUserSubmit}>
-              {isUserSubmitting ? <Spinner /> : 'Add'}
+            <Button
+              disabled={userDialog.isSubmitting}
+              icon={userDialog.isSubmitting ? <Spinner /> : undefined}
+              onClick={userDialog.submit}
+            >
+              Add
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {componentListResponse?.components ? (
-        <AddConnectorDialog
-          components={componentListResponse.components}
-          connectorType={
-            addConnectorType === 'resource'
-              ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
-              : (addConnectorType ?? undefined)
-          }
-          isOpen={addConnectorType !== null}
-          onAddConnector={handleConnectorSelected}
-          onCloseAddConnector={() => setAddConnectorType(null)}
+      <AddConnectorDialog
+        components={componentListResponse?.components ?? ({} as ComponentList)}
+        connectorType={
+          addConnectorType === 'resource'
+            ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])
+            : (addConnectorType ?? undefined)
+        }
+        isOpen={addConnectorType !== null}
+        onAddConnector={handleConnectorSelected}
+        onCloseAddConnector={() => setAddConnectorType(null)}
+        searchPlaceholder={getConnectorDialogPlaceholder(addConnectorType)}
+        title={getConnectorDialogTitle(addConnectorType)}
+      />
+
+      {isTemplateGalleryEnabled && mode !== 'view' ? (
+        <TemplateGalleryDialog
+          onClose={(stashedYaml) => {
+            if (stashedYaml) {
+              setYamlContent(stashedYaml);
+            }
+            setIsTemplateDialogOpen(false);
+          }}
+          onSubmit={({ pipelineName: suggestedName, yaml }) => {
+            setYamlContent(yaml);
+            if (!form.getValues('name')) {
+              form.setValue('name', suggestedName, { shouldDirty: true, shouldValidate: true });
+            }
+            setIsTemplateDialogOpen(false);
+            toast.success('Template applied — review the YAML and click Save to deploy.');
+          }}
+          open={isTemplateDialogOpen}
         />
       ) : null}
     </div>

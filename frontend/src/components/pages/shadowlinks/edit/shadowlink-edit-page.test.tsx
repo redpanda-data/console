@@ -200,78 +200,12 @@ type TestCase = {
 
 /**
  * Test cases for table-driven testing
+ *
+ * Note: pure `buildDataplaneUpdateRequest` behaviours (field mask / request
+ * payload given a form-values diff) live in `shadowlink-edit-utils.test.ts`.
+ * These DOM tests only cover end-to-end wiring from the form UI to the hook.
  */
 const testCases: TestCase[] = [
-  {
-    description: 'updates bootstrap server only',
-    actions: [{ type: 'addBootstrapServer', value: 'localhost:9093' }],
-    expectedFieldMaskPaths: ['configurations.client_options'],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(1);
-      exp(updateRequest.shadowLink.configurations.clientOptions.bootstrapServers).toEqual([
-        'localhost:9092',
-        'localhost:9093',
-      ]);
-    },
-  },
-  {
-    description: 'updates TLS and advanced options',
-    actions: [{ type: 'enableTLS' }, { type: 'updateMetadataMaxAge', value: 20_000 }],
-    expectedFieldMaskPaths: [
-      'configurations.client_options.tls_settings',
-      'configurations.client_options.metadata_max_age_ms',
-    ],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(2);
-      exp(updateRequest.shadowLink.configurations.clientOptions.tlsSettings?.enabled).toBe(true);
-      exp(updateRequest.shadowLink.configurations.clientOptions.metadataMaxAgeMs).toBe(20_000);
-    },
-  },
-  {
-    description: 'updates all filter types',
-    actions: [
-      { type: 'addTopicFilter', name: 'my-topic' },
-      { type: 'addConsumerFilter', name: 'my-consumer' },
-      { type: 'addACLFilter', principal: 'User:bob' },
-    ],
-    expectedFieldMaskPaths: [
-      'configurations.topic_metadata_sync_options',
-      'configurations.consumer_offset_sync_options',
-      'configurations.security_sync_options',
-    ],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(3);
-      exp(updateRequest.shadowLink.configurations.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
-        create(NameFilterSchema, {
-          name: 'my-topic',
-          patternType: PatternType.LITERAL,
-          filterType: FilterType.INCLUDE,
-        }),
-      ]);
-      exp(updateRequest.shadowLink.configurations.consumerOffsetSyncOptions?.groupFilters).toEqual([
-        create(NameFilterSchema, {
-          name: 'my-consumer',
-          patternType: PatternType.LITERAL,
-          filterType: FilterType.INCLUDE,
-        }),
-      ]);
-      exp(updateRequest.shadowLink.configurations.securitySyncOptions?.aclFilters).toEqual([
-        create(ACLFilterSchema, {
-          resourceFilter: {
-            resourceType: ACLResource.ACL_RESOURCE_ANY,
-            patternType: ACLPattern.ACL_PATTERN_ANY,
-            name: '',
-          },
-          accessFilter: {
-            principal: 'User:bob',
-            operation: ACLOperation.ACL_OPERATION_ANY,
-            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
-            host: '',
-          },
-        }),
-      ]);
-    },
-  },
   {
     description: 'updates comprehensive set of fields',
     actions: [
@@ -330,103 +264,6 @@ const testCases: TestCase[] = [
     },
   },
   {
-    description: 'adds multiple topic filters with different patterns',
-    actions: [
-      {
-        type: 'addTopicFilterWithPattern',
-        options: { name: 'exact-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
-      },
-      {
-        type: 'addTopicFilterWithPattern',
-        options: { name: 'exclude-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
-      },
-      {
-        type: 'addTopicFilterWithPattern',
-        options: { name: 'include-', patternType: PatternType.PREFIX, filterType: FilterType.INCLUDE },
-      },
-    ],
-    expectedFieldMaskPaths: ['configurations.topic_metadata_sync_options'],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(1);
-      exp(updateRequest.shadowLink.configurations.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toHaveLength(
-        3
-      );
-      exp(updateRequest.shadowLink.configurations.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
-        create(NameFilterSchema, {
-          name: 'exact-topic',
-          patternType: PatternType.LITERAL,
-          filterType: FilterType.INCLUDE,
-        }),
-        create(NameFilterSchema, { name: 'exclude-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE }),
-        create(NameFilterSchema, { name: 'include-', patternType: PatternType.PREFIX, filterType: FilterType.INCLUDE }),
-      ]);
-    },
-  },
-  {
-    description: 'updates multiple advanced client options',
-    actions: [
-      { type: 'updateMetadataMaxAge', value: 30_000 },
-      { type: 'updateAdvancedOption', field: 'connection-timeout', value: 2000 },
-      { type: 'updateAdvancedOption', field: 'retry-backoff', value: 200 },
-      { type: 'updateAdvancedOption', field: 'fetch-wait-max', value: 1000 },
-    ],
-    expectedFieldMaskPaths: [
-      'configurations.client_options.metadata_max_age_ms',
-      'configurations.client_options.connection_timeout_ms',
-      'configurations.client_options.retry_backoff_ms',
-      'configurations.client_options.fetch_wait_max_ms',
-    ],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(4);
-      exp(updateRequest.shadowLink.configurations.clientOptions.metadataMaxAgeMs).toBe(30_000);
-      exp(updateRequest.shadowLink.configurations.clientOptions.connectionTimeoutMs).toBe(2000);
-      exp(updateRequest.shadowLink.configurations.clientOptions.retryBackoffMs).toBe(200);
-      exp(updateRequest.shadowLink.configurations.clientOptions.fetchWaitMaxMs).toBe(1000);
-    },
-  },
-  {
-    description: 'handles cross-tab workflow maintaining state',
-    actions: [
-      { type: 'addBootstrapServer', value: 'cross-tab:9092' },
-      { type: 'addTopicFilter', name: 'cross-topic' },
-      { type: 'toggleExcludeDefault' },
-      { type: 'addConsumerFilter', name: 'cross-consumer' },
-    ],
-    expectedFieldMaskPaths: [
-      'configurations.client_options',
-      'configurations.topic_metadata_sync_options',
-      'configurations.consumer_offset_sync_options',
-    ],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(3);
-      exp(updateRequest.shadowLink.configurations.clientOptions.bootstrapServers).toContain('cross-tab:9092');
-      exp(updateRequest.shadowLink.configurations.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toHaveLength(
-        1
-      );
-      exp(updateRequest.shadowLink.configurations.consumerOffsetSyncOptions?.groupFilters).toHaveLength(1);
-      exp(updateRequest.shadowLink.configurations.topicMetadataSyncOptions?.excludeDefault).toBe(false);
-    },
-  },
-  {
-    description: 'updates only some filter types, not all',
-    actions: [
-      { type: 'addTopicFilter', name: 'selective-topic' },
-      { type: 'addConsumerFilter', name: 'selective-consumer' },
-    ],
-    expectedFieldMaskPaths: [
-      'configurations.topic_metadata_sync_options',
-      'configurations.consumer_offset_sync_options',
-    ],
-    verify: (updateRequest, exp) => {
-      exp(updateRequest.updateMask.paths).toHaveLength(2);
-      exp(updateRequest.shadowLink.configurations.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toHaveLength(
-        1
-      );
-      exp(updateRequest.shadowLink.configurations.consumerOffsetSyncOptions?.groupFilters).toHaveLength(1);
-      exp(updateRequest.updateMask.paths).not.toContain('configurations.security_sync_options');
-    },
-  },
-  {
     description: 'enables schema registry sync',
     actions: [{ type: 'enableSchemaRegistrySync' }],
     expectedFieldMaskPaths: ['configurations.schema_registry_sync_options'],
@@ -463,6 +300,7 @@ describe('ShadowLinkEditPage', () => {
       error: null,
       isUpdating: false,
       hasData: true,
+      isSchemaRegistryApiMode: false,
       updateShadowLink: mockUpdateShadowLink,
       dataplaneUpdate: {
         isPending: false,
@@ -484,7 +322,7 @@ describe('ShadowLinkEditPage', () => {
 
     // Wait for the form to load
     await waitFor(() => {
-      expect(screen.getByText('Edit shadow link')).toBeInTheDocument();
+      expect(screen.getByTestId('shadowLink-edit-page-description')).toBeInTheDocument();
     });
 
     // Wait for the source tab content to be visible

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 
 // Mock TanStack Router before any imports
 vi.mock('@tanstack/react-router', async () => {
@@ -19,7 +19,7 @@ vi.mock('@tanstack/react-router', async () => {
     createRouter: vi.fn(() => ({
       subscribe: vi.fn(() => vi.fn()), // Returns unsubscribe function
       load: vi.fn().mockResolvedValue(undefined),
-      state: { location: { pathname: '/topics' } },
+      state: { location: { pathname: '/topics', searchStr: '' } },
       navigate: vi.fn(),
     })),
     createMemoryHistory: vi.fn(() => ({
@@ -104,10 +104,27 @@ describe('ConsoleApp', () => {
     config.jwt = undefined;
   });
 
-  test('shows nothing while loading', () => {
+  test('shows nothing while loading', async () => {
+    // Use a deferred promise so the component stays in its loading branch
+    // for the duration of the assertion. This prevents the async
+    // initialize() useEffect from flushing a second state update (which
+    // would trigger "update was not wrapped in act(...)" since the render()
+    // call wasn't awaited).
+    const tokenPromise = new Promise<string>(() => {
+      // never resolves
+    });
+    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
+
     const { container } = render(<ConsoleApp {...defaultProps} />);
 
     // Component returns null while initializing
+    expect(container.firstChild).toBeNull();
+
+    // Let any queued microtasks settle inside act() so React's scheduler
+    // doesn't log a deferred-update warning after the test completes.
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(container.firstChild).toBeNull();
   });
 
@@ -259,6 +276,156 @@ describe('ConsoleApp', () => {
       await waitFor(() => {
         expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: {} }));
       });
+    });
+  });
+
+  describe('Router Stability', () => {
+    test('does not recreate router when initialPath prop changes', async () => {
+      const { createRouter, createMemoryHistory } = await import('@tanstack/react-router');
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      const createRouterCallCount = vi.mocked(createRouter).mock.calls.length;
+      const createMemoryHistoryCallCount = vi.mocked(createMemoryHistory).mock.calls.length;
+
+      // Rerender with a different initialPath (simulates cloud-ui navigation)
+      rerender(<ConsoleApp {...defaultProps} initialPath="/groups" />);
+
+      // Router should NOT have been recreated
+      expect(vi.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
+      expect(vi.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
+    });
+
+    test('uses first initialPath for memory history, ignores subsequent changes', async () => {
+      const { createMemoryHistory } = await import('@tanstack/react-router');
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Verify initial path was used
+      expect(vi.mocked(createMemoryHistory)).toHaveBeenCalledWith(
+        expect.objectContaining({ initialEntries: ['/topics'] })
+      );
+
+      const callCount = vi.mocked(createMemoryHistory).mock.calls.length;
+
+      // Changing initialPath should not create a new memory history
+      rerender(<ConsoleApp {...defaultProps} initialPath="/schema-registry" />);
+      expect(vi.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
+    });
+  });
+
+  describe('Search Params Handling', () => {
+    test('onRouteChange includes searchStr when route resolves with search params', async () => {
+      // Get a reference to the subscribe callback so we can invoke it manually
+      const { createRouter } = await import('@tanstack/react-router');
+      let subscribedCallback: ((event: unknown) => void) | undefined;
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn((event: string, cb: (event: unknown) => void) => {
+          subscribedCallback = cb;
+          return vi.fn(); // unsubscribe
+        }),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '' } },
+        navigate: vi.fn(),
+      } as unknown as ReturnType<typeof createRouter>);
+
+      render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Simulate a route resolution with search params (e.g., ?tab=messages)
+      expect(subscribedCallback).toBeDefined();
+      subscribedCallback!({
+        toLocation: { pathname: '/topics/my-topic', searchStr: '?tab=messages' },
+      });
+
+      expect(mockOnRouteChange).toHaveBeenCalledWith('/topics/my-topic?tab=messages');
+    });
+
+    test('navigateTo with search params triggers router navigation', async () => {
+      const { createRouter } = await import('@tanstack/react-router');
+      const mockNavigate = vi.fn();
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn(() => vi.fn()),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '' } },
+        navigate: mockNavigate,
+      } as unknown as ReturnType<typeof createRouter>);
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Rerender with navigateTo containing search params
+      rerender(<ConsoleApp {...defaultProps} navigateTo="/groups?search=my-group" />);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups', search: { search: 'my-group' } });
+      });
+    });
+
+    test('navigateTo without search params still works (backwards compat)', async () => {
+      const { createRouter } = await import('@tanstack/react-router');
+      const mockNavigate = vi.fn();
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn(() => vi.fn()),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '' } },
+        navigate: mockNavigate,
+      } as unknown as ReturnType<typeof createRouter>);
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Rerender with navigateTo without search params
+      rerender(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/groups', search: undefined });
+      });
+    });
+
+    test('navigateTo matching current path + searchStr is a no-op', async () => {
+      const { createRouter } = await import('@tanstack/react-router');
+      const mockNavigate = vi.fn();
+
+      vi.mocked(createRouter).mockReturnValueOnce({
+        subscribe: vi.fn(() => vi.fn()),
+        load: vi.fn().mockResolvedValue(undefined),
+        state: { location: { pathname: '/topics', searchStr: '?tab=messages' } },
+        navigate: mockNavigate,
+      } as unknown as ReturnType<typeof createRouter>);
+
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // navigateTo equals currentPath + currentSearchStr, so navigate should NOT be called
+      rerender(<ConsoleApp {...defaultProps} navigateTo="/topics?tab=messages" />);
+
+      // Give it a tick to process the effect
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
   });
 

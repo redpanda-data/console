@@ -34,7 +34,7 @@ import './globals.css';
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -42,14 +42,19 @@ import { builderCustomComponents } from 'components/builder-io/builder-custom-co
 import { BUILDER_API_KEY } from 'components/constants';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import useDeveloperView from 'hooks/use-developer-view';
+import type { LucideIcon } from 'lucide-react';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
+import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
+import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
+import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routeTree } from './routeTree.gen';
+import { installUISettingsSideEffects } from './state/ui';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
@@ -71,7 +76,14 @@ const router = createRouter({
   basepath: getBasePath(),
   trailingSlash: 'never',
   defaultNotFoundComponent: NotFoundPage,
+  defaultPendingComponent: RoutePendingFallback,
 });
+
+declare global {
+  interface Window {
+    __E2E_FEATURE_FLAGS__?: Record<string, boolean>;
+  }
+}
 
 // Register router for type safety
 declare module '@tanstack/react-router' {
@@ -89,6 +101,16 @@ declare module '@tanstack/react-router' {
     content?: string;
     score?: number;
   }
+
+  // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
+  interface StaticDataRouteOption {
+    /** Route title shown in the page header/breadcrumbs. */
+    title?: string;
+    /** Lucide icon for the route's sidebar entry. */
+    icon?: LucideIcon;
+    /** Render the route with minimal chrome (no page header/footer/padding). */
+    fullscreen?: boolean;
+  }
 }
 
 const EMPTY_SETUP_ARGS = {};
@@ -97,12 +119,20 @@ const App = () => {
   const developerView = useDeveloperView();
 
   useEffect(() => {
-    setup(EMPTY_SETUP_ARGS);
+    const setupTeardown = setup(EMPTY_SETUP_ARGS);
+    // Apply local debug feature-flag overrides AFTER setup() (which clobbers
+    // config.featureFlags). Dev-only mechanism — see debug-helper/feature-flag-overrides.ts.
+    applyDebugFeatureFlagOverrides();
+    const uiSettingsTeardown = installUISettingsSideEffects();
+    return () => {
+      uiSettingsTeardown();
+      setupTeardown?.();
+    };
   }, []);
 
   // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
-    <CustomFeatureFlagProvider initialFlags={{}}>
+    <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
       <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
         <TransportProvider transport={dataplaneTransport}>

@@ -25,13 +25,16 @@ import (
 )
 
 func TestNewConnectErrorFromSchemaRegistryError(t *testing.T) {
+	t.Parallel()
+
+	expectedReason := v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String()
+
 	testCases := []struct {
 		name             string
 		err              error
 		prefixErrMsg     string
 		expectedCode     connect.Code
 		expectedErrorMsg string
-		expectedReason   string
 	}{
 		{
 			name: "Subject not found error",
@@ -43,7 +46,6 @@ func TestNewConnectErrorFromSchemaRegistryError(t *testing.T) {
 			prefixErrMsg:     "error listing Schema Registry ACLs: ",
 			expectedCode:     connect.CodeNotFound,
 			expectedErrorMsg: "error listing Schema Registry ACLs: Subject not found",
-			expectedReason:   v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String(),
 		},
 		{
 			name: "Invalid schema error",
@@ -55,7 +57,6 @@ func TestNewConnectErrorFromSchemaRegistryError(t *testing.T) {
 			prefixErrMsg:     "error creating Schema Registry ACL: ",
 			expectedCode:     connect.CodeInvalidArgument,
 			expectedErrorMsg: "error creating Schema Registry ACL: Invalid schema",
-			expectedReason:   v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String(),
 		},
 		{
 			name: "Incompatible schema error",
@@ -67,7 +68,6 @@ func TestNewConnectErrorFromSchemaRegistryError(t *testing.T) {
 			prefixErrMsg:     "compatibility check failed: ",
 			expectedCode:     connect.CodeFailedPrecondition,
 			expectedErrorMsg: "compatibility check failed: Schema is incompatible with an earlier schema",
-			expectedReason:   v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String(),
 		},
 		{
 			name:             "Timeout error",
@@ -75,7 +75,6 @@ func TestNewConnectErrorFromSchemaRegistryError(t *testing.T) {
 			prefixErrMsg:     "operation failed: ",
 			expectedCode:     connect.CodeCanceled,
 			expectedErrorMsg: "operation failed: the request to the Schema Registry timed out",
-			expectedReason:   v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String(),
 		},
 		{
 			name:             "Generic error",
@@ -83,39 +82,141 @@ func TestNewConnectErrorFromSchemaRegistryError(t *testing.T) {
 			prefixErrMsg:     "operation failed: ",
 			expectedCode:     connect.CodeInternal,
 			expectedErrorMsg: "operation failed: network connection failed",
-			expectedReason:   v1.Reason_REASON_REDPANDA_SCHEMA_REGISTRY_ERROR.String(),
+		},
+		// Soft-deleted resources
+		{
+			name: "Subject soft deleted",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusNotFound,
+				ErrorCode:  sr.ErrSubjectSoftDeleted.Code,
+				Message:    "Subject was soft deleted",
+			},
+			prefixErrMsg:     "failed to get subject: ",
+			expectedCode:     connect.CodeNotFound,
+			expectedErrorMsg: "failed to get subject: Subject was soft deleted",
+		},
+		{
+			name: "Schema version soft deleted",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusNotFound,
+				ErrorCode:  sr.ErrSchemaVersionSoftDeleted.Code,
+				Message:    "Schema version was soft deleted",
+			},
+			prefixErrMsg:     "failed to get version: ",
+			expectedCode:     connect.CodeNotFound,
+			expectedErrorMsg: "failed to get version: Schema version was soft deleted",
+		},
+		{
+			name: "Subject level mode not configured",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusNotFound,
+				ErrorCode:  sr.ErrSubjectLevelModeNotConfigured.Code,
+				Message:    "Subject does not have subject-level mode configured",
+			},
+			prefixErrMsg:     "failed to get mode: ",
+			expectedCode:     connect.CodeNotFound,
+			expectedErrorMsg: "failed to get mode: Subject does not have subject-level mode configured",
+		},
+		// Constraint violations
+		{
+			name: "Reference exists",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusUnprocessableEntity,
+				ErrorCode:  sr.ErrReferenceExists.Code,
+				Message:    "Schema reference already exists",
+			},
+			prefixErrMsg:     "failed to delete schema: ",
+			expectedCode:     connect.CodeFailedPrecondition,
+			expectedErrorMsg: "failed to delete schema: Schema reference already exists",
+		},
+		// Invalid input errors
+		{
+			name: "Schema too large",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusUnprocessableEntity,
+				ErrorCode:  sr.ErrSchemaTooLarge.Code,
+				Message:    "Schema is too large",
+			},
+			prefixErrMsg:     "failed to register schema: ",
+			expectedCode:     connect.CodeInvalidArgument,
+			expectedErrorMsg: "failed to register schema: Schema is too large",
+		},
+		{
+			name: "Invalid ruleset",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusUnprocessableEntity,
+				ErrorCode:  sr.ErrInvalidRuleset.Code,
+				Message:    "Ruleset is invalid",
+			},
+			prefixErrMsg:     "failed to register schema: ",
+			expectedCode:     connect.CodeInvalidArgument,
+			expectedErrorMsg: "failed to register schema: Ruleset is invalid",
+		},
+		{
+			name: "Invalid mode",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusUnprocessableEntity,
+				ErrorCode:  sr.ErrInvalidMode.Code,
+				Message:    "Mode is invalid",
+			},
+			prefixErrMsg:     "failed to set mode: ",
+			expectedCode:     connect.CodeInvalidArgument,
+			expectedErrorMsg: "failed to set mode: Mode is invalid",
+		},
+		// State constraint
+		{
+			name: "Operation not permitted",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusUnprocessableEntity,
+				ErrorCode:  sr.ErrOperationNotPermitted.Code,
+				Message:    "Operation is not permitted",
+			},
+			prefixErrMsg:     "operation failed: ",
+			expectedCode:     connect.CodeFailedPrecondition,
+			expectedErrorMsg: "operation failed: Operation is not permitted",
+		},
+		// Leader unavailable
+		{
+			name: "Unknown leader",
+			err: &sr.ResponseError{
+				StatusCode: http.StatusInternalServerError,
+				ErrorCode:  sr.ErrUnknownLeader.Code,
+				Message:    "Leader is unknown",
+			},
+			prefixErrMsg:     "operation failed: ",
+			expectedCode:     connect.CodeUnavailable,
+			expectedErrorMsg: "operation failed: Leader is unknown",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			connectErr := NewConnectErrorFromSchemaRegistryError(tc.err, tc.prefixErrMsg)
 
-			assert.Equal(t, tc.expectedCode, connectErr.Code(), "Expected connect code to match")
-			assert.Equal(t, tc.expectedErrorMsg, connectErr.Message(), "Expected error message to match")
+			assert.Equal(t, tc.expectedCode, connectErr.Code(), "wrong connect code")
+			assert.Equal(t, tc.expectedErrorMsg, connectErr.Message(), "wrong error message")
 
-			// Check that the ErrorInfo contains the correct reason
 			details := connectErr.Details()
-			assert.NotEmpty(t, details, "Expected error details to be present")
+			require.NotEmpty(t, details, "expected error details")
 
-			// Verify that the error has the expected reason
-			errorInfo := &errdetails.ErrorInfo{}
+			var errorInfo *errdetails.ErrorInfo
 			for _, detail := range details {
-				value, err := detail.Value()
+				val, err := detail.Value()
 				require.NoError(t, err)
-				if errDetails, ok := value.(*errdetails.ErrorInfo); ok && errDetails.Reason == tc.expectedReason {
-					errorInfo = errDetails
+				if ei, ok := val.(*errdetails.ErrorInfo); ok {
+					errorInfo = ei
 					break
 				}
 			}
-
-			require.NotNil(t, errorInfo, "Expected to find ErrorInfo with correct reason")
+			require.NotNil(t, errorInfo, "expected an ErrorInfo detail")
+			assert.Equal(t, expectedReason, errorInfo.Reason, "wrong ErrorInfo reason")
 
 			var srErr *sr.ResponseError
 			if errors.As(tc.err, &srErr) {
-				assert.Contains(t, errorInfo.Metadata, "sr_error_code", "Expected sr_error_code in metadata")
-				assert.Contains(t, errorInfo.Metadata, "sr_http_status_code", "Expected sr_http_status_code in metadata")
-				assert.Contains(t, errorInfo.Metadata, "sr_error_name", "Expected sr_error_name in metadata")
+				assert.Contains(t, errorInfo.Metadata, "sr_error_code")
+				assert.Contains(t, errorInfo.Metadata, "sr_http_status_code")
+				assert.Contains(t, errorInfo.Metadata, "sr_error_name")
 			}
 		})
 	}

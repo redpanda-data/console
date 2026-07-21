@@ -33,8 +33,10 @@ import {
   updateMCPServer,
 } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
 import { useMemo } from 'react';
+import { ConsoleJWTOAuthProvider } from 'react-query/api/mcp-oauth-provider';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export { MCPServer_State, MCPServer_Tool_ComponentType };
@@ -274,7 +276,10 @@ export const createMCPClientWithSession = async (
   );
 
   // Create StreamableHTTP transport for HTTP endpoints
+  const authProvider = new ConsoleJWTOAuthProvider({ getJwt: () => config.jwt, clientName });
   const transport = new StreamableHTTPClientTransport(new URL(serverUrl), {
+    authProvider,
+    // allow: direct-query MCP SDK transport requires a raw fetch to stream SSE — ConnectRPC does not apply here
     fetch: async (input, init) => {
       const response = await fetch(input, {
         ...init,
@@ -282,12 +287,17 @@ export const createMCPClientWithSession = async (
           ...init?.headers,
           'Content-Type': 'application/json',
           ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          'Mcp-Session-Id': client?.transport?.sessionId ?? '',
+          ...(client?.transport?.sessionId && { 'Mcp-Session-Id': client.transport.sessionId }),
         },
       });
       return response;
     },
   });
+
+  transport.onerror = (error) => {
+    // biome-ignore lint/suspicious/noConsole: transport-level errors have no UI surface
+    console.error('[MCP] transport error', { serverUrl, error });
+  };
 
   // Connect the client to the transport
   await client.connect(transport);
@@ -298,7 +308,11 @@ export const createMCPClientWithSession = async (
 export const listMCPServerTools = async (serverUrl: string) => {
   const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-  return client.listTools();
+  try {
+    return await client.listTools();
+  } finally {
+    await client.close?.();
+  }
 };
 
 export type CallMCPToolParams = {
@@ -313,14 +327,18 @@ export const useCallMCPServerToolMutation = () =>
     mutationFn: async ({ serverUrl, toolName, parameters, signal }: CallMCPToolParams) => {
       const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
 
-      return client.callTool(
-        {
-          name: toolName,
-          arguments: parameters,
-        },
-        undefined,
-        { signal }
-      );
+      try {
+        return await client.callTool(
+          {
+            name: toolName,
+            arguments: parameters,
+          },
+          undefined,
+          { signal }
+        );
+      } finally {
+        await client.close?.();
+      }
     },
     onError: (error) => {
       if (error.name === 'AbortError' || error.message?.includes('aborted')) {
@@ -329,11 +347,169 @@ export const useCallMCPServerToolMutation = () =>
 
       const connectError = ConnectError.from(error);
 
-      return formatToastErrorMessageGRPC({
-        error: connectError,
-        action: 'call',
-        entity: 'MCP tool',
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: connectError,
+          action: 'call',
+          entity: 'MCP tool',
+        })
+      );
+    },
+  });
+
+export type MCPStreamTaskStatus = 'working' | 'input_required' | 'completed' | 'failed' | 'cancelled';
+
+export type MCPStreamProgress = {
+  taskId?: string;
+  status?: MCPStreamTaskStatus;
+  statusMessage?: string;
+  progress?: number;
+  total?: number;
+};
+
+export type StreamMCPToolParams = CallMCPToolParams & {
+  onProgress?: (update: MCPStreamProgress) => void;
+  /**
+   * Maximum time to wait for the stream to produce a terminal (result/error)
+   * message. On timeout, the SDK signal is aborted and the mutation rejects
+   * with a descriptive error. Defaults to {@link DEFAULT_STREAM_TIMEOUT_MS}.
+   */
+  streamTimeoutMs?: number;
+};
+
+type CallToolResult = Awaited<
+  ReturnType<InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>['callTool']>
+>;
+
+type MCPClient = InstanceType<typeof import('@modelcontextprotocol/sdk/client/index.js').Client>;
+
+export const DEFAULT_STREAM_TIMEOUT_MS = 120_000;
+
+const serverSupportsToolTasks = (client: MCPClient): boolean => {
+  const capabilities = client.getServerCapabilities();
+  return capabilities?.tasks?.requests?.tools?.call !== undefined;
+};
+
+// Compose a caller signal with a timeout so a hung stream rejects instead of
+// blocking forever. Returned cleanup must run in a `finally`.
+const buildStreamAbortControl = (signal: AbortSignal | undefined, timeoutMs: number) => {
+  const timeoutController = new AbortController();
+  const timeoutHandle = setTimeout(() => timeoutController.abort(), timeoutMs);
+  const onUserAbort = () => timeoutController.abort();
+  if (signal?.aborted) {
+    timeoutController.abort();
+  } else {
+    signal?.addEventListener('abort', onUserAbort, { once: true });
+  }
+  return {
+    composedSignal: timeoutController.signal,
+    cleanup: () => {
+      clearTimeout(timeoutHandle);
+      signal?.removeEventListener('abort', onUserAbort);
+    },
+  };
+};
+
+const drainMCPStream = async <T,>(
+  stream: AsyncIterable<{
+    type: 'taskCreated' | 'taskStatus' | 'result' | 'error';
+    task?: { taskId: string; status: MCPStreamTaskStatus; statusMessage?: string };
+    result?: T;
+    error?: Error;
+  }>,
+  onProgress?: (update: MCPStreamProgress) => void
+): Promise<T | undefined> => {
+  for await (const message of stream) {
+    if (message.type === 'taskCreated' || message.type === 'taskStatus') {
+      onProgress?.({
+        taskId: message.task?.taskId,
+        status: message.task?.status,
+        statusMessage: message.task?.statusMessage,
       });
+      continue;
+    }
+    if (message.type === 'result') {
+      return message.result;
+    }
+    throw message.error ?? new Error('MCP stream yielded an error event with no payload');
+  }
+  return;
+};
+
+export const useStreamMCPServerToolMutation = () =>
+  useTanstackMutation({
+    mutationFn: async ({
+      serverUrl,
+      toolName,
+      parameters,
+      signal,
+      onProgress,
+      streamTimeoutMs = DEFAULT_STREAM_TIMEOUT_MS,
+    }: StreamMCPToolParams): Promise<CallToolResult> => {
+      const { client } = await createMCPClientWithSession(serverUrl, 'redpanda-console');
+
+      try {
+        const { composedSignal, cleanup } = buildStreamAbortControl(signal, streamTimeoutMs);
+
+        try {
+          // Older servers respond to callToolStream but never produce a terminal
+          // message, which would hang the mutation — fall back to non-streaming.
+          if (!serverSupportsToolTasks(client)) {
+            return (await client.callTool({ name: toolName, arguments: parameters }, undefined, {
+              signal: composedSignal,
+            })) as CallToolResult;
+          }
+
+          const stream = client.experimental.tasks.callToolStream(
+            { name: toolName, arguments: parameters },
+            undefined,
+            {
+              signal: composedSignal,
+              onprogress: (progress) => {
+                onProgress?.({
+                  progress: progress.progress,
+                  total: progress.total,
+                });
+              },
+            }
+          );
+
+          const result = await drainMCPStream(stream, onProgress);
+          if (result !== undefined) {
+            return result as CallToolResult;
+          }
+
+          // Stream closed without a terminal message. Surface timeout explicitly
+          // if that was the cause, user cancellation as an AbortError so the
+          // mutation's onError skips the toast, else a watchdog error.
+          if (composedSignal.aborted && !signal?.aborted) {
+            throw new Error(`MCP tool stream timed out after ${streamTimeoutMs}ms`);
+          }
+          if (signal?.aborted) {
+            throw Object.assign(new Error('Request was cancelled'), { name: 'AbortError' });
+          }
+          throw new Error('MCP tool stream ended without a terminal result or error message');
+        } finally {
+          cleanup();
+        }
+      } finally {
+        await client.close?.();
+      }
+    },
+    onError: (error) => {
+      if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+        return;
+      }
+
+      const connectError = ConnectError.from(error);
+
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: connectError,
+          action: 'call',
+          entity: 'MCP tool',
+        })
+      );
     },
   });
 

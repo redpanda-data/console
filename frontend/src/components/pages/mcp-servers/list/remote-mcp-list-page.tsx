@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
@@ -41,7 +39,6 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import React, { useCallback, useEffect } from 'react';
 import {
@@ -89,18 +86,18 @@ const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MC
     [MCPServer_State.RUNNING]: {
       text: 'Running',
       icon: Check,
-      iconColor: 'text-green-600',
+      iconColor: 'text-success',
     },
     [MCPServer_State.STARTING]: {
       text: 'Starting',
       icon: Loader2,
-      iconColor: 'text-blue-600',
+      iconColor: 'text-informative',
       animate: true,
     },
     [MCPServer_State.STOPPING]: {
       text: 'Stopping',
       icon: Loader2,
-      iconColor: 'text-orange-600',
+      iconColor: 'text-warning',
       animate: true,
     },
     [MCPServer_State.STOPPED]: {
@@ -111,7 +108,7 @@ const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MC
     [MCPServer_State.ERROR]: {
       text: 'Error',
       icon: AlertCircle,
-      iconColor: 'text-red-600',
+      iconColor: 'text-error',
     },
     [MCPServer_State.UNSPECIFIED]: {
       text: 'Unknown',
@@ -123,7 +120,7 @@ const StatusIcon = ({ state }: { state: (typeof MCPServer_State)[keyof typeof MC
   const statusProps = statusPropsMap[state] || {
     text: 'Unknown',
     icon: AlertCircle,
-    iconColor: 'text-red-600',
+    iconColor: 'text-error',
   };
 
   const IconComponent = statusProps.icon;
@@ -164,7 +161,7 @@ export const createColumns = (
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
+    cell: ({ row }) => <div className="font-medium text-body">{row.getValue('name')}</div>,
   },
   {
     accessorKey: 'tools',
@@ -199,13 +196,11 @@ export const createColumns = (
       const truncatedUrl = url.length > 40 ? `${url.slice(0, 37)}...` : url;
       return (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Text className="cursor-help font-mono text-muted-foreground" variant="small">
-              {truncatedUrl}
-            </Text>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={<div className="cursor-help font-mono text-body-sm text-muted-foreground">{truncatedUrl}</div>}
+          />
           <TooltipContent>
-            <Text>{url}</Text>
+            <div className="text-body">{url}</div>
           </TooltipContent>
         </Tooltip>
       );
@@ -266,8 +261,11 @@ export const updatePageTitle = () => {
   });
 };
 
-const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef> }) => {
-  'use no memo';
+const RemoteMCPListPageContent = ({
+  deleteHandlerRef,
+}: {
+  deleteHandlerRef: React.RefObject<MCPDeleteHandlerRef | null>;
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -304,7 +302,7 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
         }
 
         // Show single success toast regardless of what was deleted
-        toast.success('MCP server deleted successfully');
+        toast.success('MCP server deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(
@@ -375,8 +373,8 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <Heading level={1}>Remote MCP</Heading>
-          <Text variant="muted">Manage your Model Context Protocol (MCP) servers.</Text>
+          <h1 className="text-heading-xl">Remote MCP</h1>
+          <div className="text-body text-muted-foreground">Manage your Model Context Protocol (MCP) servers.</div>
         </header>
         <div className="mb-4">
           <Button onClick={() => navigate({ to: '/mcp-servers/create' })}>Create MCP Server</Button>
@@ -415,7 +413,7 @@ const RemoteMCPListPageContent = ({ deleteHandlerRef }: { deleteHandlerRef: Reac
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-red-600">
+                      <div className="flex items-center justify-center gap-2 text-error">
                         <AlertCircle className="h-4 w-4" />
                         Error loading MCP servers: {error.message}
                       </div>

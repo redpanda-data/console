@@ -12,7 +12,6 @@ import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Controller, type UseFieldArrayReturn, type UseFormReturn } from 'react-hook-form';
@@ -32,8 +31,10 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
     <CardContent>
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
-          <Heading level={2}>Server Metadata</Heading>
-          <Text variant="muted">Configure the basic information and resources for your MCP server.</Text>
+          <h2 className="text-heading-lg">Server Metadata</h2>
+          <div className="text-body text-muted-foreground">
+            Configure the basic information and resources for your MCP server.
+          </div>
         </div>
 
         <form className="w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -94,7 +95,7 @@ export const MetadataStep: React.FC<MetadataStepProps> = ({ form, tagFields, app
               </FieldLabel>
               <Input
                 id="serviceAccountName"
-                placeholder="e.g., cluster-abc123-mcp-my-server-sa"
+                placeholder="cluster-abc123-mcp-my-server-sa"
                 {...form.register('serviceAccountName')}
                 aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
                 aria-invalid={!!form.formState.errors.serviceAccountName}

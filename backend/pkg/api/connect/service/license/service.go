@@ -26,6 +26,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/license"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Ensure that Service implements the LicenseServiceHandler interface.
@@ -140,5 +141,25 @@ func (s Service) ListEnterpriseFeatures(ctx context.Context, _ *connect.Request[
 
 	featuresProto := s.mapper.enterpriseFeaturesToProto(features)
 
+	// Synthesize the gbac (Group-Based Access Control) feature. GBAC is supported
+	// when the cluster is running Redpanda >= 26.1. We check the first broker
+	// returned — all brokers in a cluster run the same version.
+	gbacEnabled := false
+	brokers, err := adminCl.Brokers(ctx)
+	if err != nil {
+		s.logger.WarnContext(ctx, "failed to retrieve brokers for gbac feature check, defaulting to disabled", slog.Any("error", err))
+	} else if len(brokers) > 0 {
+		if version, verr := redpanda.VersionFromString(brokers[0].Version); verr == nil {
+			gbacEnabled = version.IsAtLeast(gbacMinVersion)
+		}
+	}
+	featuresProto.Features = append(featuresProto.Features, &v1alpha1.ListEnterpriseFeaturesResponse_Feature{
+		Name:    "gbac",
+		Enabled: gbacEnabled,
+	})
+
 	return connect.NewResponse(featuresProto), nil
 }
+
+// gbacMinVersion is the first Redpanda release with Group-Based Access Control.
+var gbacMinVersion = redpanda.MustParseVersion("26.1.0")

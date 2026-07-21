@@ -128,9 +128,6 @@ test.describe('Topic Creation', () => {
       if ((await replicationInput.isVisible()) && !(await replicationInput.isDisabled())) {
         await replicationInput.fill('999');
 
-        // Wait a moment for validation
-        await page.waitForTimeout(500);
-
         // Check if validation error appears
         const errorText = page.getByText(/replication factor/i);
         if (await errorText.isVisible()) {
@@ -179,7 +176,7 @@ test.describe('Topic Creation', () => {
     await test.step('Navigate to topic details', async () => {
       await page.getByTestId(`topic-link-${topicName}`).click();
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`));
-      await expect(page.getByText(topicName)).toBeVisible();
+      await expect(page.getByText(topicName).first()).toBeVisible();
     });
 
     await test.step('Navigate back to list', async () => {

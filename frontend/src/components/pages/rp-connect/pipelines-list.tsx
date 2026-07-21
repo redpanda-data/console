@@ -203,16 +203,24 @@ class RpConnectPipelinesList extends PageComponent<{}> {
               {
                 header: 'ID',
                 cell: ({ row: { original } }) => (
-                  <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} to="/rp-connect/$pipelineId">
+                  <Link
+                    params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+                    search={{} as never}
+                    to="/rp-connect/$pipelineId"
+                  >
                     <Text>{original.id}</Text>
                   </Link>
                 ),
                 size: 100,
               },
               {
-                header: 'Pipeline Name',
+                header: 'Pipeline',
                 cell: ({ row: { original } }) => (
-                  <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} to="/rp-connect/$pipelineId">
+                  <Link
+                    params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+                    search={{} as never}
+                    to="/rp-connect/$pipelineId"
+                  >
                     <Text whiteSpace="break-spaces" wordBreak="break-word">
                       {original.displayName}
                     </Text>
@@ -234,15 +242,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                 header: 'State',
                 cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
               },
-              // {
-              //     header: 'Throughput',
-              //     cell: ({ row: { original } }) => {
-              //         return <>
-              //             <PipelineThroughput pipeline={original} />
-              //         </>
-              //     },
-              //     size: 100,
-              // },
               {
                 header: '',
                 id: 'actions',
@@ -277,7 +276,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                           });
                       });
                     }}
-                    // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
                     variant="icon"
                   >
                     <TrashIcon />

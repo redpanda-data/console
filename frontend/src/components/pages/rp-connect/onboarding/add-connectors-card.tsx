@@ -1,6 +1,5 @@
 import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
 import { Separator } from 'components/redpanda-ui/components/separator';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { PlusIcon } from 'lucide-react';
 import { memo } from 'react';
 
@@ -55,9 +54,7 @@ export const AddConnectorsCard = memo(
     return (
       <div className="!border-border border-t p-4">
         <div className="flex flex-col gap-2">
-          <Heading className="mb-2 text-muted-foreground" level={5}>
-            Connectors
-          </Heading>
+          <h5 className="mb-2 text-heading-xs text-muted-foreground">Connectors</h5>
           <div className="flex flex-wrap gap-2">
             {allowedConnectorTypes.map((connectorType) => (
               <AddConnectorButton key={connectorType} onClick={onAddConnector} type={connectorType} />

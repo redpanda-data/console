@@ -12,7 +12,7 @@
 'use client';
 
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
-import { List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/;
 
@@ -33,21 +33,21 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
 
   return (
     <div className="space-y-2">
-      <Text className="font-medium text-sm">Preview of selected topics:</Text>
+      <div className="text-body font-medium">Preview of selected topics:</div>
 
       {/* Show exact topics first */}
       {exactTopics.length > 0 && (
         <div>
           <Card size="sm">
             <CardContent space="sm">
-              <Text className="font-medium text-sm">Exact topics ({exactTopics.length}):</Text>
+              <div className="text-body font-medium">Exact topics ({exactTopics.length}):</div>
               <div className="max-h-[100px] overflow-y-auto">
                 <List className="my-0">
                   {exactTopics.map((topic, idx) => (
                     <ListItem key={idx}>
-                      <Text as="span" className="font-mono text-gray-700 text-xs">
+                      <span className="text-body-sm font-mono text-gray-700">
                         {topic}
-                      </Text>
+                      </span>
                     </ListItem>
                   ))}
                 </List>
@@ -65,29 +65,29 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
           <div key={index}>
             <Card size="sm" variant="ghost">
               <CardContent space="sm">
-                <Text className="font-medium font-mono text-blue-600 text-sm">
+                <div className="text-body font-medium font-mono text-informative">
                   {topic}{' '}
-                  <Text as="span" className="text-gray-500 text-xs">
+                  <span className="text-body-sm text-gray-500">
                     (regex pattern)
-                  </Text>
-                </Text>
+                  </span>
+                </div>
                 {matchingTopics.length > 0 ? (
                   <>
-                    <Text className="text-gray-600 text-xs">Matches {matchingTopics.length} existing topics:</Text>
+                    <div className="text-body-sm text-gray-600">Matches {matchingTopics.length} existing topics:</div>
                     <div className="max-h-[100px] overflow-y-auto">
                       <List className="my-0">
                         {matchingTopics.map((matchedTopic, idx) => (
                           <ListItem key={idx}>
-                            <Text as="span" className="font-mono text-gray-700 text-xs">
+                            <span className="text-body-sm font-mono text-gray-700">
                               {matchedTopic}
-                            </Text>
+                            </span>
                           </ListItem>
                         ))}
                       </List>
                     </div>
                   </>
                 ) : (
-                  <Text className="text-gray-500 text-xs">No existing topics match yet</Text>
+                  <div className="text-body-sm text-gray-500">No existing topics match yet</div>
                 )}
               </CardContent>
             </Card>

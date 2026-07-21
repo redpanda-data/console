@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { InlineCode, List, ListItem, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useState } from 'react';
 
@@ -33,6 +33,36 @@ import { ClientType, getClientCommand, getClientConfig, getMCPServerName, type M
 type ClientClaudeCodeProps = {
   mcpServer: MCPServer;
 };
+
+// Drives the scope Select's items, options, config file, and help text.
+const SCOPE_OPTIONS = [
+  {
+    value: 'local',
+    label: 'Local',
+    configFile: '~/.claude.json',
+    description: 'Configuration stored locally for this project only',
+  },
+  {
+    value: 'user',
+    label: 'User',
+    configFile: '~/.claude.json',
+    description: (
+      <span className="text-body">
+        Configuration available across all your projects in <InlineCode>~/.claude.json</InlineCode>
+      </span>
+    ),
+  },
+  {
+    value: 'project',
+    label: 'Project',
+    configFile: '.mcp.json',
+    description: (
+      <span className="text-body">
+        Configuration shared with team using <InlineCode>.mcp.json</InlineCode> file in project
+      </span>
+    ),
+  },
+] as const;
 
 export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
   const [selectedScope, setSelectedScope] = useState<string>('local');
@@ -56,6 +86,8 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
     isServerless: config.isServerless,
   });
 
+  const selectedScopeOption = SCOPE_OPTIONS.find((option) => option.value === selectedScope);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
@@ -66,41 +98,31 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-1">
                 <span>In</span>
-                <Text as="span" className="inline-flex items-center gap-1 whitespace-nowrap font-bold">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap font-bold text-body">
                   <img alt="Claude Code" className="h-4 w-4" src={ClaudeCodeLogo} />
                   Claude Code
-                </Text>
+                </span>
                 <span>, select the configuration scope for the MCP server:</span>
               </div>
               <Label className="font-medium text-sm">Scope</Label>
               <div>
-                <Select onValueChange={setSelectedScope} value={selectedScope}>
+                <Select items={SCOPE_OPTIONS} onValueChange={setSelectedScope} value={selectedScope}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Configuration Scope</SelectLabel>
-                      <SelectItem value="local">Local</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="project">Project</SelectItem>
+                      {SCOPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
-              <Text className="text-muted-foreground" variant="small">
-                {selectedScope === 'local' && 'Configuration stored locally for this project only'}
-                {selectedScope === 'project' && (
-                  <Text as="span">
-                    Configuration shared with team via <InlineCode>.mcp.json</InlineCode> file in project
-                  </Text>
-                )}
-                {selectedScope === 'user' && (
-                  <Text as="span">
-                    Configuration available across all your projects in <InlineCode>~/.claude.json</InlineCode>
-                  </Text>
-                )}
-              </Text>
+              <div className="text-body-sm text-muted-foreground">{selectedScopeOption?.description}</div>
             </div>
           </ListItem>
           <ListItem>
@@ -112,9 +134,7 @@ export const ClientClaudeCode = ({ mcpServer }: ClientClaudeCodeProps) => {
           <ListItem>
             <div className="flex flex-wrap items-center gap-1">
               <span>Alternatively, you can manually update</span>
-              {selectedScope === 'local' && <InlineCode className="whitespace-nowrap">~/.claude.json</InlineCode>}
-              {selectedScope === 'user' && <InlineCode className="whitespace-nowrap">~/.claude.json</InlineCode>}
-              {selectedScope === 'project' && <InlineCode className="whitespace-nowrap">.mcp.json</InlineCode>}
+              <InlineCode className="whitespace-nowrap">{selectedScopeOption?.configFile}</InlineCode>
               <span>with:</span>
             </div>
             <DynamicCodeBlock code={claudeCodeConfigJson} lang="json" />

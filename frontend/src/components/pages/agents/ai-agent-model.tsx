@@ -13,7 +13,6 @@ import AnthropicLogo from 'assets/anthropic.svg';
 import ApiGenericLogo from 'assets/api-generic.svg';
 import GeminiLogo from 'assets/gemini.svg';
 import OpenAILogo from 'assets/openai.svg';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 
 /**
@@ -53,6 +52,11 @@ export const PROVIDER_INFO = {
     label: 'OpenAI Compatible',
     icon: ApiGenericLogo,
     modelPattern: /^$/,
+  },
+  bedrock: {
+    label: 'AWS Bedrock',
+    icon: ApiGenericLogo,
+    modelPattern: /^(anthropic\.|us\.|eu\.|ap\.)/i,
   },
 } as const;
 
@@ -185,11 +189,32 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     icon: ApiGenericLogo,
     models: [],
   },
+  bedrock: {
+    label: 'AWS Bedrock',
+    icon: ApiGenericLogo,
+    models: [
+      {
+        value: 'anthropic.claude-sonnet-4-6',
+        name: 'Claude Sonnet 4.6',
+        description: 'Fast, intelligent model through Bedrock',
+      },
+      {
+        value: 'anthropic.claude-opus-4-6-v1',
+        name: 'Claude Opus 4.6',
+        description: 'Most capable model through Bedrock',
+      },
+      {
+        value: 'anthropic.claude-haiku-4-5-20251001-v1:0',
+        name: 'Claude Haiku 4.5',
+        description: 'Fast and cost-effective through Bedrock',
+      },
+    ],
+  },
 } as const;
 
 type AIAgentModelProps = {
   model: string;
-  providerType?: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
+  providerType?: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
   className?: string;
   showLogo?: boolean;
   size?: 'sm' | 'md' | 'lg';
@@ -236,9 +261,7 @@ export const AIAgentModel = ({ model, providerType, className, showLogo = true, 
   return (
     <div className={cn('flex items-center gap-2', className)}>
       {showLogo && providerInfo ? <img alt={providerInfo.label} className={logoSize} src={providerInfo.icon} /> : null}
-      <Text className="font-mono" variant={size === 'sm' ? 'small' : 'body'}>
-        {model}
-      </Text>
+      <div className={cn(size === 'sm' ? 'text-body-sm' : 'text-body', 'font-mono')}>{model}</div>
     </div>
   );
 };

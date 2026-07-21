@@ -15,7 +15,8 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Database } from 'lucide-react';
+import type { JSX, ReactNode } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
 import {
@@ -250,6 +251,17 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     visibilityCheck: routeVisibility(true, [Feature.GetQuotas], ['canListQuotas']),
   },
   {
+    path: '/sql',
+    title: 'SQL',
+    icon: Database,
+    group: SidebarSection.STREAMING,
+    // The enterprise backend mounts the SQLService and reports it in endpoint
+    // compatibility only when SQL is enabled (cfg.API.SQL.Enabled). This is the
+    // single source of truth for both embedded (cloud) and self-hosted, so the
+    // nav is gated on capability detection rather than a feature flag.
+    visibilityCheck: routeVisibility(true, [Feature.SQLService]),
+  },
+  {
     path: '/connect-clusters',
     title: 'Connect',
     icon: LinkIcon,
@@ -301,7 +313,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'Remote MCP',
     icon: MCPIcon,
     group: SidebarSection.AGENTIC,
-    visibilityCheck: routeVisibility(() => isEmbedded()),
+    visibilityCheck: routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')),
   },
   {
     path: '/agents',

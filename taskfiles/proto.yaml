@@ -62,7 +62,16 @@ tasks:
       - task: :backend:fmt
       - task: generate-openapi3
       - task: check-bsr-versions
-      - if [[ $CI == "true" ]]; then git diff -w --exit-code; fi
+      - |
+        if [[ $CI == "true" ]]; then
+          git diff -w --exit-code
+          untracked=$(git ls-files --others --exclude-standard -- frontend/src/protogen/ backend/pkg/protogen/ proto/gen/)
+          if [[ -n "$untracked" ]]; then
+            echo "ERROR: proto:generate produced untracked files that must be committed:"
+            echo "$untracked"
+            exit 1
+          fi
+        fi
 
   check-bsr-versions:
     desc: verify BSR SDK package versions match buf.lock commits
@@ -126,7 +135,7 @@ tasks:
   install-buf:
     desc: install buf
     vars:
-      BUF_VERSION: 1.65.0
+      BUF_VERSION: 1.71.0
       BUF_URL: https://github.com/bufbuild/buf/releases/download/v{{.BUF_VERSION}}/buf-$(uname -s)-$(uname -m)
     cmds:
       - mkdir -p {{.BUILD_ROOT}}/bin

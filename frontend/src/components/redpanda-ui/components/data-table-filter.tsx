@@ -1,6 +1,3 @@
-'use no memo';
-
-
 import type { Table } from '@tanstack/react-table';
 import { Ellipsis, FilterIcon, X } from 'lucide-react';
 import React, { isValidElement, memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,8 +24,6 @@ import type { DataTableFilterActions } from '../lib/use-data-table-filter';
 import type { FilterModel, FilterOperatorMap, FiltersState, FilterType } from '../lib/filter-utils';
 import { getOperatorsForType } from '../lib/filter-utils';
 import { cn } from '../lib/utils';
-
-// ── Types ──────────────────────────────────────────────────────────────
 
 export type DataTableFilterVariant =
   | 'neutral'
@@ -59,11 +54,9 @@ export type FilterColumnConfig = {
   icon?: React.ComponentType<{ className?: string }>;
 } & (
   | { type: 'text'; placeholder?: string }
-  | { type: 'option'; options?: FilterOption[] }
+  | { type: 'option'; options?: FilterOption[]; mode?: 'single' | 'multiple' }
   | { type: 'multiOption'; options?: FilterOption[] }
 );
-
-// ── Helpers ─────────────────────────────────────────────────────────────
 
 type MatchingOption = {
   columnId: string;
@@ -107,7 +100,18 @@ function renderIcon(icon: React.ComponentType<{ className?: string }> | undefine
   return isValidElement(Icon) ? Icon : <Icon className={className} />;
 }
 
-// ── DataTableFilter (root) ─────────────────────────────────────────────
+function RadioIndicator({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className={cn(
+        'mr-1 flex size-4 shrink-0 items-center justify-center rounded-full border border-primary',
+        checked ? 'opacity-100' : 'opacity-0 group-data-[selected=true]:opacity-100'
+      )}
+    >
+      {checked && <span className="size-2 rounded-full bg-primary" />}
+    </span>
+  );
+}
 
 type DataTableFilterProps<TData> = {
   columns: FilterColumnConfig[];
@@ -151,16 +155,16 @@ export function DataTableFilter<TData>({
 }
 DataTableFilter.displayName = 'DataTableFilter';
 
-// ── MatchingOptionItem ─────────────────────────────────────────────────
-
 function MatchingOptionItem({
   match,
   isSelected,
   onSelect,
+  singleMode,
 }: {
   match: MatchingOption;
   isSelected: boolean;
   onSelect: () => void;
+  singleMode?: boolean;
 }) {
   const { icon: MatchIcon } = match.option;
   const ColIcon = match.columnIcon;
@@ -171,10 +175,14 @@ function MatchingOptionItem({
       onSelect={onSelect}
       value={`${match.columnId}:${match.option.value}`}
     >
-      <Checkbox
-        checked={isSelected}
-        className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
-      />
+      {singleMode ? (
+        <RadioIndicator checked={isSelected} />
+      ) : (
+        <Checkbox
+          checked={isSelected}
+          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+        />
+      )}
       <span className="inline-flex items-center gap-1 text-muted-foreground">
         {ColIcon ? <ColIcon className="size-3.5" /> : null}
         <span>{match.columnDisplayName}</span>
@@ -197,8 +205,6 @@ function MatchingOptionItem({
     </CommandItem>
   );
 }
-
-// ── FilterSelector ─────────────────────────────────────────────────────
 
 type FilterSelectorProps<TData> = {
   columns: FilterColumnConfig[];
@@ -231,7 +237,6 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
     }
   }, [open]);
 
-  // Hierarchical search: match option values across all columns
   const matchingOptions = useMemo(() => {
     if (!search || activeColumnId) {
       return [];
@@ -241,19 +246,21 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className={cn(
-            'h-7',
-            hasFilters ? 'w-fit px-2!' : undefined,
-            variant ? badgeVariants({ variant }) : undefined
-          )}
-          variant="ghost"
-        >
-          <FilterIcon className="size-4" />
-          {hasFilters ? null : <span>Filter</span>}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            className={cn(
+              'h-7',
+              hasFilters ? 'w-fit px-2!' : undefined,
+              variant ? badgeVariants({ variant }) : undefined
+            )}
+            variant="ghost"
+          >
+            <FilterIcon className="size-4" />
+            {hasFilters ? null : <span>Filter</span>}
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-fit p-0" side="bottom">
         <Command loop>
           <CommandInput onValueChange={setSearch} placeholder="Search..." value={search} />
@@ -291,6 +298,8 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
                 <CommandSeparator />
                 <CommandGroup>
                   {matchingOptions.map((match) => {
+                    const col = columns.find((c) => c.id === match.columnId);
+                    const singleMode = col?.type === 'option' && col.mode === 'single';
                     const selectedValues = filters.find((f) => f.columnId === match.columnId)?.values ?? [];
                     const isSelected = selectedValues.includes(match.option.value);
                     return (
@@ -299,13 +308,18 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
                         key={`${match.columnId}:${match.option.value}`}
                         match={match}
                         onSelect={() => {
-                          if (isSelected) {
+                          if (singleMode) {
+                            if (!isSelected) {
+                              actions.setFilterValues(match.columnId, [match.option.value]);
+                            }
+                          } else if (isSelected) {
                             actions.removeFilterValue(match.columnId, match.option.value);
                           } else {
                             actions.addFilterValue(match.columnId, match.option.value);
                           }
                           setOpen(false);
                         }}
+                        singleMode={singleMode}
                       />
                     );
                   })}
@@ -319,8 +333,6 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
   );
 }) as <TData>(props: FilterSelectorProps<TData>) => React.ReactElement;
 (FilterSelector as { displayName?: string }).displayName = 'FilterSelector';
-
-// ── FilterKeySubmenu ────────────────────────────────────────────────────
 
 function FilterKeySubmenu<TData>({
   filterColumn,
@@ -358,8 +370,6 @@ function FilterKeySubmenu<TData>({
       return null;
   }
 }
-
-// ── ActiveFilter (segmented pill) ──────────────────────────────────────
 
 type ActiveFilterProps<TData> = {
   filter: FilterModel;
@@ -401,8 +411,6 @@ function ActiveFilter<TData>({
 }
 ActiveFilter.displayName = 'ActiveFilter';
 
-// ── FilterSubject ──────────────────────────────────────────────────────
-
 function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
   return (
     <span className="flex select-none items-center gap-1 whitespace-nowrap px-2 font-medium opacity-75">
@@ -412,8 +420,6 @@ function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
   );
 }
 FilterSubject.displayName = 'FilterSubject';
-
-// ── FilterOperator ─────────────────────────────────────────────────────
 
 type FilterOperatorProps = {
   filter: FilterModel;
@@ -430,14 +436,16 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
-          variant="ghost"
-        >
-          <span className="opacity-80">{filter.operator}</span>
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+            variant="ghost"
+          >
+            <span className="opacity-80">{filter.operator}</span>
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-fit p-0">
         <Command loop>
           <CommandList className="max-h-fit">
@@ -463,8 +471,6 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
 }
 FilterOperator.displayName = 'FilterOperator';
 
-// ── FilterValue ────────────────────────────────────────────────────────
-
 type FilterValueProps<TData> = {
   filter: FilterModel;
   filterColumn: FilterColumnConfig;
@@ -480,14 +486,16 @@ const FilterValue = memo(function FilterValueImpl<TData>({
 }: FilterValueProps<TData>) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
-          variant="ghost"
-        >
-          <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+            variant="ghost"
+          >
+            <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
+          </Button>
+        }
+      />
       <PopoverContent align="start" className="w-fit p-0" side="bottom">
         <FilterValueController actions={actions} filter={filter} filterColumn={filterColumn} table={table} />
       </PopoverContent>
@@ -495,8 +503,6 @@ const FilterValue = memo(function FilterValueImpl<TData>({
   );
 }) as <TData>(props: FilterValueProps<TData>) => React.ReactElement;
 (FilterValue as { displayName?: string }).displayName = 'FilterValue';
-
-// ── FilterValueDisplay ─────────────────────────────────────────────────
 
 function FilterValueDisplay({ filter, filterColumn }: { filter: FilterModel; filterColumn: FilterColumnConfig }) {
   if (filter.values.length === 0) {
@@ -548,7 +554,8 @@ function OptionValueDisplay({
             if (!icon) {
               return null;
             }
-            return renderIcon(icon, 'size-4') ?? <span key={value} />;
+            const el = renderIcon(icon, 'size-4');
+            return el ? <span key={value}>{el}</span> : <span key={value} />;
           })
         : null}
       <span className={cn(hasIcons ? 'ml-1.5' : undefined)}>
@@ -557,8 +564,6 @@ function OptionValueDisplay({
     </div>
   );
 }
-
-// ── FilterValueController ──────────────────────────────────────────────
 
 function FilterValueController<TData>({
   filter,
@@ -596,8 +601,6 @@ function FilterValueController<TData>({
       return null;
   }
 }
-
-// ── TextValueController ────────────────────────────────────────────────
 
 function TextValueController({
   columnId,
@@ -637,26 +640,32 @@ function TextValueController({
   );
 }
 
-// ── OptionValueController ──────────────────────────────────────────────
-
 type OptionItemProps = {
   option: FilterOption & { selected: boolean; count?: number };
   onToggle: (value: string, checked: boolean) => void;
+  singleMode?: boolean;
 };
 
-const OptionItem = memo(function OptionItemImpl({ option, onToggle }: OptionItemProps) {
+const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }: OptionItemProps) {
   const { value, label, icon: ItemIcon, selected, count } = option;
 
   const handleSelect = useCallback(() => {
+    if (singleMode && selected) {
+      return;
+    }
     onToggle(value, !selected);
-  }, [onToggle, value, selected]);
+  }, [onToggle, value, selected, singleMode]);
 
   return (
     <CommandItem className="group flex items-center gap-1.5" onSelect={handleSelect}>
-      <Checkbox
-        checked={selected}
-        className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
-      />
+      {singleMode ? (
+        <RadioIndicator checked={selected} />
+      ) : (
+        <Checkbox
+          checked={selected}
+          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+        />
+      )}
       {ItemIcon ? renderIcon(ItemIcon, 'size-4 text-primary') : null}
       <span>
         {label}
@@ -689,6 +698,7 @@ function OptionValueController<TData>({
   actions: DataTableFilterActions;
   table?: Table<TData>;
 }) {
+  const singleMode = filterColumn.type === 'option' && filterColumn.mode === 'single';
   const baseOptions = filterColumn.options ?? [];
   const facetedCounts = table?.getColumn(columnId)?.getFacetedUniqueValues();
 
@@ -704,13 +714,15 @@ function OptionValueController<TData>({
 
   const handleToggle = useCallback(
     (val: string, checked: boolean) => {
-      if (checked) {
+      if (singleMode && checked) {
+        actions.setFilterValues(columnId, [val]);
+      } else if (checked) {
         actions.addFilterValue(columnId, val);
       } else {
         actions.removeFilterValue(columnId, val);
       }
     },
-    [actions, columnId]
+    [actions, columnId, singleMode]
   );
 
   return (
@@ -720,15 +732,13 @@ function OptionValueController<TData>({
       <CommandList className="max-h-fit">
         <CommandGroup>
           {enrichedOptions.map((option) => (
-            <OptionItem key={option.value} onToggle={handleToggle} option={option} />
+            <OptionItem key={option.value} onToggle={handleToggle} option={option} singleMode={singleMode} />
           ))}
         </CommandGroup>
       </CommandList>
     </Command>
   );
 }
-
-// ── FilterActions ──────────────────────────────────────────────────────
 
 const FilterActions = memo(function FilterActionsImpl({
   hasFilters,

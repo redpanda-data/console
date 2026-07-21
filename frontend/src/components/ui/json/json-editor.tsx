@@ -1,4 +1,3 @@
-import { Text } from 'components/redpanda-ui/components/typography';
 import Prism from 'prismjs';
 import { useEffect, useState } from 'react';
 import Editor from 'react-simple-code-editor';
@@ -29,7 +28,7 @@ export const JSONEditor = ({ value, onChange, error: externalError }: JSONEditor
 
   return (
     <div className="relative">
-      <div className={`rounded-md border ${displayError ? 'border-red-500' : 'border-gray-200 dark:border-gray-800'}`}>
+      <div className={`rounded-md border ${displayError ? 'border-outline-error' : 'border-gray-200 dark:border-gray-800'}`}>
         <Editor
           className="w-full"
           highlight={(code) => Prism.highlight(code, Prism.languages.json, 'json')}
@@ -45,9 +44,9 @@ export const JSONEditor = ({ value, onChange, error: externalError }: JSONEditor
         />
       </div>
       {displayError && (
-        <Text className="mt-1 text-red-500" variant="small">
+        <div className="text-body-sm mt-1 text-error">
           {displayError}
-        </Text>
+        </div>
       )}
     </div>
   );

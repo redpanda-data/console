@@ -10,8 +10,18 @@
  */
 
 import { render, screen } from '@testing-library/react';
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
+import { vi } from 'vitest';
 
 import AclList from './acl-list';
+
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return { ...actual, useLocation: () => ({ searchStr: '' }) };
+});
+
+const renderWithAdapter = (ui: React.ReactElement) => render(<NuqsTestingAdapter>{ui}</NuqsTestingAdapter>);
+
 import type {
   AclStrOperation,
   AclStrPermission,
@@ -26,7 +36,7 @@ describe('AclList', () => {
       aclResources: [],
     };
 
-    render(<AclList acl={store} />);
+    renderWithAdapter(<AclList acl={store} />);
     expect(screen.getByText('No data found')).toBeInTheDocument();
   });
 
@@ -50,7 +60,7 @@ describe('AclList', () => {
       ],
     } as GetAclOverviewResponse;
 
-    render(<AclList acl={store} />);
+    renderWithAdapter(<AclList acl={store} />);
 
     expect(screen.getByText('Topic')).toBeInTheDocument();
     expect(screen.getByText('Test Topic')).toBeInTheDocument();
@@ -60,7 +70,7 @@ describe('AclList', () => {
   });
 
   test('informs user about missing permission to view ACLs', () => {
-    render(<AclList acl={null} />);
+    renderWithAdapter(<AclList acl={null} />);
     expect(screen.getByText('You do not have the necessary permissions to view ACLs')).toBeInTheDocument();
   });
 
@@ -70,7 +80,7 @@ describe('AclList', () => {
       aclResources: [],
     };
 
-    render(<AclList acl={store} />);
+    renderWithAdapter(<AclList acl={store} />);
     expect(screen.getByText("There's no authorizer configured in your Kafka cluster")).toBeInTheDocument();
   });
 });

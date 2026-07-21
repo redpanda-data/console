@@ -111,7 +111,15 @@ export type TopicSettingsStore = {
   clearAllSettings: () => void;
 };
 
-const DEFAULT_SORTING: SortingState = [];
+// Default display order for the message list: newest-first by timestamp, with
+// offset descending as a cross-partition tiebreak (offset isn't global across
+// partitions, so timestamp is the primary key). The backend's listMessages
+// stream isn't globally timestamp-sorted across partitions, so this default
+// drives the table's client-side sort to give users a sensible newest-first view.
+export const DEFAULT_SORTING: SortingState = [
+  { id: 'timestamp', desc: true },
+  { id: 'offset', desc: true },
+];
 
 const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   offsetOrigin: -1,
@@ -156,6 +164,15 @@ const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicS
   quickSearch: '',
   ...overrides,
 });
+
+/**
+ * Cap on retained per-topic settings. This persisted store appends one entry per distinct topic
+ * that gets any setting changed (sort, preview, …) and the persist middleware serializes the whole
+ * array, so a long session touching many topics would grow heap + storage without bound. Oldest-added
+ * entries are dropped first (FIFO; a dropped topic re-creates defaults on next access). Mirrors the
+ * cap on the `setCurrentTopicName` path in `state/ui-state.ts`.
+ */
+export const MAX_PER_TOPIC_SETTINGS = 200;
 
 /**
  * Subscribe to Zustand store changes and sync them to the legacy MobX uiSettings store.
@@ -205,7 +222,11 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 
         getSorting: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-          return topic?.searchParams.sorting ?? DEFAULT_SORTING;
+          const sorting = topic?.searchParams.sorting;
+          // Treat an empty/unset sort as "use the newest-first default" so the
+          // default applies on every fresh load, including returning users whose
+          // persisted settings still hold the old empty sort.
+          return sorting && sorting.length > 0 ? sorting : DEFAULT_SORTING;
         },
 
         setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => {
@@ -449,3 +470,14 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 // This ensures that changes made via Zustand are also reflected in the legacy MobX store
 // and persisted by MobX's autorun mechanism
 useTopicSettingsStore.subscribe(syncPerTopicSettingsToMobX);
+
+// Enforce the perTopicSettings cap on every change. Registered after the MobX sync so that the
+// sync re-run (triggered by this trim's setState) ends up mirroring the trimmed array. The length
+// guard makes the re-entrant setState terminate immediately (the trimmed array is within the cap).
+useTopicSettingsStore.subscribe((state) => {
+  if (state.perTopicSettings.length > MAX_PER_TOPIC_SETTINGS) {
+    useTopicSettingsStore.setState({
+      perTopicSettings: state.perTopicSettings.slice(-MAX_PER_TOPIC_SETTINGS),
+    });
+  }
+});

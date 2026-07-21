@@ -16,7 +16,7 @@ const ListLayout = React.forwardRef<HTMLDivElement, ListLayoutProps>(
   ({ className, orientation = 'vertical', testId, ...props }, ref) => (
     <ListLayoutContext.Provider value={{ orientation }}>
       <div
-        className={cn('flex min-h-screen w-full flex-col gap-4 p-4 sm:gap-6 sm:p-6', className)}
+        className={cn('flex min-h-screen w-full flex-col gap-4 sm:gap-6', className)}
         data-testid={testId}
         ref={ref}
         {...props}
@@ -36,7 +36,7 @@ const ListLayoutHeader = React.forwardRef<HTMLDivElement, ListLayoutHeaderProps>
   ({ className, title, description, actions, ...props }, ref) => (
     <div className={cn('flex flex-col gap-2', className)} ref={ref} {...props}>
       <div className="flex items-center gap-2">
-        <h1 className="font-semibold text-foreground text-xl sm:text-2xl">{title}</h1>
+        <h1 className="text-foreground text-heading-lg sm:text-heading-xl">{title}</h1>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>
       {description ? <p className="text-muted-foreground text-sm sm:text-base">{description}</p> : null}

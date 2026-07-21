@@ -121,16 +121,15 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Wait for error state
+    // RTL's waitFor batches state updates in act(); vi.waitFor does not,
+    // so the second-page error triggers "not wrapped in act" on TestComponent.
     await waitFor(
       () => {
         expect(result.current.isFetching).toBe(false);
+        expect(callCount).toBe(2);
       },
-      { timeout: 5000 }
+      { timeout: 2000, interval: 50 }
     );
-
-    // Give time to ensure no infinite loop (would cause many more calls)
-    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Should have called API exactly twice: first page success, second page error
     // If there's an infinite loop, callCount would be much higher
@@ -173,8 +172,11 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Wait a bit to ensure no calls are made
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Flush microtasks + one macrotask so a would-be fetch has a chance to run.
+    // Avoids a hard setTimeout(r, 500) that both wastes wall time and leaks into
+    // react-query's gcTime cleanup path.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(callCount).toBe(0);
   });

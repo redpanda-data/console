@@ -10,7 +10,7 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen } from 'test-utils';
 
 vi.mock('config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('config')>();
@@ -24,22 +24,24 @@ vi.mock('config', async (importOriginal) => {
 
 import { KnowledgeBaseDocumentList, type RetrievalResult } from './knowledge-base-document-list';
 
+// Hoisted once — 25 rows = 3 pages at the component's hard-coded pageSize of 10.
+const PAGINATION_RESULTS_FIXTURE: RetrievalResult[] = Array.from({ length: 25 }, (_, index) => ({
+  score: 0.9 - index * 0.01,
+  document_name: `Document ${index + 1}`,
+  chunk_id: `chunk-${index + 1}`,
+  topic: `topic-${index + 1}`,
+  text: `Content ${index + 1}`,
+}));
+
 describe('KnowledgeBaseDocumentList', () => {
   test('should update pagination footer and disable next button on the last page', async () => {
     const user = userEvent.setup();
-    const results: RetrievalResult[] = Array.from({ length: 25 }, (_, index) => ({
-      score: 0.9 - index * 0.01,
-      document_name: `Document ${index + 1}`,
-      chunk_id: `chunk-${index + 1}`,
-      topic: `topic-${index + 1}`,
-      text: `Content ${index + 1}`,
-    }));
 
-    renderWithFileRoutes(<KnowledgeBaseDocumentList isLoading={false} knowledgebaseId="kb-1" results={results} />);
+    renderWithFileRoutes(
+      <KnowledgeBaseDocumentList isLoading={false} knowledgebaseId="kb-1" results={PAGINATION_RESULTS_FIXTURE} />
+    );
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 1 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 1 of 3')).toBeVisible();
 
     const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
     const nextButton = screen.getByRole('button', { name: 'Go to next page' });
@@ -49,17 +51,13 @@ describe('KnowledgeBaseDocumentList', () => {
 
     await user.click(nextButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 2 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 2 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('Page 3 of 3')).toBeVisible();
-    });
+    expect(await screen.findByText('Page 3 of 3')).toBeVisible();
 
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
   });

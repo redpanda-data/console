@@ -22,7 +22,6 @@ import {
   Button,
   Checkbox,
   ConfirmModal,
-  DateTimeInput,
   Flex,
   FormField,
   Grid,
@@ -35,6 +34,7 @@ import {
   Text,
 } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
+import { DateTimeInput } from 'components/ui/date-time-input';
 
 import {
   type CreateDebugBundleRequest,
@@ -466,7 +466,7 @@ const NewDebugBundleForm: FC<{
             />
           </FormField>
           <FormField
-            description="Read the logs until the given size is reached (e.g. 3MB, 1GB). Default 100MB."
+            description="Read the logs until the given size is reached (for example, 3MB, 1GB). Default 100MB."
             errorText={fieldViolationsMap?.logsSizeLimitBytes}
             isInvalid={!!fieldViolationsMap?.logsSizeLimitBytes}
             label="Logs size limit"

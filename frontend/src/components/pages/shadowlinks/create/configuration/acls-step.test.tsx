@@ -10,10 +10,11 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { useForm } from 'react-hook-form';
-import { fireEvent, render, screen, waitFor, within } from 'test-utils';
+import { render, screen, waitFor, within } from 'test-utils';
 
 import { AclsStep } from './acls-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
@@ -38,6 +39,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 describe('AclsStep', () => {
   describe('Adding ACL filters', () => {
     test('should add new ACL filter with default values that match allow all', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         aclsMode: 'specify',
@@ -58,14 +60,9 @@ describe('AclsStep', () => {
 
       // Need to open the collapsible to see the editable filters
       const toggleButton = screen.getByTestId('acls-toggle-button');
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
-      });
-
-      // Verify default values match "allow all" pattern
-      const filter0 = screen.getByTestId('acl-filter-0');
+      const filter0 = await screen.findByTestId('acl-filter-0');
 
       // Check that the resource type field has "Any" selected (ACL_RESOURCE_ANY = 0)
       const resourceTypeField = within(filter0).getByTestId('acl-filter-0-resource-type');
@@ -74,6 +71,7 @@ describe('AclsStep', () => {
     });
 
     test('should create multiple ACL filters', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         aclsMode: 'specify',
@@ -94,19 +92,15 @@ describe('AclsStep', () => {
 
       // Need to open the collapsible to see the editable filters
       const toggleButton = screen.getByTestId('acls-toggle-button');
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
-      });
+      expect(await screen.findByTestId('acl-filter-0')).toBeInTheDocument();
 
       // Add second filter
       const addButton = screen.getByTestId('add-acl-filter-button');
-      fireEvent.click(addButton);
+      await user.click(addButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('acl-filter-1')).toBeInTheDocument();
-      });
+      expect(await screen.findByTestId('acl-filter-1')).toBeInTheDocument();
 
       // Verify both filters exist
       expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
@@ -116,6 +110,7 @@ describe('AclsStep', () => {
 
   describe('Deleting ACL filters', () => {
     test('should delete ACL filters', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         aclsMode: 'specify',
@@ -145,23 +140,20 @@ describe('AclsStep', () => {
 
       // Need to open the collapsible to see the editable filters
       const toggleButton = screen.getByTestId('acls-toggle-button');
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
 
-      await waitFor(() => {
-        expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
-        expect(screen.getByTestId('acl-filter-1')).toBeInTheDocument();
-      });
+      expect(await screen.findByTestId('acl-filter-0')).toBeInTheDocument();
+      expect(screen.getByTestId('acl-filter-1')).toBeInTheDocument();
 
       // Delete the first filter
       const deleteButton = screen.getByTestId('delete-acl-filter-0');
-      fireEvent.click(deleteButton);
+      await user.click(deleteButton);
 
       await waitFor(() => {
-        // The second filter should now be at index 0
-        expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
-        // The old filter at index 1 should not exist anymore
+        // The old filter at index 1 should not exist anymore once deletion settles.
         expect(screen.queryByTestId('acl-filter-1')).not.toBeInTheDocument();
       });
+      expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
 
       // Verify only one filter remains
       expect(screen.getAllByTestId(ACL_FILTER_PATTERN)).toHaveLength(1);

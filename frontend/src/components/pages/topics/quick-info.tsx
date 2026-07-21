@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
@@ -16,7 +17,6 @@ import { InfoIcon } from 'components/icons';
 import type { ReactNode } from 'react';
 
 import type { CleanupPolicyType } from './types';
-import { useTopicConfigQuery, useTopicPartitionsQuery } from '../../../react-query/api/topic';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
 import { numberToThousandsString } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
@@ -27,23 +27,21 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
   // Messages
-  const { data: partitionsResult, isLoading: partitionsLoading } = useTopicPartitionsQuery(topic.topicName);
+  const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
 
   let messageSum: ReactNode;
 
-  if (partitionsLoading) {
+  if (partitions === undefined) {
     messageSum = '...'; // no response yet
-  } else if (partitionsResult?.partitions === null) {
+  } else if (partitions === null) {
     messageSum = 'N/A'; // explicit null -> not allowed
   } else {
-    const partitions = partitionsResult?.partitions ?? [];
     const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
     messageSum = numberToThousandsString(totalMessages);
   }
 
   // Config Entries / Separator
-  const { data: topicConfigData } = useTopicConfigQuery(topic.topicName);
-  const configEntries = topicConfigData?.configEntries;
+  const configEntries = useApiStoreHook((s) => s.topicConfig.get(topic.topicName))?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
 
@@ -121,27 +119,30 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
           </>
         )}
 
-        {cleanupPolicy === 'delete' && (
+        {cleanupPolicy === 'delete' && retentionMs && retentionBytes && (
           <>
-            <Text as="dt" fontWeight="bold">
-              Retention:
-            </Text>
-            {retentionMs && retentionBytes ? (
-              <Text as="dd">
-                ~
-                {retentionMs.value === '-1' && retentionBytes.value === '-1' ? (
-                  'Unlimited'
-                ) : (
-                  <>
-                    {formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')} or{' '}
-                    {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
-                    {Number.isFinite(Number(retentionBytes.value)) &&
-                      Number(retentionBytes.value) !== -1 &&
-                      ' / partition'}
-                  </>
-                )}
+            <Flex gap={2}>
+              <Text as="dt" fontWeight="bold">
+                Retention Time:
               </Text>
-            ) : null}
+              <Text as="dd">
+                {retentionMs.value !== '-1' && '~'}
+                {formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')}
+              </Text>
+            </Flex>
+            <Box>
+              <Divider orientation="vertical" />
+            </Box>
+            <Flex gap={2}>
+              <Text as="dt" fontWeight="bold">
+                Retention Size:
+              </Text>
+              <Text as="dd">
+                {retentionBytes.value !== '-1' && '~'}
+                {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
+                {Number.isFinite(Number(retentionBytes.value)) && Number(retentionBytes.value) !== -1 && ' / partition'}
+              </Text>
+            </Flex>
           </>
         )}
       </Flex>

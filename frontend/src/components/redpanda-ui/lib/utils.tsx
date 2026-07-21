@@ -1,10 +1,37 @@
 import { cva } from 'class-variance-authority';
-import { type ClassValue, clsx } from 'clsx';
+import { type ClassValue, clsx, twMerge as twMergeFast } from 'cnfast';
 import React from 'react';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
 
+// The custom text-* utilities defined in theme.css. Stock tailwind-merge (and
+// cnfast, which is byte-identical) doesn't know them, so it buckets them as
+// text-COLOR classes — `cn('text-body', 'text-muted-foreground')` would
+// silently drop `text-body`. Keep this list in sync with theme.css.
+const THEME_TEXT_UTILITY = /\btext-(?:body(?:-sm)?|label|caption|lead|heading-(?:xl|lg|md|sm|xs))\b/;
+
+// tailwind-merge configured to treat the theme's text-* utilities as
+// font-size classes: they conflict with each other and with Tailwind's
+// `text-sm`…`text-9xl`, while weight/leading/color still compose.
+const twMergeTheme = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [
+        { text: ['body', 'body-sm', 'label', 'caption', 'lead', { heading: ['xl', 'lg', 'md', 'sm', 'xs'] }] },
+      ],
+    },
+  },
+});
+
+/**
+ * Merge class names. Class lists that reference one of the theme's custom
+ * text-* utilities go through a tailwind-merge configured to understand them;
+ * everything else keeps cnfast's fast path (see PR #220). Keeps the original
+ * `(...inputs: ClassValue[])` signature, so every consumer call site is
+ * unaffected.
+ */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  const joined = clsx(...inputs);
+  return THEME_TEXT_UTILITY.test(joined) ? twMergeTheme(joined) : twMergeFast.mergeString(joined);
 }
 
 export function wrapStringChild(
@@ -58,9 +85,18 @@ export type ModalRootProps = PortalRootProps & {
  * These props control auto-focus behavior when content opens/closes.
  */
 export type FocusScopeContentProps = {
-  /** Callback to prevent auto-focus when content opens (passed to Radix primitive) */
+  /**
+   * @deprecated Radix-compat shim. Base UI primitives do not expose an
+   * `onOpenAutoFocus` hook; the callback is ignored at runtime and will emit
+   * a dev-mode warning. Use `initialFocus` on the underlying Base UI `Popup`
+   * (or equivalent) instead. Scheduled for removal in a future major.
+   */
   onOpenAutoFocus?: (event: Event) => void;
-  /** Callback to control focus when content closes */
+  /**
+   * @deprecated Radix-compat shim. Base UI primitives do not expose an
+   * `onCloseAutoFocus` hook; handle close-focus in a `ref` callback or
+   * `onOpenChange` handler instead. Scheduled for removal in a future major.
+   */
   onCloseAutoFocus?: (event: Event) => void;
 };
 
@@ -70,7 +106,7 @@ export type FocusScopeContentProps = {
  */
 export type PortalContentProps = FocusScopeContentProps & {
   /** Container element for inline rendering (no portal to body) */
-  container?: Element;
+  container?: HTMLElement;
 };
 
 /**

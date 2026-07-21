@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write  # OIDC to assume AWS role for Secrets Manager
 
 jobs:
   proto-generate:
@@ -21,7 +22,18 @@ jobs:
     env:
       CI: "true"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ vars.RP_AWS_CRED_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
+
+      - uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        with:
+          secret-ids: |
+            ,sdlc/prod/github/buf_token
+          parse-json-secrets: true
 
       - uses: actions/setup-go@v6
         with:
@@ -29,18 +41,20 @@ jobs:
           cache-dependency-path: 'backend/go.sum'
 
       - name: Install Task
-        uses: arduino/setup-task@v1
+        uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache proto tools
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build
           key: proto-tools-${{ runner.os }}-go${{ hashFiles('backend/go.mod') }}-${{ hashFiles('taskfiles/proto.yaml') }}
 
+      - name: Download Go modules
+        run: go mod download
+        working-directory: backend
+
       - name: Generate protos
-        env:
-          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
         run: task proto:generate

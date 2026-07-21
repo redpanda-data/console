@@ -10,10 +10,11 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useForm } from 'react-hook-form';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 import { ConsumerOffsetStep } from './consumer-offset-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
@@ -38,6 +39,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 describe('ConsumerOffsetStep', () => {
   describe('Filter type options', () => {
     test('should show all filter type options when in specify consumer groups mode', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         consumersMode: 'specify',
@@ -54,7 +56,7 @@ describe('ConsumerOffsetStep', () => {
 
       // Need to open the collapsible to see the editable filters
       const toggleButton = screen.getByTestId('consumers-toggle-button');
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
@@ -76,6 +78,7 @@ describe('ConsumerOffsetStep', () => {
 
   describe('Multiple filters', () => {
     test('should create multiple consumer filters', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         consumersMode: 'specify',
@@ -92,7 +95,7 @@ describe('ConsumerOffsetStep', () => {
 
       // Need to open the collapsible to see the editable filters
       const toggleButton = screen.getByTestId('consumers-toggle-button');
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
@@ -100,7 +103,7 @@ describe('ConsumerOffsetStep', () => {
 
       // Add second filter
       const addButton = screen.getByTestId('add-consumer-filter-button');
-      fireEvent.click(addButton);
+      await user.click(addButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('consumer-filter-1')).toBeInTheDocument();
@@ -114,6 +117,7 @@ describe('ConsumerOffsetStep', () => {
 
   describe('Deleting filters', () => {
     test('should delete consumer filters', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         consumersMode: 'specify',
@@ -135,7 +139,7 @@ describe('ConsumerOffsetStep', () => {
 
       // Need to open the collapsible to see the editable filters
       const toggleButton = screen.getByTestId('consumers-toggle-button');
-      fireEvent.click(toggleButton);
+      await user.click(toggleButton);
 
       await waitFor(() => {
         expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
@@ -144,7 +148,7 @@ describe('ConsumerOffsetStep', () => {
 
       // Delete the first filter
       const deleteButton = screen.getByTestId('consumer-filter-0-delete');
-      fireEvent.click(deleteButton);
+      await user.click(deleteButton);
 
       await waitFor(() => {
         // The second filter should now be at index 0

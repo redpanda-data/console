@@ -1,14 +1,37 @@
-@source "../node_modules/streamdown/dist/index.js";
-
 @import "./components/redpanda-ui/style/theme.css";
 @import "tailwindcss";
 @import "tw-animate-css";
+
+@source "../node_modules/streamdown/dist/index.js";
 
 /* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
    which collides with Monaco's internal .monaco-hover.fade-in class,
    forcing hover widgets to be invisible. Override to restore opacity. */
 .monaco-hover.fade-in {
   opacity: 1;
+}
+
+/* Tailwind v4's Preflight sets `border: 0 solid` on every element, which
+   leaves border-color defaulting to currentColor. Legacy Chakra components
+   were authored against v3's transparent default, so any Chakra node that
+   sets a border width without an explicit color now paints visibly.
+   Scope the reset to Chakra's own `chakra-*` class prefix so Registry
+   components rendered alongside (or inside) Chakra are unaffected. */
+@layer base {
+  [class*="chakra-"],
+  [class*="chakra-"]::before,
+  [class*="chakra-"]::after {
+    border-color: transparent;
+  }
+}
+
+/* Chakra (@redpanda-data/ui) resets every element's border-color via an unlayered
+   `*` rule reading this var; in dark mode it stays light and leaks onto bare-border
+   dividers. This selector out-specifies Chakra's `:root[data-theme="light"]` (0,2,0)
+   so our dark token wins on specificity alone. Lives here (app entry CSS) rather
+   than the registry-synced theme.css so it survives registry re-syncs. (UX-1259) */
+:root[data-theme].dark {
+  --chakra-colors-chakra-border-color: var(--color-border);
 }
 
 @media (prefers-reduced-motion: reduce) {

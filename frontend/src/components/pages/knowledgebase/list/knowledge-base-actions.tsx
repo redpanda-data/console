@@ -16,8 +16,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
+import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { MoreHorizontal } from 'lucide-react';
+import React from 'react';
 import { toast } from 'sonner';
 
 import type { KnowledgeBaseTableRow } from './knowledge-base-list-page';
@@ -33,6 +34,8 @@ export const KnowledgeBaseActionsCell = ({
   onDelete,
   isDeletingKnowledgeBase,
 }: KnowledgeBaseActionsCellProps) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+
   const handleCopySuccess = () => {
     toast.success('Retrieval API URL copied to clipboard');
   };
@@ -44,12 +47,14 @@ export const KnowledgeBaseActionsCell = ({
   return (
     <div data-actions-column>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="h-8 w-8 data-[state=open]:bg-muted" size="icon" variant="ghost">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button className="h-8 w-8 data-[popup-open]:bg-muted" size="icon" variant="ghost">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          }
+        />
         <DropdownMenuContent align="end" className="w-[200px]">
           <CopyButton
             className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
@@ -60,15 +65,18 @@ export const KnowledgeBaseActionsCell = ({
             Copy URL
           </CopyButton>
           <DropdownMenuSeparator />
-          <DeleteResourceAlertDialog
-            isDeleting={isDeletingKnowledgeBase}
-            onDelete={handleDelete}
-            resourceId={knowledgeBase.id}
-            resourceName={knowledgeBase.displayName}
-            resourceType="Knowledge Base"
-          />
+          <DeleteResourceMenuItem isDeleting={isDeletingKnowledgeBase} onSelect={() => setIsDeleteDialogOpen(true)} />
         </DropdownMenuContent>
       </DropdownMenu>
+      <DeleteResourceAlertDialog
+        isDeleting={isDeletingKnowledgeBase}
+        onDelete={handleDelete}
+        onOpenChange={setIsDeleteDialogOpen}
+        open={isDeleteDialogOpen}
+        resourceId={knowledgeBase.id}
+        resourceName={knowledgeBase.displayName}
+        resourceType="Knowledge Base"
+      />
     </div>
   );
 };

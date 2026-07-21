@@ -1,0 +1,42 @@
+input:
+  postgres_cdc:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    dsn: ${slot.dsn}
+    schema: public                         # change if your tables aren't in 'public'
+    slot_name: ${slot.slotName}
+    tables:
+      - ${slot.includedTable}
+
+    # ── Snapshot of existing rows before streaming changes ──────────────────
+    stream_snapshot: true                  # capture current rows on first run
+    # snapshot_batch_size: 0               # 0 = let the connector pick a safe size
+    # snapshot_memory_safety_factor: 0
+    # max_parallel_snapshot_tables: 0
+
+    # ── Replication tuning ──────────────────────────────────────────────────
+    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # temporary_slot: false                # set true if you don't need durable slots
+    # pg_standby_timeout: 10s
+    # pg_wal_monitor_interval: 3s
+
+    # ── Transaction markers (most users leave these off) ────────────────────
+    # include_transaction_markers: false
+
+    # ── Error handling ──────────────────────────────────────────────────────
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda:
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${slot.targetTopic}
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true
+
+    # ── Optional knobs ──────────────────────────────────────────────────────
+    # key: ${! json("table") }            # partition by source table
+    # partitioner: murmur2_hash
+    # timeout: 10s

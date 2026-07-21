@@ -12,7 +12,6 @@
 import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
-import { Text } from 'components/redpanda-ui/components/typography';
 import type { CSSProperties } from 'react';
 
 import type { UnifiedShadowLink } from '../model';
@@ -27,9 +26,9 @@ const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
       <ItemTitle>Source cluster</ItemTitle>
       <div className="flex flex-col gap-1 text-muted-foreground text-xs">
         {data.brokers.map((broker) => (
-          <Text className="max-w-[240px] truncate" key={broker} variant={'muted'}>
+          <div className="max-w-[240px] truncate text-body text-muted-foreground" key={broker}>
             {broker}
-          </Text>
+          </div>
         ))}
       </div>
     </ItemContent>
@@ -43,7 +42,7 @@ const ShadowClusterNode = () => (
     <ItemContent>
       <ItemTitle>Shadow cluster</ItemTitle>
       <div className="text-muted-foreground text-xs">
-        <Text variant={'muted'}>This cluster </Text>
+        <div className="text-body text-muted-foreground">This cluster </div>
       </div>
     </ItemContent>
   </Item>

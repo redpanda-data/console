@@ -127,14 +127,15 @@ describe('DetailsDialog', () => {
     expect(screen.getByText('my-topic')).toBeInTheDocument();
   });
 
-  it('renders delete button when onDelete provided', () => {
-    renderDetailsDialog({ isDeleting: false, onDelete: vi.fn(), pipeline: createPipeline() });
-    expect(screen.getByText('Delete')).toBeInTheDocument();
+  it('renders the Danger Zone section when onRequestDelete is provided', () => {
+    renderDetailsDialog({ onRequestDelete: vi.fn(), pipeline: createPipeline() });
+    expect(screen.getByText('Danger zone')).toBeInTheDocument();
+    expect(screen.getByText('Delete pipeline')).toBeInTheDocument();
   });
 
-  it('does not render delete section when onDelete is undefined', () => {
+  it('does not render the Danger Zone section when onRequestDelete is undefined', () => {
     renderDetailsDialog({ pipeline: createPipeline() });
-    expect(screen.queryByText('Delete')).not.toBeInTheDocument();
     expect(screen.queryByText('Danger zone')).not.toBeInTheDocument();
+    expect(screen.queryByText('Delete pipeline')).not.toBeInTheDocument();
   });
 });

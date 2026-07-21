@@ -15,8 +15,8 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { useFormContext } from 'react-hook-form';
 
 import { AdvancedClientOptions } from '../create/connection/advanced-client-options';
+import { AuthenticationSection } from '../create/connection/authentication-section';
 import { BootstrapServers } from '../create/connection/bootstrap-servers';
-import { ScramConfiguration } from '../create/connection/scram-configuration';
 import type { FormValues } from '../create/model';
 
 export const SourceTab = () => {
@@ -47,8 +47,8 @@ export const SourceTab = () => {
       {/* Source Cluster Connection and TLS */}
       <BootstrapServers />
 
-      {/* SCRAM Credentials */}
-      <ScramConfiguration />
+      {/* Authentication (None / SCRAM / PLAIN) */}
+      <AuthenticationSection />
 
       {/* Advanced Settings */}
       <AdvancedClientOptions />

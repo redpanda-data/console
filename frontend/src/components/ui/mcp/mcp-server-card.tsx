@@ -1,8 +1,7 @@
-import type { MCPServer } from 'react-query/api/remote-mcp';
-import { MCPServer_State } from 'react-query/api/remote-mcp';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { type MCPServer, MCPServerType } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
 import type { HTMLAttributes } from 'react';
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import { pluralizeWithNumber } from 'utils/string';
 
 import { Badge } from '../../redpanda-ui/components/badge';
@@ -30,8 +29,8 @@ export const MCPServerCardList = ({
   idPrefix = 'default',
   ...props
 }: MCPServerCardListProps) => {
-  const handleToggle = (serverId: string) => {
-    const newValue = value.includes(serverId) ? value.filter((id) => id !== serverId) : [...value, serverId];
+  const handleToggle = (serverName: string) => {
+    const newValue = value.includes(serverName) ? value.filter((n) => n !== serverName) : [...value, serverName];
     onValueChange?.(newValue);
   };
 
@@ -39,13 +38,13 @@ export const MCPServerCardList = ({
     <div className={cn('w-full space-y-3', className)} data-testid={testId} {...props}>
       <div className="divide-y rounded-md border">
         {servers.map((server) => {
-          const isSelected = value.includes(server.id);
+          const isSelected = value.includes(server.name);
           return (
             <MCPServerRow
               idPrefix={idPrefix}
               isSelected={isSelected}
-              key={server.id}
-              onToggle={() => handleToggle(server.id)}
+              key={server.name}
+              onToggle={() => handleToggle(server.name)}
               server={server}
               showCheckbox={showCheckbox}
             />
@@ -53,7 +52,7 @@ export const MCPServerCardList = ({
         })}
       </div>
 
-      <AllAvailableTools selectedServerIds={value} servers={servers} />
+      <AllAvailableTools selectedServerNames={value} servers={servers} />
     </div>
   );
 };
@@ -68,16 +67,18 @@ type MCPServerRowProps = {
 
 const MCPServerRow = ({ server, isSelected, onToggle, showCheckbox = true, idPrefix = 'default' }: MCPServerRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const toolNames = Object.keys(server.tools || {});
-  const isDeleted = server.state === MCPServer_State.UNSPECIFIED && server.displayName.includes('(deleted)');
+  const tools = server.tools ?? [];
+  const hasTools = tools.length > 0;
 
   const MAX_VISIBLE_TOOLS = 6;
-  const visibleTools = toolNames.slice(0, MAX_VISIBLE_TOOLS);
-  const remainingCount = toolNames.length - MAX_VISIBLE_TOOLS;
+  const visibleTools = tools.slice(0, MAX_VISIBLE_TOOLS);
+  const remainingCount = tools.length - MAX_VISIBLE_TOOLS;
+
+  const typeLabel = server.type === MCPServerType.MCP_SERVER_TYPE_MANAGED ? 'Managed' : 'Remote';
 
   const rowContent = (
     <div className="flex flex-1 items-center gap-3">
-      {toolNames.length > 0 && (
+      {hasTools ? (
         <Button
           className="h-5 w-5 shrink-0"
           onClick={(e) => {
@@ -90,23 +91,31 @@ const MCPServerRow = ({ server, isSelected, onToggle, showCheckbox = true, idPre
         >
           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Button>
+      ) : (
+        <div className="w-5 shrink-0" />
       )}
-      {toolNames.length === 0 && <div className="w-5 shrink-0" />}
 
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        {isDeleted && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />}
-        <span className={cn('truncate font-medium', isDeleted && 'text-destructive')}>{server.displayName}</span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className={cn('truncate font-medium', !server.enabled && 'text-muted-foreground')}>{server.name}</span>
+        {server.description && <span className="truncate text-muted-foreground text-xs">{server.description}</span>}
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {toolNames.length > 0 && (
-          <Badge variant="secondary" className="text-xs">
-            {pluralizeWithNumber(toolNames.length, 'tool')}
+        <Badge className="text-xs" variant="outline">
+          {typeLabel}
+        </Badge>
+        {hasTools ? (
+          <Badge className="text-xs" variant="secondary">
+            {pluralizeWithNumber(tools.length, 'tool')}
+          </Badge>
+        ) : (
+          <Badge className="text-xs" variant="secondary">
+            Tools discovered on first use
           </Badge>
         )}
-        {isDeleted && (
-          <Badge variant="destructive" className="text-xs">
-            Missing
+        {!server.enabled && (
+          <Badge className="text-xs" variant="destructive">
+            Disabled
           </Badge>
         )}
       </div>
@@ -120,12 +129,12 @@ const MCPServerRow = ({ server, isSelected, onToggle, showCheckbox = true, idPre
           <Checkbox
             checked={isSelected}
             className="shrink-0"
-            id={`mcp-server-${idPrefix}-${server.id}`}
+            id={`mcp-server-${idPrefix}-${server.name}`}
             onCheckedChange={onToggle}
           />
         )}
         {showCheckbox ? (
-          <Label htmlFor={`mcp-server-${idPrefix}-${server.id}`} className="flex flex-1 cursor-pointer items-center">
+          <Label className="flex flex-1 cursor-pointer items-center" htmlFor={`mcp-server-${idPrefix}-${server.name}`}>
             {rowContent}
           </Label>
         ) : (
@@ -133,15 +142,15 @@ const MCPServerRow = ({ server, isSelected, onToggle, showCheckbox = true, idPre
         )}
       </div>
 
-      {isExpanded && toolNames.length > 0 && (
+      {isExpanded && hasTools && (
         <div className="border-t bg-muted/30 px-3 py-2 pl-11">
           <div className="flex flex-wrap gap-1.5">
-            {visibleTools.map((toolName) => (
+            {visibleTools.map((tool) => (
               <span
                 className="inline-flex items-center rounded bg-secondary/10 px-1.5 py-0.5 font-medium text-secondary text-xs"
-                key={toolName}
+                key={tool.name}
               >
-                {toolName}
+                {tool.name}
               </span>
             ))}
             {remainingCount > 0 && (
@@ -158,22 +167,20 @@ const MCPServerRow = ({ server, isSelected, onToggle, showCheckbox = true, idPre
 
 type AllAvailableToolsProps = {
   servers: MCPServer[];
-  selectedServerIds: string[];
+  selectedServerNames: string[];
 };
 
-const AllAvailableTools = ({ servers, selectedServerIds }: AllAvailableToolsProps) => {
+const AllAvailableTools = ({ servers, selectedServerNames }: AllAvailableToolsProps) => {
   const selectedServers = useMemo(
-    () => servers.filter((server) => selectedServerIds.includes(server.id)),
-    [servers, selectedServerIds]
+    () => servers.filter((server) => selectedServerNames.includes(server.name)),
+    [servers, selectedServerNames]
   );
 
-  // Collect all tools from all selected servers
   const allTools = useMemo(() => {
     const toolsSet = new Set<string>();
     for (const server of selectedServers) {
-      const toolNames = Object.keys(server.tools || {});
-      for (const toolName of toolNames) {
-        toolsSet.add(toolName);
+      for (const tool of server.tools ?? []) {
+        toolsSet.add(tool.name);
       }
     }
     return Array.from(toolsSet).sort();

@@ -521,7 +521,6 @@ func (api *API) routes() *chi.Mux {
 		api.Cfg.REST.StripPrefix)
 
 	baseRouter.Use(recoverer.Wrap)
-	baseRouter.Use(chimiddleware.RealIP)
 	baseRouter.Use(basePath.Wrap)
 	baseRouter.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, _ string) bool {
@@ -594,13 +593,6 @@ func (api *API) routes() *chi.Mux {
 
 				// ACLs
 				r.Get("/acls", api.handleGetACLsOverview())
-				r.Post("/acls", api.handleCreateACL())
-				r.Delete("/acls", api.handleDeleteACLs())
-
-				// Kafka Users/Principals
-				r.Get("/users", api.handleGetUsers())
-				r.Post("/users", api.handleCreateUser())
-				r.Delete("/users/{principalID}", api.handleDeleteUser())
 
 				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
@@ -615,9 +607,6 @@ func (api *API) routes() *chi.Mux {
 				r.Patch("/topics/{topicName}/configuration", api.handleEditTopicConfig())
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())
-
-				// Quotas
-				r.Get("/quotas", api.handleGetQuotas())
 
 				// Consumer Groups
 				r.Get("/consumer-groups", api.handleGetConsumerGroups())
@@ -645,6 +634,7 @@ func (api *API) routes() *chi.Mux {
 				r.Delete("/schema-registry/config/{subject}", api.handleDeleteSchemaRegistrySubjectConfig())
 				r.Get("/schema-registry/contexts", api.handleGetSchemaRegistryContexts())
 				r.Get("/schema-registry/subjects", api.handleGetSchemaSubjects())
+				r.Get("/schema-registry/schemas", api.handleGetAllSchemas())
 				r.Get("/schema-registry/schemas/types", api.handleGetSchemaRegistrySchemaTypes())
 				r.Get("/schema-registry/schemas/ids/{id}/versions", api.handleGetSchemaUsagesByID())
 				r.Delete("/schema-registry/subjects/{subject}", api.handleDeleteSubject())

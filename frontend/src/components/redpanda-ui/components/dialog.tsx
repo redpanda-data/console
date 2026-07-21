@@ -1,32 +1,41 @@
+'use client';
+
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import { Dialog as DialogPrimitive } from 'radix-ui';
 import React from 'react';
 
+import { Button } from './button';
+import { useAnimatedAutoHeight } from '../lib/use-animated-auto-height';
+import { useMediaQuery } from '../lib/use-media-query';
 import { usePortalContainer } from '../lib/use-portal-container';
-import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
+import { useScrollShadow } from '../lib/use-scroll-shadow';
+import { cn, type SharedProps } from '../lib/utils';
 
-function Dialog({ testId, ...props }: React.ComponentProps<typeof DialogPrimitive.Root> & SharedProps) {
+type DialogRootProps = DialogPrimitive.Root.Props & SharedProps;
+
+function Dialog({ testId, ...props }: DialogRootProps) {
   return <DialogPrimitive.Root data-slot="dialog" data-testid={testId} {...props} />;
 }
 
-function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+function DialogTrigger({ className, ...props }: DialogPrimitive.Trigger.Props) {
+  return <DialogPrimitive.Trigger className={cn('cursor-pointer', className)} data-slot="dialog-trigger" {...props} />;
 }
 
-function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
-function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+function DialogClose({ className, ...props }: DialogPrimitive.Close.Props) {
+  return <DialogPrimitive.Close className={cn('cursor-pointer', className)} data-slot="dialog-close" {...props} />;
 }
 
-function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
   return (
-    <DialogPrimitive.Overlay
+    <DialogPrimitive.Backdrop
       className={cn(
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/40 backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in',
+        'fixed inset-0 z-50 bg-black/40 backdrop-blur-xs transition-opacity duration-200 ease-out',
+        'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
         className
       )}
       data-slot="dialog-overlay"
@@ -35,35 +44,49 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
   );
 }
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+// `height` is intentionally omitted from the transition list — useAnimatedAutoHeight drives it.
 const dialogContentVariants = cva(
-  'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-xl border bg-background shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in',
+  'fixed top-[50%] left-[50%] z-50 flex w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl border bg-background shadow-lg transition-[opacity,transform,max-height,min-height] duration-200 ease-out data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
   {
     variants: {
       size: {
-        sm: 'gap-3 p-4 sm:max-w-sm',
-        md: 'gap-4 p-6 sm:max-w-lg',
-        lg: 'gap-5 p-8 sm:max-w-2xl',
-        xl: 'gap-6 p-10 sm:max-w-4xl',
-        full: 'gap-4 p-6 sm:max-w-[90vw]',
+        sm: 'sm:max-w-sm',
+        md: 'sm:max-w-lg',
+        lg: 'sm:max-w-2xl',
+        xl: 'sm:max-w-4xl',
+        full: 'sm:max-w-[90vw]',
       },
       variant: {
         standard: '',
         centered: 'text-center',
         destructive: 'border-destructive/50',
       },
+      height: {
+        auto: 'max-h-[85vh]',
+        sm: 'h-[min(85vh,400px)]',
+        md: 'h-[min(85vh,560px)]',
+        lg: 'h-[min(85vh,720px)]',
+        xl: 'h-[min(85vh,880px)]',
+      },
     },
     defaultVariants: {
       size: 'md',
       variant: 'standard',
+      height: 'auto',
     },
   }
 );
 
 interface DialogContentProps
-  extends React.ComponentProps<typeof DialogPrimitive.Content>,
+  extends DialogPrimitive.Popup.Props,
     VariantProps<typeof dialogContentVariants>,
-    SharedProps,
-    Pick<FixedPositionContentProps, 'container' | 'showOverlay' | 'onOpenAutoFocus'> {
+    SharedProps {
+  /** Container element for inline rendering (no portal to body). */
+  container?: HTMLElement;
+  /** When false, hides the overlay/backdrop. Defaults to `true`. */
+  showOverlay?: boolean;
   showCloseButton?: boolean;
 }
 
@@ -74,33 +97,47 @@ function DialogContent({
   showOverlay = true,
   size,
   variant,
+  height,
   testId,
   container,
   ...props
 }: DialogContentProps) {
   const portalContainer = usePortalContainer();
+  // Skip the JS height animation under reduced motion (height snaps instantly).
+  const prefersReducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
+  const isAutoHeight = !height || height === 'auto';
+  const setPopupRef = useAnimatedAutoHeight<HTMLDivElement>(isAutoHeight && !prefersReducedMotion);
   return (
     <DialogPortal container={container ?? portalContainer}>
       {showOverlay ? <DialogOverlay /> : null}
-      <DialogPrimitive.Content
-        className={cn(dialogContentVariants({ size, variant }), className)}
+      <DialogPrimitive.Popup
+        className={cn(dialogContentVariants({ size, variant, height }), className)}
         data-slot="dialog-content"
         data-testid={testId}
+        ref={setPopupRef}
         {...props}
       >
         {children}
         {showCloseButton ? (
-          <DialogPrimitive.Close className="absolute top-4 right-4 rounded-sm p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          <DialogPrimitive.Close
+            render={
+              <Button
+                aria-label="Close"
+                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                size="icon-sm"
+                variant="ghost"
+              >
+                <X />
+              </Button>
+            }
+          />
         ) : null}
-      </DialogPrimitive.Content>
+      </DialogPrimitive.Popup>
     </DialogPortal>
   );
 }
 
-const dialogHeaderVariants = cva('flex flex-col', {
+const dialogHeaderVariants = cva('flex shrink-0 flex-col p-4 [&:has(+[data-slot=dialog-body])]:border-b', {
   variants: {
     align: {
       left: 'text-left',
@@ -127,12 +164,12 @@ function DialogHeader({ className, align, spacing, ...props }: DialogHeaderProps
   );
 }
 
-const dialogFooterVariants = cva('flex', {
+const dialogFooterVariants = cva('flex shrink-0 p-4 [[data-slot=dialog-body]+&]:border-t', {
   variants: {
     direction: {
       column: 'flex-col',
-      row: 'flex-row',
-      responsive: 'flex-col-reverse sm:flex-row',
+      row: 'flex-row items-center',
+      responsive: 'flex-col-reverse sm:flex-row sm:items-center',
     },
     justify: {
       start: 'justify-start',
@@ -153,84 +190,111 @@ const dialogFooterVariants = cva('flex', {
   },
 });
 
-interface DialogFooterProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogFooterVariants> {}
+interface DialogFooterProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogFooterVariants> {
+  /** Render a built-in "Close" button that dismisses the dialog. Defaults to `false`. */
+  showCloseButton?: boolean;
+}
 
-function DialogFooter({ className, direction, justify, gap, ...props }: DialogFooterProps) {
+function DialogFooter({
+  className,
+  direction,
+  justify,
+  gap,
+  showCloseButton = false,
+  children,
+  ...props
+}: DialogFooterProps) {
   return (
     <div
       className={cn(dialogFooterVariants({ direction, justify, gap }), className)}
       data-slot="dialog-footer"
       {...props}
-    />
+    >
+      {children}
+      {showCloseButton ? <DialogPrimitive.Close render={<Button variant="outline">Close</Button>} /> : null}
+    </div>
   );
 }
 
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
-      className={cn('font-semibold text-lg leading-none tracking-tight', className)}
+      className={cn('text-heading-md leading-none', className)}
       data-slot="dialog-title"
       {...props}
     />
   );
 }
 
-function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="dialog-description"
+      // Render as <div> (not Base UI's default <p>) so block-level children don't trigger validateDOMNesting.
+      render={<div />}
       {...props}
     />
   );
 }
 
-// Content layout helpers
-const dialogBodyVariants = cva('', {
+// Padding lives on the inner wrapper so scroll shadows can sit flush against the body edges.
+const dialogBodyContainerVariants = cva('relative min-h-0 flex-1 overflow-y-auto');
+
+const dialogBodyContentVariants = cva('', {
   variants: {
+    padding: {
+      none: '',
+      sm: 'p-2',
+      md: 'p-4',
+      lg: 'p-6',
+    },
     spacing: {
       none: '',
       sm: 'space-y-2',
       md: 'space-y-4',
       lg: 'space-y-6',
     },
-    padding: {
-      none: '',
-      sm: 'py-2',
-      md: 'py-4',
-      lg: 'py-6',
-    },
   },
   defaultVariants: {
-    spacing: 'md',
     padding: 'md',
+    spacing: 'md',
   },
 });
 
-interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyVariants> {}
+const dialogScrollShadow = 'pointer-events-none sticky z-10 h-0 transition-opacity duration-150';
+const dialogScrollShadowState = (visible: boolean) => (visible ? 'opacity-100' : 'opacity-0');
 
-function DialogBody({ className, spacing, padding, ...props }: DialogBodyProps) {
-  return <div className={cn(dialogBodyVariants({ spacing, padding }), className)} data-slot="dialog-body" {...props} />;
+interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyContentVariants> {
+  /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
+  scrollShadow?: boolean;
 }
 
-// Form-specific layout helpers
-const dialogFormVariants = cva('grid gap-4', {
-  variants: {
-    spacing: {
-      tight: 'gap-2',
-      normal: 'gap-4',
-      loose: 'gap-6',
-    },
-  },
-  defaultVariants: {
-    spacing: 'normal',
-  },
-});
+function DialogBody({ className, padding, spacing, scrollShadow = true, children, style, ...props }: DialogBodyProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const edges = useScrollShadow(containerRef, scrollShadow);
 
-interface DialogFormProps extends React.ComponentProps<'form'>, VariantProps<typeof dialogFormVariants> {}
-
-function DialogForm({ className, spacing, ...props }: DialogFormProps) {
-  return <form className={cn(dialogFormVariants({ spacing }), className)} {...props} />;
+  return (
+    <div
+      className={cn(dialogBodyContainerVariants(), className)}
+      data-slot="dialog-body"
+      ref={containerRef}
+      style={style}
+      {...props}
+    >
+      {scrollShadow ? (
+        <div aria-hidden className={cn(dialogScrollShadow, 'top-0', dialogScrollShadowState(edges.start))}>
+          <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+        </div>
+      ) : null}
+      <div className={cn(dialogBodyContentVariants({ padding, spacing }))}>{children}</div>
+      {scrollShadow ? (
+        <div aria-hidden className={cn(dialogScrollShadow, 'bottom-0', dialogScrollShadowState(edges.end))}>
+          <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 const dialogFieldVariants = cva('flex flex-col', {
@@ -264,6 +328,5 @@ export {
   DialogTitle,
   DialogDescription,
   DialogBody,
-  DialogForm,
   DialogField,
 };

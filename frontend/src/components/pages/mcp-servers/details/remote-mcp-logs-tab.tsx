@@ -20,7 +20,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Logs, RefreshCcw } from 'lucide-react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -215,12 +214,12 @@ export const RemoteMCPLogsTab = () => {
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <Logs className="h-4 w-4" />
-          <Text className="font-semibold">Server Logs</Text>
+          <div className="font-semibold text-body">Server Logs</div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <div className="flex flex-col gap-2">
-          <Text variant="muted">Real-time logs from the MCP server.</Text>
+          <div className="text-body text-muted-foreground">Real-time logs from the MCP server.</div>
 
           <div className="mb-6 flex items-center gap-4">
             <Input
@@ -241,7 +240,7 @@ export const RemoteMCPLogsTab = () => {
         <div>
           {(() => {
             if (error) {
-              return <Text className="text-destructive">Error loading logs: {error}</Text>;
+              return <div className="text-body text-destructive">Error loading logs: {error}</div>;
             }
             if (!isComplete && messages.length === 0) {
               return (

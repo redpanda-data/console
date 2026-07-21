@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { useState } from 'react';
 
 import type { uiSettings } from '../../../../state/ui';

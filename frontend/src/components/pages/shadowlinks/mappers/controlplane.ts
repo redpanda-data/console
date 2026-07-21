@@ -16,10 +16,10 @@
 
 import type { ShadowLink as ControlplaneShadowLink } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
-import { type FormValues, TLS_MODE } from '../create/model';
+import { AUTH_METHOD, type FormValues, initialValues, TLS_MODE } from '../create/model';
 import {
   mapControlplaneStateToUnified,
   type UnifiedAuthenticationConfiguration,
@@ -240,33 +240,62 @@ export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedS
  * while the TypeScript types expect authentication.case === 'scramConfiguration'.
  * We handle both formats for robustness.
  */
+type RawScramConfig = { username?: string; password?: string; scramMechanism?: ScramMechanism };
+type RawPlainConfig = { username?: string; password?: string };
+
+const extractRawAuthConfigs = (
+  authConfig: NonNullable<ControlplaneShadowLink['clientOptions']>['authenticationConfiguration'] | undefined
+): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
+  if (!authConfig) {
+    return {};
+  }
+  // The controlplane SDK type does not yet declare plainConfiguration in the oneof, so we widen via cast.
+  const oneof = authConfig.authentication as { case?: string; value?: unknown } | undefined;
+  if (oneof?.case === 'scramConfiguration') {
+    return { scramConfig: oneof.value as RawScramConfig };
+  }
+  if (oneof?.case === 'plainConfiguration') {
+    return { plainConfig: oneof.value as RawPlainConfig };
+  }
+  // Fallback: config sits directly on authConfig (JSON wire format) when response isn't fully deserialized.
+  const raw = authConfig as unknown as {
+    scramConfiguration?: RawScramConfig;
+    plainConfiguration?: RawPlainConfig;
+  };
+  if (raw.scramConfiguration) {
+    return { scramConfig: raw.scramConfiguration };
+  }
+  if (raw.plainConfiguration) {
+    return { plainConfig: raw.plainConfiguration };
+  }
+  return {};
+};
+
 const extractControlplaneAuthSettings = (
   clientOptions: ControlplaneShadowLink['clientOptions']
-): Pick<FormValues, 'useScram' | 'scramCredentials'> => {
-  const authConfig = clientOptions?.authenticationConfiguration;
+): Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'> => {
+  const { scramConfig, plainConfig } = extractRawAuthConfigs(clientOptions?.authenticationConfiguration);
 
-  // Try the proper protobuf-es oneof pattern first
-  let scramConfig =
-    authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
-
-  // Fallback: check if scramConfiguration is directly on authConfig (JSON wire format)
-  // This can happen if the response wasn't fully deserialized through protobuf-es
-  if (!scramConfig && authConfig) {
-    const rawAuthConfig = authConfig as unknown as {
-      scramConfiguration?: { username?: string; password?: string; scramMechanism?: number };
-    };
-    if (rawAuthConfig.scramConfiguration) {
-      scramConfig = rawAuthConfig.scramConfiguration as unknown as typeof scramConfig;
-    }
+  let authMethod: FormValues['authMethod'] = AUTH_METHOD.NONE;
+  if (scramConfig) {
+    authMethod = AUTH_METHOD.SCRAM;
+  } else if (plainConfig) {
+    authMethod = AUTH_METHOD.PLAIN;
   }
 
   return {
-    useScram: Boolean(scramConfig),
+    authMethod,
     scramCredentials: scramConfig
       ? {
           username: scramConfig.username || '',
           password: scramConfig.password || '',
-          mechanism: scramConfig.scramMechanism,
+          mechanism: scramConfig.scramMechanism ?? ScramMechanism.SCRAM_SHA_256,
+        }
+      : undefined,
+    plainCredentials: plainConfig
+      ? {
+          username: plainConfig.username || '',
+          password: plainConfig.password || '',
         }
       : undefined,
   };
@@ -418,12 +447,16 @@ const buildControlplaneACLsValues = (
  */
 const buildControlplaneSchemaRegistryValues = (
   shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync'> => {
+): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> => {
   const schemaRegistrySyncOptions = shadowLink.schemaRegistrySyncOptions;
   const isEnabled = schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
 
   return {
     enableSchemaRegistrySync: isEnabled,
+    // The edit flow only exposes the legacy switch for now; the redesigned section's
+    // fields stay at their defaults. Deep-copy so callers can't mutate the
+    // shared module-level initialValues through the returned reference.
+    schemaRegistry: structuredClone(initialValues.schemaRegistry),
   };
 };
 

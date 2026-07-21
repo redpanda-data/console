@@ -9,8 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Flex, Text } from '@redpanda-data/ui';
-import React from 'react';
+import type React from 'react';
 
 import { MessageSchema } from './message-schema';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
@@ -36,17 +35,13 @@ export const MessageMetaData = (props: { msg: TopicMessage }) => {
   }
 
   return (
-    <Flex gap={10} my={6}>
+    <div className="my-6 flex gap-10">
       {Object.entries(data).map(([k, v]) => (
-        <Flex direction="column" key={k} rowGap=".4em">
-          <Text fontSize="md" fontWeight="600">
-            {k}
-          </Text>
-          <Text color="" fontSize="sm">
-            {v}
-          </Text>
-        </Flex>
+        <div className="flex flex-col gap-[0.4em]" key={k}>
+          <div className="font-semibold text-base">{k}</div>
+          <div className="text-body">{v}</div>
+        </div>
       ))}
-    </Flex>
+    </div>
   );
 };

@@ -9,7 +9,7 @@ import {
   OperationTypeAllow,
   OperationTypeDeny,
   type Rule,
-} from '../../../src/components/pages/acls/new-acl/acl.model';
+} from '../../../src/components/pages/security/shared/acl-model';
 
 /**
  * Page Object Model for ACL (Access Control List) pages
@@ -136,9 +136,9 @@ export class AclPage {
 
     // Verify the operation shows the correct permission icon
     if (permission === OperationTypeAllow) {
-      await expect(operationSelector.locator('svg.text-green-600')).toBeVisible();
+      await expect(operationSelector.locator('svg.text-success')).toBeVisible();
     } else if (permission === OperationTypeDeny) {
-      await expect(operationSelector.locator('svg.text-red-600')).toBeVisible();
+      await expect(operationSelector.locator('svg.text-error')).toBeVisible();
     }
   }
 
@@ -308,11 +308,9 @@ export class AclPage {
    * Form submission
    */
   async submitForm() {
-    await this.page.waitForTimeout(1000); // Give UI time to settle
     const submitButton = this.page.getByTestId('submit-acl-button').first();
     await submitButton.waitFor({ state: 'visible' });
     await submitButton.scrollIntoViewIfNeeded();
-    await this.page.waitForTimeout(500); // Brief pause before click
 
     // Wait for the ACL creation/update API call to complete
     // The API uses Connect RPC: /redpanda.api.dataplane.v1.ACLService/CreateACL or DeleteACLs
@@ -336,9 +334,40 @@ export class AclPage {
 
     await submitButton.click();
     await responsePromise; // Wait for API response
+  }
 
-    // Additional wait for ACL propagation to Kafka
-    await this.page.waitForTimeout(2000); // Increased for CI stability
+  /**
+   * Form submission for tests that mock an ACL RPC error.
+   * - kind: 'http-error' → waits for a 4xx/5xx response (e.g., when using route.fulfill)
+   * - kind: 'network-abort' → does NOT wait for a response (e.g., when using route.abort),
+   *   because an aborted request never produces a response frame
+   */
+  async submitFormExpectingError(kind: 'http-error' | 'network-abort' = 'http-error') {
+    const submitButton = this.page.getByTestId('submit-acl-button').first();
+    await submitButton.waitFor({ state: 'visible' });
+    await submitButton.scrollIntoViewIfNeeded();
+
+    if (kind === 'network-abort') {
+      await submitButton.click();
+      return;
+    }
+
+    const responsePromise = this.page.waitForResponse(
+      (response) => {
+        const url = response.url();
+        const method = response.request().method();
+        const status = response.status();
+        return (
+          (url.includes('ACLService/CreateACL') || url.includes('ACLService/DeleteACLs')) &&
+          method === 'POST' &&
+          status >= 400
+        );
+      },
+      { timeout: 60_000 }
+    );
+
+    await submitButton.click();
+    await responsePromise;
   }
 
   /**
@@ -354,9 +383,9 @@ export class AclPage {
 
     // Verify the correct color class based on permission
     if (permission === OperationTypeAllow) {
-      await expect(summaryItem).toHaveClass(/bg-green-100 text-green-800/);
+      await expect(summaryItem).toHaveClass(/bg-background-success-subtle text-success/);
     } else if (permission === OperationTypeDeny) {
-      await expect(summaryItem).toHaveClass(/bg-red-100 text-red-800/);
+      await expect(summaryItem).toHaveClass(/bg-background-error-subtle text-error/);
     }
   }
 
@@ -411,9 +440,9 @@ export class AclPage {
 
     // Verify correct styling
     if (permission === OperationTypeAllow) {
-      await expect(detailOperationItem).toHaveClass(/bg-green-100 text-green-800/);
+      await expect(detailOperationItem).toHaveClass(/bg-background-success-subtle text-success/);
     } else if (permission === OperationTypeDeny) {
-      await expect(detailOperationItem).toHaveClass(/bg-red-100 text-red-800/);
+      await expect(detailOperationItem).toHaveClass(/bg-background-error-subtle text-error/);
     }
   }
 

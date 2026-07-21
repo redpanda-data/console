@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import useDeveloperView from './use-developer-view';
@@ -47,22 +48,30 @@ describe('useDeveloperView', () => {
     expect(result.current).toBe(true);
   });
 
-  it('does not crash when pressing ? key', () => {
+  it('does not crash when pressing ? key', async () => {
+    const user = userEvent.setup();
     const { result } = renderHook(() => useDeveloperView());
 
     // Simulate pressing '?' — this previously caused React error #301 in production
-    // when connected to vanilla Kafka (issue #2262)
-    expect(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
-    }).not.toThrow();
+    // when connected to vanilla Kafka (issue #2262).
+    // userEvent.keyboard wraps the state update triggered by useKey in act()
+    // automatically, eliminating the "not wrapped in act" warning.
+    await user.keyboard('?');
 
     // Hook should still return a valid boolean
     expect(typeof result.current).toBe('boolean');
   });
 
   it('returns false when localStorage contains invalid JSON', () => {
+    // The tested fallback path intentionally catches + logs a SyntaxError via
+    // @redpanda-data/ui's useLocalStorage (which uses console.log). Scope the
+    // mute to this single test so the expected error doesn't pollute CI output.
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {
+      // intentionally empty — scoped mute for expected fallback log
+    });
     store.dv = 'not-json';
     const { result } = renderHook(() => useDeveloperView());
     expect(typeof result.current).toBe('boolean');
+    logSpy.mockRestore();
   });
 });

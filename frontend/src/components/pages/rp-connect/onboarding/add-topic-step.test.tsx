@@ -115,6 +115,7 @@ describe('AddTopicStep', () => {
     mockFetch.mockReset();
     // Default: return empty topic list
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse([])),
     });
   });
@@ -122,6 +123,7 @@ describe('AddTopicStep', () => {
   it('existing topic returns name via triggerSubmit', async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
     });
 
@@ -144,13 +146,15 @@ describe('AddTopicStep', () => {
     });
 
     // The component starts in "Existing" mode when topics exist.
-    // Open the combobox, type to filter, then select with Enter (autocomplete)
+    // Open the combobox, type to filter, then click the matching option.
+    // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
+    // load — clicking the rendered option is deterministic.)
     const comboboxInput = await screen.findByPlaceholderText('Select a topic');
     await user.click(comboboxInput);
     await user.type(comboboxInput, 'my-topic');
 
-    // Use Enter to autocomplete select the best match
-    await user.keyboard('{Enter}');
+    const option = await screen.findByRole('option', { name: 'my-topic' });
+    await user.click(option);
 
     // Submit
     const submitBtn = screen.getByTestId('submit');
@@ -215,7 +219,7 @@ describe('AddTopicStep', () => {
       expect(result).toEqual(
         expect.objectContaining({
           success: true,
-          message: expect.stringMatching(/Created topic/),
+          message: expect.stringMatching(/Topic ".*" created/),
         })
       );
     });
@@ -276,13 +280,13 @@ describe('AddTopicStep', () => {
 
     render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
-    // The ToggleGroup with "Existing" / "New" buttons should NOT be present
     expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
   });
 
   it('selectionMode=existing shows combobox', async () => {
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
     });
     const transport = createTransport();
@@ -296,6 +300,7 @@ describe('AddTopicStep', () => {
   it('existing topic alert shown in create mode when name matches', async () => {
     const user = userEvent.setup();
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
     });
     const transport = createTransport();
@@ -307,8 +312,8 @@ describe('AddTopicStep', () => {
       expect(mockFetch).toHaveBeenCalled();
     });
 
-    // Switch to "New" tab (ToggleGroupItem renders as role="radio")
-    const newButton = await screen.findByRole('radio', { name: 'New' });
+    // Switch to "New" tab (single-select ToggleGroupItem renders as a Base UI toggle button (aria-pressed))
+    const newButton = await screen.findByRole('button', { name: 'New' });
     await user.click(newButton);
 
     // Type a name matching an existing topic
@@ -355,16 +360,16 @@ describe('AddTopicStep', () => {
 
   it('selectionMode=both renders toggle group', async () => {
     mockFetch.mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(createTopicsResponse(['t1'])),
     });
     const transport = createTransport();
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 
-    // ToggleGroupItem renders as role="radio"
     await waitFor(() => {
-      expect(screen.getByRole('radio', { name: 'Existing' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'New' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'New' })).toBeInTheDocument();
     });
   });
 });

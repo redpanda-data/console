@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, Flex, useToast } from '@redpanda-data/ui';
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import type { Payload } from '../../../../../state/rest-interfaces';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
+import { Button } from '../../../../redpanda-ui/components/button';
 import { getControlCharacterName } from '../helpers';
 
 // Regex for checking printable ASCII characters
@@ -64,6 +65,7 @@ type PayloadRenderData =
   | { type: 'json'; content: string | object | null | undefined }
   | { type: 'error'; content: string };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex payload parsing
 function preparePayloadData(payload: Payload): PayloadRenderData {
   try {
     if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
@@ -120,41 +122,33 @@ function preparePayloadData(payload: Payload): PayloadRenderData {
   }
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
   const { payload, loadLargeMessage } = p;
-  const toast = useToast();
   const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
   const renderData = useMemo(() => preparePayloadData(payload), [payload]);
 
   if (payload.isPayloadTooLarge) {
     return (
-      <Flex flexDirection="column" gap="4">
-        <Flex alignItems="center" gap="2">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
           Because this message size exceeds the display limit, loading it could cause performance degradation.
-        </Flex>
+        </div>
         <Button
+          className="w-40"
           data-testid="load-anyway-button"
           isLoading={isLoadingLargeMessage}
-          loadingText="Loading..."
           onClick={() => {
             setLoadingLargeMessage(true);
             loadLargeMessage()
-              .catch((err) =>
-                toast({
-                  status: 'error',
-                  description: err instanceof Error ? err.message : String(err),
-                })
-              )
+              .catch((err) => toast.error(err instanceof Error ? err.message : String(err)))
               .finally(() => setLoadingLargeMessage(false));
           }}
-          size="small"
+          size="sm"
           variant="outline"
-          width="10rem"
         >
           Load anyway
         </Button>
-      </Flex>
+      </div>
     );
   }
 
@@ -182,7 +176,10 @@ export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => 
     );
   }
   if (renderData.type === 'json') {
-    return <KowlJsonView srcObj={renderData.content} />;
+    // Avro JSON encodes bytes fields as \u00XX escape sequences. Re-escape
+    // Latin-1 code points in the viewer so copy-paste yields the original
+    // bytes rather than their UTF-8 encoding.
+    return <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} />;
   }
   return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {renderData.content}</span>;
 };

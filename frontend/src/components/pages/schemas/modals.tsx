@@ -1,173 +1,173 @@
-import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  Flex,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  type ThemeTypings,
-} from '@redpanda-data/ui';
 import { WarningIcon } from 'components/icons';
-import { type ReactNode, useState } from 'react';
+import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
+import type { ReactNode } from 'react';
+import { useState } from 'react';
 
-import { openModal } from '../../../utils/modal-container';
-
-const GenericModal = (p: {
-  title: JSX.Element;
-  body: JSX.Element;
-  primaryButtonContent: JSX.Element;
-  secondaryButtonContent: JSX.Element;
-
-  onPrimaryButton: (closeModal: () => void) => void;
-  onSecondaryButton: (closeModal: () => void) => void;
-
-  primaryColorScheme?: ThemeTypings['colorSchemes'];
-
-  closeModal: () => void;
-}) => (
-  <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-    <ModalOverlay />
-    <ModalContent>
-      <ModalHeader mr="4">{p.title}</ModalHeader>
-      <ModalCloseButton />
-      <ModalBody>{p.body}</ModalBody>
-
-      <ModalFooter>
-        <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="ghost">
-          {p.secondaryButtonContent}
-        </Button>
-        <Button colorScheme={p.primaryColorScheme} ml={3} onClick={() => p.onPrimaryButton(p.closeModal)}>
-          {p.primaryButtonContent}
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-);
-
-const ExplicitConfirmModal = (p: {
-  title: JSX.Element;
-  body: JSX.Element;
-  primaryButtonContent: JSX.Element;
-  secondaryButtonContent: JSX.Element;
-
-  onPrimaryButton: (closeModal: () => void) => void;
-  onSecondaryButton: (closeModal: () => void) => void;
-
-  closeModal: () => void;
-}) => {
-  const [confirmBoxText, setConfirmBoxText] = useState('');
-  const isConfirmEnabled = confirmBoxText === 'delete';
-
+export function DeleteDialog(p: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  schemaVersionName: string;
+  onConfirm: () => void;
+}) {
   return (
-    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader mr="4">{p.title}</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          {p.body}
-
-          <Box mt="4">
-            To confirm, enter "delete":
-            <Input onChange={(e) => setConfirmBoxText(e.target.value)} />
-          </Box>
-        </ModalBody>
-
-        <ModalFooter>
-          <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="ghost">
-            {p.secondaryButtonContent}
+    <Dialog onOpenChange={p.onOpenChange} open={p.open}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Delete schema version {p.schemaVersionName}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <DialogDescription>
+            This is a soft-delete operation. This schema version will remain readable. It can also be permanently
+            deleted or recovered.
+            <br />
+            <br />
+            Are you sure?
+          </DialogDescription>
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={() => p.onOpenChange(false)} variant="ghost">
+            Cancel
           </Button>
           <Button
-            colorScheme="red"
-            isDisabled={!isConfirmEnabled}
-            ml={3}
-            onClick={() => p.onPrimaryButton(p.closeModal)}
+            onClick={() => {
+              p.onConfirm();
+              p.onOpenChange(false);
+            }}
+            variant="destructive"
           >
-            {p.primaryButtonContent}
+            Delete
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
-};
-
-// A type of modal that simply shows some stuff and only has an "ok" button
-const InfoModal = (p: {
-  title: JSX.Element;
-  body: JSX.Element;
-  primaryButtonContent: ReactNode;
-  onClose?: () => void;
-  closeModal: () => void;
-}) => (
-  <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-    <ModalOverlay />
-    <ModalContent>
-      <ModalHeader mr="4">{p.title}</ModalHeader>
-      <ModalBody>{p.body}</ModalBody>
-      <ModalFooter>
-        <Button
-          mr={3}
-          onClick={() => {
-            if (p.onClose) {
-              p.onClose();
-            }
-            p.closeModal();
-          }}
-        >
-          {p.primaryButtonContent}
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-);
-
-export function openInfoModal(p: {
-  title: JSX.Element;
-  body: JSX.Element;
-  btnContent?: ReactNode;
-  onClose?: () => void;
-}) {
-  openModal(InfoModal, {
-    title: p.title,
-    body: p.body,
-    primaryButtonContent: p.btnContent ?? 'Close',
-    onClose: p.onClose,
-  });
 }
 
-export function openValidationErrorsModal(
+export function PermanentDeleteDialog(p: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  schemaVersionName: string;
+  onConfirm: () => void;
+}) {
+  const [confirmText, setConfirmText] = useState('');
+  const isConfirmEnabled = confirmText === 'delete';
+
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) setConfirmText('');
+        p.onOpenChange(open);
+      }}
+      open={p.open}
+    >
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Permanently delete schema version {p.schemaVersionName}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <DialogDescription>
+            After this schema is permanently deleted, all metadata is removed and it is unrecoverable.
+          </DialogDescription>
+          <div className="mt-4">
+            To confirm, enter "delete":
+            <Input onChange={(e) => setConfirmText(e.target.value)} value={confirmText} />
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={() => p.onOpenChange(false)} variant="ghost">
+            Cancel
+          </Button>
+          <Button
+            disabled={!isConfirmEnabled}
+            onClick={() => {
+              p.onConfirm();
+              setConfirmText('');
+              p.onOpenChange(false);
+            }}
+            variant="destructive"
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function SwitchSchemaFormatDialog(p: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog onOpenChange={p.onOpenChange} open={p.open}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Switch schema format?</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <DialogDescription>
+            Switching schema formats will reset the schema you've started with and you will lose your progress.
+            <br />
+            Are you sure?
+          </DialogDescription>
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={() => p.onOpenChange(false)} variant="ghost">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              p.onConfirm();
+              p.onOpenChange(false);
+            }}
+          >
+            Switch format
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function ValidationErrorsDialog(p: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   result: {
     isValid: boolean;
     errorDetails?: string | undefined;
     isCompatible?: boolean | undefined;
     compatibilityError?: { errorType: string; description: string } | undefined;
-  },
-  onClose?: () => void
-) {
-  const { isValid, errorDetails, isCompatible, compatibilityError } = result;
+  } | null;
+  onClose?: () => void;
+}) {
+  if (!(p.result && p.open)) return null;
 
-  let compatBox: JSX.Element | null = null;
+  const { isValid, errorDetails, isCompatible, compatibilityError } = p.result;
+
+  let compatBox: ReactNode = null;
   if (isCompatible !== undefined && isValid !== false) {
     if (isCompatible) {
       compatBox = (
-        <Alert status="success" variant="subtle">
-          <AlertIcon />
-          No compatibility issues
+        <Alert variant="success">
+          <AlertTitle>No compatibility issues</AlertTitle>
         </Alert>
       );
     } else {
       compatBox = (
-        <Alert status="error" variant="subtle">
-          <AlertIcon />
-          Compatibility issues found
+        <Alert variant="destructive">
+          <AlertTitle>Compatibility issues found</AlertTitle>
         </Alert>
       );
     }
@@ -175,122 +175,55 @@ export function openValidationErrorsModal(
 
   const compatErrorBox =
     compatibilityError && (compatibilityError.errorType || compatibilityError.description) ? (
-      <Box>
-        <Text fontWeight="semibold" mb="2">
-          Compatibility Error Details:
-        </Text>
-        <Box background="gray.100" maxHeight="400px" overflowY="auto" p="6">
+      <div>
+        <p className="mb-2 font-semibold">Compatibility Error Details:</p>
+        <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6">
           {Boolean(compatibilityError.errorType) && (
-            <Text color="red.600" fontWeight="bold" mb="2">
-              Error: {compatibilityError.errorType.replace(/_/g, ' ')}
-            </Text>
+            <p className="mb-2 font-bold text-destructive">Error: {compatibilityError.errorType.replace(/_/g, ' ')}</p>
           )}
-          {Boolean(compatibilityError.description) && <Text lineHeight="1.6">{compatibilityError.description}</Text>}
-        </Box>
-      </Box>
+          {Boolean(compatibilityError.description) && (
+            <p className="leading-relaxed">{compatibilityError.description}</p>
+          )}
+        </div>
+      </div>
     ) : null;
 
   const errDetailsBox = errorDetails ? (
-    <Box>
-      <Text fontWeight="semibold" mb="2">
-        Parsing Error:
-      </Text>
-      <Box background="gray.100" fontFamily="monospace" letterSpacing="-0.5px" maxHeight="400px" overflowY="auto" p="6">
+    <div>
+      <p className="mb-2 font-semibold">Parsing Error:</p>
+      <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6 font-mono tracking-tight">
         {errorDetails?.trim()}
-      </Box>
-    </Box>
+      </div>
+    </div>
   ) : null;
 
-  openInfoModal({
-    title: (
-      <>
-        <Text alignItems="center" color="red.500" display="flex">
-          <Box mr="3">
-            <WarningIcon size={18} />
-          </Box>
-          Schema validation error
-        </Text>
-      </>
-    ),
-    body: (
-      <>
-        <Text mb="3">Schema validation failed due to the following error.</Text>
-        <Flex direction="column" gap="4">
-          {compatBox}
-          {compatErrorBox}
-          {errDetailsBox}
-        </Flex>
-      </>
-    ),
-    onClose,
-  });
-}
-
-export function openDeleteModal(schemaVersionName: string, onConfirm: () => void) {
-  openModal(GenericModal, {
-    title: <>Delete schema version {schemaVersionName}</>,
-    body: (
-      <>
-        This is a soft-delete operation. This schema version will remain readable. It can also be permanently deleted or
-        recovered. {/* <Link>Learn more</Link> */}
-        <br />
-        <br />
-        Are you sure?
-      </>
-    ),
-    primaryButtonContent: <>Delete</>,
-    primaryColorScheme: 'red',
-
-    secondaryButtonContent: <>Cancel</>,
-
-    onPrimaryButton: (closeModal) => {
-      onConfirm();
-      closeModal();
-    },
-
-    onSecondaryButton: (closeModal) => {
-      closeModal();
-    },
-  });
-}
-
-export function openPermanentDeleteModal(schemaVersionName: string, onConfirm: () => void) {
-  openModal(ExplicitConfirmModal, {
-    title: <>Permanently delete schema version {schemaVersionName}</>,
-    body: <>After this schema is permanently deleted, all metadata is removed and it is unrecoverable.</>,
-    primaryButtonContent: <>Delete</>,
-    secondaryButtonContent: <>Cancel</>,
-
-    onPrimaryButton: (closeModal) => {
-      onConfirm();
-      closeModal();
-    },
-
-    onSecondaryButton: (closeModal) => {
-      closeModal();
-    },
-  });
-}
-export function openSwitchSchemaFormatModal(onConfirm: () => void) {
-  openModal(GenericModal, {
-    title: <>Switch schema format?</>,
-    body: (
-      <>
-        Switching schema formats will reset the schema you've started with and you will lose your progress.
-        <br />
-        Are you sure?
-      </>
-    ),
-    primaryButtonContent: <>Switch format</>,
-    secondaryButtonContent: <>Cancel</>,
-
-    onPrimaryButton: (closeModal) => {
-      onConfirm();
-      closeModal();
-    },
-
-    onSecondaryButton: (closeModal) => {
-      closeModal();
-    },
-  });
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) p.onClose?.();
+        p.onOpenChange(open);
+      }}
+      open={p.open}
+    >
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center text-destructive">
+            <WarningIcon className="mr-3 shrink-0" size={18} />
+            Schema validation error
+          </DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p className="mb-3">Schema validation failed due to the following error.</p>
+          <div className="flex flex-col gap-4">
+            {compatBox}
+            {compatErrorBox}
+            {errDetailsBox}
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={() => p.onOpenChange(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

@@ -1,22 +1,26 @@
+/**
+ * Copyright 2025 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Box,
-  Button,
-  Code,
-  FormField,
-  Grid,
-  GridItem,
-  Heading,
-  Input,
-  ListItem,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  UnorderedList,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 import { useState } from 'react';
 
@@ -31,82 +35,92 @@ const JavascriptFilterModal: FC<{
   const [filter, setFilter] = useState<FilterEntry>({ ...currentFilter });
 
   return (
-    <Modal isOpen onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent minW="4xl">
-        <ModalHeader>JavaScript filtering</ModalHeader>
-        <ModalBody>
-          <Text mb={4}>Write JavaScript code to filter your records.</Text>
-          <Grid gap={6} templateColumns={{ base: '1fr', md: '3fr 2fr' }}>
-            <GridItem>
-              <FormField label="Filter display name">
-                <Input
-                  data-testid="add-javascript-filter-name"
-                  onChange={(e) => {
-                    setFilter((prev) => ({ ...prev, name: e.target.value }));
-                  }}
-                  placeholder="This name will appear in the filter bar"
-                  value={filter.name}
-                />
-              </FormField>
-            </GridItem>
-            <GridItem />
-            <GridItem display="flex" flexDirection="column" gap={4}>
-              <FormField label="Filter code">
-                <Box borderRadius={20}>
-                  <FilterEditor
-                    data-testid="add-javascript-filter-code"
-                    onValueChange={(code, transpiled) => {
-                      setFilter((prev) => ({ ...prev, code, transpiledCode: transpiled }));
-                    }}
-                    value={filter.code}
-                  />
-                </Box>
-              </FormField>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      open
+    >
+      <DialogContent size="xl">
+        <DialogHeader>
+          <DialogTitle>JavaScript filtering</DialogTitle>
+        </DialogHeader>
+        <DialogBody spacing="lg">
+          <div className="text-body text-muted-foreground">Write JavaScript code to filter your records.</div>
 
-              <UnorderedList>
-                <ListItem>return true allows messages, return false discards them.</ListItem>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="add-javascript-filter-name">Filter display name</Label>
+            <Input
+              data-testid="add-javascript-filter-name"
+              id="add-javascript-filter-name"
+              onChange={(e) => {
+                setFilter((prev) => ({ ...prev, name: e.target.value }));
+              }}
+              placeholder="This name will appear in the filter bar"
+              value={filter.name}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-[3fr_2fr]">
+            <div className="flex flex-col gap-3">
+              <Label htmlFor="add-javascript-filter-code">Filter code</Label>
+              <div className="overflow-hidden rounded-md border">
+                <FilterEditor
+                  data-testid="add-javascript-filter-code"
+                  onValueChange={(code, transpiled) => {
+                    setFilter((prev) => ({ ...prev, code, transpiledCode: transpiled }));
+                  }}
+                  value={filter.code}
+                />
+              </div>
+
+              <List>
                 <ListItem>
-                  Available params are <Code>offset</Code>, <Code>partitionID</Code> (number), <Code>key</Code> (any),{' '}
-                  <Code>value</Code> (any), and <Code>headers</Code> (object), <Code>keySchemaID</Code> (number) and{' '}
-                  <Code>valueSchemaID</Code> (number)
+                  <InlineCode>return true</InlineCode> allows messages, <InlineCode>return false</InlineCode> discards
+                  them.
+                </ListItem>
+                <ListItem>
+                  Available params are <InlineCode>offset</InlineCode>, <InlineCode>partitionID</InlineCode> (number),{' '}
+                  <InlineCode>key</InlineCode> (any), <InlineCode>value</InlineCode> (any),{' '}
+                  <InlineCode>headers</InlineCode> (object), <InlineCode>keySchemaID</InlineCode> (number) and{' '}
+                  <InlineCode>valueSchemaID</InlineCode> (number).
                 </ListItem>
                 <ListItem>Multiple active filters are combined with 'and'.</ListItem>
-              </UnorderedList>
-            </GridItem>
-            <GridItem>
-              <Heading mb={6}>Examples</Heading>
-              <UnorderedList margin={0} spacing={4} styleType="none">
+              </List>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h3 className="text-heading-sm">Examples</h3>
+              <List>
                 <ListItem>
-                  <Code>value != null</Code> skips records without value
+                  <InlineCode>value != null</InlineCode> skips records without value.
                 </ListItem>
                 <ListItem>
-                  <Code>if (key == 'example') return true</Code>
-                  only returns messages where keys equal <Code>'example'</Code> in their string presentation (after
-                  decoding)
+                  <InlineCode>if (key == 'example') return true</InlineCode> only returns messages where keys equal{' '}
+                  <InlineCode>'example'</InlineCode> in their string presentation (after decoding).
                 </ListItem>
-              </UnorderedList>
-            </GridItem>
-          </Grid>
-        </ModalBody>
-        <ModalFooter>
-          <Box alignItems="center" display="flex" gap={2} justifyContent="flex-end">
-            <Button data-testid="add-javascript-filter-close" onClick={() => onClose()} variant="outline">
-              Close
-            </Button>
-            <Button
-              data-testid="add-javascript-filter-save"
-              onClick={() => {
-                onSave(filter);
-                onClose();
-              }}
-            >
-              Save
-            </Button>
-          </Box>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+              </List>
+            </div>
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button data-testid="add-javascript-filter-close" onClick={() => onClose()} variant="outline">
+            Close
+          </Button>
+          <Button
+            data-testid="add-javascript-filter-save"
+            onClick={() => {
+              onSave(filter);
+              onClose();
+            }}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

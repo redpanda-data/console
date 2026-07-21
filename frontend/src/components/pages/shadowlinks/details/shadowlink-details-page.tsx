@@ -16,7 +16,6 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -43,6 +42,7 @@ export const ShadowLinkDetailsPage = () => {
   const [failoverTopicName, setFailoverTopicName] = useState<string>('');
 
   useEffect(() => {
+    uiState.pageTitle = name;
     uiState.pageBreadcrumbs = [
       { title: 'Shadow Links', linkTo: '/shadowlinks' },
       { title: name, linkTo: '' },
@@ -66,11 +66,7 @@ export const ShadowLinkDetailsPage = () => {
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
     onSuccess: async () => {
-      toast.success(
-        failoverTopicName
-          ? `Topic ${failoverTopicName} failed over successfully`
-          : 'Shadowlink failed over successfully'
-      );
+      toast.success(failoverTopicName ? `Topic ${failoverTopicName} failed over` : 'Shadow link failed over');
       setShowFailoverDialog(false);
       setFailoverTopicName('');
       await refetch();
@@ -121,7 +117,7 @@ export const ShadowLinkDetailsPage = () => {
       <div className="flex h-64 items-center justify-center">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <Text>Loading shadow link details...</Text>
+          <div className="text-body">Loading shadow link details...</div>
         </div>
       </div>
     );

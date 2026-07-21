@@ -344,7 +344,7 @@ const createKafkaUser = async (
     return {
       operation: 'Create user',
       success: true,
-      message: `User "${userData.username}" created successfully`,
+      message: `User "${userData.username}" created`,
     };
   } catch (error) {
     const connectError = ConnectError.from(error);
@@ -414,7 +414,7 @@ export const useCreateUserWithSecretsMutation = () => {
         exact: false,
       });
 
-      toast.success(consumerGroupACLResult.message || 'Permissions configured successfully');
+      toast.success(consumerGroupACLResult.message || 'Permissions configured');
       return { success: true, data: userData };
     }
 
@@ -427,7 +427,7 @@ export const useCreateUserWithSecretsMutation = () => {
     toast.success(userResult.message || `User "${userData.username}" created`);
 
     // Step 2: Configure topic ACL if needed
-    if (topicName && userData.superuser) {
+    if (topicName && userData.grantTopicPermissions) {
       const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
       if (!aclResult.success) {
         toast.error(aclResult.error || 'Failed to configure topic permissions');

@@ -1,0 +1,35 @@
+input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topics:
+      - ${slot.sourceTopic}
+    consumer_group: ${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  gcp_bigquery:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    project: ${slot.project}
+    dataset: ${slot.dataset}
+    table: ${slot.table}
+    credentials_json: ${slot.credentialsJson}
+
+    # ── Format & schema ─────────────────────────────────────────────────────
+    format: NEWLINE_DELIMITED_JSON         # NEWLINE_DELIMITED_JSON | CSV | AVRO | PARQUET
+    # write_disposition: WRITE_APPEND      # WRITE_APPEND | WRITE_TRUNCATE | WRITE_EMPTY
+    # create_disposition: CREATE_IF_NEEDED # auto-create the table if missing
+    # auto_detect: false                   # schema auto-detect on load
+    # csv:
+    #   header: ""
+    #   field_delimiter: ","
+
+    # ── Throughput defaults — BigQuery loads do best with medium batches ────
+    batching:
+      count: 500
+      period: 5s
+    # max_in_flight: 4

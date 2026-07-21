@@ -1,225 +1,181 @@
 'use client';
 
+import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
-import { Dialog as SheetPrimitive } from 'radix-ui';
-import React from 'react';
+import type React from 'react';
 
-import { Heading } from './typography';
-import { cn, type SharedProps } from '../lib/utils';
+import { usePortalContainer } from '../lib/use-portal-container';
+import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
-type SheetContextType = {
-  isOpen: boolean;
-};
+type SheetProps = SheetPrimitive.Root.Props & SharedProps;
 
-const SheetContext = React.createContext<SheetContextType | undefined>(undefined);
+function Sheet({ testId, ...props }: SheetProps) {
+  return <SheetPrimitive.Root data-slot="sheet" data-testid={testId} {...props} />;
+}
 
-const useSheet = (): SheetContextType => {
-  const context = React.useContext(SheetContext);
-  if (!context) {
-    throw new Error('useSheet must be used within a Sheet');
-  }
-  return context;
-};
+type SheetTriggerProps = SheetPrimitive.Trigger.Props & SharedProps;
 
-type SheetProps = React.ComponentProps<typeof SheetPrimitive.Root> & SharedProps;
-
-function Sheet({ children, testId, ...props }: SheetProps) {
-  const [isOpen, setIsOpen] = React.useState(props?.open ?? props?.defaultOpen ?? false);
-
-  React.useEffect(() => {
-    if (props?.open !== undefined) {
-      setIsOpen(props.open);
-    }
-  }, [props?.open]);
-
-  const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      props.onOpenChange?.(open);
-    },
-    // biome-ignore lint/correctness/useExhaustiveDependencies: part of the sheet implementation
-    [props]
-  );
-
+function SheetTrigger({ className, testId, ...props }: SheetTriggerProps) {
   return (
-    <SheetContext.Provider value={{ isOpen }}>
-      <SheetPrimitive.Root data-slot="sheet" data-testid={testId} {...props} onOpenChange={handleOpenChange}>
-        {children}
-      </SheetPrimitive.Root>
-    </SheetContext.Provider>
+    <SheetPrimitive.Trigger
+      className={cn('cursor-pointer', className)}
+      data-slot="sheet-trigger"
+      data-testid={testId}
+      {...props}
+    />
   );
 }
 
-type SheetTriggerProps = React.ComponentProps<typeof SheetPrimitive.Trigger> & SharedProps;
+type SheetCloseProps = SheetPrimitive.Close.Props;
 
-function SheetTrigger({ testId, ...props }: SheetTriggerProps) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" data-testid={testId} {...props} />;
+function SheetClose({ className, ...props }: SheetCloseProps) {
+  return <SheetPrimitive.Close className={cn('cursor-pointer', className)} data-slot="sheet-close" {...props} />;
 }
 
-type SheetCloseProps = React.ComponentProps<typeof SheetPrimitive.Close>;
-
-function SheetClose(props: SheetCloseProps) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
-}
-
-type SheetPortalProps = React.ComponentProps<typeof SheetPrimitive.Portal>;
+type SheetPortalProps = SheetPrimitive.Portal.Props;
 
 function SheetPortal(props: SheetPortalProps) {
   return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
-type SheetOverlayProps = React.ComponentProps<typeof SheetPrimitive.Overlay>;
+type SheetOverlayProps = SheetPrimitive.Backdrop.Props;
 
 function SheetOverlay({ className, ...props }: SheetOverlayProps) {
   return (
-    <SheetPrimitive.Overlay
-      className={cn('fixed inset-0 z-50 bg-black/50', className)}
+    <SheetPrimitive.Backdrop
+      className={cn(
+        'fixed inset-0 z-50 bg-black/50 transition-opacity duration-500 ease-in-out data-[ending-style]:duration-300',
+        'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+        className
+      )}
       data-slot="sheet-overlay"
       {...props}
     />
   );
 }
 
-const sheetVariants = cva('fixed z-50 gap-4 bg-background px-10 py-8 shadow-lg', {
-  variants: {
-    side: {
-      top: 'inset-x-0 top-0 border-b',
-      bottom: 'inset-x-0 bottom-0 border-t',
-      left: 'inset-y-0 left-0 h-full border-r',
-      right: 'inset-y-0 right-0 h-full border-l',
+const sheetVariants = cva(
+  cn(
+    'fixed z-50 gap-4 bg-background px-10 py-8 shadow-lg',
+    // shadcn's asymmetric slide timing: 500ms in / 300ms out, full off-screen travel.
+    'transition-transform duration-500 ease-in-out data-[ending-style]:duration-300 motion-reduce:transition-none',
+    'data-[side=right]:data-[ending-style]:translate-x-full data-[side=right]:data-[starting-style]:translate-x-full',
+    'data-[side=left]:data-[ending-style]:-translate-x-full data-[side=left]:data-[starting-style]:-translate-x-full',
+    'data-[side=top]:data-[ending-style]:-translate-y-full data-[side=top]:data-[starting-style]:-translate-y-full',
+    'data-[side=bottom]:data-[ending-style]:translate-y-full data-[side=bottom]:data-[starting-style]:translate-y-full'
+  ),
+  {
+    variants: {
+      side: {
+        top: 'inset-x-0 top-0 border-b',
+        bottom: 'inset-x-0 bottom-0 border-t',
+        left: 'inset-y-0 left-0 h-full border-r',
+        right: 'inset-y-0 right-0 h-full border-l',
+      },
+      size: {
+        sm: 'w-full sm:max-w-sm',
+        md: 'w-full sm:max-w-md',
+        lg: 'w-full sm:max-w-lg',
+        xl: 'w-full sm:max-w-xl',
+        '2xl': 'w-full sm:max-w-2xl',
+        full: 'w-full sm:max-w-none',
+      },
     },
-    size: {
-      sm: 'w-full sm:max-w-sm',
-      md: 'w-full sm:max-w-md',
-      lg: 'w-full sm:max-w-lg',
-      xl: 'w-full sm:max-w-xl',
-      '2xl': 'w-full sm:max-w-2xl',
-      full: 'w-full sm:max-w-none',
+    defaultVariants: {
+      side: 'right',
+      size: 'xl',
     },
-  },
-  defaultVariants: {
-    side: 'right',
-    size: 'xl',
-  },
-});
+  }
+);
 
-type SheetContentProps = React.ComponentProps<typeof SheetPrimitive.Content> &
+type SheetContentProps = SheetPrimitive.Popup.Props &
   VariantProps<typeof sheetVariants> &
-  HTMLMotionProps<'div'> &
-  SharedProps & {
-    transition?: Transition;
-    container?: Element;
+  SharedProps &
+  Pick<FixedPositionContentProps, 'container' | 'showOverlay'> & {
+    showCloseButton?: boolean;
   };
 
 function SheetContent({
   side = 'right',
   size = 'xl',
   className,
-  transition = { type: 'spring', stiffness: 150, damping: 25 },
   children,
   testId,
   container,
+  showOverlay = true,
+  showCloseButton = true,
   ...props
 }: SheetContentProps) {
-  const { isOpen } = useSheet();
-
-  let animationPosition: { x?: string; y?: string; opacity: number };
-  if (side === 'right') {
-    animationPosition = { x: '100%', opacity: 0 };
-  } else if (side === 'left') {
-    animationPosition = { x: '-100%', opacity: 0 };
-  } else if (side === 'top') {
-    animationPosition = { y: '-100%', opacity: 0 };
-  } else {
-    animationPosition = { y: '100%', opacity: 0 };
-  }
+  const portalContainer = usePortalContainer();
 
   return (
-    <AnimatePresence>
-      {isOpen ? (
-        <SheetPortal container={container} data-slot="sheet-portal" forceMount>
-          <SheetOverlay asChild forceMount>
-            <motion.div
-              animate={{ opacity: 1, filter: 'blur(0px)' }}
-              data-slot="sheet-overlay"
-              exit={{ opacity: 0, filter: 'blur(4px)' }}
-              initial={{ opacity: 0, filter: 'blur(4px)' }}
-              key="sheet-overlay"
-              transition={{ duration: 0.2, ease: 'easeInOut' }}
-            />
-          </SheetOverlay>
-          <SheetPrimitive.Content asChild forceMount {...props}>
-            <motion.div
-              animate={{ x: 0, y: 0, opacity: 1 }}
-              className={cn(sheetVariants({ side, size }), className)}
-              data-slot="sheet-content"
-              data-testid={testId}
-              exit={animationPosition}
-              initial={animationPosition}
-              key="sheet-content"
-              transition={transition}
-              {...props}
-            >
-              {children}
-              <SheetPrimitive.Close
-                className="absolute top-5 right-5 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
-                data-slot="sheet-close"
-              >
-                <X className="h-7 w-7" />
-                <span className="sr-only">Close</span>
-              </SheetPrimitive.Close>
-            </motion.div>
-          </SheetPrimitive.Content>
-        </SheetPortal>
-      ) : null}
-    </AnimatePresence>
+    <SheetPrimitive.Portal container={container ?? portalContainer} data-slot="sheet-portal">
+      {showOverlay ? <SheetOverlay /> : null}
+      <SheetPrimitive.Popup
+        className={cn(sheetVariants({ side, size }), className)}
+        data-side={side}
+        data-slot="sheet-content"
+        data-testid={testId}
+        {...props}
+      >
+        {children}
+        {showCloseButton ? (
+          <SheetPrimitive.Close
+            className="absolute top-5 right-5 cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none"
+            data-slot="sheet-close"
+          >
+            <X className="h-7 w-7" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        ) : null}
+      </SheetPrimitive.Popup>
+    </SheetPrimitive.Portal>
   );
 }
 
 type SheetHeaderProps = React.ComponentProps<'div'>;
 
 function SheetHeader({ className, ...props }: SheetHeaderProps) {
-  return (
-    <div
-      className={cn('flex flex-col space-y-2 text-center sm:text-left', className)}
-      data-slot="sheet-header"
-      {...props}
-    />
-  );
+  return <div className={cn('flex flex-col gap-1.5', className)} data-slot="sheet-header" {...props} />;
 }
 
 type SheetFooterProps = React.ComponentProps<'div'>;
 
 function SheetFooter({ className, ...props }: SheetFooterProps) {
+  return <div className={cn('mt-auto flex flex-col gap-2', className)} data-slot="sheet-footer" {...props} />;
+}
+
+type SheetTitleProps = Omit<SheetPrimitive.Title.Props, 'className'> & {
+  className?: string;
+  level?: 1 | 2 | 3 | 4;
+};
+
+// Maps a sheet title level (1–4) to its heading utility class (literals so Tailwind can scan them).
+const SHEET_HEADING_CLASS = {
+  1: 'text-heading-xl',
+  2: 'text-heading-lg',
+  3: 'text-heading-md',
+  4: 'text-heading-sm',
+} as const;
+
+function SheetTitle({ className, level = 2, children, ...props }: SheetTitleProps) {
+  const SheetHeadingTag = `h${level}` as const;
   return (
-    <div
-      className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
-      data-slot="sheet-footer"
+    <SheetPrimitive.Title
+      data-slot="sheet-title"
+      render={<SheetHeadingTag className={cn(SHEET_HEADING_CLASS[level], className)}>{children}</SheetHeadingTag>}
       {...props}
     />
   );
 }
 
-type SheetTitleProps = React.ComponentProps<typeof SheetPrimitive.Title> & { level?: 1 | 2 | 3 | 4 };
-
-function SheetTitle({ className, level = 2, ...props }: SheetTitleProps) {
-  return (
-    <SheetPrimitive.Title asChild data-slot="sheet-title" {...props}>
-      <Heading className={className} level={level}>
-        {props.children}
-      </Heading>
-    </SheetPrimitive.Title>
-  );
-}
-
-type SheetDescriptionProps = React.ComponentProps<typeof SheetPrimitive.Description>;
+type SheetDescriptionProps = SheetPrimitive.Description.Props;
 
 function SheetDescription({ className, ...props }: SheetDescriptionProps) {
   return (
     <SheetPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="sheet-description"
       {...props}
     />
@@ -227,7 +183,6 @@ function SheetDescription({ className, ...props }: SheetDescriptionProps) {
 }
 
 export {
-  useSheet,
   Sheet,
   SheetPortal,
   SheetOverlay,

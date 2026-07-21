@@ -1,36 +1,30 @@
 'use client';
 
+import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot as SlotPrimitive } from 'radix-ui';
-import React, { type ElementType } from 'react';
+import type React from 'react';
+import type { ElementType } from 'react';
 
 import { useGroup } from './group';
+import { Spinner } from './spinner';
 import { cn, type SharedProps } from '../lib/utils';
 
 const buttonVariants = cva(
   [
-    // Base layout (from Figma: display: inline-flex, justify-content: center, align-items: center)
     'inline-flex items-center justify-center',
-    // Typography
     'whitespace-nowrap font-semibold transition-all',
-    // Cursor
     'cursor-pointer',
-    // Disabled state
-    'disabled:pointer-events-none disabled:cursor-not-allowed',
-    // Icon styles (size set per variant)
+    'disabled:pointer-events-none disabled:cursor-not-allowed data-disabled:pointer-events-none data-disabled:cursor-not-allowed',
     'shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0',
-    // Focus ring
     'outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-    // Selection
+    'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
     'selection:bg-selected selection:text-selected-foreground',
-    // Active/Pressed state base
     'active:scale-[0.98]',
   ],
   {
     variants: {
       variant: {
         primary: [
-          // default: bg-surface-secondary, hover: bg-surface-secondary-hover, pressed: bg-surface-secondary-pressed, disabled: bg-surface-secondary-disabled
           'bg-surface-secondary text-inverse shadow-xs',
           'hover:bg-surface-secondary-hover',
           'active:bg-surface-secondary-pressed',
@@ -50,7 +44,7 @@ const buttonVariants = cva(
           'disabled:bg-background-disabled disabled:text-disabled',
         ],
         destructive: [
-          'bg-destructive text-inverse shadow-xs',
+          'bg-surface-error text-inverse shadow-xs',
           'hover:bg-surface-error-hover',
           'active:bg-surface-error-pressed',
           'focus-visible:ring-destructive',
@@ -124,14 +118,12 @@ const buttonVariants = cva(
           'active:bg-light-alpha-stronger',
           'disabled:text-inverse-disabled',
         ],
-        // Link variant
         link: [
           'text-primary underline-offset-4',
           'hover:text-primary/80 hover:underline',
           'active:text-primary/60',
           'disabled:text-disabled disabled:no-underline',
         ],
-        // Dashed border variant
         dashed: [
           '!border-primary border-2 border-dashed bg-transparent text-primary',
           'hover:border-primary/80 hover:bg-primary/5',
@@ -140,19 +132,14 @@ const buttonVariants = cva(
         ],
       },
       size: {
-        // XS: height 24px, padding 0 8px, gap 4px, font 12px (from Figma)
         xs: 'h-6 gap-1 px-2 py-0 text-xs has-[>svg]:px-1.5 [&_svg]:size-3',
-        // SM: height 32px, padding 0 12px, gap 8px, font 12px (from Figma)
         sm: 'h-8 gap-2 px-3 py-0 text-xs has-[>svg]:px-2.5 [&_svg]:size-3.5',
-        // MD (default): height 40px, padding 0 16px, gap 8px, font 14px (from Figma)
-        md: 'h-10 gap-2 px-4 py-0 text-sm has-[>svg]:px-3 [&_svg]:size-4',
-        // LG: height 48px, padding 0 24px, gap 8px, font 16px (from Figma)
-        lg: 'h-12 gap-2 px-6 py-0 text-base has-[>svg]:px-4 [&_svg]:size-5',
-        // Icon-only sizes (square buttons with centered, slightly smaller icons)
-        icon: 'size-10 [&_svg]:size-5',
+        md: 'h-9 gap-2 px-4 py-0 text-sm has-[>svg]:px-3 [&_svg]:size-4',
+        lg: 'h-10 gap-2 px-6 py-0 text-base has-[>svg]:px-4 [&_svg]:size-5',
+        icon: 'size-9 [&_svg]:size-5',
         'icon-xs': 'size-6 [&_svg]:size-3.5',
         'icon-sm': 'size-8 [&_svg]:size-4',
-        'icon-lg': 'size-12 [&_svg]:size-6',
+        'icon-lg': 'size-10 [&_svg]:size-6',
       },
     },
     defaultVariants: {
@@ -164,68 +151,139 @@ const buttonVariants = cva(
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
-export type ButtonProps = React.ComponentProps<'button'> &
+/**
+ * Resolve Base UI's `nativeButton` flag. Base UI can't introspect a component render,
+ * so force `false` only for a known non-button intrinsic `render`/`as`; else defer to it.
+ */
+function resolveNativeButton(
+  explicit: boolean | undefined,
+  render: ButtonPrimitive.Props['render'],
+  as: ElementType | undefined
+): boolean | undefined {
+  if (explicit !== undefined) {
+    return explicit;
+  }
+  if (render !== undefined) {
+    const isNonButtonIntrinsic =
+      typeof render === 'object' &&
+      render !== null &&
+      'type' in render &&
+      typeof render.type === 'string' &&
+      render.type !== 'button';
+    return isNonButtonIntrinsic ? false : undefined;
+  }
+  if (as !== undefined) {
+    return as === 'button' ? undefined : false;
+  }
+  return;
+}
+
+type GroupPosition = 'first' | 'middle' | 'last' | undefined;
+
+function getPositionClasses(attached: boolean, position: GroupPosition): string {
+  if (!attached) {
+    return 'rounded-md';
+  }
+  if (position === 'first') {
+    return 'rounded-r-none rounded-l-md border-r-0';
+  }
+  if (position === 'last') {
+    return 'rounded-r-md rounded-l-none border-l-0';
+  }
+  if (position === 'middle') {
+    return 'rounded-none border-r-0 border-l-0';
+  }
+  return 'rounded-md';
+}
+
+function renderButtonChildren(children: React.ReactNode, icon: React.ReactNode, isLoading: boolean): React.ReactNode {
+  const content = icon ? (
+    <>
+      {children}
+      {icon}
+    </>
+  ) : (
+    children
+  );
+
+  if (!isLoading) {
+    return content;
+  }
+
+  return (
+    <>
+      <span className="invisible inline-flex items-center justify-center [gap:inherit]">{content}</span>
+      <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+        <Spinner />
+      </span>
+    </>
+  );
+}
+
+export type ButtonProps = ButtonPrimitive.Props &
   ButtonVariants & {
-    asChild?: boolean;
+    /** Render the button as a different element (e.g. a router `Link` or `"a"`). */
     as?: ElementType;
+    /** Router destination, forwarded to the element rendered via `as`. */
     to?: string;
-    icon?: React.ReactNode;
-    // Support anchor element props when as="a"
     href?: string;
     target?: string;
     rel?: string;
+    icon?: React.ReactNode;
+    /** Centered spinner overlay at the button's natural width; also disables interaction and sets aria-busy. */
+    isLoading?: boolean;
   } & SharedProps;
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, testId, as, to, icon, children, ...props }, ref) => {
-    const Comp = as ?? (asChild ? SlotPrimitive.Slot : 'button');
-    const { attached, position } = useGroup();
+function Button({
+  className,
+  variant,
+  size,
+  testId,
+  as,
+  to,
+  href,
+  icon,
+  isLoading = false,
+  disabled,
+  render,
+  nativeButton,
+  children,
+  ...props
+}: ButtonProps) {
+  const { attached, position } = useGroup();
+  const positionClasses = getPositionClasses(attached, position);
+  const isDisabled = disabled || isLoading;
+  const renderedChildren = renderButtonChildren(children, icon, isLoading);
 
-    let positionClasses = 'rounded-md';
-    if (attached && position === 'first') {
-      positionClasses = 'rounded-r-none rounded-l-md border-r-0';
-    } else if (attached && position === 'last') {
-      positionClasses = 'rounded-r-md rounded-l-none border-l-0';
-    } else if (attached && position === 'middle') {
-      positionClasses = 'rounded-none border-r-0 border-l-0';
-    }
+  // `as`/`to`/`href` are router value-adds mapped onto Base UI's native `render` prop.
+  // Anchors (`as="a"`) take `href`; router links (`as={Link}`) take `to`.
+  const AsElement = as;
+  const asElementProps = AsElement === 'a' ? { href: href ?? to } : { to };
+  const resolvedRender = render ?? (AsElement ? <AsElement {...asElementProps} /> : undefined);
 
-    // When asChild is used with Slot, we can only pass ONE child element
-    // to satisfy React.Children.only(). In asChild mode, users must include
-    // icons inside children instead of using the icon prop.
-    const renderContent = () => {
-      if (asChild) {
-        return children;
-      }
+  const resolvedNativeButton = resolveNativeButton(nativeButton, render, as);
 
-      // Normal button mode - can have children + icon prop
-      if (icon) {
-        return (
-          <>
-            {children}
-            {icon}
-          </>
-        );
-      }
-
-      return children;
-    };
-
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }), positionClasses, icon && 'gap-2', className)}
-        data-slot="button"
-        data-testid={testId}
-        ref={ref}
-        to={to}
-        {...props}
-      >
-        {renderContent()}
-      </Comp>
-    );
-  }
-);
-
-Button.displayName = 'Button';
+  return (
+    <ButtonPrimitive
+      aria-busy={isLoading || undefined}
+      className={cn(
+        buttonVariants({ variant, size, className }),
+        positionClasses,
+        icon && 'gap-2',
+        isLoading && 'relative',
+        className
+      )}
+      data-loading={isLoading || undefined}
+      data-slot="button"
+      data-testid={testId}
+      disabled={isDisabled}
+      nativeButton={resolvedNativeButton}
+      render={resolvedRender}
+      {...props}
+    >
+      {renderedChildren}
+    </ButtonPrimitive>
+  );
+}
 
 export { Button, buttonVariants };

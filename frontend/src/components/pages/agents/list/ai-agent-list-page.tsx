@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
@@ -41,13 +39,13 @@ import {
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
+import { config } from 'config';
 import { AlertCircle, Check, Loader2, Pause } from 'lucide-react';
 import type { AIAgent as APIAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { AIAgent_State } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import React, { useCallback, useEffect } from 'react';
 import { useDeleteAIAgentMutation, useListAIAgentsQuery } from 'react-query/api/ai-agent';
-import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';
 import { useDeleteSecretMutation } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
@@ -71,7 +69,7 @@ export type AIAgent = {
   description: string;
   state: AIAgent_State;
   model: string;
-  providerType: 'openai' | 'anthropic' | 'google' | 'openaiCompatible';
+  providerType: 'openai' | 'anthropic' | 'google' | 'openaiCompatible' | 'bedrock';
   url?: string;
   mcpServers: Record<string, { id: string }>;
   tags: Record<string, string>;
@@ -82,18 +80,18 @@ const StatusIcon = ({ state }: { state: AIAgent_State }) => {
     [AIAgent_State.RUNNING]: {
       text: 'Running',
       icon: Check,
-      iconColor: 'text-green-600',
+      iconColor: 'text-success',
     },
     [AIAgent_State.STARTING]: {
       text: 'Starting',
       icon: Loader2,
-      iconColor: 'text-blue-600',
+      iconColor: 'text-informative',
       animate: true,
     },
     [AIAgent_State.STOPPING]: {
       text: 'Stopping',
       icon: Loader2,
-      iconColor: 'text-orange-600',
+      iconColor: 'text-warning',
       animate: true,
     },
     [AIAgent_State.STOPPED]: {
@@ -104,7 +102,7 @@ const StatusIcon = ({ state }: { state: AIAgent_State }) => {
     [AIAgent_State.ERROR]: {
       text: 'Error',
       icon: AlertCircle,
-      iconColor: 'text-red-600',
+      iconColor: 'text-error',
     },
     [AIAgent_State.UNSPECIFIED]: {
       text: 'Unknown',
@@ -114,7 +112,7 @@ const StatusIcon = ({ state }: { state: AIAgent_State }) => {
   }[state] || {
     text: 'Unknown',
     icon: AlertCircle,
-    iconColor: 'text-red-600',
+    iconColor: 'text-error',
   };
 
   const IconComponent = statusProps.icon;
@@ -158,7 +156,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-      cell: ({ row }) => <Text className="font-medium">{row.getValue('name')}</Text>,
+      cell: ({ row }) => <div className="font-medium text-body">{row.getValue('name')}</div>,
     },
     {
       id: 'tools',
@@ -193,17 +191,19 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<AIAgent>
             ))}
             {allTools.length > 3 && (
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
-                    +{allTools.length - 3} more
-                  </span>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <span className="inline-flex cursor-help items-center rounded-md bg-muted px-2 py-0.5 font-medium text-xs">
+                      +{allTools.length - 3} more
+                    </span>
+                  }
+                />
                 <TooltipContent>
                   <div className="space-y-1">
                     {allTools.slice(3).map((toolName) => (
-                      <Text key={toolName} variant="small">
+                      <div className="text-body-sm" key={toolName}>
                         • {toolName}
-                      </Text>
+                      </div>
                     ))}
                   </div>
                 </TooltipContent>
@@ -282,9 +282,8 @@ export const updatePageTitle = () => {
 const AIAgentsListPageContent = ({
   deleteHandlerRef,
 }: {
-  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef>;
+  deleteHandlerRef: React.RefObject<AIAgentDeleteHandlerRef | null>;
 }) => {
-  'use no memo';
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -294,7 +293,7 @@ const AIAgentsListPageContent = ({
 
   // React Query hooks
   const { data: aiAgentsData, isLoading, error } = useListAIAgentsQuery({});
-  const { data: mcpServersData } = useListMCPServersQuery();
+  const { data: mcpServersData } = useListAigwMCPServersQuery(undefined, { enabled: !!config.aigwUrl });
   const { mutateAsync: deleteAIAgent, isPending: isDeletingAgent } = useDeleteAIAgentMutation();
   const { mutateAsync: deleteSecret } = useDeleteSecretMutation({
     skipInvalidation: true,
@@ -322,7 +321,7 @@ const AIAgentsListPageContent = ({
         }
 
         // Show single success toast regardless of what was deleted
-        toast.success('AI agent deleted successfully');
+        toast.success('AI agent deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(
@@ -340,14 +339,14 @@ const AIAgentsListPageContent = ({
   // Transform API data to component format
   const aiAgents = React.useMemo(() => aiAgentsData?.aiAgents?.map(transformAPIAIAgent) || [], [aiAgentsData]);
 
-  // Build a map of MCP server ID -> { name, tools }
+  // Build a map of MCP server name -> { name, tools }
   const mcpServersMap = React.useMemo(() => {
     const map = new Map<string, { name: string; tools: string[] }>();
     if (mcpServersData?.mcpServers) {
       for (const server of mcpServersData.mcpServers) {
-        map.set(server.id, {
-          name: server.displayName,
-          tools: Object.keys(server.tools || {}),
+        map.set(server.name, {
+          name: server.name,
+          tools: (server.tools ?? []).map((tool) => tool.name),
         });
       }
     }
@@ -409,8 +408,10 @@ const AIAgentsListPageContent = ({
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <Heading level={1}>AI Agents</Heading>
-          <Text variant="muted">Manage your AI agents with custom configurations and LLM providers.</Text>
+          <h1 className="text-heading-xl">AI Agents</h1>
+          <div className="text-body text-muted-foreground">
+            Manage your AI agents with custom configurations and LLM providers.
+          </div>
         </header>
         <div className="mb-4">
           <Button onClick={() => navigate({ to: '/agents/create' })}>Create AI Agent</Button>
@@ -449,7 +450,7 @@ const AIAgentsListPageContent = ({
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-red-600">
+                      <div className="flex items-center justify-center gap-2 text-error">
                         <AlertCircle className="h-4 w-4" />
                         Error loading AI agents: {error.message}
                       </div>

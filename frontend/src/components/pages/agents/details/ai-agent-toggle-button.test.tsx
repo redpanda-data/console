@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import userEvent from '@testing-library/user-event';
 import {
   AIAgent_State,
   AIAgentSchema,
@@ -26,7 +27,7 @@ import {
   startAIAgent,
   stopAIAgent,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -53,6 +54,7 @@ const START_BUTTON_REGEX = /start/i;
 
 describe('AIAgentToggleButton', () => {
   test('should stop a running AI agent from the details page', async () => {
+    const user = userEvent.setup();
     const agentId = 'agent-1';
     const agent = create(AIAgentSchema, {
       id: agentId,
@@ -105,7 +107,7 @@ describe('AIAgentToggleButton', () => {
     );
 
     const stopButton = screen.getByTestId('stop-ai-agent-button');
-    fireEvent.click(stopButton);
+    await user.click(stopButton);
 
     await waitFor(() => {
       expect(stopAIAgentMock).toHaveBeenCalledTimes(1);
@@ -119,6 +121,7 @@ describe('AIAgentToggleButton', () => {
   });
 
   test('should start a stopped AI agent from the details page', async () => {
+    const user = userEvent.setup();
     const agentId = 'agent-1';
     const agent = create(AIAgentSchema, {
       id: agentId,
@@ -171,7 +174,7 @@ describe('AIAgentToggleButton', () => {
     );
 
     const startButton = screen.getByTestId('start-ai-agent-button');
-    fireEvent.click(startButton);
+    await user.click(startButton);
 
     await waitFor(() => {
       expect(startAIAgentMock).toHaveBeenCalledTimes(1);

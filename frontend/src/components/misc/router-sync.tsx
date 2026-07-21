@@ -12,7 +12,7 @@
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 
-import { isEmbedded } from '../../config';
+import { config as appConfig, isEmbedded } from '../../config';
 import { trackHubspotPage } from '../../hubspot/hubspot.helper';
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';
@@ -54,10 +54,13 @@ export const RouterSync = () => {
     appGlobal.setLocation(location);
   }, [location]);
 
-  // Notify shell (Cloud UI) when Console navigates internally
-  // This enables bidirectional sync between TanStack Router and React Router DOM
+  // Notify shell (Cloud UI) when Console navigates internally.
+  // Skip in MFv2 federated mode — console-app.tsx handles navigation sync
+  // via the onRouteChange callback. Dispatching events here too creates a
+  // feedback loop: Console dispatches → cloud-ui navigates → Console sees
+  // new path → dispatches again.
   useEffect(() => {
-    if (isEmbedded() && location.pathname && previousPathRef.current !== location.pathname) {
+    if (isEmbedded() && !isFederatedMode() && location.pathname && previousPathRef.current !== location.pathname) {
       // Dispatch event for shell to sync its router state
       window.dispatchEvent(new CustomEvent('[console] navigated', { detail: location.pathname }));
       previousPathRef.current = location.pathname;
@@ -66,3 +69,13 @@ export const RouterSync = () => {
 
   return null;
 };
+
+/**
+ * Detect MFv2 federated mode. In federated mode, console-app.tsx sets up its own
+ * navigation sync via onRouteChange — the legacy window event dispatch is not needed.
+ */
+function isFederatedMode(): boolean {
+  // config.clusterId is only set in federated mode (via setup() in console-app.tsx).
+  // In standalone mode, it's undefined.
+  return appConfig.clusterId !== undefined && appConfig.clusterId !== '';
+}

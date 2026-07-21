@@ -128,35 +128,6 @@ export class Timer {
   }
 }
 
-export class DebugTimerStore {
-  private static instance: DebugTimerStore;
-  static get Instance() {
-    if (!DebugTimerStore.instance) {
-      DebugTimerStore.instance = new DebugTimerStore();
-    }
-    return DebugTimerStore.instance;
-  }
-
-  private secondCounter = 0;
-  private frame = 0;
-
-  private constructor() {
-    const ONE_SECOND_MS = 1000;
-    this.increaseSec = this.increaseSec.bind(this);
-    setInterval(this.increaseSec, ONE_SECOND_MS);
-
-    this.increaseFrame = this.increaseFrame.bind(this);
-    //setInterval(this.increaseFrame, 30);
-  }
-
-  private increaseSec() {
-    this.secondCounter += 1;
-  }
-  private increaseFrame() {
-    this.frame += 1;
-  }
-}
-
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 const REFRESH_COUNTER_MAX = 1000;
 export const alwaysChanging = () => {

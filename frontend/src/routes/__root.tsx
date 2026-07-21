@@ -11,7 +11,7 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
@@ -19,6 +19,7 @@ import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
+import { DebugHelper } from '../components/debug-helper/debug-dialog';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
 import { SidebarLayout } from '../components/layout/sidebar';
@@ -30,6 +31,9 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
+import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { IsDev } from '../utils/env';
+import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
 export type RouterContext = {
@@ -50,8 +54,10 @@ function RootLayout() {
         <ErrorBoundary>
           <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
         </ErrorBoundary>
+        {IsDev && <DebugHelper />}
       </NuqsAdapter>
-      {process.env.NODE_ENV === 'development' && <TanStackRouterDevtools position="bottom-right" />}
+
+      {IsDev && <TanStackRouterDevtools position="bottom-right" />}
     </>
   );
 }
@@ -69,7 +75,7 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          <div className="container mx-auto max-w-[1500px] px-12 pt-8">
+          <div className="container mx-auto max-w-[1500px] px-12">
             <AppContent />
           </div>
         </SidebarInset>
@@ -83,6 +89,27 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
+  const matches = useMatches();
+  const { pathname } = useLocation();
+  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
+  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+
+  if (isFullscreen) {
+    return (
+      <div id="mainLayout">
+        <TooltipProvider>
+          <ModalContainer />
+          {!isEmbedded() && <AppPageHeader breadcrumbOnly />}
+          <ErrorDisplay>
+            <Outlet />
+          </ErrorDisplay>
+          <ErrorModalsRenderer />
+          <Toaster position="top-right" richColors theme={toasterTheme} />
+        </TooltipProvider>
+      </div>
+    );
+  }
+
   return (
     <div id="mainLayout">
       <TooltipProvider>
@@ -94,7 +121,9 @@ function AppContent() {
         <AppPageHeader />
 
         <ErrorDisplay>
-          <Outlet />
+          <div className="pt-8">
+            <Outlet />
+          </div>
         </ErrorDisplay>
 
         <AppFooter />
@@ -104,7 +133,7 @@ function AppContent() {
         <ErrorModalsRenderer />
 
         {/* Toaster for notifications */}
-        <Toaster />
+        <Toaster position="top-right" richColors theme={toasterTheme} />
       </TooltipProvider>
     </div>
   );

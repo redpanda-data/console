@@ -52,6 +52,12 @@ type ConfigEntryExtension struct {
 	// the user the available compression methods for `compression.type`.
 	// The presented values may be dependent on the target Kafka cluster version.
 	EnumValues []string `json:"enumValues,omitempty"`
+
+	// NoInfiniteValue opts a config out of the "Infinite" button in the config
+	// editor. BYTE_SIZE and DURATION configs show Infinite by default; set this
+	// to true for configs where the broker rejects the infinite sentinel (e.g.
+	// max.message.bytes, segment.bytes, which have hard server-side caps).
+	NoInfiniteValue bool `json:"noInfiniteValue,omitempty"`
 }
 
 func loadConfigExtensions() (map[string]ConfigEntryExtension, error) {

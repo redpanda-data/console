@@ -2,11 +2,9 @@ import type React from 'react';
 
 export const AWSDynamoDbLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
-    height="256px"
     preserveAspectRatio="xMidYMid"
     version="1.1"
     viewBox="0 0 256 256"
-    width="256px"
     xlinkHref="http://www.w3.org/1999/xlink"
     xmlns="http://www.w3.org/2000/svg"
     {...props}

@@ -28,7 +28,7 @@ import { describe, expect, test } from 'vitest';
 
 import { buildControlplaneUpdateRequest, buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
-import { TLS_MODE } from '../create/model';
+import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
 // Base form values for testing
 const baseFormValues: FormValues = {
@@ -43,8 +43,9 @@ const baseFormValues: FormValues = {
     fetchMaxBytes: 20_971_520,
     fetchPartitionMaxBytes: 1_048_576,
   },
-  useScram: false,
+  authMethod: AUTH_METHOD.NONE,
   scramCredentials: undefined,
+  plainCredentials: undefined,
   useTls: false,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
@@ -72,6 +73,7 @@ const baseFormValues: FormValues = {
   ],
   excludeDefault: false,
   enableSchemaRegistrySync: false,
+  schemaRegistry: initialValues.schemaRegistry,
 };
 
 // Helper to create a minimal ShadowLink proto for testing
@@ -334,7 +336,7 @@ describe('buildDataplaneUpdateRequest', () => {
       {
         description: 'authentication change',
         changes: {
-          useScram: true,
+          authMethod: AUTH_METHOD.SCRAM,
           scramCredentials: { username: 'user', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         },
         expectedPath: 'configurations.client_options.authentication_configuration',

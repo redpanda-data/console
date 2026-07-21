@@ -1155,17 +1155,17 @@ components:
             In this example, in proto `field` could take one of the following values:
 
             * `full_name` for a violation in the `full_name` value
-            * `email_addresses[1].email` for a violation in the `email` field of the
+            * `email_addresses[0].email` for a violation in the `email` field of the
               first `email_addresses` message
-            * `email_addresses[3].type[2]` for a violation in the second `type`
+            * `email_addresses[2].type[1]` for a violation in the second `type`
               value in the third `email_addresses` message.
 
             In JSON, the same values are represented as:
 
             * `fullName` for a violation in the `fullName` value
-            * `emailAddresses[1].email` for a violation in the `email` field of the
+            * `emailAddresses[0].email` for a violation in the `email` field of the
               first `emailAddresses` message
-            * `emailAddresses[3].type[2]` for a violation in the second `type`
+            * `emailAddresses[2].type[1]` for a violation in the second `type`
               value in the third `emailAddresses` message.
           type: string
         localized_message:
@@ -1298,6 +1298,27 @@ components:
       properties:
         transform:
           $ref: '#/components/schemas/TransformMetadata'
+      type: object
+    HTTPBasicAuthOptions:
+      description: HTTP Basic auth credentials.
+      properties:
+        password:
+          description: HTTP Basic auth password. For Confluent Cloud, this is the API secret.
+          type: string
+        password_set:
+          description: Indicates that the password has been set.
+          readOnly: true
+          type: boolean
+        password_set_at:
+          description: |-
+            Timestamp of when the password was last set - only valid if password_set
+            is true.
+          format: date-time
+          readOnly: true
+          type: string
+        username:
+          description: HTTP Basic auth username. For Confluent Cloud, this is the API key.
+          type: string
       type: object
     Help:
       description: |-
@@ -2698,15 +2719,106 @@ components:
           description: The name of the principal assigned to the role.
           type: string
       type: object
+    RoleSyncOptions:
+      properties:
+        effective_interval:
+          readOnly: true
+          title: The effective interval for the task
+          type: string
+        interval:
+          title: |-
+            Sync interval
+            If 0 provided, defaults to 30 seconds
+          type: string
+        paused:
+          title: |-
+            Allows user to pause the role sync task.  If paused, then the task will
+            enter the 'paused' state and will not sync roles from the source cluster
+          type: boolean
+        role_name_filters:
+          items:
+            $ref: '#/components/schemas/NameFilter'
+          title: |-
+            Filters selecting which roles to shadow by name.  Defaults to empty: no
+            roles are synced until at least one include filter is added
+          type: array
+      title: Options for syncing RBAC roles
+      type: object
     SASLMechanism:
       description: SASL mechanism to use for authentication.
       enum:
         - SASL_MECHANISM_SCRAM_SHA_256
         - SASL_MECHANISM_SCRAM_SHA_512
       type: string
+    SchemaRegistryAuthOptions:
+      description: Authentication settings for source Schema Registry HTTP requests.
+      properties:
+        basic:
+          $ref: '#/components/schemas/HTTPBasicAuthOptions'
+      type: object
+    SchemaRegistryContextDestination:
+      description: Destination context mapping for source Schema Registry data.
+      properties:
+        exact:
+          $ref: '#/components/schemas/SchemaRegistryExactContextMappings'
+        identity:
+          $ref: '#/components/schemas/SchemaRegistryIdentityContextMapping'
+      type: object
+    SchemaRegistryContextMap:
+      description: One source-to-destination context mapping.
+      properties:
+        destination:
+          description: Destination context name.
+          type: string
+        source:
+          description: Source context name.
+          type: string
+      type: object
+    SchemaRegistryExactContextMappings:
+      description: Explicit source-to-destination context mappings.
+      properties:
+        mappings:
+          description: |-
+            Explicit source-to-destination context mappings. Every source context in
+            the effective source scope must have exactly one mapping.
+          items:
+            $ref: '#/components/schemas/SchemaRegistryContextMap'
+          type: array
+      type: object
+    SchemaRegistryIdentityContextMapping:
+      description: Preserve source context names in the destination Schema Registry.
+      type: object
+    SchemaRegistrySourceFilter:
+      description: |-
+        Filter for specific Schema Registry contexts and subjects to select for
+        replication. If unset or empty, the whole source Schema Registry is
+        replicated.
+      properties:
+        contexts:
+          description: |-
+            Source contexts to replicate in full, for example ".", ".prod", or
+            ".staging". If both `contexts` and `subjects` are set, the effective
+            source scope is the union of both selections.
+          items:
+            type: string
+          type: array
+        subjects:
+          description: |-
+            Exact source subjects to replicate, using Schema Registry qualified
+            subject syntax. For example, "orders-value" selects the subject in the
+            default context, and ":.prod:orders-value" selects the subject in context
+            ".prod". If both `contexts` and `subjects` are set, the union of both
+            selections is replicated. If a subject is also included by `contexts`, it
+            is counted and replicated once.
+          items:
+            type: string
+          type: array
+      type: object
     SchemaRegistrySyncOptions:
       description: Options for how the Schema Registry is synced.
       properties:
+        shadow_schema_registry_api:
+          $ref: '#/components/schemas/ShadowSchemaRegistryApi'
         shadow_schema_registry_topic:
           $ref: '#/components/schemas/ShadowSchemaRegistryTopic'
       type: object
@@ -2966,6 +3078,8 @@ components:
           $ref: '#/components/schemas/ShadowLinkClientOptions'
         consumer_offset_sync_options:
           $ref: '#/components/schemas/ConsumerOffsetSyncOptions'
+        role_sync_options:
+          $ref: '#/components/schemas/RoleSyncOptions'
         schema_registry_sync_options:
           $ref: '#/components/schemas/SchemaRegistrySyncOptions'
         security_sync_options:
@@ -3002,6 +3116,63 @@ components:
         state:
           $ref: '#/components/schemas/TaskState'
       title: Status of a task
+      type: object
+    ShadowSchemaRegistryApi:
+      description: |-
+        Replicates selected Schema Registry subjects, configs, modes, and schema
+        IDs over the Schema Registry HTTP API.
+      properties:
+        auth_options:
+          $ref: '#/components/schemas/SchemaRegistryAuthOptions'
+        destination:
+          $ref: '#/components/schemas/SchemaRegistryContextDestination'
+        effective_full_sync_interval:
+          description: The effective interval between full scans.
+          readOnly: true
+          type: string
+        effective_max_source_requests_per_second:
+          description: The effective maximum request rate, in requests per second.
+          format: int32
+          readOnly: true
+          type: integer
+        effective_tail_interval:
+          description: The effective interval between incremental polls.
+          readOnly: true
+          type: string
+        full_sync_interval:
+          description: |-
+            Interval between full scans of the selected source subjects. If unset
+            or zero, the cluster default of 5m is used.
+          type: string
+        max_source_requests_per_second:
+          description: |-
+            Maximum request rate, in requests per second, for calls to the source
+            Schema Registry. If unset or zero, a default rate limit of 30
+            requests/s is used.
+          format: int32
+          type: integer
+        paused:
+          description: |-
+            Allows the user to pause the Schema Registry sync task. If paused,
+            the task enters the 'paused' state and stops replicating schemas from
+            the source, and the per-context client write protection on the
+            contexts this link owns is lifted.
+          type: boolean
+        source_filter:
+          $ref: '#/components/schemas/SchemaRegistrySourceFilter'
+        source_url:
+          description: The source Schema Registry URL to use.
+          type: string
+        tail_interval:
+          description: |-
+            Interval between incremental polls for new source subjects and
+            subject versions. If unset or zero, the cluster default of 10s is
+            used.
+          type: string
+        tls_settings:
+          $ref: '#/components/schemas/TLSSettings'
+        unsupported_schema_feature_policy:
+          $ref: '#/components/schemas/UnsupportedSchemaFeaturePolicy'
       type: object
     ShadowSchemaRegistryTopic:
       description: |-
@@ -3349,6 +3520,16 @@ components:
           title: ID of unmount
           type: integer
       type: object
+    UnsupportedSchemaFeaturePolicy:
+      description: |-
+        Policy for handling source schema features unsupported by the destination.
+
+         - UNSUPPORTED_SCHEMA_FEATURE_POLICY_FAIL: Fail the sync when an unsupported schema feature is encountered.
+         - UNSUPPORTED_SCHEMA_FEATURE_POLICY_REMOVE: Remove unsupported schema features before writing to the destination.
+      enum:
+        - UNSUPPORTED_SCHEMA_FEATURE_POLICY_FAIL
+        - UNSUPPORTED_SCHEMA_FEATURE_POLICY_REMOVE
+      type: string
     UpdateConfiguration:
       properties:
         name:
@@ -7837,7 +8018,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

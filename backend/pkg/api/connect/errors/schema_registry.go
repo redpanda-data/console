@@ -56,34 +56,39 @@ func NewConnectErrorFromSchemaRegistryError(err error, prefixErrMsg string) *con
 }
 
 func codeFromSRError(srErr *sr.ResponseError) connect.Code {
-	connectCode := CodeFromHTTPStatus(srErr.StatusCode)
-
 	switch srErr.ErrorCode {
-	case sr.ErrSubjectNotFound.Code:
-		connectCode = connect.CodeNotFound
-	case sr.ErrVersionNotFound.Code:
-		connectCode = connect.CodeNotFound
-	case sr.ErrSchemaNotFound.Code:
-		connectCode = connect.CodeNotFound
-	case sr.ErrSubjectLevelCompatibilityNotConfigured.Code:
-		connectCode = connect.CodeNotFound
-	case sr.ErrInvalidSchema.Code:
-		connectCode = connect.CodeInvalidArgument
-	case sr.ErrInvalidVersion.Code:
-		connectCode = connect.CodeInvalidArgument
-	case sr.ErrInvalidCompatibilityLevel.Code:
-		connectCode = connect.CodeInvalidArgument
-	case sr.ErrInvalidSubject.Code:
-		connectCode = connect.CodeInvalidArgument
-	case sr.ErrIncompatibleSchema.Code:
-		connectCode = connect.CodeFailedPrecondition
-	case sr.ErrStoreError.Code:
-		connectCode = connect.CodeInternal
-	case sr.ErrRequestForwardingFailed.Code:
-		connectCode = connect.CodeUnavailable
-	case sr.ErrOperationTimeout.Code:
-		connectCode = connect.CodeUnavailable
-	}
+	case sr.ErrSubjectNotFound.Code,
+		sr.ErrVersionNotFound.Code,
+		sr.ErrSchemaNotFound.Code,
+		sr.ErrSubjectLevelCompatibilityNotConfigured.Code,
+		sr.ErrSubjectSoftDeleted.Code,
+		sr.ErrSchemaVersionSoftDeleted.Code,
+		sr.ErrSubjectLevelModeNotConfigured.Code:
+		return connect.CodeNotFound
 
-	return connectCode
+	case sr.ErrInvalidSchema.Code,
+		sr.ErrInvalidVersion.Code,
+		sr.ErrInvalidCompatibilityLevel.Code,
+		sr.ErrInvalidSubject.Code,
+		sr.ErrSchemaTooLarge.Code,
+		sr.ErrInvalidRuleset.Code,
+		sr.ErrInvalidMode.Code:
+		return connect.CodeInvalidArgument
+
+	case sr.ErrIncompatibleSchema.Code,
+		sr.ErrReferenceExists.Code,
+		sr.ErrOperationNotPermitted.Code:
+		return connect.CodeFailedPrecondition
+
+	case sr.ErrRequestForwardingFailed.Code,
+		sr.ErrOperationTimeout.Code,
+		sr.ErrUnknownLeader.Code:
+		return connect.CodeUnavailable
+
+	case sr.ErrStoreError.Code:
+		return connect.CodeInternal
+
+	default:
+		return CodeFromHTTPStatus(srErr.StatusCode)
+	}
 }

@@ -10,7 +10,6 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { AlertCircle, Trash2 } from 'lucide-react';
 import type { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
@@ -40,10 +39,10 @@ export const RemoteMCPToolButton = ({
 }: RemoteMCPToolButtonProps) => {
   const getButtonClassName = () => {
     if (hasLintIssues) {
-      return 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30';
+      return 'border-outline-error bg-background-error-subtle';
     }
     if (isSelected) {
-      return 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30';
+      return 'border-outline-informative bg-background-informative-subtle';
     }
     return 'border-border bg-card hover:bg-gray-50 dark:hover:bg-secondary';
   };
@@ -66,12 +65,12 @@ export const RemoteMCPToolButton = ({
       <div className="mb-1 flex items-center justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <RedpandaConnectComponentTypeBadge componentType={componentType} />
-          <Text as="span" className="truncate text-sm" title={name || 'Unnamed Tool'}>
+          <span className="truncate text-body" title={name || 'Unnamed Tool'}>
             {name || 'Unnamed Tool'}
-          </Text>
+          </span>
           {Boolean(hasLintIssues) && (
             <span title="Has linting issues">
-              <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600 dark:text-red-400" />
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-error" />
             </span>
           )}
         </div>
@@ -89,9 +88,9 @@ export const RemoteMCPToolButton = ({
         ) : null}
       </div>
       <div className="flex-1">
-        <Text className="line-clamp-2 text-xs" title={description} variant="muted">
+        <div className="line-clamp-2 text-body-sm text-muted-foreground" title={description}>
           {description}
-        </Text>
+        </div>
       </div>
     </button>
   );

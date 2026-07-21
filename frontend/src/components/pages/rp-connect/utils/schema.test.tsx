@@ -1,10 +1,22 @@
 import { create } from '@bufbuild/protobuf';
 import { ComponentStatus, FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { onboardingWizardStore } from 'state/onboarding-wizard-store';
+import { rpcnWizardStore } from 'state/rpcn-wizard-store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
-import { checkRequired, generateDefaultValue, SENTINEL_REQUIRED_FIELD, schemaToConfig } from './schema';
+import {
+  checkRequired,
+  fieldHasOptions,
+  generateDefaultValue,
+  isComponentField,
+  isFormField,
+  isObjectGroupField,
+  isResourceRefField,
+  isScalarArrayField,
+  isScalarField,
+  SENTINEL_REQUIRED_FIELD,
+  schemaToConfig,
+} from './schema';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 vi.mock('zustand');
@@ -16,7 +28,7 @@ describe('generateDefaultValue', () => {
 
   describe('SASL visibility for Redpanda components', () => {
     test('SASL shown for Redpanda components when wizard user data exists', () => {
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setUserData({
         username: 'testuser',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: '',
@@ -46,11 +58,11 @@ describe('generateDefaultValue', () => {
       expect(result).toBeDefined();
       expect((result as Record<string, unknown>).mechanism).toBe('SCRAM-SHA-256');
 
-      onboardingWizardStore.setUserData({ username: '', consumerGroup: '' });
+      rpcnWizardStore.setUserData({ username: '', consumerGroup: '' });
     });
 
     test('SASL NOT shown for Redpanda components without wizard user data', () => {
-      onboardingWizardStore.setUserData({ username: '', consumerGroup: '' });
+      rpcnWizardStore.setUserData({ username: '', consumerGroup: '' });
 
       const spec = {
         name: 'sasl',
@@ -160,8 +172,8 @@ describe('generateDefaultValue', () => {
 
   describe('Wizard data population', () => {
     beforeEach(() => {
-      onboardingWizardStore.setTopicData({ topicName: 'example' });
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setTopicData({ topicName: 'example' });
+      rpcnWizardStore.setUserData({
         username: 'admin',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: 'my-consumer-group',
@@ -201,7 +213,7 @@ describe('generateDefaultValue', () => {
     });
 
     test('topics array field without wizard data returns sentinel for required field', () => {
-      onboardingWizardStore.setTopicData({ topicName: undefined });
+      rpcnWizardStore.setTopicData({ topicName: undefined });
 
       const spec = {
         name: 'topics',
@@ -444,7 +456,7 @@ describe('generateDefaultValue', () => {
 
   describe('SASL critical field behavior', () => {
     test('SASL populates with wizard data (user, password as secrets)', () => {
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setUserData({
         username: 'admin',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: '',
@@ -570,8 +582,8 @@ describe('generateDefaultValue', () => {
 
   describe('Full component integration', () => {
     beforeEach(() => {
-      onboardingWizardStore.setTopicData({ topicName: 'example' });
-      onboardingWizardStore.setUserData({
+      rpcnWizardStore.setTopicData({ topicName: 'example' });
+      rpcnWizardStore.setUserData({
         username: 'admin',
         saslMechanism: 'SCRAM-SHA-256',
         consumerGroup: '',
@@ -1140,5 +1152,68 @@ describe('checkRequired', () => {
       children: [{ optional: true, type: 'string', kind: 'scalar' } as RawFieldSpec],
     } as RawFieldSpec;
     expect(checkRequired(spec)).toBe(false);
+  });
+});
+
+describe('field-type predicates', () => {
+  const field = (partial: Partial<RawFieldSpec>): RawFieldSpec => ({ name: 'f', ...partial }) as RawFieldSpec;
+
+  test('fieldHasOptions detects enum annotations', () => {
+    expect(fieldHasOptions(field({ annotatedOptions: [{ value: 'a' }] as RawFieldSpec['annotatedOptions'] }))).toBe(
+      true
+    );
+    expect(fieldHasOptions(field({}))).toBe(false);
+  });
+
+  test('isScalarField covers primitives, enums, and resource refs', () => {
+    expect(isScalarField(field({ type: 'string', kind: 'scalar' }))).toBe(true);
+    expect(isScalarField(field({ type: 'int', kind: 'scalar' }))).toBe(true);
+    expect(
+      isScalarField(
+        field({
+          type: 'object',
+          kind: 'scalar',
+          annotatedOptions: [{ value: 'a' }] as RawFieldSpec['annotatedOptions'],
+        })
+      )
+    ).toBe(true);
+    expect(isScalarField(field({ type: 'cache', kind: 'scalar' }))).toBe(true); // resource ref
+    // A nested object (children) is an object group, not a scalar.
+    expect(isScalarField(field({ type: 'object', kind: 'scalar', children: [field({})] }))).toBe(false);
+  });
+
+  test('isScalarArrayField is a primitive list without options', () => {
+    expect(isScalarArrayField(field({ type: 'string', kind: 'array' }))).toBe(true);
+    expect(isScalarArrayField(field({ type: 'string', kind: 'scalar' }))).toBe(false);
+    expect(
+      isScalarArrayField(
+        field({ type: 'string', kind: 'array', annotatedOptions: [{ value: 'a' }] as RawFieldSpec['annotatedOptions'] })
+      )
+    ).toBe(false);
+  });
+
+  test('isObjectGroupField is a scalar with children', () => {
+    expect(isObjectGroupField(field({ type: 'object', kind: 'scalar', children: [field({})] }))).toBe(true);
+    expect(isObjectGroupField(field({ type: 'string', kind: 'scalar' }))).toBe(false);
+  });
+
+  test('isResourceRefField is a childless cache/rate_limit scalar', () => {
+    expect(isResourceRefField(field({ type: 'cache', kind: 'scalar' }))).toBe(true);
+    expect(isResourceRefField(field({ type: 'rate_limit', kind: 'scalar' }))).toBe(true);
+    expect(isResourceRefField(field({ type: 'cache', kind: 'scalar', children: [field({})] }))).toBe(false);
+    expect(isResourceRefField(field({ type: 'input', kind: 'scalar' }))).toBe(false);
+  });
+
+  test('isComponentField is a nested component, not a resource ref', () => {
+    expect(isComponentField(field({ type: 'input', kind: 'scalar' }))).toBe(true);
+    expect(isComponentField(field({ type: 'processor', kind: 'array' }))).toBe(true);
+    // A cache scalar is a resource reference, not an inline component.
+    expect(isComponentField(field({ type: 'cache', kind: 'scalar' }))).toBe(false);
+  });
+
+  test('isFormField excludes nested components', () => {
+    expect(isFormField(field({ type: 'string', kind: 'scalar' }))).toBe(true);
+    expect(isFormField(field({ type: 'string', kind: 'array' }))).toBe(true);
+    expect(isFormField(field({ type: 'input', kind: 'scalar' }))).toBe(false);
   });
 });

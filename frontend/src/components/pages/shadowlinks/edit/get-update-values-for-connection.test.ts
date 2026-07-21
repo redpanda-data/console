@@ -14,7 +14,7 @@ import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForConnection } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
-import { TLS_MODE } from '../create/model';
+import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
 // Base form values for testing
 const baseFormValues: FormValues = {
@@ -29,12 +29,13 @@ const baseFormValues: FormValues = {
     fetchMaxBytes: 20_971_520,
     fetchPartitionMaxBytes: 1_048_576,
   },
-  useScram: true,
+  authMethod: AUTH_METHOD.SCRAM,
   scramCredentials: {
     username: 'admin',
     password: 'password123',
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
+  plainCredentials: undefined,
   useTls: true,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
@@ -52,6 +53,7 @@ const baseFormValues: FormValues = {
   aclFilters: [],
   excludeDefault: false,
   enableSchemaRegistrySync: false,
+  schemaRegistry: initialValues.schemaRegistry,
 };
 
 describe('getUpdateValuesForConnection', () => {
@@ -211,57 +213,97 @@ describe('getUpdateValuesForConnection', () => {
     test.each([
       {
         description: 'SCRAM enabled',
-        originalUseScram: false,
-        newUseScram: true,
+        originalAuthMethod: AUTH_METHOD.NONE,
+        newAuthMethod: AUTH_METHOD.SCRAM,
         originalCredentials: undefined,
         newCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
       {
         description: 'SCRAM disabled',
-        originalUseScram: true,
-        newUseScram: false,
+        originalAuthMethod: AUTH_METHOD.SCRAM,
+        newAuthMethod: AUTH_METHOD.NONE,
         originalCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         newCredentials: undefined,
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
       {
         description: 'username changed',
-        originalUseScram: true,
-        newUseScram: true,
+        originalAuthMethod: AUTH_METHOD.SCRAM,
+        newAuthMethod: AUTH_METHOD.SCRAM,
         originalCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         newCredentials: { username: 'user2', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
       {
         description: 'password changed',
-        originalUseScram: true,
-        newUseScram: true,
+        originalAuthMethod: AUTH_METHOD.SCRAM,
+        newAuthMethod: AUTH_METHOD.SCRAM,
         originalCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         newCredentials: { username: 'admin', password: 'newpass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
       {
         description: 'mechanism changed',
-        originalUseScram: true,
-        newUseScram: true,
+        originalAuthMethod: AUTH_METHOD.SCRAM,
+        newAuthMethod: AUTH_METHOD.SCRAM,
         originalCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
         newCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_512 },
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
     ])('should detect $description', ({
-      originalUseScram,
-      newUseScram,
+      originalAuthMethod,
+      newAuthMethod,
       originalCredentials,
       newCredentials,
       expectedPath,
     }) => {
-      const original = { ...baseFormValues, useScram: originalUseScram, scramCredentials: originalCredentials };
-      const updated = { ...baseFormValues, useScram: newUseScram, scramCredentials: newCredentials };
+      const original = { ...baseFormValues, authMethod: originalAuthMethod, scramCredentials: originalCredentials };
+      const updated = { ...baseFormValues, authMethod: newAuthMethod, scramCredentials: newCredentials };
 
       const result = getUpdateValuesForConnection(updated, original);
 
       expect(result.fieldMaskPaths).toContain(expectedPath);
+    });
+
+    test('detects switch from SCRAM to PLAIN', () => {
+      const original = {
+        ...baseFormValues,
+        authMethod: AUTH_METHOD.SCRAM,
+        scramCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
+        plainCredentials: undefined,
+      };
+      const updated = {
+        ...baseFormValues,
+        authMethod: AUTH_METHOD.PLAIN,
+        scramCredentials: undefined,
+        plainCredentials: { username: 'admin', password: 'pass' },
+      };
+
+      const result = getUpdateValuesForConnection(updated, original);
+
+      expect(result.fieldMaskPaths).toContain('configurations.client_options.authentication_configuration');
+    });
+
+    test('does not flag auth change when only the inactive branch was seeded by a tab visit', () => {
+      // Loaded SCRAM-only link, user briefly opened PLAIN tab (seeding plainCredentials),
+      // then went back to SCRAM without editing.
+      const original = {
+        ...baseFormValues,
+        authMethod: AUTH_METHOD.SCRAM,
+        scramCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
+        plainCredentials: undefined,
+      };
+      const updated = {
+        ...baseFormValues,
+        authMethod: AUTH_METHOD.SCRAM,
+        scramCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_256 },
+        plainCredentials: { username: '', password: '' },
+      };
+
+      const result = getUpdateValuesForConnection(updated, original);
+
+      expect(result.fieldMaskPaths).not.toContain('configurations.client_options.authentication_configuration');
     });
   });
 
@@ -330,7 +372,7 @@ describe('getUpdateValuesForConnection', () => {
       const original = {
         ...baseFormValues,
         bootstrapServers: [{ value: 'localhost:9092' }],
-        useScram: true,
+        authMethod: AUTH_METHOD.SCRAM,
         useTls: false,
         advanceClientOptions: {
           ...baseFormValues.advanceClientOptions,
@@ -342,7 +384,7 @@ describe('getUpdateValuesForConnection', () => {
       const updated = {
         ...baseFormValues,
         bootstrapServers: [{ value: 'example.com:9092' }],
-        useScram: false,
+        authMethod: AUTH_METHOD.NONE,
         useTls: true,
         advanceClientOptions: {
           ...baseFormValues.advanceClientOptions,
@@ -442,10 +484,10 @@ describe('getUpdateValuesForConnection', () => {
       expect(result.value.tlsSettings).toBeUndefined();
     });
 
-    test('should include authentication when useScram is true', () => {
+    test('should include authentication when authMethod is SCRAM', () => {
       const values = {
         ...baseFormValues,
-        useScram: true,
+        authMethod: AUTH_METHOD.SCRAM,
         scramCredentials: {
           username: 'testuser',
           password: 'testpass',
@@ -466,11 +508,32 @@ describe('getUpdateValuesForConnection', () => {
       }
     });
 
-    test('should not include authentication when useScram is false', () => {
+    test('should include PLAIN authentication when authMethod is PLAIN', () => {
       const values = {
         ...baseFormValues,
-        useScram: false,
+        authMethod: AUTH_METHOD.PLAIN,
         scramCredentials: undefined,
+        plainCredentials: {
+          username: 'plainuser',
+          password: 'plainpass',
+        },
+      };
+
+      const result = getUpdateValuesForConnection(values, baseFormValues);
+
+      expect(result.value.authenticationConfiguration?.authentication?.case).toBe('plainConfiguration');
+      if (result.value.authenticationConfiguration?.authentication?.case === 'plainConfiguration') {
+        expect(result.value.authenticationConfiguration.authentication.value.username).toBe('plainuser');
+        expect(result.value.authenticationConfiguration.authentication.value.password).toBe('plainpass');
+      }
+    });
+
+    test('should not include authentication when authMethod is none', () => {
+      const values = {
+        ...baseFormValues,
+        authMethod: AUTH_METHOD.NONE,
+        scramCredentials: undefined,
+        plainCredentials: undefined,
       };
 
       const result = getUpdateValuesForConnection(values, baseFormValues);

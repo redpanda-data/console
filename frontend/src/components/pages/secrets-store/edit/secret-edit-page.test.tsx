@@ -9,7 +9,7 @@ import {
   Scope,
   SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -130,7 +130,7 @@ describe('SecretEditPage', () => {
       expect(submitButton).toBeEnabled();
     });
 
-    fireEvent.click(submitButton);
+    await user.click(submitButton);
 
     // Verify the update mutation was called
     await waitFor(() => {

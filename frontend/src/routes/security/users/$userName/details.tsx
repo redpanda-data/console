@@ -11,7 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import UserDetailsPage from '../../../../components/pages/acls/user-details';
+import UserDetailsPage from '../../../../components/pages/security/users/user-details';
 
 export const Route = createFileRoute('/security/users/$userName/details')({
   staticData: {

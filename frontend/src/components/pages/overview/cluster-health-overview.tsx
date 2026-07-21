@@ -5,7 +5,7 @@ import { ErrorIcon, WarningIcon } from 'components/icons';
 import colors from '../../../colors';
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { api } from '../../../state/backend-api';
-import { Features } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { titleCase } from '../../../utils/utils';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
 
@@ -19,6 +19,7 @@ const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
 };
 
 const ClusterHealthOverview = () => {
+  const featureDebugBundle = useSupportedFeaturesStore((s) => s.debugBundle);
   return (
     <Box>
       <List spacing={3}>
@@ -57,7 +58,9 @@ const ClusterHealthOverview = () => {
                   <ErrorIcon color={colors.brandError} size={18} />{' '}
                   <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text>
                 </Flex>{' '}
-                <Link to="/topics">View topics</Link>
+                <Link search={{} as never} to="/topics">
+                  View topics
+                </Link>
               </Flex>
             </Grid>
           </ListItem>
@@ -73,12 +76,14 @@ const ClusterHealthOverview = () => {
                   <WarningIcon color={colors.brandWarning} size={18} />{' '}
                   <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text>
                 </Flex>{' '}
-                <Link to="/topics">View topics</Link>
+                <Link search={{} as never} to="/topics">
+                  View topics
+                </Link>
               </Flex>
             </Grid>
           </ListItem>
         )}
-        {Boolean(api.userData?.canViewDebugBundle && Features.debugBundle) && (
+        {Boolean(api.userData?.canViewDebugBundle && featureDebugBundle) && (
           <ListItem>
             <Grid gap={4} templateColumns={{ sm: '1fr', md: '1fr 1fr' }}>
               <Box fontWeight="bold">Debug bundle</Box>

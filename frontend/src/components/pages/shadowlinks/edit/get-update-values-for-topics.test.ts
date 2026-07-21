@@ -23,7 +23,7 @@ import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
-import { TLS_MODE } from '../create/model';
+import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 import { buildDefaultTopicsValues } from '../mappers/dataplane';
 
 // Base form values for testing
@@ -39,12 +39,13 @@ const baseFormValues: FormValues = {
     fetchMaxBytes: 20_971_520,
     fetchPartitionMaxBytes: 1_048_576,
   },
-  useScram: true,
+  authMethod: AUTH_METHOD.SCRAM,
   scramCredentials: {
     username: 'admin',
     password: 'password123',
     mechanism: ScramMechanism.SCRAM_SHA_256,
   },
+  plainCredentials: undefined,
   useTls: true,
   mtlsMode: TLS_MODE.PEM,
   mtls: {
@@ -62,6 +63,7 @@ const baseFormValues: FormValues = {
   aclsMode: 'all',
   aclFilters: [],
   enableSchemaRegistrySync: false,
+  schemaRegistry: initialValues.schemaRegistry,
 };
 
 describe('getUpdateValuesForTopics', () => {

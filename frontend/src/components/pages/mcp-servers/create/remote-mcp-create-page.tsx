@@ -8,7 +8,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
 'use client';
 
 import { create } from '@bufbuild/protobuf';
@@ -18,7 +17,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { useLintHints } from 'components/ui/lint-hint/use-lint-hints';
 import { useSecretDetection } from 'components/ui/secret/use-secret-detection';
 import {
@@ -30,7 +28,7 @@ import { useYamlLabelSync } from 'components/ui/yaml/use-yaml-label-sync';
 import { ArrowLeft, FileText, Hammer, Loader2 } from 'lucide-react';
 import { MCPServer_ServiceAccountSchema } from 'protogen/redpanda/api/dataplane/v1/mcp_pb';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { type Resolver, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateMCPServerMutation, useLintMCPConfigMutation } from 'react-query/api/remote-mcp';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
@@ -91,7 +89,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
 
   // Form setup
   const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+    resolver: zodResolver(FormSchema) as Resolver<FormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -361,8 +359,10 @@ export const RemoteMCPCreatePage: React.FC = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Create MCP Server</Heading>
-        <Text variant="muted">Set up a new managed MCP server with custom tools and configurations.</Text>
+        <h1 className="text-heading-xl">Create MCP Server</h1>
+        <div className="text-body text-muted-foreground">
+          Set up a new managed MCP server with custom tools and configurations.
+        </div>
       </header>
 
       <Stepper.Provider className="space-y-4" variant="horizontal">
@@ -447,7 +447,7 @@ export const RemoteMCPCreatePage: React.FC = () => {
                   {isCreateMCPServerPending || isCreateServiceAccountPending || isCreateSecretPending ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <Text as="span">Creating...</Text>
+                      <span className="text-body">Creating...</span>
                     </div>
                   ) : (
                     'Create MCP Server'

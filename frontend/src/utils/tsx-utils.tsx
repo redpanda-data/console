@@ -26,8 +26,8 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import { CopyIcon, DownloadIcon, HelpIcon, InfoIcon } from 'components/icons';
-import { motion } from 'framer-motion';
-import React, { Component, type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
+import React, { Component, type CSSProperties, type JSX, type ReactNode, useEffect, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
@@ -646,17 +646,17 @@ export function LabelTooltip(p: {
 
 export type ButtonProps = Omit<RpButtonProps, 'disabled' | 'isDisabled'> & { disabledReason?: string };
 export function Button(p: ButtonProps) {
-  if (!p.disabledReason) {
-    return <RpButton {...p} />;
+  // Destructure disabledReason OUT of the spread in BOTH branches: leaving the key (even with a
+  // falsy value) lets RpButton forward it to its DOM element, which React warns about as an
+  // unknown attribute.
+  const { disabledReason, ...btnProps } = p;
+  if (!disabledReason) {
+    return <RpButton {...btnProps} />;
   }
 
-  const reason = p.disabledReason;
-  const btnProps = { ...p };
-  btnProps.disabledReason = undefined;
-
   return (
-    <Tooltip hasArrow label={reason} placement="top">
-      <RpButton {...btnProps} className={`${p.className ?? ''} disabled`} isDisabled onClick={undefined} />
+    <Tooltip hasArrow label={disabledReason} placement="top">
+      <RpButton {...btnProps} className={`${btnProps.className ?? ''} disabled`} isDisabled onClick={undefined} />
     </Tooltip>
   );
 }
@@ -665,10 +665,11 @@ export function IconButton(p: {
   onClick?: React.MouseEventHandler<HTMLElement>;
   children?: React.ReactNode;
   disabledReason?: string;
+  'data-testid'?: string;
 }) {
   if (!p.disabledReason) {
     return (
-      <button className="iconButton" onClick={p.onClick} type="button">
+      <button className="iconButton" data-testid={p['data-testid']} onClick={p.onClick} type="button">
         {p.children}
       </button>
     );
@@ -676,7 +677,9 @@ export function IconButton(p: {
 
   return (
     <Tooltip hasArrow label={p.disabledReason} placement="top">
-      <span className="iconButton disabled">{p.children}</span>
+      <span className="iconButton disabled" data-testid={p['data-testid']}>
+        {p.children}
+      </span>
     </Tooltip>
   );
 }

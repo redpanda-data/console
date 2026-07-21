@@ -10,7 +10,7 @@
  */
 
 import { useLocation, useMatchRoute } from '@tanstack/react-router';
-import { GitHubIcon, LinkedInIcon, SlackIcon, TwitterIcon } from 'components/icons';
+import { GitHubIcon, SlackIcon, TwitterIcon } from 'components/icons';
 
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
@@ -87,14 +87,6 @@ export const AppFooter = () => {
         </a>
         <a href="https://twitter.com/redpandadata" rel="noopener noreferrer" target="_blank" title="Twitter">
           <TwitterIcon size={16} />
-        </a>
-        <a
-          href="https://www.linkedin.com/company/redpanda-data"
-          rel="noopener noreferrer"
-          target="_blank"
-          title="LinkedIn"
-        >
-          <LinkedInIcon size={16} />
         </a>
       </div>
 

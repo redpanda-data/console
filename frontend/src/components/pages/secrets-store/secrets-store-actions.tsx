@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
+import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { MoreHorizontal, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useListResourcesForSecretQuery } from 'react-query/api/secret';
@@ -53,17 +53,19 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
   return (
     <div data-actions-column>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className="h-8 w-8 data-[state=open]:bg-muted"
-            data-testid="secret-actions-menu-trigger"
-            size="icon"
-            variant="ghost"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              className="h-8 w-8 data-[popup-open]:bg-muted"
+              data-testid="secret-actions-menu-trigger"
+              size="icon"
+              variant="ghost"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          }
+        />
         <DropdownMenuContent align="end" className="w-[200px]">
           <CopyButton
             className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
@@ -82,18 +84,21 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DeleteResourceAlertDialog
-            isDeleting={isDeleting}
-            onDelete={handleDelete}
-            onOpenChange={setIsDeleteDialogOpen}
-            resourceId={secret.id}
-            resourceName={secret.id}
-            resourceType="Secret"
-          >
-            {resources.length > 0 && <ResourceInUseAlert resources={resources} />}
-          </DeleteResourceAlertDialog>
+          <DeleteResourceMenuItem isDeleting={isDeleting} onSelect={() => setIsDeleteDialogOpen(true)} />
         </DropdownMenuContent>
       </DropdownMenu>
+      {/* Render the dialog as a sibling of the dropdown so the dialog survives the menu's unmount on close. */}
+      <DeleteResourceAlertDialog
+        isDeleting={isDeleting}
+        onDelete={handleDelete}
+        onOpenChange={setIsDeleteDialogOpen}
+        open={isDeleteDialogOpen}
+        resourceId={secret.id}
+        resourceName={secret.id}
+        resourceType="Secret"
+      >
+        {resources.length > 0 && <ResourceInUseAlert resources={resources} />}
+      </DeleteResourceAlertDialog>
     </div>
   );
 };

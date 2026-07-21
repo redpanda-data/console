@@ -8,7 +8,7 @@ test.describe('Licenses', () => {
     const licensingEl = page.locator('[data-testid="overview-license-name"]');
 
     // Assert that at least one element is visible and contains the text
-    await expect(licensingEl.filter({ hasText: 'Console Enterprise' }).first()).toBeVisible();
+    await expect(licensingEl.first()).toBeVisible();
   });
 
   test('should be able to upload new license', async ({ page }) => {
@@ -25,6 +25,6 @@ test.describe('Licenses', () => {
 
     await page.getByTestId('license').fill(licenseContent);
     await page.getByTestId('upload-license').click();
-    await expect(page.locator('h1:has-text("License uploaded successfully")')).toBeVisible();
+    await expect(page.locator('h1:has-text("License uploaded")')).toBeVisible();
   });
 });

@@ -1,5 +1,7 @@
 'use client';
 
+import { mergeProps } from '@base-ui/react/merge-props';
+import { useRender } from '@base-ui/react/use-render';
 import {
   defineStepper as defineStepperPrimitive,
   type Get,
@@ -9,11 +11,9 @@ import {
   type Stepper as StepperType,
 } from '@stepperize/react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot as SlotPrimitive } from 'radix-ui';
 import React from 'react';
 
-import { Button } from './button';
-import { Heading, Text } from './typography';
+import { Button, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
 const StepperContext = React.createContext<Stepper.ConfigProps | null>(null);
@@ -43,7 +43,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
     const renderedChildren = typeof children === 'function' ? children({ methods }) : children;
 
     return (
-      <div className={cn('w-full', className)} data-testid={testId} date-component="stepper" {...props}>
+      <div className={cn('w-full', className)} data-component="stepper" data-testid={testId} {...props}>
         {renderedChildren}
       </div>
     );
@@ -74,8 +74,8 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       Navigation: ({ children, 'aria-label': ariaLabel = 'Stepper Navigation', testId, ...props }) => {
         const { variant } = useStepperProvider();
         return (
-          <nav aria-label={ariaLabel} data-testid={testId} date-component="stepper-navigation" {...props}>
-            <ol className={classForNavigationList({ variant })} date-component="stepper-navigation-list">
+          <nav aria-label={ariaLabel} data-component="stepper-navigation" data-testid={testId} {...props}>
+            <ol className={classForNavigationList({ variant })} data-component="stepper-navigation-list">
               {children}
             </ol>
           </nav>
@@ -92,7 +92,6 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
         const step = allSteps[stepIndex];
         const currentIndex = utils.getIndex(current.id);
 
-        // Use icon from step definition if available, otherwise fall back to passed icon
         const stepIcon = step.icon || icon;
 
         const isLast = utils.getLast().id === props.of;
@@ -109,10 +108,10 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
           return (
             <li
               className={cn('flex shrink-0 items-center gap-4 rounded-md transition-colors', className)}
-              date-component="stepper-step"
+              data-component="stepper-step"
             >
               <CircleStepIndicator currentStep={stepIndex + 1} totalSteps={steps.length} />
-              <div className="flex flex-col items-start gap-1" date-component="stepper-step-content">
+              <div className="flex flex-col items-start gap-1" data-component="stepper-step-content">
                 {title}
                 {description}
               </div>
@@ -130,11 +129,11 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                 'data-[label-orientation=vertical]:flex-col',
                 'data-[label-orientation=vertical]:justify-center',
               ])}
+              data-component="stepper-step"
               data-disabled={props.disabled}
               data-label-orientation={labelOrientation}
               data-state={dataState}
               data-variant={variant}
-              date-component="stepper-step"
             >
               <Button
                 aria-controls={`step-panel-${props.of}`}
@@ -143,8 +142,8 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                 aria-selected={isActive}
                 aria-setsize={steps.length}
                 className={cn('rounded-full', isActive && 'ring-3 ring-secondary/20')}
+                data-component="stepper-step-indicator"
                 data-testid={testId}
-                date-component="stepper-step-indicator"
                 id={`step-${step.id}`}
                 onKeyDown={(e) => onStepKeyDown(e, utils.getNext(props.of), utils.getPrev(props.of))}
                 role="tab"
@@ -165,7 +164,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                   state={dataState}
                 />
               )}
-              <div className="flex flex-col items-start" date-component="stepper-step-content">
+              <div className="flex flex-col items-start" data-component="stepper-step-content">
                 {title}
                 {description}
               </div>
@@ -195,59 +194,86 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       },
       Title,
       Description,
-      Panel: ({ children, asChild, ...props }) => {
-        const Comp = asChild ? SlotPrimitive.Slot : 'div';
+      Panel: ({ children, render, ...props }) => {
         const { tracking } = useStepperProvider();
+        /**
+         * React invokes inline ref callbacks on every commit, so scrolling
+         * directly in the ref re-centered the panel on each re-render (e.g.
+         * typing in a field or switching an inner tab). Guard on node identity
+         * so the panel scrolls only when a new panel mounts — i.e. the active
+         * step actually changed.
+         */
+        const scrolledNodeRef = React.useRef<HTMLDivElement | null>(null);
+        const setPanelRef = React.useCallback(
+          (node: HTMLDivElement | null) => {
+            if (node && tracking && scrolledNodeRef.current !== node) {
+              scrolledNodeRef.current = node;
+              scrollIntoStepperPanel(node);
+            }
+          },
+          [tracking]
+        );
 
-        return (
-          <Comp date-component="stepper-step-panel" ref={(node) => scrollIntoStepperPanel(node, tracking)} {...props}>
-            {children}
-          </Comp>
-        );
+        return useRender({
+          defaultTagName: 'div',
+          render,
+          props: mergeProps<'div'>(
+            {
+              'data-component': 'stepper-step-panel',
+              ref: setPanelRef,
+              children,
+            } as useRender.ElementProps<'div'>,
+            props
+          ),
+        });
       },
-      Controls: ({ children, className, asChild, ...props }) => {
-        const Comp = asChild ? SlotPrimitive.Slot : 'div';
-        return (
-          <Comp className={cn('flex justify-end gap-4', className)} date-component="stepper-controls" {...props}>
-            {children}
-          </Comp>
-        );
-      },
+      Controls: ({ children, className, render, ...props }) =>
+        useRender({
+          defaultTagName: 'div',
+          render,
+          props: mergeProps<'div'>(
+            {
+              className: cn('flex justify-end gap-4', className),
+              'data-component': 'stepper-controls',
+              children,
+            } as useRender.ElementProps<'div'>,
+            props
+          ),
+        }),
     },
   };
 };
 
-const Title = ({ children, className, asChild, ...props }: React.ComponentProps<'h4'> & { asChild?: boolean }) => {
-  const Comp = asChild ? SlotPrimitive.Slot : Heading;
+const Title = ({ children, className, render, ...props }: useRender.ComponentProps<'h4'>) =>
+  useRender({
+    defaultTagName: 'h4',
+    render: render ?? <h4 className="text-heading-sm">{children}</h4>,
+    props: mergeProps<'h4'>(
+      {
+        className: cn('selection:bg-selected selection:text-selected-foreground', className),
+        'data-component': 'stepper-step-title',
+        children,
+      } as useRender.ElementProps<'h4'>,
+      props
+    ),
+  });
 
-  return (
-    <Comp
-      className={cn('font-medium text-base selection:bg-selected selection:text-selected-foreground', className)}
-      date-component="stepper-step-title"
-      level={asChild ? undefined : 4}
-      {...props}
-    >
-      {children}
-    </Comp>
-  );
-};
-
-const Description = ({ children, className, asChild, ...props }: React.ComponentProps<'p'> & { asChild?: boolean }) => {
-  const Comp = asChild ? SlotPrimitive.Slot : Text;
-
-  return (
-    <Comp
-      className={cn(
-        'text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
-        className
-      )}
-      date-component="stepper-step-description"
-      {...props}
-    >
-      {children}
-    </Comp>
-  );
-};
+const Description = ({ children, className, render, ...props }: useRender.ComponentProps<'p'>) =>
+  useRender({
+    defaultTagName: 'p',
+    render: render ?? <div className="text-body">{children}</div>,
+    props: mergeProps<'p'>(
+      {
+        className: cn(
+          'text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
+          className
+        ),
+        'data-component': 'stepper-step-description',
+        children,
+      } as useRender.ElementProps<'p'>,
+      props
+    ),
+  });
 
 const StepperSeparator = ({
   orientation,
@@ -267,10 +293,10 @@ const StepperSeparator = ({
     <div
       aria-hidden="true"
       className={classForSeparator({ orientation, labelOrientation })}
+      data-component="stepper-separator"
       data-disabled={disabled}
       data-orientation={orientation}
       data-state={state}
-      date-component="stepper-separator"
     />
   );
 };
@@ -291,7 +317,7 @@ const CircleStepIndicator = ({
       aria-valuemin={1}
       aria-valuenow={currentStep}
       className="relative inline-flex items-center justify-center"
-      date-component="stepper-step-indicator"
+      data-component="stepper-step-indicator"
       role="progressbar"
       tabIndex={-1}
     >
@@ -320,10 +346,7 @@ const CircleStepIndicator = ({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span
-          aria-live="polite"
-          className="font-medium text-sm selection:bg-selected selection:text-selected-foreground"
-        >
+        <span aria-live="polite" className="text-label selection:bg-selected selection:text-selected-foreground">
           {currentStep} of {totalSteps}
         </span>
       </div>
@@ -360,10 +383,8 @@ const classForSeparator = cva(
   }
 );
 
-function scrollIntoStepperPanel(node: HTMLDivElement | null, tracking?: boolean) {
-  if (tracking) {
-    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+function scrollIntoStepperPanel(node: HTMLDivElement) {
+  node.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 const useStepChildren = (children: React.ReactNode) => React.useMemo(() => extractChildren(children), [children]);
@@ -452,12 +473,14 @@ namespace Stepper {
           of: Get.Id<Steps>;
           icon?: React.ReactNode;
           testId?: string;
+          /** Render the trigger Button in a non-default variant. */
+          variant?: ButtonVariants['variant'];
         }
       ) => React.ReactElement;
-      Title: (props: AsChildProps<'h4'>) => React.ReactElement;
-      Description: (props: AsChildProps<'p'>) => React.ReactElement;
-      Panel: (props: AsChildProps<'div'>) => React.ReactElement;
-      Controls: (props: AsChildProps<'div'>) => React.ReactElement;
+      Title: (props: useRender.ComponentProps<'h4'>) => React.ReactElement;
+      Description: (props: useRender.ComponentProps<'p'>) => React.ReactElement;
+      Panel: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
+      Controls: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
     };
   };
 
@@ -468,9 +491,5 @@ namespace Stepper {
     strokeWidth?: number;
   };
 }
-
-type AsChildProps<T extends React.ElementType> = React.ComponentProps<T> & {
-  asChild?: boolean;
-};
 
 export { defineStepper };

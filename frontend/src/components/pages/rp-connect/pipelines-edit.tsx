@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Button, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import {
   type Pipeline,
@@ -145,21 +145,33 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   return (
     <PageContent>
       <div className="my-2">
-        <UIText>
+        <div className="text-body">
           For help editing your pipeline, see our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             quickstart documentation
           </UILink>
           , our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             library of examples
           </UILink>
           , or our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             connector catalog
           </UILink>
           .
-        </UIText>
+        </div>
       </div>
 
       <FormField errorText="Name cannot be empty" isInvalid={isNameEmpty} label="Pipeline name">
@@ -223,7 +235,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         >
           Update
         </Button>
-        <Link params={{ pipelineId }} to="/rp-connect/$pipelineId">
+        <Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
           <Button variant="link">Cancel</Button>
         </Link>
       </Flex>

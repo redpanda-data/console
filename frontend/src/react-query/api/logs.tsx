@@ -11,8 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { useEffect, useReducer, useRef, useState } from 'react';
-import { ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
 
 import { config as appConfig } from '../../config';
@@ -27,17 +27,19 @@ import { sanitizeString } from '../../utils/filter-helper';
 import { convertListMessageData } from '../../utils/message-converters';
 import { encodeBase64 } from '../../utils/utils';
 
-// --- Constants ---
-
 const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
-const HISTORY_HOURS = 5;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
 const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
-
-// --- Types ---
+/**
+ * Sliding-window cap for the live-tail log buffer. A live stream runs for up to 30 minutes
+ * and `flushMessages` prepends every batch with no limit, so without a cap the reducer's
+ * `messages` array would grow unbounded for the whole window on a long-lived/backgrounded tab.
+ * Newest-first means the most recent entries are kept.
+ */
+export const MAX_LIVE_LOG_MESSAGES = 5000;
 
 type UseLogSearchOptions = {
   pipelineId: string;
@@ -47,14 +49,18 @@ type UseLogSearchOptions = {
   serverless?: boolean;
 };
 
+type SearchProgress = {
+  bytesConsumed: number;
+  messagesConsumed: number;
+};
+
 type UseLogSearchReturn = {
   messages: TopicMessage[];
   phase: string | null;
   error: string | null;
+  progress: SearchProgress;
   refresh: () => void;
 };
-
-// --- Helpers ---
 
 const LOG_HISTORY_KEY = (pipelineId: string) => ['log-history', pipelineId] as const;
 
@@ -82,10 +88,9 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     req.startTimestamp = 0n;
     req.maxResults = LIVE_MAX_RESULTS;
   } else {
-    const startTime = new Date();
-    startTime.setHours(startTime.getHours() - HISTORY_HOURS);
-    req.startOffset = BigInt(PartitionOffsetOrigin.Timestamp);
-    req.startTimestamp = BigInt(startTime.getTime());
+    // Start at high-water-mark - maxResults so we get the most recent N, not the oldest.
+    req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
+    req.startTimestamp = 0n;
     req.maxResults = HISTORY_MAX_RESULTS;
   }
 
@@ -93,21 +98,21 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
 }
 
 function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean): boolean {
-  // Server-side pushdown filter handles pipelineId matching for serverful clusters;
-  // serverless clusters need client-side filtering.
+  // Serverful clusters filter by pipelineId via server-side pushdown; serverless filters here.
   if (!serverless) {
     return true;
   }
   return msg.keyJson === pipelineId;
 }
 
-// --- History streaming (extracted for React Compiler compatibility) ---
+// History streaming (extracted for React Compiler compatibility).
 
 type HistoryStreamOpts = {
   pipelineId: string;
   serverless: boolean;
   signal: AbortSignal;
-  messagesRef: React.RefObject<TopicMessage[]>;
+  messagesRef: React.RefObject<TopicMessage[] | null>;
+  progressRef: React.MutableRefObject<SearchProgress>;
   setPhase: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
@@ -118,6 +123,14 @@ function handleHistoryMessage(res: ListMessagesResponse, opts: HistoryStreamOpts
       if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
         opts.messagesRef.current?.push(msg);
       }
+      break;
+    }
+    case 'progress': {
+      const p = res.controlMessage.value;
+      opts.progressRef.current = {
+        bytesConsumed: Number(p.bytesConsumed),
+        messagesConsumed: Number(p.messagesConsumed),
+      };
       break;
     }
     case 'phase':
@@ -163,20 +176,23 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
   return opts.messagesRef.current ?? [];
 }
 
-// --- useLogHistory: React Query + ref/interval for incremental streaming ---
+const ZERO_PROGRESS: SearchProgress = { bytesConsumed: 0, messagesConsumed: 0 };
 
 function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled: boolean }) {
   const messagesRef = useRef<TopicMessage[]>([]);
+  const progressRef = useRef<SearchProgress>(ZERO_PROGRESS);
   const [streamingMessages, setStreamingMessages] = useState<TopicMessage[]>([]);
+  const [progress, setProgress] = useState<SearchProgress>(ZERO_PROGRESS);
   const [phase, setPhase] = useState<string | null>(null);
 
-  // Flush ref to state every 200ms during streaming
+  // Flush ref to state on an interval while streaming.
   useEffect(() => {
     if (!phase) {
       return;
     }
     const interval = setInterval(() => {
       setStreamingMessages([...(messagesRef.current ?? [])]);
+      setProgress({ ...progressRef.current });
     }, FLUSH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [phase]);
@@ -185,64 +201,79 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
     queryKey: LOG_HISTORY_KEY(opts.pipelineId),
     queryFn: ({ signal }) => {
       messagesRef.current = [];
+      progressRef.current = ZERO_PROGRESS;
       setPhase('Searching...');
       setStreamingMessages([]);
+      setProgress(ZERO_PROGRESS);
 
       return runHistoryStream({
         pipelineId: opts.pipelineId,
         serverless: opts.serverless,
         signal,
         messagesRef,
+        progressRef,
         setPhase,
       });
     },
     enabled: opts.enabled,
-    staleTime: 0,
+    staleTime: NO_LIVED_CACHE_STALE_TIME,
     gcTime: 5 * ONE_MINUTE,
     refetchOnWindowFocus: false,
   });
 
-  // While streaming, show incremental messages. Once resolved, show query data.
-  const messages = query.data ?? streamingMessages;
+  // Incremental messages while streaming, query data once resolved; newest-first to match live tail.
+  const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
-  return { messages, phase, error: query.error?.message ?? null, refetch: query.refetch };
+  return { messages, phase, progress, error: query.error?.message ?? null, refetch: query.refetch };
 }
-
-// --- useLogLive: Standalone streaming hook for live tail ---
 
 type LiveState = {
   messages: TopicMessage[];
   phase: string | null;
   error: string | null;
+  progress: SearchProgress;
 };
 
 type LiveAction =
   | { type: 'reset' }
   | { type: 'start' }
-  | { type: 'addMessage'; msg: TopicMessage }
+  | { type: 'flushMessages'; msgs: TopicMessage[] }
   | { type: 'setPhase'; phase: string }
+  | { type: 'setProgress'; progress: SearchProgress }
   | { type: 'setError'; error: string }
   | { type: 'done' }
   | { type: 'noClient' };
 
-const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null };
+export const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null, progress: ZERO_PROGRESS };
 
-function liveReducer(state: LiveState, action: LiveAction): LiveState {
+export function liveReducer(state: LiveState, action: LiveAction): LiveState {
   switch (action.type) {
     case 'reset':
       return LIVE_INITIAL_STATE;
     case 'start':
-      return { messages: [], phase: 'Searching...', error: null };
-    case 'addMessage':
-      return { ...state, messages: [action.msg, ...state.messages] };
+      return { messages: [], phase: 'Searching...', error: null, progress: ZERO_PROGRESS };
+    case 'flushMessages': {
+      if (action.msgs.length === 0) {
+        return state;
+      }
+      // Newest message first; cap to a sliding window so a 30-minute live tail cannot grow
+      // the reducer buffer without bound on a long-lived tab.
+      const messages = [...action.msgs.toReversed(), ...state.messages];
+      return {
+        ...state,
+        messages: messages.length > MAX_LIVE_LOG_MESSAGES ? messages.slice(0, MAX_LIVE_LOG_MESSAGES) : messages,
+      };
+    }
     case 'setPhase':
       return { ...state, phase: action.phase };
+    case 'setProgress':
+      return { ...state, progress: action.progress };
     case 'setError':
       return { ...state, error: action.error, phase: null };
     case 'done':
       return { ...state, phase: null };
     case 'noClient':
-      return { messages: [], error: 'Console client not configured', phase: null };
+      return { messages: [], error: 'Console client not configured', phase: null, progress: ZERO_PROGRESS };
     default:
       return state;
   }
@@ -254,7 +285,8 @@ type LiveStreamOpts = {
   abortController: AbortController;
   pipelineId: string;
   serverless: boolean;
-  isMountedRef: React.RefObject<boolean>;
+  isMountedRef: React.RefObject<boolean | null>;
+  pendingRef: React.RefObject<TopicMessage[] | null>;
   dispatch: React.Dispatch<LiveAction>;
 };
 
@@ -266,10 +298,18 @@ function handleLiveMessage(res: ListMessagesResponse, opts: LiveStreamOpts) {
     case 'phase':
       opts.dispatch({ type: 'setPhase', phase: res.controlMessage.value.phase });
       break;
+    case 'progress': {
+      const p = res.controlMessage.value;
+      opts.dispatch({
+        type: 'setProgress',
+        progress: { bytesConsumed: Number(p.bytesConsumed), messagesConsumed: Number(p.messagesConsumed) },
+      });
+      break;
+    }
     case 'data': {
       const msg = convertListMessageData(res.controlMessage.value);
       if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
-        opts.dispatch({ type: 'addMessage', msg });
+        opts.pendingRef.current?.push(msg);
       }
       break;
     }
@@ -319,6 +359,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
+  const pendingRef = useRef<TopicMessage[]>([]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -328,14 +369,31 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
     };
   }, []);
 
+  // Flush pending messages to state on an interval.
+  useEffect(() => {
+    if (!opts.enabled) {
+      return;
+    }
+    const interval = setInterval(() => {
+      const pending = pendingRef.current;
+      if (pending.length > 0) {
+        const batch = pending.splice(0);
+        dispatch({ type: 'flushMessages', msgs: batch });
+      }
+    }, FLUSH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [opts.enabled]);
+
   useEffect(() => {
     if (!opts.enabled) {
       abortControllerRef.current?.abort();
+      pendingRef.current = [];
       dispatch({ type: 'reset' });
       return;
     }
 
     abortControllerRef.current?.abort();
+    pendingRef.current = [];
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
@@ -355,6 +413,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
       pipelineId: opts.pipelineId,
       serverless: opts.serverless,
       isMountedRef,
+      pendingRef,
       dispatch,
     });
 
@@ -365,8 +424,6 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
 
   return state;
 }
-
-// --- useLogSearch: Public composition hook ---
 
 export function useLogSearch({
   pipelineId,
@@ -391,6 +448,7 @@ export function useLogSearch({
       messages: liveResult.messages,
       phase: liveResult.phase,
       error: liveResult.error,
+      progress: liveResult.progress,
       refresh: noop,
     };
   }
@@ -399,6 +457,7 @@ export function useLogSearch({
     messages: history.messages,
     phase: history.phase,
     error: history.error,
+    progress: history.progress,
     refresh: history.refetch,
   };
 }

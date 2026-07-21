@@ -1,0 +1,36 @@
+input:
+  redpanda_migrator:
+    # ── Source cluster (filled in from the form) ────────────────────────────
+    seed_brokers:
+      - ${slot.sourceBrokers}
+    topics:
+      - ${slot.sourceTopicsRegex}
+    regexp_topics: true
+    consumer_group: redpanda-migrator
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: ${slot.sourceUser}
+        password: ${slot.sourcePassword}
+    tls:
+      enabled: true                        # set false only for unencrypted source clusters
+
+    # ── Migration tuning ────────────────────────────────────────────────────
+    start_from_oldest: true                # replicate the full topic history
+    # replication_factor_override: true    # apply destination cluster's RF on create
+    # replication_factor: -1               # -1 = preserve source RF
+    auto_replay_nacks: true
+
+output:
+  redpanda:
+    # ── Destination cluster ─────────────────────────────────────────────────
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topic: ${! @kafka_topic }             # preserve source topic name
+    key: ${! @kafka_key }                 # preserve source partition key
+
+    # ── Throughput defaults — large batches help replication catch up ───────
+    max_in_flight: 64
+    compression: snappy
+    idempotent_write: true

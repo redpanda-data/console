@@ -288,6 +288,34 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
   );
 }
 
+// Roles whose ARIA spec permits `aria-selected` (https://www.w3.org/TR/wai-aria-1.2/).
+// motion-highlight wraps arbitrary children — often plain buttons/links (sidebar,
+// dropdown) — so it must not forward `aria-selected` onto an element whose role
+// does not allow it, which fails axe / Lighthouse `aria-allowed-attr`.
+const ARIA_SELECTED_ROLES = new Set<string>([
+  'columnheader',
+  'gridcell',
+  'option',
+  'row',
+  'rowheader',
+  'tab',
+  'treeitem',
+]);
+
+// Extracted from the render body (keeps cognitive complexity within limits):
+// forward `aria-selected` only to a wrapped element whose role allows it; never
+// to plain buttons/links or the decorative wrapper divs.
+function resolveElementDataAttributes(
+  element: React.ReactElement<ExtendedChildProps>,
+  dataAttributes: Record<string, unknown>,
+  isActive: boolean
+): Record<string, unknown> {
+  if (!ARIA_SELECTED_ROLES.has(element.props.role ?? '')) {
+    return dataAttributes;
+  }
+  return { ...dataAttributes, 'aria-selected': isActive };
+}
+
 function getNonOverridingDataAttributes(
   element: React.ReactElement,
   dataAttributes: Record<string, unknown>
@@ -350,6 +378,15 @@ function useMotionHighlightItemLogic(options: {
   };
 }
 
+function buildItemDataAttributes(isActive: boolean, isDisabled: boolean | undefined, childValue: string) {
+  return {
+    'data-active': isActive ? 'true' : 'false',
+    'data-disabled': isDisabled || undefined,
+    'data-value': childValue,
+    'data-highlight': true,
+  };
+}
+
 const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItemProps>(
   (
     {
@@ -390,7 +427,6 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
 
     const localRef = React.useRef<HTMLDivElement>(null);
 
-    // Use imperative handle to properly forward the ref
     React.useImperativeHandle(forwardedRef, () => localRef.current as HTMLDivElement, []);
 
     React.useEffect(() => {
@@ -453,13 +489,9 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
       return children;
     }
 
-    const dataAttributes = {
-      'data-active': isActive ? 'true' : 'false',
-      'aria-selected': isActive,
-      'data-disabled': isDisabled,
-      'data-value': childValue,
-      'data-highlight': true,
-    };
+    const dataAttributes = buildItemDataAttributes(isActive, isDisabled, childValue);
+
+    const elementDataAttributes = resolveElementDataAttributes(element, dataAttributes, isActive);
 
     const commonHandlers = hover
       ? {
@@ -488,7 +520,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
             ref: localRef,
             className: cn('relative', element.props.className),
             ...getNonOverridingDataAttributes(element, {
-              ...dataAttributes,
+              ...elementDataAttributes,
               'data-slot': 'motion-highlight-item-container',
             }),
             ...commonHandlers,
@@ -526,7 +558,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
       return React.cloneElement(element, {
         ref: localRef,
         ...getNonOverridingDataAttributes(element, {
-          ...dataAttributes,
+          ...elementDataAttributes,
           'data-slot': 'motion-highlight-item',
         }),
         ...commonHandlers,
@@ -548,7 +580,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
           <AnimatePresence initial={false}>
             {isActive && !isDisabled && (
               <motion.div
-                animate={{ opacity: 1 }}
+                animate={{ opacity: 1, y: 0 }}
                 className={cn('absolute inset-0 z-0 bg-muted', contextClassName, activeClassName)}
                 data-slot="motion-highlight"
                 exit={{
@@ -570,7 +602,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
         {React.cloneElement(element, {
           className: cn('relative z-[1]', element.props.className),
           ...getNonOverridingDataAttributes(element, {
-            ...dataAttributes,
+            ...elementDataAttributes,
             'data-slot': 'motion-highlight-item',
           }),
         })}

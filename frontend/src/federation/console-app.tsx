@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 // Array prototype extensions (must be imported early)
 import '../utils/array-extensions';
 
@@ -37,13 +35,45 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { protobufRegistry } from 'protobuf-registry';
+import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 
 import { FederatedProviders } from './federated-providers';
+import { federatedRootRoute } from './federated-routes';
 import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
+import { installUISettingsSideEffects } from '../state/ui';
+
+/**
+ * Re-root the generated route tree onto Console's federated root.
+ *
+ * In the federated dev build, the generated tree's root route (from
+ * `src/routes/__root.tsx`) can be substituted by Cloud UI's own `__root` route
+ * — both apps compile a module with the identical id `./src/routes/__root.tsx`,
+ * and in the shared rsbuild/MF dev runtime the host's wins. The result is that
+ * the embedded Console renders Cloud UI's root chrome (its react NuqsAdapter,
+ * Builder.io `<Content>`, and `<CommandPalette>`/KBar) instead of Console's own
+ * federated layout — which breaks nuqs (NUQS-404), crashes on KBar
+ * (`getState is not a function`, no `KBarProvider` in this subtree), and leaves
+ * the embedded sidebar empty.
+ *
+ * `federatedRootRoute` lives at a Console-unique module path
+ * (`src/federation/federated-routes.tsx`) that cannot collide with Cloud UI, so
+ * reattaching the generated child routes to it guarantees the embedded app
+ * renders Console's own root. Standalone (`app.tsx`) and the legacy embedded
+ * entry keep using the generated `routeTree` unchanged.
+ */
+function createFederatedRouteTree() {
+  const childRoutes = routeTree.children ? Object.values(routeTree.children) : [];
+  for (const child of childRoutes) {
+    child.options.getParentRoute = () => federatedRootRoute;
+  }
+  return federatedRootRoute._addFileChildren(childRoutes);
+}
+
+const federatedRouteTree = createFederatedRouteTree();
 
 /**
  * Creates an interceptor that refreshes the token on 401 and retries the request.
@@ -111,13 +141,13 @@ class ConsoleErrorBoundary extends Component<
       return (
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
-            <h2 className="font-semibold text-lg text-red-600">Something went wrong</h2>
+            <h2 className="font-semibold text-error text-lg">Something went wrong</h2>
             <p className="mt-2 text-gray-600 text-sm">Console encountered an error.</p>
             {this.state.error ? (
               <p className="mt-1 font-mono text-gray-500 text-xs">{this.state.error.message}</p>
             ) : null}
             <button
-              className="mt-4 rounded-md bg-blue-600 px-4 py-2 font-medium text-sm text-white hover:bg-blue-700"
+              className="mt-4 rounded-md bg-background-informative-strong px-4 py-2 font-medium text-sm text-white hover:bg-background-informative-strong"
               onClick={this.handleRetry}
               type="button"
             >
@@ -140,7 +170,7 @@ function createFederatedQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: LONG_LIVED_CACHE_STALE_TIME,
         retry: 1,
       },
     },
@@ -198,11 +228,13 @@ function ConsoleAppInner({
 
   // Initialize Console on mount and cleanup on unmount
   useEffect(() => {
+    let setupTeardown: (() => void) | undefined;
+
     const initialize = async () => {
       await tokenManager.refresh();
 
       // Setup Console config with overrides
-      setup({
+      setupTeardown = setup({
         jwt: config.jwt,
         clusterId,
         setSidebarItems: onSidebarItemsChange,
@@ -216,8 +248,12 @@ function ConsoleAppInner({
 
     initialize();
 
+    const uiSettingsTeardown = installUISettingsSideEffects();
+
     // Cleanup on unmount
     return () => {
+      uiSettingsTeardown();
+      setupTeardown?.();
       tokenManager.reset();
       queryClient.clear();
     };
@@ -236,14 +272,20 @@ function ConsoleAppInner({
     [configOverrides?.urlOverride?.grpc, tokenRefreshInterceptor]
   );
 
+  // Capture initialPath on first render only — subsequent navigation is handled
+  // by the navigateTo prop via router.navigate(). Including initialPath in the
+  // useMemo deps would recreate the entire router on every host navigation,
+  // remounting all route components and retriggering all data fetches.
+  const initialPathRef = useRef(initialPath);
+
   // Create memory history router (host controls browser URL)
   const router = useMemo(() => {
     const memoryHistory = createMemoryHistory({
-      initialEntries: [initialPath],
+      initialEntries: [initialPathRef.current],
     });
 
     const r = createRouter({
-      routeTree,
+      routeTree: federatedRouteTree,
       history: memoryHistory,
       context: {
         basePath: '',
@@ -254,7 +296,7 @@ function ConsoleAppInner({
     });
 
     return r;
-  }, [initialPath, queryClient, dataplaneTransport]);
+  }, [queryClient, dataplaneTransport]);
 
   // Subscribe to route changes and notify host (with loop prevention)
   useEffect(() => {
@@ -263,7 +305,8 @@ function ConsoleAppInner({
     }
 
     const unsubscribe = router.subscribe('onResolved', ({ toLocation }) => {
-      const newPath = toLocation.pathname;
+      // Include search params so tab state and filters sync to Cloud UI's URL
+      const newPath = toLocation.pathname + (toLocation.searchStr || '');
 
       // Skip if path hasn't changed (prevents loops)
       if (newPath === lastNotifiedPathRef.current) {
@@ -279,17 +322,24 @@ function ConsoleAppInner({
     };
   }, [router, onRouteChange]);
 
-  // Handle navigation from host via navigateTo prop (browser back/forward)
+  // Handle navigation from host via navigateTo prop (browser back/forward).
+  // navigateTo may include search params (e.g., '/topics?tab=messages').
   useEffect(() => {
     if (!(navigateTo && isInitialized && router)) {
       return;
     }
 
-    const currentPath = router.state.location.pathname;
+    const currentPath = router.state.location.pathname + (router.state.location.searchStr || '');
     if (navigateTo !== currentPath) {
       // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      router.navigate({ to: navigateTo });
+      const qIdx = navigateTo.indexOf('?');
+      const toPath = qIdx >= 0 ? navigateTo.slice(0, qIdx) : navigateTo;
+      const toSearch = qIdx >= 0 ? navigateTo.slice(qIdx + 1) : undefined;
+      router.navigate({
+        to: toPath,
+        search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
+      });
     }
   }, [navigateTo, isInitialized, router]);
 

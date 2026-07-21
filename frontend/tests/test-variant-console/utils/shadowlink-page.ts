@@ -80,25 +80,20 @@ export class ShadowlinkPage {
       await tlsToggle.click();
     }
 
-    // Configure SASL if provided
+    // Configure SASL if provided. The authentication picker is a 3-way Tabs
+    // (None / SCRAM / PLAIN); SCRAM is the default. Click the tab explicitly
+    // to guarantee state even if the default ever changes.
     if (params.username && params.password) {
-      // Find and toggle SCRAM switch - look for the switch near "SCRAM" text
-      const scramSection = this.page.getByText('SCRAM').locator('..');
-      const scramToggle = scramSection.getByRole('switch');
+      const scramTab = this.page.getByTestId('auth-method-scram');
+      await scramTab.click();
+      // Wait for SCRAM credential fields to render
+      await this.page.getByTestId('scram-username-input').waitFor({ state: 'visible', timeout: 5000 });
 
-      // Check if SCRAM is already enabled
-      const isScramEnabled = await scramToggle.isChecked();
-      if (!isScramEnabled) {
-        await scramToggle.click();
-        // Wait for username field to appear after toggle
-        await this.page.getByLabel(/username/i).waitFor({ state: 'visible', timeout: 5000 });
-      }
-
-      // Fill username and password using labels
       const usernameInput = this.page.getByLabel(/username/i);
       await usernameInput.fill(params.username);
 
-      const passwordInput = this.page.getByLabel(/password/i);
+      // Use testid: the "Show password" toggle's aria-label also matches /password/i.
+      const passwordInput = this.page.getByTestId('scram-password-input');
       await passwordInput.fill(params.password);
 
       if (params.mechanism) {
@@ -548,12 +543,14 @@ export class ShadowlinkPage {
       const { exec } = await import('node:child_process');
       const { promisify } = await import('node:util');
       const { readFileSync, existsSync } = await import('node:fs');
-      const { resolve } = await import('node:path');
+      const { dirname, resolve } = await import('node:path');
+      const { fileURLToPath } = await import('node:url');
       const execAsync = promisify(exec);
 
       // Read state file to get destination container ID
       // Try both console-enterprise and enterprise naming conventions
-      const testsDir = resolve(__dirname, '../..');
+      // ESM-safe __dirname equivalent (frontend/package.json sets "type": "module").
+      const testsDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
       const possibleStateFiles = [
         resolve(testsDir, '.testcontainers-state-console-enterprise.json'),
         resolve(testsDir, '.testcontainers-state-enterprise.json'),

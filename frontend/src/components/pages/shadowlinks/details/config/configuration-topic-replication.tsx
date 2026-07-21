@@ -20,7 +20,6 @@ import {
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 
 import type { UnifiedShadowLink } from '../../model';
 
@@ -99,7 +98,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
     return (
       <Card size="full" testId="topic-replication-placeholder-card">
         <CardContent className="py-8 text-center">
-          <Text className="text-muted-foreground">No topic properties configured for shadowing</Text>
+          <div className="text-body text-muted-foreground">No topic properties configured for shadowing</div>
         </CardContent>
       </Card>
     );
@@ -107,9 +106,9 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
 
   return (
     <div className="flex flex-col gap-6">
-      <Heading level={2} testId="shadowing-title">
+      <h2 className="text-heading-lg" data-testid="shadowing-title">
         Topic config shadow
-      </Heading>
+      </h2>
       {sortedCategories.map((category) => {
         const properties = categorizedProperties[category];
         const categoryKey = category.toLowerCase().replace(/\s+/g, '-');
@@ -117,17 +116,19 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
         return (
           <Card key={categoryKey} size="full" testId={`category-${categoryKey}-card`}>
             <CardContent className="p-0">
-              <Accordion collapsible defaultValue={categoryKey} type="single">
+              <Accordion defaultValue={[categoryKey]}>
                 <AccordionItem value={categoryKey}>
                   <AccordionTrigger className="py-4" data-testid={`category-${categoryKey}-trigger`}>
-                    <Heading level={3}>{category}</Heading>
+                    <h3 className="text-heading-md">{category}</h3>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-4" data-testid={`category-${categoryKey}-content`}>
                     <div className="flex flex-col">
                       {properties.map((property, index) => (
                         <div key={`${categoryKey}-${property}`}>
                           <div className="flex items-center justify-between py-3">
-                            <Text data-testid={`property-${categoryKey}-${index}`}>{property}</Text>
+                            <div className="text-body" data-testid={`property-${categoryKey}-${index}`}>
+                              {property}
+                            </div>
                             <Badge data-testid={`property-${categoryKey}-${index}-badge`} variant="neutral-inverted">
                               Shadowed
                             </Badge>

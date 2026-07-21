@@ -191,8 +191,8 @@ test.describe('Produce Messages', () => {
       await page.getByTestId('produce-button').click();
 
       // Message might be produced (empty is valid) or button might be disabled
-      // Just verify no crash occurs
-      await page.waitForTimeout(2000);
+      // Just verify no crash occurs — page may navigate after producing
+      await page.waitForLoadState('networkidle', { timeout: 10_000 });
     });
 
     await topicPage.deleteTopic(topicName);

@@ -217,7 +217,6 @@ test.describe('Message Actions and Export', () => {
       await page.keyboard.press('Meta+KeyV');
 
       await page.getByTestId('produce-button').click();
-      await page.waitForTimeout(2000);
     });
 
     await test.step('Export large message', async () => {

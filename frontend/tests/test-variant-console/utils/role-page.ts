@@ -30,7 +30,7 @@ export class RolePage extends AclPage {
     await this.gotoList();
 
     // Validate that the _hostlist item is visible with correct host and principal
-    await this.page.getByTestId('search-field-input').fill(principal);
+    await this.page.getByPlaceholder('Filter by name').fill(principal);
     const listItem = this.page.getByTestId(`role-list-item-${principal}`);
     await expect(listItem).toBeVisible({ timeout: 1000 });
   }
@@ -140,24 +140,33 @@ export class RolePage extends AclPage {
         waitUntil: 'domcontentloaded',
       });
       await this.page.getByLabel('Role name').fill(roleName);
-      await this.page.getByTestId('roles-allow-all-operations').click();
+      await this.page.getByTestId('add-allow-all-operations-button').click();
       await this.page.getByRole('button').getByText('Create').click();
       await this.page.waitForURL(`/security/roles/${roleName}/details`);
     });
   }
 
   /**
-   * Deletes a role with the given name through the UI
+   * Deletes a role from the roles list
    */
-  async deleteRole(roleName: string) {
-    return await test.step('Delete role', async () => {
-      await this.gotoDetail(roleName);
-      await this.page.getByRole('button').getByText('Delete').click();
-      await this.page.getByPlaceholder(`Type "${roleName}" to confirm`).fill(roleName);
-      await this.page.getByTestId('test-delete-item').click();
-      await this.page.waitForURL(`/security/roles/${roleName}/details`, {
-        waitUntil: 'domcontentloaded',
-      });
+  async deleteRoleFromList(roleName: string) {
+    return await test.step('Delete role from list', async () => {
+      await this.gotoList();
+      await this.page.getByTestId(`delete-role-button-${roleName}`).click();
+      await this.page.getByPlaceholder(roleName).fill(roleName);
+      await this.page.getByTestId('confirm-role-delete-button').click();
+      await this.page.waitForURL('/security/roles', { waitUntil: 'domcontentloaded' });
+    });
+  }
+
+  /**
+   * Validates that a role is NOT present in the roles list
+   */
+  async validateNotInList(roleName: string) {
+    return await test.step(`Validate role "${roleName}" not in list`, async () => {
+      await this.gotoList();
+      await this.page.getByPlaceholder('Filter by name').fill(roleName);
+      await expect(this.page.getByTestId(`role-list-item-${roleName}`)).not.toBeVisible();
     });
   }
 }

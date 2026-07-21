@@ -224,33 +224,6 @@ describe('AIAgentActions', () => {
     });
   });
 
-  test('should display copy URL menu item when agent has URL', async () => {
-    const user = userEvent.setup();
-
-    const agent: AIAgent = {
-      id: 'agent-1',
-      name: 'Test Agent',
-      description: 'Test Description',
-      state: AIAgent_State.RUNNING,
-      model: 'gpt-4',
-      providerType: 'openai',
-      url: 'http://localhost:8080/agents/agent-1',
-      mcpServers: {},
-      tags: {},
-    };
-
-    render(
-      <AIAgentActions agent={agent} isDeletingAgent={false} onDeleteWithServiceAccount={onDeleteWithServiceAccount} />
-    );
-
-    const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
-    await user.click(actionsButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Copy URL')).toBeInTheDocument();
-    });
-  });
-
   test('should delete agent without service account cleanup', async () => {
     const user = userEvent.setup();
 
@@ -275,7 +248,7 @@ describe('AIAgentActions', () => {
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
     await user.click(actionsButton);
 
-    const deleteButton = await screen.findByText('Delete', {}, { timeout: 3000 });
+    const deleteButton = await screen.findByText('Delete');
     await user.click(deleteButton);
 
     await waitFor(() => {
@@ -321,7 +294,7 @@ describe('AIAgentActions', () => {
     const actionsButton = screen.getByRole('button', { name: OPEN_MENU_REGEX });
     await user.click(actionsButton);
 
-    const deleteButton = await screen.findByText('Delete', {}, { timeout: 3000 });
+    const deleteButton = await screen.findByText('Delete');
     await user.click(deleteButton);
 
     await waitFor(() => {

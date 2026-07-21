@@ -1,6 +1,6 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
-import { KAFKA_CONNECT_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
+import { KAFKA_CONNECT_IMAGE, KAFKA_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
 import { exec } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -33,7 +33,7 @@ function loadVariantConfig(variantName) {
   return config;
 }
 
-async function waitForPort(port, maxAttempts = 30, delayMs = 1000) {
+async function waitForPort(port, maxAttempts = 30, delayMs = 500) {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const { stdout } = await execAsync(
@@ -126,27 +126,8 @@ async function startRedpandaContainer(network, state, ports) {
 }
 
 async function verifyRedpandaServices(state, ports) {
-  // Give Redpanda a moment to finish internal initialization
-  console.log('Waiting for Redpanda services to initialize...');
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-
-  // Check Admin API via docker exec (avoids macOS Docker Desktop port-forwarding latency)
-  // The health check already verified Redpanda is healthy; this confirms the admin HTTP API responds.
-  console.log('Checking if Admin API is ready...');
-  for (let i = 0; i < 30; i++) {
-    try {
-      await execAsync(`docker exec ${state.redpandaId} rpk cluster health`);
-      break;
-    } catch {
-      if ((i + 1) % 5 === 0) {
-        console.log(`  Still waiting for Admin API... (attempt ${i + 1}/30)`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-  }
-  console.log('✓ Admin API is ready');
-
-  // Check Schema Registry from inside the container to avoid macOS port-forwarding latency
+  // Docker health check already verified rpk cluster health passed.
+  // Just verify Schema Registry is responding (it can lag behind the broker).
   console.log('Checking if Schema Registry is ready...');
   for (let i = 0; i < 30; i++) {
     try {
@@ -158,7 +139,7 @@ async function verifyRedpandaServices(state, ports) {
       if ((i + 1) % 5 === 0) {
         console.log(`  Still waiting for Schema Registry... (attempt ${i + 1}/30)`);
       }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
   console.log('✓ Schema Registry is ready');
@@ -173,6 +154,44 @@ async function verifyRedpandaServices(state, ports) {
   } catch (error) {
     console.log('⚠ SASL authentication check failed:', error.message);
   }
+}
+
+async function startKafkaContainer(network, state, ports, variantName) {
+  console.log('Starting Apache Kafka container (KRaft, SASL/PLAIN)...');
+  const jaasConfPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', 'kafka_server_jaas.conf');
+  const kafka = await new GenericContainer(KAFKA_IMAGE)
+    .withNetwork(network)
+    .withNetworkAliases('kafka')
+    .withExposedPorts({ container: 9092, host: ports.kafkaKafka })
+    .withBindMounts([{ source: jaasConfPath, target: '/etc/kafka/jaas.conf', mode: 'ro' }])
+    .withEnvironment({
+      KAFKA_NODE_ID: '1',
+      KAFKA_PROCESS_ROLES: 'broker,controller',
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093',
+      KAFKA_LISTENERS: 'SASL_PLAINTEXT://:9092,CONTROLLER://:9093',
+      KAFKA_ADVERTISED_LISTENERS: 'SASL_PLAINTEXT://kafka:9092',
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'SASL_PLAINTEXT:SASL_PLAINTEXT,CONTROLLER:PLAINTEXT',
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER',
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'SASL_PLAINTEXT',
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN',
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN',
+      // Enable Kafka Auth BEGIN
+      KAFKA_AUTHORIZER_CLASS_NAME: 'org.apache.kafka.metadata.authorizer.StandardAuthorizer',
+      KAFKA_SUPER_USERS: 'User:e2euser',
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'true',
+      // Enable Kafka Auth END
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1',
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true',
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk',
+      KAFKA_OPTS: '-Djava.security.auth.login.config=/etc/kafka/jaas.conf',
+    })
+    .withWaitStrategy(Wait.forLogMessage(/Kafka Server started/i))
+    .withStartupTimeout(120_000)
+    .start();
+
+  state.kafkaId = kafka.getId();
+  state.kafkaContainer = kafka;
+  console.log(`✓ Apache Kafka container started: ${state.kafkaId}`);
 }
 
 async function startOwlShop(network, state) {
@@ -356,7 +375,7 @@ topic.creation.enable=false
   }
 }
 
-async function buildBackendImage(isEnterprise) {
+export async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
 
   let backendDir;
@@ -424,23 +443,54 @@ async function buildBackendImage(isEnterprise) {
     const isWorkspaceBuild = isEnterprise && existsSync(join(backendDir, 'go.work'));
     const workspaceDir = join(backendDir, '.e2e-workspace');
 
+    let originalGoWork = null;
     if (isWorkspaceBuild) {
       console.log('Workspace build detected (go.work found)');
-      const goWorkContent = readFileSync(join(backendDir, 'go.work'), 'utf-8');
+      originalGoWork = readFileSync(join(backendDir, 'go.work'), 'utf-8');
+
+      // Detect and recover from a corrupted go.work left by a previous interrupted run.
+      // A corrupted go.work references .e2e-workspace/ paths that no longer exist on disk.
+      // In that case, use go.ci.work (the canonical workspace template) as the base instead.
+      const hasStaleWorkspacePaths = originalGoWork.includes('.e2e-workspace/');
+      if (hasStaleWorkspacePaths) {
+        const ciWorkPath = join(backendDir, 'go.ci.work');
+        if (existsSync(ciWorkPath)) {
+          console.warn(
+            '  go.work contains stale .e2e-workspace/ paths (leftover from previous run). Resetting from go.ci.work...'
+          );
+          originalGoWork = readFileSync(ciWorkPath, 'utf-8');
+          writeFileSync(join(backendDir, 'go.work'), originalGoWork);
+          console.log('  ✓ Reset go.work from go.ci.work');
+        } else {
+          throw new Error(
+            'go.work contains stale .e2e-workspace/ references but go.ci.work was not found to recover from. ' +
+              'Please restore go.work manually.'
+          );
+        }
+      }
 
       // Parse workspace module paths (skip "." which is the backend itself)
       const useRegex = /^\s+(\S+)\s*$/gm;
       const rewrittenPaths = [];
       let match;
-      while ((match = useRegex.exec(goWorkContent)) !== null) {
+      while ((match = useRegex.exec(originalGoWork)) !== null) {
         const modulePath = match[1];
         if (modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')') continue;
 
-        // Resolve the actual path relative to backendDir
-        const absModulePath = resolve(backendDir, modulePath);
+        // Resolve the actual path relative to backendDir, or fall back to the
+        // repo root (parent of backendDir). go.work paths like ../console/backend
+        // are authored relative to the repo root, not the backend/ subdir.
+        let absModulePath = resolve(backendDir, modulePath);
         if (!existsSync(absModulePath)) {
-          console.warn(`  Workspace module not found: ${absModulePath}, skipping`);
-          continue;
+          const parentDir = resolve(backendDir, '..');
+          const fromParent = resolve(parentDir, modulePath);
+          if (existsSync(fromParent)) {
+            console.log(`  Resolving ${modulePath} from repo root: ${fromParent}`);
+            absModulePath = fromParent;
+          } else {
+            console.warn(`  Workspace module not found: ${absModulePath} (also tried ${fromParent}), skipping`);
+            continue;
+          }
         }
 
         // Create a sanitized directory name
@@ -454,7 +504,7 @@ async function buildBackendImage(isEnterprise) {
 
       // Rewrite go.work to use local paths
       if (rewrittenPaths.length > 0) {
-        let newGoWork = goWorkContent;
+        let newGoWork = originalGoWork;
         for (const { original, local } of rewrittenPaths) {
           newGoWork = newGoWork.replace(original, local);
         }
@@ -463,21 +513,27 @@ async function buildBackendImage(isEnterprise) {
       }
     }
 
-    console.log('Building Docker image with testcontainers...');
+    console.log('Building Docker image with BuildKit...');
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
 
     try {
-      await GenericContainer.fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
-        .withBuildArgs({
-          BUILDKIT_INLINE_CACHE: '1',
-        })
-        .build(imageTag, { deleteOnExit: false });
+      // Use docker buildx with BuildKit cache mounts for Go module and build caches.
+      // This is significantly faster than testcontainers build on repeat runs.
+      await execAsync(`DOCKER_BUILDKIT=1 docker build -f .dockerfile.e2e.tmp -t ${imageTag} .`, {
+        cwd: backendDir,
+        maxBuffer: 50 * 1024 * 1024,
+      });
       console.log('✓ Backend image built');
     } finally {
       // Clean up temporary Dockerfile and workspace directory
       await execAsync(`rm -f "${tempDockerfile}"`).catch(() => {});
       if (isWorkspaceBuild) {
         await execAsync(`rm -rf "${workspaceDir}"`).catch(() => {});
+        // Restore original go.work so subsequent runs don't reference the deleted workspace dir
+        if (originalGoWork !== null) {
+          writeFileSync(join(backendDir, 'go.work'), originalGoWork);
+          console.log('  ✓ Restored original go.work');
+        }
       }
     }
 
@@ -639,8 +695,6 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
     }
 
     console.log(`Container created with ID: ${containerId}`);
-    console.log('Waiting 5 seconds for container to fully initialize...');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Check if container is still running
     const { stdout: inspectOutput } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
@@ -784,7 +838,6 @@ async function startDestinationRedpandaContainer(network, state, ports) {
 
 async function verifyDestinationRedpandaServices(state, ports) {
   console.log('Waiting for destination Redpanda services...');
-  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   // Debug: Check if container is still running
   try {
@@ -936,6 +989,12 @@ async function cleanupOnFailure(state) {
       console.log(`Failed to stop destination Redpanda container: ${error.message}`);
     });
   }
+  if (state.kafkaContainer) {
+    console.log('Stopping Kafka container using testcontainers API...');
+    await state.kafkaContainer.stop().catch((error) => {
+      console.log(`Failed to stop Kafka container: ${error.message}`);
+    });
+  }
   if (state.redpandaContainer) {
     console.log('Stopping Redpanda container using testcontainers API...');
     await state.redpandaContainer.stop().catch((error) => {
@@ -958,9 +1017,17 @@ export default async function globalSetup(config = {}) {
   const needsShadowlink = config?.metadata?.needsShadowlink ?? false;
   const needsConnect = config?.metadata?.needsConnect ?? false;
 
-  // Load ports from variant's config/variant.json
+  // Load ports from variant's config/variant.json, then apply any dynamic
+  // host-port overrides chosen by run-variant.mjs (E2E_PORTS_OVERRIDE) so local
+  // runs avoid collisions with whatever is on the default ports.
   const variantConfig = loadVariantConfig(variantName);
-  const ports = variantConfig.ports;
+  let portsOverride = {};
+  try {
+    portsOverride = JSON.parse(process.env.E2E_PORTS_OVERRIDE ?? '{}');
+  } catch {
+    portsOverride = {};
+  }
+  const ports = { ...variantConfig.ports, ...portsOverride };
 
   console.log('\n\n========================================');
   console.log(`🚀 GLOBAL SETUP: ${variantName}${needsShadowlink ? ' + SHADOWLINK' : ''}`);
@@ -987,26 +1054,45 @@ export default async function globalSetup(config = {}) {
   };
 
   try {
-    // Build backend Docker image
-    const imageTag = await buildBackendImage(isEnterprise);
+    // Use pre-built image tag if available (set by run-all-variants.mjs), otherwise build
+    const prebuiltTag = isEnterprise
+      ? process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE
+      : process.env.E2E_PREBUILT_IMAGE_TAG;
+    const imageTag = prebuiltTag || (await buildBackendImage(isEnterprise));
 
     // Setup Docker infrastructure
     const network = await setupDockerNetwork(state);
 
-    // Start source cluster (existing cluster - has OwlShop data)
-    await startRedpandaContainer(network, state, ports);
-    await verifyRedpandaServices(state, ports);
-    await startOwlShop(network, state);
-    await createKafkaConnectTopics(state);
-    if (needsConnect) {
-      await startKafkaConnect(network, state, ports);
+    // --- Kafka variant: simple KRaft broker, no Redpanda/owlshop/connect ---
+    if (variantConfig.isKafka) {
+      await startKafkaContainer(network, state, ports, variantName);
+      const backendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
+      await startBackendServerWithConfig(
+        network,
+        isEnterprise,
+        imageTag,
+        state,
+        backendConfigPath,
+        ports.backend,
+        'console-backend'
+      );
+      writeFileSync(getStateFile(variantName), JSON.stringify(state, null, 2));
+      console.log('\n✅ All services ready! Starting tests...\n');
+      return;
     }
 
-    // Start destination cluster for shadowlink if needed
+    // --- Group 1: Start clusters in parallel ---
+    const clusterPromises = [
+      startRedpandaContainer(network, state, ports).then(() => verifyRedpandaServices(state, ports)),
+    ];
     if (isEnterprise && needsShadowlink) {
-      await startDestinationRedpandaContainer(network, state, ports);
-      await verifyDestinationRedpandaServices(state, ports);
+      clusterPromises.push(
+        startDestinationRedpandaContainer(network, state, ports).then(() =>
+          verifyDestinationRedpandaServices(state, ports)
+        )
+      );
     }
+    await Promise.all(clusterPromises);
 
     console.log('');
     console.log('=== Docker Environment Ready ===');
@@ -1023,33 +1109,50 @@ export default async function globalSetup(config = {}) {
     console.log(`  - Kafka Connect: http://localhost:${ports.kafkaConnect}`);
     console.log('================================\n');
 
-    // Start backend server(s)
-    if (needsShadowlink) {
-      // For shadowlink tests: start source backend on port ports.backend (existing data)
-      const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
-      await startBackendServerWithConfig(
-        network,
-        isEnterprise,
-        imageTag,
-        state,
-        sourceBackendConfigPath,
-        ports.backend,
-        'console-backend'
-      );
+    // --- Group 2: Start services in parallel (all depend on Redpanda being ready) ---
+    const servicePromises = [
+      startOwlShop(network, state),
+      createKafkaConnectTopics(state).then(() => (needsConnect ? startKafkaConnect(network, state, ports) : null)),
+    ];
 
-      // Start destination backend on port ports.backendDest (where shadowlinks are created)
-      const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
-      await startBackendServerWithConfig(
-        network,
-        isEnterprise,
-        imageTag,
-        state,
-        destBackendConfigPath,
-        ports.backendDest,
-        'console-backend-dest'
-      );
-    } else {
-      // Normal setup - single backend on existing cluster
+    // For variants that need Kafka Connect, the backend must start AFTER Connect is ready
+    // (the backend proxies connector APIs and tests immediately hit those endpoints).
+    // For other variants, start the backend in parallel with services.
+    if (!needsConnect) {
+      if (needsShadowlink) {
+        const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
+        const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
+        servicePromises.push(
+          startBackendServerWithConfig(
+            network,
+            isEnterprise,
+            imageTag,
+            state,
+            sourceBackendConfigPath,
+            ports.backend,
+            'console-backend'
+          ),
+          startBackendServerWithConfig(
+            network,
+            isEnterprise,
+            imageTag,
+            state,
+            destBackendConfigPath,
+            ports.backendDest,
+            'console-backend-dest'
+          )
+        );
+      } else {
+        servicePromises.push(
+          startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports)
+        );
+      }
+    }
+
+    await Promise.all(servicePromises);
+
+    // Start backend after Kafka Connect for connect variants
+    if (needsConnect) {
       await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
     }
 
@@ -1057,8 +1160,8 @@ export default async function globalSetup(config = {}) {
 
     // Give services extra time to stabilize in CI (especially shadowlink replication)
     if (isEnterprise && needsShadowlink && process.env.CI) {
-      console.log('CI detected: Giving services 10 seconds to stabilize...');
-      await new Promise((resolve) => setTimeout(resolve, 10_000));
+      console.log('CI detected: Giving services 3 seconds to stabilize...');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       console.log('✓ Stabilization period complete');
     }
 

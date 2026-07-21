@@ -34,13 +34,13 @@ import {
   TrashIcon,
   WarningIcon,
 } from 'components/icons';
-import React, { useMemo, useState } from 'react';
+import React, { type JSX, useMemo, useState } from 'react';
 
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
-import { Features } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { Button, DefaultSkeleton, IconButton, numberToThousandsString } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
@@ -103,9 +103,6 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
   }
 
   render() {
-    // Touch observables so PageComponent's Reaction tracks them for re-renders.
-    void api.consumerGroups;
-    void api.consumerGroupAcls;
     return (
       <GroupDetailsMain
         groupId={this.props.groupId}
@@ -117,6 +114,8 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
 }
 
 const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps) => {
+  const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
+  const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
   const [editState, setEditState] = useState<{
     offsets: GroupOffset[] | null;
     topic: string | null;
@@ -139,12 +138,15 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const [quickSearch, setQuickSearch] = useState(search?.q ?? '');
   const [showWithLagOnly, setShowWithLagOnly] = useState(search?.withLag ?? false);
 
-  if (api.consumerGroups.size === 0) {
+  const groupId2 = decodeURIComponent(groupId);
+  const consumerGroupsSize = useApiStoreHook((s) => s.consumerGroups.size);
+  const group = useApiStoreHook((s) => s.consumerGroups.get(groupId2));
+  const consumerGroupAcl = useApiStoreHook((s) => s.consumerGroupAcls.get(group?.groupId ?? ''));
+
+  if (consumerGroupsSize === 0) {
     return DefaultSkeleton;
   }
 
-  const groupId2 = decodeURIComponent(groupId);
-  const group = api.consumerGroups.get(groupId2);
   if (!group) {
     return DefaultSkeleton;
   }
@@ -154,10 +156,17 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const editGroup = () => {
     const groupOffsets = group?.topicOffsets.flatMap((x) =>
       x.partitionOffsets.map(
-        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+        (p) =>
+          ({
+            topicName: x.topic,
+            partitionId: p.partitionId,
+            offset: p.groupOffset,
+          }) as GroupOffset
       )
     );
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
     setEditedTopic(null);
     setEditedPartition(null);
     setEdittingOffsets(groupOffsets);
@@ -166,10 +175,17 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   const deleteGroup = () => {
     const groupOffsets = group?.topicOffsets.flatMap((x) =>
       x.partitionOffsets.map(
-        (p) => ({ topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset }) as GroupOffset
+        (p) =>
+          ({
+            topicName: x.topic,
+            partitionId: p.partitionId,
+            offset: p.groupOffset,
+          }) as GroupOffset
       )
     );
-    if (!groupOffsets) return;
+    if (!groupOffsets) {
+      return;
+    }
     setDeletingOffsets(groupOffsets);
     setDeletingMode('group');
   };
@@ -177,10 +193,18 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
   return (
     <PageContent className="groupDetails">
       <Flex gap={2}>
-        <Button disabledReason={cannotEditGroupReason(group)} onClick={() => editGroup()} variant="outline">
+        <Button
+          disabledReason={cannotEditGroupReason(group, featurePatchGroup)}
+          onClick={() => editGroup()}
+          variant="outline"
+        >
           Edit Group
         </Button>
-        <Button disabledReason={cannotDeleteGroupReason(group)} onClick={() => deleteGroup()} variant="outline">
+        <Button
+          disabledReason={cannotDeleteGroupReason(group, featureDeleteGroup)}
+          onClick={() => deleteGroup()}
+          variant="outline"
+        >
           Delete Group
         </Button>
       </Flex>
@@ -263,7 +287,7 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
             {
               key: 'acl',
               name: 'ACL',
-              component: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />,
+              component: <AclList acl={consumerGroupAcl} />,
             },
           ]}
           variant="fitted"
@@ -282,7 +306,7 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
         }}
       />
       <DeleteOffsetsModal
-        disabledReason={cannotDeleteGroupReason(group)}
+        disabledReason={cannotDeleteGroupReason(group, featureDeleteGroup)}
         group={group}
         mode={deletingMode}
         offsets={deletingOffsets}
@@ -302,6 +326,8 @@ const GroupByTopics = (groupProps: {
   onEditOffsets: (offsets: GroupOffset[]) => void;
   onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
 }) => {
+  const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
+  const featureDeleteGroupOffsets = useSupportedFeaturesStore((s) => s.deleteGroupOffsets);
   const quickSearchRegExp = useMemo(() => getQuickSearchRegex(groupProps.quickSearch), [groupProps.quickSearch]);
 
   const topicLags = groupProps.group.topicOffsets;
@@ -314,18 +340,18 @@ const GroupByTopics = (groupProps: {
       const assignedMember = allAssignments.find(
         (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
       );
-
+      const isUnconsumed = partLag.groupOffset === null;
       return {
         topicName: topicLag.topic,
         partitionId: partLag.partitionId,
         groupOffset: partLag.groupOffset,
-        highWaterMark: partLag.highWaterMark,
-        lag: partLag.lag,
-
+        highWaterMark: partLag.highWaterMark as number | null,
+        lag: isUnconsumed ? null : (partLag.lag as number | null),
         assignedMember: assignedMember?.member,
         id: assignedMember?.member.id,
         clientId: assignedMember?.member.clientId,
         host: assignedMember?.member.clientHost,
+        isUnconsumed,
       };
     })
   );
@@ -340,11 +366,15 @@ const GroupByTopics = (groupProps: {
     const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
     const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
-    const partitions = groupProps.onlyShowPartitionsWithLag ? g.partitions.filter((e) => e.lag !== 0) : g.partitions;
+    const partitions = groupProps.onlyShowPartitionsWithLag
+      ? g.partitions.filter((e) => e.isUnconsumed || (e.lag !== null && e.lag !== 0))
+      : g.partitions;
 
     if (partitions.length === 0) {
       return null;
     }
+
+    const consumedPartitions = g.partitions.filter((p) => !p.isUnconsumed);
 
     return {
       heading: (
@@ -357,18 +387,22 @@ const GroupByTopics = (groupProps: {
 
             <Flex gap={2}>
               <IconButton
-                disabledReason={cannotEditGroupReason(groupProps.group)}
+                disabledReason={cannotEditGroupReason(groupProps.group, featurePatchGroup, consumedPartitions)}
                 onClick={(e) => {
-                  groupProps.onEditOffsets(g.partitions);
+                  groupProps.onEditOffsets(consumedPartitions);
                   e.stopPropagation();
                 }}
               >
                 <EditIcon />
               </IconButton>
               <IconButton
-                disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group)}
+                disabledReason={cannotDeleteGroupOffsetsReason(
+                  groupProps.group,
+                  featureDeleteGroupOffsets,
+                  consumedPartitions
+                )}
                 onClick={(e) => {
-                  groupProps.onDeleteOffsets(g.partitions, 'topic');
+                  groupProps.onDeleteOffsets(consumedPartitions, 'topic');
                   e.stopPropagation();
                 }}
               >
@@ -393,13 +427,14 @@ const GroupByTopics = (groupProps: {
         <DataTable<{
           topicName: string;
           partitionId: number;
-          groupOffset: number;
-          highWaterMark: number;
-          lag: number;
+          groupOffset: number | null;
+          highWaterMark: number | null;
+          lag: number | null;
           assignedMember: GroupMemberDescription | undefined;
           id: string | undefined;
           clientId: string | undefined;
           host: string | undefined;
+          isUnconsumed: boolean;
         }>
           columns={[
             {
@@ -442,19 +477,22 @@ const GroupByTopics = (groupProps: {
               size: 120,
               header: 'Log End Offset',
               accessorKey: 'highWaterMark',
-              cell: ({ row: { original } }) => numberToThousandsString(original.highWaterMark),
+              cell: ({ row: { original } }) =>
+                original.highWaterMark !== null ? numberToThousandsString(original.highWaterMark) : '—',
             },
             {
               size: 120,
               header: 'Group Offset',
               accessorKey: 'groupOffset',
-              cell: ({ row: { original } }) => numberToThousandsString(original.groupOffset),
+              cell: ({ row: { original } }) =>
+                original.groupOffset !== null ? numberToThousandsString(original.groupOffset) : '—',
             },
             {
               size: 80,
               header: 'Lag',
               accessorKey: 'lag',
-              cell: ({ row: { original } }) => ShortNum({ value: original.lag, tooltip: true }),
+              cell: ({ row: { original } }) =>
+                original.lag !== null ? ShortNum({ value: original.lag, tooltip: true }) : '—',
             },
             {
               size: 1,
@@ -463,13 +501,23 @@ const GroupByTopics = (groupProps: {
               cell: ({ row: { original } }) => (
                 <Flex gap={1} pr={2}>
                   <IconButton
-                    disabledReason={cannotEditGroupReason(groupProps.group)}
+                    data-testid={`partition-edit-${original.partitionId}`}
+                    disabledReason={cannotEditGroupReason(
+                      groupProps.group,
+                      featurePatchGroup,
+                      original.isUnconsumed ? [] : undefined
+                    )}
                     onClick={() => groupProps.onEditOffsets([original])}
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
-                    disabledReason={cannotDeleteGroupOffsetsReason(groupProps.group)}
+                    data-testid={`partition-delete-${original.partitionId}`}
+                    disabledReason={cannotDeleteGroupOffsetsReason(
+                      groupProps.group,
+                      featureDeleteGroupOffsets,
+                      original.isUnconsumed ? [] : undefined
+                    )}
                     onClick={() => groupProps.onDeleteOffsets([original], 'partition')}
                   >
                     <TrashIcon />
@@ -596,38 +644,52 @@ const ProtocolType = (p: { group: GroupDescription }) => {
   return <Statistic title="Protocol" value={protocol} />;
 };
 
-function cannotEditGroupReason(group: GroupDescription): string | undefined {
+function cannotEditGroupReason(
+  group: GroupDescription,
+  featurePatchGroup: boolean,
+  consumedPartitions?: readonly unknown[]
+): string | undefined {
+  if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
+    return 'No committed offsets';
+  }
   if (group.noEditPerms) {
     return "You don't have 'editConsumerGroup' permissions for this group";
   }
   if (group.isInUse) {
     return 'Consumer groups with active members cannot be edited';
   }
-  if (!Features.patchGroup) {
+  if (!featurePatchGroup) {
     return 'This cluster does not support editing group offsets';
   }
 }
 
-function cannotDeleteGroupReason(group: GroupDescription): string | undefined {
+function cannotDeleteGroupReason(group: GroupDescription, featureDeleteGroup: boolean): string | undefined {
   if (group.noDeletePerms) {
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
   if (group.isInUse) {
     return 'Consumer groups with active members cannot be deleted';
   }
-  if (!Features.deleteGroup) {
+  if (!featureDeleteGroup) {
     return 'This cluster does not support deleting groups';
   }
 }
 
-function cannotDeleteGroupOffsetsReason(group: GroupDescription): string | undefined {
+function cannotDeleteGroupOffsetsReason(
+  group: GroupDescription,
+  featureDeleteGroupOffsets: boolean,
+  consumedPartitions?: readonly unknown[]
+): string | undefined {
+  if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
+    return 'No committed offsets';
+  }
   if (group.noEditPerms) {
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
   if (group.isInUse) {
     return 'Consumer groups with active members cannot be deleted';
   }
-  if (!Features.deleteGroupOffsets) {
+  if (!featureDeleteGroupOffsets) {
     return 'This cluster does not support deleting group offsets';
   }
 }

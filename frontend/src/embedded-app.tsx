@@ -35,14 +35,16 @@ import './globals.css';
 
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
+import { ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
+import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { NotFoundPage } from './components/misc/not-found-page';
+import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -52,6 +54,7 @@ import {
 } from './config';
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
+import { installUISettingsSideEffects } from './state/ui';
 
 // Regex for normalizing paths by removing trailing slashes
 const TRAILING_SLASH_REGEX = /\/+$/;
@@ -107,6 +110,13 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const uiSettingsTeardown = installUISettingsSideEffects();
+    return () => {
+      uiSettingsTeardown();
+    };
+  }, []);
+
   setup(p);
 
   // This transport handles the grpc requests for the embedded app.
@@ -135,6 +145,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
         },
         basepath: basePath,
         defaultNotFoundComponent: NotFoundPage,
+        defaultPendingComponent: RoutePendingFallback,
       }),
     [basePath, dataplaneTransport]
   );

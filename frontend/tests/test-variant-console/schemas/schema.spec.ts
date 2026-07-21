@@ -88,7 +88,8 @@ test.describe('Schema Registry E2E Tests', () => {
       const checkbox = page.getByText('Show soft-deleted').locator('..');
       await checkbox.click();
 
-      await page.waitForTimeout(500);
+      // Wait for the table to update after toggling soft-deleted
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
     });
 
     test('should navigate to schema details page', async ({ page }) => {
@@ -100,7 +101,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await firstSchemaLink.click();
 
       await expect(page).toHaveURL(/\/schema-registry\/subjects\//);
-      await expect(page.getByText(schemaName || '')).toBeVisible();
+      await expect(page.getByText(schemaName || '').first()).toBeVisible();
     });
   });
 
@@ -136,7 +137,9 @@ test.describe('Schema Registry E2E Tests', () => {
       const initialCount = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
 
       await searchInput.clear();
-      await page.waitForTimeout(300);
+
+      // Wait for the table to repopulate after clearing search
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
 
       const finalCount = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
       expect(finalCount).toBeGreaterThanOrEqual(initialCount);
@@ -148,10 +151,8 @@ test.describe('Schema Registry E2E Tests', () => {
       const searchInput = page.getByPlaceholder('Filter by subject name or schema ID...');
       await searchInput.fill('non-existent-schema-12345-xyz');
 
-      await page.waitForTimeout(500);
-
-      const count = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
-      expect(count).toEqual(0);
+      // Wait for the table to show no results
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID)).toHaveCount(0);
     });
   });
 
@@ -204,13 +205,17 @@ test.describe('Schema Registry E2E Tests', () => {
       const hasTopics = await topicSelect.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (hasTopics) {
-        // Try to select the first available topic
-        // Click to open dropdown and check if options are available
+        // Open the topic select. Scope option lookup to the open popup (the
+        // registry's Base UI Select keeps a transitioning closed popup briefly,
+        // so the page-wide `[role="option"]` first match can be a stale item
+        // from the strategy select that's animating out).
         await topicSelect.click();
-        const firstOption = page.locator('[role="option"]').first();
-        const hasOptions = await firstOption.isVisible({ timeout: 500 }).catch(() => false);
+        const openPopup = page.locator('[data-slot="select-content"][data-state="open"]');
+        const hasOptions = await openPopup.isVisible({ timeout: 1000 }).catch(() => false);
 
         if (hasOptions) {
+          const firstOption = openPopup.locator('[role="option"]').first();
+          await expect(firstOption).toBeVisible();
           await firstOption.click();
 
           // Verify key/value radio appears
@@ -378,7 +383,8 @@ test.describe('Schema Registry E2E Tests', () => {
       const checkbox = page.getByTestId('schema-list-show-soft-deleted-checkbox');
       await checkbox.check();
 
-      await page.waitForTimeout(500);
+      // Wait for the table to update after toggling soft-deleted
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
 
       // Look for any soft-deleted schema indicator
       const softDeletedIcon = page.getByTestId('schema-list-soft-deleted-icon').first();
@@ -588,11 +594,8 @@ test.describe('Schema Registry E2E Tests', () => {
 
       await schemaPage.searchSchemas('nonexistent-schema-xyz-12345');
 
-      // Wait for search to complete
-      await page.waitForTimeout(500);
-
-      const count = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
-      expect(count).toBe(0);
+      // Wait for the table to show no results
+      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID)).toHaveCount(0);
     });
 
     test('should show spinner during schema ID search', async ({ page }) => {

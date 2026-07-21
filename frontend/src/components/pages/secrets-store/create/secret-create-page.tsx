@@ -24,12 +24,11 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
@@ -45,7 +44,7 @@ export const SecretCreatePage = () => {
   const { data: secretList } = useListSecretsQuery();
 
   const form = useForm<SecretCreateFormValues>({
-    resolver: zodResolver(SecretCreateFormSchema),
+    resolver: zodResolver(SecretCreateFormSchema) as Resolver<SecretCreateFormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -83,7 +82,7 @@ export const SecretCreatePage = () => {
 
     try {
       await createSecret({ request });
-      toast.success('Secret created successfully');
+      toast.success('Secret created');
       navigate({ to: '/secrets' });
     } catch (error) {
       const connectError = ConnectError.from(error);
@@ -95,8 +94,10 @@ export const SecretCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Create Secret</Heading>
-        <Text variant="muted">Create a new secret that can be securely accessed by your services.</Text>
+        <h1 className="text-heading-xl">Create Secret</h1>
+        <div className="text-body text-muted-foreground">
+          Create a new secret that can be securely accessed by your services.
+        </div>
       </header>
 
       <form className="max-w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
@@ -144,7 +145,6 @@ export const SecretCreatePage = () => {
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel required>Scopes</FieldLabel>
               <MultiSelect
-                items={SCOPE_OPTIONS}
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >

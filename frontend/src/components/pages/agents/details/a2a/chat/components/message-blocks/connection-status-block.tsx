@@ -11,7 +11,6 @@
 
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircleIcon, LoaderCircleIcon, RefreshCwIcon, WifiIcon, WifiOffIcon } from 'lucide-react';
 
 type ConnectionStatusBlockProps = {
@@ -50,9 +49,9 @@ export const ConnectionStatusBlock = ({ status, attempt, maxAttempts, timestamp 
           <LoaderCircleIcon className="size-3.5 animate-spin" />
         </AlertTitle>
         <AlertDescription>
-          <Text className="text-blue-600 text-xs" variant="body">
+          <div className="text-body-sm text-informative">
             The agent task is still running. Trying to re-establish the event stream.
-          </Text>
+          </div>
         </AlertDescription>
       </Alert>
     );
@@ -63,9 +62,9 @@ export const ConnectionStatusBlock = ({ status, attempt, maxAttempts, timestamp 
     <Alert className="mb-4" icon={<AlertCircleIcon />} variant="destructive">
       <AlertTitle>Connection lost</AlertTitle>
       <AlertDescription className="flex flex-col items-start gap-2">
-        <Text className="text-destructive/90" variant="body">
+        <div className="text-body text-destructive/90">
           Unable to reconnect after {maxAttempts ?? '?'} attempts. The agent task may still be running server-side.
-        </Text>
+        </div>
         <Button onClick={() => window.location.reload()} size="sm" variant="outline">
           <RefreshCwIcon />
           Reload to check status

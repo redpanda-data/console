@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { getRouteApi } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id/');
@@ -19,13 +17,13 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from 'components/redpanda-ui/components/dialog';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { JSONView } from 'components/ui/json/json-view';
 import { config } from 'config';
 import { FileJson, Loader2 } from 'lucide-react';
@@ -62,7 +60,7 @@ export const AIAgentInspectorTab = () => {
       <Card size="full">
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center text-center">
-            <Text className="text-muted-foreground">Loading agent details...</Text>
+            <div className="text-body text-muted-foreground">Loading agent details...</div>
           </div>
         </CardContent>
       </Card>
@@ -77,10 +75,8 @@ export const AIAgentInspectorTab = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center text-center">
-            <Text className="text-muted-foreground">Agent is not running</Text>
-            <Text className="text-muted-foreground" variant="small">
-              Start the agent to begin testing
-            </Text>
+            <div className="text-body text-muted-foreground">Agent is not running</div>
+            <div className="text-body-sm text-muted-foreground">Start the agent to begin testing</div>
           </div>
         </CardContent>
       </Card>
@@ -96,10 +92,8 @@ export const AIAgentInspectorTab = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Text className="text-muted-foreground">Agent URL not available</Text>
-            <Text className="text-muted-foreground" variant="small">
-              Please try restarting the agent
-            </Text>
+            <div className="text-body text-muted-foreground">Agent URL not available</div>
+            <div className="text-body-sm text-muted-foreground">Try restarting the agent</div>
           </div>
         </CardContent>
       </Card>
@@ -166,36 +160,34 @@ export const AIAgentInspectorTab = () => {
       agent={agent}
       headerActions={
         <Dialog>
-          <DialogTrigger asChild>
-            <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
-              <FileJson className="h-4 w-4" />
-              View Agent Card
-            </Button>
-          </DialogTrigger>
-          <DialogContent
-            className="max-h-[85vh] w-[70vw] max-w-[1200px] overflow-y-auto"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            size="full"
-          >
+          <DialogTrigger
+            render={
+              <Button onClick={fetchLiveAgentCard} size="sm" variant="ghost">
+                <FileJson className="h-4 w-4" />
+                View Agent Card
+              </Button>
+            }
+          />
+          <DialogContent className="max-h-[85vh] w-[70vw] max-w-[1200px]" initialFocus={false} size="full">
             <DialogHeader>
               <DialogTitle>Agent Card</DialogTitle>
               {Boolean(cardUrl) && <DialogDescription className="font-mono text-xs">{cardUrl}</DialogDescription>}
             </DialogHeader>
-            <div className="mt-2">
+            <DialogBody>
               {(() => {
                 if (isLoadingCard) {
                   return (
                     <div className="flex items-center justify-center p-8">
                       <Loader2 className="h-6 w-6 animate-spin" />
-                      <Text className="ml-2">Fetching agent card from A2A endpoint...</Text>
+                      <div className="ml-2 text-body">Fetching agent card from A2A endpoint...</div>
                     </div>
                   );
                 }
 
                 if (cardError) {
                   return (
-                    <div className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/30">
-                      <Text className="text-red-800 dark:text-red-200">{cardError}</Text>
+                    <div className="rounded-md border border-outline-error bg-background-error-subtle p-4">
+                      <div className="text-body text-error">{cardError}</div>
                     </div>
                   );
                 }
@@ -206,11 +198,11 @@ export const AIAgentInspectorTab = () => {
 
                 return (
                   <div className="flex items-center justify-center p-8">
-                    <Text className="text-muted-foreground">Click the button to load agent card</Text>
+                    <div className="text-body text-muted-foreground">Click the button to load agent card</div>
                   </div>
                 );
               })()}
-            </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
       }

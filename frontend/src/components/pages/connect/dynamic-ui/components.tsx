@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
 import { useCallback, useState, useSyncExternalStore } from 'react';
 

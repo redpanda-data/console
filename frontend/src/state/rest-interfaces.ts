@@ -277,6 +277,7 @@ export type ConfigEntryExtended = ConfigEntry & {
     | 'DECIMAL'
     | 'INTEGER';
   enumValues?: string[];
+  noInfiniteValue?: boolean;
 
   // added by frontend
   currentValue: string | number | null | undefined;
@@ -365,7 +366,7 @@ export type GroupTopicOffsets = {
 // PartitionOffset describes the kafka lag for a partition for a single consumer group
 export type GroupPartitionOffset = {
   partitionId: number;
-  groupOffset: number;
+  groupOffset: number | null; // null when no committed offset exists for this partition
 
   error: string | undefined; // Error will be set when the high water mark could not be fetched
   highWaterMark: number;
@@ -774,59 +775,6 @@ export type AclRule = {
   principal: string;
   host: string;
   operation: AclStrOperation;
-  permissionType: AclStrPermission;
-};
-
-export type CreateACLRequest = {
-  // ResourceType is the type of resource this acl entry will be on.
-  // It is invalid to use UNKNOWN or ANY.
-  resourceType: AclStrResourceType;
-
-  // ResourceName is the name of the resource this acl entry will be on.
-  // For CLUSTER, this must be "kafka-cluster".
-  resourceName: string;
-
-  // ResourcePatternType is the pattern type to use for the resource name.
-  // This cannot be UNKNOWN or MATCH (i.e. this must be LITERAL or PREFIXED).
-  // The default for pre-Kafka 2.0.0 is effectively LITERAL.
-  //
-  // This field has a default of 3 (prefixed).
-  resourcePatternType: ('Literal' | 'Prefixed') & AclStrResourcePatternType;
-
-  // Principal is the user to apply this acl for. With the Kafka simple
-  // authorizer, this must begin with "User:".
-  principal: string;
-
-  // Host is the host address to use for this acl. Each host to allow
-  // the principal access from must be specified as a new creation. KIP-252
-  // might solve this someday. The special wildcard host "*" allows all hosts.
-  host: '*' | string;
-
-  // Operation is the operation this acl is for. This must not be UNKNOWN or
-  // ANY.
-  operation: Exclude<AclStrOperation, 'Unknown' | 'Any'>;
-
-  // PermissionType is the permission of this acl. This must be either ALLOW
-  // or DENY.
-  permissionType: ('Allow' | 'Deny') & AclStrPermission;
-};
-
-export type DeleteACLsRequest = {
-  resourceType: AclStrResourceType;
-
-  // Unset will match any resource name
-  resourceName?: string;
-
-  resourcePatternType: AclStrResourcePatternType;
-
-  // Unset will match any principal
-  principal?: string;
-
-  // Unset will match any host
-  host?: string;
-
-  operation: AclStrOperation;
-
   permissionType: AclStrPermission;
 };
 
@@ -1366,19 +1314,6 @@ export type CreateTopicResponse = {
   partitionCount: number;
   replicationFactor: number;
   configs: TopicConfigEntry[];
-};
-
-// GET api/users
-export type GetUsersResponse = {
-  users: string[];
-  isComplete: boolean;
-};
-
-// POST api/users
-export type CreateUserRequest = {
-  username: string;
-  password: string;
-  mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
 };
 
 export type CreateSecretRequest = {

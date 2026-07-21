@@ -28,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RegexPatternsField } from 'components/ui/regex/regex-patterns-field';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
@@ -41,6 +40,14 @@ import { Controller, type UseFormReturn } from 'react-hook-form';
 
 import type { KnowledgeBaseCreateFormValues } from './schemas';
 
+// Base UI's <Select.Value> can't resolve an item's label until the popup
+// mounts, so an enum-backed controlled value renders as the raw string ("1")
+// on first paint. Passing an `items` map closes the gap eagerly.
+const SASL_MECHANISM_ITEMS: Record<string, string> = {
+  [String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)]: 'SCRAM-SHA-256',
+  [String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512)]: 'SCRAM-SHA-512',
+};
+
 type IndexerSectionProps = {
   form: UseFormReturn<KnowledgeBaseCreateFormValues>;
   availableSecrets: Array<{ id: string; name: string }>;
@@ -51,7 +58,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <TableOfContents className="h-4 w-4" />
-        <Text className="font-semibold">Indexer</Text>
+        <div className="font-semibold text-body">Indexer</div>
       </CardTitle>
     </CardHeader>
     <CardContent>
@@ -183,6 +190,7 @@ export const IndexerSection: React.FC<IndexerSectionProps> = ({ form, availableS
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel required>SASL Mechanism</FieldLabel>
                 <Select
+                  items={SASL_MECHANISM_ITEMS}
                   onValueChange={(value) => field.onChange(Number.parseInt(value, 10))}
                   value={String(field.value)}
                 >

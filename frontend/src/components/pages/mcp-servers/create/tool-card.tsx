@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditorCard } from 'components/ui/yaml/yaml-editor-card';
@@ -90,7 +89,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Text>Tool {toolIndex + 1}</Text>
+            <div className="text-body">Tool {toolIndex + 1}</div>
             {Boolean(canRemove) && (
               <Button onClick={onRemove} type="button" variant="outline">
                 <Trash2 className="h-4 w-4" />
@@ -118,7 +117,18 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                     value={String(field.value)}
                   >
                     <SelectTrigger id={`tool-${toolIndex}-componentType`}>
-                      <SelectValue placeholder="Select component type" />
+                      <SelectValue placeholder="Select component type">
+                        {(value) => {
+                          const numericValue = Number(value);
+                          if (
+                            !Number.isFinite(numericValue) ||
+                            numericValue === MCPServer_Tool_ComponentType.UNSPECIFIED
+                          ) {
+                            return null;
+                          }
+                          return <RedpandaConnectComponentTypeBadge componentType={numericValue} />;
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(MCPServer_Tool_ComponentType)
@@ -195,9 +205,7 @@ export const ToolCard: React.FC<ToolCardProps> = ({
                           <RedpandaConnectComponentTypeBadge componentType={tpl.componentType} />
                           <span className="font-medium text-sm">{tpl.name}</span>
                         </div>
-                        <Text className="text-xs leading-tight" variant="muted">
-                          {tpl.description}
-                        </Text>
+                        <div className="text-body-sm text-muted-foreground leading-tight">{tpl.description}</div>
                       </div>
                     </SelectItem>
                   ))}

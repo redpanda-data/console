@@ -16,6 +16,8 @@ import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useEffect, useMemo, useRef } from 'react';
 
+import { normalizePastedWhitespace } from './whitespace';
+
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
   transparentBackground?: boolean;
@@ -58,7 +60,42 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   stickyScroll: {
     enabled: false,
   },
+  // EditContext drops textupdate events here, breaking space + suggestions.
+  editContext: false,
 } as const;
+
+// Title each `anyOf` variant (first property name) so monaco-yaml's hover
+// doesn't render `|| || ||` between empty alternatives.
+export function annotateAnyOfTitles(node: unknown): void {
+  if (!node || typeof node !== 'object') {
+    return;
+  }
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      annotateAnyOfTitles(child);
+    }
+    return;
+  }
+  const record = node as Record<string, unknown>;
+  const anyOf = record.anyOf;
+  if (Array.isArray(anyOf)) {
+    for (const variant of anyOf) {
+      if (variant && typeof variant === 'object' && !Array.isArray(variant)) {
+        const v = variant as Record<string, unknown>;
+        if (!v.title && !v.description && !v.markdownDescription) {
+          const properties = v.properties as Record<string, unknown> | undefined;
+          const firstKey = properties ? Object.keys(properties)[0] : undefined;
+          if (firstKey) {
+            v.title = firstKey;
+          }
+        }
+      }
+    }
+  }
+  for (const value of Object.values(record)) {
+    annotateAnyOfTitles(value);
+  }
+}
 
 function buildMonacoYamlOptions(
   schema?: YamlEditorProps['schema'],
@@ -72,10 +109,11 @@ function buildMonacoYamlOptions(
           ...(schema.properties && { properties: schema.properties }),
         }
       : { type: 'object' as const };
+  annotateAnyOfTitles(inlineSchema);
 
   return {
     enableSchemaRequest: false,
-    format: true,
+    format: { enable: true },
     completion: true,
     validate: true,
     schemas: [
@@ -99,7 +137,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
     [schema],
   );
 
-  // Update Monaco YAML when schema changes after initial mount
+  // Re-apply options when schema changes after mount.
   useEffect(() => {
     if (!hasInitializedRef.current) {
       hasInitializedRef.current = true;
@@ -109,7 +147,6 @@ export const YamlEditor = (props: YamlEditorProps) => {
     yamlRef.current?.update(monacoYamlOptions);
   }, [monacoYamlOptions]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (yamlRef.current) {
@@ -137,6 +174,18 @@ export const YamlEditor = (props: YamlEditorProps) => {
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
       onMount={(editorInstance) => {
+        // Normalize invisible spaces in the pasted range (see whitespace.ts).
+        editorInstance.onDidPaste((e) => {
+          const model = editorInstance.getModel();
+          if (!model) {
+            return;
+          }
+          const pasted = model.getValueInRange(e.range);
+          const normalized = normalizePastedWhitespace(pasted);
+          if (normalized !== pasted) {
+            editorInstance.executeEdits('normalize-pasted-whitespace', [{ range: e.range, text: normalized }]);
+          }
+        });
         onEditorMount?.(editorInstance);
       }}
       options={options}

@@ -42,7 +42,7 @@ export const IsProd = !isDev;
 export const IsDev = isDev;
 export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH !== 'false';
 
-const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS', 'SHADOW_LINKS'] as const;
+const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS', 'SHADOW_LINKS', 'REDPANDA_SQL'] as const;
 export type AppFeature = (typeof appFeatureNames)[number];
 
 if (env.REACT_APP_ENABLED_FEATURES) {
@@ -97,7 +97,11 @@ for (const k in env) {
 }
 
 // - print
-// biome-ignore lint/suspicious/noConsole: intentional console usage
-console.log(toJson(envVarDebugObj));
+// Skip the banner under Vitest so test output stays clean. The value is
+// still exported below for any code that wants to introspect env at runtime.
+if (!process.env.VITEST && process.env.NODE_ENV !== 'test') {
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
+  console.log(toJson(envVarDebugObj));
+}
 
 export { envVarDebugObj, envVarDebugAr };

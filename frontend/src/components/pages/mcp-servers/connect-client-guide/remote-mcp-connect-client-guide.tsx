@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
 import { ClientAuggie } from './clients/auggie';
@@ -105,7 +104,11 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
     <div className="space-y-2">
       <Label className="font-medium text-sm">Connect to your client</Label>
       <div>
-        <Select onValueChange={(value) => setClient(value as ClientType)} value={client}>
+        <Select
+          items={AVAILABLE_CLIENTS.map((clientId) => ({ value: clientId, label: CLIENT_INFO[clientId].name }))}
+          onValueChange={(value) => setClient(value as ClientType)}
+          value={client}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a client" />
           </SelectTrigger>
@@ -118,7 +121,7 @@ export const RemoteMCPConnectClientGuide = ({ mcpServer }: RemoteMCPConnectClien
                   <SelectItem key={clientId} value={clientId}>
                     <div className="flex items-center gap-2">
                       <img alt={clientInfo.alt} className="h-4 w-4" src={clientInfo.logo} />
-                      <Text>{clientInfo.name}</Text>
+                      <div className="text-body">{clientInfo.name}</div>
                     </div>
                   </SelectItem>
                 );

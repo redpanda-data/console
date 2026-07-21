@@ -1,0 +1,36 @@
+input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topics:
+      - ${slot.sourceTopic}
+    consumer_group: ${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # backfill the topic on first run
+    auto_replay_nacks: true                # re-deliver NACKed messages
+    # commit_period: 5s                    # how often to commit offsets
+
+output:
+  snowflake_streaming:
+    # ── Connection (filled in from the form) ────────────────────────────────
+    account: ${slot.account}
+    user: ${slot.user}
+    role: ${slot.role}
+    private_key: ${slot.privateKey}
+    database: ${slot.database}
+    schema: ${slot.schema}
+    table: ${slot.table}
+
+    # ── Throughput defaults — Snowpipe Streaming likes larger batches ───────
+    batching:
+      count: 1000
+      period: 5s
+    # max_in_flight: 4                     # parallel insert channels
+    # init_statement: ""                   # optional setup SQL run once
+
+    # ── Schema handling ─────────────────────────────────────────────────────
+    # schema_evolution:
+    #   enabled: true                      # auto-add columns from incoming records
+    # mapping: ""                          # bloblang to reshape records before insert

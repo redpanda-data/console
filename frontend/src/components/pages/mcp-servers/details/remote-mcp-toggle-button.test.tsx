@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import userEvent from '@testing-library/user-event';
 import {
   GetMCPServerRequestSchema,
   GetMCPServerResponseSchema,
@@ -26,7 +27,7 @@ import {
   startMCPServer,
   stopMCPServer,
 } from 'protogen/redpanda/api/dataplane/v1/mcp-MCPServerService_connectquery';
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 vi.mock('config', () => ({
   config: {
@@ -50,6 +51,7 @@ import { RemoteMCPToggleButton } from './remote-mcp-toggle-button';
 
 describe('RemoteMCPToggleButton', () => {
   test('should stop a running MCP server from the details page', async () => {
+    const user = userEvent.setup();
     const serverId = 'server-1';
     const server = create(MCPServerSchema, {
       id: serverId,
@@ -97,7 +99,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     const stopButton = screen.getByTestId('stop-mcp-server-button');
-    fireEvent.click(stopButton);
+    await user.click(stopButton);
 
     await waitFor(() => {
       expect(stopMCPServerMock).toHaveBeenCalledTimes(1);
@@ -111,6 +113,7 @@ describe('RemoteMCPToggleButton', () => {
   });
 
   test('should start a stopped MCP server from the details page', async () => {
+    const user = userEvent.setup();
     const serverId = 'server-1';
     const server = create(MCPServerSchema, {
       id: serverId,
@@ -158,7 +161,7 @@ describe('RemoteMCPToggleButton', () => {
     );
 
     const startButton = screen.getByTestId('start-mcp-server-button');
-    fireEvent.click(startButton);
+    await user.click(startButton);
 
     await waitFor(() => {
       expect(startMCPServerMock).toHaveBeenCalledTimes(1);

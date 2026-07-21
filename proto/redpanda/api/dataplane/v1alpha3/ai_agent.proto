@@ -67,9 +67,7 @@ message AIAgent {
   // They help organize AI agents and enable filtering when listing them.
   map<string, string> tags = 10 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The current AI agent state.
@@ -108,6 +106,12 @@ message AIAgent {
   // Not user-configurable: capabilities and authentication (managed by Redpanda).
   AgentCard agent_card = 17;
 
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 18;
+
+  // Messaging endpoint URL for the Teams bridge, populated by the bridge controller.
+  optional string teams_bridge_endpoint = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message Provider {
     message OpenAI {
       string api_key = 1 [
@@ -145,12 +149,33 @@ message AIAgent {
       ];
     }
 
+    message Bedrock {
+      // AWS region for Bedrock inference (e.g., "us-east-1").
+      string region = 1 [
+        (google.api.field_behavior) = REQUIRED,
+        (buf.validate.field).required = true,
+        (buf.validate.field).string.pattern = "^[a-z]{2}(-[a-z]+-\\d+)?$"
+      ];
+      // Optional secret reference for the AWS access key ID.
+      // When omitted, uses the AWS default credential chain (IRSA, env vars, instance profile).
+      string access_key_id_secret_ref = 2 [
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+      ];
+      // Optional secret reference for the AWS secret access key.
+      string secret_access_key_secret_ref = 3 [
+        (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+        (buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"
+      ];
+    }
+
     oneof provider {
       option (buf.validate.oneof).required = true;
       OpenAI openai = 1;
       Anthropic anthropic = 2;
       Google google = 3;
       OpenAICompatible openai_compatible = 4;
+      Bedrock bedrock = 5;
     }
   }
 
@@ -210,17 +235,15 @@ message AIAgent {
     string description = 3 [(buf.validate.field).string.max_len = 256];
   }
 
-  // Gateway configuration for routing requests through an AI Gateway.
+  // Optional gateway configuration for routing requests through an AI Gateway.
   message GatewayConfig {
-    // Virtual gateway ID (XID format - 20-character alphanumeric string).
-    // This ID is used in the x-gateway-id header for multi-tenant routing.
-    string virtual_gateway_id = 1 [
-      (google.api.field_behavior) = REQUIRED,
-      (buf.validate.field).required = true,
-      (buf.validate.field).string.pattern = "^[a-z0-9]+$",
-      (buf.validate.field).string.len = 20,
-      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Virtual gateway ID (20-character XID format)."}
-    ];
+    // Deprecated: No longer needed — there is always one gateway per cluster.
+    string virtual_gateway_id = 1 [deprecated = true];
+
+    // Name of the configured LLMProvider in the AI Gateway (aigw).
+    // Used to determine which provider to route requests through.
+    // Example: "my-openai-provider"
+    string llm_provider = 2;
   }
 
   // A2A agent card configuration for customizing agent discovery metadata.
@@ -277,6 +300,26 @@ message AIAgent {
   }
 }
 
+// Microsoft Teams bridge configuration for connecting an AI agent to Teams.
+// Each agent gets its own Azure Bot registration; the bridge validates
+// inbound Bot Framework JWTs against the per-agent bot_app_id as audience.
+message AIAgentTeamsBridge {
+  // Whether the Teams bridge is active for this agent.
+  bool enabled = 1;
+  // Azure Bot registration Application (client) ID.
+  string bot_app_id = 2;
+  // AAD tenant ID the bot registration lives in.
+  string bot_tenant_id = 3;
+  // Bare secret key in the Redpanda secret store (e.g. "TEAMS_BOT_SECRET").
+  // Unlike provider api_key fields which use ${secrets.NAME} template syntax,
+  // this is a plain identifier — the bridge resolves it directly via the
+  // tenant-scoped secret store prefix.
+  string bot_app_secret_ref = 4 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.pattern = "^[A-Za-z_][A-Za-z0-9_]*$"
+  ];
+}
+
 // AIAgentService is the service for AI Agents.
 // It exposes the API for creating and managing AI agents and their configurations.
 service AIAgentService {
@@ -298,9 +341,7 @@ service AIAgentService {
         key: "201"
         value: {
           description: "Created"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
     };
@@ -324,18 +365,14 @@ service AIAgentService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -361,9 +398,7 @@ service AIAgentService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListAIAgentsResponse"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.ListAIAgentsResponse"}}
         }
       }
     };
@@ -394,9 +429,7 @@ service AIAgentService {
         key: "200"
         value: {
           description: "OK"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
     };
@@ -428,9 +461,7 @@ service AIAgentService {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -455,18 +486,14 @@ service AIAgentService {
         key: "200"
         value: {
           description: "Stopped"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -491,18 +518,14 @@ service AIAgentService {
         key: "200"
         value: {
           description: "Started"
-          schema: {
-            json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}
-          }
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.AIAgent"}}
         }
       }
       responses: {
         key: "404"
         value: {
           description: "Not Found"
-          schema: {
-            json_schema: {ref: ".google.rpc.Status"}
-          }
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
         }
       }
     };
@@ -563,9 +586,7 @@ message AIAgentCreate {
   // Optional list of tags to attach to an AI agent.
   map<string, string> tags = 8 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
@@ -595,6 +616,9 @@ message AIAgentCreate {
 
   // Optional A2A agent card configuration.
   AIAgent.AgentCard agent_card = 14;
+
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 15;
 }
 
 // CreateAIAgentRequest is the request of CreateAIAgent.
@@ -653,9 +677,7 @@ message ListAIAgentsRequest {
     map<string, string> tags = 2 [
       (buf.validate.field).map = {
         max_pairs: 16
-        values: {
-          string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-        }
+        values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
       },
       (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "AI agents that match all the provided tags will be returned."}
     ];
@@ -706,9 +728,7 @@ message AIAgentUpdate {
   // If a tag's value is empty, the server interprets that as a deletion.
   map<string, string> tags = 8 [(buf.validate.field).map = {
     max_pairs: 16
-    values: {
-      string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}
-    }
+    values: {string: {pattern: "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"}}
   }];
 
   // The number of resources that are guaranteed to be assigned to the AI agent.
@@ -736,6 +756,9 @@ message AIAgentUpdate {
 
   // Optional A2A agent card configuration.
   AIAgent.AgentCard agent_card = 14;
+
+  // Optional Microsoft Teams bridge configuration.
+  AIAgentTeamsBridge teams_bridge = 15;
 }
 
 message UpdateAIAgentRequest {

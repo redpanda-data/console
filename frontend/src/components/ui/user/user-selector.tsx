@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
-import { Text } from 'components/redpanda-ui/components/typography';
 
 import { useListUsersQuery } from '../../../react-query/api/user';
 
@@ -61,7 +60,7 @@ export const UserSelector = ({
             ))
           ) : (
             <div className="px-2 py-6 text-center text-sm">
-              <Text variant="muted">{isLoading ? 'Loading...' : 'No users found'}</Text>
+              <div className="text-body text-muted-foreground">{isLoading ? 'Loading...' : 'No users found'}</div>
             </div>
           )}
         </SelectContent>

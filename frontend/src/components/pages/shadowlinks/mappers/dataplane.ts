@@ -31,7 +31,7 @@ import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protog
 import type { TLSSettings } from 'protogen/redpanda/core/common/v1/tls_pb';
 
 import type { FormValues } from '../create/model';
-import { TLS_MODE } from '../create/model';
+import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 import {
   mapConsoleStateToUnified,
   type UnifiedAuthenticationConfiguration,
@@ -333,18 +333,33 @@ const extractTLSSettings = (
  */
 const extractAuthSettings = (
   clientOptions: ShadowLinkClientOptions | undefined
-): Pick<FormValues, 'useScram' | 'scramCredentials'> => {
+): Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'> => {
   const authConfig = clientOptions?.authenticationConfiguration;
   const scramConfig =
     authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
+  const plainConfig =
+    authConfig?.authentication?.case === 'plainConfiguration' ? authConfig.authentication.value : undefined;
+
+  let authMethod: FormValues['authMethod'] = AUTH_METHOD.NONE;
+  if (scramConfig) {
+    authMethod = AUTH_METHOD.SCRAM;
+  } else if (plainConfig) {
+    authMethod = AUTH_METHOD.PLAIN;
+  }
 
   return {
-    useScram: Boolean(scramConfig),
+    authMethod,
     scramCredentials: scramConfig
       ? {
           username: scramConfig.username || '',
           password: scramConfig.password || '',
           mechanism: scramConfig.scramMechanism,
+        }
+      : undefined,
+    plainCredentials: plainConfig
+      ? {
+          username: plainConfig.username || '',
+          password: plainConfig.password || '',
         }
       : undefined,
   };
@@ -404,7 +419,14 @@ export const buildDefaultConnectionValues = (
   shadowLink: DataplaneShadowLink
 ): Pick<
   FormValues,
-  'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'useScram' | 'scramCredentials' | 'advanceClientOptions'
+  | 'bootstrapServers'
+  | 'useTls'
+  | 'mtlsMode'
+  | 'mtls'
+  | 'authMethod'
+  | 'scramCredentials'
+  | 'plainCredentials'
+  | 'advanceClientOptions'
 > => {
   const clientOptions = shadowLink.configurations?.clientOptions;
   const tlsCertsSettings = clientOptions?.tlsSettings?.tlsSettings;
@@ -509,12 +531,16 @@ export const buildDefaultACLsValues = (
  */
 export const buildDefaultSchemaRegistryValues = (
   shadowLink: DataplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync'> => {
+): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> => {
   const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
   const isEnabled = schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
 
   return {
     enableSchemaRegistrySync: isEnabled,
+    // The edit flow only exposes the legacy switch for now; the redesigned section's
+    // fields stay at their defaults. Deep-copy so callers can't mutate the
+    // shared module-level initialValues through the returned reference.
+    schemaRegistry: structuredClone(initialValues.schemaRegistry),
   };
 };
 

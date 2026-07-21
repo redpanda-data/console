@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
 'use client';
 
 import { create } from '@bufbuild/protobuf';
@@ -22,7 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { LLMConfigSection } from 'components/ui/ai-agent/llm-config-section';
 import { SubagentConfigSection } from 'components/ui/ai-agent/subagent-config-section';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
@@ -34,7 +32,7 @@ import {
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
-import { isFeatureFlagEnabled } from 'config';
+import { config } from 'config';
 import { Loader2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
@@ -42,6 +40,7 @@ import {
   AIAgent_MCPServerSchema,
   type AIAgent_Provider,
   AIAgent_Provider_AnthropicSchema,
+  AIAgent_Provider_BedrockSchema,
   AIAgent_Provider_GoogleSchema,
   AIAgent_Provider_OpenAICompatibleSchema,
   AIAgent_Provider_OpenAISchema,
@@ -52,10 +51,10 @@ import {
   CreateAIAgentRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { Controller, type Resolver, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useCreateAIAgentMutation } from 'react-query/api/ai-agent';
-import { useListGatewaysQuery } from 'react-query/api/ai-gateway';
-import { useListMCPServersQuery } from 'react-query/api/remote-mcp';
+import { useListLLMProvidersQuery } from 'react-query/api/aigw/llm-providers';
+import { useListAigwMCPServersQuery } from 'react-query/api/aigw/mcp-servers';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import {
@@ -71,43 +70,14 @@ export const AIAgentCreatePage = () => {
   const navigate = useNavigate();
   const { mutateAsync: createAgent, isPending: isCreateAgentPending } = useCreateAIAgentMutation();
   const { data: secretsData } = useListSecretsQuery();
-  const { data: mcpServersData } = useListMCPServersQuery();
+  const { data: mcpServersData } = useListAigwMCPServersQuery(undefined, { enabled: !!config.aigwUrl });
+  const { data: llmProvidersData } = useListLLMProvidersQuery(undefined, { enabled: !!config.aigwUrl });
   const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation({
     skipInvalidation: true,
   });
 
-  // Feature flag: when true, use legacy API key mode (hardcoded providers)
-  const isLegacyApiKeyMode = isFeatureFlagEnabled('enableApiKeyConfigurationAgent');
-
-  // Gateway detection and list query (using v1 API from ai-gateway module)
-  // Only fetch when NOT in legacy mode
-  // Note: System-managed gateways are automatically excluded by the query hook
-  const { data: gatewaysData, isLoading: isLoadingGateways } = useListGatewaysQuery(
-    {},
-    { enabled: !isLegacyApiKeyMode }
-  );
-
-  const hasGatewayDeployed = useMemo(() => {
-    if (isLegacyApiKeyMode || isLoadingGateways) {
-      return false;
-    }
-    return Boolean(gatewaysData?.gateways && gatewaysData.gateways.length > 0);
-  }, [isLegacyApiKeyMode, gatewaysData, isLoadingGateways]);
-
-  const availableGateways = useMemo(() => {
-    if (isLegacyApiKeyMode || !gatewaysData?.gateways) {
-      return [];
-    }
-    return gatewaysData.gateways.map((gw) => {
-      // Extract gateway ID from name (format: "gateways/{gateway_id}")
-      const gatewayId = gw.name.split('/').pop() || gw.name;
-      return {
-        id: gatewayId,
-        displayName: gw.displayName,
-        description: gw.description,
-      };
-    });
-  }, [isLegacyApiKeyMode, gatewaysData]);
+  // Determine if AI Gateway is deployed based on config
+  const hasAigwDeployed = !!config.aigwUrl;
 
   // Ref to ServiceAccountSelector to call createServiceAccount
   const serviceAccountSelectorRef = useRef<ServiceAccountSelectorRef>(null);
@@ -121,7 +91,7 @@ export const AIAgentCreatePage = () => {
 
   // Form setup - always start with fresh values
   const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+    resolver: zodResolver(FormSchema) as Resolver<FormValues>,
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -146,13 +116,6 @@ export const AIAgentCreatePage = () => {
       form.setValue('serviceAccountName', generatedName, { shouldValidate: false });
     }
   }, [displayName, form]);
-
-  // Auto-select first gateway when gateways are available (only if not in legacy mode)
-  useEffect(() => {
-    if (!isLegacyApiKeyMode && availableGateways.length > 0 && !form.getValues('gatewayId')) {
-      form.setValue('gatewayId', availableGateways[0].id);
-    }
-  }, [isLegacyApiKeyMode, availableGateways, form]);
 
   const {
     fields: tagFields,
@@ -383,6 +346,22 @@ export const AIAgentCreatePage = () => {
           },
         });
         break;
+      case 'bedrock': {
+        // Region lives on the gateway's LLMProvider config; mirror it into the
+        // agent's Bedrock config so proto validation (region required) passes.
+        const selectedGwProvider = llmProvidersData?.llmProviders?.find((p) => p.name === values.llmProvider);
+        const region =
+          selectedGwProvider?.providerConfig?.case === 'bedrockConfig'
+            ? selectedGwProvider.providerConfig.value.region
+            : '';
+        providerConfig = create(AIAgent_ProviderSchema, {
+          provider: {
+            case: 'bedrock',
+            value: create(AIAgent_Provider_BedrockSchema, { region }),
+          },
+        });
+        break;
+      }
       default: // openai
         providerConfig = create(AIAgent_ProviderSchema, {
           provider: {
@@ -396,9 +375,9 @@ export const AIAgentCreatePage = () => {
     }
 
     const gatewayConfig =
-      values.gatewayId && values.gatewayId.trim() !== ''
+      values.llmProvider && values.llmProvider.trim() !== ''
         ? create(AIAgent_GatewayConfigSchema, {
-            virtualGatewayId: values.gatewayId,
+            llmProvider: values.llmProvider,
           })
         : undefined;
 
@@ -426,7 +405,7 @@ export const AIAgentCreatePage = () => {
         onError: handleValidationError,
         onSuccess: (data) => {
           if (data?.aiAgent?.id) {
-            toast.success('AI agent created successfully');
+            toast.success('AI agent created');
             navigate({ to: `/agents/${data.aiAgent.id}` });
           }
         },
@@ -438,7 +417,7 @@ export const AIAgentCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Create AI Agent</Heading>
+        <h1 className="text-heading-xl">Create AI Agent</h1>
       </header>
 
       <form
@@ -455,7 +434,7 @@ export const AIAgentCreatePage = () => {
               <Card size="full">
                 <CardHeader>
                   <CardTitle>Basic Information</CardTitle>
-                  <Text variant="muted">Configure the basic details of your agent</Text>
+                  <div className="text-body text-muted-foreground">Configure the basic details of your agent</div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -517,11 +496,10 @@ export const AIAgentCreatePage = () => {
               <Card size="full">
                 <CardHeader>
                   <CardTitle>LLM Provider Configuration</CardTitle>
-                  <Text variant="muted">Configure the AI model and authentication</Text>
+                  <div className="text-body text-muted-foreground">Configure the AI model and authentication</div>
                 </CardHeader>
                 <CardContent>
                   <LLMConfigSection
-                    availableGateways={availableGateways}
                     availableSecrets={availableSecrets}
                     fieldNames={{
                       provider: 'provider',
@@ -529,11 +507,10 @@ export const AIAgentCreatePage = () => {
                       apiKeySecret: 'apiKeySecret',
                       baseUrl: 'baseUrl',
                       maxIterations: 'maxIterations',
-                      gatewayId: 'gatewayId',
+                      llmProvider: 'llmProvider',
                     }}
                     form={form}
-                    hasGatewayDeployed={hasGatewayDeployed}
-                    isLoadingGateways={isLoadingGateways}
+                    hasAigwDeployed={hasAigwDeployed}
                     mode="create"
                     scopes={[Scope.MCP_SERVER, Scope.AI_AGENT]}
                     showBaseUrl={selectedProvider === 'openaiCompatible'}
@@ -547,7 +524,7 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>System Prompt</CardTitle>
-                <Text variant="muted">Define the agent's behavior and instructions</Text>
+                <div className="text-body text-muted-foreground">Define the agent's behavior and instructions</div>
               </CardHeader>
               <CardContent>
                 <Field data-invalid={!!form.formState.errors.systemPrompt}>
@@ -572,7 +549,7 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>MCP Tools</CardTitle>
-                <Text variant="muted">Select MCP servers to enable tools for this agent</Text>
+                <div className="text-body text-muted-foreground">Select MCP servers to enable tools for this agent</div>
               </CardHeader>
               <CardContent>
                 <Field data-invalid={!!form.formState.errors.selectedMcpServers}>
@@ -589,9 +566,9 @@ export const AIAgentCreatePage = () => {
                         />
                       ) : (
                         <MCPEmpty data-testid="mcp-servers-empty-state">
-                          <Text className="mb-4 text-center" variant="muted">
+                          <div className="mb-4 text-center text-body text-muted-foreground">
                             Create MCP servers first to enable additional tools for your AI agent
-                          </Text>
+                          </div>
                         </MCPEmpty>
                       )
                     }
@@ -607,10 +584,10 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>Subagents (Optional)</CardTitle>
-                <Text variant="muted">
+                <div className="text-body text-muted-foreground">
                   Configure specialized subagents that inherit the provider and model from the parent agent. Each
                   subagent has its own system prompt and can access a subset of MCP servers.
-                </Text>
+                </div>
               </CardHeader>
               <CardContent>
                 <SubagentConfigSection availableMcpServers={availableMcpServers} control={form.control} />
@@ -621,14 +598,14 @@ export const AIAgentCreatePage = () => {
             <Card size="full">
               <CardHeader>
                 <CardTitle>Service Account</CardTitle>
-                <Text variant="muted">Create a service account for agent authentication</Text>
+                <div className="text-body text-muted-foreground">Create a service account for agent authentication</div>
               </CardHeader>
               <CardContent>
                 <Field data-invalid={!!form.formState.errors.serviceAccountName}>
                   <FieldLabel htmlFor="serviceAccountName">Service Account Name</FieldLabel>
                   <Input
                     id="serviceAccountName"
-                    placeholder="e.g., cluster-abc123-agent-my-agent-sa"
+                    placeholder="cluster-abc123-agent-my-agent-sa"
                     {...form.register('serviceAccountName')}
                     aria-describedby={form.formState.errors.serviceAccountName ? 'serviceAccountName-error' : undefined}
                     aria-invalid={!!form.formState.errors.serviceAccountName}
@@ -666,7 +643,7 @@ export const AIAgentCreatePage = () => {
                 {isCreateAgentPending || isCreateServiceAccountPending || isCreateSecretPending ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <Text as="span">Creating...</Text>
+                    <span className="text-body">Creating...</span>
                   </div>
                 ) : (
                   'Create Agent'

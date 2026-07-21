@@ -13,18 +13,24 @@ import { PlusIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Command,
-  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from 'components/redpanda-ui/components/command';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
-import { Heading, InlineCode } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
 import type { editor } from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -58,7 +64,9 @@ function useAnchorPosition(
   const isActive = !!(editorInstance && slashPosition && open);
 
   useEffect(() => {
-    if (!(editorInstance && slashPosition && open)) return;
+    if (!(editorInstance && slashPosition && open)) {
+      return;
+    }
 
     const updatePosition = () => {
       const coords = editorInstance.getScrolledVisiblePosition(slashPosition);
@@ -77,7 +85,6 @@ function useAnchorPosition(
       });
     };
 
-    // Synchronous — position is correct immediately, no rAF needed
     updatePosition();
 
     const scrollDisposable = editorInstance.onDidScrollChange(updatePosition);
@@ -89,7 +96,9 @@ function useAnchorPosition(
     };
   }, [editorInstance, slashPosition, open]);
 
-  if (!isActive) return HIDDEN_STYLE;
+  if (!isActive) {
+    return HIDDEN_STYLE;
+  }
   return style;
 }
 
@@ -127,6 +136,7 @@ type SharedProps = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   hideInternal?: boolean;
   yamlContent?: string;
+  initialFilter?: FilterValue;
 };
 
 type DialogVariantProps = SharedProps & {
@@ -159,7 +169,6 @@ function insertAtCursor(editorInstance: editor.IStandaloneCodeEditor, text: stri
       text,
     },
   ]);
-  // Move cursor to end of the line where text was inserted
   const model = editorInstance.getModel();
   if (model) {
     const endColumn = model.getLineMaxColumn(position.lineNumber);
@@ -186,17 +195,12 @@ function CommandGroupHeading({ children, separator }: { children: React.ReactNod
   return (
     <>
       {separator ? <Separator /> : null}
-      <Heading
-        className="pt-3 pb-3 pl-2 font-semibold text-muted-foreground text-xs uppercase tracking-caption-wide"
-        level={5}
-      >
+      <h5 className="pt-3 pb-3 pl-2 font-semibold text-muted-foreground text-xs uppercase tracking-caption-wide">
         {children}
-      </Heading>
+      </h5>
     </>
   );
 }
-
-// ── Shared content rendered by both variants ─────────────────────────
 
 type CommandMenuContentProps = {
   contextualVariables: Array<{ name: string }>;
@@ -232,16 +236,15 @@ function CommandMenuContent({
   return (
     <>
       {showCategoryFilter ? (
-        <div className="border-b px-2 py-1.5">
+        <div className="!border-input border-b bg-dark-alpha-subtle px-2 py-1.5">
           <ToggleGroup
             attached={false}
-            onValueChange={(v: string) => {
+            onValueChange={([v]) => {
               if (v) {
                 onFilterChange(v as FilterValue);
               }
             }}
-            type="single"
-            value={activeFilter}
+            value={[activeFilter]}
           >
             <ToggleGroupItem value="all">All</ToggleGroupItem>
             <ToggleGroupItem value="variables">Variables</ToggleGroupItem>
@@ -268,7 +271,7 @@ function CommandMenuContent({
             <CommandGroupHeading separator={show('variables')}>Secrets</CommandGroupHeading>
             {secrets.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(getSecretSyntax(name))}>
-                <InlineCode>{getSecretSyntax(name)}</InlineCode>
+                <InlineCode>secrets.{name}</InlineCode>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -297,24 +300,19 @@ function CommandMenuContent({
         )}
       </CommandList>
       {(show('secrets') || show('topics') || show('users')) && (
-        <div className="flex gap-1 border-border border-t bg-primary-alpha-subtle px-2 py-2">
+        <div className="!border-input flex gap-1 border-t bg-dark-alpha-default px-2 py-1">
           {show('secrets') && (
-            <Button
-              icon={<PlusIcon />}
-              onClick={() => onOpenSubDialog(setIsSecretsDialogOpen)}
-              size="sm"
-              variant="ghost"
-            >
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsSecretsDialogOpen)} variant="ghost">
               Create secret
             </Button>
           )}
           {show('topics') && (
-            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsTopicDialogOpen)} size="sm" variant="ghost">
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsTopicDialogOpen)} variant="ghost">
               Create topic
             </Button>
           )}
           {show('users') && (
-            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsUserDialogOpen)} size="sm" variant="ghost">
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsUserDialogOpen)} variant="ghost">
               Create user
             </Button>
           )}
@@ -324,10 +322,8 @@ function CommandMenuContent({
   );
 }
 
-// ── Main component ───────────────────────────────────────────────────
-
 export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
-  const { open, onOpenChange, editorInstance, hideInternal = true, yamlContent = '' } = props;
+  const { open, onOpenChange, editorInstance, hideInternal = true, yamlContent = '', initialFilter } = props;
   const isPopover = props.variant === 'popover';
 
   // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
@@ -338,9 +334,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   );
   const clickOutsideRef = useClickOutside(isPopover && open, () => onOpenChange(false));
 
-  // Ref callback: when the popover div mounts, steal focus from Monaco into the cmdk input.
-  // Uses setTimeout(0) → rAF to defer past Monaco's keystroke processing.
-  // Fires once per open (portal unmounts on close → remounts on open).
+  // On mount, steal focus from Monaco into the cmdk input, deferred past Monaco's keystroke processing.
   const abortFocusRef = useRef(false);
   const popoverRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -351,14 +345,15 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       }
       abortFocusRef.current = false;
 
-      // Defer focus past Monaco's async keystroke processing.
-      // setTimeout(0) clears the current event loop task (keystroke handler),
-      // rAF defers past pending layout/paint.
-      // Single attempt — no retry loop needed.
+      // setTimeout(0) clears the keystroke handler task, rAF defers past layout/paint.
       setTimeout(() => {
-        if (abortFocusRef.current) return;
+        if (abortFocusRef.current) {
+          return;
+        }
         requestAnimationFrame(() => {
-          if (abortFocusRef.current) return;
+          if (abortFocusRef.current) {
+            return;
+          }
           const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
           if (input && document.activeElement !== input) {
             input.focus();
@@ -370,7 +365,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   );
 
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
-  const [pendingSearch, setPendingSearch] = useState('');
+  const [, setPendingSearch] = useState('');
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -382,13 +377,12 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   // Reset filter when dialog opens (adjust state during render, no useEffect needed)
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
-    setActiveFilter('all');
+    setActiveFilter(initialFilter ?? 'all');
   }
   if (open !== prevOpen) {
     setPrevOpen(open);
   }
 
-  // Secrets: query + missing-secret detection for AddSecretsDialog
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const secrets = useMemo(
     () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '').filter(Boolean) : []),
@@ -417,7 +411,6 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     [topicsResponse, hideInternal]
   );
 
-  // Merge cluster topics with topics referenced in YAML
   const yamlTopics = useMemo(() => extractAllTopics(yamlContent), [yamlContent]);
   const allTopics = useMemo(() => {
     const merged = new Set([...clusterTopics, ...yamlTopics]);
@@ -480,7 +473,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
 
   const handleCreateTopic = useCallback(async () => {
     const ref = topicStepRef.current;
-    if (!ref) return;
+    if (!ref) {
+      return;
+    }
     setIsTopicSubmitting(true);
     const result = await ref.triggerSubmit();
     if (result.success) {
@@ -499,7 +494,9 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
 
   const handleCreateUser = useCallback(async () => {
     const ref = userStepRef.current;
-    if (!ref) return;
+    if (!ref) {
+      return;
+    }
     setIsUserSubmitting(true);
     const result = await ref.triggerSubmit();
     if (result.success) {
@@ -517,7 +514,6 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     onOpenChange(nextOpen);
     if (!nextOpen) {
       setPendingSearch('');
-      // Re-focus editor after dialog close animation
       requestAnimationFrame(() => {
         editorInstance?.focus();
       });
@@ -539,8 +535,6 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     setIsUserDialogOpen,
   };
 
-  // ── Sub-dialogs (shared by both variants) ──────────────────────────
-
   const subDialogs = (
     <>
       <AddSecretsDialog
@@ -553,43 +547,51 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
       />
 
       <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
-        <DialogContent size="xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Create a topic</DialogTitle>
           </DialogHeader>
-          <AddTopicStep hideTitle ref={topicStepRef} selectionMode="new" />
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogBody>
+            <AddTopicStep hideTitle inline ref={topicStepRef} selectionMode="new" />
+          </DialogBody>
+          <DialogFooter>
             <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
-            <Button className="min-w-[70px]" disabled={isTopicSubmitting} onClick={handleCreateTopic} variant="primary">
-              {isTopicSubmitting ? <Spinner /> : 'Create'}
+            <Button
+              disabled={isTopicSubmitting}
+              isLoading={isTopicSubmitting}
+              onClick={handleCreateTopic}
+              variant="primary"
+            >
+              Create
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
-        <DialogContent size="xl">
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Create a user</DialogTitle>
           </DialogHeader>
-          <AddUserStep hideTitle ref={userStepRef} selectionMode="new" />
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogBody>
+            <AddUserStep hideTitle inline ref={userStepRef} selectionMode="new" />
+          </DialogBody>
+          <DialogFooter>
             <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
               Cancel
             </Button>
             <Button className="min-w-[70px]" disabled={isUserSubmitting} onClick={handleCreateUser} variant="primary">
               {isUserSubmitting ? <Spinner /> : 'Create'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   );
 
-  // ── Popover variant (rendered outside Monaco's DOM for proper focus) ──
-
+  // Popover variant is rendered outside Monaco's DOM via a portal for proper focus handling.
   if (isPopover) {
     return (
       <>
@@ -630,19 +632,23 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     );
   }
 
-  // ── Dialog variant (existing Cmd+Shift+P behavior) ─────────────────
-
+  // TODO: fix dialog close button in ui-registry, temporarily replicating Command Dialog here
   return (
     <>
-      <CommandDialog
-        description="Insert contextual variables, secrets, topics, and users"
-        onOpenChange={handleDialogOpenChange}
-        open={open}
-        title="Command Menu"
-      >
-        <CommandInput defaultValue={pendingSearch} placeholder="Search variables, secrets, topics, users..." />
-        <CommandMenuContent {...contentProps} />
-      </CommandDialog>
+      <Dialog onOpenChange={handleDialogOpenChange} open={open}>
+        <DialogContent>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Command Menu</DialogTitle>
+          </DialogHeader>
+          <Command
+            className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+            variant="dialog"
+          >
+            <CommandInput placeholder="Search variables, secrets, topics, users..." />
+            <CommandMenuContent {...contentProps} />
+          </Command>
+        </DialogContent>
+      </Dialog>
       {subDialogs}
     </>
   );

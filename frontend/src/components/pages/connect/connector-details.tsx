@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';
@@ -219,26 +217,12 @@ const KafkaConnectorMain = ({
                 <Flex m={4} mb={6}>
                   <Tooltip
                     hasArrow={true}
-                    isDisabled={canEdit === true}
-                    label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                    isDisabled={!!canEdit}
+                    label="You don't have 'canEditConnectCluster' permissions for this connect cluster"
                     placement="top"
                   >
                     <Button
-                      isDisabled={(() => {
-                        if (!canEdit) {
-                          return true;
-                        }
-                        if (!connector) {
-                          return true;
-                        }
-                        const connectorConfigObject = connectorStore?.getConfigObject();
-                        if (
-                          connectorConfigObject &&
-                          JSON.stringify(connector.config) === JSON.stringify(connectorConfigObject)
-                        ) {
-                          return true;
-                        }
-                      })()}
+                      isDisabled={!canEdit}
                       onClick={() => {
                         setS({ updatingConnector: { clusterName, connectorName } });
                       }}
@@ -312,7 +296,7 @@ const KafkaConnectorMain = ({
         }}
         successMessage={(c) => (
           <>
-            Successfully restarted connector <strong>{c.name}</strong>
+            Connector <strong>{c.name}</strong> restarted
           </>
         )}
         target={() => $state.restartingConnector}
@@ -336,7 +320,7 @@ const KafkaConnectorMain = ({
         }}
         successMessage={(c) => (
           <>
-            Successfully updated config of <strong>{c.connectorName}</strong>
+            Config of <strong>{c.connectorName}</strong> updated
           </>
         )}
         target={() => $state.updatingConnector}
@@ -358,7 +342,7 @@ const KafkaConnectorMain = ({
         }}
         successMessage={(c) => (
           <>
-            Successfully restarted <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong>
+            Task <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong> restarted
           </>
         )}
         target={() => $state.restartingTask}

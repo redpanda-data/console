@@ -13,7 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { NotFoundContent } from 'components/misc/not-found-content';
 import { AIAgentDetailsPage } from 'components/pages/agents/details/ai-agent-details-page';
 import { GetAIAgentRequestSchema } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
@@ -21,7 +20,7 @@ import { getAIAgent } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AI
 import { z } from 'zod';
 
 const searchSchema = z.object({
-  tab: fallback(z.string().optional(), undefined),
+  tab: z.string().optional().catch(undefined),
 });
 
 function AIAgentNotFound() {
@@ -35,7 +34,7 @@ export const Route = createFileRoute('/agents/$id/')({
   staticData: {
     title: 'AI Agent Details',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   loader: async ({ context: { queryClient, dataplaneTransport }, params: { id } }) => {
     try {
       await queryClient.ensureQueryData(

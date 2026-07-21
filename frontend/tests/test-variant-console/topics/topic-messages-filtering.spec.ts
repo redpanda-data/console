@@ -54,9 +54,6 @@ test.describe('View and Filter Messages', () => {
         await searchInput.fill(searchTerm);
         await page.keyboard.press('Enter');
 
-        // Wait for filtering
-        await page.waitForTimeout(1000);
-
         // Message with search term should be visible
         await expect(page.getByText(message1)).toBeVisible();
 
@@ -90,7 +87,7 @@ test.describe('View and Filter Messages', () => {
           await partition0.click();
 
           // Messages should filter to selected partition
-          await page.waitForTimeout(1000);
+          await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
         }
       }
     });
@@ -119,9 +116,6 @@ test.describe('View and Filter Messages', () => {
         await offsetInput.fill('1');
         await page.keyboard.press('Enter');
 
-        // Wait for filtering
-        await page.waitForTimeout(1000);
-
         // Messages from offset 1 onwards should be visible
         await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
       }
@@ -145,7 +139,6 @@ test.describe('View and Filter Messages', () => {
       if (await searchInput.isVisible()) {
         await searchInput.fill('some-filter');
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(500);
       }
 
       // Look for clear filters button
@@ -168,13 +161,16 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
 
     await test.step('View empty topic', async () => {
-      await page.goto(`/topics/${topicName}`);
+      await page.goto(`/topics/${topicName}#messages`);
 
-      // Should show empty state message
-      await expect(page.getByText(/No messages|empty/i).first()).toBeVisible({ timeout: 5000 });
+      // Wait for the topic page to load (tablist indicates TopicDetailsContent is rendered)
+      await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
 
-      // Produce button should still be available
-      await expect(page.getByRole('button', { name: /produce/i }).first()).toBeVisible({ timeout: 5000 });
+      // Produce button should be available
+      await expect(page.getByTestId('produce-record-button')).toBeVisible({ timeout: 10_000 });
+
+      // Should show empty state message once search completes
+      await expect(page.getByText('No messages')).toBeVisible({ timeout: 10_000 });
     });
 
     await topicPage.deleteTopic(topicName);
@@ -199,9 +195,6 @@ test.describe('View and Filter Messages', () => {
         await searchInput.clear();
         await searchInput.fill('Test');
 
-        // Wait for final filter to apply
-        await page.waitForTimeout(1000);
-
         // Should handle gracefully without errors
         await expect(page.getByText('Test rapid filtering')).toBeVisible();
       }
@@ -218,14 +211,16 @@ test.describe('View and Filter Messages', () => {
     await topicPage.produceMessage(topicName, 'URL filter test');
 
     await test.step('Apply filter and check URL', async () => {
-      await page.goto(`/topics/${topicName}`);
+      await page.goto(`/topics/${topicName}#messages`);
 
       // Use the specific testId for message quick search
       const searchInput = page.getByTestId('message-quick-search-input');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
       await searchInput.fill('test-search');
       await page.keyboard.press('Enter');
-      await page.waitForTimeout(500);
+
+      // Wait for URL to update with filter parameters
+      await page.waitForURL(/q=test-search/);
 
       // URL should contain filter parameters (quick search uses 'q' param)
       const currentUrl = page.url();

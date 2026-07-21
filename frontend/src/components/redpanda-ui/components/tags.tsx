@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/a11y/useSemanticElements: part of tags component */
 'use client';
 
 import { XIcon } from 'lucide-react';
@@ -9,11 +8,12 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react';
 
-import { Button } from './button';
+import { buttonVariants } from './button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { cn, type SharedProps } from '../lib/utils';
@@ -25,16 +25,18 @@ type TagsContextType = {
   onOpenChange: (open: boolean) => void;
   width?: number;
   setWidth?: (width: number) => void;
+  listboxId: string;
 };
 const TagsContext = createContext<TagsContextType>({
   value: undefined,
   setValue: undefined,
   open: false,
   onOpenChange: () => {
-    // Default no-op function
+    // no-op
   },
   width: undefined,
   setWidth: undefined,
+  listboxId: 'tags-listbox',
 });
 
 const useTagsContext = () => {
@@ -65,6 +67,7 @@ export const Tags = ({
 }: TagsProps) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [width, setWidth] = useState<number>();
+  const listboxId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const open = controlledOpen ?? uncontrolledOpen;
   const onOpenChange = controlledOnOpenChange ?? setUncontrolledOpen;
@@ -81,7 +84,7 @@ export const Tags = ({
     };
   }, []);
   return (
-    <TagsContext.Provider value={{ value, setValue, open, onOpenChange, width, setWidth }}>
+    <TagsContext.Provider value={{ value, setValue, open, onOpenChange, width, setWidth, listboxId }}>
       <Popover onOpenChange={onOpenChange} open={open}>
         <div className={cn('relative w-full', className)} data-testid={testId} ref={ref}>
           {children}
@@ -90,26 +93,35 @@ export const Tags = ({
     </TagsContext.Provider>
   );
 };
-export type TagsTriggerProps = ComponentProps<typeof Button> & { testId?: string };
-export const TagsTrigger = ({ className, children, testId, ...props }: TagsTriggerProps) => (
-  <PopoverTrigger asChild>
-    <Button
-      className={cn(
-        'h-auto w-full justify-between p-2 hover:bg-surface-inverse-hover active:bg-surface-default-hover',
-        className
-      )}
-      data-testid={testId}
-      role="combobox"
-      variant="outline"
-      {...props}
-    >
-      <div className="flex flex-wrap items-center gap-1">
-        {children}
-        <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
-      </div>
-    </Button>
-  </PopoverTrigger>
-);
+export type TagsTriggerProps = ComponentProps<'div'> & { testId?: string };
+export const TagsTrigger = ({ className, children, testId, ...props }: TagsTriggerProps) => {
+  const { open, listboxId } = useTagsContext();
+  return (
+    <PopoverTrigger
+      nativeButton={false}
+      render={
+        <div
+          aria-controls={listboxId}
+          aria-expanded={open}
+          className={cn(
+            buttonVariants({ variant: 'outline' }),
+            'h-auto w-full justify-between p-2 hover:bg-surface-inverse-hover active:bg-surface-default-hover',
+            className
+          )}
+          data-testid={testId}
+          role="combobox"
+          tabIndex={0}
+          {...props}
+        >
+          <div className="flex flex-wrap items-center gap-1">
+            {children}
+            <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
+          </div>
+        </div>
+      }
+    />
+  );
+};
 export type TagsValueProps = ComponentProps<'span'> & { testId?: string };
 export const TagsValue = ({
   className,
@@ -162,9 +174,10 @@ export const TagsInput = ({ className, ...props }: TagsInputProps) => (
   <CommandInput className={cn('h-9', className)} {...props} />
 );
 export type TagsListProps = ComponentProps<typeof CommandList>;
-export const TagsList = ({ className, ...props }: TagsListProps) => (
-  <CommandList className={cn('max-h-[200px]', className)} {...props} />
-);
+export const TagsList = ({ className, ...props }: TagsListProps) => {
+  const { listboxId } = useTagsContext();
+  return <CommandList className={cn('max-h-[200px]', className)} id={listboxId} {...props} />;
+};
 
 export type TagsEmptyProps = ComponentProps<typeof CommandEmpty>;
 export const TagsEmpty = ({ children, className, ...props }: TagsEmptyProps) => (

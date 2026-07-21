@@ -40,7 +40,7 @@ export const AddSecretsDialog = ({
 
   return (
     <Dialog onOpenChange={onClose} open={isOpen}>
-      <DialogContent size="xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Add secrets</DialogTitle>
           <DialogDescription>Add secrets to your pipeline.</DialogDescription>
@@ -61,6 +61,7 @@ export const AddSecretsDialog = ({
           <QuickAddSecrets
             enableNewSecrets
             existingSecrets={existingSecrets}
+            inline
             onError={handleError}
             onSecretsCreated={handleSecretsCreated}
             onUpdateEditorContent={onUpdateEditorContent}

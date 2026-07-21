@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 /** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import { create } from '@bufbuild/protobuf';
@@ -35,7 +33,6 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { RESOURCE_TIERS, ResourceTierSelect } from 'components/ui/connect/resource-tier-select';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
@@ -466,7 +463,7 @@ export const RemoteMCPConfigurationTab = () => {
     setLintHints(newLintHints);
 
     if (hasIssues) {
-      toast.error('Configuration has linting issues. Please fix them before saving.');
+      toast.error('Configuration has linting issues. Fix them before saving.');
       return false;
     }
 
@@ -626,7 +623,7 @@ export const RemoteMCPConfigurationTab = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
-                    <Text className="font-semibold">Server Configuration</Text>
+                    <div className="font-semibold text-body">Server Configuration</div>
                   </CardTitle>
                   <div className="flex gap-2">
                     {isEditing ? (
@@ -732,7 +729,7 @@ export const RemoteMCPConfigurationTab = () => {
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  <Text className="font-semibold">Resources</Text>
+                  <div className="font-semibold text-body">Resources</div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
@@ -766,14 +763,10 @@ export const RemoteMCPConfigurationTab = () => {
 
                   {Boolean(displayData.tags.length > 0 || isEditing) && (
                     <div className="flex flex-col gap-2 space-y-4">
-                      <Heading className="font-medium text-sm" level={4}>
-                        Tags
-                      </Heading>
+                      <h4 className="text-heading-xs">Tags</h4>
                       <div className="space-y-2">
                         {isEditing && hasDuplicateKeys(displayData.tags) && (
-                          <Text className="text-destructive" variant="small">
-                            Tags must have unique keys
-                          </Text>
+                          <div className="text-body-sm text-destructive">Tags must have unique keys</div>
                         )}
                         {displayData.tags.map((tag, index) => {
                           const duplicateKeys = isEditing ? getDuplicateKeys(displayData.tags) : new Set();
@@ -829,7 +822,7 @@ export const RemoteMCPConfigurationTab = () => {
               <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
                 <CardTitle className="flex items-center gap-2">
                   <Hammer className="h-4 w-4" />
-                  <Text className="font-semibold">Tools Configuration</Text>
+                  <div className="font-semibold text-body">Tools Configuration</div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
@@ -908,7 +901,7 @@ export const RemoteMCPConfigurationTab = () => {
                                   name: e.target.value,
                                 })
                               }
-                              placeholder="e.g., search-posts (must be filename-compatible)"
+                              placeholder="search-posts (must be filename-compatible)"
                               value={selectedTool.name}
                             />
                           </div>
@@ -946,10 +939,8 @@ export const RemoteMCPConfigurationTab = () => {
                                     <div className="flex items-center gap-2">
                                       <RedpandaConnectComponentTypeBadge componentType={template.componentType} />
                                       <div>
-                                        <Text className="font-medium">{template.name}</Text>
-                                        <Text className="text-xs" variant="muted">
-                                          {template.description}
-                                        </Text>
+                                        <div className="font-medium text-body">{template.name}</div>
+                                        <div className="text-body-sm text-muted-foreground">{template.description}</div>
                                       </div>
                                     </div>
                                   </SelectItem>
@@ -984,9 +975,9 @@ export const RemoteMCPConfigurationTab = () => {
                     <div className="flex items-center justify-center rounded-lg border-2 border-muted border-dashed py-12 text-center">
                       <div className="space-y-2">
                         <FileText className="mx-auto h-8 w-8 opacity-50" />
-                        <Text className="text-muted-foreground" variant="small">
+                        <div className="text-body-sm text-muted-foreground">
                           Select a tool to view and edit its configuration
-                        </Text>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1022,12 +1013,12 @@ export const RemoteMCPConfigurationTab = () => {
             <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4" />
-                <Text className="font-semibold">Service Account</Text>
+                <div className="font-semibold text-body">Service Account</div>
               </CardTitle>
-              <Text className="text-sm" variant="muted">
+              <div className="text-body text-muted-foreground">
                 The service account is used by the MCP server to authenticate to other systems within the Redpanda Cloud
-                platform (e.g. Redpanda broker).
-              </Text>
+                platform (for example, Redpanda broker).
+              </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <ServiceAccountSection

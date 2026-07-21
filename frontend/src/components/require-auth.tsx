@@ -9,9 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 
 import { ConnectionErrorUI } from './misc/connection-error-ui';
 import { config as appConfig } from '../config';

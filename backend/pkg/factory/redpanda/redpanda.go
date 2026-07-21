@@ -17,6 +17,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"buf.build/gen/go/redpandadata/core/connectrpc/go/redpanda/core/admin/v2/adminv2connect"
 	"connectrpc.com/connect"
@@ -36,6 +37,12 @@ type ClientOption func(*ClientOptions) error
 // ClientOptions holds all configurable parameters for constructing an AdminAPIClient.
 type ClientOptions struct {
 	URLs []string
+	// Timeout overrides the HTTP client timeout of the admin API client
+	// (rpadmin defaults to 10s).
+	Timeout time.Duration
+	// MaxRetries overrides the number of attempts of the admin API client's
+	// retrying HTTP client (rpadmin defaults to 3).
+	MaxRetries int
 }
 
 // WithURLs lets the caller override the URLs that the client will use.
@@ -46,6 +53,35 @@ func WithURLs(urls ...string) ClientOption {
 			return errors.New("WithURLs: at least one URL must be provided")
 		}
 		o.URLs = urls
+		return nil
+	}
+}
+
+// WithClientTimeout lets the caller override the HTTP client timeout used for
+// admin API requests. Used by console-enterprise for requests that are known
+// to be slow, such as shadow link status aggregations on large clusters. It
+// requires a positive duration; otherwise it returns an error immediately.
+func WithClientTimeout(timeout time.Duration) ClientOption {
+	return func(o *ClientOptions) error {
+		if timeout <= 0 {
+			return errors.New("WithClientTimeout: timeout must be greater than zero")
+		}
+		o.Timeout = timeout
+		return nil
+	}
+}
+
+// WithMaxRetries lets the caller override how many attempts the admin API
+// client's retrying HTTP client makes for a request. Used by
+// console-enterprise for expensive requests where retrying multiplies load on
+// the cluster. It requires a positive value; otherwise it returns an error
+// immediately.
+func WithMaxRetries(retries int) ClientOption {
+	return func(o *ClientOptions) error {
+		if retries <= 0 {
+			return errors.New("WithMaxRetries: retries must be greater than zero")
+		}
+		o.MaxRetries = retries
 		return nil
 	}
 }
@@ -180,6 +216,9 @@ type AdminAPIClient interface {
 
 	// ClusterService returns a client for listing kafka connections
 	ClusterService(opts ...connect.ClientOption) adminv2connect.ClusterServiceClient
+
+	// SecurityService returns a client for the SecurityService of the Admin API V2.
+	SecurityService(opts ...connect.ClientOption) adminv2connect.SecurityServiceClient
 
 	// SingleKeyConfig returns the value for a Redpanda Cluster config property
 	SingleKeyConfig(ctx context.Context, key string) (rpadmin.Config, error)

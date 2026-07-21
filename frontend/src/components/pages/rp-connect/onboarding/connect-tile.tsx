@@ -2,7 +2,7 @@ import { type ComponentName, componentLogoMap } from 'assets/connectors/componen
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ChoiceboxItem } from 'components/redpanda-ui/components/choicebox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon, Waypoints } from 'lucide-react';
 import { AnimatePresence, type MotionProps, motion } from 'motion/react';
@@ -12,18 +12,14 @@ import { ConnectorLogo } from './connector-logo';
 import type { ConnectComponentSpec } from '../types/schema';
 import { componentStatusToString } from '../utils/schema';
 
-const logoStyle = {
-  height: '24px',
-};
-
 const getLogoForComponent = (component: ConnectComponentSpec) => {
   if (component?.logoUrl) {
-    return <img alt={component.name} src={component.logoUrl} style={logoStyle} />;
+    return <img alt={component.name} className="h-6 w-6 object-contain" src={component.logoUrl} />;
   }
   if (componentLogoMap[component.name as ComponentName]) {
-    return <ConnectorLogo name={component.name as ComponentName} style={logoStyle} />;
+    return <ConnectorLogo className="h-6 w-6" name={component.name as ComponentName} />;
   }
-  return <Waypoints className="text-muted-foreground" style={logoStyle} />;
+  return <Waypoints className="h-6 w-6 text-muted-foreground" />;
 };
 
 const logoMotionProps: MotionProps = {
@@ -57,17 +53,13 @@ export const ConnectTile = ({
   onChange: () => void;
 }) => {
   const content = (
-    <ChoiceboxItem
-      checked={checked}
-      className={cn('relative h-[78px]')}
-      key={uniqueKey}
-      onClick={onChange}
-      value={component.name}
-    >
+    <ChoiceboxItem className={cn('relative h-[78px]')} key={uniqueKey} onClick={onChange} value={component.name}>
       {/* padding right to compensate for the absolute position of the logo */}
-      <div className="relative flex h-full w-full items-center gap-2 pr-8">
-        <div className="flex flex-col gap-1">
-          <InlineCode className="truncate bg-background px-0 py-0 font-semibold text-md">{component.name}</InlineCode>
+      <div className="relative flex h-full w-full items-center gap-2 pr-10">
+        <div className="flex min-w-0 flex-col gap-1">
+          <InlineCode className="break-words bg-background px-0 py-0 font-semibold text-md leading-tight">
+            {component.name}
+          </InlineCode>
           <span>
             {(component.status === ComponentStatus.BETA ||
               component.status === ComponentStatus.EXPERIMENTAL ||
@@ -79,7 +71,7 @@ export const ConnectTile = ({
               )}
           </span>
         </div>
-        <div className="absolute top-1/2 right-0 -translate-y-1/2">
+        <div className="absolute top-1/2 right-0 flex h-6 w-6 shrink-0 -translate-y-1/2 items-center justify-center">
           <AnimatePresence mode="wait">
             {checked ? (
               <motion.div
@@ -110,11 +102,9 @@ export const ConnectTile = ({
   return component.summary ? (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipTrigger render={content} />
         <TooltipContent className="max-w-sm">
-          <Text className="line-clamp-4 text-wrap" variant="small">
-            {component.summary}
-          </Text>
+          <div className="line-clamp-4 text-wrap text-body-sm">{component.summary}</div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

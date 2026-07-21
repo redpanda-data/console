@@ -1,4 +1,8 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+import { expect, test } from './fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 import {
   ModeAllowAll,
@@ -16,7 +20,7 @@ import {
   ResourceTypeTopic,
   ResourceTypeTransactionalId,
   type Rule,
-} from '../../src/components/pages/acls/new-acl/acl.model';
+} from '../../src/components/pages/security/shared/acl-model';
 import { AclPage } from '../test-variant-console/utils/acl-page';
 import { RolePage } from '../test-variant-console/utils/role-page';
 

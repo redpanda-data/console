@@ -11,8 +11,6 @@
 /** biome-ignore-all lint/a11y/noStaticElementInteractions: leave for now */
 /** biome-ignore-all lint/a11y/useKeyWithClickEvents: leave for now */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { getRouteApi } from '@tanstack/react-router';
 
@@ -23,8 +21,8 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Label } from 'components/redpanda-ui/components/label';
+import { Progress } from 'components/redpanda-ui/components/progress';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RedpandaConnectComponentTypeBadge } from 'components/ui/connect/redpanda-connect-component-type-badge';
 import { DynamicJSONForm } from 'components/ui/json/dynamic-json-form';
 import type { JSONSchemaType, JSONValue } from 'components/ui/json/json-utils';
@@ -37,7 +35,12 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { MCPServer_State, MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
 import { useEffect, useRef, useState } from 'react';
-import { useCallMCPServerToolMutation, useGetMCPServerQuery, useListMCPServerTools } from 'react-query/api/remote-mcp';
+import {
+  type MCPStreamProgress,
+  useGetMCPServerQuery,
+  useListMCPServerTools,
+  useStreamMCPServerToolMutation,
+} from 'react-query/api/remote-mcp';
 import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 
@@ -145,6 +148,19 @@ const getComponentTypeFromToolName = (toolName: string): MCPServer_Tool_Componen
 const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
+const PROGRESS_MAX_PERCENT = 100;
+
+const normalizeProgressPercent = (progress: number | undefined, total: number | undefined): number | undefined => {
+  if (progress === undefined || total === undefined || total <= 0) {
+    return;
+  }
+  const percent = Math.round((progress / total) * PROGRESS_MAX_PERCENT);
+  if (!Number.isFinite(percent)) {
+    return;
+  }
+  return Math.max(0, Math.min(PROGRESS_MAX_PERCENT, percent));
+};
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const RemoteMCPInspectorTab = () => {
   const { id } = routeApi.useParams();
@@ -161,13 +177,14 @@ export const RemoteMCPInspectorTab = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: mcpServerData } = useGetMCPServerQuery({ id: id || '' }, { enabled: !!id });
+  const [streamProgress, setStreamProgress] = useState<MCPStreamProgress | null>(null);
   const {
     data: serverToolResponse,
     mutate: callMCPServerTool,
     isPending: isServerToolPending,
     error: toolError,
     reset: resetMCPServerToolCall,
-  } = useCallMCPServerToolMutation();
+  } = useStreamMCPServerToolMutation();
 
   const {
     data: mcpServerTools,
@@ -246,8 +263,7 @@ export const RemoteMCPInspectorTab = () => {
           // Validate that the topic_name exists in the available topics
           const topicExists = topicsData.topics.some((topic: { topicName: string }) => topic.topicName === value);
           if (!topicExists) {
-            errors[requiredField] =
-              `Topic '${value}' does not exist. Please select a valid topic name or create a new one.`;
+            errors[requiredField] = `Topic '${value}' does not exist. Select a valid topic name or create a new one.`;
             continue;
           }
         }
@@ -346,21 +362,18 @@ export const RemoteMCPInspectorTab = () => {
 
     const parameters = (toolParameters as Record<string, unknown>) || {};
 
+    setStreamProgress(null);
+
     callMCPServerTool(
       {
         serverUrl: mcpServerData.mcpServer.url,
         toolName: selectedTool,
         parameters,
         signal: abortController.signal,
+        onProgress: (update) => setStreamProgress((prev) => ({ ...prev, ...update })),
       },
       {
-        onError: (error) => {
-          if (error.message !== 'Request was cancelled') {
-            toast.error(error.message);
-          }
-        },
         onSettled: () => {
-          // Clear the abort controller reference when request completes
           if (abortControllerRef.current === abortController) {
             abortControllerRef.current = null;
           }
@@ -415,7 +428,7 @@ export const RemoteMCPInspectorTab = () => {
         <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
           <CardTitle className="flex items-center gap-2">
             <Hammer className="h-4 w-4" />
-            <Text className="font-semibold">Tools</Text>
+            <div className="font-semibold text-body">Tools</div>
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
@@ -476,15 +489,17 @@ export const RemoteMCPInspectorTab = () => {
                         const initialData = initializeFormData(tool.inputSchema as JSONSchemaType);
                         setToolParameters(initialData);
                         resetMCPServerToolCall();
+                        // Clear progress from the previous tool's in-flight stream
+                        setStreamProgress(null);
                         // Clear validation errors when switching tools
                         setValidationErrors({});
                       }}
                     />
                   ))
                 : !(isLoadingTools || isRefetchingTools || toolsError) && (
-                    <Text className="py-8 text-center text-muted-foreground" variant="small">
+                    <div className="py-8 text-center text-body-sm text-muted-foreground">
                       No tools available on this MCP server.
-                    </Text>
+                    </div>
                   )}
             </div>
           )}
@@ -503,7 +518,7 @@ export const RemoteMCPInspectorTab = () => {
                     getComponentTypeFromToolName(selectedTool)
                   }
                 />
-                <Text className="font-semibold">{selectedTool}</Text>
+                <div className="font-semibold text-body">{selectedTool}</div>
               </CardTitle>
             </CardHeader>
             <div className="relative flex flex-1 flex-col">
@@ -558,7 +573,7 @@ export const RemoteMCPInspectorTab = () => {
                                           });
 
                                           await createTopic(request);
-                                          toast.success(`Topic '${newTopicName}' created successfully`);
+                                          toast.success(`Topic '${newTopicName}' created`);
                                           await refetchTopics();
 
                                           // Use the provided path and updateField to update the correct field
@@ -588,16 +603,13 @@ export const RemoteMCPInspectorTab = () => {
                         <div className="space-y-2">
                           {Object.entries(validationErrors).map(([field, error]) => (
                             <div
-                              className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950/20"
+                              className="rounded-md border border-outline-error bg-background-error-subtle p-3"
                               key={field}
                             >
                               <div className="flex items-start">
-                                <Text className="text-red-700 dark:text-red-400" variant="small">
-                                  <Text as="span" className="font-medium">
-                                    {field}:
-                                  </Text>{' '}
-                                  {error}
-                                </Text>
+                                <div className="text-body-sm text-error">
+                                  <span className="font-medium text-body">{field}:</span> {error}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -608,6 +620,19 @@ export const RemoteMCPInspectorTab = () => {
                       {Boolean(isServerToolPending) && (
                         <div className="space-y-2">
                           <Label className="font-medium text-sm">Response</Label>
+                          {Boolean(streamProgress) && (
+                            <div className="space-y-1" data-testid="mcp-tool-progress">
+                              <Progress
+                                testId="mcp-tool-progress-bar"
+                                value={
+                                  normalizeProgressPercent(streamProgress?.progress, streamProgress?.total) ?? null
+                                }
+                              />
+                              <div className="text-body-sm text-muted-foreground">
+                                {streamProgress?.statusMessage ?? streamProgress?.status ?? 'Running tool...'}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex flex-col space-y-3">
                             <Skeleton className="h-[250px] w-full rounded-xl" />
                             <div className="space-y-2">
@@ -675,11 +700,11 @@ export const RemoteMCPInspectorTab = () => {
         ) : (
           <CardContent className="flex flex-1 items-center justify-center px-4 pb-4">
             <div className="text-center">
-              <Text className="text-muted-foreground">
+              <div className="text-body text-muted-foreground">
                 {mcpServerData?.mcpServer?.state === MCPServer_State.STARTING
                   ? 'Server is starting...'
                   : 'Select a tool from the panel to test it'}
-              </Text>
+              </div>
             </div>
           </CardContent>
         )}

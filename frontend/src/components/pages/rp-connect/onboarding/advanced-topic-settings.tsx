@@ -113,7 +113,11 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
       control: form.control,
       name: unitField as 'retentionTimeUnit' | 'retentionSizeUnit',
     });
-    const isRetentionDisabled = isRetentionUnitDisabled(unitValue) || isExistingTopic || disabled;
+    // The numeric input is disabled when the unit is "infinite" (no value to
+    // enter) or when editing an existing topic. The unit selector itself must
+    // stay interactive in both cases so the user can switch back off "infinite".
+    const lockedForEdit = isExistingTopic || disabled;
+    const isValueDisabled = isRetentionUnitDisabled(unitValue) || lockedForEdit;
 
     return (
       <div className="space-y-2">
@@ -124,7 +128,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
         <Group attached>
           <FormField
             control={form.control}
-            disabled={isRetentionDisabled}
+            disabled={isValueDisabled}
             name={valueField as 'retentionTimeMs' | 'retentionSize'}
             render={({ field }) => (
               <FormItem className="flex-1">
@@ -142,14 +146,14 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
           />
           <FormField
             control={form.control}
-            disabled={isRetentionDisabled}
+            disabled={lockedForEdit}
             name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Select disabled={field.disabled} onValueChange={field.onChange} value={field.value}>
+                  <Select disabled={field.disabled} items={units} onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger className="w-32 bg-gray-200" disabled={field.disabled}>
-                      <SelectValue defaultValue={field.value} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {units.map(({ value, label: unitLabel }) => (

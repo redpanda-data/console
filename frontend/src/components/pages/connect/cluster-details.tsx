@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
@@ -163,6 +161,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
                   clusterName,
                   connector: original.name,
                 }}
+                search={{} as never}
                 to="/connect-clusters/$clusterName/$connector"
               >
                 <Text whiteSpace="break-spaces" wordBreak="break-word">

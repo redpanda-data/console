@@ -1,84 +1,74 @@
 'use client';
 
-import { AnimatePresence, type HTMLMotionProps, motion, type Transition } from 'motion/react';
-import { Popover as PopoverPrimitive } from 'radix-ui';
+import { mergeProps } from '@base-ui/react/merge-props';
+import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
+import { useRender } from '@base-ui/react/use-render';
 import React from 'react';
 
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
-type PopoverContextType = {
-  isOpen: boolean;
+type PopoverAnchorContextType = {
+  anchorRef: React.RefObject<Element | null>;
+  setHasAnchor: (hasAnchor: boolean) => void;
+  hasAnchor: boolean;
 };
 
-const PopoverContext = React.createContext<PopoverContextType | undefined>(undefined);
-
-const usePopover = (): PopoverContextType => {
-  const context = React.useContext(PopoverContext);
-  if (!context) {
-    throw new Error('usePopover must be used within a Popover');
-  }
-  return context;
-};
+const PopoverAnchorContext = React.createContext<PopoverAnchorContextType | undefined>(undefined);
 
 type Side = 'top' | 'bottom' | 'left' | 'right';
+type Align = 'start' | 'center' | 'end';
 
-const getInitialPosition = (side: Side) => {
-  switch (side) {
-    case 'top':
-      return { y: 15 };
-    case 'bottom':
-      return { y: -15 };
-    case 'left':
-      return { x: 15 };
-    case 'right':
-      return { x: -15 };
-    default:
-      return {};
-  }
-};
-
-type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Root> & SharedProps;
+type PopoverProps = PopoverPrimitive.Root.Props & SharedProps;
 
 function Popover({ children, testId, ...props }: PopoverProps) {
-  const [isOpen, setIsOpen] = React.useState(props?.open ?? props?.defaultOpen ?? false);
+  const anchorRef = React.useRef<Element | null>(null);
+  const [hasAnchor, setHasAnchor] = React.useState(false);
 
-  React.useEffect(() => {
-    if (props?.open !== undefined) {
-      setIsOpen(props.open);
-    }
-  }, [props?.open]);
-
-  const handleOpenChange = React.useCallback(
-    (open: boolean) => {
-      setIsOpen(open);
-      props.onOpenChange?.(open);
-    },
-
-    // biome-ignore lint/correctness/useExhaustiveDependencies: part of popover implementation
-    [props]
+  const anchorCtx = React.useMemo<PopoverAnchorContextType>(
+    () => ({ anchorRef, setHasAnchor, hasAnchor }),
+    [hasAnchor]
   );
 
   return (
-    <PopoverContext.Provider value={{ isOpen }}>
-      <PopoverPrimitive.Root data-slot="popover" data-testid={testId} {...props} onOpenChange={handleOpenChange}>
+    <PopoverAnchorContext.Provider value={anchorCtx}>
+      <PopoverPrimitive.Root data-slot="popover" data-testid={testId} {...props}>
         {children}
       </PopoverPrimitive.Root>
-    </PopoverContext.Provider>
+    </PopoverAnchorContext.Provider>
   );
 }
 
-type PopoverTriggerProps = React.ComponentProps<typeof PopoverPrimitive.Trigger> & SharedProps;
+type PopoverTriggerProps = PopoverPrimitive.Trigger.Props & SharedProps;
 
-function PopoverTrigger({ testId, ...props }: PopoverTriggerProps) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" data-testid={testId} {...props} />;
+function PopoverTrigger({ className, testId, ...props }: PopoverTriggerProps) {
+  return (
+    <PopoverPrimitive.Trigger
+      className={cn('cursor-pointer', className)}
+      data-slot="popover-trigger"
+      data-testid={testId}
+      {...props}
+    />
+  );
 }
 
-type PopoverContentProps = React.ComponentProps<typeof PopoverPrimitive.Content> &
-  HTMLMotionProps<'div'> &
+type PopoverContentProps = PopoverPrimitive.Popup.Props &
   SharedProps &
-  Pick<PortalContentProps, 'container' | 'onOpenAutoFocus'> & {
-    transition?: Transition;
+  Pick<PortalContentProps, 'container'> & {
+    side?: Side;
+    align?: Align;
+    sideOffset?: number;
+    alignOffset?: number;
+    /** `fixed` (default) keeps the popup on-screen on open so scrolling content can't jump the page. */
+    positionMethod?: 'absolute' | 'fixed';
+    /** Keep the popup within its collision boundary when the anchor scrolls out of view. */
+    sticky?: boolean;
+    /** Space to maintain from the edge of the collision boundary. */
+    collisionPadding?: PopoverPrimitive.Positioner.Props['collisionPadding'];
+    /** Element/rect the popup is confined to (defaults to the clipping ancestors). */
+    collisionBoundary?: PopoverPrimitive.Positioner.Props['collisionBoundary'];
+    /** How the popup avoids collisions; set sides to `'none'` to make it track the anchor and clip instead of repositioning. */
+    collisionAvoidance?: PopoverPrimitive.Positioner.Props['collisionAvoidance'];
   };
 
 function PopoverContent({
@@ -86,68 +76,127 @@ function PopoverContent({
   align = 'center',
   side = 'bottom',
   sideOffset = 4,
-  transition = { type: 'spring', stiffness: 300, damping: 25 },
+  alignOffset,
   children,
   testId,
   container,
-  onOpenAutoFocus,
+  positionMethod = 'fixed',
+  sticky,
+  collisionPadding,
+  collisionBoundary,
+  collisionAvoidance,
   ...props
 }: PopoverContentProps) {
-  const { isOpen } = usePopover();
-  const initialPosition = getInitialPosition(side);
   const portalContainer = usePortalContainer();
+  const anchorCtx = React.useContext(PopoverAnchorContext);
 
   return (
-    <AnimatePresence>
-      {isOpen ? (
-        <PopoverPrimitive.Portal container={container ?? portalContainer} data-slot="popover-portal" forceMount>
-          <PopoverPrimitive.Content
-            align={align}
-            className="z-50"
-            forceMount
-            side={side}
-            sideOffset={sideOffset}
-            {...(onOpenAutoFocus && { onOpenAutoFocus })}
-            {...props}
-          >
-            <motion.div
-              animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-              className={cn(
-                '!border-input w-72 rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none',
-                className
-              )}
-              data-slot="popover-content"
-              data-testid={testId}
-              exit={{ opacity: 0, scale: 0.5, ...initialPosition }}
-              initial={{ opacity: 0, scale: 0.5, ...initialPosition }}
-              key="popover-content"
-              transition={transition}
-              {...props}
-            >
-              {children}
-            </motion.div>
-          </PopoverPrimitive.Content>
-        </PopoverPrimitive.Portal>
-      ) : null}
-    </AnimatePresence>
+    <PopoverPrimitive.Portal container={container ?? portalContainer} data-slot="popover-portal">
+      <PopoverPrimitive.Positioner
+        align={align}
+        alignOffset={alignOffset}
+        {...(anchorCtx?.hasAnchor && anchorCtx.anchorRef.current ? { anchor: anchorCtx.anchorRef } : {})}
+        className="z-50"
+        collisionAvoidance={collisionAvoidance}
+        collisionBoundary={collisionBoundary}
+        collisionPadding={collisionPadding}
+        positionMethod={positionMethod}
+        side={side}
+        sideOffset={sideOffset}
+        sticky={sticky}
+      >
+        <PopoverPrimitive.Popup
+          className={cn(
+            '!border-input w-72 origin-(--transform-origin) rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none transition-[opacity,transform] duration-150 data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+            className
+          )}
+          data-slot="popover-content"
+          data-testid={testId}
+          {...props}
+        >
+          {children}
+        </PopoverPrimitive.Popup>
+      </PopoverPrimitive.Positioner>
+    </PopoverPrimitive.Portal>
   );
 }
 
-type PopoverAnchorProps = React.ComponentProps<typeof PopoverPrimitive.Anchor>;
+type PopoverHeaderProps = React.ComponentProps<'div'> & SharedProps;
 
-function PopoverAnchor({ ...props }: PopoverAnchorProps) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
+function PopoverHeader({ className, testId, ...props }: PopoverHeaderProps) {
+  return (
+    <div
+      className={cn('flex flex-col gap-1.5', className)}
+      data-slot="popover-header"
+      data-testid={testId}
+      {...props}
+    />
+  );
+}
+
+type PopoverTitleProps = PopoverPrimitive.Title.Props & SharedProps;
+
+function PopoverTitle({ className, testId, ...props }: PopoverTitleProps) {
+  return (
+    <PopoverPrimitive.Title
+      className={cn('text-heading-xs', className)}
+      data-slot="popover-title"
+      data-testid={testId}
+      {...props}
+    />
+  );
+}
+
+type PopoverDescriptionProps = PopoverPrimitive.Description.Props & SharedProps;
+
+function PopoverDescription({ className, testId, ...props }: PopoverDescriptionProps) {
+  return (
+    <PopoverPrimitive.Description
+      className={cn('text-body text-muted-foreground', className)}
+      data-slot="popover-description"
+      data-testid={testId}
+      {...props}
+    />
+  );
+}
+
+type PopoverAnchorProps = useRender.ComponentProps<'div'> & SharedProps;
+
+function PopoverAnchor({ render, testId, ...props }: PopoverAnchorProps) {
+  const ctx = React.useContext(PopoverAnchorContext);
+
+  const setRef = React.useCallback(
+    (node: Element | null) => {
+      if (ctx) {
+        ctx.anchorRef.current = node;
+        ctx.setHasAnchor(Boolean(node));
+      }
+    },
+    [ctx]
+  );
+
+  const dataProps = { 'data-slot': 'popover-anchor', 'data-testid': testId } as React.HTMLAttributes<HTMLDivElement>;
+
+  return useRender({
+    render: render ?? <div />,
+    ref: setRef as React.Ref<HTMLDivElement>,
+    props: mergeProps<'div'>(dataProps, props),
+  });
 }
 
 export {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverDescription,
   PopoverAnchor,
-  usePopover,
-  type PopoverContextType,
   type PopoverProps,
   type PopoverTriggerProps,
   type PopoverContentProps,
+  type PopoverHeaderProps,
+  type PopoverTitleProps,
+  type PopoverDescriptionProps,
   type PopoverAnchorProps,
 };

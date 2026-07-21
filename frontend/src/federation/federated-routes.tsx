@@ -11,9 +11,10 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
+import { DebugHelper } from '../components/debug-helper/debug-dialog';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
 import { LicenseNotification } from '../components/license/license-notification';
@@ -21,6 +22,11 @@ import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
 import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
+import { RouterSync } from '../components/misc/router-sync';
+import { Toaster } from '../components/redpanda-ui/components/sonner';
+import RequireAuth from '../components/require-auth';
+import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
 /**
@@ -60,11 +66,22 @@ export const federatedRootRoute = createRootRouteWithContext<FederatedRouterCont
  */
 function FederatedRootLayout() {
   return (
-    <NuqsAdapter>
-      <ErrorBoundary>
-        <FederatedAppContent />
-      </ErrorBoundary>
-    </NuqsAdapter>
+    <>
+      <RouterSync />
+      <NuqsAdapter>
+        <ErrorBoundary>
+          {/* RequireAuth triggers the user-data fetch (api.refreshUserData) that
+              gates Console's endpoint-compatibility fetch and, in turn, the
+              embedded sidebar items. The standalone root (__root.tsx) wraps its
+              embedded layout the same way. */}
+          <RequireAuth>
+            <FederatedAppContent />
+          </RequireAuth>
+        </ErrorBoundary>
+        {/* Cmd+Shift+D debug dialog — mirrors __root.tsx; dev-only. */}
+        {process.env.NODE_ENV === 'development' && <DebugHelper />}
+      </NuqsAdapter>
+    </>
   );
 }
 
@@ -73,21 +90,41 @@ function FederatedRootLayout() {
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
+  const matches = useMatches();
+  const { pathname } = useLocation();
+  // Fullscreen routes (SQL studio) own their chrome — breadcrumb-only header, no
+  // padding/footer. staticData is the source of truth, but on soft navigation
+  // useMatches() lags useLocation() by a render or two (matches resolve after
+  // pathname flips), so fall back to a path check to avoid flashing full chrome on
+  // the way in. Single return with stable element positions: toggling props/classes
+  // (not branching the tree) keeps the <Outlet> mounted across fullscreen↔normal
+  // navigation, so the embedded router doesn't reset to its default route.
+  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
+  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+
   return (
     <div id="mainLayout">
-      <NullFallbackBoundary>
-        <LicenseNotification />
-      </NullFallbackBoundary>
+      {!isFullscreen && (
+        <NullFallbackBoundary>
+          <LicenseNotification />
+        </NullFallbackBoundary>
+      )}
       <ModalContainer />
-      <AppPageHeader />
+      <AppPageHeader breadcrumbOnly={isFullscreen} />
 
       <ErrorDisplay>
-        <Outlet />
+        <div className={isFullscreen ? undefined : 'pt-8'}>
+          <Outlet />
+        </div>
       </ErrorDisplay>
 
-      <AppFooter />
+      {!isFullscreen && <AppFooter />}
 
       <ErrorModalsRenderer />
+
+      {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
+          surface Console's toasts; mirror __root.tsx's AppContent. */}
+      <Toaster position="top-right" richColors theme={toasterTheme} />
     </div>
   );
 }

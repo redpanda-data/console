@@ -52,6 +52,9 @@ const (
 	// SecretServiceListSecretScopesProcedure is the fully-qualified name of the SecretService's
 	// ListSecretScopes RPC.
 	SecretServiceListSecretScopesProcedure = "/redpanda.api.console.v1alpha1.SecretService/ListSecretScopes"
+	// SecretServiceListResourcesProcedure is the fully-qualified name of the SecretService's
+	// ListResources RPC.
+	SecretServiceListResourcesProcedure = "/redpanda.api.console.v1alpha1.SecretService/ListResources"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -63,6 +66,7 @@ var (
 	secretServiceUpdateSecretMethodDescriptor     = secretServiceServiceDescriptor.Methods().ByName("UpdateSecret")
 	secretServiceDeleteSecretMethodDescriptor     = secretServiceServiceDescriptor.Methods().ByName("DeleteSecret")
 	secretServiceListSecretScopesMethodDescriptor = secretServiceServiceDescriptor.Methods().ByName("ListSecretScopes")
+	secretServiceListResourcesMethodDescriptor    = secretServiceServiceDescriptor.Methods().ByName("ListResources")
 )
 
 // SecretServiceClient is a client for the redpanda.api.console.v1alpha1.SecretService service.
@@ -73,6 +77,7 @@ type SecretServiceClient interface {
 	UpdateSecret(context.Context, *connect.Request[v1alpha1.UpdateSecretRequest]) (*connect.Response[v1alpha1.UpdateSecretResponse], error)
 	DeleteSecret(context.Context, *connect.Request[v1alpha1.DeleteSecretRequest]) (*connect.Response[v1alpha1.DeleteSecretResponse], error)
 	ListSecretScopes(context.Context, *connect.Request[v1alpha1.ListSecretScopesRequest]) (*connect.Response[v1alpha1.ListSecretScopesResponse], error)
+	ListResources(context.Context, *connect.Request[v1alpha1.ListResourcesRequest]) (*connect.Response[v1alpha1.ListResourcesResponse], error)
 }
 
 // NewSecretServiceClient constructs a client for the redpanda.api.console.v1alpha1.SecretService
@@ -121,6 +126,12 @@ func NewSecretServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(secretServiceListSecretScopesMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listResources: connect.NewClient[v1alpha1.ListResourcesRequest, v1alpha1.ListResourcesResponse](
+			httpClient,
+			baseURL+SecretServiceListResourcesProcedure,
+			connect.WithSchema(secretServiceListResourcesMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -132,6 +143,7 @@ type secretServiceClient struct {
 	updateSecret     *connect.Client[v1alpha1.UpdateSecretRequest, v1alpha1.UpdateSecretResponse]
 	deleteSecret     *connect.Client[v1alpha1.DeleteSecretRequest, v1alpha1.DeleteSecretResponse]
 	listSecretScopes *connect.Client[v1alpha1.ListSecretScopesRequest, v1alpha1.ListSecretScopesResponse]
+	listResources    *connect.Client[v1alpha1.ListResourcesRequest, v1alpha1.ListResourcesResponse]
 }
 
 // GetSecret calls redpanda.api.console.v1alpha1.SecretService.GetSecret.
@@ -164,6 +176,11 @@ func (c *secretServiceClient) ListSecretScopes(ctx context.Context, req *connect
 	return c.listSecretScopes.CallUnary(ctx, req)
 }
 
+// ListResources calls redpanda.api.console.v1alpha1.SecretService.ListResources.
+func (c *secretServiceClient) ListResources(ctx context.Context, req *connect.Request[v1alpha1.ListResourcesRequest]) (*connect.Response[v1alpha1.ListResourcesResponse], error) {
+	return c.listResources.CallUnary(ctx, req)
+}
+
 // SecretServiceHandler is an implementation of the redpanda.api.console.v1alpha1.SecretService
 // service.
 type SecretServiceHandler interface {
@@ -173,6 +190,7 @@ type SecretServiceHandler interface {
 	UpdateSecret(context.Context, *connect.Request[v1alpha1.UpdateSecretRequest]) (*connect.Response[v1alpha1.UpdateSecretResponse], error)
 	DeleteSecret(context.Context, *connect.Request[v1alpha1.DeleteSecretRequest]) (*connect.Response[v1alpha1.DeleteSecretResponse], error)
 	ListSecretScopes(context.Context, *connect.Request[v1alpha1.ListSecretScopesRequest]) (*connect.Response[v1alpha1.ListSecretScopesResponse], error)
+	ListResources(context.Context, *connect.Request[v1alpha1.ListResourcesRequest]) (*connect.Response[v1alpha1.ListResourcesResponse], error)
 }
 
 // NewSecretServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -217,6 +235,12 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(secretServiceListSecretScopesMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	secretServiceListResourcesHandler := connect.NewUnaryHandler(
+		SecretServiceListResourcesProcedure,
+		svc.ListResources,
+		connect.WithSchema(secretServiceListResourcesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.SecretService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SecretServiceGetSecretProcedure:
@@ -231,6 +255,8 @@ func NewSecretServiceHandler(svc SecretServiceHandler, opts ...connect.HandlerOp
 			secretServiceDeleteSecretHandler.ServeHTTP(w, r)
 		case SecretServiceListSecretScopesProcedure:
 			secretServiceListSecretScopesHandler.ServeHTTP(w, r)
+		case SecretServiceListResourcesProcedure:
+			secretServiceListResourcesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -262,4 +288,8 @@ func (UnimplementedSecretServiceHandler) DeleteSecret(context.Context, *connect.
 
 func (UnimplementedSecretServiceHandler) ListSecretScopes(context.Context, *connect.Request[v1alpha1.ListSecretScopesRequest]) (*connect.Response[v1alpha1.ListSecretScopesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecretService.ListSecretScopes is not implemented"))
+}
+
+func (UnimplementedSecretServiceHandler) ListResources(context.Context, *connect.Request[v1alpha1.ListResourcesRequest]) (*connect.Response[v1alpha1.ListResourcesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SecretService.ListResources is not implemented"))
 }

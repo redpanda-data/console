@@ -8,8 +8,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { useNavigate } from '@tanstack/react-router';
 import {
   type ColumnDef,
@@ -39,7 +37,6 @@ import {
 } from '../../../redpanda-ui/components/data-table';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Heading, Text } from '../../../redpanda-ui/components/typography';
 
 export type RetrievalResult = {
   score?: number;
@@ -75,7 +72,7 @@ const createColumns = (): ColumnDef<RetrievalResultRow>[] => [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
     cell: ({ row }) => {
       const score = row.getValue('score') as number | undefined;
-      return <Text className="font-mono">{score !== undefined ? score.toFixed(3) : '-'}</Text>;
+      return <div className="font-mono text-body">{score !== undefined ? score.toFixed(3) : '-'}</div>;
     },
   },
   {
@@ -83,7 +80,7 @@ const createColumns = (): ColumnDef<RetrievalResultRow>[] => [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
     cell: ({ row }) => (
       <a
-        className="text-blue-500 hover:text-blue-600 hover:underline"
+        className="text-informative hover:text-informative hover:underline"
         href={`/clusters/${config.clusterId}/topics/${encodeURIComponent(row.getValue('topic'))}`}
       >
         {row.getValue('topic')}
@@ -94,26 +91,22 @@ const createColumns = (): ColumnDef<RetrievalResultRow>[] => [
     accessorKey: 'documentName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Document" />,
     cell: ({ row }) => (
-      <Text className="max-w-[200px] truncate font-mono" title={row.getValue('documentName')}>
+      <div className="max-w-[200px] truncate font-mono text-body" title={row.getValue('documentName')}>
         {row.getValue('documentName')}
-      </Text>
+      </div>
     ),
   },
   {
     accessorKey: 'chunkId',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Chunk ID" />,
-    cell: ({ row }) => (
-      <Text className="font-mono" variant="muted">
-        {row.getValue('chunkId')}
-      </Text>
-    ),
+    cell: ({ row }) => <div className="font-mono text-body text-muted-foreground">{row.getValue('chunkId')}</div>,
   },
   {
     accessorKey: 'content',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Content" />,
     cell: ({ row }) => {
       const content = row.getValue('content') as string;
-      return <Text className="wrap-break-word line-clamp-2">{content}</Text>;
+      return <div className="wrap-break-word line-clamp-2 text-body">{content}</div>;
     },
   },
 ];
@@ -153,7 +146,6 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
   isLoading,
   knowledgebaseId,
 }) => {
-  'use no memo';
   const navigate = useNavigate();
 
   // TanStack Table state
@@ -233,7 +225,7 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
 
   return (
     <div className="flex flex-col gap-4">
-      <Heading level={3}>Results</Heading>
+      <h3 className="text-heading-md">Results</h3>
       <RetrievalResultsToolbar table={table} />
       <Table>
         <TableHeader>
@@ -255,7 +247,7 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
                   <TableCell className="h-24 text-center" colSpan={columns.length}>
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <Text variant="muted">Loading results...</Text>
+                      <div className="text-body text-muted-foreground">Loading results...</div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -268,9 +260,7 @@ export const KnowledgeBaseDocumentList: React.FC<KnowledgeBaseDocumentListProps>
               return (
                 <TableRow>
                   <TableCell className="h-24 text-center" colSpan={columns.length}>
-                    <Text align="center" variant="muted">
-                      No results found
-                    </Text>
+                    <div className="text-center text-body text-muted-foreground">No results found</div>
                   </TableCell>
                 </TableRow>
               );

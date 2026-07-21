@@ -2,6 +2,64 @@
 
 ## Master / Unreleased
 
+## v3.8.0 / 2026-06-29
+- [IMPROVEMENT] Add a SQL query workspace with Iceberg bridge support, including a results grid and a JSON tree viewer for composite/record columns.
+- [IMPROVEMENT] Migrate the Quotas page to the new UI registry and fix out-of-range pagination while preserving zero-value quotas.
+- [IMPROVEMENT] Improve the Overview and Shadow Link pages for users without permissions, and remove the cluster-unhealthy banner from the overview page.
+- [IMPROVEMENT] Add a Redpanda Connect template gallery and improved template management.
+- [IMPROVEMENT] Migrate the Topic detail page to the UI registry with a grouped, navigable Configuration tab.
+- [IMPROVEMENT] Persist topic list pagination, page size, and sorting across the URL and local storage.
+- [IMPROVEMENT] Migrate the frontend to React 19 via a Module Federation bridge.
+- [IMPROVEMENT] Improve accessibility with accessible names for icon-only buttons and `rel="noopener noreferrer"` on external links.
+- [BUGFIX] Bound protobuf git-sync memory usage with a shallow clone and allow disabling periodic refresh.
+- [BUGFIX] Inject the Bearer token on config fetch so authenticated config loading works correctly.
+
+## v3.7.4 / 2026-05-29
+- [IMPROVEMENT] Rewrite the Security page (users, roles, ACLs) with consistent UI, improved data fetching, ACL popover previews, and confirmation prompts before destructive actions.
+- [IMPROVEMENT] Split topic retention configuration into separate Retention Time and Retention Size controls.
+- [IMPROVEMENT] Add schema-aware Produce Record support so records can be produced using registered schemas.
+- [IMPROVEMENT] Show unconsumed partitions in consumer groups.
+- [IMPROVEMENT] Support custom AWS MSK DNS names.
+- [BUGFIX] Fix password-related error handling in security forms.
+- [BUGFIX] Fix loading of consumers in topic detail pages.
+- [BUGFIX] Fix ACL handling when Pattern Type is set to "Any".
+- [CHANGE] Register the Permissions page behind a feature flag.
+- [SECURITY] Bump `golang.org/x/crypto` to v0.52.0 to address Snyk findings.
+
+## v3.7.3 / 2026-05-20
+- [BUGFIX] Fix Avro JSON viewer to preserve `\u00XX` byte escapes so "Copy Value" returns the original bytes instead of UTF-8 encoded glyphs.
+- [BUGFIX] Fix stale ACL check in Redpanda Connect onboarding add-user step.
+- [BUGFIX] Provide default feature flags for non-embedded mode so self-hosted deployments load with sensible defaults.
+- [BUGFIX] Improve back button behavior on Redpanda Connect pipeline pages.
+- [IMPROVEMENT] YAML editor tooltip adjustments and removal of a duplicate Sonner toaster provider.
+- [CHANGE] Remove consumer group search from persistent UI state.
+- [SECURITY] Resolve Snyk security vulnerabilities in backend and frontend dependencies (including `go-git` v5.19.1 and `golang.org/x/net` v0.54.0).
+
+## v3.7.2 / 2026-04-29
+- [BUGFIX] Hide unavailable "Infinite" retention option for topics with capped configurations and fix topic config UI layout.
+- [BUGFIX] Fix secrets list returning only the first page instead of all entries.
+- [BUGFIX] Fix ACL rule key collision in edit mode causing incorrect rule management.
+- [IMPROVEMENT] Show Group principals in ACLs and Permissions List.
+- [IMPROVEMENT] Add `lockPrincipal` query parameter to ACL create page to pre-fill and lock the principal field.
+- [IMPROVEMENT] UX copy and typography improvements across console UI.
+- [SECURITY] Resolve security vulnerabilities in frontend and backend dependencies.
+
+## v3.7.1 / 2026-04-08
+- [IMPROVEMENT] Schema Registry pagination and sort order are now reflected in URL query parameters, enabling bookmarkable views.
+- [IMPROVEMENT] Add user-friendly Kafka error messages with detailed per-error context.
+- [BUGFIX] Fix consumer group loading in topic detail page.
+- [BUGFIX] Fix ACL feature-support disabled states not reflecting cluster capabilities correctly.
+- [BUGFIX] Fix Kafka and Schema Registry error mapping to correct gRPC status codes.
+- [SECURITY] Resolve dependency vulnerabilities in dependencies.
+
+## v3.7.0 / 2026-03-30
+- [IMPROVEMENT] Add pipeline page with view, edit, and create modes including an interactive flow diagram visualizer.
+- [IMPROVEMENT] Add Schema Registry context support: filter schema list, create schemas, and edit compatibility by context.
+- [CHANGE] Replace Redpanda Admin API with Kafka SCRAM API for user management.
+- [BUGFIX] Fix Kafka Connect JSON editor not applying configuration changes.
+- [BUGFIX] Fix security role edit route and role update page loading state.
+- [SECURITY] Resolve security vulnerabilities in backend and frontend dependencies.
+
 ## v3.6.0 / 2026-03-10
 - [IMPROVEMENT] Add unlimited and continuous pagination for Kafka message listing.
 - [IMPROVEMENT] Group sidebar navigation items into sections for better organization.

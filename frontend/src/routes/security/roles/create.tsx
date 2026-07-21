@@ -11,7 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import RoleCreatePage from '../../../components/pages/roles/role-create-page';
+import RoleCreatePage from '../../../components/pages/security/roles/role-create-page';
 
 export const Route = createFileRoute('/security/roles/create')({
   staticData: {

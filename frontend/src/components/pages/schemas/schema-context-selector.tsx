@@ -19,7 +19,6 @@ import {
 } from 'components/redpanda-ui/components/command';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon, ChevronDownIcon, InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
@@ -47,33 +46,33 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
   return (
     <div className="mt-2 flex flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
-        <Text as="span" variant="bodyStrongSmall">
-          Context
-        </Text>
+        <span className="font-medium text-body-sm">Context</span>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex cursor-help">
-              <InfoIcon className="size-4 text-muted-foreground" />
-            </span>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <span className="inline-flex cursor-help">
+                <InfoIcon className="size-4 text-muted-foreground" />
+              </span>
+            }
+          />
           <TooltipContent side="top">
-            Schema registry contexts allow grouping subjects into isolated namespaces
+            Schema Registry contexts allow grouping subjects into isolated namespaces
           </TooltipContent>
         </Tooltip>
       </div>
       <Popover onOpenChange={setOpen} open={open}>
-        <PopoverTrigger asChild>
-          <Button
-            className="w-44 justify-between truncate"
-            data-testid="schema-context-selector"
-            variant="secondary-outline"
-          >
-            <Text as="span" className="truncate">
-              {selectedLabel}
-            </Text>
-            <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger
+          render={
+            <Button
+              className="w-44 justify-between truncate"
+              data-testid="schema-context-selector"
+              variant="secondary-outline"
+            >
+              <span className="truncate text-body">{selectedLabel}</span>
+              <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
         <PopoverContent align="start" className="w-[280px] p-0">
           <Command size="full" variant="minimal">
             <CommandInput placeholder="Search contexts..." />
@@ -93,12 +92,8 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
                     className={cn('mt-0.5 size-4 shrink-0', selectedContext === ctx.id ? 'opacity-100' : 'opacity-0')}
                   />
                   <div className="flex flex-col">
-                    <Text as="span" variant="body">
-                      {ctx.label}
-                    </Text>
-                    <Text as="span" className="text-muted-foreground" variant="captionMedium">
-                      {pluralize(ctx.subjectCount, 'subject')}
-                    </Text>
+                    <span className="text-body">{ctx.label}</span>
+                    <span className="text-body-sm text-muted-foreground">{pluralize(ctx.subjectCount, 'subject')}</span>
                   </div>
                 </CommandItem>
               ))}

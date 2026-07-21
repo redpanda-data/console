@@ -19,15 +19,14 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldLabel, FieldDescription, FieldError } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { MarkdownEditor } from 'components/ui/markdown-editor';
 import { MCPEmpty } from 'components/ui/mcp/mcp-empty';
 import { MCPServerCardList } from 'components/ui/mcp/mcp-server-card';
 import { Plus, Trash2 } from 'lucide-react';
+import type { MCPServer } from 'protogen/redpanda/api/adp/v1alpha1/mcp_server_pb';
 import { useState } from 'react';
 import { Controller, type Control, useFormState } from 'react-hook-form';
 import { useFieldArray } from 'react-hook-form';
-import type { MCPServer } from 'react-query/api/remote-mcp';
 
 import type { FormValues } from '../../pages/agents/create/schemas';
 
@@ -63,20 +62,20 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
       {/* Empty state */}
       {fields.length === 0 && (
         <div className="space-y-2 text-center">
-          <Text variant="muted">
+          <div className="text-body text-muted-foreground">
             No subagents configured. Subagents inherit the provider and model from the parent agent.
-          </Text>
+          </div>
         </div>
       )}
 
       {/* Accordion for subagents */}
       {fields.length > 0 && (
-        <Accordion collapsible onValueChange={setExpandedItem} type="single" value={expandedItem}>
+        <Accordion onValueChange={([value]) => setExpandedItem(value as string | undefined)} value={expandedItem ? [expandedItem] : []}>
           {fields.map((field, index) => (
             <AccordionItem key={field.id} value={`subagent-${index}`}>
               <AccordionTrigger>
                 <div className="flex flex-1 items-center gap-2">
-                  <Text className="font-medium">{field.name || `Subagent ${index + 1}`}</Text>
+                  <div className="text-body font-medium">{field.name || `Subagent ${index + 1}`}</div>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
@@ -92,7 +91,7 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                       render={({ field: nameField }) => (
                         <Input
                           id={`subagent-name-${index}`}
-                          placeholder="e.g., code-reviewer"
+                          placeholder="code-reviewer"
                           {...nameField}
                           aria-invalid={!!errors.subagents?.[index]?.name}
                         />
@@ -166,9 +165,9 @@ export const SubagentConfigSection = ({ control, availableMcpServers }: Subagent
                           />
                         ) : (
                           <MCPEmpty>
-                            <Text className="mb-4 text-center" variant="muted">
+                            <div className="text-body text-muted-foreground mb-4 text-center">
                               No MCP servers available. Create MCP servers to enable tools for this subagent.
-                            </Text>
+                            </div>
                           </MCPEmpty>
                         )
                       }

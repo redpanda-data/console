@@ -65,11 +65,13 @@ export const TopicsStep = () => {
         <CardHeader>
           <CardTitle>Shadow topics</CardTitle>
           <CardAction>
-            <CollapsibleTrigger asChild>
-              <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
+            <CollapsibleTrigger
+              render={
+                <Button className="w-fit p-0" data-testid="topics-toggle-button" size="sm" variant="ghost">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              }
+            />
           </CardAction>
         </CardHeader>
         <CardContent>
@@ -134,11 +136,7 @@ export const TopicsStep = () => {
                         render={({ field: nameField }) => (
                           <FormItem className="flex-1">
                             <FormControl>
-                              <Input
-                                placeholder="e.g., * or metrics"
-                                testId={`topic-filter-${index}-name`}
-                                {...nameField}
-                              />
+                              <Input placeholder="* or metrics" testId={`topic-filter-${index}-name`} {...nameField} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

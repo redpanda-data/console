@@ -36,26 +36,23 @@ export function useControllableState<T>({
   const isControlled = prop !== undefined;
   const value = isControlled ? prop : uncontrolledProp;
 
-  // OK to disable conditionally calling hooks here because they will always run
-  // consistently in the same environment. Bundlers should be able to remove the
-  // code block entirely in production.
-  if (process.env.NODE_ENV !== 'production') {
-    // biome-ignore lint/correctness/useHookAtTopLevel: see comment above
-    const isControlledRef = React.useRef(prop !== undefined);
-    // biome-ignore lint/correctness/useHookAtTopLevel: see comment above
-    React.useEffect(() => {
-      const wasControlled = isControlledRef.current;
-      if (wasControlled !== isControlled) {
-        const from = wasControlled ? 'controlled' : 'uncontrolled';
-        const to = isControlled ? 'controlled' : 'uncontrolled';
-        // biome-ignore lint/suspicious/noConsole: needed for controllable state implementation
-        console.warn(
-          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
-        );
-      }
-      isControlledRef.current = isControlled;
-    }, [isControlled, caller]);
-  }
+  const isControlledRef = React.useRef(prop !== undefined);
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+    const wasControlled = isControlledRef.current;
+    if (wasControlled !== isControlled) {
+      const from = wasControlled ? 'controlled' : 'uncontrolled';
+      const to = isControlled ? 'controlled' : 'uncontrolled';
+      // biome-ignore lint/suspicious/noConsole: needed for controllable state implementation
+      console.warn(
+        `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
+      );
+    }
+    isControlledRef.current = isControlled;
+  }, [isControlled, caller]);
 
   const setValue = React.useCallback<SetStateFn<T>>(
     (nextValue) => {

@@ -5,11 +5,11 @@ import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
 import { cn } from '../lib/utils';
 
 const headingClasses: Record<number, string> = {
-  1: 'font-display font-medium leading-none tracking-heading text-2xl',
-  2: 'font-display font-medium leading-none tracking-heading text-xl',
-  3: 'font-display font-medium leading-none tracking-heading text-lg',
-  4: 'font-display font-medium leading-none tracking-heading text-md',
-  5: 'font-display font-medium leading-none tracking-heading text-sm',
+  1: 'text-heading-xl',
+  2: 'text-heading-lg',
+  3: 'text-heading-md',
+  4: 'text-heading-sm',
+  5: 'text-heading-xs',
 };
 
 type EditableTextProps = {
@@ -23,7 +23,7 @@ type EditableTextProps = {
   headingLevel?: 1 | 2 | 3 | 4 | 5;
   error?: boolean;
   errorMessage?: string;
-  defaultEditing?: boolean;
+  autoFocus?: boolean;
 };
 
 function EditableText({
@@ -37,9 +37,9 @@ function EditableText({
   headingLevel = 1,
   error,
   errorMessage,
-  defaultEditing,
+  autoFocus,
 }: EditableTextProps) {
-  const [isEditing, setIsEditing] = useState(defaultEditing ?? false);
+  const [isEditing, setIsEditing] = useState(autoFocus ?? false);
   const [draft, setDraft] = useState(value);
   const [textWidth, setTextWidth] = useState<number | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -59,8 +59,7 @@ function EditableText({
     node.select();
   }, []);
 
-  const typographyClasses =
-    as === 'heading' ? headingClasses[headingLevel] : 'font-sans font-normal text-sm leading-5 tracking-normal';
+  const typographyClasses = as === 'heading' ? headingClasses[headingLevel] : 'font-sans text-body';
 
   const handleClick = useCallback(() => {
     if (readOnly) {

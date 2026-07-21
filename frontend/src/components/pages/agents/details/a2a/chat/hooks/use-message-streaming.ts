@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { JSONRPCError, Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
+import type { Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from '@a2a-js/sdk';
 import { streamText } from 'ai';
 import { config } from 'config';
 
@@ -18,83 +18,16 @@ import {
   handleResponseMetadataEvent,
   handleStatusUpdateEvent,
   handleTaskEvent,
-  handleTextDeltaEvent,
 } from './event-handlers';
 import { buildMessageWithContentBlocks, closeActiveTextBlock } from './message-builder';
-import type { ResponseMetadataEvent, StreamChunk, StreamingState, TextDeltaEvent } from './streaming-types';
+import type { ResponseMetadataEvent, StreamChunk, StreamingState } from './streaming-types';
 import { a2a } from '../../a2a-provider';
 import type { ChatMessage, ContentBlock } from '../types';
 import { createA2AClient } from '../utils/a2a-client';
 import { saveMessage, updateMessage } from '../utils/database-operations';
 import { createAssistantMessage } from '../utils/message-converter';
+import { parseA2AError } from '../utils/parse-a2a-error';
 import { resolveStaleToolBlocks } from '../utils/task-to-content-blocks';
-
-/**
- * Regex patterns for parsing JSON-RPC error details from error messages.
- *
- * Why regex? The a2a-js SDK throws plain Error objects with formatted strings
- * instead of structured error objects. The SDK has access to the structured
- * JSON-RPC error (code, message, data) but serializes it into the error message:
- *
- *   // a2a-js/src/client/transports/json_rpc_transport.ts
- *   if ('error' in a2aStreamResponse) {
- *     const err = a2aStreamResponse.error;
- *     throw new Error(
- *       `SSE event contained an error: ${err.message} (Code: ${err.code}) Data: ${JSON.stringify(err.data || {})}`
- *     );
- *   }
- *
- * Until the SDK exposes structured error data, we parse it back out.
- */
-const JSON_RPC_CODE_REGEX = /\(Code:\s*(-?\d+)\)/i;
-const JSON_RPC_DATA_REGEX = /Data:\s*(\{[^}]*\})/i;
-const JSON_RPC_MESSAGE_REGEX = /error:\s*([^(]+)\s*\(Code:/i;
-const ERROR_PREFIX_STREAMING_REGEX = /^Error during streaming[^:]*:\s*/i;
-const ERROR_PREFIX_SSE_REGEX = /^SSE event contained an error:\s*/i;
-const ERROR_SUFFIX_CODE_REGEX = /\s*\(Code:\s*-?\d+\).*$/i;
-
-/**
- * Parse A2A/JSON-RPC error details from an error message string.
- */
-export const parseA2AError = (error: unknown): JSONRPCError => {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-
-  // Try to parse JSON-RPC error from the error message
-  // Format: "SSE event contained an error: <message> (Code: <code>) Data: <json> (code: <connect_code>)"
-  const jsonRpcMatch = errorMessage.match(JSON_RPC_CODE_REGEX);
-  const dataMatch = errorMessage.match(JSON_RPC_DATA_REGEX);
-  const messageMatch = errorMessage.match(JSON_RPC_MESSAGE_REGEX);
-
-  // Extract just the core error message without wrapper text
-  let message = errorMessage;
-  if (messageMatch?.[1]) {
-    message = messageMatch[1].trim();
-  } else {
-    // Remove common prefixes
-    message = message
-      .replace(ERROR_PREFIX_STREAMING_REGEX, '')
-      .replace(ERROR_PREFIX_SSE_REGEX, '')
-      .replace(ERROR_SUFFIX_CODE_REGEX, '')
-      .trim();
-  }
-
-  const code = jsonRpcMatch?.[1] ? Number.parseInt(jsonRpcMatch[1], 10) : -1;
-
-  let data: Record<string, unknown> | undefined;
-  if (dataMatch?.[1]) {
-    try {
-      data = JSON.parse(dataMatch[1]);
-    } catch {
-      // Invalid JSON in data field
-    }
-  }
-
-  return {
-    code,
-    message: message || 'Unknown error',
-    data,
-  };
-};
 
 type StreamMessageParams = {
   prompt: string;
@@ -352,6 +285,11 @@ export const streamMessage = async ({
     latestUsage: undefined,
   };
 
+  // Tracks whether the clean-close path already ran resubscribeLoop, so that
+  // a post-reconnect failure in finalizeMessage doesn't cause the outer catch
+  // to re-enter the loop a second time.
+  let resubscribeAttempted = false;
+
   try {
     // Stream the response using a2a provider
     const streamResult = streamText({
@@ -393,14 +331,10 @@ export const streamMessage = async ({
             handleArtifactUpdateEvent(event as TaskArtifactUpdateEvent, state, assistantMessage, onMessageUpdate);
           }
         }
-        continue;
       }
-
-      // Handle text-delta events
-      if (streamChunk.type === 'text-delta') {
-        const textDelta = streamChunk as TextDeltaEvent;
-        handleTextDeltaEvent(textDelta.text, state, assistantMessage, onMessageUpdate);
-      }
+      // text-delta chunks are emitted as raw events routed above; no separate
+      // handling is needed because the A2A protocol carries text through
+      // status-update.message.parts and artifact-update.
     }
 
     // Close any active text block before finalizing
@@ -417,10 +351,43 @@ export const streamMessage = async ({
       }
     }
 
+    // The stream ended without throwing, but the task may still be in-flight
+    // server-side. This happens when a load balancer silently closes an idle
+    // TCP connection (FIN) around its idle timeout — the AsyncIterable exits
+    // cleanly rather than raising, so the catch-block reconnect never runs.
+    // Route through the same resubscribe loop to avoid finalizing a task that
+    // is still progressing on the server.
+    //
+    // The active text block was already closed and nulled above, so we don't
+    // need to repeat that here (unlike the catch branch, which can arrive
+    // mid-stream).
+    if (isResubscribable(state)) {
+      resubscribeAttempted = true;
+      const recovered = await resubscribeLoop(state, agentCardUrl, assistantMessage, onMessageUpdate);
+      try {
+        const finalResult = await finalizeMessage(state, assistantMessage);
+        // gave-up = orphaned task; mirror the error path by reporting failure
+        // so callers and the UI treat this the same as a thrown-error gave-up.
+        // The gave-up connection-status block is still visible to the user.
+        return recovered ? finalResult : { ...finalResult, success: false };
+      } catch (finalizeError) {
+        // Mirror the logging in the catch-block recovery branch so a DB
+        // failure after a clean-close reconnect is observable in production.
+        // biome-ignore lint/suspicious/noConsole: intentional error logging for production observability
+        console.error('finalizeMessage failed after clean-close recovery:', finalizeError);
+        // Rethrow into the outer catch, which will produce an a2a-error block.
+        // The resubscribeAttempted flag prevents a second resubscribe round.
+        throw finalizeError;
+      }
+    }
+
     return await finalizeMessage(state, assistantMessage);
   } catch (error) {
-    // If the task is still in-flight, try to resubscribe before giving up
-    if (isResubscribable(state)) {
+    // If the task is still in-flight, try to resubscribe before giving up.
+    // Skip if the clean-close path already exhausted a resubscribe round —
+    // otherwise a finalizeMessage failure after a gave-up reconnect would
+    // trigger another full round of retries.
+    if (!resubscribeAttempted && isResubscribable(state)) {
       closeActiveTextBlock(state.contentBlocks, state.activeTextBlock);
       state.activeTextBlock = null;
 

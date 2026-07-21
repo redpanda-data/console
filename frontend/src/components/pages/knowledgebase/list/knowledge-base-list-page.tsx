@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 'use client';
 
 import { ConnectError } from '@connectrpc/connect';
@@ -42,14 +40,13 @@ import {
 } from 'components/redpanda-ui/components/data-table';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, Loader2, X } from 'lucide-react';
 import type { KnowledgeBase } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useDeleteKnowledgeBaseMutation, useListKnowledgeBasesQuery } from 'react-query/api/knowledge-base';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
-import { Features } from 'state/supported-features';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -166,7 +163,7 @@ const ModelCell = ({ provider, model }: { provider: string; model: string }) => 
   return (
     <div className="flex items-center gap-2">
       <ProviderLogo className="h-4 w-4 shrink-0" provider={provider} />
-      <Text>{model}</Text>
+      <div className="text-body">{model}</div>
     </div>
   );
 };
@@ -197,7 +194,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       cell: ({ row }) => {
         const displayName = row.getValue('displayName') as string;
-        return <Text className="wrap-break-word font-medium">{displayName}</Text>;
+        return <div className="wrap-break-word font-medium text-body">{displayName}</div>;
       },
     },
     {
@@ -205,7 +202,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
       cell: ({ row }) => {
         const description = row.getValue('description') as string;
-        return <Text className="wrap-break-word">{description || ''}</Text>;
+        return <div className="wrap-break-word text-body">{description || ''}</div>;
       },
     },
     {
@@ -214,14 +211,14 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<Knowledg
       cell: ({ row }) => {
         const patterns = row.getValue('inputTopics') as string[];
         if (patterns.length === 0) {
-          return <Text variant="muted">-</Text>;
+          return <div className="text-body text-muted-foreground">-</div>;
         }
 
         // Get all existing topics that match the patterns
         const matchedTopics = getMatchedTopics(patterns, availableTopics);
 
         if (matchedTopics.length === 0) {
-          return <Text variant="muted">-</Text>;
+          return <div className="text-body text-muted-foreground">-</div>;
         }
 
         return (
@@ -352,7 +349,7 @@ export const updatePageTitle = () => {
 };
 
 export const KnowledgeBaseListPage = () => {
-  'use no memo';
+  const featurePipelinesApi = useSupportedFeaturesStore((s) => s.pipelinesApi);
   const navigate = useNavigate();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -367,14 +364,14 @@ export const KnowledgeBaseListPage = () => {
   } = useListKnowledgeBasesQuery(
     {},
     {
-      enabled: Features.pipelinesApi,
+      enabled: featurePipelinesApi,
     }
   );
 
   // Fetch all available topics to match against knowledge base patterns
   const { data: topicsData } = useListTopicsQuery(
     undefined,
-    { enabled: Features.pipelinesApi },
+    { enabled: featurePipelinesApi },
     { hideInternalTopics: true }
   );
 
@@ -395,7 +392,7 @@ export const KnowledgeBaseListPage = () => {
   }, []);
 
   useEffect(() => {
-    if (error && Features.pipelinesApi) {
+    if (error && featurePipelinesApi) {
       const errorStr = String(error);
       if (!errorStr.includes('404')) {
         toast.error('Failed to load knowledge bases', {
@@ -403,14 +400,14 @@ export const KnowledgeBaseListPage = () => {
         });
       }
     }
-  }, [error]);
+  }, [error, featurePipelinesApi]);
 
   const handleDelete = useCallback(
     async (knowledgeBaseId: string) => {
       try {
         await deleteKnowledgeBase({ id: knowledgeBaseId });
 
-        toast.success('Knowledge base deleted successfully');
+        toast.success('Knowledge base deleted');
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
         toast.error(
@@ -476,13 +473,13 @@ export const KnowledgeBaseListPage = () => {
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Knowledge Bases</Heading>
-        <Text variant="muted">
+        <h1 className="text-heading-xl">Knowledge Bases</h1>
+        <div className="text-body text-muted-foreground">
           Knowledge bases store and organize your documents, data, and content for AI-powered retrieval and chat. They
           enable Retrieval-Augmented Generation (RAG) by connecting language models with your specific information,
           providing accurate, contextual responses grounded in your data. Upload documents, configure embeddings, and
           create intelligent systems that can answer questions and provide insights from your knowledge repository.
-        </Text>
+        </div>
       </header>
       <div className="mb-4">
         <Button onClick={() => navigate({ to: '/knowledgebases/create' })}>Create Knowledge Base</Button>
@@ -517,13 +514,13 @@ export const KnowledgeBaseListPage = () => {
                 </TableRow>
               );
             }
-            if (error && Features.pipelinesApi) {
+            if (error && featurePipelinesApi) {
               const errorStr = String(error);
               if (!errorStr.includes('404')) {
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-red-600">
+                      <div className="flex items-center justify-center gap-2 text-error">
                         <AlertCircle className="h-4 w-4" />
                         Error loading knowledge bases: {errorStr}
                       </div>

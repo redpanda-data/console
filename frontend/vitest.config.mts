@@ -5,13 +5,11 @@ import envCompatible from 'vite-plugin-env-compatible';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defineConfig } from 'vitest/config';
 
+import { sharedAliases } from './vitest.shared.mts';
+
 const ENV_PREFIX = 'REACT_APP_';
 
-// Regex patterns for module resolution
-const REDPANDA_UI_REGEX = /^@redpanda-data\/ui$/;
-const BUFBUILD_REGEX = /^@bufbuild\/buf$/;
-const MONACO_EDITOR_REGEX = /^monaco-editor$/;
-
+// Default config used by test:file and test:watch
 export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
 
@@ -21,26 +19,13 @@ export default defineConfig(({ mode }) => {
       vmMemoryLimit: '1000Mb',
       testTimeout: 15_000,
       globals: true,
-      environment: 'jsdom',
+      environment: 'happy-dom',
       setupFiles: './vitest.setup.ts',
       deps: {
         registerNodeLoader: true,
       },
-      alias: [
-        {
-          find: REDPANDA_UI_REGEX, // For Redpanda UI we generate both CommonJS and ESM versions, but Vitest is ESM 1st, so we want to force ESM to be used.
-          replacement: '@redpanda-data/ui/dist/index.js',
-        },
-        {
-          find: BUFBUILD_REGEX,
-          replacement: '@bufbuild/protobuf/dist/esm/index.js',
-        },
-        {
-          find: MONACO_EDITOR_REGEX,
-          replacement: 'monaco-editor/esm/vs/editor/editor.api.js',
-        },
-      ],
-      reporters: ['default', 'html'],
+      alias: sharedAliases,
+      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
       typecheck: {
         enabled: false,
       },

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Empty, Text } from '@redpanda-data/ui';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Link } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 
@@ -19,18 +19,20 @@ import Section from '../../misc/section';
 export const SchemaNotConfiguredPage: FC = () => (
   <PageContent>
     <Section>
-      <div className="flex flex-col items-center gap-4" data-testid="schema-not-configured">
-        <Empty description="Not Configured" />
-        <Text textAlign="center">
-          Schema Registry is not configured in Redpanda Console.
-          <br />
-          To view all registered schemas, their documentation and their versioned history simply provide the connection
-          credentials in the Redpanda Console config.
-        </Text>
+      <Empty data-testid="schema-not-configured">
+        <EmptyHeader>
+          <EmptyTitle>Not Configured</EmptyTitle>
+          <EmptyDescription>
+            Schema Registry is not configured in Redpanda Console.
+            <br />
+            To view all registered schemas, their documentation and their versioned history simply provide the
+            connection credentials in the Redpanda Console config.
+          </EmptyDescription>
+        </EmptyHeader>
         <Link href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
           Redpanda Console Config Documentation
         </Link>
-      </div>
+      </Empty>
     </Section>
   </PageContent>
 );

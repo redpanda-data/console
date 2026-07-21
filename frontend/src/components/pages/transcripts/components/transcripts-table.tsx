@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { durationMs } from '@bufbuild/protobuf/wkt';
 import {
   type ColumnDef,
@@ -28,7 +26,6 @@ import { DataTableFacetedFilter } from 'components/redpanda-ui/components/data-t
 import { Input } from 'components/redpanda-ui/components/input';
 import { ScrollArea } from 'components/redpanda-ui/components/scroll-area';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Small, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   AlertCircle,
@@ -399,7 +396,9 @@ const SpanRow: FC<SpanRowProps> = ({
       >
         {/* Timestamp */}
         <div className="shrink-0 px-2 py-1">
-          <Small className="font-mono text-muted-foreground">{formatTime(spanTimestamp)}</Small>
+          <small className="font-mono text-body-sm text-muted-foreground leading-none">
+            {formatTime(spanTimestamp)}
+          </small>
         </div>
 
         {/* Span Info with Tree Lines */}
@@ -422,9 +421,9 @@ const SpanRow: FC<SpanRowProps> = ({
             variant="outline"
           >
             {createElement(serviceIcon, { className: 'mr-1 h-3 w-3 shrink-0' })}
-            <Small className="truncate" title={serviceName}>
+            <small className="truncate text-body-sm leading-none" title={serviceName}>
               {serviceName}
-            </Small>
+            </small>
           </Badge>
 
           {/* Children count */}
@@ -433,15 +432,15 @@ const SpanRow: FC<SpanRowProps> = ({
               className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-muted-foreground"
               variant="outline"
             >
-              <Small>{span.children?.length || 0}</Small>
+              <small className="text-body-sm leading-none">{span.children?.length || 0}</small>
             </Badge>
           )}
 
           {/* Span name - wrapped in container for proper truncation */}
           <div className="min-w-0 flex-1">
-            <Text as="span" className="block truncate" title={span.name} variant="small">
+            <span className="block truncate text-body-sm" title={span.name}>
               {span.name}
-            </Text>
+            </span>
           </div>
 
           {/* Error badge */}
@@ -463,9 +462,9 @@ const SpanRow: FC<SpanRowProps> = ({
               }}
             />
           </div>
-          <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">
+          <small className="w-14 shrink-0 text-left font-mono text-body-sm text-muted-foreground leading-none">
             {formatDuration(span.duration)}
-          </Small>
+          </small>
         </div>
       </button>
 
@@ -630,9 +629,9 @@ const RootTraceServiceBadge: FC<{ isIncomplete: boolean; serviceName: string | u
       variant="outline"
     >
       <Cpu className="mr-1 h-3 w-3 shrink-0" />
-      <Small className="truncate" title={serviceName || 'service'}>
+      <small className="truncate text-body-sm leading-none" title={serviceName || 'service'}>
         {serviceName || 'service'}
-      </Small>
+      </small>
     </Badge>
   );
 };
@@ -649,7 +648,7 @@ const RootTraceDurationCell: FC<{
         <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
           <div className="h-full w-full rounded-full bg-warning/30" />
         </div>
-        <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">—</Small>
+        <small className="w-14 shrink-0 text-left font-mono text-body-sm text-muted-foreground leading-none">—</small>
       </>
     );
   }
@@ -661,7 +660,9 @@ const RootTraceDurationCell: FC<{
           style={{ width: '100%' }}
         />
       </div>
-      <Small className="w-14 shrink-0 text-left font-mono text-muted-foreground">{formatDuration(duration)}</Small>
+      <small className="w-14 shrink-0 text-left font-mono text-body-sm text-muted-foreground leading-none">
+        {formatDuration(duration)}
+      </small>
     </>
   );
 };
@@ -733,7 +734,7 @@ const RootTraceRow: FC<{
     >
       {/* Timestamp */}
       <div className="shrink-0 px-2 py-1.5">
-        <Small className="font-mono text-muted-foreground">{formatTime(baseTimestamp)}</Small>
+        <small className="font-mono text-body-sm text-muted-foreground leading-none">{formatTime(baseTimestamp)}</small>
       </div>
 
       {/* Message column */}
@@ -776,21 +777,19 @@ const RootTraceRow: FC<{
           className="h-4 shrink-0 border-border bg-muted/50 px-1 py-0 font-mono text-muted-foreground"
           variant="outline"
         >
-          <Small>{traceSummary.spanCount}</Small>
+          <small className="text-body-sm leading-none">{traceSummary.spanCount}</small>
         </Badge>
 
         {/* Trace name - wrapped in container for proper truncation */}
         <div className="min-w-0 flex-1">
-          <Text
-            as="span"
-            className={cn('block truncate', isIncomplete && 'text-muted-foreground italic')}
+          <span
+            className={cn('block truncate text-body-sm', isIncomplete && 'text-muted-foreground italic')}
             title={traceSummary.rootSpanName}
-            variant="small"
           >
             {isIncomplete
               ? `${traceSummary.rootServiceName || 'unknown'} — waiting for parent span`
               : traceSummary.rootSpanName}
-          </Text>
+          </span>
         </div>
 
         {/* Error badge */}
@@ -1004,7 +1003,6 @@ export const TranscriptsTable: FC<Props> = ({
   matchedSpans,
   showFullTraces = true,
 }) => {
-  'use no memo';
   const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
 
   // Auto-expand trace when autoExpandTraceId changes (for linked trace mode)
@@ -1176,9 +1174,7 @@ export const TranscriptsTable: FC<Props> = ({
                 }
                 type="button"
               >
-                <Text as="span" variant="small">
-                  Time
-                </Text>
+                <span className="text-body-sm">Time</span>
                 {sortOrder === 'newest-first' ? (
                   <ArrowDown aria-hidden="true" className="h-3 w-3" />
                 ) : (
@@ -1186,14 +1182,10 @@ export const TranscriptsTable: FC<Props> = ({
                 )}
               </button>
               <div className="flex min-w-0 items-center px-1 py-2.5">
-                <Text as="span" variant="small">
-                  Span
-                </Text>
+                <span className="text-body-sm">Span</span>
               </div>
               <div className="flex shrink-0 items-center py-2.5 pr-6 pl-2">
-                <Text as="span" variant="small">
-                  Duration
-                </Text>
+                <span className="text-body-sm">Duration</span>
               </div>
             </div>
 
@@ -1232,15 +1224,15 @@ export const TranscriptsTable: FC<Props> = ({
                     <Inbox className="h-12 w-12 text-muted-foreground/40" strokeWidth={1.5} />
                     <div className="flex flex-col items-center gap-1.5 text-center">
                       <h3 className="font-medium text-sm">No transcripts found</h3>
-                      <Text as="p" className="max-w-md leading-relaxed" variant="muted">
+                      <p className="max-w-md text-body text-muted-foreground leading-relaxed">
                         {isFiltered && hasUnfilteredData
                           ? 'No transcripts match your search criteria. Try adjusting your filter or clearing it.'
                           : `No transcripts have been recorded in the ${timeRange.toLowerCase()}. Transcripts will appear here once your agents start processing requests.`}
-                      </Text>
+                      </p>
                       {!!(isFiltered && hasUnfilteredData) && (
-                        <Small className="mt-1 text-muted-foreground/70">
+                        <small className="mt-1 text-body-sm text-muted-foreground/70 leading-none">
                           <span className="font-medium">Tip:</span> Clear the search filter to see all transcripts
-                        </Small>
+                        </small>
                       )}
                     </div>
                   </div>
@@ -1255,14 +1247,14 @@ export const TranscriptsTable: FC<Props> = ({
                       <div key={dateKey}>
                         {/* Date Separator */}
                         <div className="border-border/30 border-b py-2 text-center">
-                          <Small className="text-muted-foreground">
+                          <small className="text-body-sm text-muted-foreground leading-none">
                             {label}
                             {index === 0 && (
                               <span className="ml-1.5 text-muted-foreground/60">
                                 • {sortOrder === 'newest-first' ? 'Newest' : 'Oldest'}
                               </span>
                             )}
-                          </Small>
+                          </small>
                         </div>
 
                         {/* Traces for this date */}

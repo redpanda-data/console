@@ -41,7 +41,7 @@ vi.mock('../../config', () => ({
   },
 }));
 
-import { useLogSearch } from './logs';
+import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 
 function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   return {
@@ -74,6 +74,41 @@ describe('useLogSearch live mode', () => {
     vi.clearAllMocks();
     convertCallIndex = 0;
     fakeMessages.length = 0;
+  });
+
+  test('reports progress during live streaming', async () => {
+    fakeMessages.push(makeMessage(1));
+
+    mockListMessages.mockImplementation(async function* () {
+      yield {
+        controlMessage: {
+          case: 'progress' as const,
+          value: { bytesConsumed: BigInt(5000), messagesConsumed: BigInt(42) },
+        },
+      };
+      yield {
+        controlMessage: { case: 'data' as const, value: {} },
+      };
+      yield {
+        controlMessage: { case: 'done' as const, value: {} },
+      };
+    });
+
+    const { result } = renderHook(
+      () =>
+        useLogSearch({
+          pipelineId: 'pipeline-1',
+          live: true,
+          enabled: true,
+          serverless: false,
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.progress.bytesConsumed).toBe(5000);
+      expect(result.current.progress.messagesConsumed).toBe(42);
+    });
   });
 
   test('prepends new messages in live mode (newest first)', async () => {
@@ -118,5 +153,93 @@ describe('useLogSearch live mode', () => {
     expect(result.current.messages[0].offset).toBe(3);
     expect(result.current.messages[1].offset).toBe(2);
     expect(result.current.messages[2].offset).toBe(1);
+  });
+});
+
+describe('useLogSearch history mode', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.clearAllMocks();
+    convertCallIndex = 0;
+    fakeMessages.length = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('reports progress during history streaming', async () => {
+    fakeMessages.push(makeMessage(1));
+
+    mockListMessages.mockImplementation(async function* () {
+      yield {
+        controlMessage: {
+          case: 'progress' as const,
+          value: { bytesConsumed: BigInt(10_000), messagesConsumed: BigInt(99) },
+        },
+      };
+      yield {
+        controlMessage: { case: 'data' as const, value: {} },
+      };
+      // Pause before done so the 200ms flush interval fires while phase is active
+      await vi.advanceTimersByTimeAsync(250);
+      yield {
+        controlMessage: { case: 'done' as const, value: {} },
+      };
+    });
+
+    const { result } = renderHook(
+      () =>
+        useLogSearch({
+          pipelineId: 'pipeline-1',
+          live: false,
+          enabled: true,
+          serverless: false,
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(1);
+      expect(result.current.progress.bytesConsumed).toBe(10_000);
+      expect(result.current.progress.messagesConsumed).toBe(99);
+    });
+  });
+
+  test('returns history messages newest-first (matches live ordering)', async () => {
+    fakeMessages.push(makeMessage(1), makeMessage(2), makeMessage(3));
+
+    mockListMessages.mockImplementation(async function* () {
+      for (const _msg of fakeMessages) {
+        yield { controlMessage: { case: 'data' as const, value: {} } };
+      }
+      yield { controlMessage: { case: 'done' as const, value: {} } };
+    });
+
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.messages).toHaveLength(3);
+    });
+
+    expect(result.current.messages[0].offset).toBe(3);
+    expect(result.current.messages[2].offset).toBe(1);
+  });
+});
+
+describe('liveReducer flushMessages cap', () => {
+  test('caps the live buffer to MAX_LIVE_LOG_MESSAGES, keeping the newest entries', () => {
+    const batch = Array.from({ length: MAX_LIVE_LOG_MESSAGES + 10 }, (_, i) => makeMessage(i));
+
+    const next = liveReducer(LIVE_INITIAL_STATE, { type: 'flushMessages', msgs: batch });
+
+    expect(next.messages).toHaveLength(MAX_LIVE_LOG_MESSAGES);
+    // Newest-first: msgs are reversed on flush, so the highest offset is at the front.
+    expect(next.messages[0].offset).toBe(MAX_LIVE_LOG_MESSAGES + 9);
+    // Oldest entries are dropped by the sliding window.
+    expect(next.messages.some((m) => m.offset === 0)).toBe(false);
   });
 });

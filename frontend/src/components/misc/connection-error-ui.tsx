@@ -14,7 +14,6 @@ import type { FC } from 'react';
 
 import { AlertIcon, RefreshIcon } from '../icons';
 import { Button } from '../redpanda-ui/components/button';
-import { Heading, Text } from '../redpanda-ui/components/typography';
 
 type ConnectionErrorUIProps = {
   error: ConnectError;
@@ -31,17 +30,17 @@ function getErrorMessage(error: ConnectError): { title: string; description: str
     case Code.DeadlineExceeded:
       return {
         title: 'Request Timeout',
-        description: 'The server took too long to respond. Please try again.',
+        description: 'The server took too long to respond. Try again.',
       };
     case Code.Internal:
       return {
         title: 'Internal Server Error',
-        description: 'An unexpected error occurred on the server. Please try again.',
+        description: 'An unexpected error occurred on the server. Try again.',
       };
     default:
       return {
         title: 'Connection Error',
-        description: 'Unable to connect to the server. Please check your connection and try again.',
+        description: 'Unable to connect to the server. Check your connection and try again.',
       };
   }
 }
@@ -53,15 +52,11 @@ export const ConnectionErrorUI: FC<ConnectionErrorUIProps> = ({ error, onRetry }
     <div className="flex min-h-screen items-center justify-center bg-neutral-100">
       <div className="mx-4 w-full max-w-md rounded-lg bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <AlertIcon className="h-6 w-6 text-red-600" />
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-background-error-subtle">
+            <AlertIcon className="h-6 w-6 text-error" />
           </div>
-          <Heading className="mb-2 text-neutral-900" level={3}>
-            {title}
-          </Heading>
-          <Text className="mb-6 text-neutral-600" variant="small">
-            {description}
-          </Text>
+          <h3 className="mb-2 text-heading-md text-neutral-900">{title}</h3>
+          <div className="mb-6 text-body-sm text-neutral-600">{description}</div>
           <Button onClick={onRetry}>
             <RefreshIcon className="mr-2 h-4 w-4" />
             Try Again

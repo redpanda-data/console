@@ -15,7 +15,6 @@ import { ChakraProvider, redpandaTheme, redpandaToastOptions } from '@redpanda-d
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-import { Toaster } from '../components/redpanda-ui/components/sonner';
 import { TooltipProvider } from '../components/redpanda-ui/components/tooltip';
 import { CustomFeatureFlagProvider } from '../custom-feature-flag-provider';
 
@@ -36,10 +35,7 @@ export function FederatedProviders({ children, transport, queryClient, featureFl
       <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
         <TransportProvider transport={transport}>
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              {children}
-              <Toaster />
-            </TooltipProvider>
+            <TooltipProvider>{children}</TooltipProvider>
           </QueryClientProvider>
         </TransportProvider>
       </ChakraProvider>

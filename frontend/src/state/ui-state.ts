@@ -14,6 +14,16 @@ import { create } from 'zustand';
 
 import { api } from './backend-api';
 import { createTopicDetailsSettings, type TopicDetailsSettings as TopicSettings, useUISettingsStore } from './ui';
+import { boundedAppend } from '../utils/bounded-array';
+
+/**
+ * Cap on retained per-topic settings. The array grows by one entry per distinct topic ever
+ * visited and is persisted (as a full blob) by the settings store, so a session that browses
+ * many topics would grow heap and storage without bound. Oldest-added entries drop first (FIFO;
+ * re-visits don't refresh position). The persisted zustand store has its own cap in
+ * stores/topic-settings-store.ts.
+ */
+const MAX_PER_TOPIC_SETTINGS = 200;
 
 export type BreadcrumbOptions = {
   canBeTruncated?: boolean;
@@ -36,10 +46,16 @@ export type ServerVersionInfo = {
   branchBusiness?: string;
 };
 
+export type BackLink = {
+  title: string;
+  linkTo: string;
+};
+
 type UIStateStore = {
   // Core state
   _pageTitle: string | React.ReactElement;
   pageBreadcrumbs: BreadcrumbEntry[];
+  backLink: BackLink | null;
   shouldHidePageHeader: boolean;
   pathName: string;
   _currentTopicName: string | undefined;
@@ -56,6 +72,12 @@ type UIStateStore = {
   // Actions (setters)
   setPageTitle: (title: string | React.ReactElement) => void;
   setPageBreadcrumbs: (breadcrumbs: BreadcrumbEntry[]) => void;
+  setPageState: (
+    title: string | React.ReactElement,
+    breadcrumbs: BreadcrumbEntry[],
+    backLink?: BackLink | null
+  ) => void;
+  setBackLink: (backLink: BackLink | null) => void;
   setShouldHidePageHeader: (hide: boolean) => void;
   setPathName: (path: string) => void;
   setCurrentTopicName: (topicName: string | undefined) => void;
@@ -68,6 +90,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   // Initial state
   _pageTitle: ' ',
   pageBreadcrumbs: [],
+  backLink: null,
   shouldHidePageHeader: false,
   pathName: '',
   _currentTopicName: undefined,
@@ -132,6 +155,19 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
     set({ pageBreadcrumbs: breadcrumbs });
   },
 
+  setPageState: (title: string | React.ReactElement, breadcrumbs: BreadcrumbEntry[], backLink?: BackLink | null) => {
+    if (typeof title === 'string') {
+      document.title = `${title} - Redpanda Console`;
+    } else {
+      document.title = 'Redpanda Console';
+    }
+    set({ _pageTitle: title, pageBreadcrumbs: breadcrumbs, backLink: backLink ?? null });
+  },
+
+  setBackLink: (backLink: BackLink | null) => {
+    set({ backLink });
+  },
+
   setShouldHidePageHeader: (hide: boolean) => {
     set({ shouldHidePageHeader: hide });
   },
@@ -149,7 +185,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
       if (!uiSettings.perTopicSettings.find((s) => s.topicName === topicName)) {
         const topicSettings = createTopicDetailsSettings(topicName);
         useUISettingsStore.getState().updateSettings({
-          perTopicSettings: [...uiSettings.perTopicSettings, topicSettings],
+          perTopicSettings: boundedAppend(uiSettings.perTopicSettings, topicSettings, MAX_PER_TOPIC_SETTINGS),
         });
       }
     }
@@ -174,6 +210,7 @@ export const uiState = new Proxy(
   {} as {
     pageTitle: string | React.ReactElement;
     pageBreadcrumbs: BreadcrumbEntry[];
+    backLink: BackLink | null;
     shouldHidePageHeader: boolean;
     selectedClusterName: string | null;
     pathName: string;
@@ -232,8 +269,20 @@ export const uiState = new Proxy(
         store.setServerBuildTimestamp(value as number | undefined);
         return true;
       }
+      if (prop === 'backLink') {
+        store.setBackLink(value as BackLink | null);
+        return true;
+      }
 
       return true;
     },
   }
 );
+
+export function setPageHeader(
+  title: string | React.ReactElement,
+  breadcrumbs: BreadcrumbEntry[],
+  backLink?: BackLink | null
+) {
+  useUIStateStore.getState().setPageState(title, breadcrumbs, backLink);
+}

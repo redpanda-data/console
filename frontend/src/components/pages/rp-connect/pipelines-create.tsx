@@ -18,10 +18,11 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
+import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { AlertCircle, PlusIcon } from 'lucide-react';
+import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
+import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -50,7 +52,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     p.addBreadcrumb('Create Pipeline', '');
 
     this.refreshData(true);
-    // get secrets
     rpcnSecretManagerApi.refreshSecrets(true);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
@@ -78,6 +79,9 @@ const RpConnectPipelinesCreateContent = () => {
   const [tasks, setTasks] = useState(MIN_TASKS);
   const [editorContent, setEditorContent] = useState(exampleContent);
   const [isCreating, setIsCreating] = useState(false);
+  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const isEditorPristine = editorContent.trim() === '';
 
   const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
   const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);
@@ -123,21 +127,33 @@ const RpConnectPipelinesCreateContent = () => {
   return (
     <PageContent>
       <div className="my-2">
-        <UIText>
+        <div className="text-body">
           For help creating your pipeline, see our{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             quickstart
           </UILink>
           ,{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             library of examples
           </UILink>
           , and{' '}
-          <UILink href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/" target="_blank">
+          <UILink
+            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             connector catalog
           </UILink>
           .
-        </UIText>
+        </div>
       </div>
 
       <Flex flexDirection="column" gap={3}>
@@ -183,6 +199,36 @@ const RpConnectPipelinesCreateContent = () => {
         </FormField>
       </Flex>
 
+      <AnimatePresence>
+        {isTemplateGalleryEnabled && isEditorPristine ? (
+          <motion.button
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="group mt-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+            data-testid="template-gallery-cta"
+            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            onClick={() => setIsTemplateDialogOpen(true)}
+            transition={{ duration: 0.3, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            type="button"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="flex flex-1 flex-col">
+              <span className="font-semibold text-foreground">Start from a template</span>
+              <span className="text-muted-foreground text-sm">
+                Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
+                directly.
+              </span>
+            </div>
+            <ArrowRight
+              aria-hidden
+              className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+            />
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
       <div className="mt-4">
         <PipelineEditor
           onChange={(x) => {
@@ -198,10 +244,30 @@ const RpConnectPipelinesCreateContent = () => {
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
         </Button>
-        <Link to="/connect-clusters">
+        <Link search={{} as never} to="/connect-clusters">
           <Button variant="link">Cancel</Button>
         </Link>
       </Flex>
+
+      {isTemplateGalleryEnabled ? (
+        <TemplateGalleryDialog
+          onClose={(stashedYaml) => {
+            if (stashedYaml) {
+              setEditorContent(stashedYaml);
+            }
+            setIsTemplateDialogOpen(false);
+          }}
+          onSubmit={({ pipelineName, yaml }) => {
+            setEditorContent(yaml);
+            if (!fileName) {
+              setFileName(pipelineName);
+            }
+            setIsTemplateDialogOpen(false);
+            toast.success('Template applied — review the YAML and click Create to deploy.');
+          }}
+          open={isTemplateDialogOpen}
+        />
+      ) : null}
     </PageContent>
   );
 };
@@ -337,6 +403,15 @@ export const PipelineEditor = (p: {
     };
   }, [secretAutocomplete, contextualVarsAutocomplete]);
 
+  // Monaco reads `defaultValue` only at mount, so external updates (applying a
+  // template, restoring stashed YAML) must be pushed in imperatively. The guard
+  // skips normal typing, where `p.yaml` already equals the editor's content.
+  useEffect(() => {
+    if (editorInstance && editorInstance.getValue() !== p.yaml) {
+      editorInstance.setValue(p.yaml);
+    }
+  }, [editorInstance, p.yaml]);
+
   return (
     <Tabs
       tabs={[
@@ -345,16 +420,15 @@ export const PipelineEditor = (p: {
           title: 'Configuration',
           content: () => (
             <div>
-              {/* yaml editor */}
               <div className="flex min-h-[400px] gap-7">
                 <PipelinesYamlEditor
                   defaultPath="config.yaml"
                   defaultValue={p.yaml}
                   language="yaml"
                   onChange={(e) => {
-                    if (e) {
-                      p.onChange?.(e);
-                    }
+                    // Propagate empty content too — clearing the editor must
+                    // flip `isEditorPristine` so the template CTA can re-appear.
+                    p.onChange?.(e ?? '');
                   }}
                   onMount={async (editorRef, monacoInst) => {
                     setEditorInstance(editorRef);
@@ -385,16 +459,17 @@ export const PipelineEditor = (p: {
                 <Alert variant="destructive">
                   <AlertCircle size={16} />
                   <AlertDescription>
-                    <UIText>
+                    <div className="text-body">
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
                       <UILink
                         href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
+                        rel="noopener noreferrer"
                         target="_blank"
                       >
                         see our quickstart documentation
                       </UILink>
                       .
-                    </UIText>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
@@ -439,12 +514,10 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
   if (value === undefined) {
     return false;
   }
-  // Attempt to parse the input string as JSON
   let json: object;
   try {
     json = JSON.parse(value);
   } catch (_e) {
-    // If parsing fails, it's not a valid JSON and hence not a Kafka Connect config
     return false;
   }
 

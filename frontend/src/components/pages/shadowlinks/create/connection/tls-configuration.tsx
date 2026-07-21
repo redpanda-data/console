@@ -11,14 +11,19 @@
 
 import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 import type { FormValues } from '../model';
 
+const TLS_DOCS_URL =
+  'https://docs.redpanda.com/current/manage/disaster-recovery/shadowing/setup/#network-and-authentication';
+
 export const TlsConfiguration = () => {
   const { control } = useFormContext<FormValues>();
+  const useTls = useWatch({ control, name: 'useTls' });
+
   return (
-    <div className="space-y-4" data-testid="tls-configuration">
+    <div className="space-y-3" data-testid="tls-configuration">
       <FormField
         control={control}
         name="useTls"
@@ -31,6 +36,16 @@ export const TlsConfiguration = () => {
           </FormItem>
         )}
       />
+
+      {useTls && (
+        <div className="text-body text-muted-foreground" data-testid="tls-intro">
+          The connection to the source cluster is encrypted. By default, its certificate is verified using the system
+          trust store. Upload a custom CA below if the source uses a private or self-signed CA.{' '}
+          <a className="text-primary hover:underline" href={TLS_DOCS_URL} rel="noreferrer" target="_blank">
+            Learn about TLS for shadow links
+          </a>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,18 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
+import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { ColumnFiltersState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { parseAsArrayOf, parseAsBoolean, parseAsString, useQueryStates } from 'nuqs';
 import {
   type AttributeFilter,
+  AttributeFilterSchema,
   AttributeOperator,
   type ListTracesRequest_Filter,
+  ListTracesRequest_FilterSchema,
   type TraceSummary,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/tracing_pb';
 import type { FC } from 'react';
@@ -68,15 +69,13 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
   if (isLoading && isInitialLoad) {
     return (
       <div className="flex items-center justify-between px-1">
-        <Text as="span" className="flex items-center gap-2" variant="muted">
+        <span className="flex items-center gap-2 text-body text-muted-foreground">
           <Spinner className="size-3" />
           Loading transcripts...
-        </Text>
+        </span>
         <div className="flex items-center gap-3">
           <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
-            <Text as="span" variant="muted">
-              Collapse all
-            </Text>
+            <span className="text-body text-muted-foreground">Collapse all</span>
           </Button>
         </div>
       </div>
@@ -87,7 +86,7 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
 
   return (
     <div className="flex items-center justify-between px-1">
-      <Text as="span" variant="muted">
+      <span className="text-body text-muted-foreground">
         Showing {stats.total} {pluralize(stats.total, 'transcript')}
         {hasAnomalies ? (
           <span className="text-muted-foreground/70">
@@ -97,12 +96,10 @@ const TranscriptsStatsRow: FC<TranscriptsStatsRowProps> = ({ isLoading, isInitia
             {stats.inProgress > 0 ? `, ${stats.inProgress} in-progress` : null})
           </span>
         ) : null}
-      </Text>
+      </span>
       <div className="flex items-center gap-3">
         <Button className="h-6 px-2" onClick={onCollapseAll} size="sm" variant="ghost">
-          <Text as="span" variant="muted">
-            Collapse all
-          </Text>
+          <span className="text-body text-muted-foreground">Collapse all</span>
         </Button>
       </div>
     </div>
@@ -216,50 +213,49 @@ const buildApiFilter = ({
 
   // LLM filter → attribute filter with IN operator
   if (activePresets.includes('llm')) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: 'gen_ai.operation.name',
-      operator: AttributeOperator.IN,
-      value: '',
-      values: ['chat', 'text_completion'],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: 'gen_ai.operation.name',
+        operator: AttributeOperator.IN,
+        values: ['chat', 'text_completion'],
+      })
+    );
   }
 
   // Tool filter → attribute filter
   if (activePresets.includes('tool')) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: 'gen_ai.operation.name',
-      operator: AttributeOperator.EQUALS,
-      value: 'execute_tool',
-      values: [],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: 'gen_ai.operation.name',
+        operator: AttributeOperator.EQUALS,
+        value: 'execute_tool',
+      })
+    );
   }
 
   // Agent filter → attribute filter
   if (activePresets.includes('agent')) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: 'gen_ai.operation.name',
-      operator: AttributeOperator.EQUALS,
-      value: 'invoke_agent',
-      values: [],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: 'gen_ai.operation.name',
+        operator: AttributeOperator.EQUALS,
+        value: 'invoke_agent',
+      })
+    );
   }
 
   // Add user-defined attribute filters
   for (const f of urlAttrFilters) {
-    attributeFilters.push({
-      $typeName: 'redpanda.api.dataplane.v1alpha3.AttributeFilter',
-      key: f.key,
-      operator: f.op === 'equals' ? AttributeOperator.EQUALS : AttributeOperator.NOT_EQUALS,
-      value: f.value,
-      values: [],
-    });
+    attributeFilters.push(
+      create(AttributeFilterSchema, {
+        key: f.key,
+        operator: f.op === 'equals' ? AttributeOperator.EQUALS : AttributeOperator.NOT_EQUALS,
+        value: f.value,
+      })
+    );
   }
 
-  return {
-    $typeName: 'redpanda.api.dataplane.v1alpha3.ListTracesRequest.Filter',
+  return create(ListTracesRequest_FilterSchema, {
     startTime: startTimestamp,
     endTime: endTimestamp,
     attributeFilters,
@@ -270,7 +266,7 @@ const buildApiFilter = ({
     serviceNames: serviceNames.length > 0 ? serviceNames : [],
     // Span ID filter - not exposed in UI yet, but required by proto
     spanIds: [],
-  };
+  });
 };
 
 type TranscriptListPageProps = {
@@ -766,14 +762,18 @@ export const TranscriptListPage: FC<TranscriptListPageProps> = ({ disableFacetin
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Transcripts</Heading>
-        <Text variant="muted">
+        <h1 className="text-heading-xl">Transcripts</h1>
+        <div className="text-body text-muted-foreground">
           Trace and debug AI requests across your agentic dataplane — view LLM calls, tool invocations, and spans from
           agents, gateways, and services.{' '}
-          <Link href="https://docs.redpanda.com/redpanda-cloud/ai-agents/observability" target="_blank">
+          <Link
+            href="https://docs.redpanda.com/redpanda-cloud/ai-agents/observability"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             Learn more
           </Link>
-        </Text>
+        </div>
       </header>
 
       {/* Toolbar with Span Filters, Time Range, and Controls */}

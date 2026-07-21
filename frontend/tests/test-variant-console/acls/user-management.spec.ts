@@ -1,7 +1,9 @@
 // spec: ACL User Management Tests
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../fixtures';
+
+test.use({ featureFlags: { enableNewSecurityPage: false } });
 
 test.describe('ACL User Management', () => {
   test.beforeEach(async ({ page }) => {
@@ -19,36 +21,34 @@ test.describe('ACL User Management', () => {
   test('should create a new user with special characters in password', async ({ page }) => {
     await test.step('1. Click Create user button to open user creation dialog', async () => {
       await page.getByTestId('create-user-button').click();
-      await expect(page).toHaveURL('/security/users/create');
-      await expect(page.getByRole('heading', { name: 'Create user' })).toBeVisible();
+      await expect(page.getByTestId('create-user-name')).toBeVisible();
     });
 
     const timestamp = Date.now();
     const username = `test-user-e2e-${timestamp}`;
 
     await test.step('2. Fill in username field with timestamp suffix for unique test runs', async () => {
-      const usernameInput = page.getByTestId('create-user-name');
-      await usernameInput.fill(username);
+      await page.getByTestId('create-user-name').fill(username);
     });
 
     await test.step('3. Enable special characters checkbox', async () => {
-      await page.locator('label').filter({ hasText: 'Generate with special' }).click();
-      await expect(page.getByRole('checkbox', { name: 'Generate with special' })).toBeChecked();
+      await page.getByTestId('special-chars-checkbox').click();
+      await expect(page.getByTestId('special-chars-checkbox')).toHaveAttribute('data-state', 'checked');
     });
 
     await test.step('4. Verify Create button is enabled and submit', async () => {
-      const createButton = page.getByRole('button', { name: 'Create' });
+      const createButton = page.getByTestId('create-user-submit');
       await expect(createButton).toBeEnabled();
       await createButton.click();
     });
 
     await test.step('5. Verify success message', async () => {
-      await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
-      await expect(page.getByText(username)).toBeVisible();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
     });
 
-    await test.step('6. Return to users list', async () => {
-      await page.getByRole('button', { name: 'Done' }).click();
+    await test.step('6. Close dialog', async () => {
+      await page.getByTestId('done-button').click();
+      await expect(page.getByTestId('create-user-name')).not.toBeVisible();
       await expect(page).toHaveURL('/security/users');
     });
 
@@ -57,24 +57,52 @@ test.describe('ACL User Management', () => {
     });
   });
 
-  test('should toggle special characters checkbox and regenerate password', async ({ page }) => {
-    await test.step('1. Navigate to create user page', async () => {
+  test('should navigate to user details after user creation via Add permissions button', async ({ page }) => {
+    const timestamp = Date.now();
+    const username = `test-user-acl-${timestamp}`;
+
+    await test.step('1. Create a new user', async () => {
       await page.getByTestId('create-user-button').click();
+      await expect(page.getByTestId('create-user-name')).toBeVisible();
+      await page.getByTestId('create-user-name').fill(username);
+      await page.getByTestId('create-user-submit').click();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
     });
 
-    const passwordInput = page.getByTestId('create-user-password').locator('input').first();
+    await test.step('2. Click Add permissions button', async () => {
+      await page.getByTestId('go-to-user-details-button').click();
+    });
+
+    await test.step('3. Verify URL is the user details page', async () => {
+      await expect(page).toHaveURL(`/security/users/${username}/details`);
+    });
+
+    await test.step('4. Verify user details page is shown', async () => {
+      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
+    });
+
+    await test.step('5. Verify ACLs card is present', async () => {
+      await expect(page.getByRole('heading', { name: /ACLs/ })).toBeVisible();
+    });
+  });
+
+  test('should toggle special characters checkbox and regenerate password', async ({ page }) => {
+    await test.step('1. Open create user dialog', async () => {
+      await page.getByTestId('create-user-button').click();
+      await expect(page.getByTestId('create-user-name')).toBeVisible();
+    });
+
+    const passwordInput = page.getByTestId('create-user-password');
     let initialPassword: string;
     let passwordAfterToggle: string;
 
     await test.step('2. Get initial password value', async () => {
       initialPassword = await passwordInput.inputValue();
-      await page.getByTestId('password-input-toggle').click();
     });
 
     await test.step('3. Toggle special characters checkbox on', async () => {
-      const specialCharsCheckbox = page.locator('label').filter({ hasText: 'Generate with special characters' });
-      await specialCharsCheckbox.click();
-      await expect(page.getByRole('checkbox', { name: 'Generate with special characters' })).toBeChecked();
+      await page.getByTestId('special-chars-checkbox').click();
+      await expect(page.getByTestId('special-chars-checkbox')).toHaveAttribute('data-state', 'checked');
     });
 
     await test.step('4. Verify password changed after checkbox toggle', async () => {
@@ -83,9 +111,8 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('5. Toggle checkbox off', async () => {
-      const specialCharsCheckbox = page.locator('label').filter({ hasText: 'Generate with special characters' });
-      await specialCharsCheckbox.click();
-      await expect(page.getByRole('checkbox', { name: 'Generate with special' })).not.toBeChecked();
+      await page.getByTestId('special-chars-checkbox').click();
+      await expect(page.getByTestId('special-chars-checkbox')).toHaveAttribute('data-state', 'unchecked');
     });
 
     await test.step('6. Verify password changed again', async () => {
@@ -93,8 +120,9 @@ test.describe('ACL User Management', () => {
       expect(finalPassword).not.toBe(passwordAfterToggle);
     });
 
-    await test.step('Cancel and return to list', async () => {
-      await page.getByRole('button', { name: 'Cancel' }).click();
+    await test.step('Cancel and close dialog', async () => {
+      await page.getByTestId('create-user-cancel').click();
+      await expect(page.getByTestId('create-user-name')).not.toBeVisible();
       await expect(page).toHaveURL('/security/users');
     });
   });
@@ -106,9 +134,9 @@ test.describe('ACL User Management', () => {
     await test.step('1. Create a unique test user for filtering', async () => {
       await page.getByTestId('create-user-button').click();
       await page.getByTestId('create-user-name').fill(username);
-      await page.getByRole('button', { name: 'Create' }).click();
-      await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
-      await page.getByRole('button', { name: 'Done' }).click();
+      await page.getByTestId('create-user-submit').click();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+      await page.getByTestId('done-button').click();
       await expect(page).toHaveURL('/security/users');
     });
 
@@ -117,34 +145,30 @@ test.describe('ACL User Management', () => {
       await expect(table).toBeVisible();
     });
 
-    const filterInput = page.getByTestId('search-field-input').getByRole('textbox');
+    const filterInput = page.getByPlaceholder('Filter by name');
 
-    await test.step('3. Get filter input', async () => {
-      await expect(filterInput).toBeVisible();
-    });
-
-    await test.step('4. Filter by test', async () => {
+    await test.step('3. Filter by test', async () => {
       await filterInput.fill('test');
     });
 
-    await test.step('5. Verify URL contains query parameter q=test', async () => {
+    await test.step('4. Verify URL contains query parameter q=test', async () => {
       await expect(page).toHaveURL('/security/users/?q=test');
     });
 
-    await test.step('6. Verify filtered results show only users with test in name', async () => {
+    await test.step('5. Verify filtered results show only users with test in name', async () => {
       await expect(page.getByRole('link', { name: /test-user-.*/ }).first()).toBeVisible();
       await expect(page.getByRole('link', { name: 'e2euser', exact: true })).not.toBeVisible();
     });
 
-    await test.step('7. Clear filter', async () => {
+    await test.step('6. Clear filter', async () => {
       await filterInput.fill('');
     });
 
-    await test.step('8. Verify URL query parameter is removed', async () => {
+    await test.step('7. Verify URL query parameter is removed', async () => {
       await expect(page).toHaveURL('/security/users');
     });
 
-    await test.step('9. Verify e2euser is visible again', async () => {
+    await test.step('8. Verify e2euser is visible again', async () => {
       await expect(page.getByRole('link', { name: 'e2euser' })).toBeVisible();
     });
   });
@@ -156,13 +180,13 @@ test.describe('ACL User Management', () => {
     await test.step('1. Create a unique test user for partial matching', async () => {
       await page.getByTestId('create-user-button').click();
       await page.getByTestId('create-user-name').fill(username);
-      await page.getByRole('button', { name: 'Create' }).click();
-      await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
-      await page.getByRole('button', { name: 'Done' }).click();
+      await page.getByTestId('create-user-submit').click();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+      await page.getByTestId('done-button').click();
       await expect(page).toHaveURL('/security/users');
     });
 
-    const filterInput = page.getByTestId('search-field-input').getByRole('textbox');
+    const filterInput = page.getByPlaceholder('Filter by name');
 
     await test.step('2. Filter by e2e', async () => {
       await filterInput.fill('e2e');
@@ -205,9 +229,9 @@ test.describe('ACL User Management', () => {
     await test.step('1. Create a unique test user for navigation test', async () => {
       await page.getByTestId('create-user-button').click();
       await page.getByTestId('create-user-name').fill(username);
-      await page.getByRole('button', { name: 'Create' }).click();
-      await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
-      await page.getByRole('button', { name: 'Done' }).click();
+      await page.getByTestId('create-user-submit').click();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+      await page.getByTestId('done-button').click();
       await expect(page).toHaveURL('/security/users');
     });
 
@@ -217,11 +241,11 @@ test.describe('ACL User Management', () => {
 
     await test.step('3. Verify user detail page loads', async () => {
       await expect(page).toHaveURL(`/security/users/${username}/details`);
-      await expect(page.getByRole('heading', { name: username, exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
     });
 
     await test.step('4. Verify user information section', async () => {
-      await expect(page.getByRole('heading', { name: 'User information' })).toBeVisible();
+      await expect(page.getByText('User information')).toBeVisible();
       await expect(page.getByText('Username')).toBeVisible();
       await expect(page.getByText(username, { exact: true }).first()).toBeVisible();
       await expect(page.getByText('Passwords cannot be viewed')).toBeVisible();
@@ -238,7 +262,6 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('7. Verify we are back on the users list', async () => {
-      await expect(page.getByRole('heading', { name: 'Access Control' })).toBeVisible();
       await expect(page.getByTestId('create-user-button')).toBeVisible();
     });
   });
@@ -250,9 +273,9 @@ test.describe('ACL User Management', () => {
     await test.step('1. Create a unique test user for details test', async () => {
       await page.getByTestId('create-user-button').click();
       await page.getByTestId('create-user-name').fill(username);
-      await page.getByRole('button', { name: 'Create' }).click();
-      await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
-      await page.getByRole('button', { name: 'Done' }).click();
+      await page.getByTestId('create-user-submit').click();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+      await page.getByTestId('done-button').click();
       await expect(page).toHaveURL('/security/users');
     });
 
@@ -262,7 +285,7 @@ test.describe('ACL User Management', () => {
 
     await test.step('3. Verify URL and heading', async () => {
       await expect(page).toHaveURL(`/security/users/${username}/details`);
-      await expect(page.getByRole('heading', { name: username, exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
     });
 
     await test.step('4. Verify User information section shows correct username', async () => {
@@ -281,8 +304,9 @@ test.describe('ACL User Management', () => {
   });
 
   test('should validate username format requirements', async ({ page }) => {
-    await test.step('1. Navigate to create user page', async () => {
+    await test.step('1. Open create user dialog', async () => {
       await page.getByTestId('create-user-button').click();
+      await expect(page.getByTestId('create-user-name')).toBeVisible();
     });
 
     await test.step('2. Verify username input has help text', async () => {
@@ -292,22 +316,22 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('3. Fill in valid username with allowed characters', async () => {
-      const usernameInput = page.getByTestId('create-user-name');
-      await usernameInput.fill('valid-user.name_123');
+      await page.getByTestId('create-user-name').fill('valid-user.name_123');
     });
 
     await test.step('4. Verify Create button becomes enabled', async () => {
-      await expect(page.getByRole('button', { name: 'Create' })).toBeEnabled();
+      await expect(page.getByTestId('create-user-submit')).toBeEnabled();
     });
 
     await test.step('Cancel and return', async () => {
-      await page.getByRole('button', { name: 'Cancel' }).click();
+      await page.getByTestId('create-user-cancel').click();
     });
   });
 
   test('should display password requirements', async ({ page }) => {
-    await test.step('1. Navigate to create user page', async () => {
+    await test.step('1. Open create user dialog', async () => {
       await page.getByTestId('create-user-button').click();
+      await expect(page.getByTestId('create-user-name')).toBeVisible();
     });
 
     await test.step('2. Verify password requirements are displayed', async () => {
@@ -315,21 +339,21 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('3. Verify password field has auto-generated value', async () => {
-      const passwordInput = page.getByTestId('create-user-password').locator('input').first();
+      const passwordInput = page.getByTestId('create-user-password');
       const passwordValue = await passwordInput.inputValue();
       expect(passwordValue.length).toBeGreaterThan(0);
     });
 
     await test.step('4. Verify refresh button is available', async () => {
-      await expect(page.locator('button[aria-label="Refresh"]')).toBeVisible();
+      await expect(page.getByTestId('refresh-password-button')).toBeVisible();
     });
 
     await test.step('5. Verify copy button is available', async () => {
-      await expect(page.getByRole('button', { name: 'Copy' })).toBeVisible();
+      await expect(page.getByTestId('copy-password-button')).toBeVisible();
     });
 
     await test.step('Cancel and return', async () => {
-      await page.getByRole('button', { name: 'Cancel' }).click();
+      await page.getByTestId('create-user-cancel').click();
     });
   });
 
@@ -340,9 +364,9 @@ test.describe('ACL User Management', () => {
     await test.step('1. Create a unique test user for deletion', async () => {
       await page.getByTestId('create-user-button').click();
       await page.getByTestId('create-user-name').fill(username);
-      await page.getByRole('button', { name: 'Create' }).click();
-      await expect(page.getByRole('heading', { name: 'User created successfully' })).toBeVisible();
-      await page.getByRole('button', { name: 'Done' }).click();
+      await page.getByTestId('create-user-submit').click();
+      await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+      await page.getByTestId('done-button').click();
       await expect(page).toHaveURL('/security/users');
     });
 
@@ -353,7 +377,7 @@ test.describe('ACL User Management', () => {
     await test.step('3. Navigate to user detail page', async () => {
       await page.getByRole('link', { name: username, exact: true }).click();
       await expect(page).toHaveURL(`/security/users/${username}/details`);
-      await expect(page.getByRole('heading', { name: username, exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: `User: ${username}`, exact: true })).toBeVisible();
     });
 
     await test.step('4. Click Delete user button', async () => {
@@ -361,8 +385,7 @@ test.describe('ACL User Management', () => {
     });
 
     await test.step('5. Confirm deletion', async () => {
-      const filterInput = page.getByTestId('txt-confirmation-delete');
-      await filterInput.fill(username);
+      await page.getByTestId('txt-confirmation-delete').fill(username);
       await page.getByRole('button', { name: 'Delete' }).click();
     });
 

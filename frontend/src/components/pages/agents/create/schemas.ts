@@ -49,18 +49,11 @@ export const FormSchema = z
         { message: 'Tags must have unique keys' }
       ),
     triggerType: z.enum(['http', 'slack', 'kafka']).default('http'),
-    gatewayId: z
-      .string()
-      .refine(
-        (val) => !val || (val.length === 20 && /^[a-z0-9]+$/.test(val)),
-        'Gateway ID must be exactly 20 lowercase alphanumeric characters'
-      )
-      .optional()
-      .or(z.literal('')),
-    provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible']).default('openai'),
+    llmProvider: z.string().optional().or(z.literal('')),
+    provider: z.enum(['openai', 'anthropic', 'google', 'openaiCompatible', 'bedrock']).default('openai'),
     apiKeySecret: z.string(),
     model: z.string().min(1, 'Model is required'),
-    baseUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+    baseUrl: z.url('Must be a valid URL').optional().or(z.literal('')),
     maxIterations: z
       .number()
       .min(10, 'Max iterations must be at least 10')
@@ -88,16 +81,15 @@ export const FormSchema = z
   })
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex validation logic with multiple conditional checks
   .superRefine((data, ctx) => {
-    // Note: Gateway validation happens in the UI layer based on availability
-    // If gateways are available, gateway is required (enforced by UI)
-    // If gateways are NOT available, API key is required
+    // If llmProvider is set, API key is not required (managed by AI Gateway)
+    // If llmProvider is NOT set, API key IS required
 
-    const hasGateway = data.gatewayId && data.gatewayId.trim() !== '';
+    const hasLlmProvider = data.llmProvider && data.llmProvider.trim() !== '';
 
-    if (!hasGateway && (!data.apiKeySecret || data.apiKeySecret.trim() === '')) {
-      // No gateway selected: API Key is required
+    if (!hasLlmProvider && (!data.apiKeySecret || data.apiKeySecret.trim() === '')) {
+      // No LLM provider selected: API Key is required
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'API Token is required',
         path: ['apiKeySecret'],
       });
@@ -106,7 +98,7 @@ export const FormSchema = z
     if (data.provider === 'openaiCompatible') {
       if (!data.baseUrl || data.baseUrl.trim() === '') {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           message: 'Base URL is required for OpenAI-compatible provider',
           path: ['baseUrl'],
         });
@@ -115,14 +107,14 @@ export const FormSchema = z
           new URL(data.baseUrl);
           if (!(data.baseUrl.startsWith('http://') || data.baseUrl.startsWith('https://'))) {
             ctx.addIssue({
-              code: z.ZodIssueCode.custom,
+              code: 'custom',
               message: 'Base URL must start with http:// or https://',
               path: ['baseUrl'],
             });
           }
         } catch {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             message: 'Must be a valid URL',
             path: ['baseUrl'],
           });
@@ -130,11 +122,14 @@ export const FormSchema = z
       }
     }
 
-    // API Key is required when not using a gateway
-    if ((!data.gatewayId || data.gatewayId.trim() === '') && (!data.apiKeySecret || data.apiKeySecret.trim() === '')) {
+    // API Key is required when not using an LLM provider
+    if (
+      (!data.llmProvider || data.llmProvider.trim() === '') &&
+      (!data.apiKeySecret || data.apiKeySecret.trim() === '')
+    ) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'API Token is required when not using a gateway',
+        code: 'custom',
+        message: 'API Token is required when not using an LLM provider',
         path: ['apiKeySecret'],
       });
     }
@@ -148,7 +143,7 @@ export const initialValues: FormValues = {
   description: '',
   tags: [],
   triggerType: 'http',
-  gatewayId: '',
+  llmProvider: '',
   provider: 'openai',
   apiKeySecret: '',
   model: '',

@@ -9,27 +9,34 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { Dropzone, DropzoneContent, DropzoneEmptyState } from 'components/redpanda-ui/components/dropzone';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, Trash2, UploadCloud } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { useMemo, useState } from 'react';
-import type { Control, FieldErrors } from 'react-hook-form';
+import { useCallback, useMemo, useState } from 'react';
+import type { FieldErrors } from 'react-hook-form';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
-import { CertificateDialog, type CertificateType } from './certificate-dialog';
-import { Text } from '../../../../redpanda-ui/components/typography';
+import { extractSecretId, toSecretReference } from './secret-reference';
 import type { FormValues } from '../model';
 
-// Regex to extract secret ID from ${secrets.SECRET_NAME} format
-const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+export type CertificateType = 'ca' | 'clientCert' | 'clientKey';
 
-/** Custom text for mTLS client key secret */
+const CERTIFICATE_ACCEPT = {
+  'application/x-pem-file': ['.pem'],
+  'application/x-x509-ca-cert': ['.crt', '.cer'],
+  'application/pkix-cert': ['.crt', '.cer'],
+  'application/x-pkcs12': ['.key'],
+};
+
 const MTLS_CLIENT_KEY_SECRET_TEXT: SecretSelectorCustomText = {
   dialogDescription: 'Create a new secret for your mTLS client private key. The secret will be stored securely.',
   secretNamePlaceholder: 'e.g., MTLS_CLIENT_KEY',
@@ -56,70 +63,100 @@ const CERTIFICATE_TEST_ID_SUFFIXES: Record<CertificateType, string> = {
   clientKey: 'client-key',
 };
 
-type CertificateButtonProps = {
-  certType: CertificateType;
-  cert: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
-  onOpenDialog: (certType: CertificateType) => void;
-  onRemove: (certType: CertificateType) => void;
-};
+type Cert = NonNullable<FormValues['mtls']>['ca'];
 
-function CertificateButton({ certType, cert, onOpenDialog, onRemove }: CertificateButtonProps) {
-  const label = CERTIFICATE_LABELS[certType] ?? 'Certificate';
-  const hasCert = Boolean(cert?.filePath || cert?.pemContent);
+const hasCertValue = (cert: Cert): boolean => Boolean(cert?.filePath || cert?.pemContent);
 
-  if (!hasCert) {
-    return (
-      <Button onClick={() => onOpenDialog(certType)} testId={`add-${certType}-button`} type="button" variant="outline">
-        Add {label}
-      </Button>
-    );
-  }
+// ---------------------------------------------------------------------------
+// Inline cert dropzone (PEM upload — replaces the old modal-based flow).
+// Self-contained: reads/writes form state directly via useFormContext.
+// ---------------------------------------------------------------------------
 
-  const displayValue = cert?.fileName || cert?.filePath || 'Certificate added';
+function CertificateDropzone({ certType }: { certType: CertificateType }) {
+  const { control, setValue } = useFormContext<FormValues>();
+  const cert = useWatch({ control, name: `mtls.${certType}` });
+  const label = CERTIFICATE_LABELS[certType];
+  const hasCert = hasCertValue(cert);
+  const fileName = cert?.fileName ?? cert?.filePath;
+
+  // Dropzone uses src to decide between empty/filled rendering. Build a placeholder
+  // File object purely so DropzoneContent renders — the real PEM bytes live in form state.
+  const src = useMemo(() => (fileName ? [new File([], fileName)] : undefined), [fileName]);
+
+  const handleDrop = useCallback(
+    (files: File[]) => {
+      const file = files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = (event.target?.result as string | undefined) ?? '';
+        setValue(`mtls.${certType}`, { pemContent: content, fileName: file.name });
+      };
+      reader.readAsText(file);
+    },
+    [certType, setValue]
+  );
+
+  const handleRemove = useCallback(() => {
+    setValue(`mtls.${certType}`, undefined);
+  }, [certType, setValue]);
 
   return (
-    <div className="flex items-center justify-between rounded-md bg-muted px-4 py-3" data-testid={`${certType}-status`}>
-      <div className="flex flex-col gap-0.5">
-        <span className="text-muted-foreground text-xs">{label}</span>
-        <span className="font-medium text-sm">{displayValue}</span>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline gap-1.5">
+        <span className="font-medium text-sm">{label}</span>
+        <span className="text-muted-foreground text-xs">· optional</span>
       </div>
-      <div className="flex gap-2">
-        <Button
-          onClick={() => onOpenDialog(certType)}
-          size="sm"
-          testId={`edit-${certType}-button`}
-          type="button"
-          variant="ghost"
+      <div className="relative">
+        <Dropzone
+          accept={CERTIFICATE_ACCEPT}
+          className={cn('justify-start! h-auto! flex-row! gap-2.5! p-2! text-sm', hasCert && 'bg-primary/5!')}
+          maxFiles={1}
+          onDrop={handleDrop}
+          src={src}
+          testId={hasCert ? `${certType}-status` : `add-${certType}-button`}
         >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Button>
-        <Button
-          className="text-destructive hover:text-destructive"
-          onClick={() => onRemove(certType)}
-          size="sm"
-          testId={`remove-${certType}-button`}
-          type="button"
-          variant="ghost"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete
-        </Button>
+          <DropzoneEmptyState className="items-center! justify-start! my-0! w-full! flex-row! gap-2! text-muted-foreground">
+            <UploadCloud className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Upload file</span>
+          </DropzoneEmptyState>
+          <DropzoneContent>
+            <div className="flex w-full items-center gap-2">
+              <Check className="h-4 w-4 shrink-0 text-success" />
+              <span className="flex-1 truncate text-left font-medium text-foreground">{fileName}</span>
+            </div>
+          </DropzoneContent>
+        </Dropzone>
+        {hasCert && (
+          <button
+            aria-label={`Remove ${label}`}
+            className="absolute top-1/2 right-2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            data-testid={`remove-${certType}-button`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemove();
+            }}
+            type="button"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-type CertificateInputFieldProps = {
-  certType: CertificateType;
-  control: Control<FormValues>;
-  cert: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
-};
+// ---------------------------------------------------------------------------
+// File-path input (alternative cert input mode for non-embedded users).
+// ---------------------------------------------------------------------------
 
-function CertificateInputField({ certType, control, cert }: CertificateInputFieldProps) {
-  const label = CERTIFICATE_LABELS[certType] ?? 'Certificate';
-  const placeholder = CERTIFICATE_PLACEHOLDERS[certType] ?? '/path/to/certificate';
-  const testIdSuffix = CERTIFICATE_TEST_ID_SUFFIXES[certType] ?? 'client-key';
+function CertificateInputField({ certType }: { certType: CertificateType }) {
+  const { control } = useFormContext<FormValues>();
+  const label = CERTIFICATE_LABELS[certType];
+  const placeholder = CERTIFICATE_PLACEHOLDERS[certType];
+  const testIdSuffix = CERTIFICATE_TEST_ID_SUFFIXES[certType];
 
   return (
     <FormField
@@ -127,9 +164,13 @@ function CertificateInputField({ certType, control, cert }: CertificateInputFiel
       name={`mtls.${certType}`}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label} path</FormLabel>
+          <FormLabel className="flex items-baseline gap-1.5">
+            <span className="font-medium text-sm">{label} path</span>
+            <span className="text-muted-foreground text-xs">· optional</span>
+          </FormLabel>
           <FormControl>
             <Input
+              className="placeholder:!text-muted-foreground/50"
               onChange={(e) => {
                 const value = e.target.value.trim();
                 field.onChange(value ? { filePath: value } : undefined);
@@ -137,7 +178,7 @@ function CertificateInputField({ certType, control, cert }: CertificateInputFiel
               placeholder={placeholder}
               testId={`mtls-${testIdSuffix}-path-input`}
               type="text"
-              value={cert?.filePath || ''}
+              value={field.value?.filePath || ''}
             />
           </FormControl>
           <FormMessage />
@@ -147,87 +188,153 @@ function CertificateInputField({ certType, control, cert }: CertificateInputFiel
   );
 }
 
-type MtlsCertificatesUploadProps = {
-  control: Control<FormValues>;
-  errors: FieldErrors<FormValues>;
-  certs: {
-    ca: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
-    clientCert: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
-    clientKey: { filePath?: string; pemContent?: string; fileName?: string } | undefined;
-  };
-  onOpenDialog: (certType: CertificateType) => void;
-  onRemove: (certType: CertificateType) => void;
-  hideClientKey?: boolean;
+// ---------------------------------------------------------------------------
+// Embedded-mode client-key picker (lives in Cloud Secrets, not as a file).
+// ---------------------------------------------------------------------------
+
+function ClientKeySecretField() {
+  const { control } = useFormContext<FormValues>();
+
+  const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
+  const availableSecrets = useMemo(() => {
+    if (!secretsData?.secrets) {
+      return [];
+    }
+    return secretsData.secrets
+      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => Boolean(secret?.id))
+      .map((secret) => ({ id: secret.id, name: secret.id }));
+  }, [secretsData]);
+
+  return (
+    <FormField
+      control={control}
+      name="mtls.clientKey"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Client private key secret</FormLabel>
+          <FormControl>
+            <SecretSelector
+              availableSecrets={availableSecrets}
+              customText={MTLS_CLIENT_KEY_SECRET_TEXT}
+              onChange={(secretId) => {
+                field.onChange(secretId ? { pemContent: toSecretReference(secretId) } : undefined);
+              }}
+              placeholder="Select or create client key secret"
+              scopes={[Scope.REDPANDA_CLUSTER]}
+              value={extractSecretId(field.value?.pemContent)}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Disclosure row (used twice: CA and mTLS).
+// ---------------------------------------------------------------------------
+
+type DisclosureRowProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  label: string;
+  description: string;
+  configured: boolean;
+  testId: string;
+  triggerTestId: string;
+  children: React.ReactNode;
 };
 
-const MtlsCertificatesUpload = ({
-  control,
-  errors,
-  certs,
-  onOpenDialog,
-  onRemove,
-  hideClientKey,
-}: MtlsCertificatesUploadProps) => (
-  <div className="flex flex-col gap-4">
-    <div className="flex flex-col gap-4">
-      <FormField
-        control={control}
-        name="mtls.ca"
-        render={() => (
-          <FormItem className="w-1/2">
-            <CertificateButton cert={certs.ca} certType="ca" onOpenDialog={onOpenDialog} onRemove={onRemove} />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="mtls.clientCert"
-        render={() => (
-          <FormItem className="w-1/2">
-            <CertificateButton
-              cert={certs.clientCert}
-              certType="clientCert"
-              onOpenDialog={onOpenDialog}
-              onRemove={onRemove}
+function DisclosureRow({
+  open,
+  onOpenChange,
+  label,
+  description,
+  configured,
+  testId,
+  triggerTestId,
+  children,
+}: DisclosureRowProps) {
+  return (
+    <Collapsible onOpenChange={onOpenChange} open={open} testId={testId}>
+      <CollapsibleTrigger
+        render={
+          <button
+            className="-mx-2 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-muted/50"
+            data-testid={triggerTestId}
+            type="button"
+          >
+            <ChevronRight
+              className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
             />
-          </FormItem>
-        )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">{label}</span>
+                {configured && !open && (
+                  <Badge size="sm" variant="success-inverted">
+                    Configured
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>
+            </div>
+          </button>
+        }
       />
+      <CollapsibleContent className="mt-2 ml-6 rounded-md border bg-muted/30 p-4">{children}</CollapsibleContent>
+    </Collapsible>
+  );
+}
 
-      {!hideClientKey && (
-        <FormField
-          control={control}
-          name="mtls.clientKey"
-          render={() => (
-            <FormItem className="w-1/2">
-              <CertificateButton
-                cert={certs.clientKey}
-                certType="clientKey"
-                onOpenDialog={onOpenDialog}
-                onRemove={onRemove}
-              />
-            </FormItem>
-          )}
-        />
-      )}
+// ---------------------------------------------------------------------------
+// Sub-fields per disclosure
+// ---------------------------------------------------------------------------
+
+function CaCertField({ useFilePath }: { useFilePath: boolean }) {
+  return useFilePath ? <CertificateInputField certType="ca" /> : <CertificateDropzone certType="ca" />;
+}
+
+function MtlsCertFields({ useFilePath, embedded }: { useFilePath: boolean; embedded: boolean }) {
+  if (useFilePath) {
+    return (
+      <>
+        <CertificateInputField certType="clientKey" />
+        <CertificateInputField certType="clientCert" />
+      </>
+    );
+  }
+  return (
+    <>
+      {embedded ? <ClientKeySecretField /> : <CertificateDropzone certType="clientKey" />}
+      <CertificateDropzone certType="clientCert" />
+    </>
+  );
+}
+
+function MtlsErrors({ errors }: { errors: FieldErrors<FormValues> }) {
+  const messages = (['ca', 'clientCert', 'clientKey'] as const)
+    .map((key) => errors.mtls?.[key]?.message)
+    .filter((msg): msg is string => Boolean(msg));
+
+  if (messages.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-1" data-testid="mtls-certificates-errors">
+      {messages.map((msg) => (
+        <div className="text-body text-destructive" key={msg}>
+          {msg}
+        </div>
+      ))}
     </div>
+  );
+}
 
-    {Boolean(errors.mtls?.ca || errors.mtls?.clientCert || errors.mtls?.clientKey) && (
-      <div className="flex flex-col gap-1" data-testid="mtls-certificates-errors">
-        {Boolean(errors.mtls?.ca?.message) && (
-          <Text className="text-destructive text-sm">{String(errors.mtls?.ca?.message)}</Text>
-        )}
-        {Boolean(errors.mtls?.clientCert?.message) && (
-          <Text className="text-destructive text-sm">{String(errors.mtls?.clientCert?.message)}</Text>
-        )}
-        {Boolean(errors.mtls?.clientKey?.message) && (
-          <Text className="text-destructive text-sm">{String(errors.mtls?.clientKey?.message)}</Text>
-        )}
-      </div>
-    )}
-  </div>
-);
+// ---------------------------------------------------------------------------
+// Top-level component
+// ---------------------------------------------------------------------------
 
 export const MtlsConfiguration = () => {
   const { control, setValue } = useFormContext<FormValues>();
@@ -236,153 +343,87 @@ export const MtlsConfiguration = () => {
   const mtlsMode = useWatch({ control, name: 'mtlsMode' });
   const mtls = useWatch({ control, name: 'mtls' });
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentCertType, setCurrentCertType] = useState<CertificateType>('ca');
+  const hasCa = hasCertValue(mtls?.ca);
+  const hasClientCert = hasCertValue(mtls?.clientCert);
+  const hasClientKey = hasCertValue(mtls?.clientKey);
 
-  // Fetch secrets for SecretSelector (embedded mode only)
-  const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
-  const availableSecrets = useMemo(() => {
-    if (!secretsData?.secrets) {
-      return [];
-    }
-    return secretsData.secrets
-      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => !!secret?.id)
-      .map((secret) => ({
-        id: secret.id,
-        name: secret.id,
-      }));
-  }, [secretsData]);
+  // Snapshot form state at mount for initial open state. Once mounted, the user
+  // controls open/close — values arriving later won't re-open the row.
+  const [caOpen, setCaOpen] = useState(hasCa);
+  const [mtlsOpen, setMtlsOpen] = useState(hasClientCert || hasClientKey);
 
-  // Helper to extract secret ID from ${secrets.SECRET_NAME} format
-  const extractSecretId = (pemContent: string | undefined): string => {
-    if (!pemContent) {
-      return '';
-    }
-    const match = pemContent.match(SECRET_REFERENCE_REGEX);
-    return match?.[1] || '';
-  };
-
-  // Don't render if TLS is disabled
   if (!useTls) {
     return null;
   }
 
-  const handleOpenDialog = (certType: CertificateType) => {
-    setCurrentCertType(certType);
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveCertificate = (value: { filePath?: string; pemContent?: string; fileName?: string }) => {
-    setValue(`mtls.${currentCertType}`, value);
-  };
-
-  const handleRemoveCertificate = (certType: CertificateType) => {
-    setValue(`mtls.${certType}`, undefined);
-  };
-
-  const getCertificateValue = (certType: CertificateType) => mtls?.[certType];
-
-  const certs = {
-    ca: getCertificateValue('ca'),
-    clientCert: getCertificateValue('clientCert'),
-    clientKey: getCertificateValue('clientKey'),
-  };
+  const useFilePathInputs = !isEmbedded() && mtlsMode === 'file_path';
+  const showModePicker = !isEmbedded() && (caOpen || mtlsOpen);
 
   return (
-    <>
-      <div className="flex flex-col gap-4" data-testid="mtls-certificates-form">
-        <Text variant="muted">
-          Configure certificates for mutual TLS authentication. Upload embeds certificate content in the configuration,
-          while file path references certificates already on the broker. Providing certificates enables mTLS; leaving
-          them empty uses server-side TLS only.
-        </Text>
+    <div className="flex flex-col gap-3" data-testid="mtls-certificates-form">
+      {showModePicker && (
+        <FormField
+          control={control}
+          name="mtlsMode"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Certificate input method</FormLabel>
+              <FormControl>
+                <Tabs
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    // Switching modes invalidates any partially-entered cert values
+                    // because file_path and pem use different storage shapes.
+                    setValue('mtls.ca', undefined);
+                    setValue('mtls.clientCert', undefined);
+                    setValue('mtls.clientKey', undefined);
+                  }}
+                  value={field.value}
+                >
+                  <TabsList>
+                    <TabsTrigger data-testid="mtls-mode-upload-tab" value="pem">
+                      Upload
+                    </TabsTrigger>
+                    <TabsTrigger data-testid="mtls-mode-file-path-tab" value="file_path">
+                      File path
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      )}
 
-        {!isEmbedded() && (
-          <FormField
-            control={control}
-            name="mtlsMode"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Certificate input method</FormLabel>
-                <FormControl>
-                  <Tabs
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Clear all certificates when mode changes
-                      setValue('mtls.ca', undefined);
-                      setValue('mtls.clientCert', undefined);
-                      setValue('mtls.clientKey', undefined);
-                    }}
-                    value={field.value}
-                  >
-                    <TabsList>
-                      <TabsTrigger data-testid="mtls-mode-upload-tab" value="pem">
-                        Upload
-                      </TabsTrigger>
-                      <TabsTrigger data-testid="mtls-mode-file-path-tab" value="file_path">
-                        File path
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        )}
+      <DisclosureRow
+        configured={hasCa}
+        description="For self-signed certificates or a private CA on the source cluster."
+        label="Use a custom CA certificate"
+        onOpenChange={setCaOpen}
+        open={caOpen}
+        testId="tls-ca-disclosure"
+        triggerTestId="tls-ca-disclosure-trigger"
+      >
+        <CaCertField useFilePath={useFilePathInputs} />
+      </DisclosureRow>
 
-        {!isEmbedded() && mtlsMode === 'file_path' ? (
-          <div className="flex flex-col gap-4">
-            <CertificateInputField cert={certs.ca} certType="ca" control={control} />
-            <CertificateInputField cert={certs.clientCert} certType="clientCert" control={control} />
-            <CertificateInputField cert={certs.clientKey} certType="clientKey" control={control} />
+      <DisclosureRow
+        configured={hasClientCert && hasClientKey}
+        description="Authenticate the shadow cluster to the source cluster with a client certificate."
+        label="Use mutual TLS (mTLS)"
+        onOpenChange={setMtlsOpen}
+        open={mtlsOpen}
+        testId="tls-mtls-disclosure"
+        triggerTestId="tls-mtls-disclosure-trigger"
+      >
+        <div className="flex flex-col gap-4">
+          <MtlsCertFields embedded={isEmbedded()} useFilePath={useFilePathInputs} />
+          <div className="text-body-sm text-muted-foreground" data-testid="tls-mtls-pair-hint">
+            Client certificate and private key must be provided together.
           </div>
-        ) : (
-          <>
-            <MtlsCertificatesUpload
-              certs={certs}
-              control={control}
-              errors={errors}
-              hideClientKey={isEmbedded()}
-              onOpenDialog={handleOpenDialog}
-              onRemove={handleRemoveCertificate}
-            />
-            {isEmbedded() && (
-              <FormField
-                control={control}
-                name="mtls.clientKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Client private key secret</FormLabel>
-                    <FormControl>
-                      <SecretSelector
-                        availableSecrets={availableSecrets}
-                        customText={MTLS_CLIENT_KEY_SECRET_TEXT}
-                        onChange={(secretId) => {
-                          // Store the complete secret reference structure: ${secrets.<NAME>}
-                          field.onChange(secretId ? { pemContent: `\${secrets.${secretId}}` } : undefined);
-                        }}
-                        placeholder="Select or create client key secret"
-                        scopes={[Scope.REDPANDA_CLUSTER]}
-                        value={extractSecretId(mtls?.clientKey?.pemContent)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </>
-        )}
-      </div>
-
-      <CertificateDialog
-        certificateType={currentCertType}
-        existingValue={getCertificateValue(currentCertType)}
-        isOpen={isDialogOpen}
-        mode={mtlsMode}
-        onOpenChange={setIsDialogOpen}
-        onSave={handleSaveCertificate}
-      />
-    </>
+          <MtlsErrors errors={errors} />
+        </div>
+      </DisclosureRow>
+    </div>
   );
 };

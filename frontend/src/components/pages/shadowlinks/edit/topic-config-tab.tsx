@@ -23,7 +23,7 @@ import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from 'components/redpanda-ui/components/item';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -121,18 +121,20 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
         {tooltipMessage ? (
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Switch
-                    checked={isSelected}
-                    data-testid={`switch-${property.name}`}
-                    disabled={!isEditable}
-                    onCheckedChange={(checked) => onToggle(property.name, checked)}
-                  />
-                </div>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <div>
+                    <Switch
+                      checked={isSelected}
+                      data-testid={`switch-${property.name}`}
+                      disabled={!isEditable}
+                      onCheckedChange={(checked) => onToggle(property.name, checked)}
+                    />
+                  </div>
+                }
+              />
               <TooltipContent>
-                <Text>{tooltipMessage}</Text>
+                <div className="text-body">{tooltipMessage}</div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -263,17 +265,19 @@ export const TopicConfigTab = () => {
         <CardHeader>
           <div className="space-y-2">
             <CardTitle>Topic properties shadowed</CardTitle>
-            <Text variant="muted">
+            <div className="text-body text-muted-foreground">
               Toggle replication on and off for specific topic configurations. When enabled, the configuration will be
               replicated to the shadow cluster.
-            </Text>
+            </div>
           </div>
           <CardAction>
-            <CollapsibleTrigger asChild>
-              <Button className="w-fit p-0" data-testid="topic-config-toggle-button" size="sm" variant="ghost">
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
+            <CollapsibleTrigger
+              render={
+                <Button className="w-fit p-0" data-testid="topic-config-toggle-button" size="sm" variant="ghost">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </Button>
+              }
+            />
           </CardAction>
         </CardHeader>
 
@@ -284,16 +288,16 @@ export const TopicConfigTab = () => {
           {/* Summary view when collapsed */}
           {!isOpen && (
             <div className="space-y-2">
-              <Text variant="small">
+              <div className="text-body-sm">
                 {topicProperties.length} {topicProperties.length === 1 ? 'property' : 'properties'} selected for
                 replication
-              </Text>
+              </div>
             </div>
           )}
 
           {/* Full editable view when expanded */}
           <CollapsibleContent>
-            <Accordion className="space-y-2" defaultValue={CATEGORY_ORDER} type="multiple">
+            <Accordion className="space-y-2" defaultValue={CATEGORY_ORDER} multiple>
               {CATEGORY_ORDER.map((category) => {
                 const properties = propertiesByCategory.get(category);
                 if (!properties || properties.length === 0) {

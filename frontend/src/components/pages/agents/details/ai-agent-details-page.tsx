@@ -9,14 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/agents/$id/');
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { AlertCircle, FileText, Loader2, Network, Search, Settings } from 'lucide-react';
+import { isFeatureFlagEnabled } from 'config';
+import { AlertCircle, FileText, Loader2, Network, Plug, Search, Settings } from 'lucide-react';
 import { useEffect } from 'react';
 import { useGetAIAgentQuery } from 'react-query/api/ai-agent';
 import { uiState } from 'state/ui-state';
@@ -25,6 +24,7 @@ import { AIAgentCardTab } from './ai-agent-card-tab';
 import { AIAgentConfigurationTab } from './ai-agent-configuration-tab';
 import { AIAgentDetailsHeader } from './ai-agent-details-header';
 import { AIAgentInspectorTab } from './ai-agent-inspector-tab';
+import { AIAgentIntegrationsTab } from './ai-agent-integrations-tab';
 import { AIAgentTranscriptsTab } from './ai-agent-transcripts-tab';
 
 export const updatePageTitle = (agentName?: string) => {
@@ -69,7 +69,7 @@ export const AIAgentDetailsPage = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="flex items-center gap-2 text-red-600">
+        <div className="flex items-center gap-2 text-error">
           <AlertCircle className="h-4 w-4" />
           Error loading AI agent: {error.message}
         </div>
@@ -80,6 +80,8 @@ export const AIAgentDetailsPage = () => {
   if (!aiAgentData?.aiAgent) {
     return null;
   }
+
+  const showTeamsBridge = isFeatureFlagEnabled('enableTeamsBridge');
 
   return (
     <div className="flex flex-col gap-4 pb-1">
@@ -93,6 +95,14 @@ export const AIAgentDetailsPage = () => {
               Configuration
             </div>
           </TabsTrigger>
+          {showTeamsBridge && (
+            <TabsTrigger className="gap-2" value="integrations">
+              <div className="flex items-center gap-2">
+                <Plug className="h-4 w-4" />
+                Integrations
+              </div>
+            </TabsTrigger>
+          )}
           <TabsTrigger className="gap-2" value="agent-card">
             <div className="flex items-center gap-2">
               <Network className="h-4 w-4" />
@@ -114,6 +124,11 @@ export const AIAgentDetailsPage = () => {
         <TabsContent value="configuration">
           <AIAgentConfigurationTab />
         </TabsContent>
+        {showTeamsBridge && (
+          <TabsContent value="integrations">
+            <AIAgentIntegrationsTab />
+          </TabsContent>
+        )}
         <TabsContent value="agent-card">
           <AIAgentCardTab />
         </TabsContent>

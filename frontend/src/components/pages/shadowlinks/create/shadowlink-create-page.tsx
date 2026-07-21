@@ -16,18 +16,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import {
   ACLFilterSchema,
-  AuthenticationConfigurationSchema,
   ConsumerOffsetSyncOptionsSchema,
   CreateShadowLinkRequestSchema,
   FilterType,
   NameFilterSchema,
   PatternType,
-  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
-  SchemaRegistrySyncOptionsSchema,
-  ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
@@ -43,6 +38,7 @@ import { uiState } from 'state/ui-state';
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
 import { FormSchema, type FormValues, initialValues } from './model';
+import { buildSchemaRegistrySyncOptions } from './schema-registry-request';
 import { isEmbedded } from '../../../../config';
 import {
   ACLOperation,
@@ -52,7 +48,7 @@ import {
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { getBasePath } from '../../../../utils/env';
-import { buildTLSSettings } from '../edit/shadowlink-edit-utils';
+import { buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -91,18 +87,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
           tlsSettings,
         })
       : undefined,
-    authenticationConfiguration: values.useScram
-      ? create(AuthenticationConfigurationSchema, {
-          authentication: {
-            case: 'scramConfiguration',
-            value: create(ScramConfigSchema, {
-              username: values.scramCredentials?.username,
-              password: values.scramCredentials?.password,
-              scramMechanism: values.scramCredentials?.mechanism,
-            }),
-          },
-        })
-      : undefined,
+    authenticationConfiguration: buildAuthenticationConfiguration(values),
     metadataMaxAgeMs: values.advanceClientOptions.metadataMaxAgeMs,
     connectionTimeoutMs: values.advanceClientOptions.connectionTimeoutMs,
     retryBackoffMs: values.advanceClientOptions.retryBackoffMs,
@@ -186,15 +171,9 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
         ),
   });
 
-  // Build schema registry sync options (only set if enabled)
-  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
-    ? create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: {
-          case: 'shadowSchemaRegistryTopic',
-          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
-        },
-      })
-    : undefined;
+  // Build schema registry sync options (api mode via the redesigned section,
+  // topic mode via the legacy switch, otherwise unset)
+  const schemaRegistrySyncOptions = buildSchemaRegistrySyncOptions(values);
 
   // Build configurations
   const configurations = create(ShadowLinkConfigurationsSchema, {
@@ -229,7 +208,7 @@ export const ShadowLinkCreatePage = () => {
 
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
-      toast.success('Shadow link created successfully');
+      toast.success('Shadow link created');
       navigate({ to: '/shadowlinks' });
     },
     onError: (error) => {
@@ -265,13 +244,9 @@ export const ShadowLinkCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="space-y-2">
-        <Heading level={1}>Create shadow link</Heading>
-        <Text variant="muted">
-          Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
-          preserved offsets and timestamps. Select the replicated content for this shadow link.
-        </Text>
+      <div className="text-body text-muted-foreground" data-testid="shadowLink-create-page-description">
+        Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
+        preserved offsets and timestamps. Select the replicated content for this shadow link.
       </div>
 
       <Stepper.Provider className="flex flex-col space-y-4" variant="horizontal">

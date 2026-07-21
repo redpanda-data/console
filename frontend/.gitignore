@@ -40,6 +40,8 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+coverage-integration
+coverage-merged
 *.lcov
 html
 
@@ -103,6 +105,9 @@ web_modules/
 .cache
 .parcel-cache
 
+# TanStack Router generated temp cache
+.tanstack/
+
 # Next.js build output
 .next
 out
@@ -160,3 +165,4 @@ dist
 .gemini/settings.json
 
 tests/**/playwright-report/
+tests/**/*.js

@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import {
   Box,
   Button,
@@ -44,7 +42,7 @@ import {
   useDisclosure,
   useToast,
 } from '@redpanda-data/ui';
-import React, { Component, type FC, useRef, useState } from 'react';
+import React, { Component, type FC, type JSX, useRef, useState } from 'react';
 
 import { BandwidthSlider } from './bandwidth-slider';
 import queryClient from '../../../../query-client';
@@ -212,7 +210,7 @@ export const ThrottleDialog: FC<{
   const [newThrottleValue, setNewThrottleValue] = useState<number | null>(lastKnownMinThrottle ?? null);
 
   const toastFn = useToast();
-  const toastRef = useRef<ToastId>();
+  const toastRef = useRef<ToastId>(undefined);
 
   const throttleValue = newThrottleValue ?? 0;
   const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;
@@ -341,9 +339,11 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
         <PopoverBody>Are you sure you want to stop the reassignment?</PopoverBody>
         <PopoverFooter display="flex" justifyContent="flex-end">
           <ButtonGroup size="sm">
-            <Button variant="ghost">No</Button>
+            <Button onClick={onClose} variant="ghost">
+              Keep running
+            </Button>
             <Button onClick={onConfirm} variant="solid">
-              Yes
+              Stop reassignment
             </Button>
           </ButtonGroup>
         </PopoverFooter>

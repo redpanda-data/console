@@ -1,14 +1,11 @@
-'use no memo';
-
 import { TransportProvider } from '@connectrpc/connect-query';
 import { Markdown } from '@redpanda-data/ui';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import PageContent from 'components/misc/page-content';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { config } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
@@ -102,7 +99,7 @@ const HowToConnectComponent = ({ topicName, username, saslMechanism }: HowToConn
     <Card size="full">
       <CardHeader className="mb-2">
         <CardTitle>
-          <Heading level={2}>Connect to your cluster</Heading>
+          <h2 className="text-heading-lg">Connect to your cluster</h2>
         </CardTitle>
         <CardDescription>
           Follow the instructions below to connect to your cluster using the {capitalizeFirst(connectionName ?? '')}{' '}
@@ -127,6 +124,7 @@ const HowToConnectStep = ({ topicName, username, saslMechanism }: HowToConnectPr
 
 export const APIConnectWizard = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const { reset: resetApiWizardStore } = useAPIWizardStore();
   const [topicName, setTopicName] = useState<string | undefined>(undefined);
   const [username, setUsername] = useState<string | undefined>(undefined);
@@ -171,9 +169,8 @@ export const APIConnectWizard = () => {
 
   const handleCancel = useCallback(() => {
     resetApiWizardStore();
-    navigate({ to: '/overview' });
-    window.location.reload(); // Required because we want to load Cloud UI's overview, not Console UI.
-  }, [navigate, resetApiWizardStore]);
+    router.history.back();
+  }, [router, resetApiWizardStore]);
 
   useEffect(() => {
     uiState.pageTitle = 'Connect to your cluster';
@@ -214,7 +211,7 @@ export const APIConnectWizard = () => {
                       of={step.id}
                       onClick={() => {
                         if (step.id === APIWizardStep.ADD_DATA) {
-                          window.location.href = '/get-started?type=input'; // Required because we want to load Cloud UI's get-started page.
+                          router.history.back();
                         } else {
                           methods.goTo(step.id);
                         }
@@ -242,7 +239,7 @@ export const APIConnectWizard = () => {
                     onClick={
                       methods.current.id === APIWizardStep.ADD_TOPIC
                         ? () => {
-                            window.location.href = '/get-started?type=input';
+                            router.history.back();
                           }
                         : methods.prev
                     }

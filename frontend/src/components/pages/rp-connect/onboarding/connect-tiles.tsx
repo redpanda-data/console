@@ -13,12 +13,11 @@ import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui
 import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import type { FiltersState } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Search } from 'lucide-react';
-import type { MotionProps } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -174,10 +173,11 @@ export type ConnectTilesProps = {
   tileWrapperClassName?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
+  searchPlaceholder?: string;
 };
 
 export const ConnectTiles = memo(
-  forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps & MotionProps>(
+  forwardRef<BaseStepRef<ConnectTilesListFormData>, ConnectTilesProps>(
     (
       {
         components,
@@ -197,7 +197,7 @@ export const ConnectTiles = memo(
         tileWrapperClassName,
         title,
         description,
-        ...motionProps
+        searchPlaceholder,
       },
       ref
     ) => {
@@ -270,7 +270,6 @@ export const ConnectTiles = memo(
         [categories, typeOptions]
       );
 
-      // Pre-select type filter when componentTypeFilter is provided
       const defaultFilterValue = useMemo<FiltersState>(() => {
         if (!componentTypeFilter?.length) {
           return [];
@@ -307,7 +306,6 @@ export const ConnectTiles = memo(
         });
       }, [checkScrollable]);
 
-      // Notify parent when validity changes
       useEffect(() => {
         onValidityChange?.(form.formState.isValid);
       }, [form.formState.isValid, onValidityChange]);
@@ -319,13 +317,13 @@ export const ConnectTiles = memo(
             const values = form.getValues();
             return {
               success: true,
-              message: 'Connector selected successfully',
+              message: 'Connector selected',
               data: values,
             };
           }
           return {
             success: false,
-            message: 'Please fix the form errors before proceeding',
+            message: 'Fix the form errors before proceeding',
             error: 'Form validation failed',
           };
         },
@@ -333,23 +331,27 @@ export const ConnectTiles = memo(
       }));
 
       return (
-        <Card className={cn(className, 'relative')} size={size} variant={variant} {...motionProps} animated>
+        <Card className={cn(className, 'relative')} size={size} variant={variant}>
           {!hideHeader && (
             <CardHeader className="bg-background">
               <CardTitle>
-                <Heading level={2}>{title ?? 'Select a connector'}</Heading>
+                <h2 className="text-heading-lg">{title ?? 'Select a connector'}</h2>
               </CardTitle>
               <CardDescription className="mt-4">
                 {description ?? (
-                  <Text>
+                  <div className="text-body">
                     Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines
                     that drive real-time analytics and actionable business insights. Integrate data across systems with
                     hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
                     pipelines.{' '}
-                    <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+                    <Link
+                      href="https://docs.redpanda.com/redpanda-connect/home/"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
                       Learn more
                     </Link>
-                  </Text>
+                  </div>
                 )}
               </CardDescription>
             </CardHeader>
@@ -361,7 +363,7 @@ export const ConnectTiles = memo(
                   <Input
                     containerClassName="w-[200px] shrink-0"
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search connectors..."
+                    placeholder={searchPlaceholder ?? 'Search connectors...'}
                     value={searchQuery}
                   >
                     <InputStart>
@@ -374,7 +376,7 @@ export const ConnectTiles = memo(
 
               <div className="relative">
                 <div
-                  className={cn('max-h-[50vh] min-h-[400px] overflow-y-auto py-4', tileWrapperClassName)}
+                  className={cn('max-h-[50vh] min-h-100 overflow-y-auto py-4', tileWrapperClassName)}
                   onScroll={checkScrollable}
                   ref={scrollContainerRef}
                 >
@@ -394,11 +396,9 @@ export const ConnectTiles = memo(
                             key={uniqueKey}
                             onChange={() => {
                               if (isChecked) {
-                                // Unselect if already selected
                                 field.onChange('');
                                 form.setValue('connectionType', '' as ConnectComponentType, { shouldValidate: true });
                               } else {
-                                // Select the component
                                 field.onChange(component.name);
                                 form.setValue('connectionType', component.type as ConnectComponentType, {
                                   shouldValidate: true,
@@ -421,10 +421,12 @@ export const ConnectTiles = memo(
                       if (hasNoResults) {
                         content = (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <Text className="text-muted-foreground">No connections found matching your filters</Text>
-                            <Text className="mt-1 text-muted-foreground text-sm">
+                            <div className="text-body text-muted-foreground">
+                              No connections found matching your filters
+                            </div>
+                            <div className="mt-1 text-muted-foreground text-sm">
                               Try adjusting your search or category filters
-                            </Text>
+                            </div>
                           </div>
                         );
                       } else if (showSkeleton) {
@@ -450,7 +452,6 @@ export const ConnectTiles = memo(
                     }}
                   />
                 </div>
-                {/* Gradient overlay to indicate scrollability - only show when not at bottom */}
                 {Boolean(showScrollGradient) && (
                   <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-gradient-to-t from-background via-background/60 to-transparent" />
                 )}

@@ -12,7 +12,14 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import {
   Form,
   FormControl,
@@ -204,35 +211,35 @@ type ConfigDialogProps = {
 };
 
 export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogProps) {
-  const handleSave = async () => {
+  const handleSave = form.handleSubmit(() => {
+    onOpenChange(false);
+  });
+
+  const onSaveClick = () => {
     // Strip empty tag rows before validation
     const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
     form.setValue('tags', tags);
-
-    const isValid = await form.trigger();
-    if (isValid) {
-      onOpenChange(false);
-    }
+    handleSave();
   };
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>
-            {mode === 'create' ? 'Pipeline settings' : mode === 'view' ? 'Pipeline settings' : 'Edit pipeline settings'}
-          </DialogTitle>
+          <DialogTitle>{mode === 'edit' ? 'Edit pipeline settings' : 'Pipeline settings'}</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <ConfigFields mode={mode} />
-          {mode !== 'view' && (
-            <div className="flex justify-end gap-2 pt-4">
-              <Button onClick={handleSave} variant="primary">
-                Save
-              </Button>
-            </div>
-          )}
-        </Form>
+        <DialogBody>
+          <Form {...form}>
+            <ConfigFields mode={mode} />
+          </Form>
+        </DialogBody>
+        {mode !== 'view' && (
+          <DialogFooter>
+            <Button onClick={onSaveClick} variant="primary">
+              Save settings
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

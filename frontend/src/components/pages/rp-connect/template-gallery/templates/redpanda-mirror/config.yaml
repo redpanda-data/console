@@ -1,0 +1,35 @@
+input:
+  redpanda:
+    # ── Source (filled in from the form) ────────────────────────────────────
+    seed_brokers:
+      - ${REDPANDA_BROKERS}
+    topics:
+      - ${slot.sourceTopic}
+    consumer_group: ${slot.consumerGroup}
+
+    # ── Read behavior ───────────────────────────────────────────────────────
+    start_from_oldest: true                # mirror the full topic history
+    auto_replay_nacks: true                # re-deliver NACKed messages
+
+output:
+  redpanda_migrator:
+    # ── Destination cluster (filled in from the form) ───────────────────────
+    seed_brokers:
+      - ${slot.destBrokers}
+    topic: ${slot.destTopic}
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    sasl:
+      - mechanism: SCRAM-SHA-256
+        username: ${slot.destUser}
+        password: ${slot.destPassword}
+    tls:
+      enabled: true                        # set false only for unencrypted destinations
+
+    # ── Throughput defaults — tune for your workload ────────────────────────
+    batching:
+      count: 500
+      period: 1s
+    max_in_flight: 64
+    compression: snappy
+    # key: ${! @kafka_key }               # preserve source key for partitioning

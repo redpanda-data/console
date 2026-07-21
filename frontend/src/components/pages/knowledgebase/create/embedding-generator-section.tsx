@@ -22,7 +22,7 @@ import {
   FieldSet,
 } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { EmbeddingModelSelect } from 'components/ui/ai/embedding-model-select';
 import { SecretSelector } from 'components/ui/secret/secret-selector';
 import { formatSecretTemplate } from 'components/ui/secret/secret-utils';
@@ -48,7 +48,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Combine className="h-4 w-4" />
-        <Text className="font-semibold">Embedding Generator</Text>
+        <div className="font-semibold text-body">Embedding Generator</div>
       </CardTitle>
     </CardHeader>
     <CardContent>
@@ -173,7 +173,7 @@ export const EmbeddingGeneratorSection: React.FC<EmbeddingGeneratorSectionProps>
                 <Field data-invalid={fieldState.invalid}>
                   <div className="mb-2 flex items-center gap-2">
                     <img alt="Cohere" className="h-4 w-4" src={CohereLogo} />
-                    <Text className="font-medium text-sm">Cohere Configuration</Text>
+                    <div className="font-medium text-body">Cohere Configuration</div>
                   </div>
                   <FieldLabel required>Cohere API Key</FieldLabel>
                   <SecretSelector

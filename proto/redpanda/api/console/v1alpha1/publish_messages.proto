@@ -24,7 +24,8 @@ message PublishMessagePayloadOptions {
   PayloadEncoding encoding = 1; // Payload encoding to use.
   bytes data = 2; // Data.
   optional int32 schema_id = 9; // Optional schema ID.
-  optional int32 index = 10; // Optional index. Useful for Protobuf messages.
+  optional int32 index = 10; // Deprecated single-index. Prefer index_path for Protobuf messages so nested types are addressable.
+  repeated int32 index_path = 11; // Optional message-index path for Protobuf. Each element selects the Nth nested MessageDescriptor; e.g. [0] = first top-level, [1, 0] = first nested message of the second top-level. Empty = first top-level.
 }
 
 // PublishMessageResponse is the response for PublishMessage call.
@@ -32,4 +33,17 @@ message PublishMessageResponse {
   string topic = 1;
   int32 partition_id = 2;
   int64 offset = 3;
+}
+
+// GenerateSchemaSampleRequest asks for a zero-valued JSON skeleton for the schema identified
+// by schema_id. The backend dispatches based on the schema's registered type (AVRO/PROTOBUF/JSON).
+// index_path is only consulted for Protobuf and is the Confluent message-indexes path.
+message GenerateSchemaSampleRequest {
+  int32 schema_id = 1 [(buf.validate.field).int32.gt = 0];
+  repeated int32 index_path = 2;
+}
+
+// GenerateSchemaSampleResponse returns the JSON skeleton.
+message GenerateSchemaSampleResponse {
+  string sample_json = 1;
 }

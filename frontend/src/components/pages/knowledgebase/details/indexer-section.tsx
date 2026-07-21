@@ -25,12 +25,19 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpan
 import { FormItem, FormLabel } from '../../../redpanda-ui/components/form';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { SecretSelector } from '../../../ui/secret/secret-selector';
 import { extractSecretName, formatSecretTemplate } from '../../../ui/secret/secret-utils';
 import { TopicSelector } from '../../../ui/topic/topic-selector';
 import { UserSelector } from '../../../ui/user/user-selector';
 import { isRegexPattern, stripRegexPrefix } from '../create/schemas';
+
+// Base UI's <Select.Value> can't resolve an item's label until the popup
+// mounts, so an enum-backed controlled value renders as the raw string ("1")
+// on first paint. Passing an `items` map closes the gap eagerly.
+const SASL_MECHANISM_ITEMS: Record<string, string> = {
+  [String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)]: 'SCRAM-SHA-256',
+  [String(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512)]: 'SCRAM-SHA-512',
+};
 
 type KnowledgeBaseUpdateForm = KnowledgeBaseUpdate & {
   indexer?: KnowledgeBaseUpdate['indexer'] & {
@@ -63,7 +70,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
       <CardHeader className="border-b p-4 dark:border-border [.border-b]:pb-4">
         <CardTitle className="flex items-center gap-2">
           <TableOfContents className="h-4 w-4" />
-          <Text className="font-semibold">Indexer</Text>
+          <div className="font-semibold text-body">Indexer</div>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
@@ -198,6 +205,7 @@ export const IndexerSection = ({ knowledgeBase, isEditMode }: IndexerSectionProp
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel required>SASL Mechanism</FieldLabel>
                     <Select
+                      items={SASL_MECHANISM_ITEMS}
                       onValueChange={(value) => field.onChange(Number(value))}
                       value={String(field.value || SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256)}
                     >

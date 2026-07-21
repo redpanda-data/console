@@ -1,81 +1,63 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { type MotionProps, motion } from 'motion/react';
 import React from 'react';
 
-import { Heading, Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
-const cardVariants = cva(
-  'flex min-w-0 flex-col rounded-lg border border-base-200 border-solid bg-white dark:border-base-800 dark:bg-base-900',
-  {
-    variants: {
-      size: {
-        sm: 'max-w-sm gap-2 px-6 py-4',
-        md: 'max-w-md gap-4 px-8 py-6',
-        lg: 'max-w-lg gap-4 px-10 py-8',
-        xl: 'max-w-xl gap-6 px-12 py-10',
-        full: 'w-full gap-4 px-8 py-6',
-      },
-      variant: {
-        standard: '',
-        elevated: 'shadow-elevated',
-        outlined: 'border-1',
-        ghost: 'border-0 bg-transparent shadow-none dark:bg-transparent',
-      },
+// Maps a card title level (1–4) to its heading utility class (literals so Tailwind can scan them).
+const CARD_HEADING_CLASS = {
+  1: 'text-heading-xl',
+  2: 'text-heading-lg',
+  3: 'text-heading-md',
+  4: 'text-heading-sm',
+} as const;
+
+const cardVariants = cva('flex min-w-0 flex-col rounded-lg border border-border border-solid bg-card', {
+  variants: {
+    size: {
+      sm: 'max-w-sm gap-2 px-6 py-4',
+      md: 'max-w-md gap-4 px-8 py-6',
+      lg: 'max-w-lg gap-4 px-10 py-8',
+      xl: 'max-w-xl gap-6 px-12 py-10',
+      full: 'w-full gap-4 px-8 py-6',
     },
-    defaultVariants: {
-      size: 'md',
-      variant: 'elevated',
+    variant: {
+      standard: '',
+      elevated: 'shadow-elevated',
+      outlined: 'border-1',
+      ghost: 'border-0 bg-transparent shadow-none dark:bg-transparent',
     },
-  }
-);
+  },
+  defaultVariants: {
+    size: 'md',
+    variant: 'elevated',
+  },
+});
 
 export type CardVariant = VariantProps<typeof cardVariants>['variant'];
 export type CardSize = VariantProps<typeof cardVariants>['size'];
 
-type BaseCardProps = SharedProps & {
-  size?: CardSize;
-  variant?: CardVariant;
-  className?: string;
-};
+export type CardProps = SharedProps &
+  React.ComponentProps<'div'> & {
+    size?: CardSize;
+    variant?: CardVariant;
+  };
 
-type StaticCardProps = BaseCardProps & Omit<React.ComponentProps<'div'>, keyof BaseCardProps> & { animated?: false };
-type AnimatedCardProps = BaseCardProps & Omit<MotionProps, keyof BaseCardProps> & { animated: true };
-
-export type CardProps = StaticCardProps | AnimatedCardProps;
-
-const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, size, variant, testId, animated = false, ...props }, ref) => {
-    const cardClassName = cn(cardVariants({ size, variant }), className);
-
-    if (animated) {
-      return (
-        <motion.div
-          className={cardClassName}
-          data-slot="card"
-          data-testid={testId}
-          ref={ref}
-          {...(props as Omit<AnimatedCardProps, 'animated' | 'className' | 'size' | 'variant' | 'testId'>)}
-        />
-      );
-    }
-
-    return (
-      <div
-        className={cardClassName}
-        data-slot="card"
-        data-testid={testId}
-        ref={ref}
-        {...(props as Omit<StaticCardProps, 'animated' | 'className' | 'size' | 'variant' | 'testId'>)}
-      />
-    );
-  }
-);
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, size, variant, testId, ...props }, ref) => (
+  <div
+    className={cn(cardVariants({ size, variant }), className)}
+    data-size={size}
+    data-slot="card"
+    data-testid={testId}
+    data-variant={variant}
+    ref={ref}
+    {...props}
+  />
+));
 
 Card.displayName = 'Card';
 
 const cardHeaderVariants = cva(
-  '@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6',
+  '@container/card-header grid auto-rows-min items-start has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-6',
   {
     variants: {
       spacing: {
@@ -119,7 +101,13 @@ const CardTitle = React.forwardRef<
 >(({ className, level = 4, testId, children, ...props }, ref) => {
   let content: React.ReactNode = null;
   if (children) {
-    content = typeof children === 'string' ? <Heading level={level}>{children}</Heading> : children;
+    const HeadingTag = `h${level}` as const;
+    content =
+      typeof children === 'string' ? (
+        <HeadingTag className={CARD_HEADING_CLASS[level]}>{children}</HeadingTag>
+      ) : (
+        children
+      );
   }
 
   return (
@@ -135,7 +123,7 @@ const CardDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'d
   ({ className, testId, children, ...props }, ref) => {
     let content: React.ReactNode = null;
     if (children) {
-      content = typeof children === 'string' ? <Text>{children}</Text> : children;
+      content = typeof children === 'string' ? <div className="text-body">{children}</div> : children;
     }
 
     return (
@@ -255,7 +243,6 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
 
 CardFooter.displayName = 'CardFooter';
 
-// Form-specific layout helpers
 const cardFormVariants = cva('grid w-full items-center', {
   variants: {
     gap: {

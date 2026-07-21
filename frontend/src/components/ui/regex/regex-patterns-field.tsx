@@ -12,7 +12,6 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -42,7 +41,7 @@ export const RegexPatternsField = ({
   onChange,
   isReadOnly = false,
   label = 'Regex Patterns',
-  helperText = 'Add regex patterns to match multiple topics (e.g., my-topic-prefix-.*)',
+  helperText = 'Add regex patterns to match multiple topics (for example, my-topic-prefix-.*)',
 }: RegexPatternsFieldProps) => {
   const [validationStates, setValidationStates] = useState<Record<number, { valid: boolean; error?: string }>>({});
 
@@ -73,7 +72,7 @@ export const RegexPatternsField = ({
   return (
     <div className="flex flex-col gap-2">
       <FieldLabel>{label}</FieldLabel>
-      <Text className="text-muted-foreground text-sm">{helperText}</Text>
+      <div className="text-body text-muted-foreground">{helperText}</div>
 
       {patterns.map((pattern, idx) => {
         const validation = validationStates[idx] || validateRegex(pattern);
@@ -90,13 +89,13 @@ export const RegexPatternsField = ({
                   className={inputClassName}
                   disabled={isReadOnly}
                   onChange={(e) => handlePatternChange(idx, e.target.value)}
-                  placeholder="e.g., my-topics-.*"
+                  placeholder="my-topics-.*"
                   value={pattern}
                 />
                 {pattern && !isReadOnly && (
                   <div className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3">
                     {validation.valid ? (
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-success" />
                     ) : (
                       <X className="h-4 w-4 text-destructive" />
                     )}
@@ -104,7 +103,7 @@ export const RegexPatternsField = ({
                 )}
               </div>
               {!validation.valid && pattern && (
-                <Text className="mt-1 text-destructive text-xs">{validation.error}</Text>
+                <div className="text-body-sm mt-1 text-destructive">{validation.error}</div>
               )}
             </div>
 

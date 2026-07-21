@@ -37,6 +37,7 @@ import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { KnowledgeBaseService } from 'protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
+import type { JSX } from 'react';
 
 import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
 import { appGlobal } from './state/app-global';
@@ -82,6 +83,30 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
 };
 
 /**
+ * Wraps a base `fetch` so REST requests carry the same Bearer token as gRPC
+ * (see {@link addBearerTokenInterceptor}).
+ *
+ * Under Module Federation v2 the Cloud UI host supplies the access token via
+ * `getAccessToken`/`config.jwt` rather than a pre-authenticated `fetch`, so
+ * Console must attach the header itself on every `config.fetch` call. Centralizing
+ * it here covers the REST helpers that call `config.fetch` directly instead of the
+ * `rest<T>()` wrapper, which already injects the token.
+ *
+ * The token is read lazily at call time because the host may refresh `config.jwt`
+ * in place. We never overwrite an `Authorization` header that a legacy
+ * host-provided (V1) authenticatedFetch may already have set.
+ */
+export const createAuthInjectingFetch =
+  (baseFetch: WindowOrWorkerGlobalScope['fetch']): WindowOrWorkerGlobalScope['fetch'] =>
+  (input, init) => {
+    const headers = new Headers(init?.headers);
+    if (config.jwt && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${config.jwt}`);
+    }
+    return baseFetch(input, { ...init, headers });
+  };
+
+/**
  * Interceptor to handle license expiration errors in gRPC responses.
  *
  * This interceptor checks if the error is of type `ConnectError` with the
@@ -118,7 +143,7 @@ export type SetConfigArguments = {
   fetch?: WindowOrWorkerGlobalScope['fetch'];
   jwt?: string;
   clusterId?: string;
-  aiGatewayUrl?: string;
+  aigwUrl?: string;
   urlOverride?: {
     rest?: string;
     ws?: string;
@@ -147,7 +172,7 @@ export type Breadcrumb = {
 
 type Config = {
   controlplaneUrl: string;
-  aiGatewayUrl?: string;
+  aigwUrl?: string;
   dataplaneTransport?: Transport;
   restBasePath: string;
   grpcBasePath: string;
@@ -192,7 +217,7 @@ export const config: Config = {
   },
   isServerless: false,
   isAdpEnabled: false,
-  featureFlags: FEATURE_FLAGS,
+  featureFlags: { ...FEATURE_FLAGS, ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
 };
 
 const setConfig = ({
@@ -250,7 +275,7 @@ const setConfig = ({
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
-    fetch: fetch ?? window.fetch.bind(window),
+    fetch: createAuthInjectingFetch(fetch ?? window.fetch.bind(window)),
     assetsPath: assetsUrl ?? getBasePath(),
     authenticationClient: authenticationGrpcClient,
     licenseClient: licenseGrpcClient,
@@ -266,7 +291,7 @@ const setConfig = ({
     serviceAccountClient,
     roleBindingClient,
     shadowLinkClient,
-    featureFlags, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
   return config;
@@ -290,14 +315,18 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
   monaco.editor.setTheme('kowl');
 };
 
-// Subscribe to UI state changes for breadcrumbs and sidebar items
-// Delay to ensure stores are initialized
-setTimeout(() => {
+// Subscribe to UI state changes for breadcrumbs and sidebar items.
+// Installed from `setup()` so it is tied to the app's lifecycle and can be
+// torn down by the returned teardown function — not at module-top-level,
+// which previously pinned store subscribers across vitest isolate resets.
+function installUiStateSubscriptions(): () => void {
+  const unsubs: Array<() => void> = [];
+
   try {
     // Subscribe to breadcrumbs changes
     let previousBreadcrumbs = useUIStateStore.getState().pageBreadcrumbs;
 
-    useUIStateStore.subscribe((state) => {
+    const unsubUi = useUIStateStore.subscribe((state) => {
       const setBreadcrumbs = config.setBreadcrumbs;
       if (!setBreadcrumbs) {
         return;
@@ -317,6 +346,7 @@ setTimeout(() => {
 
       setBreadcrumbs(breadcrumbs);
     });
+    unsubs.push(unsubUi);
 
     const updateSidebarItems = () => {
       const setSidebarItems = config.setSidebarItems;
@@ -347,16 +377,26 @@ setTimeout(() => {
     // Call once on initialization; also re-call whenever endpointCompatibility
     // becomes available (it starts null and is populated after the first API fetch).
     updateSidebarItems();
-    useApiStore.subscribe((state, prev) => {
+    const unsubApi = useApiStore.subscribe((state, prev) => {
       if (state.endpointCompatibility !== prev.endpointCompatibility) {
         updateSidebarItems();
       }
     });
-  } catch (error) {
+    unsubs.push(unsubApi);
+  } catch {
     // Ignore errors in test environments where stores might not be properly initialized
-    // This setTimeout runs globally when config.ts is imported
   }
-}, 50);
+
+  return () => {
+    for (const unsub of unsubs) {
+      try {
+        unsub();
+      } catch {
+        // ignore — teardown is best-effort
+      }
+    }
+  };
+}
 
 export function isEmbedded() {
   return config.jwt !== null && config.jwt !== undefined;
@@ -370,10 +410,13 @@ export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;
 /**
  * @description use in non-functional components if you must
  * @param featureFlag feature flag key to track
- * @returns feature flag value, false if no feature flag with that key exists, false if the feature flags are not loaded.
+ * @returns The runtime value if the host (e.g. Cloud UI) provided one, otherwise
+ *   the default declared in `FEATURE_FLAGS` (`components/constants.ts`). This lets
+ *   `constants.ts` act as the source of truth for defaults — useful in standalone
+ *   dev where `config.featureFlags` is never populated.
  */
 export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
-  return config.featureFlags?.[featureFlag] ?? false;
+  return config.featureFlags?.[featureFlag] ?? FEATURE_FLAGS[featureFlag] ?? false;
 }
 
 export function isServerless() {
@@ -390,23 +433,72 @@ export const embeddedAvailableRoutesObservable = {
   },
 };
 
+// Module-level state for cancelling `setup()`'s recursive user-data poll and
+// for holding the current setup teardown. `setup` is memoized with
+// memoize-one, so repeated calls with the same args no-op; these refs let the
+// harness (and app lifecycle) cancel the pending work explicitly.
+let checkUserDataCancelled = false;
+let currentSetupTeardown: (() => void) | null = null;
+let subscriptionInstallTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Cancels the recursive `checkUserData` polling timer started by `setup()`.
+ * Exposed for test cleanup + explicit app teardown.
+ */
+export function cancelCheckUserData(): void {
+  checkUserDataCancelled = true;
+}
+
+/**
+ * Tear down anything `setup()` installed (store subscriptions + polling timer).
+ * Safe to call multiple times.
+ */
+export function teardownSetup(): void {
+  if (subscriptionInstallTimeoutId !== null) {
+    clearTimeout(subscriptionInstallTimeoutId);
+    subscriptionInstallTimeoutId = null;
+  }
+  cancelCheckUserData();
+  if (currentSetupTeardown) {
+    const t = currentSetupTeardown;
+    currentSetupTeardown = null;
+    t();
+  }
+}
+
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
+  // If setup() is re-invoked (memoize-one only caches the latest args), tear
+  // down any state installed by the previous invocation first to avoid
+  // stacking subscribers / pending timeouts.
+  teardownSetup();
+
   setConfig(setupArgs);
 
-  // Set MonacoEnvironment synchronously before loader.init() to avoid race
-  // where the editor mounts before the worker URL resolver is available
+  // Reset the cancel flag now that we're installing fresh state.
+  checkUserDataCancelled = false;
+
+  // Install UI / API store subscriptions on a short delay (matches historical
+  // behavior that waited for stores to initialize). Tracked so teardown can
+  // unsubscribe and clear the pending timeout.
+  subscriptionInstallTimeoutId = setTimeout(() => {
+    subscriptionInstallTimeoutId = null;
+    currentSetupTeardown = installUiStateSubscriptions();
+  }, 50);
+
+  // Use `new Worker(new URL(...))` so rsbuild bundles each as its own chunk
+  // (needed for monaco-yaml's CJS/ESM interop).
   window.MonacoEnvironment = {
-    getWorkerUrl(_, label: string): string {
+    getWorker(_workerId, label) {
       switch (label) {
-        case 'editorWorkerService': {
-          return `${window.location.origin}/static/js/editor.worker.js`;
-        }
-        case 'typescript': {
-          return `${window.location.origin}/static/js/ts.worker.js`;
-        }
-        default: {
-          return `${window.location.origin}/static/js/${label}.worker.js`;
-        }
+        case 'json':
+          return new Worker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
+        case 'yaml':
+          return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
+        case 'typescript':
+        case 'javascript':
+          return new Worker(new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url));
+        default:
+          return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
       }
     },
   };
@@ -414,12 +506,38 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // Tell monaco editor where to load dependencies from
   loader.config({ monaco });
 
+  // Override `vs` (the default theme `@monaco-editor/react` applies) so every
+  // editor without an explicit `theme` prop uses these colors.
+  const kowlThemeColors = {
+    'editor.background': '#fcfcfc',
+    'editorGutter.background': '#00000018',
+    'editor.lineHighlightBackground': '#aaaaaa20',
+    'editor.lineHighlightBorder': '#00000000',
+    'editorLineNumber.foreground': '#8c98a8',
+    'editorOverviewRuler.background': '#606060',
+  };
+  monaco.editor.defineTheme('vs', {
+    base: 'vs',
+    inherit: true,
+    colors: kowlThemeColors,
+    rules: [],
+  });
+  monaco.editor.defineTheme('kowl', {
+    base: 'vs',
+    inherit: false,
+    colors: kowlThemeColors,
+    rules: [],
+  });
+
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is
   // protected, so we need to delay the call until the user is logged in.
   if (AppFeatures.SINGLE_SIGN_ON) {
     // Poll for user data instead of using MobX when
     const checkUserData = () => {
+      if (checkUserDataCancelled) {
+        return;
+      }
       if (api.userData) {
         api.refreshSupportedEndpoints();
         api.listLicenses();
@@ -432,4 +550,6 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     api.listLicenses();
     api.refreshSupportedEndpoints();
   }
+
+  return teardownSetup;
 });

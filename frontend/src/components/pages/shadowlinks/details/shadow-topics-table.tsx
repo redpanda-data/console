@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { useNavigate } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -19,7 +17,6 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Info, Loader2, RefreshCw, X } from 'lucide-react';
 import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -49,7 +46,7 @@ const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength
     <TableCell className="h-16 text-center" colSpan={columnsLength}>
       <div className="flex items-center justify-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <Text className="text-muted-foreground">{message}</Text>
+        <div className="text-body text-muted-foreground">{message}</div>
       </div>
     </TableCell>
   </TableRow>
@@ -111,7 +108,6 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   topicNameFilter,
   onTopicNameFilterChange,
 }) => {
-  'use no memo';
   const columnHelper = createColumnHelper<ShadowTopic>();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -121,16 +117,17 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
       columnHelper.accessor('topicName', {
         header: 'Name',
         size: 300,
-        cell: (info) => <Text className="font-medium">{info.getValue()}</Text>,
+        cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
       }),
       columnHelper.accessor('totalLag', {
         header: () => (
           <div className="flex items-center gap-2">
             Max offset lag
             <Tooltip>
-              <TooltipTrigger asChild data-testid="max-offset-lag-info-icon">
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
+              <TooltipTrigger
+                data-testid="max-offset-lag-info-icon"
+                render={<Info className="h-4 w-4 text-muted-foreground" />}
+              />
               <TooltipContent>
                 <p>Maximum offset difference between source and replica topic partitions</p>
               </TooltipContent>
@@ -138,7 +135,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           </div>
         ),
         size: 150,
-        cell: (info) => <Text className="text-muted-foreground">{info.getValue().toString()}</Text>,
+        cell: (info) => <div className="text-body text-muted-foreground">{info.getValue().toString()}</div>,
       }),
       columnHelper.accessor('state', {
         header: 'Replication state',
@@ -232,11 +229,17 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                 />
               </div>
               {Boolean(topicNameFilter) && (
-                <Button onClick={() => onTopicNameFilterChange?.('')} size="sm" variant="ghost">
+                <Button
+                  aria-label="Clear filter"
+                  onClick={() => onTopicNameFilterChange?.('')}
+                  size="sm"
+                  variant="ghost"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               )}
               <Button
+                aria-label="Refresh topics"
                 data-testid="refresh-topics-button"
                 disabled={isFetching}
                 onClick={onRefresh}

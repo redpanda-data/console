@@ -9,19 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { zodResolver } from '@hookform/resolvers/zod';
+import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm, useWatch } from 'react-hook-form';
-import { fireEvent, render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 import { TopicConfigTab } from './topic-config-tab';
 import { getDefaultProperties } from './topic-properties-config';
 import { FormSchema, type FormValues, initialValues } from '../create/model';
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
-  'use no memo';
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,
@@ -42,6 +40,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 describe('TopicConfigTab', () => {
   describe('Exclude default properties toggle', () => {
     test('should remove default properties from topicProperties when excludeDefault is enabled', async () => {
+      const user = userEvent.setup();
       const defaultProps = getDefaultProperties();
       const customValues: FormValues = {
         ...initialValues,
@@ -55,7 +54,7 @@ describe('TopicConfigTab', () => {
       expect(toggle).not.toBeChecked();
 
       // Enable exclude default
-      fireEvent.click(toggle);
+      await user.click(toggle);
 
       await waitFor(() => {
         expect(toggle).toBeChecked();
@@ -72,6 +71,7 @@ describe('TopicConfigTab', () => {
     });
 
     test('should add default properties to topicProperties when excludeDefault is disabled', async () => {
+      const user = userEvent.setup();
       const customValues: FormValues = {
         ...initialValues,
         excludeDefault: true,
@@ -84,7 +84,7 @@ describe('TopicConfigTab', () => {
       expect(toggle).toBeChecked();
 
       // Disable exclude default
-      fireEvent.click(toggle);
+      await user.click(toggle);
 
       await waitFor(() => {
         expect(toggle).not.toBeChecked();

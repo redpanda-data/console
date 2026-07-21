@@ -9,13 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
 import { create } from '@bufbuild/protobuf';
 import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
@@ -35,7 +33,7 @@ import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/da
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
-import { Features } from '../../../state/supported-features';
+import { Features, useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { Code, DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
@@ -97,13 +95,18 @@ const WrapKafkaConnectOverview: FunctionComponent<{
   );
 };
 
+const RpConnectTabContent = () => {
+  const featurePipelinesApi = useSupportedFeaturesStore((s) => s.pipelinesApi);
+  return featurePipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />;
+};
+
 class KafkaConnectOverview extends PageComponent<{
   defaultView: string;
   isKafkaConnectEnabled: boolean;
   isLoadingKafkaConnectors: boolean;
 }> {
   initPage(p: PageInitHelper): void {
-    p.title = 'Overview';
+    p.title = 'Connect';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
     this.initializeData();
@@ -156,15 +159,15 @@ class KafkaConnectOverview extends PageComponent<{
         ),
         content: (
           <div className="mb-4 flex flex-col gap-4">
-            <Text>
+            <div className="text-body">
               {this.props.isKafkaConnectEnabled
                 ? 'Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors.'
                 : 'Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.'}{' '}
-              <Link href="https://docs.redpanda.com/redpanda-connect/home/" target="_blank">
+              <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
                 Learn more
               </Link>
-            </Text>
-            {Features.pipelinesApi ? <RpConnectPipelinesList matchedPath="/rp-connect" /> : <RedpandaConnectIntro />}
+            </div>
+            <RpConnectTabContent />
           </div>
         ),
       },
@@ -173,13 +176,17 @@ class KafkaConnectOverview extends PageComponent<{
         title: <Box minWidth="180px">Kafka Connect</Box>,
         content: (
           <div className="flex flex-col gap-4">
-            <Text>
+            <div className="text-body">
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
-              <Link href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/" target="_blank">
+              <Link
+                href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Learn more.
               </Link>
-            </Text>
+            </div>
             <TabKafkaConnect />
           </div>
         ),
@@ -193,10 +200,10 @@ class KafkaConnectOverview extends PageComponent<{
     return (
       <PageContent>
         {Boolean(this.props.isKafkaConnectEnabled) && (
-          <Text>
+          <div className="text-body">
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.
-          </Text>
+          </div>
         )}
         {(() => {
           if (tabs.length !== 1) {
@@ -303,7 +310,9 @@ const TabConnectors = () => {
       const quickSearchRegExp = new RegExp(filter, 'i');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;
       const classMatch = item.class.match(quickSearchRegExp) !== null;
-      if (nameMatch) return true;
+      if (nameMatch) {
+        return true;
+      }
       return classMatch;
     } catch (_e) {
       return item.name.toLowerCase().includes(filter.toLowerCase());
@@ -418,8 +427,11 @@ class TabTasks extends Component {
             header: 'Connector',
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
-              <Text
-                className="hoverLink whitespace-break-spaces break-words"
+              // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+              // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+              <div
+                className="hoverLink whitespace-break-spaces break-words text-body"
                 onClick={() =>
                   appGlobal.historyPush(
                     `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
@@ -427,7 +439,7 @@ class TabTasks extends Component {
                 }
               >
                 {original.connectorName}
-              </Text>
+              </div>
             ),
             size: 300,
           },

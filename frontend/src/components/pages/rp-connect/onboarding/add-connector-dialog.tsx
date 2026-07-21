@@ -1,24 +1,14 @@
 import {
   Dialog,
-  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Link } from 'components/redpanda-ui/components/typography';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-import { ConnectTiles } from './connect-tiles';
+import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType } from '../types/schema';
-
-function getDocsUrl(connectorType?: ConnectComponentType | ConnectComponentType[]): string | null {
-  const type = Array.isArray(connectorType) ? connectorType[0] : connectorType;
-  if (!type) {
-    return null;
-  }
-  return `https://docs.redpanda.com/redpanda-cloud/develop/connect/components/${type}s/about/`;
-}
 
 export const AddConnectorDialog = ({
   isOpen,
@@ -26,12 +16,16 @@ export const AddConnectorDialog = ({
   connectorType,
   onAddConnector,
   components,
+  title,
+  searchPlaceholder,
 }: {
   isOpen: boolean;
   onCloseAddConnector: () => void;
   connectorType?: ConnectComponentType | ConnectComponentType[];
   onAddConnector: ((connectionName: string, connectionType: ConnectComponentType) => void) | undefined;
   components: ComponentList;
+  title?: string;
+  searchPlaceholder?: string;
 }) => {
   let typeFilter: ConnectComponentType[] | undefined;
   if (Array.isArray(connectorType)) {
@@ -40,33 +34,22 @@ export const AddConnectorDialog = ({
     typeFilter = [connectorType];
   }
 
-  const docsUrl = getDocsUrl(connectorType);
-
   return (
     <Dialog onOpenChange={onCloseAddConnector} open={isOpen}>
-      <DialogContent size="xl">
+      <DialogContent height="lg" size="xl">
         <DialogHeader>
-          <DialogTitle>Add a connector</DialogTitle>
-          <DialogDescription className="mt-4">
-            Configure your pipeline.{' '}
-            {docsUrl ? (
-              <Link href={docsUrl} rel="noopener noreferrer" target="_blank">
-                Learn more
-              </Link>
-            ) : null}
+          <DialogTitle>{title ?? 'Add a connector'}</DialogTitle>
+          <DialogDescription>
+            Search the component catalog, then select a component to add it to your pipeline.
           </DialogDescription>
         </DialogHeader>
-        <DialogBody>
-          <ConnectTiles
-            className="px-0 pt-0"
-            components={components}
-            componentTypeFilter={typeFilter}
-            gridCols={3}
-            hideHeader
-            onChange={onAddConnector}
-            variant="ghost"
-          />
-        </DialogBody>
+        <ConnectCommandPalette
+          allowedTypes={typeFilter}
+          components={components}
+          onCancel={onCloseAddConnector}
+          onSelect={(name, type) => onAddConnector?.(name, type)}
+          searchPlaceholder={searchPlaceholder}
+        />
       </DialogContent>
     </Dialog>
   );

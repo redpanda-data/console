@@ -9,24 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-'use no memo';
-
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  CloseButton,
-  Flex,
-  FormField,
-  IconButton,
-  useToast,
-} from '@redpanda-data/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { KeyValueField } from 'components/redpanda-ui/components/key-value-field';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -42,12 +30,12 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
-import { InfoIcon } from 'lucide-react';
+import { AlertCircle, InfoIcon, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
-import { openSwitchSchemaFormatModal, openValidationErrorsModal } from './modals';
+import { SwitchSchemaFormatDialog, ValidationErrorsDialog } from './modals';
 import {
   ALL_CONTEXT_ID,
   buildQualifiedReferences,
@@ -66,7 +54,7 @@ import {
 } from '../../../react-query/api/schema-registry';
 import { useTopicsQuery } from '../../../react-query/api/topic';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
+import { api, useApiStoreHook } from '../../../state/backend-api';
 import {
   type SchemaRegistryValidateSchemaResponse,
   SchemaType,
@@ -262,7 +250,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
 
 const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
   const [stateData, setStateData] = useState<SchemaEditorStateData | null>(null);
-  const subject = api.schemaDetails.get(subjectName);
+  const subject = useApiStoreHook((s) => s.schemaDetails.get(subjectName));
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   useEffect(() => {
@@ -328,9 +316,9 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
 
   return (
     <PageContent key="b">
-      <Heading level={1} testId="schema-add-version-heading">
+      <h1 className="text-heading-xl" data-testid="schema-add-version-heading">
         Add schema version
-      </Heading>
+      </h1>
 
       <SchemaEditor mode="ADD_VERSION" onStateChange={setNonNullStateData} state={state} />
 
@@ -347,7 +335,6 @@ const SchemaPageButtons = (p: {
   parentSubjectName?: string; // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
   editorState: SchemaEditorStateHelper;
 }) => {
-  const toast = useToast();
   const queryClient = useQueryClient();
   const [isValidating, setValidating] = useState(false);
   const [isCreating, setCreating] = useState(false);
@@ -357,6 +344,7 @@ const SchemaPageButtons = (p: {
     isCompatible?: boolean;
     compatibilityError?: { errorType: string; description: string };
   } | null>(null);
+  const [validationDialogResult, setValidationDialogResult] = useState<typeof persistentValidationError>(null);
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
@@ -365,32 +353,31 @@ const SchemaPageButtons = (p: {
   return (
     <>
       {persistentValidationError ? (
-        <Alert data-testid="schema-create-validation-error-alert" mb="4" mt="4" status="error" variant="left-accent">
-          <AlertIcon />
-          <Box flex="1">
-            <AlertTitle alignItems="center" display="flex">
-              {persistentValidationError.compatibilityError?.errorType
-                ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
-                : 'Schema Validation Error'}
-            </AlertTitle>
-            <AlertDescription display="block" mt="2">
-              {persistentValidationError.compatibilityError?.description ||
-                persistentValidationError.errorDetails ||
-                'Schema validation failed'}
-            </AlertDescription>
-          </Box>
-          <CloseButton
-            alignSelf="flex-start"
-            data-testid="schema-create-error-close-btn"
+        <Alert className="my-4" testId="schema-create-validation-error-alert" variant="destructive">
+          <AlertCircle />
+          <AlertTitle>
+            {persistentValidationError.compatibilityError?.errorType
+              ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
+              : 'Schema Validation Error'}
+          </AlertTitle>
+          <AlertDescription>
+            {persistentValidationError.compatibilityError?.description ||
+              persistentValidationError.errorDetails ||
+              'Schema validation failed'}
+          </AlertDescription>
+          <Button
+            aria-label="Close"
+            className="absolute top-2 right-2"
             onClick={() => setPersistentValidationError(null)}
-            position="relative"
-            right={-1}
-            top={-1}
-          />
+            size="icon-xs"
+            testId="schema-create-error-close-btn"
+            variant="ghost"
+          >
+            <X />
+          </Button>
         </Alert>
       ) : null}
-
-      <Flex gap="4" mt="4">
+      <div className="mt-4 flex gap-4">
         <Button
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
@@ -401,9 +388,7 @@ const SchemaPageButtons = (p: {
             if (!validationResponse.isValid || validationResponse.isCompatible === false) {
               // Something is wrong with the schema, abort
               // Persist error only after user closes the modal
-              openValidationErrorsModal(validationResponse, () => {
-                setPersistentValidationError(validationResponse);
-              });
+              setValidationDialogResult(validationResponse);
               return;
             }
 
@@ -437,13 +422,7 @@ const SchemaPageButtons = (p: {
               // success: navigate to details with "latest" so it picks up the new version
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
             } catch (err) {
-              toast({
-                status: 'error',
-                duration: undefined,
-                isClosable: true,
-                title: 'Error creating schema',
-                description: String(err),
-              });
+              toast.error('Error creating schema', { description: String(err) });
             }
           }}
           testId="schema-create-save-btn"
@@ -461,17 +440,10 @@ const SchemaPageButtons = (p: {
             if (r.isValid && r.isCompatible !== false) {
               // Clear any previous validation errors on successful validation
               setPersistentValidationError(null);
-              toast({
-                status: 'success',
-                duration: 4000,
-                isClosable: false,
-                title: 'Schema validated successfully',
-              });
+              toast.success('Schema validated');
             } else {
               // Persist error only after user closes the modal
-              openValidationErrorsModal(r, () => {
-                setPersistentValidationError(r);
-              });
+              setValidationDialogResult(r);
             }
           }}
           testId="schema-create-validate-btn"
@@ -493,7 +465,19 @@ const SchemaPageButtons = (p: {
         >
           Cancel
         </Button>
-      </Flex>
+      </div>
+      <ValidationErrorsDialog
+        onClose={() => {
+          if (validationDialogResult) {
+            setPersistentValidationError(validationDialogResult);
+          }
+        }}
+        onOpenChange={(open) => {
+          if (!open) setValidationDialogResult(null);
+        }}
+        open={validationDialogResult !== null}
+        result={validationDialogResult}
+      />
     </>
   );
 };
@@ -549,6 +533,8 @@ const SchemaEditor = (p: {
   const { state, mode } = p;
   const isAddVersion = mode === 'ADD_VERSION';
   const [contextWarning, setContextWarning] = useState('');
+  const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
+  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
 
   const availableContexts = useMemo(() => {
     if (!(srContextsEnabled && apiContexts && subjects)) return [];
@@ -579,24 +565,21 @@ const SchemaEditor = (p: {
 
   return (
     <>
-      <Heading level={2}>Subject Settings</Heading>
-
+      <h2 className="text-heading-lg">Subject Settings</h2>
       {Boolean(isAddVersion) && (
-        <Alert status="info">
-          <AlertIcon />
-          When adding a new schema version, the only thing that can be changed is the schema definition and its
-          references. The rest of the fields have been disabled.
+        <Alert variant="info">
+          <InfoIcon />
+          <AlertDescription>
+            When adding a new schema version, the only thing that can be changed is the schema definition and its
+            references. The rest of the fields have been disabled.
+          </AlertDescription>
         </Alert>
       )}
-
-      <Flex direction="column" gap="8" maxWidth="650px">
+      <div className="flex max-w-[650px] flex-col gap-8">
         {srContextsEnabled && !isAddVersion && (
-          <FormField
-            description="Select an existing context or type a new name to create one."
-            errorText="Context is required"
-            isInvalid={!state.context}
-            label="Context"
-          >
+          <Field data-invalid={!state.context || undefined}>
+            <FieldLabel>Context</FieldLabel>
+            <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
             <Combobox
               // Our chakra UI has a global override for SVGs that make icons look off-center in UI registry components.
               className="[&_svg]:block! [&_input]:pl-8!"
@@ -615,7 +598,7 @@ const SchemaEditor = (p: {
                 if (value.startsWith('.')) {
                   setContextWarning('');
                 } else {
-                  setContextWarning('Context name must start with a dot (e.g. ".staging")');
+                  setContextWarning('Context name must start with a dot (for example, ".staging")');
                 }
               }}
               options={contextOptions}
@@ -623,23 +606,28 @@ const SchemaEditor = (p: {
               testId="schema-create-context-select"
               value={contextIdToLabel(state.context)}
             />
-            {contextWarning && (
-              <Text className="mt-1 text-destructive" variant="bodyMedium">
-                {contextWarning}
-              </Text>
-            )}
-          </FormField>
+            {contextWarning && <div className="mt-1 text-body text-destructive">{contextWarning}</div>}
+            {!state.context && <FieldError>Context is required</FieldError>}
+          </Field>
         )}
 
         {srContextsEnabled && isAddVersion && (
-          <FormField label="Context">
+          <Field>
+            <FieldLabel>Context</FieldLabel>
             <Input disabled value={contextIdToLabel(state.context) || 'None'} />
-          </FormField>
+          </Field>
         )}
 
-        <FormField label="Strategy">
+        <Field>
+          <FieldLabel>Strategy</FieldLabel>
           <Select
             disabled={isAddVersion}
+            items={{
+              TOPIC: 'Topic Name',
+              RECORD_NAME: 'Record Name',
+              TOPIC_RECORD_NAME: 'Topic-Record Name',
+              CUSTOM: 'Custom',
+            }}
             onValueChange={(e) => {
               p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
             }}
@@ -655,10 +643,11 @@ const SchemaEditor = (p: {
               <SelectItem value="CUSTOM">Custom</SelectItem>
             </SelectContent>
           </Select>
-        </FormField>
+        </Field>
 
         {showTopicNameInput && (
-          <FormField errorText="Topic name is required" isInvalid={!state.userInput} label="Topic name">
+          <Field data-invalid={!state.userInput || undefined}>
+            <FieldLabel>Topic name</FieldLabel>
             <Select
               disabled={isAddVersion}
               onValueChange={(e) => {
@@ -677,19 +666,15 @@ const SchemaEditor = (p: {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
+            {!state.userInput && <FieldError>Topic name is required</FieldError>}
+          </Field>
         )}
 
         {!isCustom && (
-          <FormField
-            errorText="Required"
-            footerDescription="Determines whether this schema is registered for the topic's key or value messages."
-            isInvalid={state.isInvalidKeyOrValue}
-            label="Schema applies to"
-            width="auto"
-          >
+          <Field data-invalid={state.isInvalidKeyOrValue || undefined}>
+            <FieldLabel>Schema applies to</FieldLabel>
             <RadioGroup
-              className="mt-3 w-fit"
+              className="mt-3 flex"
               data-testid="schema-create-key-value-radio"
               disabled={isAddVersion}
               onValueChange={(e) => {
@@ -707,11 +692,16 @@ const SchemaEditor = (p: {
                 <Label htmlFor="key-or-value-value">Value</Label>
               </div>
             </RadioGroup>
-          </FormField>
+            <FieldDescription>
+              Determines whether this schema is registered for the topic's key or value messages.
+            </FieldDescription>
+            {state.isInvalidKeyOrValue && <FieldError>Required</FieldError>}
+          </Field>
         )}
 
         {isCustom && (
-          <FormField errorText="Subject name is required" isInvalid={!state.computedSubjectName} label="Subject name">
+          <Field data-invalid={!state.computedSubjectName || undefined}>
+            <FieldLabel>Subject name</FieldLabel>
             <Input
               disabled={isAddVersion}
               onChange={(e) => {
@@ -720,19 +710,16 @@ const SchemaEditor = (p: {
               testId="schema-create-subject-name-input"
               value={state.computedSubjectName}
             />
-          </FormField>
+            {!state.computedSubjectName && <FieldError>Subject name is required</FieldError>}
+          </Field>
         )}
 
         {!isCustom && state.computedSubjectName && (
           <>
             <Separator />
             <div className="flex flex-col gap-0.5">
-              <Text className="uppercase" variant="labelStrongXSmall">
-                Subject name
-              </Text>
-              <Text className="font-mono" variant="bodyMedium">
-                {state.computedSubjectName}
-              </Text>
+              <div className="font-medium text-body-sm uppercase">Subject name</div>
+              <div className="font-mono text-body">{state.computedSubjectName}</div>
             </div>
           </>
         )}
@@ -741,53 +728,37 @@ const SchemaEditor = (p: {
           state.qualifiedSubjectName &&
           state.qualifiedSubjectName !== state.computedSubjectName && (
             <div className="flex flex-col gap-0.5">
-              <Text className="uppercase" variant="labelStrongXSmall">
-                Qualified subject name
-              </Text>
-              <Text className="font-mono" variant="bodyMedium">
+              <div className="font-medium text-body-sm uppercase">Qualified subject name</div>
+              <div className="font-mono text-body">
                 {isNamedContext(state.context) ? (
                   <>
-                    <Text as="span" className="font-mono text-gray-400" variant="bodyMedium">
-                      :{state.context}:
-                    </Text>
-                    <Text as="span" className="font-mono" variant="bodyMedium">
-                      {state.computedSubjectName}
-                    </Text>
+                    <span className="font-mono text-body text-gray-400">:{state.context}:</span>
+                    <span className="font-mono text-body">{state.computedSubjectName}</span>
                   </>
                 ) : (
                   state.qualifiedSubjectName
                 )}
-              </Text>
+              </div>
             </div>
           )}
-      </Flex>
-
-      <Heading className="mt-8" level={2}>
-        Schema definition
-      </Heading>
-
-      <Flex direction="column" gap="4" maxWidth="1000px">
-        <FormField label="Format">
+      </div>
+      <h2 className="mt-8 text-heading-lg">Schema definition</h2>
+      <div className="flex max-w-[1000px] flex-col gap-4">
+        <Field>
+          <FieldLabel>Format</FieldLabel>
           <ToggleGroup
-            className="w-fit divide-x divide-border p-0"
+            className="w-fit! divide-x divide-border p-0"
             data-testid="schema-create-format-radio"
             disabled={isAddVersion}
-            onValueChange={(e) => {
+            onValueChange={([e]) => {
               if (!e || state.format === e) {
                 return;
               }
               // Let user confirm
-              openSwitchSchemaFormatModal(() => {
-                p.onStateChange((prev) => ({
-                  ...prev,
-                  format: e as 'AVRO' | 'PROTOBUF' | 'JSON',
-                  schemaText: exampleSchema[e as SchemaTypeType],
-                }));
-              });
+              setPendingFormat(e);
+              setSwitchFormatOpen(true);
             }}
-            transition={{ duration: 0 }}
-            type="single"
-            value={state.format}
+            value={[state.format]}
             variant="outline"
           >
             {formatOptions.map((opt) => (
@@ -796,7 +767,7 @@ const SchemaEditor = (p: {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-        </FormField>
+        </Field>
 
         <div data-testid="schema-create-schema-editor">
           <KowlEditor
@@ -809,36 +780,32 @@ const SchemaEditor = (p: {
           />
         </div>
 
-        <Flex alignItems="center" gap="3">
-          <Flex alignItems="center" gap="2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="font-semibold">Normalize schema</span>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="h-4 w-4 cursor-help text-gray-500" />
-                </TooltipTrigger>
+                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-gray-500" />} />
                 <TooltipContent side="right">
                   When enabled, the schema will be normalized to a canonical form before registration, reducing
                   duplicate schema versions
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          </Flex>
+          </div>
           <Switch
             checked={state.normalize}
             onCheckedChange={(checked) => {
               p.onStateChange((prev) => ({ ...prev, normalize: checked === true }));
             }}
           />
-        </Flex>
+        </div>
 
-        <Heading className="mt-8" level={2}>
-          Schema references
-        </Heading>
-        <Text>
+        <h2 className="mt-8 text-heading-lg">Schema references</h2>
+        <div className="text-body">
           Link other schemas that this schema depends on. References allow schemas to reuse types defined in other
           subjects.
-        </Text>
+        </div>
 
         <ReferencesEditor
           contextSelectOptions={contextSelectOptions}
@@ -848,15 +815,27 @@ const SchemaEditor = (p: {
           state={state}
         />
 
-        <Heading className="mt-8" level={2}>
-          Schema metadata
-        </Heading>
-        <Text className="w-1/2">
+        <h2 className="mt-8 text-heading-lg">Schema metadata</h2>
+        <div className="w-1/2 text-body">
           Optional key-value properties to associate with this schema. Metadata will be ignored if not supported by
-          schema registry.
-        </Text>
+          Schema Registry.
+        </div>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
-      </Flex>
+      </div>
+      <SwitchSchemaFormatDialog
+        onConfirm={() => {
+          if (pendingFormat) {
+            p.onStateChange((prev) => ({
+              ...prev,
+              format: pendingFormat as 'AVRO' | 'PROTOBUF' | 'JSON',
+              schemaText: exampleSchema[pendingFormat as SchemaTypeType],
+            }));
+            setPendingFormat(null);
+          }
+        }}
+        onOpenChange={setSwitchFormatOpen}
+        open={switchFormatOpen}
+      />
     </>
   );
 };
@@ -897,9 +876,10 @@ const ReferencesEditor = (p: {
         : null;
 
     return (
-      <Flex direction="column" gap="2" key={ref.id}>
-        <Flex alignItems="flex-end" gap="4">
-          <FormField label="Schema reference name">
+      <div className="flex flex-col gap-2" key={ref.id}>
+        <div className="flex items-end gap-4">
+          <Field>
+            <FieldLabel>Schema reference name</FieldLabel>
             <Input
               data-testid={`schema-create-reference-name-input-${index}`}
               onChange={(e) => {
@@ -910,10 +890,12 @@ const ReferencesEditor = (p: {
               }}
               value={ref.name}
             />
-          </FormField>
+          </Field>
           {p.srContextsEnabled && (
-            <FormField label="Context">
+            <Field>
+              <FieldLabel>Context</FieldLabel>
               <Select
+                items={p.contextSelectOptions}
                 onValueChange={(contextId) => {
                   p.onStateChange((prev) => ({
                     ...prev,
@@ -935,9 +917,10 @@ const ReferencesEditor = (p: {
                   ))}
                 </SelectContent>
               </Select>
-            </FormField>
+            </Field>
           )}
-          <FormField label="Subject">
+          <Field>
+            <FieldLabel>Subject</FieldLabel>
             <Select
               onValueChange={async (e) => {
                 p.onStateChange((prev) => ({
@@ -982,8 +965,9 @@ const ReferencesEditor = (p: {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
-          <FormField label="Version">
+          </Field>
+          <Field>
+            <FieldLabel>Version</FieldLabel>
             <Select
               onValueChange={(e) => {
                 p.onStateChange((prev) => ({
@@ -1008,32 +992,32 @@ const ReferencesEditor = (p: {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
-          <IconButton
+          </Field>
+          <Button
             aria-label="delete"
-            data-testid={`schema-create-reference-delete-btn-${index}`}
-            flexShrink={0}
-            icon={<TrashIcon size="12px" />}
+            className="shrink-0"
             onClick={() => {
               p.onStateChange((prev) => ({
                 ...prev,
                 references: prev.references.filter((_, i) => i !== index),
               }));
             }}
+            size="icon-sm"
+            testId={`schema-create-reference-delete-btn-${index}`}
             variant="ghost"
-          />
-        </Flex>
+          >
+            <TrashIcon />
+          </Button>
+        </div>
         {refQualified && (
-          <Text className="ml-1 font-mono text-muted-foreground" variant="bodySmall">
-            Reference subject: {refQualified}
-          </Text>
+          <div className="ml-1 font-mono text-body-sm text-muted-foreground">Reference subject: {refQualified}</div>
         )}
-      </Flex>
+      </div>
     );
   };
 
   return (
-    <Flex direction="column" gap="4">
+    <div className="flex flex-col gap-4">
       {refs.map((x, index) => renderRow(x, index))}
 
       <Button
@@ -1053,7 +1037,7 @@ const ReferencesEditor = (p: {
       >
         Add reference
       </Button>
-    </Flex>
+    </div>
   );
 };
 
