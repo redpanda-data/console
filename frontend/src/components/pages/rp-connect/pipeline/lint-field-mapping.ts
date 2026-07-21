@@ -61,6 +61,19 @@ function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineC
   }
 }
 
+// The key itself when rendered, else its closest rendered ancestor (a group section), else nothing.
+function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>): string | undefined {
+  const path = key.split('/');
+  while (path.length > 0) {
+    const candidate = path.join('/');
+    if (fieldKeys.has(candidate)) {
+      return candidate;
+    }
+    path.pop();
+  }
+  return;
+}
+
 // The deepest field whose YAML range contains the line.
 function fieldKeyForLine(segments: readonly FieldSegment[], line: number): string | undefined {
   let best: FieldSegment | undefined;
@@ -148,47 +161,53 @@ function collectFieldSegments(yaml: string, target: EditTarget, componentName: s
 /** An unanchored hint plus, when its line resolved to a (non-rendered) field, that field's dotted path. */
 export type UnmappedLintHint = { hint: LintHint; fieldLabel?: string };
 
+type ResolvedHint = { anchors: { key: string; message: string }[]; fieldLabel?: string };
+
+// Where one hint anchors, by signal strength: an explicit "field X …" reference (it beats the
+// line, which for a MISSING field can only point at the component — whose mapping starts on some
+// other field's line); then the line's field, walked up to its nearest rendered ancestor (a group
+// section) with the deeper path noted; then loose prose mentions. No anchors = the banner keeps
+// it, labelled with the line's field when known (a line number is meaningless in the form view).
+function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKeys: ReadonlySet<string>): ResolvedHint {
+  const named = fieldKeysNamedExplicitly(hint.hint, fieldKeys);
+  if (named.length > 0) {
+    return { anchors: named.map((key) => ({ key, message: hint.hint })) };
+  }
+  const lineKey = hint.line > 0 ? fieldKeyForLine(segments, hint.line) : undefined;
+  const lineAnchor = lineKey ? nearestRenderedAncestor(lineKey, fieldKeys) : undefined;
+  if (lineKey && lineAnchor) {
+    const remainder = lineKey === lineAnchor ? '' : lineKey.slice(lineAnchor.length + 1).replaceAll('/', '.');
+    return { anchors: [{ key: lineAnchor, message: remainder ? `${hint.hint} (${remainder})` : hint.hint }] };
+  }
+  const mentioned = fieldKeysMentioned(hint.hint, fieldKeys);
+  if (mentioned.length > 0) {
+    return { anchors: mentioned.map((key) => ({ key, message: hint.hint })) };
+  }
+  return { anchors: [], fieldLabel: lineKey?.replaceAll('/', '.') };
+}
+
 /** Splits a node's lint hints into per-field anchors (only keys the form renders) and the rest. */
 export function mapLintHintsToFields(opts: {
   yaml: string;
   target: EditTarget;
   componentName: string;
   hints: readonly LintHint[];
-  /** Leaf keys the schema form actually renders (see `formFieldKeys`). */
+  /** Keys the schema form actually renders — leaves and group sections (see `formFieldKeys`). */
   fieldKeys: ReadonlySet<string>;
 }): { byField: FieldLintErrors; unmapped: UnmappedLintHint[] } {
   const segments = collectFieldSegments(opts.yaml, opts.target, opts.componentName);
   const byField = new Map<string, string[]>();
   const unmapped: UnmappedLintHint[] = [];
-  const anchor = (key: string, message: string) => {
-    byField.set(key, [...(byField.get(key) ?? []), message]);
-  };
 
   for (const hint of opts.hints) {
-    // An explicit "field X …" reference is the strongest signal — it beats the line, which for a
-    // MISSING field can only point at the component (whose mapping starts on another field's line).
-    const named = fieldKeysNamedExplicitly(hint.hint, opts.fieldKeys);
-    if (named.length > 0) {
-      for (const key of named) {
-        anchor(key, hint.hint);
-      }
+    const resolved = resolveHint(hint, segments, opts.fieldKeys);
+    if (resolved.anchors.length === 0) {
+      unmapped.push({ hint, fieldLabel: resolved.fieldLabel });
       continue;
     }
-    const lineKey = hint.line > 0 ? fieldKeyForLine(segments, hint.line) : undefined;
-    if (lineKey && opts.fieldKeys.has(lineKey)) {
-      anchor(lineKey, hint.hint);
-      continue;
+    for (const { key, message } of resolved.anchors) {
+      byField.set(key, [...(byField.get(key) ?? []), message]);
     }
-    const mentioned = fieldKeysMentioned(hint.hint, opts.fieldKeys);
-    if (mentioned.length > 0) {
-      for (const key of mentioned) {
-        anchor(key, hint.hint);
-      }
-      continue;
-    }
-    // Not anchorable to a rendered field. If the line at least resolves to a known (complex /
-    // unrendered) field, carry its name — a line number is meaningless in the form view.
-    unmapped.push({ hint, fieldLabel: lineKey?.replaceAll('/', '.') });
   }
   return { byField, unmapped };
 }

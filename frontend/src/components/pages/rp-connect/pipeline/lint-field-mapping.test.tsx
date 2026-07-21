@@ -110,6 +110,31 @@ describe('mapLintHintsToFields', () => {
     expect(unmapped[0].fieldLabel).toBeUndefined();
   });
 
+  test('an error on a null object anchors to its rendered group section', () => {
+    // e.g. `batching:` hollowed to null — no leaf input exists, but the batching group does.
+    const yamlWithNullGroup = 'input:\n  redpanda:\n    topics: []\n    batching:\n';
+    const { byField, unmapped } = mapLintHintsToFields({
+      yaml: yamlWithNullGroup,
+      target,
+      componentName: 'redpanda',
+      hints: [hint(4, 'expected object value, got !!null')],
+      fieldKeys: new Set(['topics', 'batching']),
+    });
+    expect(byField.get('batching')).toEqual(['expected object value, got !!null']);
+    expect(unmapped).toHaveLength(0);
+  });
+
+  test('a line inside an unrendered child anchors up to its group, noting the deeper path', () => {
+    const { byField } = mapLintHintsToFields({
+      yaml: YAML,
+      target,
+      componentName: 'redpanda',
+      hints: [hint(8, 'expected bool value')], // tls/enabled's line
+      fieldKeys: new Set(['tls']), // only the group section is rendered
+    });
+    expect(byField.get('tls')).toEqual(['expected bool value (enabled)']);
+  });
+
   test('an unmapped hint on an unrendered field carries that field name for the banner', () => {
     const { byField, unmapped } = mapLintHintsToFields({
       yaml: YAML,

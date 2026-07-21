@@ -322,10 +322,33 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
   return { scalars, arrays };
 }
 
-/** Leaf keys the schema form renders (plus `label`) — the anchors lint errors can attach to. */
+// Paths of the nested object groups the form renders as collapsible sections (tls, batching, …).
+function collectGroupKeys(fields: RawFieldSpec[], base: string[] = [], out: string[] = []): string[] {
+  for (const f of fields) {
+    if (f.deprecated || !isObjectGroupField(f)) {
+      continue;
+    }
+    const path = [...base, f.name];
+    out.push(path.join('/'));
+    collectGroupKeys(f.children ?? [], path, out);
+  }
+  return out;
+}
+
+/**
+ * Keys the schema form renders — leaf inputs, `label`, and object-group sections — i.e. the
+ * anchors lint errors can attach to. A group anchor renders at the top of its (auto-opened)
+ * section, which is as specific as an error on the group itself (`batching: null`) can get.
+ */
 export function formFieldKeys(spec: ConnectComponentSpec): ReadonlySet<string> {
-  const leaves = collectLeaves(spec.config?.children ?? []);
-  return new Set(['label', ...leaves.scalars.map((l) => l.key), ...leaves.arrays.map((l) => l.key)]);
+  const fields = spec.config?.children ?? [];
+  const leaves = collectLeaves(fields);
+  return new Set([
+    'label',
+    ...leaves.scalars.map((l) => l.key),
+    ...leaves.arrays.map((l) => l.key),
+    ...collectGroupKeys(fields),
+  ]);
 }
 
 // Lint messages anchored to field keys, provided by the inspector; read by the recursive field
@@ -740,6 +763,8 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
         key={hasLintErrorInside ? `${spec.name}-with-errors` : spec.name}
         label={spec.name}
       >
+        {/* Errors anchored on the group itself (e.g. `batching: null`) — shown where it's fixed. */}
+        <FieldLintErrorList dirty={false} fieldKey={here.join('/')} />
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />
       </FieldGroup>
     );

@@ -384,6 +384,19 @@ describe('NodeConfigForm — field-anchored lint errors', () => {
     expect(screen.queryByText('topic must not be empty')).not.toBeInTheDocument();
   });
 
+  test('renders a group-anchored error inside its (auto-opened) section', () => {
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        fieldErrors={new Map([['batching', ['expected object value, got !!null']]])}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], batching: null } }}
+      />
+    );
+    // The batching group opens and shows the error at its top — no line numbers, no banner.
+    expect(screen.getByText('expected object value, got !!null')).toBeInTheDocument();
+  });
+
   test('opens the Advanced group when it hides an errored field', () => {
     render(
       <NodeConfigForm
