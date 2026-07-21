@@ -23,6 +23,7 @@ import {
   removeComponentAt,
   renameResourceReferences,
   setComponentAt,
+  tryPatchRedpandaYaml,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -2004,6 +2005,24 @@ output_resources:
       // the insert writes an output with only a label, which renders as an empty placeholder.
       const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
       expect(step?.drop).toEqual({});
+    });
+  });
+
+  describe('tryPatchRedpandaYaml', () => {
+    test('appends a created topic to an existing topics list instead of replacing it', () => {
+      const next = tryPatchRedpandaYaml('input:\n  redpanda:\n    topics:\n      - existing\n', 'input', 'redpanda', {
+        topicName: 'new-topic',
+      });
+      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
+      expect(parsed.input.redpanda.topics).toEqual(['existing', 'new-topic']);
+    });
+
+    test('does not duplicate a topic already in the list', () => {
+      const next = tryPatchRedpandaYaml('input:\n  redpanda:\n    topics:\n      - existing\n', 'input', 'redpanda', {
+        topicName: 'existing',
+      });
+      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
+      expect(parsed.input.redpanda.topics).toEqual(['existing']);
     });
   });
 

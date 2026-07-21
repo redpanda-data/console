@@ -908,6 +908,7 @@ export function VisualEditorPanel({
                   commitRef={isEditing ? commitRef : undefined}
                   components={components}
                   lintHints={lintByNode.get(selected.id)}
+                  onAddTopic={isEditing ? onAddTopic : undefined}
                   onApply={onYamlChange}
                   onClose={() => selectNode(null)}
                   onCreateResource={isEditing ? handleRequestCreateResource : undefined}

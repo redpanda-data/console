@@ -11,6 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -26,8 +27,9 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
+import { useListTopicsQuery } from 'react-query/api/topic';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import type { FieldLintErrors } from './lint-field-mapping';
@@ -43,6 +45,7 @@ import {
   isScalarArrayField,
   isScalarField,
 } from '../utils/schema';
+import { isTopicField } from '../utils/wizard';
 import type { EditTarget, ResourceKind } from '../utils/yaml';
 import { resourceKindForComponentName } from '../utils/yaml';
 
@@ -135,13 +138,15 @@ export const ChildItemsList = ({
   </div>
 );
 
-// Resource-link context (existing labels + create-and-link), provided by the inspector so the form
-// stays a pure config editor.
+// Cluster-linking context (resource labels, create-resource, create-topic), provided by the
+// inspector so the form stays a pure config editor.
 type ResourceFieldContextValue = {
   labels: Record<ResourceKind, string[]>;
   onCreateResource?: (kind: ResourceKind) => void;
   // Kind of the edited component, so a plainly-typed `resource:` string field still reads as a link.
   componentResourceKind?: ResourceKind;
+  /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
+  onCreateTopic?: () => void;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
@@ -559,6 +564,75 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
   />
 );
 
+// Cluster topics offered by topic-field pickers (internal topics hidden, like the template flow).
+function useTopicOptions() {
+  const { data, isLoading } = useListTopicsQuery(undefined, undefined, { hideInternalTopics: true });
+  const options = useMemo(
+    () =>
+      (data?.topics ?? [])
+        .map((t) => t.name)
+        .filter((name) => !name.startsWith('__redpanda'))
+        .map((name) => ({ value: name, label: name })),
+    [data]
+  );
+  return { options, isLoading };
+}
+
+// The "Create new topic" affordance next to topic pickers; opens the Add-topic dialog. The created
+// topic is written into the YAML, which re-syncs into the (clean) form.
+const CreateTopicButton = () => {
+  const { onCreateTopic } = useContext(ResourceFieldContext);
+  if (!onCreateTopic) {
+    return null;
+  }
+  return (
+    <Button className="self-start" onClick={onCreateTopic} size="sm" type="button" variant="outline">
+      <Plus className="size-3.5" /> Create new topic
+    </Button>
+  );
+};
+
+// A topic-named scalar: pick an existing cluster topic (like the template flow's selector), type a
+// custom value (interpolations, `topic:partition`), or create a new topic.
+const TopicScalarControl = ({ value, onChange }: { value: string; onChange: (value: unknown) => void }) => {
+  const { options, isLoading } = useTopicOptions();
+  return (
+    <div className="flex flex-col gap-2">
+      <Combobox
+        creatable
+        createLabel="value"
+        loading={isLoading}
+        onChange={onChange}
+        onCreateOption={onChange}
+        options={options}
+        placeholder="Select or enter a topic…"
+        value={value}
+      />
+      <CreateTopicButton />
+    </div>
+  );
+};
+
+// Appends cluster topics to a topics-list field without giving up the free-text lines (regex
+// patterns, explicit partitions) the textarea supports.
+const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (topic: string) => void }) => {
+  const { options, isLoading } = useTopicOptions();
+  const remaining = options.filter((o) => !lines.includes(o.value));
+  return (
+    <div className="flex flex-col gap-2">
+      <Combobox
+        clearable={false}
+        loading={isLoading}
+        onChange={(topic) => topic && onAppend(topic)}
+        options={remaining}
+        placeholder="Add existing topic…"
+        value=""
+      />
+      <CreateTopicButton />
+    </div>
+  );
+};
+
 // A select can't be cleared by deleting text the way inputs can, so without an explicit unset
 // item a value (often seeded by the insert template) is stuck in the YAML forever. Maps to ''
 // which the save path treats as "remove the key". Sentinel because '' can't be an item value.
@@ -623,11 +697,34 @@ const ScalarControl = ({
   if (fieldHasOptions(spec)) {
     return <OptionsSelect id={id} onChange={onChange} required={required} spec={spec} value={value} />;
   }
+  if (isTopicField(spec.name ?? '')) {
+    return <TopicScalarControl onChange={onChange} value={String(value ?? '')} />;
+  }
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
   }
-  // Text input (numeric inputMode), not type="number": a number input blanks values the browser
-  // can't parse (e.g. `1000$`); text keeps them visible and fixable.
+  return (
+    <ScalarTextInput id={id} invalid={invalid} onChange={onChange} required={required} spec={spec} value={value} />
+  );
+};
+
+// Text input (numeric inputMode), not type="number": a number input blanks values the browser
+// can't parse (e.g. `1000$`); text keeps them visible and fixable.
+const ScalarTextInput = ({
+  spec,
+  value,
+  onChange,
+  id,
+  invalid,
+  required,
+}: {
+  spec: RawFieldSpec;
+  value: string | boolean;
+  onChange: (value: unknown) => void;
+  id?: string;
+  invalid?: boolean;
+  required?: boolean;
+}) => {
   const numericMode = spec.type === 'int' ? 'numeric' : 'decimal';
   return (
     <Input
@@ -700,30 +797,43 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
   );
 };
 
+const arrayFieldLines = (text: string): string[] =>
+  text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l !== '');
+
 const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
+  const isTopics = isTopicField(leaf.spec.name ?? '');
   return (
     <Controller
       control={control}
       name={`arrays.${leaf.key}` as FieldPath<FormValues>}
-      render={({ field, fieldState }) => (
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel htmlFor={inputId} spec={leaf.spec} />
-          <Textarea
-            aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
-            aria-required={checkRequired(leaf.spec) || undefined}
-            className="font-mono text-sm"
-            id={inputId}
-            onChange={field.onChange}
-            placeholder="One value per line"
-            rows={3}
-            value={String(field.value ?? '')}
-          />
-          <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
-          <FieldDescription spec={leaf.spec} />
-        </div>
-      )}
+      render={({ field, fieldState }) => {
+        const lines = arrayFieldLines(String(field.value ?? ''));
+        return (
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor={inputId} spec={leaf.spec} />
+            <Textarea
+              aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
+              aria-required={checkRequired(leaf.spec) || undefined}
+              className="font-mono text-sm"
+              id={inputId}
+              onChange={field.onChange}
+              placeholder="One value per line"
+              rows={3}
+              value={String(field.value ?? '')}
+            />
+            {isTopics ? (
+              <TopicArrayPicker lines={lines} onAppend={(t) => field.onChange([...lines, t].join('\n'))} />
+            ) : null}
+            <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
+            <FieldDescription spec={leaf.spec} />
+          </div>
+        );
+      }}
     />
   );
 };
@@ -867,6 +977,8 @@ type NodeConfigFormProps = {
   onCommitField?: () => boolean;
   /** Lint messages anchored to field keys (see mapLintHintsToFields), rendered under their fields. */
   fieldErrors?: FieldLintErrors;
+  /** Opens the Add-topic dialog for this node; offered by topic-named fields. */
+  onCreateTopic?: () => void;
   /** Resource nodes are referenced by label — the label field must not be cleared. */
   requireLabel?: boolean;
 };
@@ -885,6 +997,7 @@ export function NodeConfigForm({
   onConfigChange,
   onCommitField,
   fieldErrors,
+  onCreateTopic,
   requireLabel,
 }: NodeConfigFormProps) {
   const labelId = useId();
@@ -992,6 +1105,7 @@ export function NodeConfigForm({
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
     onCreateResource,
     componentResourceKind: resourceKindForComponentName(componentName),
+    onCreateTopic,
   };
 
   const advancedHasLintError = advanced.some((f) => hasLintErrorUnder(fieldErrors ?? NO_FIELD_ERRORS, f.name));

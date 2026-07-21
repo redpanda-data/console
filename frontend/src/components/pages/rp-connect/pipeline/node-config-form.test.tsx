@@ -14,6 +14,12 @@ import { render, screen } from 'test-utils';
 import { describe, expect, test, vi } from 'vitest';
 
 import { NodeConfigForm } from './node-config-form';
+
+// Cluster topics offered by topic-field pickers.
+vi.mock('react-query/api/topic', () => ({
+  useListTopicsQuery: () => ({ data: { topics: [{ name: 'orders' }, { name: 'events' }] }, isLoading: false }),
+}));
+
 import type { ConnectComponentSpec } from '../types/schema';
 import { mockKafkaOutput } from '../utils/__fixtures__/component-schemas';
 
@@ -25,6 +31,8 @@ function renderForm(value: Record<string, unknown>, onConfigChange = vi.fn()) {
   render(<NodeConfigForm componentName="kafka" onConfigChange={onConfigChange} spec={spec} value={value} />);
   return onConfigChange;
 }
+
+const CREATE_NEW_TOPIC_RE = /create new topic/i;
 
 // The most recent config reported by the form (undefined if never called, null when clean).
 function lastReported(onConfigChange: ReturnType<typeof vi.fn>): unknown {
@@ -75,7 +83,7 @@ describe('NodeConfigForm — full schema', () => {
 
   test('reports a config only once something changes', async () => {
     const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
+    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } });
     // Clean on mount → reports null (nothing to commit).
     expect(lastReported(onConfigChange)).toBeNull();
 
@@ -85,17 +93,16 @@ describe('NodeConfigForm — full schema', () => {
 
   test('reports a changed scalar and keeps the YAML minimal (no empty optionals)', async () => {
     const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 'orig', addresses: ['a:9092'] } });
+    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } });
 
-    const topic = screen.getByDisplayValue('orig');
-    await user.clear(topic);
-    await user.type(topic, 'new-topic');
+    const key = screen.getByDisplayValue('orig');
+    await user.clear(key);
+    await user.type(key, 'new-key');
 
     const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-    expect(next.kafka.topic).toBe('new-topic');
+    expect(next.kafka.key).toBe('new-key');
     expect(next.kafka.addresses).toEqual(['a:9092']);
     // Untouched optional fields are not written out.
-    expect(next.kafka).not.toHaveProperty('key');
     expect(next.kafka).not.toHaveProperty('partitioner');
   });
 
@@ -104,8 +111,9 @@ describe('NodeConfigForm — full schema', () => {
     // `metadata` is not in the schema; `count: 1000$` is a malformed int — both must survive.
     const onConfigChange = renderForm({
       kafka: {
-        topic: 'orig',
+        topic: 't',
         addresses: ['a:9092'],
+        key: 'orig',
         metadata: { include_patterns: ['.*'] },
         batching: { count: '1000$' },
       },
@@ -371,17 +379,17 @@ describe('NodeConfigForm — field-anchored lint errors', () => {
     render(
       <NodeConfigForm
         componentName="kafka"
-        fieldErrors={new Map([['topic', ['topic must not be empty']]])}
+        fieldErrors={new Map([['key', ['key must not be empty']]])}
         spec={spec}
-        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'k' } }}
       />
     );
 
-    expect(screen.getByText('topic must not be empty')).toBeInTheDocument();
+    expect(screen.getByText('key must not be empty')).toBeInTheDocument();
 
     // Typing in the field means the user is addressing it — the stale message gets out of the way.
-    await user.type(screen.getByDisplayValue('t'), 'opic-name');
-    expect(screen.queryByText('topic must not be empty')).not.toBeInTheDocument();
+    await user.type(screen.getByDisplayValue('k'), 'ey-name');
+    expect(screen.queryByText('key must not be empty')).not.toBeInTheDocument();
   });
 
   test('renders a group-anchored error inside its (auto-opened) section', () => {
@@ -455,7 +463,7 @@ describe('NodeConfigForm — field-level commit', () => {
         onCommitField={onCommitField}
         onConfigChange={onConfigChange}
         spec={spec}
-        value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } }}
       />
     );
 
@@ -480,7 +488,7 @@ describe('NodeConfigForm — field-level commit', () => {
         onCommitField={onCommitField}
         onConfigChange={onConfigChange}
         spec={spec}
-        value={{ kafka: { topic: 'orig', addresses: ['a:9092'], batching: { count: 5 } } }}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig', batching: { count: 5 } } }}
       />
     );
 
@@ -508,7 +516,7 @@ describe('NodeConfigForm — field-level commit', () => {
         onCommitField={onCommitField}
         onConfigChange={onConfigChange}
         spec={spec}
-        value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } }}
       />
     );
 
@@ -527,7 +535,7 @@ describe('NodeConfigForm — field-level commit', () => {
         componentName="kafka"
         onCommitField={onCommitField}
         spec={spec}
-        value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } }}
       />
     );
 
@@ -555,6 +563,73 @@ describe('NodeConfigForm — field-level commit', () => {
       />
     );
     expect(screen.getByDisplayValue('from-dialog')).toBeInTheDocument();
+  });
+});
+
+describe('NodeConfigForm — topic fields', () => {
+  test('a topic scalar offers existing cluster topics; selecting one reports it', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onConfigChange={onConfigChange}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+
+    await user.click(screen.getByPlaceholderText('Select or enter a topic…'));
+    await user.click(await screen.findByText('orders'));
+
+    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
+    expect(next.kafka.topic).toBe('orders');
+  });
+
+  test('the create-topic affordance opens the Add-topic flow', async () => {
+    const user = userEvent.setup();
+    const onCreateTopic = vi.fn();
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onCreateTopic={onCreateTopic}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: CREATE_NEW_TOPIC_RE }));
+    expect(onCreateTopic).toHaveBeenCalled();
+  });
+
+  test('a topics list keeps free text but can append an existing cluster topic', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    const topicsSpec = {
+      name: 'redpanda',
+      type: 'input',
+      config: {
+        name: '',
+        type: 'object',
+        kind: 'scalar',
+        children: [{ name: 'topics', type: 'string', kind: 'array', optional: true }],
+      },
+    } as unknown as ConnectComponentSpec;
+    render(
+      <NodeConfigForm
+        componentName="redpanda"
+        onConfigChange={onConfigChange}
+        spec={topicsSpec}
+        value={{ redpanda: { topics: ['my-topic:0'] } }}
+      />
+    );
+
+    await user.click(screen.getByPlaceholderText('Add existing topic…'));
+    await user.click(await screen.findByText('events'));
+
+    // The free-text line (explicit partition syntax) survives; the picked topic is appended.
+    const next = lastReported(onConfigChange) as { redpanda: { topics: string[] } };
+    expect(next.redpanda.topics).toEqual(['my-topic:0', 'events']);
   });
 });
 

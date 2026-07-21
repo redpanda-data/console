@@ -112,6 +112,8 @@ type NodeInspectorProps = {
   onRequestCommit?: () => void;
   /** Bumped on undo/redo so the form remounts (drops now-stale edit state) instead of resyncing in place. */
   resetToken?: number;
+  /** Opens the Add-topic dialog for a top-level input/output; the result is patched into its YAML. */
+  onAddTopic?: (section: string, componentName: string) => void;
 };
 
 /** The inspector's pending-edit hooks, registered into the panel's `commitRef`. */
@@ -164,6 +166,7 @@ export function NodeInspector({
   commitRef,
   onRequestCommit,
   resetToken,
+  onAddTopic,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   // The routing condition for a case-entry node, read from its switch case.
@@ -278,6 +281,16 @@ export function NodeInspector({
     return componentDraftRef.current === null;
   }, [onRequestCommit]);
 
+  // Create-topic is patched by section+componentName, which only resolves for top-level
+  // input/output nodes; nested topic fields still get the picker, just not the create flow.
+  const targetKind = target?.kind;
+  const createTopicForNode = useMemo(() => {
+    if (readOnly || !(onAddTopic && componentName) || !(targetKind === 'input' || targetKind === 'output')) {
+      return;
+    }
+    return () => onAddTopic(targetKind, componentName);
+  }, [readOnly, onAddTopic, componentName, targetKind]);
+
   if (!(target && component && componentName)) {
     return <InspectorEmptyState readOnly={readOnly} />;
   }
@@ -382,6 +395,7 @@ export function NodeInspector({
         fieldErrors={lintMapping.byField}
         onCommitField={readOnly || !onRequestCommit ? undefined : commitField}
         onCreateResource={onCreateResource}
+        onCreateTopic={createTopicForNode}
         onSelectChild={onSelectChild}
         readOnly={readOnly}
         reportComponentDraft={reportComponentDraft}
@@ -410,6 +424,7 @@ type InspectorBodyProps = {
   reportComponentDraft: (next: Record<string, unknown> | null) => void;
   fieldErrors?: FieldLintErrors;
   onCommitField?: () => boolean;
+  onCreateTopic?: () => void;
   resetToken?: number;
 };
 
@@ -429,6 +444,7 @@ const InspectorBody = ({
   reportComponentDraft,
   fieldErrors,
   onCommitField,
+  onCreateTopic,
   resetToken,
 }: InspectorBodyProps) => {
   if (readOnly) {
@@ -454,6 +470,7 @@ const InspectorBody = ({
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
+        onCreateTopic={onCreateTopic}
         onSelectChild={onSelectChild}
         requireLabel={resourceRefKindForTarget(target) !== undefined}
         resourceLabels={resourceLabels}
