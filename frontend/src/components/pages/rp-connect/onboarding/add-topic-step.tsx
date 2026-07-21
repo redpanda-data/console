@@ -47,6 +47,13 @@ import {
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 
+// Only describe what the mode can actually do — "create a new topic" with no input reads as broken.
+const TOPIC_NAME_DESCRIPTIONS: Record<'new' | 'existing' | 'both', string> = {
+  new: 'Enter a name for the new topic.',
+  existing: 'Choose an existing topic to read or write data from.',
+  both: 'Choose an existing topic to read or write data from, or create a new topic.',
+};
+
 type AddTopicStepProps = {
   defaultTopicName?: string;
   hideInternal?: boolean;
@@ -291,16 +298,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
         <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
           <div className="flex flex-col gap-2">
             <FormLabel>Topic name</FormLabel>
-            {/* Only offer what the mode can actually do — "create a new topic" with no input reads as broken. */}
-            <FormDescription>
-              {
-                {
-                  new: 'Enter a name for the new topic.',
-                  existing: 'Choose an existing topic to read or write data from.',
-                  both: 'Choose an existing topic to read or write data from, or create a new topic.',
-                }[selectionMode]
-              }
-            </FormDescription>
+            <FormDescription>{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</FormDescription>
             <div className="flex flex-col items-start gap-2">
               {selectionMode === 'both' && (
                 <ToggleGroup

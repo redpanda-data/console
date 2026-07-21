@@ -16,7 +16,6 @@ import { isMap, parseDocument } from 'yaml';
 import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import type { RawFieldSpec } from '../../types/schema';
 import { checkRequired, findComponentByName, resolveFieldByPath } from '../../utils/schema';
-import { KNOWN_MISSING_COMPONENTS } from '../known-missing-components';
 import type { PipelineTemplate, TemplateSlot } from '../pipeline-template-types';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 import { stitchTemplateYaml } from '../template-deploy';
@@ -117,7 +116,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       }
       for (const pair of section.items) {
         const componentName = (pair.key as { value?: unknown } | null)?.value;
-        if (typeof componentName !== 'string' || KNOWN_MISSING_COMPONENTS.has(componentName)) {
+        if (typeof componentName !== 'string') {
           continue;
         }
         const comp = findComponentByName(componentList, componentName, type);
@@ -209,7 +208,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       }
       for (const pair of section.items) {
         const componentName = (pair.key as { value?: unknown } | null)?.value;
-        if (typeof componentName !== 'string' || KNOWN_MISSING_COMPONENTS.has(componentName)) {
+        if (typeof componentName !== 'string') {
           continue;
         }
         const comp = findComponentByName(componentList, componentName, type);

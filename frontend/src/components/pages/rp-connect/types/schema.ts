@@ -4,11 +4,18 @@ import type { ComponentSpec, ComponentStatus, FieldSpec } from 'protogen/redpand
 export interface RawFieldSpec extends Omit<FieldSpec, 'children'> {
   comment?: string; // Keep for internal use (YAML generation)
   children?: RawFieldSpec[];
-  // Stamped by enrichComponentsWithConfigSchema from the raw config schema JSON, which carries
-  // signals the proto FieldSpec drops (is_secret entirely; required-ness for fields whose
-  // non-string default is lost in serialization). Both stay undefined when the dataplane's
-  // schema predates flag serialization (benthos < 4.59) — consumers then fall back to proto flags.
+  /**
+   * Stamped by enrichComponentsWithConfigSchema from the raw config-schema JSON — the proto
+   * FieldSpec has no is_secret field at all. Undefined when the dataplane's schema predates
+   * flag serialization (benthos < 4.59); consumers then fall back to the name heuristic.
+   */
   secret?: boolean;
+  /**
+   * Stamped by enrichComponentsWithConfigSchema from the schema's `required` arrays, which the
+   * backend computes with full default knowledge (the proto drops non-string defaults, making
+   * "required" indistinguishable from "default lost in serialization"). Undefined when the
+   * schema carries no `required` arrays; consumers then fall back to proto flags.
+   */
   requiredBySchema?: boolean;
 }
 

@@ -14,7 +14,6 @@ import { describe, expect, test } from 'vitest';
 
 import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import { findComponentByName, resolveFieldByPath } from '../../utils/schema';
-import { KNOWN_MISSING_COMPONENTS } from '../known-missing-components';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 
 // Asserts each slot's schemaField resolves against the committed schema snapshot, so a renamed/removed
@@ -44,9 +43,6 @@ describe('PIPELINE_TEMPLATES schemaField paths resolve against the schema snapsh
     component,
     type,
   }) => {
-    if (KNOWN_MISSING_COMPONENTS.has(component)) {
-      return;
-    }
     const comp = findComponentByName(componentList, component, type);
     expect(comp, `template "${templateId}": ${type} "${component}" not in schema snapshot`).toBeDefined();
     const field = resolveFieldByPath(comp?.config, schemaField);

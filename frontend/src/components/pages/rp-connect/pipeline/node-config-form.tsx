@@ -139,7 +139,9 @@ export const ChildItemsList = ({
 );
 
 // Cluster-linking context (resource labels, create-resource, create-topic), provided by the
-// inspector so the form stays a pure config editor.
+// inspector so the form stays a pure config editor. Context rather than props because the
+// consumers are leaf controls several generic layers down (SchemaFields → SchemaField →
+// Scalar/ArrayField → controls) — drilling would thread cluster concerns through every layer.
 type ResourceFieldContextValue = {
   labels: Record<ResourceKind, string[]>;
   onCreateResource?: (kind: ResourceKind) => void;
@@ -655,11 +657,15 @@ const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (top
   );
 };
 
-// A select can't be cleared by deleting text the way inputs can, so without an explicit unset
-// item a value (often seeded by the insert template) is stuck in the YAML forever. Maps to ''
-// which the save path treats as "remove the key". Sentinel because '' can't be an item value.
+// Sentinel item value — '' can't be one.
 const UNSET_OPTION = '__unset__';
 
+/**
+ * Enum (annotated-options) field. A select can't be cleared by deleting text the way inputs can,
+ * so optional fields get an explicit unset item ("Default (x)" / "Not set") — without it a value
+ * seeded by the insert template is stuck in the YAML forever. Unset maps to '', which the save
+ * path treats as "remove the key".
+ */
 const OptionsSelect = ({
   spec,
   value,

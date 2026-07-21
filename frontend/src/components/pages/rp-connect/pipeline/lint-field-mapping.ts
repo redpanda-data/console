@@ -14,12 +14,6 @@ import { isMap, isScalar, LineCounter, parseDocument } from 'yaml';
 
 import { type EditTarget, editTargetPath } from '../utils/yaml';
 
-/**
- * Anchors a node's lint hints to the inspector form fields they belong to, so an error renders
- * under the field (or inside the group section) it's about instead of as "(line 12)" in a banner
- * the user has to decode. See `resolveHint` for the anchoring tiers.
- */
-
 /** Field/group key (`path.join('/')`) → the lint messages anchored to it. */
 export type FieldLintErrors = ReadonlyMap<string, string[]>;
 
@@ -179,7 +173,12 @@ function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKey
   return { anchors: [], fieldLabel: lineKey?.replaceAll('/', '.') };
 }
 
-/** Splits a node's lint hints into per-field anchors (only keys the form renders) and the rest. */
+/**
+ * Anchors a node's lint hints to the inspector form fields they belong to, so an error renders
+ * under the field (or inside the group section) it's about instead of as "(line 12)" in a banner
+ * the user has to decode. Splits into per-field anchors (only keys the form renders) and the
+ * rest for the banner. See `resolveHint` for the anchoring tiers.
+ */
 export function mapLintHintsToFields(opts: {
   yaml: string;
   target: EditTarget;
