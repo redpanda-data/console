@@ -28,6 +28,10 @@ export type StringSlot = SlotBase & {
   placeholder?: string;
   default?: string;
   multiline?: boolean;
+  /** Comma-separated multi-value: the stitcher expands the referencing `- ${slot.X}` sequence item into one item per entry. */
+  list?: boolean;
+  /** Validates the trimmed value (each entry, for list slots) so connector-side rejections surface in the form instead. */
+  entryPattern?: { regex: RegExp; message: string };
   /** When blank but the connector still needs the key, emit this generated value instead of dropping the line. */
   defaultWhenBlank?: (ctx: { pipelineName: string }) => string;
 };

@@ -26,6 +26,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
 import PipelinePage from './pipeline';
@@ -129,27 +130,15 @@ const RpConnectPipelinesCreateContent = () => {
       <div className="my-2">
         <div className="text-body">
           For help creating your pipeline, see our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectQuickstart} rel="noopener noreferrer" target="_blank">
             quickstart
           </UILink>
           ,{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectCookbooks} rel="noopener noreferrer" target="_blank">
             library of examples
           </UILink>
           , and{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectComponentCatalog} rel="noopener noreferrer" target="_blank">
             connector catalog
           </UILink>
           .
@@ -461,11 +450,7 @@ export const PipelineEditor = (p: {
                   <AlertDescription>
                     <div className="text-body">
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
-                      <UILink
-                        href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <UILink href={docsLinks.cloud.connectQuickstart} rel="noopener noreferrer" target="_blank">
                         see our quickstart documentation
                       </UILink>
                       .

@@ -1,0 +1,1439 @@
+{
+  "definitions": {
+    "input": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "generate": {
+                  "additionalProperties": false,
+                  "is_advanced": false,
+                  "is_deprecated": false,
+                  "is_optional": false,
+                  "is_secret": false,
+                  "properties": {
+                    "auto_replay_nacks": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "batch_size": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    },
+                    "count": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    },
+                    "interval": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "mapping": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["mapping"],
+                  "type": "object"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "http_client": {
+                  "additionalProperties": false,
+                  "is_advanced": false,
+                  "is_deprecated": false,
+                  "is_optional": false,
+                  "is_secret": false,
+                  "properties": {
+                    "auto_replay_nacks": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "backoff_on": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "items": {
+                        "is_advanced": true,
+                        "is_deprecated": false,
+                        "is_optional": false,
+                        "is_secret": false,
+                        "type": "number"
+                      },
+                      "type": "array"
+                    },
+                    "basic_auth": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "enabled": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "password": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "username": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "disable_http2": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "drop_empty_bodies": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "drop_on": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "items": {
+                        "is_advanced": true,
+                        "is_deprecated": false,
+                        "is_optional": false,
+                        "is_secret": false,
+                        "type": "number"
+                      },
+                      "type": "array"
+                    },
+                    "dump_request_log_level": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "extract_headers": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "include_patterns": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "include_prefixes": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "follow_redirects": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "headers": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "patternProperties": {
+                        ".": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "jwt": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "claims": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "patternProperties": {
+                            ".": {
+                              "is_advanced": true,
+                              "is_deprecated": false,
+                              "is_optional": false,
+                              "is_secret": false
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "enabled": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "headers": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "patternProperties": {
+                            ".": {
+                              "is_advanced": true,
+                              "is_deprecated": false,
+                              "is_optional": false,
+                              "is_secret": false
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "private_key_file": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "signing_method": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "max_retry_backoff": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "include_patterns": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "include_prefixes": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "oauth": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "access_token": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "access_token_secret": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "consumer_key": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "consumer_secret": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "enabled": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "oauth2": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "client_key": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "client_secret": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "enabled": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "endpoint_params": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "patternProperties": {
+                            ".": {
+                              "is_advanced": true,
+                              "is_deprecated": false,
+                              "is_optional": true,
+                              "is_secret": false
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "scopes": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "token_url": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "payload": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "proxy_url": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "rate_limit": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "retries": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    },
+                    "retry_period": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "stream": {
+                      "additionalProperties": false,
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "codec": {
+                          "is_advanced": false,
+                          "is_deprecated": true,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "enabled": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "max_buffer": {
+                          "is_advanced": false,
+                          "is_deprecated": true,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "number"
+                        },
+                        "reconnect": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "scanner": {
+                          "$ref": "#/definitions/scanner",
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "successful_on": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "items": {
+                        "is_advanced": true,
+                        "is_deprecated": false,
+                        "is_optional": false,
+                        "is_secret": false,
+                        "type": "number"
+                      },
+                      "type": "array"
+                    },
+                    "timeout": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "tls": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "client_certs": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "additionalProperties": false,
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "properties": {
+                              "cert": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": false,
+                                "type": "string"
+                              },
+                              "cert_file": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": false,
+                                "type": "string"
+                              },
+                              "key": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": true,
+                                "type": "string"
+                              },
+                              "key_file": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": false,
+                                "type": "string"
+                              },
+                              "password": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": true,
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "enable_renegotiation": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "enabled": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "root_cas": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "root_cas_file": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "skip_cert_verify": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "url": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "verb": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["url"],
+                  "type": "object"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kafka": {
+                  "additionalProperties": false,
+                  "is_advanced": false,
+                  "is_deprecated": false,
+                  "is_optional": false,
+                  "is_secret": false,
+                  "properties": {
+                    "addresses": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "items": {
+                        "is_advanced": false,
+                        "is_deprecated": false,
+                        "is_optional": false,
+                        "is_secret": false,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "auto_replay_nacks": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "batching": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "byte_size": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "number"
+                        },
+                        "check": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "count": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "number"
+                        },
+                        "period": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "processors": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "items": {
+                            "$ref": "#/definitions/processor",
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": true,
+                            "is_secret": false
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "checkpoint_limit": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    },
+                    "client_id": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "commit_period": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "consumer_group": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "extract_tracing_map": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "fetch_buffer_cap": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    },
+                    "group": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "heartbeat_interval": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "rebalance_timeout": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "session_timeout": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "instance_id": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "max_processing_period": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "multi_header": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "rack_id": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "sasl": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "access_token": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "mechanism": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "password": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "token_cache": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "token_key": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "user": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "start_from_oldest": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "target_version": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "timely_nacks_maximum_wait": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "tls": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "client_certs": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "additionalProperties": false,
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "properties": {
+                              "cert": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": false,
+                                "type": "string"
+                              },
+                              "cert_file": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": false,
+                                "type": "string"
+                              },
+                              "key": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": true,
+                                "type": "string"
+                              },
+                              "key_file": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": false,
+                                "type": "string"
+                              },
+                              "password": {
+                                "is_advanced": true,
+                                "is_deprecated": false,
+                                "is_optional": false,
+                                "is_secret": true,
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "enable_renegotiation": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "enabled": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "root_cas": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "root_cas_file": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "skip_cert_verify": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "boolean"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "topics": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "items": {
+                        "is_advanced": false,
+                        "is_deprecated": false,
+                        "is_optional": false,
+                        "is_secret": false,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["addresses", "topics"],
+                  "type": "object"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "output": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "aws_s3": {
+                  "additionalProperties": false,
+                  "is_advanced": false,
+                  "is_deprecated": false,
+                  "is_optional": false,
+                  "is_secret": false,
+                  "properties": {
+                    "batching": {
+                      "additionalProperties": false,
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "byte_size": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "number"
+                        },
+                        "check": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "count": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "number"
+                        },
+                        "period": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "processors": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "items": {
+                            "$ref": "#/definitions/processor",
+                            "is_advanced": true,
+                            "is_deprecated": false,
+                            "is_optional": true,
+                            "is_secret": false
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "bucket": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "cache_control": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "checksum_algorithm": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "content_disposition": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "content_encoding": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "content_language": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "content_type": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "credentials": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "from_ec2_role": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "boolean"
+                        },
+                        "id": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "profile": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "role": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "role_external_id": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "secret": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": true,
+                          "type": "string"
+                        },
+                        "token": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "endpoint": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "force_path_style_urls": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "boolean"
+                    },
+                    "kms_key_id": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "max_in_flight": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    },
+                    "metadata": {
+                      "additionalProperties": false,
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "properties": {
+                        "exclude_prefixes": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "items": {
+                            "is_advanced": false,
+                            "is_deprecated": false,
+                            "is_optional": false,
+                            "is_secret": false,
+                            "type": "string"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "object_canned_acl": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "path": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "region": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "server_side_encryption": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "storage_class": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "tags": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "patternProperties": {
+                        ".": {
+                          "is_advanced": false,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "tcp": {
+                      "additionalProperties": false,
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": true,
+                      "is_secret": false,
+                      "properties": {
+                        "connect_timeout": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        },
+                        "keep_alive": {
+                          "additionalProperties": false,
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": true,
+                          "is_secret": false,
+                          "properties": {
+                            "count": {
+                              "is_advanced": true,
+                              "is_deprecated": false,
+                              "is_optional": false,
+                              "is_secret": false,
+                              "type": "number"
+                            },
+                            "idle": {
+                              "is_advanced": true,
+                              "is_deprecated": false,
+                              "is_optional": false,
+                              "is_secret": false,
+                              "type": "string"
+                            },
+                            "interval": {
+                              "is_advanced": true,
+                              "is_deprecated": false,
+                              "is_optional": false,
+                              "is_secret": false,
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "tcp_user_timeout": {
+                          "is_advanced": true,
+                          "is_deprecated": false,
+                          "is_optional": false,
+                          "is_secret": false,
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "timeout": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    },
+                    "website_redirect_location": {
+                      "is_advanced": true,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["bucket"],
+                  "type": "object"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "processor": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "mapping": {
+                  "is_advanced": false,
+                  "is_deprecated": false,
+                  "is_optional": false,
+                  "is_secret": false,
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "scanner": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "chunker": {
+                  "additionalProperties": false,
+                  "is_advanced": false,
+                  "is_deprecated": false,
+                  "is_optional": false,
+                  "is_secret": false,
+                  "properties": {
+                    "size": {
+                      "is_advanced": false,
+                      "is_deprecated": false,
+                      "is_optional": false,
+                      "is_secret": false,
+                      "type": "number"
+                    }
+                  },
+                  "required": ["size"],
+                  "type": "object"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "properties": {}
+}

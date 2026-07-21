@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-const DOCS_BASE = 'https://docs.redpanda.com/redpanda-cloud/develop/connect/components';
+import { docsLinks } from 'utils/docs-links';
+
+const DOCS_BASE = docsLinks.cloud.connectComponents;
 // Sections whose docs path is the naive plural (`${section}s`); metrics/tracer don't follow that rule.
 const DOCS_SECTIONS = new Set(['input', 'output', 'processor', 'cache', 'rate_limit']);
 

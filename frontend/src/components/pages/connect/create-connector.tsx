@@ -32,6 +32,7 @@ import {
   useToast,
 } from '@redpanda-data/ui';
 import { useEffect, useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './connector-box-card';
 import { ConfigPage } from './dynamic-ui/components';
@@ -143,10 +144,7 @@ const ConnectorType = (p: {
             <Box maxWidth="600px">
               <Text>
                 Select a managed connector. Connectors simplify importing and exporting data between Redpanda and
-                popular data sources.{' '}
-                <Link href="https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/">
-                  Learn more
-                </Link>
+                popular data sources. <Link href={docsLinks.cloud.managedConnectors}>Learn more</Link>
               </Text>
 
               <Box marginBlock="4" marginTop="8">

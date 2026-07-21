@@ -23,6 +23,7 @@ import {
   removeComponentAt,
   renameResourceReferences,
   setComponentAt,
+  tryPatchRedpandaYaml,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -198,11 +199,10 @@ output:
       // topic IS required (no optional ancestor) → commented out
       expect(yaml).toContain('# topic: Required - string, must be manually set');
 
-      // metadata children are NOT required (parent metadata is optional) → normal keys, not comment-only lines
-      expect(yaml).toMatch(/^\s+include_prefixes:/m);
-      expect(yaml).toMatch(/^\s+include_patterns:/m);
-      expect(yaml).not.toContain('# include_prefixes: Required');
-      expect(yaml).not.toContain('# include_patterns: Required');
+      // metadata children are NOT required (parent metadata is optional) → with no serialized
+      // defaults they are omitted entirely rather than placeholder-filled or marked required.
+      expect(yaml).not.toContain('include_prefixes');
+      expect(yaml).not.toContain('include_patterns');
     });
 
     test('should preserve existing comments and add comments to merged component', () => {
@@ -1998,6 +1998,57 @@ output_resources:
       const target: EditTarget = { kind: 'processor', index: 0 };
       expect(target.kind).toBe('processor');
       expect(buildInsertableComponent('does_not_exist', 'processor', [])).toBeUndefined();
+    });
+
+    test('keeps the component key for a field-less component (drop output)', () => {
+      // drop has no config fields; the generated object must still carry `drop: {}` — without it
+      // the insert writes an output with only a label, which renders as an empty placeholder.
+      const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
+      expect(step?.drop).toEqual({});
+    });
+  });
+
+  describe('tryPatchRedpandaYaml', () => {
+    test('appends a created topic to an existing topics list instead of replacing it', () => {
+      const next = tryPatchRedpandaYaml('input:\n  redpanda:\n    topics:\n      - existing\n', 'input', 'redpanda', {
+        topicName: 'new-topic',
+      });
+      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
+      expect(parsed.input.redpanda.topics).toEqual(['existing', 'new-topic']);
+    });
+
+    test('does not duplicate a topic already in the list', () => {
+      const next = tryPatchRedpandaYaml('input:\n  redpanda:\n    topics:\n      - existing\n', 'input', 'redpanda', {
+        topicName: 'existing',
+      });
+      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
+      expect(parsed.input.redpanda.topics).toEqual(['existing']);
+    });
+
+    test('appending preserves non-string entries and comments in the topics list', () => {
+      const next = tryPatchRedpandaYaml(
+        'input:\n  redpanda:\n    topics:\n      - 123\n      - existing # keep me\n',
+        'input',
+        'redpanda',
+        { topicName: 'new-topic' }
+      );
+      expect(next).toContain('# keep me');
+      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: unknown[] } } };
+      expect(parsed.input.redpanda.topics).toEqual([123, 'existing', 'new-topic']);
+    });
+  });
+
+  describe('field-less component templates', () => {
+    test('getConnectTemplate emits the component key for drop', () => {
+      const yaml = getConnectTemplate({
+        connectionName: 'drop',
+        connectionType: 'output',
+        components: Object.values(mockComponents),
+        existingYaml: '',
+      });
+
+      const parsed = parseYaml(yaml as string) as { output?: Record<string, unknown> };
+      expect(parsed.output?.drop).toEqual({});
     });
   });
 });

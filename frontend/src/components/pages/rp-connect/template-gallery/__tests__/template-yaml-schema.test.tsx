@@ -16,7 +16,6 @@ import { isMap, parseDocument } from 'yaml';
 import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import type { RawFieldSpec } from '../../types/schema';
 import { checkRequired, findComponentByName, resolveFieldByPath } from '../../utils/schema';
-import { KNOWN_MISSING_COMPONENTS } from '../known-missing-components';
 import type { PipelineTemplate, TemplateSlot } from '../pipeline-template-types';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 import { stitchTemplateYaml } from '../template-deploy';
@@ -26,18 +25,33 @@ const componentList = schemaJson as unknown as ComponentList;
 // Bridge snapshot field names (is_optional/default/...) to proto FieldSpec names so we reuse the form's required-field logic.
 type SnapshotField = {
   is_optional?: boolean;
-  default?: string;
+  default?: unknown;
   is_advanced?: boolean;
   is_deprecated?: boolean;
   children?: SnapshotField[];
 };
+
+// benthos's required rule (jSchemaIsRequired): no default and not optional; objects follow children.
+// The snapshot has full default info, so we stamp requiredBySchema exactly like runtime enrichment does.
+const snapshotRequired = (f: SnapshotField): boolean => {
+  if (f.is_optional || 'default' in f) {
+    return false;
+  }
+  if (!f.children?.length) {
+    return true;
+  }
+  return f.children.some(snapshotRequired);
+};
+
 const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
   ({
     ...f,
     optional: f.is_optional,
-    defaultValue: f.default,
+    // Mirror the proto's loss: only string defaults survive serialization.
+    defaultValue: typeof f.default === 'string' ? f.default : undefined,
     advanced: f.is_advanced,
     deprecated: f.is_deprecated,
+    requiredBySchema: snapshotRequired(f),
     children: f.children?.map(toRawFieldSpec),
   }) as unknown as RawFieldSpec;
 
@@ -102,7 +116,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       }
       for (const pair of section.items) {
         const componentName = (pair.key as { value?: unknown } | null)?.value;
-        if (typeof componentName !== 'string' || KNOWN_MISSING_COMPONENTS.has(componentName)) {
+        if (typeof componentName !== 'string') {
           continue;
         }
         const comp = findComponentByName(componentList, componentName, type);
@@ -194,7 +208,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       }
       for (const pair of section.items) {
         const componentName = (pair.key as { value?: unknown } | null)?.value;
-        if (typeof componentName !== 'string' || KNOWN_MISSING_COMPONENTS.has(componentName)) {
+        if (typeof componentName !== 'string') {
           continue;
         }
         const comp = findComponentByName(componentList, componentName, type);
@@ -226,10 +240,44 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     }
     const yaml = stitchTemplateYaml({
       template: postgres,
-      values: { dsn: 'PG_DSN', slotName: '', includedTable: 'public.users', targetTopic: 'orders' },
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: 'users', targetTopic: 'orders' },
       pipelineName: 'My Pipeline 1',
     });
     const doc = parseDocument(yaml);
     expect(doc.getIn(['input', 'postgres_cdc', 'slot_name'])).toBe('rpcn_my_pipeline_1');
+  });
+
+  test('list slots expand comma-separated values into one sequence item each', () => {
+    const postgres = PIPELINE_TEMPLATES.find((t) => t.id === 'postgres-cdc-to-redpanda');
+    expect(postgres).toBeDefined();
+    if (!postgres) {
+      return;
+    }
+    const yaml = stitchTemplateYaml({
+      template: postgres,
+      // Ragged whitespace and a trailing comma must not produce blank entries.
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: ' users,  orders ,invoices, ', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    expect(doc.getIn(['input', 'postgres_cdc', 'tables'])?.toJSON()).toEqual(['users', 'orders', 'invoices']);
+  });
+
+  test('a blank list slot still drops the whole sequence key', () => {
+    const mongodb = PIPELINE_TEMPLATES.find((t) => t.id === 'mongodb-cdc-to-redpanda');
+    expect(mongodb).toBeDefined();
+    if (!mongodb) {
+      return;
+    }
+    const yaml = stitchTemplateYaml({
+      template: mongodb,
+      values: { url: 'MONGODB_URL', database: 'mydb', collection: ' , ', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    // Only separators/whitespace → zero entries → the `collections:` key is dropped, not left as [].
+    expect(doc.getIn(['input', 'mongodb_cdc', 'collections'])).toBeUndefined();
   });
 });

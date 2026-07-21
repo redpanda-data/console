@@ -22,7 +22,6 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { ArrowLeft, KeyRound } from 'lucide-react';
-import { LayoutGroup, motion } from 'motion/react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
@@ -174,6 +173,11 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     }
   };
 
+  // The sub-steps hold a single small form; xl dimensions would leave them floating in dead
+  // space, so the dialog steps down to a compact content-hugging size (auto height animates
+  // via DialogContent's useAnimatedAutoHeight) and back up on return.
+  const isStepView = isAddSecretViewActive || isCreateTopicViewActive;
+
   return (
     <Dialog
       // Block backdrop dismissal past the gallery so a stray click can't wipe
@@ -182,7 +186,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
       open={open}
     >
-      <DialogContent height="xl" size="xl">
+      <DialogContent height={isStepView ? 'auto' : 'xl'} size={isStepView ? 'lg' : 'xl'}>
         {view.kind === 'gallery' ? (
           <>
             <DialogHeader>
@@ -278,28 +282,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
 
         {isCreateTopicViewActive ? (
           <DialogBody>
-            {/* LayoutGroup keeps the button below in sync with the popLayout
-                AnimatePresence inside AddTopicStep — otherwise it jumps on collapse. */}
-            <LayoutGroup>
-              <div className="flex flex-col gap-4">
-                <AddTopicStep hideTitle inline ref={addTopicStepRef} selectionMode="new" />
-                <motion.div
-                  className="flex justify-end"
-                  layout="position"
-                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <Button
-                    data-testid="template-create-topic-submit"
-                    disabled={isCreatingTopic}
-                    onClick={handleCreateTopicSubmit}
-                    type="button"
-                    variant="primary"
-                  >
-                    {isCreatingTopic ? 'Creating...' : 'Create topic'}
-                  </Button>
-                </motion.div>
-              </div>
-            </LayoutGroup>
+            <AddTopicStep hideTitle inline ref={addTopicStepRef} selectionMode="new" />
           </DialogBody>
         ) : null}
 
@@ -310,6 +293,22 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
             </Button>
             <Button data-testid="template-submit" form={formId} type="submit" variant="primary">
               Apply template
+            </Button>
+          </DialogFooter>
+        ) : null}
+
+        {isCreateTopicViewActive ? (
+          // Single action: back navigation is the header's arrow, same as the addSecret view.
+          <DialogFooter>
+            <Button
+              data-testid="template-create-topic-submit"
+              disabled={isCreatingTopic}
+              isLoading={isCreatingTopic}
+              onClick={handleCreateTopicSubmit}
+              type="button"
+              variant="primary"
+            >
+              Create topic
             </Button>
           </DialogFooter>
         ) : null}

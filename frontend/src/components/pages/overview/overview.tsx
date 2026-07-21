@@ -10,6 +10,7 @@
  */
 
 import { isFeatureFlagEnabled } from 'config';
+import { docsLinks } from 'utils/docs-links';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -242,9 +243,9 @@ class Overview extends PageComponent {
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr />
                 <div className="mt-4 flex flex-row items-center gap-2 font-sm text-gray-600">
-                  <a href="https://docs.redpanda.com/docs/home/">Documentation</a>
+                  <a href={docsLinks.selfManaged.home}>Documentation</a>
                   <span className="mx-2 text-gray-300">|</span>
-                  <a href="https://docs.redpanda.com/docs/get-started/rpk-install/">CLI tools</a>
+                  <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
                 </div>
               </Section>
             </GridItem>

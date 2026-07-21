@@ -18,11 +18,11 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { Check, ChevronRight, Trash2, UploadCloud } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { docsLinks } from 'utils/docs-links';
 
 import { type FormValues, hasSrCertificate } from '../../model';
 
-const TLS_DOCS_URL =
-  'https://docs.redpanda.com/current/manage/disaster-recovery/shadowing/setup/#network-and-authentication';
+const TLS_DOCS_URL = docsLinks.selfManaged.shadowingNetworkSetup;
 
 type SrCertificateType = 'ca' | 'clientCert' | 'clientKey';
 
