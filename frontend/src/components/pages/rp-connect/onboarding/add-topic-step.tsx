@@ -293,11 +293,13 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
             <FormLabel>Topic name</FormLabel>
             {/* Only offer what the mode can actually do — "create a new topic" with no input reads as broken. */}
             <FormDescription>
-              {selectionMode === 'new' ? 'Enter a name for the new topic.' : null}
-              {selectionMode === 'existing' ? 'Choose an existing topic to read or write data from.' : null}
-              {selectionMode === 'both'
-                ? 'Choose an existing topic to read or write data from, or create a new topic.'
-                : null}
+              {
+                {
+                  new: 'Enter a name for the new topic.',
+                  existing: 'Choose an existing topic to read or write data from.',
+                  both: 'Choose an existing topic to read or write data from, or create a new topic.',
+                }[selectionMode]
+              }
             </FormDescription>
             <div className="flex flex-col items-start gap-2">
               {selectionMode === 'both' && (

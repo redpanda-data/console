@@ -2024,6 +2024,18 @@ output_resources:
       const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
       expect(parsed.input.redpanda.topics).toEqual(['existing']);
     });
+
+    test('appending preserves non-string entries and comments in the topics list', () => {
+      const next = tryPatchRedpandaYaml(
+        'input:\n  redpanda:\n    topics:\n      - 123\n      - existing # keep me\n',
+        'input',
+        'redpanda',
+        { topicName: 'new-topic' }
+      );
+      expect(next).toContain('# keep me');
+      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: unknown[] } } };
+      expect(parsed.input.redpanda.topics).toEqual([123, 'existing', 'new-topic']);
+    });
   });
 
   describe('field-less component templates', () => {

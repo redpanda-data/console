@@ -27,14 +27,14 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import type { FieldLintErrors } from './lint-field-mapping';
 import { ScrollShadow } from './scroll-shadow';
-import { getSecretSyntax } from '../types/constants';
+import { getSecretSyntax, REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import {
   checkRequired,
@@ -145,6 +145,9 @@ type ResourceFieldContextValue = {
   onCreateResource?: (kind: ResourceKind) => void;
   // Kind of the edited component, so a plainly-typed `resource:` string field still reads as a link.
   componentResourceKind?: ResourceKind;
+  // True when the component's topic/topics fields name topics on THIS cluster (kafka/redpanda
+  // family) — gates the pickers, so an mqtt/pulsar topic field stays a plain input.
+  clusterTopicFields?: boolean;
   /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
   onCreateTopic?: () => void;
 };
@@ -291,11 +294,14 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | numbe
   return text;
 }
 
-function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
-  const lines = text
+const arrayFieldLines = (text: string): string[] =>
+  text
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l !== '');
+
+function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
+  const lines = arrayFieldLines(text);
   if (spec.type === 'int' || spec.type === 'float') {
     return lines.map(Number).filter((n) => !Number.isNaN(n));
   }
@@ -380,18 +386,21 @@ const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: bool
   );
 };
 
-// True when a lint error is anchored at `prefix` or anywhere under it (opens enclosing groups).
-function hasLintErrorUnder(errors: FieldLintErrors, prefix: string): boolean {
-  for (const key of errors.keys()) {
+// The lint errors anchored at `prefix` or anywhere under it, joined into one signature string.
+// Groups force-open when the signature CHANGES: mere truthiness would leave errors that arrive
+// after a manual collapse invisible, while reopening on every lint refresh would fight the user.
+function lintErrorSignatureUnder(errors: FieldLintErrors, prefix: string): string {
+  const messages: string[] = [];
+  for (const [key, list] of errors) {
     if (key === prefix || key.startsWith(`${prefix}/`)) {
-      return true;
+      messages.push(...list);
     }
   }
-  return false;
+  return messages.join('\n');
 }
 
-function useHasLintErrorUnder(prefix: string[]): boolean {
-  return hasLintErrorUnder(useContext(FieldLintErrorsContext), prefix.join('/'));
+function useLintErrorSignatureUnder(prefix: string[]): string {
+  return lintErrorSignatureUnder(useContext(FieldLintErrorsContext), prefix.join('/'));
 }
 
 type FormValues = {
@@ -567,14 +576,7 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
 // Cluster topics offered by topic-field pickers (internal topics hidden, like the template flow).
 function useTopicOptions() {
   const { data, isLoading } = useListTopicsQuery(undefined, undefined, { hideInternalTopics: true });
-  const options = useMemo(
-    () =>
-      (data?.topics ?? [])
-        .map((t) => t.name)
-        .filter((name) => !name.startsWith('__redpanda'))
-        .map((name) => ({ value: name, label: name })),
-    [data]
-  );
+  const options = (data.topics ?? []).map((t) => ({ value: t.name, label: t.name }));
   return { options, isLoading };
 }
 
@@ -593,17 +595,28 @@ const CreateTopicButton = () => {
 };
 
 // A topic-named scalar: pick an existing cluster topic (like the template flow's selector), type a
-// custom value (interpolations, `topic:partition`), or create a new topic.
-const TopicScalarControl = ({ value, onChange }: { value: string; onChange: (value: unknown) => void }) => {
+// custom value (interpolations, `topic:partition`), or create a new topic. Typed text propagates
+// per keystroke (onInputValueChange): the combobox itself only fires onChange on Enter/selection,
+// which would let a blur-commit save stale YAML while the field still displays the typed text.
+const TopicScalarControl = ({
+  value,
+  onChange,
+  invalid,
+}: {
+  value: string;
+  onChange: (value: unknown) => void;
+  invalid?: boolean;
+}) => {
   const { options, isLoading } = useTopicOptions();
   return (
     <div className="flex flex-col gap-2">
       <Combobox
+        className={invalid ? 'ring-1 ring-destructive' : undefined}
         creatable
         createLabel="value"
         loading={isLoading}
         onChange={onChange}
-        onCreateOption={onChange}
+        onInputValueChange={onChange}
         options={options}
         placeholder="Select or enter a topic…"
         value={value}
@@ -617,13 +630,22 @@ const TopicScalarControl = ({ value, onChange }: { value: string; onChange: (val
 // patterns, explicit partitions) the textarea supports.
 const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (topic: string) => void }) => {
   const { options, isLoading } = useTopicOptions();
+  // Remounted per pick: the combobox pins value='' but keeps displaying the picked label as if
+  // it were still a pending selection.
+  const [pickCount, setPickCount] = useState(0);
   const remaining = options.filter((o) => !lines.includes(o.value));
   return (
     <div className="flex flex-col gap-2">
       <Combobox
         clearable={false}
+        key={pickCount}
         loading={isLoading}
-        onChange={(topic) => topic && onAppend(topic)}
+        onChange={(topic) => {
+          if (topic) {
+            onAppend(topic);
+            setPickCount((n) => n + 1);
+          }
+        }}
         options={remaining}
         placeholder="Add existing topic…"
         value=""
@@ -685,7 +707,7 @@ const ScalarControl = ({
   id?: string;
   invalid?: boolean;
 }) => {
-  const { componentResourceKind } = useContext(ResourceFieldContext);
+  const { componentResourceKind, clusterTopicFields } = useContext(ResourceFieldContext);
   const required = checkRequired(spec);
   if (spec.type === 'bool') {
     return <Switch aria-label={spec.name} checked={Boolean(value)} id={id} onCheckedChange={onChange} />;
@@ -697,8 +719,8 @@ const ScalarControl = ({
   if (fieldHasOptions(spec)) {
     return <OptionsSelect id={id} onChange={onChange} required={required} spec={spec} value={value} />;
   }
-  if (isTopicField(spec.name ?? '')) {
-    return <TopicScalarControl onChange={onChange} value={String(value ?? '')} />;
+  if (clusterTopicFields && isTopicField(spec.name ?? '')) {
+    return <TopicScalarControl invalid={invalid} onChange={onChange} value={String(value ?? '')} />;
   }
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
@@ -763,6 +785,9 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
+  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  // The topic picker's combobox can't take an id — don't point the label at a nonexistent one.
+  const labelFor = clusterTopicFields && isTopicField(leaf.spec.name ?? '') ? undefined : inputId;
   return (
     <Controller
       control={control}
@@ -773,7 +798,7 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
         const hasLintError = (lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty;
         return (
           <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor={inputId} spec={leaf.spec} />
+            <FieldLabel htmlFor={labelFor} spec={leaf.spec} />
             <ScalarControl
               id={inputId}
               invalid={Boolean(hint) || hasLintError}
@@ -797,16 +822,11 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
   );
 };
 
-const arrayFieldLines = (text: string): string[] =>
-  text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l !== '');
-
 const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const isTopics = isTopicField(leaf.spec.name ?? '');
+  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  const isTopics = Boolean(clusterTopicFields) && isTopicField(leaf.spec.name ?? '');
   return (
     <Controller
       control={control}
@@ -841,21 +861,21 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
 const FieldGroup = ({
   label,
   defaultOpen = true,
-  forceOpen = false,
+  forceOpenSignal = '',
   children,
 }: {
   label: string;
   defaultOpen?: boolean;
-  /** Opens the group (e.g. async lint anchored an error inside it) without ever auto-closing it. */
-  forceOpen?: boolean;
+  /** Reopens the group whenever this changes to non-empty (lint anchored new errors inside it). */
+  forceOpenSignal?: string;
   children: React.ReactNode;
 }) => {
-  const [open, setOpen] = useState(defaultOpen || forceOpen);
+  const [open, setOpen] = useState(defaultOpen || forceOpenSignal !== '');
   useEffect(() => {
-    if (forceOpen) {
+    if (forceOpenSignal) {
       setOpen(true);
     }
-  }, [forceOpen]);
+  }, [forceOpenSignal]);
   return (
     <Collapsible className="rounded-md border border-border/60" onOpenChange={setOpen} open={open}>
       <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
@@ -872,7 +892,7 @@ const FieldGroup = ({
 // Render one field: scalar, scalar list, or nested object group; complex fields go to the raw section.
 const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string[]; control: Control<FormValues> }) => {
   const here = [...path, spec.name];
-  const hasLintErrorInside = useHasLintErrorUnder(here);
+  const lintSignatureInside = useLintErrorSignatureUnder(here);
   if (isScalarField(spec)) {
     return <ScalarField control={control} leaf={{ spec, path: here, key: here.join('/') }} />;
   }
@@ -881,7 +901,11 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   }
   if (isObjectGroupField(spec)) {
     return (
-      <FieldGroup defaultOpen={checkRequired(spec) && !spec.advanced} forceOpen={hasLintErrorInside} label={spec.name}>
+      <FieldGroup
+        defaultOpen={checkRequired(spec) && !spec.advanced}
+        forceOpenSignal={lintSignatureInside}
+        label={spec.name}
+      >
         {/* Errors anchored on the group itself (e.g. `batching: null`) — shown where it's fixed. */}
         <FieldLintErrorList dirty={false} fieldKey={here.join('/')} />
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />
@@ -1061,7 +1085,9 @@ export function NodeConfigForm({
   }, [serializedValue, isDirty]);
 
   const watched = useWatch({ control });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; the config is rebuilt from the latest values/props read in the body.
+  // `serializedValue` is a trigger too: an external write while dirty (create-topic patch) must
+  // rebuild the draft from the fresh value, or flushing it later would clobber that write.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched`/`serializedValue` are the change triggers; the config is rebuilt from the latest values/props read in the body.
   useEffect(() => {
     onConfigChange?.(
       isDirty
@@ -1078,7 +1104,7 @@ export function NodeConfigForm({
           })
         : null
     );
-  }, [watched, isDirty, getValues, onConfigChange]);
+  }, [watched, isDirty, getValues, onConfigChange, serializedValue]);
 
   // Flush the draft into the YAML now (field blur / ⌘⏎ / Apply). On success the committed values
   // become the form's new baseline in place — no remount, focus and scroll survive. Edits the save
@@ -1101,14 +1127,19 @@ export function NodeConfigForm({
     reset(committed, { keepDirtyValues: true });
   };
 
+  const clusterTopicFields = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
   const resourceCtx: ResourceFieldContextValue = {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
     onCreateResource,
     componentResourceKind: resourceKindForComponentName(componentName),
-    onCreateTopic,
+    clusterTopicFields,
+    onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
   };
 
-  const advancedHasLintError = advanced.some((f) => hasLintErrorUnder(fieldErrors ?? NO_FIELD_ERRORS, f.name));
+  const advancedLintSignature = advanced
+    .map((f) => lintErrorSignatureUnder(fieldErrors ?? NO_FIELD_ERRORS, f.name))
+    .filter(Boolean)
+    .join('\n');
 
   return (
     <ResourceFieldContext.Provider value={resourceCtx}>
@@ -1190,7 +1221,7 @@ export function NodeConfigForm({
             )}
 
             {!isListValued && advanced.length > 0 ? (
-              <FieldGroup defaultOpen={false} forceOpen={advancedHasLintError} label="Advanced">
+              <FieldGroup defaultOpen={false} forceOpenSignal={advancedLintSignature} label="Advanced">
                 {advanced.map((f) => (
                   <SchemaField control={control} key={f.name} path={[]} spec={f} />
                 ))}
@@ -1239,7 +1270,7 @@ export function NodeConfigForm({
           {onCommitField && isDirty ? (
             <div className="flex shrink-0 items-center justify-between gap-2 border-border border-t bg-muted/40 px-4 py-2">
               <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
-                <span aria-hidden className="size-1.5 rounded-full bg-warning" />
+                <span aria-hidden className="size-1.5 rounded-full bg-informative" />
                 Unsaved edits
               </span>
               <Button

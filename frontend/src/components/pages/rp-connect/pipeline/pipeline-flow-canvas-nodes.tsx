@@ -209,7 +209,7 @@ export type FlowCardData = {
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
-  /** Config differs from the last-saved pipeline — flagged with a warning-toned "unsaved" dot. */
+  /** Config differs from the last-saved pipeline — flagged with an info-toned "unsaved" dot. */
   unsaved?: boolean;
   // Injected by the canvas (edit mode only).
   onToggle?: () => void;
@@ -395,10 +395,10 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     </span>
   ) : null;
 
-// A warning-toned dot marking a node whose config differs from the last-saved pipeline.
+// An info-toned dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
-    <span className="size-2 shrink-0 rounded-full bg-warning" title="Unsaved changes on this node">
+    <span className="size-2 shrink-0 rounded-full bg-informative" title="Unsaved changes on this node">
       <span className="sr-only">Unsaved changes</span>
     </span>
   ) : null;

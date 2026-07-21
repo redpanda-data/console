@@ -22,7 +22,7 @@ type PipelineUnsavedPanelProps = {
 };
 
 /**
- * Floating "unsaved" chip (warning-toned) on the Visual canvas, mirroring the problems chip. Expands to a
+ * Floating "unsaved" chip (info-toned) on the Visual canvas, mirroring the problems chip. Expands to a
  * list of the nodes whose config differs from the last-saved pipeline; clicking one jumps to it.
  */
 export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelProps) {
@@ -35,7 +35,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
       chipClassName="border-border text-muted-foreground hover:bg-muted/50"
       chipTestId="pipeline-unsaved-chip"
       label={nodes.length === 1 ? '1 unsaved' : `${nodes.length} unsaved`}
-      leading={<span aria-hidden className="size-2 rounded-full bg-warning" />}
+      leading={<span aria-hidden className="size-2 rounded-full bg-informative" />}
       listClassName="w-72"
       listTestId="pipeline-unsaved-list"
     >
@@ -50,7 +50,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
             }}
             type="button"
           >
-            <span aria-hidden className="size-2 shrink-0 rounded-full bg-warning" />
+            <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" />
             <span className="min-w-0 truncate text-body-sm text-foreground">{node.label}</span>
             {node.detail ? (
               <span

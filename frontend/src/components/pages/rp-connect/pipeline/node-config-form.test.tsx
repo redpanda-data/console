@@ -602,6 +602,54 @@ describe('NodeConfigForm — topic fields', () => {
     expect(onCreateTopic).toHaveBeenCalled();
   });
 
+  test('typing a custom topic reports it without needing Enter or a selection', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onConfigChange={onConfigChange}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+
+    const input = screen.getByPlaceholderText('Select or enter a topic…');
+    await user.clear(input);
+    await user.type(input, 'custom:0');
+
+    // A blur-commit must see the typed text — the combobox alone only fires onChange on Enter/selection.
+    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
+    expect(next.kafka.topic).toBe('custom:0');
+  });
+
+  test('topic fields on non-Redpanda connectors stay plain inputs', () => {
+    const onCreateTopic = vi.fn();
+    const mqttSpec = {
+      name: 'mqtt',
+      type: 'output',
+      config: {
+        name: '',
+        type: 'object',
+        kind: 'scalar',
+        children: [{ name: 'topic', type: 'string', kind: 'scalar', optional: false }],
+      },
+    } as unknown as ConnectComponentSpec;
+    render(
+      <NodeConfigForm
+        componentName="mqtt"
+        onCreateTopic={onCreateTopic}
+        spec={mqttSpec}
+        value={{ mqtt: { topic: 'sensors/temp' } }}
+      />
+    );
+
+    // An mqtt topic is not a cluster topic: no picker, no create-topic affordance.
+    expect(screen.queryByPlaceholderText('Select or enter a topic…')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: CREATE_NEW_TOPIC_RE })).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('sensors/temp')).toBeInTheDocument();
+  });
+
   test('a topics list keeps free text but can append an existing cluster topic', async () => {
     const user = userEvent.setup();
     const onConfigChange = vi.fn();
