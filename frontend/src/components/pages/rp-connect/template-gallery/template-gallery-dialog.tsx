@@ -298,10 +298,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
         ) : null}
 
         {isCreateTopicViewActive ? (
-          <DialogFooter justify="between">
-            <Button onClick={() => setView({ kind: 'form' })} type="button" variant="ghost">
-              Back
-            </Button>
+          // Single action: back navigation is the header's arrow, same as the addSecret view.
+          <DialogFooter>
             <Button
               data-testid="template-create-topic-submit"
               disabled={isCreatingTopic}

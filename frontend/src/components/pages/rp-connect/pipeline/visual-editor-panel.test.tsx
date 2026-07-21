@@ -356,6 +356,27 @@ output:
     expect(screen.getAllByText('1 problem').length).toBeGreaterThan(0);
   });
 
+  test('view mode keeps field-mappable lint hints in the banner (no form renders them)', async () => {
+    const user = userEvent.setup();
+    // "field mapping is required" would anchor to the mapping input in edit mode — but the
+    // read-only inspector renders no form fields, so the banner must keep it.
+    render(
+      <PipelineEditorProvider>
+        <VisualEditorPanel
+          componentList={{} as ComponentList}
+          components={mockComponents.generateInput ? [mockComponents.generateInput] : []}
+          lintHints={[{ line: 2, column: 1, hint: 'field mapping is required', lintType: 'config' }] as never}
+          mode="view"
+          onYamlChange={vi.fn()}
+          yamlContent={sampleYaml}
+        />
+      </PipelineEditorProvider>
+    );
+
+    await user.click(screen.getByText('select-input'));
+    expect(await screen.findByText('field mapping is required')).toBeInTheDocument();
+  });
+
   test('the problems chip lists lint hints and clicking one selects the offending node', async () => {
     const user = userEvent.setup();
     // Line 2 (`generate:`) maps to the input node.

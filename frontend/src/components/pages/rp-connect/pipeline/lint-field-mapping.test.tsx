@@ -84,6 +84,12 @@ describe('mapLintHintsToFields', () => {
     expect(unmapped).toHaveLength(0);
   });
 
+  test('an explicit field reference at the end of a sentence is not swallowed by the period', () => {
+    const message = 'this output requires the field topics.';
+    const { byField } = run([hint(3, message)]);
+    expect(byField.get('topics')).toEqual([message]);
+  });
+
   test('an explicit field reference beats the line anchor', () => {
     // A missing-field error's line points at the component's mapping, which STARTS on some other
     // field's line — the named field must win (observed with aws_s3's "field bucket is required"

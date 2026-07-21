@@ -397,6 +397,38 @@ describe('NodeConfigForm — field-anchored lint errors', () => {
     expect(screen.getByText('expected object value, got !!null')).toBeInTheDocument();
   });
 
+  test('a group stays open (state intact, no remount) after its error clears', () => {
+    const renderProps = (fieldErrors?: Map<string, string[]>) => (
+      <NodeConfigForm
+        componentName="kafka"
+        fieldErrors={fieldErrors}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } }}
+      />
+    );
+    const { rerender } = render(renderProps(new Map([['batching/count', ['expected number value']]])));
+    // The error opened the batching group.
+    expect(screen.getByText('expected number value')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('5')).toBeInTheDocument();
+
+    // Lint clears (e.g. after a blur-commit): the group must NOT slam shut around the user.
+    rerender(renderProps(undefined));
+    expect(screen.queryByText('expected number value')).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('5')).toBeInTheDocument();
+  });
+
+  test('renders an error anchored to the label field', () => {
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        fieldErrors={new Map([['label', ['label collides with a previously defined label']]])}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'], label: 'dup' } }}
+      />
+    );
+    expect(screen.getByText('label collides with a previously defined label')).toBeInTheDocument();
+  });
+
   test('opens the Advanced group when it hides an errored field', () => {
     render(
       <NodeConfigForm
@@ -436,6 +468,34 @@ describe('NodeConfigForm — field-level commit', () => {
     // The commit landed, so the form is clean again (reports null) but keeps the typed value.
     expect(lastReported(onConfigChange)).toBeNull();
     expect(screen.getByDisplayValue('orig-2')).toBeInTheDocument();
+  });
+
+  test('a blur commit does not silently revert an uncommitted malformed edit', async () => {
+    const user = userEvent.setup();
+    const onConfigChange = vi.fn();
+    const onCommitField = vi.fn(() => true);
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        onCommitField={onCommitField}
+        onConfigChange={onConfigChange}
+        spec={spec}
+        value={{ kafka: { topic: 'orig', addresses: ['a:9092'], batching: { count: 5 } } }}
+      />
+    );
+
+    // A malformed numeric ("won't be saved until fixed") plus a valid edit.
+    await user.click(screen.getByText('batching'));
+    const count = screen.getByDisplayValue('5');
+    await user.clear(count);
+    await user.type(count, '10x');
+    await user.type(screen.getByDisplayValue('orig'), '-2');
+
+    await user.tab();
+    expect(onCommitField).toHaveBeenCalled();
+    // The malformed edit stays visible and pending — not silently reverted to the saved value.
+    expect(screen.getByDisplayValue('10x')).toBeInTheDocument();
+    expect(lastReported(onConfigChange)).not.toBeNull();
   });
 
   test('keeps the draft pending when the commit fails', async () => {

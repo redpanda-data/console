@@ -26,7 +26,7 @@ import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useId, useRef } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -364,8 +364,9 @@ const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: bool
   }
   return (
     <div className="flex flex-col gap-1">
-      {errors.map((message) => (
-        <div className="flex items-start gap-1 text-body-sm text-destructive" key={message}>
+      {errors.map((message, i) => (
+        // Indexed key: identical messages can anchor to one field, and the list is rebuilt per render.
+        <div className="flex items-start gap-1 text-body-sm text-destructive" key={`${i}-${message}`}>
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
           {message}
         </div>
@@ -374,16 +375,18 @@ const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: bool
   );
 };
 
-// True when a lint error is anchored at this path or anywhere under it (opens enclosing groups).
-function useHasLintErrorUnder(prefix: string[]): boolean {
-  const errors = useContext(FieldLintErrorsContext);
-  const path = prefix.join('/');
+// True when a lint error is anchored at `prefix` or anywhere under it (opens enclosing groups).
+function hasLintErrorUnder(errors: FieldLintErrors, prefix: string): boolean {
   for (const key of errors.keys()) {
-    if (key === path || key.startsWith(`${path}/`)) {
+    if (key === prefix || key.startsWith(`${prefix}/`)) {
       return true;
     }
   }
   return false;
+}
+
+function useHasLintErrorUnder(prefix: string[]): boolean {
+  return hasLintErrorUnder(useContext(FieldLintErrorsContext), prefix.join('/'));
 }
 
 type FormValues = {
@@ -728,22 +731,33 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
 const FieldGroup = ({
   label,
   defaultOpen = true,
+  forceOpen = false,
   children,
 }: {
   label: string;
   defaultOpen?: boolean;
+  /** Opens the group (e.g. async lint anchored an error inside it) without ever auto-closing it. */
+  forceOpen?: boolean;
   children: React.ReactNode;
-}) => (
-  <Collapsible className="rounded-md border border-border/60" defaultOpen={defaultOpen}>
-    <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
-      <div className="font-medium text-body">{label}</div>
-      <ChevronDown
-        className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
-      />
-    </CollapsibleTrigger>
-    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
-  </Collapsible>
-);
+}) => {
+  const [open, setOpen] = useState(defaultOpen || forceOpen);
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+    }
+  }, [forceOpen]);
+  return (
+    <Collapsible className="rounded-md border border-border/60" onOpenChange={setOpen} open={open}>
+      <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
+        <div className="font-medium text-body">{label}</div>
+        <ChevronDown
+          className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 // Render one field: scalar, scalar list, or nested object group; complex fields go to the raw section.
 const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string[]; control: Control<FormValues> }) => {
@@ -757,12 +771,7 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   }
   if (isObjectGroupField(spec)) {
     return (
-      // Keyed on the error state so a lint hint arriving after mount reopens a group that hides it.
-      <FieldGroup
-        defaultOpen={(checkRequired(spec) && !spec.advanced) || hasLintErrorInside}
-        key={hasLintErrorInside ? `${spec.name}-with-errors` : spec.name}
-        label={spec.name}
-      >
+      <FieldGroup defaultOpen={checkRequired(spec) && !spec.advanced} forceOpen={hasLintErrorInside} label={spec.name}>
         {/* Errors anchored on the group itself (e.g. `batching: null`) — shown where it's fixed. */}
         <FieldLintErrorList dirty={false} fieldKey={here.join('/')} />
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />
@@ -927,14 +936,16 @@ export function NodeConfigForm({
   // External writes while the form is open (a field-blur commit round-tripping through the YAML,
   // the Topic/User pill dialogs, resource linking) change `value` without remounting. A clean form
   // re-syncs in place — no remount, so focus and scroll survive; a dirty form keeps the user's
-  // edits (the next commit starts from the fresh saved value and overlays only dirty fields).
+  // edits and re-syncs when it next becomes clean, so a write that landed mid-edit isn't lost.
   const serializedValue = JSON.stringify(value);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `serializedValue` is the change trigger; values rebuild from the latest props.
+  const syncedValueRef = useRef(serializedValue);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `serializedValue`/`isDirty` are the triggers; values rebuild from the latest props.
   useEffect(() => {
-    if (!isDirty) {
+    if (!isDirty && syncedValueRef.current !== serializedValue) {
+      syncedValueRef.current = serializedValue;
       reset(buildFormValues());
     }
-  }, [serializedValue]);
+  }, [serializedValue, isDirty]);
 
   const watched = useWatch({ control });
   // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; the config is rebuilt from the latest values/props read in the body.
@@ -956,20 +967,26 @@ export function NodeConfigForm({
     );
   }, [watched, isDirty, getValues, onConfigChange]);
 
-  // Ref so commitNow doesn't re-create per keystroke (isDirty changes every edit).
-  const isDirtyRef = useRef(isDirty);
-  isDirtyRef.current = isDirty;
-
-  // Flush the draft into the YAML now (field blur / ⌘⏎ / Apply). On success the form's values ARE
-  // the saved values, so it's marked clean in place — no remount, focus and scroll survive.
-  const commitNow = useCallback(() => {
-    if (!(onCommitField && isDirtyRef.current)) {
+  // Flush the draft into the YAML now (field blur / ⌘⏎ / Apply). On success the committed values
+  // become the form's new baseline in place — no remount, focus and scroll survive. Edits the save
+  // path deliberately skipped (malformed numerics, invalid raw YAML) keep their SAVED value as the
+  // baseline so they stay dirty — otherwise the clean-form resync would silently revert them.
+  const commitNow = () => {
+    if (!(onCommitField && isDirty && onCommitField())) {
       return;
     }
-    if (onCommitField()) {
-      reset(getValues());
+    const current = getValues();
+    const committed: FormValues = { ...current, fields: { ...current.fields } };
+    for (const leaf of leaves.scalars) {
+      if (numericHint(leaf.spec, current.fields[leaf.key])) {
+        committed.fields[leaf.key] = initialScalar(leaf.spec, getInObj(inner, leaf.path));
+      }
     }
-  }, [onCommitField, reset, getValues]);
+    if (showRaw && current.raw.trim() !== '' && parseRawSection(true, current.raw) === null) {
+      committed.raw = yamlStringify(rawObject);
+    }
+    reset(committed, { keepDirtyValues: true });
+  };
 
   const resourceCtx: ResourceFieldContextValue = {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
@@ -977,10 +994,7 @@ export function NodeConfigForm({
     componentResourceKind: resourceKindForComponentName(componentName),
   };
 
-  // Lint arrives async, so it can appear after mount — key the Advanced group on it so a group
-  // hiding an errored field remounts open (defaultOpen alone is read once).
-  const errorKeys = [...(fieldErrors ?? NO_FIELD_ERRORS).keys()];
-  const advancedHasLintError = advanced.some((f) => errorKeys.some((k) => k === f.name || k.startsWith(`${f.name}/`)));
+  const advancedHasLintError = advanced.some((f) => hasLintErrorUnder(fieldErrors ?? NO_FIELD_ERRORS, f.name));
 
   return (
     <ResourceFieldContext.Provider value={resourceCtx}>
@@ -1014,7 +1028,7 @@ export function NodeConfigForm({
               <Controller
                 control={control}
                 name="label"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <>
                     <Input
                       aria-required={requireLabel || undefined}
@@ -1032,6 +1046,7 @@ export function NodeConfigForm({
                         A resource needs a label — nodes reference it by name. The saved label is kept.
                       </div>
                     ) : null}
+                    <FieldLintErrorList dirty={fieldState.isDirty} fieldKey="label" />
                   </>
                 )}
               />
@@ -1061,11 +1076,7 @@ export function NodeConfigForm({
             )}
 
             {!isListValued && advanced.length > 0 ? (
-              <FieldGroup
-                defaultOpen={advancedHasLintError}
-                key={advancedHasLintError ? 'advanced-with-errors' : 'advanced'}
-                label="Advanced"
-              >
+              <FieldGroup defaultOpen={false} forceOpen={advancedHasLintError} label="Advanced">
                 {advanced.map((f) => (
                   <SchemaField control={control} key={f.name} path={[]} spec={f} />
                 ))}

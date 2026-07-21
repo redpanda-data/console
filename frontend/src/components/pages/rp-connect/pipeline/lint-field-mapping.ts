@@ -16,19 +16,11 @@ import { type EditTarget, editTargetPath } from '../utils/yaml';
 
 /**
  * Anchors a node's lint hints to the inspector form fields they belong to, so an error renders
- * under the field it's about instead of as "(line 12)" in a banner the user has to decode.
- *
- * Two signals, in order of precedence:
- * 1. Line: the hint's line falls inside a field's YAML range (computed from the parsed document's
- *    node ranges — the same technique the switch-case `check` field already used).
- * 2. Mention: the hint's text names a field ("either topics or regexp_topics_include must be
- *    specified"); underscores match spaces too, so "consumer group" finds `consumer_group`. This
- *    catches missing-field errors, whose line can only point at the component itself.
- *
- * Hints that anchor to nothing the form renders stay in `unmapped` for the banner.
+ * under the field (or inside the group section) it's about instead of as "(line 12)" in a banner
+ * the user has to decode. See `resolveHint` for the anchoring tiers.
  */
 
-/** Field-key (leaf `path.join('/')`) → the lint messages anchored to it. */
+/** Field/group key (`path.join('/')`) → the lint messages anchored to it. */
 export type FieldLintErrors = ReadonlyMap<string, string[]>;
 
 type FieldSegment = { key: string; depth: number; startLine: number; endLine: number };
@@ -91,7 +83,8 @@ const ESCAPE_RE = /[.*+?^${}()|[\]\\]/g;
 const MIN_MENTION_NAME_LENGTH = 3;
 
 // The lint convention for structural errors: "field id is required", "field `host` is required".
-const FIELD_TOKEN_RE = /\bfield\s+[`'"]?([A-Za-z0-9_.]+)[`'"]?/gi;
+// Dots only BETWEEN segments ("batching.count"), so a sentence-ending period isn't swallowed.
+const FIELD_TOKEN_RE = /\bfield\s+[`'"]?([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/gi;
 
 // Fields the hint names via the exact "field X" convention — precise, so any name length counts.
 function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>): string[] {

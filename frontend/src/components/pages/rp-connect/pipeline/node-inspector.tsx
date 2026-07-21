@@ -251,14 +251,19 @@ export function NodeInspector({
   }, [components, target, componentName]);
 
   // Anchor the node's lint hints to the form fields they're about; the banner keeps only the rest.
-  // With no schema form (raw editor / member list) fieldKeys is empty, so everything stays bannered.
-  const fieldKeys = useMemo(() => (spec ? formFieldKeys(spec) : new Set<string>()), [spec]);
+  // Anchors exist only when the schema form will actually render them: in read-only mode, for the
+  // raw-YAML/member-list fallbacks, and for list-valued components (switch/try — value is an array,
+  // so the form shows no schema fields) everything stays bannered, located by field name via lines.
+  const componentValue = componentName ? component?.[componentName] : undefined;
+  const rendersFieldAnchors = !readOnly && (spec?.config?.children?.length ?? 0) > 0 && !Array.isArray(componentValue);
+  const fieldKeys = useMemo(
+    () => (rendersFieldAnchors && spec ? formFieldKeys(spec) : new Set<string>()),
+    [rendersFieldAnchors, spec]
+  );
   const lintMapping = useMemo(() => {
     if (!(target && componentName && lintHints?.length)) {
-      return {
-        byField: new Map<string, string[]>() as FieldLintErrors,
-        unmapped: (lintHints ?? []).map((hint) => ({ hint })),
-      };
+      const byField: FieldLintErrors = new Map();
+      return { byField, unmapped: (lintHints ?? []).map((hint) => ({ hint })) };
     }
     return mapLintHintsToFields({ yaml, target, componentName, hints: lintHints, fieldKeys });
   }, [yaml, target, componentName, lintHints, fieldKeys]);
