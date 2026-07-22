@@ -1,0 +1,3 @@
+# SPA fallback for standalone mode. In embedded (MF) mode, only
+# remoteEntry.js/embedded.js and chunks are fetched.
+/*    /index.html   200
