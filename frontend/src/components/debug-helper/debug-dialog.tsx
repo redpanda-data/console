@@ -52,6 +52,7 @@ import {
   Trash2,
   Zap,
 } from 'lucide-react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
@@ -115,6 +116,22 @@ function readStorageEntries(storage: Storage): { key: string; value: string }[] 
 function useForceUpdate(): () => void {
   const [, setTick] = useState(0);
   return useCallback(() => setTick((n) => n + 1), []);
+}
+
+// Scale/fade pop for small elements that mount and unmount (badges, count dots).
+// Render inside an <AnimatePresence> so the exit animation can play.
+function PopIn({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <motion.span
+      animate={{ opacity: 1, scale: 1 }}
+      className={cn('inline-flex', className)}
+      exit={{ opacity: 0, scale: 0.5 }}
+      initial={{ opacity: 0, scale: 0.5 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.span>
+  );
 }
 
 function EmptyState({ children }: { children: React.ReactNode }) {
@@ -695,11 +712,15 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                   >
                     {key}
                   </code>
-                  {isOverridden ? (
-                    <Badge className="shrink-0" size="sm" variant="warning-inverted">
-                      overridden
-                    </Badge>
-                  ) : null}
+                  <AnimatePresence initial={false}>
+                    {isOverridden ? (
+                      <PopIn className="shrink-0" key="overridden">
+                        <Badge size="sm" variant="warning-inverted">
+                          overridden
+                        </Badge>
+                      </PopIn>
+                    ) : null}
+                  </AnimatePresence>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <FlagToggle
@@ -710,18 +731,22 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                       onMutate();
                     }}
                   />
-                  {isOverridden ? (
-                    <Button
-                      onClick={() => {
-                        setFlagOverride(key, null);
-                        onMutate();
-                      }}
-                      size="xs"
-                      variant="secondary-ghost"
-                    >
-                      Reset
-                    </Button>
-                  ) : null}
+                  <AnimatePresence initial={false}>
+                    {isOverridden ? (
+                      <PopIn key="reset">
+                        <Button
+                          onClick={() => {
+                            setFlagOverride(key, null);
+                            onMutate();
+                          }}
+                          size="xs"
+                          variant="secondary-ghost"
+                        >
+                          Reset
+                        </Button>
+                      </PopIn>
+                    ) : null}
+                  </AnimatePresence>
                   <span className="ml-auto shrink-0 text-body-sm text-muted-foreground">
                     default {defaultValue ? 'on' : 'off'}
                   </span>
@@ -851,11 +876,15 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
               <ItemTitle>{label}</ItemTitle>
               <ItemDescription>{value}</ItemDescription>
             </ItemContent>
-            {active ? (
-              <Badge size="sm" variant="warning-inverted">
-                active
-              </Badge>
-            ) : null}
+            <AnimatePresence initial={false}>
+              {active ? (
+                <PopIn key="active">
+                  <Badge size="sm" variant="warning-inverted">
+                    active
+                  </Badge>
+                </PopIn>
+              ) : null}
+            </AnimatePresence>
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </Item>
         </Fragment>
@@ -937,7 +966,13 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                         >
                           {icon}
                           <span className="min-w-0 flex-1 truncate">{itemLabel}</span>
-                          <CountDot count={count} size="sm" variant="warning" />
+                          <AnimatePresence initial={false}>
+                            {count > 0 ? (
+                              <PopIn key="count">
+                                <CountDot count={count} size="sm" variant="warning" />
+                              </PopIn>
+                            ) : null}
+                          </AnimatePresence>
                         </button>
                       );
                     })}
@@ -960,7 +995,19 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               <div className="font-semibold text-body">{title}</div>
               <div className="text-body-sm text-muted-foreground">{description}</div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{renderPanel()}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              <AnimatePresence initial={false} mode="wait">
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  key={panel}
+                  transition={{ duration: 0.12, ease: 'easeOut' }}
+                >
+                  {renderPanel()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </DialogContent>
@@ -982,7 +1029,13 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
       type="button"
     >
       <DebugPanda className="h-[22px] w-[22px]" />
-      <CountDot className="absolute -top-1 -right-1" count={activeCount} size="sm" variant="warning" />
+      <AnimatePresence initial={false}>
+        {activeCount > 0 ? (
+          <PopIn className="absolute -top-1 -right-1" key="count">
+            <CountDot count={activeCount} size="sm" variant="warning" />
+          </PopIn>
+        ) : null}
+      </AnimatePresence>
     </button>,
     document.body
   );
@@ -1003,9 +1056,9 @@ export function DebugHelperRoot() {
   }
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       {!open && <DebugLauncher onClick={() => setOpen(true)} />}
       <DebugDialog onOpenChange={setOpen} open={open} />
-    </>
+    </MotionConfig>
   );
 }
