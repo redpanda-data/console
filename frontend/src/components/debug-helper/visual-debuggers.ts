@@ -11,7 +11,7 @@
 
 import { IsDev } from '../../utils/env';
 
-export type VisualDebuggerId = 'grayscale' | 'outlines' | 'blur' | 'grid' | 'no-motion' | 'testids' | 'a11y';
+export type VisualDebuggerId = 'grayscale' | 'outlines' | 'blur' | 'grid' | 'testids' | 'a11y';
 
 export type VisualDebugger = {
   id: VisualDebuggerId;
@@ -39,12 +39,6 @@ export const VISUAL_DEBUGGERS: VisualDebugger[] = [
     id: 'grid',
     label: '8px baseline grid',
     description: 'Overlay an 8px grid to spot spacing and alignment drift.',
-  },
-  {
-    id: 'no-motion',
-    label: 'Disable animations',
-    description:
-      'Force CSS animations and transitions to near-zero duration to catch flicker and bad resting states. Completion events still fire.',
   },
   {
     id: 'testids',
@@ -83,17 +77,6 @@ html.__debug-grid::after {
   background-image:
     repeating-linear-gradient(to right, rgba(217, 70, 239, 0.25) 0 1px, transparent 1px 8px),
     repeating-linear-gradient(to bottom, rgba(217, 70, 239, 0.25) 0 1px, transparent 1px 8px);
-}
-
-html.__debug-no-motion *,
-html.__debug-no-motion *::before,
-html.__debug-no-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-delay: 0ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  transition-delay: 0ms !important;
-  scroll-behavior: auto !important;
 }
 
 html.__debug-testids :is(button, a[href], input, select, textarea, [role='button'], [role='tab'], [role='menuitem'], [role='switch'], [role='checkbox'], [role='combobox']):not([data-testid]) {
