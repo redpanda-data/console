@@ -20,7 +20,6 @@ import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
-import { UserPreferencesButton } from '../misc/user-preferences';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -156,7 +155,6 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
                 </Button>
               </Link>
             )}
-            <UserPreferencesButton />
             {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
           </div>
         </div>

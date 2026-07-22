@@ -205,15 +205,6 @@ type UISettings = {
   perTopicSettings: TopicDetailsSettings[]; // don't use directly, instead use uiState.topicDetails
   topicDetailsActiveTabKey: TopicTabId | undefined;
 
-  topicDetailsShowStatisticsBar: boolean; // for now: global for all topic details
-  autoRefreshIntervalSecs: number;
-  jsonViewer: {
-    fontSize: string;
-    lineHeight: string;
-    maxStringLength: number;
-    collapsed: number;
-  };
-
   // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
   brokerList: {
     hideEmptyColumns: boolean;
@@ -316,7 +307,6 @@ type UISettings = {
 
   consumerGroupDetails: {
     pageSize: number;
-    showStatisticsBar: boolean;
   };
 
   aclList: {
@@ -401,15 +391,6 @@ const defaultUiSettings: UISettings = {
   selectedClusterIndex: 0,
   perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
   topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
-
-  topicDetailsShowStatisticsBar: true, // for now: global for all topic details
-  autoRefreshIntervalSecs: 10,
-  jsonViewer: {
-    fontSize: '12px',
-    lineHeight: '1em',
-    maxStringLength: 200,
-    collapsed: 2,
-  },
 
   // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
   brokerList: {
@@ -513,7 +494,6 @@ const defaultUiSettings: UISettings = {
 
   consumerGroupDetails: {
     pageSize: DEFAULT_TABLE_PAGE_SIZE,
-    showStatisticsBar: true,
   },
 
   aclList: {

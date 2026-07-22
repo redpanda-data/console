@@ -34,6 +34,7 @@ import {
 } from '@redpanda-data/ui';
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
 import { type CSSProperties, type JSX, useRef, useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -100,8 +101,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Apache Software Foundation',
     friendlyName: 'Kafka cluster topics',
     description: 'Imports messages from another Kafka cluster, using MirrorSourceConnector',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mmaker-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mmaker-source-connector'),
   } as const,
   {
     classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorCheckpointConnector',
@@ -109,8 +109,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Apache Software Foundation',
     friendlyName: 'Kafka cluster offsets',
     description: 'Imports consumer group offsets from another Kafka cluster, using MirrorCheckpointConnector',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mmaker-checkpoint-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mmaker-checkpoint-connector'),
   } as const,
   {
     classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorHeartbeatConnector',
@@ -118,8 +117,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Apache Software Foundation',
     friendlyName: 'Heartbeat',
     description: 'Generates heartbeat messages to local heartbeat topic',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mmaker-heartbeat-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mmaker-heartbeat-connector'),
   } as const,
   // Confluent Connectors
   {
@@ -175,8 +173,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Debezium',
     friendlyName: 'MySQL (Debezium)',
     description: 'Imports a stream of changes from MySQL, Amazon RDS and Amazon Aurora',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mysql-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mysql-source-connector'),
   } as const,
   {
     classNamePrefix: 'io.debezium.connector.mongodb.',
@@ -189,8 +186,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Debezium',
     friendlyName: 'PostgreSQL (Debezium)',
     description: 'Imports a stream of changes from PostgreSQL',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-postgresql-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-postgresql-connector'),
   } as const,
   {
     classNamePrefix: 'io.debezium.connector.sqlserver.',
@@ -198,8 +194,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Debezium',
     friendlyName: 'SQL Server (Debezium)',
     description: 'Imports a stream of changes from Microsoft SQL Server',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-sqlserver-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-sqlserver-connector'),
   } as const,
   {
     classNamePrefix: 'io.debezium.connector.cassandra.',
@@ -219,8 +214,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Redpanda',
     friendlyName: 'S3',
     description: 'Exports messages to files in S3 buckets',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-s3-sink-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-s3-sink-connector'),
   } as const,
   {
     classNamePrefix: 'com.redpanda.kafka.connect.gcs.',
@@ -228,8 +222,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Redpanda',
     friendlyName: 'Google Cloud Storage',
     description: 'Exports messages to files in Google Cloud Storage',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-gcs-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-gcs-connector'),
   } as const,
   {
     classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSourceConnector',
@@ -237,8 +230,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Redpanda',
     friendlyName: 'JDBC',
     description: 'Imports batches of rows from MySQL, PostgreSQL, SQLite and SQL Server',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jdbc-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-jdbc-source-connector'),
   } as const,
   {
     classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSinkConnector',
@@ -246,8 +238,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Redpanda',
     friendlyName: 'JDBC',
     description: 'Exports messages to tables in MySQL, PostgreSQL, SQLite and SQL Server',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jdbc-sink-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-jdbc-sink-connector'),
   } as const,
 
   // Stream Reactor / Lenses
@@ -264,8 +255,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'WePay',
     friendlyName: 'Google BigQuery',
     description: 'Exports messages to Google BigQuery tables',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-gcp-bigquery-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-gcp-bigquery-connector'),
   } as const,
 
   // Snowflake Connectors
@@ -275,8 +265,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Snowflake',
     friendlyName: 'Snowflake',
     description: 'Exports messages to Snowflake tables',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-snowflake-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-snowflake-connector'),
   } as const,
 
   // MongoDB Connectors
@@ -286,8 +275,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'MongoDB',
     friendlyName: 'MongoDB',
     description: 'Imports collections from MongoDB',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mongodb-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mongodb-source-connector'),
   } as const,
   {
     classNamePrefix: 'com.mongodb.kafka.connect.MongoSinkConnector',
@@ -295,8 +283,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'MongoDB',
     friendlyName: 'MongoDB',
     description: 'Exports messages to MongoDB collections',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-mongodb-sink-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mongodb-sink-connector'),
   } as const,
 
   // Iceberg Connectors
@@ -306,8 +293,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Tabular',
     friendlyName: 'Iceberg',
     description: 'Exports messages to Iceberg tables',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-iceberg-sink-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-iceberg-sink-connector'),
   } as const,
 
   // JMS Connectors
@@ -317,8 +303,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'MacroNova',
     friendlyName: 'JMS',
     description: 'Exports messages to JMS queue',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-sink-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
   {
     classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSourceConnector',
@@ -326,8 +311,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'MacroNova',
     friendlyName: 'JMS',
     description: 'Imports messages from JMS queue',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-jms-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
   // IBM MQ Connectors
@@ -337,8 +321,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'IBM Messaging',
     friendlyName: 'IBM MQ',
     description: 'Exports messages to IBM MQ queue',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-sink-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
   {
     classNamePrefix: 'com.ibm.eventstreams.connect.mqsource.MQSourceConnector',
@@ -346,8 +329,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'IBM Messaging',
     friendlyName: 'IBM MQ',
     description: 'Imports messages from IBM MQ queue',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-ibmmq-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
   // Community Connector
@@ -367,8 +349,7 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Cástor Rodríguez',
     friendlyName: 'HTTP',
     description: 'Imports data from HTTP services as batches or increments',
-    learnMoreLink:
-      'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-http-source-connector/',
+    learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
   // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
@@ -553,7 +534,7 @@ export function NotConfigured() {
             Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and
             control all your connectors and tasks.
           </Text>
-          <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+          <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
             <Button variant="solid">Redpanda Console Config Documentation</Button>
           </a>
         </VStack>

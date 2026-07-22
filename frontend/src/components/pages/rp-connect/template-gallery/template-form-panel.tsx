@@ -16,7 +16,6 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Waypoints } from 'lucide-react';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
-import { useListComponentsQuery } from 'react-query/api/connect';
 import { z } from 'zod';
 
 import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
@@ -27,6 +26,7 @@ import { TopicSlotField } from './slot-fields/topic-slot';
 import { stitchTemplateYaml } from './template-deploy';
 import { applySchemaToSlots } from './template-schema';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { useEnrichedComponents } from '../utils/use-enriched-components';
 
 const SECTION_LABELS: Record<TemplateSlotSection, string> = {
   source: 'Source',
@@ -65,16 +65,30 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
-const buildSchema = (slots: TemplateSlot[]) => {
+// Exported for tests: slot validation rules (required, list entries, entryPattern) live here.
+export const buildSchema = (slots: TemplateSlot[]) => {
   const shape: Record<string, z.ZodTypeAny> = {
     [PIPELINE_NAME_FIELD]: z.string().min(1, 'Pipeline name is required'),
   };
   for (const slot of slots) {
-    if (slot.required) {
-      shape[slot.id] = z.string().min(1, `${slot.label} is required`);
+    const isList = slot.kind === 'string' && slot.list;
+    const entryPattern = slot.kind === 'string' ? slot.entryPattern : undefined;
+
+    let field: z.ZodType<string>;
+    if (!slot.required) {
+      field = z.string();
+    } else if (isList) {
+      // Comma-separated multi-value: require at least one non-blank entry (",," must not pass).
+      field = z.string().refine((v) => v.split(',').some((part) => part.trim()), `${slot.label} is required`);
     } else {
-      shape[slot.id] = z.string().optional().default('');
+      field = z.string().min(1, `${slot.label} is required`);
     }
+    if (entryPattern) {
+      // Validate each trimmed entry; blanks are the required check's concern, not the pattern's.
+      const entriesOf = (v: string) => (isList ? v.split(',') : [v]).map((part) => part.trim()).filter(Boolean);
+      field = field.refine((v) => entriesOf(v).every((entry) => entryPattern.regex.test(entry)), entryPattern.message);
+    }
+    shape[slot.id] = slot.required ? field : field.optional().default('');
   }
   return z.object(shape);
 };
@@ -140,10 +154,10 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
     ref
   ) => {
-    const { data: componentListResponse } = useListComponentsQuery();
+    const { components, isLoading: isComponentsLoading } = useEnrichedComponents();
     const effectiveSlots = useMemo(
-      () => applySchemaToSlots(template, componentListResponse?.components),
-      [template, componentListResponse]
+      () => applySchemaToSlots(template, components.length > 0 ? components : undefined),
+      [template, components]
     );
 
     const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
@@ -158,14 +172,18 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
     // Schema-driven defaults can arrive after mount; reapply once per template, but only while pristine.
     const lastAppliedTemplateId = useRef<string | null>(null);
     useEffect(() => {
-      if (!componentListResponse || lastAppliedTemplateId.current === template.id) {
+      // Wait for the config schema too (isLoading), so the one-shot reset uses schema-exact
+      // required-ness/defaults rather than locking in values derived from proto flags alone.
+      // If that query hangs forever the reset never fires (errors settle isLoading) and the
+      // form stays on its first-render defaults — degraded but usable.
+      if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
         return;
       }
       lastAppliedTemplateId.current = template.id;
       if (!form.formState.isDirty) {
         form.reset(defaultValues as FormValues);
       }
-    }, [componentListResponse, defaultValues, form, template.id]);
+    }, [isComponentsLoading, components, defaultValues, form, template.id]);
 
     const stitchCurrentYaml = (values: FormValues): string => {
       const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;

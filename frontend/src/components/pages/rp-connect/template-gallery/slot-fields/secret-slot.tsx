@@ -102,7 +102,6 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
               <Button
                 data-testid={`slot-${slot.id}-create`}
                 onClick={handleCreateClick}
-                size="sm"
                 type="button"
                 variant="outline"
               >

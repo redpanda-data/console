@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -24,13 +26,15 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { createContext, useContext, useEffect, useId } from 'react';
+import { AlertCircle, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { type Control, Controller, type FieldPath, useForm, useWatch } from 'react-hook-form';
+import { useListTopicsQuery } from 'react-query/api/topic';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
+import type { FieldLintErrors } from './lint-field-mapping';
 import { ScrollShadow } from './scroll-shadow';
-import { getSecretSyntax } from '../types/constants';
+import { getSecretSyntax, REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import {
   checkRequired,
@@ -41,6 +45,7 @@ import {
   isScalarArrayField,
   isScalarField,
 } from '../utils/schema';
+import { isTopicField } from '../utils/wizard';
 import type { EditTarget, ResourceKind } from '../utils/yaml';
 import { resourceKindForComponentName } from '../utils/yaml';
 
@@ -133,13 +138,20 @@ export const ChildItemsList = ({
   </div>
 );
 
-// Resource-link context (existing labels + create-and-link), provided by the inspector so the form
-// stays a pure config editor.
+// Cluster-linking context (resource labels, create-resource, create-topic), provided by the
+// inspector so the form stays a pure config editor. Context rather than props because the
+// consumers are leaf controls several generic layers down (SchemaFields → SchemaField →
+// Scalar/ArrayField → controls) — drilling would thread cluster concerns through every layer.
 type ResourceFieldContextValue = {
   labels: Record<ResourceKind, string[]>;
   onCreateResource?: (kind: ResourceKind) => void;
   // Kind of the edited component, so a plainly-typed `resource:` string field still reads as a link.
   componentResourceKind?: ResourceKind;
+  // True when the component's topic/topics fields name topics on THIS cluster (kafka/redpanda
+  // family) — gates the pickers, so an mqtt/pulsar topic field stays a plain input.
+  clusterTopicFields?: boolean;
+  /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
+  onCreateTopic?: () => void;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
@@ -284,11 +296,14 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | numbe
   return text;
 }
 
-function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
-  const lines = text
+const arrayFieldLines = (text: string): string[] =>
+  text
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l !== '');
+
+function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
+  const lines = arrayFieldLines(text);
   if (spec.type === 'int' || spec.type === 'float') {
     return lines.map(Number).filter((n) => !Number.isNaN(n));
   }
@@ -302,6 +317,9 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
   const scalars: Leaf[] = [];
   const arrays: Leaf[] = [];
   for (const f of fields) {
+    if (f.deprecated) {
+      continue;
+    }
     const path = [...base, f.name];
     const leaf: Leaf = { spec: f, path, key: path.join('/') };
     if (isScalarField(f)) {
@@ -315,6 +333,76 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: 
     }
   }
   return { scalars, arrays };
+}
+
+// Paths of the nested object groups the form renders as collapsible sections (tls, batching, …).
+function collectGroupKeys(fields: RawFieldSpec[], base: string[] = [], out: string[] = []): string[] {
+  for (const f of fields) {
+    if (f.deprecated || !isObjectGroupField(f)) {
+      continue;
+    }
+    const path = [...base, f.name];
+    out.push(path.join('/'));
+    collectGroupKeys(f.children ?? [], path, out);
+  }
+  return out;
+}
+
+/**
+ * Keys the schema form renders — leaf inputs, `label`, and object-group sections — i.e. the
+ * anchors lint errors can attach to. A group anchor renders at the top of its (auto-opened)
+ * section, which is as specific as an error on the group itself (`batching: null`) can get.
+ */
+export function formFieldKeys(spec: ConnectComponentSpec): ReadonlySet<string> {
+  const fields = spec.config?.children ?? [];
+  const leaves = collectLeaves(fields);
+  return new Set([
+    'label',
+    ...leaves.scalars.map((l) => l.key),
+    ...leaves.arrays.map((l) => l.key),
+    ...collectGroupKeys(fields),
+  ]);
+}
+
+// Lint messages anchored to field keys, provided by the inspector; read by the recursive field
+// renderers (a prop would have to thread through every SchemaField level).
+const FieldLintErrorsContext = createContext<FieldLintErrors>(new Map());
+
+// Lint errors anchored under this field. Hidden while the field is dirty — the user is addressing
+// it, and the message describes the SAVED value, not what they're typing.
+const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: boolean }) => {
+  const errors = useContext(FieldLintErrorsContext).get(fieldKey);
+  if (!errors || errors.length === 0 || dirty) {
+    return null;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      {errors.map((message, i) => (
+        // Indexed key: identical messages can anchor to one field, and the list is rebuilt per render.
+        <div className="flex items-start gap-1 text-body-sm text-destructive" key={`${i}-${message}`}>
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+          {message}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// The lint errors anchored at `prefix` or anywhere under it, joined into one signature string.
+// Groups force-open when the signature CHANGES: mere truthiness would leave errors that arrive
+// after a manual collapse invisible, while reopening on every lint refresh would fight the user.
+function lintErrorSignatureUnder(errors: FieldLintErrors, prefix: string): string {
+  const messages: string[] = [];
+  for (const [key, list] of errors) {
+    if (key === prefix || key.startsWith(`${prefix}/`)) {
+      messages.push(...list);
+    }
+  }
+  return messages.join('\n');
+}
+
+function useLintErrorSignatureUnder(prefix: string[]): string {
+  return lintErrorSignatureUnder(useContext(FieldLintErrorsContext), prefix.join('/'));
 }
 
 type FormValues = {
@@ -443,17 +531,20 @@ function buildComponentEntry({
 
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
-    <Label className="font-medium text-sm" htmlFor={htmlFor}>
+    <Label className="shrink-0 font-medium text-sm" htmlFor={htmlFor}>
       {spec.name}
     </Label>
     {checkRequired(spec) ? (
-      <span aria-hidden className="text-destructive text-xs" title="Required">
+      <span aria-hidden className="shrink-0 text-destructive text-xs" title="Required">
         *
       </span>
     ) : null}
-    {spec.type && spec.type !== 'string' ? <span className="text-muted-foreground text-xs">{spec.type}</span> : null}
+    {spec.type && spec.type !== 'string' ? (
+      <span className="shrink-0 text-muted-foreground text-xs">{spec.type}</span>
+    ) : null}
     {spec.defaultValue ? (
-      <span className="text-muted-foreground text-xs">
+      // Defaults can be long templates — keep the label on one line and ellipsize, full value on hover.
+      <span className="min-w-0 truncate text-muted-foreground text-xs" title={`default: ${spec.defaultValue}`}>
         default: <span className="font-mono">{spec.defaultValue}</span>
       </span>
     ) : null}
@@ -463,11 +554,13 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
 const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
   spec.description ? <div className="text-body-sm text-muted-foreground">{spec.description}</div> : null;
 
-// The schema has no secret flag, so mask plausibly-credential fields by name heuristic.
+// Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
+// secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
+// like AWS session tokens and SAS tokens, and the heuristic is all we have on older dataplanes.
 const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/i;
 
 const isSecretField = (spec: RawFieldSpec): boolean =>
-  spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? '');
+  spec.secret === true || (spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? ''));
 
 // Masked credential input. `type="password"` gives the registry Input's reveal toggle; a `${…}`
 // interpolation isn't a literal credential, so it's shown in the clear.
@@ -482,6 +575,97 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
   />
 );
 
+// Cluster topics offered by topic-field pickers (internal topics hidden, like the template flow).
+function useTopicOptions() {
+  const { data, isLoading } = useListTopicsQuery(undefined, undefined, { hideInternalTopics: true });
+  const options = (data.topics ?? []).map((t) => ({ value: t.name, label: t.name }));
+  return { options, isLoading };
+}
+
+// The "Create new topic" affordance next to topic pickers; opens the Add-topic dialog. The created
+// topic is written into the YAML, which re-syncs into the (clean) form.
+const CreateTopicButton = () => {
+  const { onCreateTopic } = useContext(ResourceFieldContext);
+  if (!onCreateTopic) {
+    return null;
+  }
+  return (
+    <Button className="self-start" onClick={onCreateTopic} size="sm" type="button" variant="outline">
+      <Plus className="size-3.5" /> Create new topic
+    </Button>
+  );
+};
+
+// A topic-named scalar: pick an existing cluster topic (like the template flow's selector), type a
+// custom value (interpolations, `topic:partition`), or create a new topic. Typed text propagates
+// per keystroke (onInputValueChange): the combobox itself only fires onChange on Enter/selection,
+// which would let a blur-commit save stale YAML while the field still displays the typed text.
+const TopicScalarControl = ({
+  value,
+  onChange,
+  invalid,
+}: {
+  value: string;
+  onChange: (value: unknown) => void;
+  invalid?: boolean;
+}) => {
+  const { options, isLoading } = useTopicOptions();
+  return (
+    <div className="flex flex-col gap-2">
+      <Combobox
+        className={invalid ? 'ring-1 ring-destructive' : undefined}
+        creatable
+        createLabel="value"
+        loading={isLoading}
+        onChange={onChange}
+        onInputValueChange={onChange}
+        options={options}
+        placeholder="Select or enter a topic…"
+        value={value}
+      />
+      <CreateTopicButton />
+    </div>
+  );
+};
+
+// Appends cluster topics to a topics-list field without giving up the free-text lines (regex
+// patterns, explicit partitions) the textarea supports.
+const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (topic: string) => void }) => {
+  const { options, isLoading } = useTopicOptions();
+  // Remounted per pick: the combobox pins value='' but keeps displaying the picked label as if
+  // it were still a pending selection.
+  const [pickCount, setPickCount] = useState(0);
+  const remaining = options.filter((o) => !lines.includes(o.value));
+  return (
+    <div className="flex flex-col gap-2">
+      <Combobox
+        clearable={false}
+        key={pickCount}
+        loading={isLoading}
+        onChange={(topic) => {
+          if (topic) {
+            onAppend(topic);
+            setPickCount((n) => n + 1);
+          }
+        }}
+        options={remaining}
+        placeholder="Add existing topic…"
+        value=""
+      />
+      <CreateTopicButton />
+    </div>
+  );
+};
+
+// Sentinel item value — '' can't be one.
+const UNSET_OPTION = '__unset__';
+
+/**
+ * Enum (annotated-options) field. A select can't be cleared by deleting text the way inputs can,
+ * so optional fields get an explicit unset item ("Default (x)" / "Not set") — without it a value
+ * seeded by the insert template is stuck in the YAML forever. Unset maps to '', which the save
+ * path treats as "remove the key".
+ */
 const OptionsSelect = ({
   spec,
   value,
@@ -495,11 +679,18 @@ const OptionsSelect = ({
   id?: string;
   required?: boolean;
 }) => (
-  <Select onValueChange={onChange} value={String(value ?? '')}>
+  <Select onValueChange={(next) => onChange(next === UNSET_OPTION ? '' : next)} value={String(value ?? '')}>
     <SelectTrigger aria-label={spec.name} aria-required={required || undefined} id={id}>
       <SelectValue placeholder={spec.defaultValue || 'Select…'} />
     </SelectTrigger>
     <SelectContent>
+      {required ? null : (
+        <SelectItem key={UNSET_OPTION} value={UNSET_OPTION}>
+          <span className="text-muted-foreground">
+            {spec.defaultValue ? `Default (${spec.defaultValue})` : 'Not set'}
+          </span>
+        </SelectItem>
+      )}
       {spec.annotatedOptions?.map((option) => (
         <SelectItem key={option.value} value={option.value}>
           {option.value}
@@ -522,7 +713,7 @@ const ScalarControl = ({
   id?: string;
   invalid?: boolean;
 }) => {
-  const { componentResourceKind } = useContext(ResourceFieldContext);
+  const { componentResourceKind, clusterTopicFields } = useContext(ResourceFieldContext);
   const required = checkRequired(spec);
   if (spec.type === 'bool') {
     return <Switch aria-label={spec.name} checked={Boolean(value)} id={id} onCheckedChange={onChange} />;
@@ -534,11 +725,34 @@ const ScalarControl = ({
   if (fieldHasOptions(spec)) {
     return <OptionsSelect id={id} onChange={onChange} required={required} spec={spec} value={value} />;
   }
+  if (clusterTopicFields && isTopicField(spec.name ?? '')) {
+    return <TopicScalarControl invalid={invalid} onChange={onChange} value={String(value ?? '')} />;
+  }
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
   }
-  // Text input (numeric inputMode), not type="number": a number input blanks values the browser
-  // can't parse (e.g. `1000$`); text keeps them visible and fixable.
+  return (
+    <ScalarTextInput id={id} invalid={invalid} onChange={onChange} required={required} spec={spec} value={value} />
+  );
+};
+
+// Text input (numeric inputMode), not type="number": a number input blanks values the browser
+// can't parse (e.g. `1000$`); text keeps them visible and fixable.
+const ScalarTextInput = ({
+  spec,
+  value,
+  onChange,
+  id,
+  invalid,
+  required,
+}: {
+  spec: RawFieldSpec;
+  value: string | boolean;
+  onChange: (value: unknown) => void;
+  id?: string;
+  invalid?: boolean;
+  required?: boolean;
+}) => {
   const numericMode = spec.type === 'int' ? 'numeric' : 'decimal';
   return (
     <Input
@@ -576,24 +790,30 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
+  const lintErrors = useContext(FieldLintErrorsContext);
+  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  // The topic picker's combobox can't take an id — don't point the label at a nonexistent one.
+  const labelFor = clusterTopicFields && isTopicField(leaf.spec.name ?? '') ? undefined : inputId;
   return (
     <Controller
       control={control}
       name={`fields.${leaf.key}` as FieldPath<FormValues>}
-      render={({ field }) => {
+      render={({ field, fieldState }) => {
         const hint = numericHint(leaf.spec, field.value as string | boolean);
         const showSecretTip = isSecretField(leaf.spec) && !String(field.value ?? '').includes('${');
+        const hasLintError = (lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty;
         return (
           <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor={inputId} spec={leaf.spec} />
+            <FieldLabel htmlFor={labelFor} spec={leaf.spec} />
             <ScalarControl
               id={inputId}
-              invalid={Boolean(hint)}
+              invalid={Boolean(hint) || hasLintError}
               onChange={field.onChange}
               spec={leaf.spec}
               value={field.value as string | boolean}
             />
             {hint ? <div className="text-body-sm text-destructive">{hint}</div> : null}
+            <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
             {showSecretTip ? (
               <div className="text-body-sm text-muted-foreground">
                 Tip: reference a secret (<span className="font-mono">{SECRET_REF_EXAMPLE}</span>) instead of a literal
@@ -610,25 +830,36 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
 
 const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
+  const lintErrors = useContext(FieldLintErrorsContext);
+  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  const isTopics = Boolean(clusterTopicFields) && isTopicField(leaf.spec.name ?? '');
   return (
     <Controller
       control={control}
       name={`arrays.${leaf.key}` as FieldPath<FormValues>}
-      render={({ field }) => (
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel htmlFor={inputId} spec={leaf.spec} />
-          <Textarea
-            aria-required={checkRequired(leaf.spec) || undefined}
-            className="font-mono text-sm"
-            id={inputId}
-            onChange={field.onChange}
-            placeholder="One value per line"
-            rows={3}
-            value={String(field.value ?? '')}
-          />
-          <FieldDescription spec={leaf.spec} />
-        </div>
-      )}
+      render={({ field, fieldState }) => {
+        const lines = arrayFieldLines(String(field.value ?? ''));
+        return (
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel htmlFor={inputId} spec={leaf.spec} />
+            <Textarea
+              aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
+              aria-required={checkRequired(leaf.spec) || undefined}
+              className="font-mono text-sm"
+              id={inputId}
+              onChange={field.onChange}
+              placeholder="One value per line"
+              rows={3}
+              value={String(field.value ?? '')}
+            />
+            {isTopics ? (
+              <TopicArrayPicker lines={lines} onAppend={(t) => field.onChange([...lines, t].join('\n'))} />
+            ) : null}
+            <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
+            <FieldDescription spec={leaf.spec} />
+          </div>
+        );
+      }}
     />
   );
 };
@@ -636,26 +867,38 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
 const FieldGroup = ({
   label,
   defaultOpen = true,
+  forceOpenSignal = '',
   children,
 }: {
   label: string;
   defaultOpen?: boolean;
+  /** Reopens the group whenever this changes to non-empty (lint anchored new errors inside it). */
+  forceOpenSignal?: string;
   children: React.ReactNode;
-}) => (
-  <Collapsible className="rounded-md border border-border/60" defaultOpen={defaultOpen}>
-    <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
-      <div className="font-medium text-body">{label}</div>
-      <ChevronDown
-        className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
-      />
-    </CollapsibleTrigger>
-    <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
-  </Collapsible>
-);
+}) => {
+  const [open, setOpen] = useState(defaultOpen || forceOpenSignal !== '');
+  useEffect(() => {
+    if (forceOpenSignal) {
+      setOpen(true);
+    }
+  }, [forceOpenSignal]);
+  return (
+    <Collapsible className="rounded-md border border-border/60" onOpenChange={setOpen} open={open}>
+      <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
+        <div className="font-medium text-body">{label}</div>
+        <ChevronDown
+          className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 // Render one field: scalar, scalar list, or nested object group; complex fields go to the raw section.
 const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string[]; control: Control<FormValues> }) => {
   const here = [...path, spec.name];
+  const lintSignatureInside = useLintErrorSignatureUnder(here);
   if (isScalarField(spec)) {
     return <ScalarField control={control} leaf={{ spec, path: here, key: here.join('/') }} />;
   }
@@ -664,12 +907,36 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   }
   if (isObjectGroupField(spec)) {
     return (
-      <FieldGroup defaultOpen={checkRequired(spec) && !spec.advanced} label={spec.name}>
+      <FieldGroup
+        defaultOpen={checkRequired(spec) && !spec.advanced}
+        forceOpenSignal={lintSignatureInside}
+        label={spec.name}
+      >
+        {/* Errors anchored on the group itself (e.g. `batching: null`) — shown where it's fixed. */}
+        <FieldLintErrorList dirty={false} fieldKey={here.join('/')} />
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />
       </FieldGroup>
     );
   }
   return null;
+};
+
+// "Optional" only means something in contrast to required fields above it — with none, the label
+// reads as "nothing here matters", which lint errors then contradict; render the fields plainly.
+const OptionalFieldsSection = ({
+  fields,
+  hasRequired,
+  control,
+}: {
+  fields: RawFieldSpec[];
+  hasRequired: boolean;
+  control: Control<FormValues>;
+}) => {
+  if (fields.length === 0) {
+    return null;
+  }
+  const rendered = fields.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />);
+  return hasRequired ? <FieldGroup label="Optional">{rendered}</FieldGroup> : rendered;
 };
 
 type FieldGroupKey = 'required' | 'optional' | 'advanced';
@@ -688,6 +955,7 @@ const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
 function groupFormFields(fields: RawFieldSpec[]): Record<FieldGroupKey, RawFieldSpec[]> {
   const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };
   for (const spec of fields) {
+    // isFormField excludes deprecated fields; their existing values surface in the raw-YAML section.
     if (isFormField(spec)) {
       groups[fieldGroupKey(spec)].push(spec);
     }
@@ -731,9 +999,21 @@ type NodeConfigFormProps = {
   onSelectChild?: (item: InspectorChildItem) => void;
   /** Reports the assembled config on change (null when clean) so the inspector can auto-commit on leave/save. */
   onConfigChange?: (config: Record<string, unknown> | null) => void;
+  /**
+   * Flushes the reported draft into the YAML immediately; returns whether it was applied. When
+   * provided, the form commits on field blur / ⌘⏎ / its Apply button — not just on node-leave —
+   * so the canvas and lint react per field.
+   */
+  onCommitField?: () => boolean;
+  /** Lint messages anchored to field keys (see mapLintHintsToFields), rendered under their fields. */
+  fieldErrors?: FieldLintErrors;
+  /** Opens the Add-topic dialog for this node; offered by topic-named fields. */
+  onCreateTopic?: () => void;
   /** Resource nodes are referenced by label — the label field must not be cleared. */
   requireLabel?: boolean;
 };
+
+const NO_FIELD_ERRORS: FieldLintErrors = new Map();
 
 export function NodeConfigForm({
   spec,
@@ -745,6 +1025,9 @@ export function NodeConfigForm({
   childItems,
   onSelectChild,
   onConfigChange,
+  onCommitField,
+  fieldErrors,
+  onCreateTopic,
   requireLabel,
 }: NodeConfigFormProps) {
   const labelId = useId();
@@ -767,32 +1050,50 @@ export function NodeConfigForm({
   // raw-YAML fallback; nested-component fields are preserved untouched (the form clones the config).
   const leaves = collectLeaves(fields);
   const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
-  const complexSchemaKeys = fields.filter((f) => f.name && !(isFormField(f) || isComponentField(f))).map((f) => f.name);
+  const complexSchemaKeys = fields
+    .filter((f) => f.name && (f.deprecated || !(isFormField(f) || isComponentField(f))))
+    .map((f) => f.name);
   const unknownKeys = Object.keys(inner).filter((k) => !schemaKeys.has(k));
   const rawKeys = [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
   const showRaw = rawKeys.length > 0;
   const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
 
-  const { control, formState, getValues } = useForm<FormValues>({
-    defaultValues: {
-      label: typeof value.label === 'string' ? value.label : '',
-      raw: showRaw ? yamlStringify(rawObject) : '',
-      fields: Object.fromEntries(leaves.scalars.map((l) => [l.key, initialScalar(l.spec, getInObj(inner, l.path))])),
-      arrays: Object.fromEntries(
-        leaves.arrays.map((l) => {
-          const v = getInObj(inner, l.path);
-          return [l.key, Array.isArray(v) ? v.join('\n') : ''];
-        })
-      ),
-    },
+  const buildFormValues = (): FormValues => ({
+    label: typeof value.label === 'string' ? value.label : '',
+    raw: showRaw ? yamlStringify(rawObject) : '',
+    fields: Object.fromEntries(leaves.scalars.map((l) => [l.key, initialScalar(l.spec, getInObj(inner, l.path))])),
+    arrays: Object.fromEntries(
+      leaves.arrays.map((l) => {
+        const v = getInObj(inner, l.path);
+        return [l.key, Array.isArray(v) ? v.join('\n') : ''];
+      })
+    ),
   });
+
+  const { control, formState, getValues, reset } = useForm<FormValues>({ defaultValues: buildFormValues() });
 
   // Read dirtyFields/isDirty during render so react-hook-form subscribes to (and
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
   const { dirtyFields, isDirty } = formState;
 
+  // External writes while the form is open (a field-blur commit round-tripping through the YAML,
+  // the Topic/User pill dialogs, resource linking) change `value` without remounting. A clean form
+  // re-syncs in place — no remount, so focus and scroll survive; a dirty form keeps the user's
+  // edits and re-syncs when it next becomes clean, so a write that landed mid-edit isn't lost.
+  const serializedValue = JSON.stringify(value);
+  const syncedValueRef = useRef(serializedValue);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `serializedValue`/`isDirty` are the triggers; values rebuild from the latest props.
+  useEffect(() => {
+    if (!isDirty && syncedValueRef.current !== serializedValue) {
+      syncedValueRef.current = serializedValue;
+      reset(buildFormValues());
+    }
+  }, [serializedValue, isDirty]);
+
   const watched = useWatch({ control });
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched` is the change trigger; the config is rebuilt from the latest values/props read in the body.
+  // `serializedValue` is a trigger too: an external write while dirty (create-topic patch) must
+  // rebuild the draft from the fresh value, or flushing it later would clobber that write.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `watched`/`serializedValue` are the change triggers; the config is rebuilt from the latest values/props read in the body.
   useEffect(() => {
     onConfigChange?.(
       isDirty
@@ -809,121 +1110,188 @@ export function NodeConfigForm({
           })
         : null
     );
-  }, [watched, isDirty, getValues, onConfigChange]);
+  }, [watched, isDirty, getValues, onConfigChange, serializedValue]);
 
+  // Flush the draft into the YAML now (field blur / ⌘⏎ / Apply). On success the committed values
+  // become the form's new baseline in place — no remount, focus and scroll survive. Edits the save
+  // path deliberately skipped (malformed numerics, invalid raw YAML) keep their SAVED value as the
+  // baseline so they stay dirty — otherwise the clean-form resync would silently revert them.
+  const commitNow = () => {
+    if (!(onCommitField && isDirty && onCommitField())) {
+      return;
+    }
+    const current = getValues();
+    const committed: FormValues = { ...current, fields: { ...current.fields } };
+    for (const leaf of leaves.scalars) {
+      if (numericHint(leaf.spec, current.fields[leaf.key])) {
+        committed.fields[leaf.key] = initialScalar(leaf.spec, getInObj(inner, leaf.path));
+      }
+    }
+    if (showRaw && current.raw.trim() !== '' && parseRawSection(true, current.raw) === null) {
+      committed.raw = yamlStringify(rawObject);
+    }
+    reset(committed, { keepDirtyValues: true });
+  };
+
+  const clusterTopicFields = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
   const resourceCtx: ResourceFieldContextValue = {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
     onCreateResource,
     componentResourceKind: resourceKindForComponentName(componentName),
+    clusterTopicFields,
+    onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
   };
+
+  const advancedLintSignature = advanced
+    .map((f) => lintErrorSignatureUnder(fieldErrors ?? NO_FIELD_ERRORS, f.name))
+    .filter(Boolean)
+    .join('\n');
 
   return (
     <ResourceFieldContext.Provider value={resourceCtx}>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ScrollShadow contentClassName="space-y-4 px-4 py-4">
-          {/* Full-bleed to the scroll edges; padded fields follow. */}
-          {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
-          <div className="flex flex-col gap-1.5">
-            <Label className="font-medium text-sm" htmlFor={labelId}>
-              label
-            </Label>
-            <Controller
-              control={control}
-              name="label"
-              render={({ field }) => (
-                <>
-                  <Input
-                    aria-required={requireLabel || undefined}
-                    id={labelId}
-                    onChange={field.onChange}
-                    placeholder={
-                      requireLabel
-                        ? 'Name other nodes use to reference this resource'
-                        : 'Optional identifier for this component'
-                    }
-                    value={field.value}
-                  />
-                  {requireLabel && !field.value.trim() ? (
-                    <div className="text-body-sm text-destructive">
-                      A resource needs a label — nodes reference it by name. The saved label is kept.
-                    </div>
-                  ) : null}
-                </>
-              )}
-            />
-          </div>
-
-          {isListValued && hasChildList ? (
-            <ChildItemsList
-              items={childItems as InspectorChildItem[]}
-              label="Cases"
-              onSelect={onSelectChild as (item: InspectorChildItem) => void}
-            />
-          ) : null}
-          {isListValued && !hasChildList ? (
-            <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
-              <div className="text-body-sm text-muted-foreground">
-                This component's items (cases / processors) are edited on the canvas — select one to edit it.
-              </div>
-            </div>
-          ) : null}
-
-          {isListValued ? null : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
-
-          {!isListValued && optional.length > 0 ? (
-            <FieldGroup label="Optional">
-              {optional.map((f) => (
-                <SchemaField control={control} key={f.name} path={[]} spec={f} />
-              ))}
-            </FieldGroup>
-          ) : null}
-
-          {!isListValued && advanced.length > 0 ? (
-            <FieldGroup defaultOpen={false} label="Advanced">
-              {advanced.map((f) => (
-                <SchemaField control={control} key={f.name} path={[]} spec={f} />
-              ))}
-            </FieldGroup>
-          ) : null}
-
-          {!isListValued && componentFields.length > 0 && hasChildList ? (
-            <ChildItemsList
-              items={childItems as InspectorChildItem[]}
-              label="Steps"
-              onSelect={onSelectChild as (item: InspectorChildItem) => void}
-            />
-          ) : null}
-
-          {!isListValued && showRaw ? (
-            <FieldGroup defaultOpen={false} label="Other settings (YAML)">
+      <FieldLintErrorsContext.Provider value={fieldErrors ?? NO_FIELD_ERRORS}>
+        {/* Committing per FIELD (not per node): the container listens for focus leaving any field
+            (bubbled focusout) and ⌘⏎, flushing the draft so the canvas card and lint react while
+            the node is still selected. It is not itself interactive — the fields inside are. */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the form controls. */}
+        {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: passive listener for events bubbling from the form controls. */}
+        <div
+          className="flex min-h-0 flex-1 flex-col"
+          onBlur={onCommitField ? commitNow : undefined}
+          onKeyDown={
+            onCommitField
+              ? (e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    commitNow();
+                  }
+                }
+              : undefined
+          }
+        >
+          <ScrollShadow contentClassName="space-y-4 px-4 py-4">
+            {/* Full-bleed to the scroll edges; padded fields follow. */}
+            {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
+            <div className="flex flex-col gap-1.5">
+              <Label className="font-medium text-sm" htmlFor={labelId}>
+                label
+              </Label>
               <Controller
                 control={control}
-                name="raw"
-                render={({ field }) => {
-                  const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
-                  return (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="h-[450px] overflow-hidden rounded-md border border-border">
-                        <YamlEditor
-                          onChange={(v) => field.onChange(v || '')}
-                          options={{ minimap: { enabled: false } }}
-                          transparentBackground
-                          value={field.value}
-                        />
+                name="label"
+                render={({ field, fieldState }) => (
+                  <>
+                    <Input
+                      aria-required={requireLabel || undefined}
+                      id={labelId}
+                      onChange={field.onChange}
+                      placeholder={
+                        requireLabel
+                          ? 'Name other nodes use to reference this resource'
+                          : 'Optional identifier for this component'
+                      }
+                      value={field.value}
+                    />
+                    {requireLabel && !field.value.trim() ? (
+                      <div className="text-body-sm text-destructive">
+                        A resource needs a label — nodes reference it by name. The saved label is kept.
                       </div>
-                      {invalid ? (
-                        <div className="text-body-sm text-destructive">
-                          Invalid YAML — these settings won't be saved until fixed.
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                }}
+                    ) : null}
+                    <FieldLintErrorList dirty={fieldState.isDirty} fieldKey="label" />
+                  </>
+                )}
               />
-            </FieldGroup>
+            </div>
+
+            {isListValued && hasChildList ? (
+              <ChildItemsList
+                items={childItems as InspectorChildItem[]}
+                label="Cases"
+                onSelect={onSelectChild as (item: InspectorChildItem) => void}
+              />
+            ) : null}
+            {isListValued && !hasChildList ? (
+              <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
+                <div className="text-body-sm text-muted-foreground">
+                  This component's items (cases / processors) are edited on the canvas — select one to edit it.
+                </div>
+              </div>
+            ) : null}
+
+            {isListValued
+              ? null
+              : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
+
+            {isListValued ? null : (
+              <OptionalFieldsSection control={control} fields={optional} hasRequired={required.length > 0} />
+            )}
+
+            {!isListValued && advanced.length > 0 ? (
+              <FieldGroup defaultOpen={false} forceOpenSignal={advancedLintSignature} label="Advanced">
+                {advanced.map((f) => (
+                  <SchemaField control={control} key={f.name} path={[]} spec={f} />
+                ))}
+              </FieldGroup>
+            ) : null}
+
+            {!isListValued && componentFields.length > 0 && hasChildList ? (
+              <ChildItemsList
+                items={childItems as InspectorChildItem[]}
+                label="Steps"
+                onSelect={onSelectChild as (item: InspectorChildItem) => void}
+              />
+            ) : null}
+
+            {!isListValued && showRaw ? (
+              <FieldGroup defaultOpen={false} label="Other settings (YAML)">
+                <Controller
+                  control={control}
+                  name="raw"
+                  render={({ field }) => {
+                    const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
+                    return (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="h-[450px] overflow-hidden rounded-md border border-border">
+                          <YamlEditor
+                            onChange={(v) => field.onChange(v || '')}
+                            options={{ minimap: { enabled: false } }}
+                            transparentBackground
+                            value={field.value}
+                          />
+                        </div>
+                        {invalid ? (
+                          <div className="text-body-sm text-destructive">
+                            Invalid YAML — these settings won't be saved until fixed.
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }}
+                />
+              </FieldGroup>
+            ) : null}
+          </ScrollShadow>
+          {/* Edits normally apply on field blur; this is the visible pending state plus a manual
+            trigger (and ⌘⏎) for applying without moving focus. */}
+          {onCommitField && isDirty ? (
+            <div className="flex shrink-0 items-center justify-between gap-2 border-border border-t bg-muted/40 px-4 py-2">
+              <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
+                <span aria-hidden className="size-1.5 rounded-full bg-informative" />
+                Unsaved edits
+              </span>
+              <Button
+                onClick={commitNow}
+                size="sm"
+                title="Apply now (⌘⏎) — edits also apply when you leave a field"
+                type="button"
+                variant="secondary"
+              >
+                Apply
+              </Button>
+            </div>
           ) : null}
-        </ScrollShadow>
-      </div>
+        </div>
+      </FieldLintErrorsContext.Provider>
     </ResourceFieldContext.Provider>
   );
 }

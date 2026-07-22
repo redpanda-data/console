@@ -11,7 +11,6 @@ import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useListComponentsQuery } from 'react-query/api/connect';
 import { useResetRpcnWizardStore, useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -30,7 +29,7 @@ import {
 import type { ExtendedConnectComponentSpec } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, ConnectTilesListFormData, UserStepRef } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
-import { parseSchema } from '../utils/schema';
+import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { handleStepResult, regenerateYamlForTopicUserComponents } from '../utils/wizard';
 import { getConnectTemplate } from '../utils/yaml';
 
@@ -61,11 +60,7 @@ export const ConnectOnboardingWizard = ({
 }: ConnectOnboardingWizardProps = {}) => {
   const navigate = useNavigate();
 
-  const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
-  const components = useMemo(
-    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-    [componentListResponse]
-  );
+  const { components, componentList, isLoading: isComponentListLoading } = useEnrichedComponents();
 
   const persistedInputConnectionName = useRpcnWizardStore(useShallow((state) => state.input?.connectionName));
   const persistedOutputConnectionName = useRpcnWizardStore(useShallow((state) => state.output?.connectionName));
@@ -348,7 +343,7 @@ export const ConnectOnboardingWizard = ({
                   [WizardStep.ADD_INPUT]: () => (
                     <ConnectTiles
                       additionalComponents={additionalComponents}
-                      components={componentListResponse?.components}
+                      components={componentList}
                       componentTypeFilter={['input', 'custom']}
                       defaultConnectionName={persistedInputConnectionName}
                       defaultConnectionType="input"
@@ -363,7 +358,7 @@ export const ConnectOnboardingWizard = ({
                   [WizardStep.ADD_OUTPUT]: () => (
                     <ConnectTiles
                       additionalComponents={additionalComponents}
-                      components={componentListResponse?.components}
+                      components={componentList}
                       componentTypeFilter={['output', 'custom']}
                       defaultConnectionName={persistedOutputConnectionName}
                       defaultConnectionType="output"

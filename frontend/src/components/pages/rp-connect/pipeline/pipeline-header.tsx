@@ -26,13 +26,14 @@ import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { docsLinks } from 'utils/docs-links';
 
 import { PipelineStatusToggle } from './pipeline-status-toggle';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
-const DOCS_URL = 'https://docs.redpanda.com/redpanda-connect/home/';
+const DOCS_URL = docsLinks.cloud.connectQuickstart;
 
 type TagEntry = { key: string; value: string };
 
@@ -332,7 +333,7 @@ export function PipelineEditHeader({
                 className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
                 title="You have unsaved changes"
               >
-                <span aria-hidden className="size-2 rounded-full bg-warning" />
+                <span aria-hidden className="size-2 rounded-full bg-informative" />
                 Unsaved changes
               </span>
             ) : null}

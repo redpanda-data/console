@@ -63,7 +63,6 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
               <Button
                 data-testid={`slot-${slot.id}-create`}
                 onClick={() => onRequestCreateTopic(slot.id)}
-                size="sm"
                 type="button"
                 variant="outline"
               >

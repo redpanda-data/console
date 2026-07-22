@@ -12,11 +12,11 @@
 import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { useFormContext, useWatch } from 'react-hook-form';
+import { docsLinks } from 'utils/docs-links';
 
 import type { FormValues } from '../model';
 
-const TLS_DOCS_URL =
-  'https://docs.redpanda.com/current/manage/disaster-recovery/shadowing/setup/#network-and-authentication';
+const TLS_DOCS_URL = docsLinks.selfManaged.shadowingNetworkSetup;
 
 export const TlsConfiguration = () => {
   const { control } = useFormContext<FormValues>();

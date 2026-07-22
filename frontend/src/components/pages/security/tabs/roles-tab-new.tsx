@@ -55,6 +55,7 @@ import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 import { useStore } from 'zustand';
 
 import ErrorResult from '../../../../components/misc/error-result';
@@ -248,11 +249,7 @@ export const RolesTabNew: FC = () => {
                   </Button>
                   <Button
                     render={
-                      <a
-                        href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
                         Read the docs →
                       </a>
                     }

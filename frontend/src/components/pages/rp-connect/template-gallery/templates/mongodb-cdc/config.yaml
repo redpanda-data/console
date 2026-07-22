@@ -3,18 +3,19 @@ input:
     # ── Connection (filled in from the form) ────────────────────────────────
     url: ${slot.url}
     database: ${slot.database}
-    collections:
+    collections:                           # accepts several — add more entries here
       - ${slot.collection}
 
     # ── Change-stream behavior ──────────────────────────────────────────────
-    stream_snapshot: true                  # backfill existing documents first
+    stream_snapshot: false                 # enable to seed existing documents first
     checkpoint_cache: mongodb_cdc_checkpoint # cache resource storing the resume token (defined below)
-    # full_document: updateLookup          # uncomment to include the post-image
-    # checkpoint_limit: 1024
-    # batch_size: 0                        # 0 = driver default
+    # document_mode: update_lookup         # partial_update | pre_and_post_images | update_lookup
+    # checkpoint_limit: 1000
+    # read_batch_size: 1000
+    # snapshot_auto_bucket_sharding: true  # for MongoDB Atlas snapshots
 
     # ── Error handling ──────────────────────────────────────────────────────
-    auto_replay_nacks: true                # re-deliver NACKed messages
+    # auto_replay_nacks: true              # default — re-deliver NACKed messages
 
 output:
   redpanda:
@@ -22,12 +23,10 @@ output:
       - ${REDPANDA_BROKERS}
     topic: ${slot.targetTopic}
 
-    # ── Throughput defaults — tune for your workload ────────────────────────
-    max_in_flight: 64
+    # Engine defaults (max_in_flight 256, idempotent writes) are already tuned.
     compression: snappy
-    idempotent_write: true
 
 cache_resources:
   # Persists the change-stream resume token so restarts resume instead of re-snapshotting.
   - label: mongodb_cdc_checkpoint
-    memory: {}                             # swap for file/redis to persist across restarts
+    memory: {}                             # swap for a persistent cache to resume across restarts

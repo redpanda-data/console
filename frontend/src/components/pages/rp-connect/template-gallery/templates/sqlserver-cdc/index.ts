@@ -18,12 +18,12 @@ export const sqlserverCdcTemplate: PipelineTemplate = {
   name: 'SQL Server CDC to Redpanda',
   description: 'Capture CDC-enabled tables from SQL Server into a Redpanda topic.',
   category: 'cdc',
-  source: { component: 'sql_server_cdc', type: 'input' },
+  source: { component: 'microsoft_sql_server_cdc', type: 'input' },
   sink: { component: 'redpanda', type: 'output' },
   setupTimeMinutes: 10,
   defaultPipelineName: 'sqlserver-cdc-pipeline',
   slots: [
-    dsnSlot('dsn', 'SQL Server', 'SQLSERVER_DSN', 'dsn'),
+    dsnSlot('dsn', 'SQL Server', 'SQLSERVER_DSN', 'connection_string'),
     {
       id: 'includedTable',
       section: 'source',
@@ -32,7 +32,7 @@ export const sqlserverCdcTemplate: PipelineTemplate = {
       description: 'Schema-qualified table to capture (e.g. dbo.users). Add more in the YAML editor afterwards.',
       placeholder: 'dbo.users',
       required: true,
-      schemaField: 'tables',
+      schemaField: 'include',
     },
     targetTopicSlot,
   ],

@@ -29,7 +29,6 @@ import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
@@ -219,16 +218,15 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
       </div>
 
       {/* Statistics Card */}
-      {Boolean(uiSettings.consumerGroupDetails.showStatisticsBar) && (
-        <Card className="gap-0 px-6 py-4" size="full" variant="standard">
-          <CardContent className="flex flex-wrap items-start justify-between gap-4">
+      <Card className="gap-0 px-6 py-4" size="full" variant="standard">
+        <CardContent className="flex flex-wrap items-start justify-between gap-4">
             <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
             <Stat label="Assigned Partitions" mono value={totalPartitions} />
             <Stat label="Protocol" value={group.protocol || '—'} />
             <Stat label="Protocol Type" value={group.protocolType || '—'} />
             <Stat
               label="Coordinator ID"
-              mono
+            mono
               value={
                 <span className="inline-flex items-center gap-1">
                   {group.coordinatorId}
@@ -239,7 +237,6 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
             <Stat label="Total Lag" mono value={numberToThousandsString(group.lagSum)} />
           </CardContent>
         </Card>
-      )}
 
       {/* Main Card */}
       <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
