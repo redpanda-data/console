@@ -13,28 +13,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
-import { Feature, useSupportedFeaturesStore } from 'state/supported-features';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { render, screen, waitFor } from 'test-utils';
 
 import { LegacySchemaRegistrySection, SchemaRegistryStep } from './schema-registry-step';
+import { setSchemaRegistrySyncGateSupported as setSrSyncSupported } from '../../shadowlink-test-helpers';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../model';
-
-// Drive the real supported-features store the way the app does at boot, so the
-// gate exercises the actual endpoint-compatibility fail-closed logic instead of
-// a mock: a supported endpoint yields the redesigned section, anything else
-// (unsupported, absent, or a never-loaded null store) yields the legacy switch.
-const setSrSyncSupported = (isSupported: boolean) => {
-  useSupportedFeaturesStore.getState().setEndpointCompatibility({
-    kafkaVersion: 'v26.2.0',
-    endpoints: [
-      {
-        endpoint: Feature.ShadowLinkSchemaRegistrySync.endpoint,
-        method: Feature.ShadowLinkSchemaRegistrySync.method,
-        isSupported,
-      },
-    ],
-  });
-};
 
 const TestWrapper = ({
   defaultValues = initialValues,

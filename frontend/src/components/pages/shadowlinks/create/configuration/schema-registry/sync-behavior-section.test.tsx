@@ -99,4 +99,33 @@ describe('SyncBehaviorSection', () => {
       expect(screen.getByText('Use a number with a unit, e.g. 10s or 5m')).toBeInTheDocument();
     });
   });
+
+  test('should show a customized badge while collapsed when values are set', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper
+        defaultValues={{
+          ...apiModeValues,
+          schemaRegistry: {
+            ...apiModeValues.schemaRegistry,
+            syncBehavior: { ...apiModeValues.schemaRegistry.syncBehavior, tailInterval: '10s' },
+          },
+        }}
+      />
+    );
+
+    // Collapsed with hydrated non-default values → badge signals customization.
+    expect(screen.getByTestId('sr-sync-behavior-customized-badge')).toBeInTheDocument();
+
+    // Expanded → the fields themselves are visible, badge disappears.
+    await user.click(screen.getByTestId('sr-sync-behavior-trigger'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('sr-sync-behavior-customized-badge')).not.toBeInTheDocument();
+    });
+  });
+
+  test('should not show the customized badge for cluster defaults', () => {
+    render(<TestWrapper />);
+    expect(screen.queryByTestId('sr-sync-behavior-customized-badge')).not.toBeInTheDocument();
+  });
 });

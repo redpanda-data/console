@@ -9,18 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
+import { SchemaRegistryEditSection } from './schema-registry-edit-section';
 import { AclsStep } from '../create/configuration/acls-step';
 import { ConsumerOffsetStep } from '../create/configuration/consumer-offset-step';
-import { LegacySchemaRegistrySection } from '../create/configuration/schema-registry-step';
 import { TopicsStep } from '../create/configuration/topics-step';
+import { SCHEMA_REGISTRY_MODE, type SchemaRegistryMode } from '../create/model';
 
-export const ShadowingTab = ({ schemaRegistryApiMode = false }: { schemaRegistryApiMode?: boolean }) => (
+export const ShadowingTab = ({
+  schemaRegistryOriginalMode = SCHEMA_REGISTRY_MODE.NONE,
+}: {
+  schemaRegistryOriginalMode?: SchemaRegistryMode;
+}) => (
   <div className="space-y-4">
     <TopicsStep />
     <AclsStep />
     <ConsumerOffsetStep />
-    {/* Always the legacy switch: the edit request builder can't express the
-        version-gated API sync mode for now, only the create wizard can. */}
-    <LegacySchemaRegistrySection readOnlyApiMode={schemaRegistryApiMode} />
+    <SchemaRegistryEditSection originalMode={schemaRegistryOriginalMode} />
   </div>
 );

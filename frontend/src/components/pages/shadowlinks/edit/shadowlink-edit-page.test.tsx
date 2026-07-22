@@ -19,6 +19,7 @@ import {
   FilterType,
   NameFilterSchema,
   PatternType,
+  SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   ScramMechanism,
   SecuritySettingsSyncOptionsSchema,
@@ -75,6 +76,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 });
 
 import { useEditShadowLink } from 'react-query/api/shadowlink';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { renderWithFileRoutes } from 'test-utils';
 
 import { buildDefaultFormValues } from '../mappers/dataplane';
@@ -88,6 +90,7 @@ import {
   enableMTLS,
   enableSchemaRegistrySync,
   enableTLS,
+  setSchemaRegistrySyncGateSupported,
   toggleExcludeDefault,
   updateAdvancedOption,
   updateMetadataMaxAge,
@@ -280,43 +283,45 @@ const testCases: TestCase[] = [
   },
 ];
 
+const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof vi.fn>, mockShadowLink: ShadowLink) => {
+  vi.mocked(useEditShadowLink).mockReturnValue({
+    formValues: buildDefaultFormValues(mockShadowLink),
+    isLoading: false,
+    error: null,
+    isUpdating: false,
+    hasData: true,
+    updateShadowLink: mockUpdateShadowLink,
+    dataplaneUpdate: {
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+      reset: vi.fn(),
+    } as any,
+    controlplaneUpdate: {
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+      reset: vi.fn(),
+    } as any,
+  });
+};
+
 describe('ShadowLinkEditPage', () => {
   const mockUpdateShadowLink = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateShadowLink.mockImplementation((_request) => Promise.resolve({}));
+    // The SR feature gate defaults to closed; api-mode tests seed it open.
+    useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkSchemaRegistrySync: false });
   });
 
   test.each(testCases)('$description', async ({ actions, expectedFieldMaskPaths, verify }) => {
     const user = userEvent.setup();
     const mockShadowLink = createMockShadowLink();
-    const formValues = buildDefaultFormValues(mockShadowLink);
-
-    // Mock useEditShadowLink hook
-    vi.mocked(useEditShadowLink).mockReturnValue({
-      formValues,
-      isLoading: false,
-      error: null,
-      isUpdating: false,
-      hasData: true,
-      isSchemaRegistryApiMode: false,
-      updateShadowLink: mockUpdateShadowLink,
-      dataplaneUpdate: {
-        isPending: false,
-        isSuccess: false,
-        isError: false,
-        error: null,
-        reset: vi.fn(),
-      } as any,
-      controlplaneUpdate: {
-        isPending: false,
-        isSuccess: false,
-        isError: false,
-        error: null,
-        reset: vi.fn(),
-      } as any,
-    });
+    mockEditHook(mockUpdateShadowLink, mockShadowLink);
 
     renderEditPage(mockShadowLink);
 
@@ -357,5 +362,141 @@ describe('ShadowLinkEditPage', () => {
 
     // Run custom verification function
     verify(updateRequest, expect);
+  });
+
+  describe('schema registry api mode', () => {
+    const createApiModeShadowLink = (): ShadowLink => {
+      const link = createMockShadowLink();
+      if (link.configurations) {
+        link.configurations.schemaRegistrySyncOptions = create(SchemaRegistrySyncOptionsSchema, {
+          schemaRegistryShadowingMode: {
+            case: 'shadowSchemaRegistryApi',
+            value: {
+              sourceUrl: 'https://sr.example.com',
+              authOptions: {
+                authOptions: {
+                  case: 'basic',
+                  value: { username: 'sr-replicator', password: '', passwordSet: true },
+                },
+              },
+              tlsSettings: { enabled: true },
+              tailInterval: { seconds: 10n },
+              sourceFilter: { contexts: ['.prod'] },
+              paused: true,
+            },
+          },
+        });
+      }
+      return link;
+    };
+
+    const openSrSyncBehavior = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByTestId('tab-shadowing'));
+      await screen.findByTestId('sr-source-url-input');
+      await user.click(screen.getByTestId('sr-sync-behavior-trigger'));
+      await screen.findByTestId('sr-tail-interval-input');
+    };
+
+    test('edits an api-mode link with a retyped password and emits only the SR mask', async () => {
+      setSchemaRegistrySyncGateSupported(true);
+      const user = userEvent.setup();
+      const mockShadowLink = createApiModeShadowLink();
+      mockEditHook(mockUpdateShadowLink, mockShadowLink);
+
+      renderEditPage(mockShadowLink);
+      await openSrSyncBehavior(user);
+
+      // The topic tab is locked for an api-mode link.
+      expect(screen.getByTestId('sr-mode-topic-tab')).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByTestId('sr-source-url-input')).toHaveValue('https://sr.example.com');
+
+      const tailInput = screen.getByTestId('sr-tail-interval-input');
+      expect(tailInput).toHaveValue('10s');
+      await user.clear(tailInput);
+      await user.type(tailInput, '30s');
+      await user.type(screen.getByTestId('sr-basic-password-input'), 'retyped-secret');
+
+      await user.click(screen.getByText('Save'));
+
+      await waitFor(() => {
+        expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
+      });
+
+      const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
+      const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
+      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink);
+
+      expect(updateRequest.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
+      const mode = updateRequest.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
+      expect(mode?.case).toBe('shadowSchemaRegistryApi');
+      if (mode?.case === 'shadowSchemaRegistryApi') {
+        expect(mode.value.tailInterval).toMatchObject({ seconds: 30n });
+        expect(mode.value.authOptions?.authOptions?.case).toBe('basic');
+        if (mode.value.authOptions?.authOptions?.case === 'basic') {
+          expect(mode.value.authOptions.authOptions.value.password).toBe('retyped-secret');
+        }
+        // paused was hydrated and must survive the rebuild
+        expect(mode.value.paused).toBe(true);
+      }
+    });
+
+    test('blocks saving an api-mode link until the password is re-entered', async () => {
+      setSchemaRegistrySyncGateSupported(true);
+      const user = userEvent.setup();
+      const mockShadowLink = createApiModeShadowLink();
+      mockEditHook(mockUpdateShadowLink, mockShadowLink);
+
+      renderEditPage(mockShadowLink);
+      await openSrSyncBehavior(user);
+
+      const tailInput = screen.getByTestId('sr-tail-interval-input');
+      await user.clear(tailInput);
+      await user.type(tailInput, '30s');
+
+      await user.click(screen.getByText('Save'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Password is required when HTTP Basic is enabled')).toBeInTheDocument();
+      });
+      expect(mockUpdateShadowLink).not.toHaveBeenCalled();
+    });
+
+    test('keeps the read-only card for an api-mode link when the gate is closed', async () => {
+      const user = userEvent.setup();
+      const mockShadowLink = createApiModeShadowLink();
+      mockEditHook(mockUpdateShadowLink, mockShadowLink);
+
+      renderEditPage(mockShadowLink);
+      await user.click(screen.getByTestId('tab-shadowing'));
+
+      await screen.findByTestId('sr-api-mode-readonly');
+      expect(screen.queryByTestId('sr-mode-api-tab')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('sr-enable-switch')).not.toBeInTheDocument();
+    });
+
+    test('saves unrelated edits on an api-mode link when the gate is closed', async () => {
+      // The hydrated basic-auth password can never be re-entered behind the
+      // read-only card, so its validation must not block the rest of the form.
+      const user = userEvent.setup();
+      const mockShadowLink = createApiModeShadowLink();
+      mockEditHook(mockUpdateShadowLink, mockShadowLink);
+
+      renderEditPage(mockShadowLink);
+      await screen.findByTestId('bootstrap-server-input-0');
+      await addTopicFilter(user, screen, 'unrelated-topic');
+
+      await user.click(screen.getByText('Save'));
+
+      await waitFor(() => {
+        expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
+      });
+
+      const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
+      const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
+      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink);
+
+      // Only the topic change goes out; the untouched SR slice emits no mask.
+      expect(updateRequest.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
+    });
   });
 });

@@ -101,4 +101,48 @@ describe('SecretSelector', () => {
     const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveTextContent('MY_NEW_SECRET');
   });
+
+  test('rejects short values by default (API-key style secrets)', async () => {
+    const user = userEvent.setup();
+
+    render(<SecretSelector {...defaultProps} availableSecrets={[]} value="" />);
+    await user.click(screen.getByRole('button', { name: /create secret/i }));
+
+    await user.type(screen.getByLabelText(/secret name/i), 'MY_SECRET');
+    await user.type(screen.getByLabelText(/secret value/i), 'short');
+
+    await waitFor(() => {
+      expect(screen.getByText('Secret value must be at least 20 characters')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /^create secret$/i })).toBeDisabled();
+  });
+
+  test('accepts short values when minValueLength allows them (e.g. Basic passwords)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+
+    render(<SecretSelector {...defaultProps} availableSecrets={[]} minValueLength={1} onChange={onChange} value="" />);
+    await user.click(screen.getByRole('button', { name: /create secret/i }));
+
+    await user.type(screen.getByLabelText(/secret name/i), 'SR_PASSWORD');
+    await user.type(screen.getByLabelText(/secret value/i), 'short');
+
+    const submitButton = screen.getByRole('button', { name: /^create secret$/i });
+    await waitFor(() => {
+      expect(submitButton).toBeEnabled();
+    });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('SR_PASSWORD');
+    });
+  });
+
+  test('forwards form wiring props to the combobox trigger', () => {
+    render(<SecretSelector {...defaultProps} aria-describedby="hint" id="password-field" value="" />);
+
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('id', 'password-field');
+    expect(trigger).toHaveAttribute('aria-describedby', 'hint');
+  });
 });
