@@ -105,7 +105,7 @@ function readStorageEntries(storage: Storage): { key: string; value: string }[] 
   const entries: { key: string; value: string }[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
-    if (key != null) {
+    if (key !== null) {
       entries.push({ key, value: storage.getItem(key) ?? '' });
     }
   }
@@ -186,9 +186,9 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
           </Button>
         </ItemActions>
       </ItemHeader>
-      {previewing && (
+      {previewing ? (
         <SimpleCodeBlock className="my-0" code={fixture.yaml} language="yaml" maxHeight="sm" size="sm" width="full" />
-      )}
+      ) : null}
     </Item>
   );
 }
@@ -307,6 +307,7 @@ function SimulatePanel({ onClose }: { onClose: () => void }) {
             Throw in event handler
           </Button>
           <Button
+            // biome-ignore lint/complexity/noVoid: an unhandled rejection is the point of this button
             onClick={() => void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'))}
             size="sm"
             variant="destructive"
@@ -328,7 +329,7 @@ function SimulatePanel({ onClose }: { onClose: () => void }) {
         </div>
       </DebugSection>
 
-      {renderThrow && <ErrorThrower />}
+      {renderThrow ? <ErrorThrower /> : null}
     </div>
   );
 }
@@ -410,7 +411,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
               {formatBytes(sizeBytes)}
             </Badge>
           </div>
-          {!expanded && (
+          {expanded ? null : (
             <div className="min-w-0 truncate font-mono text-body-sm text-muted-foreground">
               {formatted.split('\n')[0]}
             </div>
@@ -436,9 +437,9 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
           >
             Copy
           </Button>
-          {isMultiline && !expanded && (
+          {isMultiline && !expanded ? (
             <Button icon={<Eye />} onClick={() => setExpanded(true)} size="xs" variant="secondary-ghost" />
-          )}
+          ) : null}
         </div>
       </div>
     </Collapsible>
@@ -460,14 +461,12 @@ function StorageSection({
   onConfirmClear: () => void;
   filter: string;
 }) {
-  const entries = useMemo(() => {
-    const all = readStorageEntries(storage).sort((a, b) => a.key.localeCompare(b.key));
-    const q = filter.trim().toLowerCase();
-    if (!q) {
-      return all;
-    }
-    return all.filter((e) => e.key.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
-  }, [storage, filter]);
+  // Computed on every render (no memo): the Storage object is a stable reference,
+  // so memoizing on it would keep serving deleted entries after a Clear.
+  const q = filter.trim().toLowerCase();
+  const entries = readStorageEntries(storage)
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .filter((e) => !q || e.key.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
 
   return (
     <div className="overflow-hidden rounded-md border">
@@ -591,8 +590,7 @@ function EnvironmentPanel() {
   );
 }
 
-// Combined control + status in one element, mirroring the RPCN pipeline run toggle:
-// a pill whose chrome, switch, and label all read the on/off state together.
+// Control + status in one pill, mirroring the RPCN pipeline run toggle.
 function FlagToggle({
   id,
   checked,
@@ -686,7 +684,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                 size="xs"
                 variant="outline"
               >
-                {/* Fixed h-5 so the row height doesn't jump when the badge (h-5) appears. */}
+                {/* h-5 matches the badge so the row doesn't grow when it appears */}
                 <div className="flex h-5 min-w-0 items-center gap-1.5">
                   <code
                     className={cn(
@@ -697,11 +695,11 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                   >
                     {key}
                   </code>
-                  {isOverridden && (
+                  {isOverridden ? (
                     <Badge className="shrink-0" size="sm" variant="warning-inverted">
                       overridden
                     </Badge>
-                  )}
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <FlagToggle
@@ -712,7 +710,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                       onMutate();
                     }}
                   />
-                  {isOverridden && (
+                  {isOverridden ? (
                     <Button
                       onClick={() => {
                         setFlagOverride(key, null);
@@ -723,7 +721,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                     >
                       Reset
                     </Button>
-                  )}
+                  ) : null}
                   <span className="ml-auto shrink-0 text-body-sm text-muted-foreground">
                     default {defaultValue ? 'on' : 'off'}
                   </span>
@@ -841,8 +839,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
     <ItemGroup className="overflow-hidden rounded-md border">
       {rows.map(({ panel, icon, label, value, active }, index) => (
         <Fragment key={panel}>
-          {/* Rendered as a bare bottom border (not the divider token) so it picks up the same
-              default border-color as the surrounding `border` container in both themes. */}
+          {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
           {index > 0 ? <ItemSeparator className="border-b bg-transparent" /> : null}
           <Item
             className="cursor-pointer rounded-none border-0 text-left hover:bg-muted/50"
@@ -873,7 +870,6 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  // Live counts surface in the nav rail so active subsystems are visible from anywhere.
   const railCounts: Partial<Record<PanelId, number>> = {
     visual: getEnabledVisualDebuggers().length,
     flags: Object.keys(getFlagOverrides()).length,
@@ -899,6 +895,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         return null;
     }
   };
+
+  const { title, description } = PANEL_META[panel];
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -959,8 +957,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="border-b px-5 pt-4 pb-3">
-              <div className="font-semibold text-body">{PANEL_META[panel].title}</div>
-              <div className="text-body-sm text-muted-foreground">{PANEL_META[panel].description}</div>
+              <div className="font-semibold text-body">{title}</div>
+              <div className="text-body-sm text-muted-foreground">{description}</div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{renderPanel()}</div>
           </div>
@@ -970,11 +968,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   );
 }
 
-// Small floating launcher (TanStack-devtools style) so the dialog stays reachable
-// without remembering the hotkey. Sits above the TanStack corner buttons and shows
-// an amber count when any visual debugger or flag override is active. Portaled to
-// document.body — in embedded mode the DebugHelper mount lives in a hidden host
-// container, which the dialog already escapes via its own portal.
+// Floating launcher, portaled to document.body: in embedded mode this component
+// mounts inside a hidden host container (the dialog escapes via its own portal).
 function DebugLauncher({ onClick }: { onClick: () => void }) {
   const activeCount = getEnabledVisualDebuggers().length + Object.keys(getFlagOverrides()).length;
 
@@ -987,15 +982,13 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
       type="button"
     >
       <DebugPanda className="h-[22px] w-[22px]" />
-      {activeCount > 0 && (
-        <CountDot className="absolute -top-1 -right-1" count={activeCount} size="sm" variant="warning" />
-      )}
+      <CountDot className="absolute -top-1 -right-1" count={activeCount} size="sm" variant="warning" />
     </button>,
     document.body
   );
 }
 
-export function DebugHelper() {
+export function DebugHelperRoot() {
   const [open, setOpen] = useState(false);
 
   useHotKey({

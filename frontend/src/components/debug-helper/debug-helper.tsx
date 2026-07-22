@@ -13,18 +13,15 @@ import { lazy, Suspense } from 'react';
 
 // Eager on purpose: the flag-override accessor must replace config.featureFlags
 // before the first render reads it, and persisted visual-debugger classes should
-// re-apply before paint. Both modules are tiny and self-guard on IsDev, so they
-// cost a few KB in production but never run there.
+// re-apply before paint. Both self-guard on IsDev.
 import './feature-flag-overrides';
 import './visual-debuggers';
 
 import { IsDev } from '../../utils/env';
 
-// The dialog UI and its Connect YAML fixtures are the heavy part (~100KB of
-// source). They load as a separate chunk that production users never fetch —
-// gated at runtime (not build time) so a REACT_APP_DEV_HINT build can still
-// summon the helpers.
-const LazyDebugHelper = lazy(() => import('./debug-dialog').then((m) => ({ default: m.DebugHelper })));
+// The dialog UI and its YAML fixtures load as a separate chunk that production
+// never fetches — gated at runtime so a REACT_APP_DEV_HINT build still works.
+const LazyDebugHelper = lazy(() => import('./debug-dialog').then((m) => ({ default: m.DebugHelperRoot })));
 
 export function DebugHelper() {
   if (!IsDev) {

@@ -10,27 +10,25 @@
  */
 
 /**
- * Mascot for the dev-only debug helpers: a small flat red-panda face. Drawn to
- * stay legible from 16px up — bold shapes, no strokes thinner than ~1px at 1x.
- * Decorative only; hosts provide their own accessible labels.
+ * Debug-helpers mascot: a flat red panda peering through a magnifying glass,
+ * drawn to stay legible from 16px up. Decorative — hosts provide the labels.
  */
 export function DebugPanda({ className }: { className?: string }) {
   return (
     <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-      {/* ears — sharp triangles whose bases sit inside the head ellipse, so the
-          head drawn after them covers the joint and they connect seamlessly */}
+      {/* ears — bases sit inside the head ellipse so the head covers the joint */}
       <path d="M4.6 3.4 12.5 8.8 6 13.5Z" fill="#A34424" />
       <path d="M27.4 3.4 19.5 8.8 26 13.5Z" fill="#A34424" />
       <path d="M5.7 5 10.3 8.1 7 10.6Z" fill="#FCF0E4" />
       <path d="M26.3 5 21.7 8.1 25 10.6Z" fill="#FCF0E4" />
-      {/* head — fills the canvas, no rim stroke */}
+      {/* head */}
       <ellipse cx="16" cy="19" fill="#DE6B35" rx="12.5" ry="11" />
       {/* cream face mask */}
       <ellipse cx="16" cy="24" fill="#FCF0E4" rx="9.5" ry="6" />
       <circle cx="10" cy="14.4" fill="#FCF0E4" r="2.2" />
       {/* sclera behind the magnified eye — reads as the eye seen through the lens */}
       <circle cx="21.4" cy="16.8" fill="#FCF0E4" r="4.3" />
-      {/* cheek tear-streak (left only — the lens owns the right side) */}
+      {/* tear-streak (left only; the lens owns the right side) */}
       <path d="M10.6 20.6c-.4 2-1.2 3.6-2.4 5.2" stroke="#C75B2F" strokeLinecap="round" strokeWidth="2" />
       {/* bare eye (left) */}
       <circle cx="10.4" cy="17" fill="#43241B" r="1.8" />

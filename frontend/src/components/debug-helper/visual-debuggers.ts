@@ -62,9 +62,8 @@ export const VISUAL_DEBUGGERS: VisualDebugger[] = [
 const STORAGE_KEY = '__debug_visual_debuggers';
 const STYLE_ELEMENT_ID = '__debug-visual-styles';
 
-// Filters on the root element do NOT create a containing block for fixed-position
-// descendants (unlike on any other element), so grayscale/blur on <html> won't
-// break dialogs, toasts, or sticky headers.
+// Root-element filters don't create a containing block for fixed-position
+// descendants, so grayscale/blur on <html> won't break dialogs or toasts.
 const DEBUG_CSS = `
 html.__debug-grayscale { filter: grayscale(1); }
 html.__debug-blur { filter: blur(3px); }
@@ -168,7 +167,6 @@ export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean): void 
   } else {
     current.delete(id);
   }
-  // Keep storage in the registry's declaration order so re-apply is deterministic.
   const next = VISUAL_DEBUGGERS.map((d) => d.id).filter((d) => current.has(d));
   writeEnabled(next);
   applyDomState(next);
@@ -179,8 +177,7 @@ export function clearVisualDebuggers(): void {
   applyDomState([]);
 }
 
-// Re-apply persisted debuggers at module load so a reload keeps the overlays
-// without waiting for the dialog to mount.
+// Re-apply persisted debuggers at module load so overlays survive a reload.
 if (IsDev && typeof window !== 'undefined') {
   try {
     const enabled = readEnabled();

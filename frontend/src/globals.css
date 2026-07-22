@@ -35,9 +35,8 @@
 }
 
 /* Dev-only bottom-right cluster for floating debug triggers, raised clear of the
-   host's Feedback tab in the corner: the router-devtools pill (scaled down) sits
-   at bottom 48px, with the query-devtools circle and the Console debug-helpers
-   launcher (positioned via its own classes) in a horizontal row above it.
+   host's Feedback tab: router-devtools pill at the bottom, query-devtools circle
+   and the debug-helpers launcher (positioned via its own classes) in a row above.
    These selectors only match dev builds — inert in production. */
 /* The container carries 4px padding around the button — offset by -4 so the
    visible circle sits at right 12 / bottom 68, flush with the launcher's grid. */
@@ -50,8 +49,7 @@
 .tsqd-open-btn-container:hover {
   opacity: 1;
 }
-/* Compact the trigger to match the debug-helpers launcher (32px); the logo is a
-   viewBox svg, so it scales with the button. */
+/* Compact the trigger; the logo is a viewBox svg, so it scales with the button. */
 .tsqd-open-btn,
 .tsqd-open-btn svg {
   width: 32px !important;
