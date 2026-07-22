@@ -11,6 +11,10 @@
 
 import { act, render, waitFor } from '@testing-library/react';
 
+vi.mock('@connectrpc/connect-web', () => ({
+  createConnectTransport: vi.fn(() => ({ kind: 'transport' })),
+}));
+
 // Mock TanStack Router before any imports
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router');
@@ -39,7 +43,7 @@ vi.mock('config', () => ({
     jwt: undefined as string | undefined,
   },
   setup: vi.fn(),
-  getGrpcBasePath: vi.fn(() => 'http://localhost:9090'),
+  getGrpcBasePath: vi.fn((overrideUrl?: string) => overrideUrl ?? 'http://localhost:9090'),
   addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
   checkExpiredLicenseInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
 }));
@@ -74,9 +78,11 @@ vi.mock('./token-manager', () => ({
   },
 }));
 
+import { createConnectTransport } from '@connectrpc/connect-web';
+
 import { ConsoleApp } from './console-app';
 import type { ConsoleAppProps } from './types';
-import { config, setup } from '../config';
+import { config, getGrpcBasePath, setup } from '../config';
 
 describe('ConsoleApp', () => {
   const mockGetAccessToken = vi.fn();
@@ -458,6 +464,32 @@ describe('ConsoleApp', () => {
         expect(setup).toHaveBeenCalledWith(
           expect.objectContaining({
             urlOverride: customConfig.urlOverride,
+          })
+        );
+      });
+    });
+
+    test('uses explicit gRPC URL override for the federated Connect Query transport', async () => {
+      render(<ConsoleApp {...defaultProps} config={{ urlOverride: { grpc: 'https://grpc.example.com' } }} />);
+
+      await waitFor(() => {
+        expect(getGrpcBasePath).toHaveBeenCalledWith('https://grpc.example.com');
+        expect(createConnectTransport).toHaveBeenCalledWith(
+          expect.objectContaining({
+            baseUrl: 'https://grpc.example.com',
+          })
+        );
+      });
+    });
+
+    test('uses the default gRPC base path for federated transport when no override is provided', async () => {
+      render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(getGrpcBasePath).toHaveBeenCalledWith(undefined);
+        expect(createConnectTransport).toHaveBeenCalledWith(
+          expect.objectContaining({
+            baseUrl: 'http://localhost:9090',
           })
         );
       });
