@@ -54,6 +54,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
@@ -969,6 +970,31 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   );
 }
 
+// Small floating launcher (TanStack-devtools style) so the dialog stays reachable
+// without remembering the hotkey. Sits above the TanStack corner buttons and shows
+// an amber count when any visual debugger or flag override is active. Portaled to
+// document.body — in embedded mode the DebugHelper mount lives in a hidden host
+// container, which the dialog already escapes via its own portal.
+function DebugLauncher({ onClick }: { onClick: () => void }) {
+  const activeCount = getEnabledVisualDebuggers().length + Object.keys(getFlagOverrides()).length;
+
+  return createPortal(
+    <button
+      aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
+      className="fixed right-[52px] bottom-[68px] z-40 flex h-[32px] w-[32px] cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground opacity-70 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
+      onClick={onClick}
+      title="Debug helpers — ⌃/⌘⇧D"
+      type="button"
+    >
+      <Bug className="h-[16px] w-[16px]" />
+      {activeCount > 0 && (
+        <CountDot className="absolute -top-1 -right-1" count={activeCount} size="sm" variant="warning" />
+      )}
+    </button>,
+    document.body
+  );
+}
+
 export function DebugHelper() {
   const [open, setOpen] = useState(false);
 
@@ -983,5 +1009,10 @@ export function DebugHelper() {
     return null;
   }
 
-  return <DebugDialog onOpenChange={setOpen} open={open} />;
+  return (
+    <>
+      {!open && <DebugLauncher onClick={() => setOpen(true)} />}
+      <DebugDialog onOpenChange={setOpen} open={open} />
+    </>
+  );
 }
