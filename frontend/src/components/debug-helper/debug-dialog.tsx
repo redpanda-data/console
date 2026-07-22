@@ -37,7 +37,6 @@ import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/co
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
-  Bug,
   Check,
   ChevronDown,
   ChevronRight,
@@ -58,6 +57,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
+import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,
   getAllFlagKeys,
@@ -905,7 +905,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       <DialogContent className="sm:max-w-5xl" height="xl" size="xl">
         <DialogHeader align="left" spacing="tight">
           <DialogTitle className="flex items-center gap-2">
-            <Bug className="h-4 w-4" />
+            <DebugPanda className="h-5 w-5" />
             Debug helpers
             <Badge size="sm" variant="simple-outline">
               dev only
@@ -981,12 +981,12 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
   return createPortal(
     <button
       aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
-      className="fixed right-[52px] bottom-[68px] z-40 flex h-[32px] w-[32px] cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground opacity-70 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
+      className="fixed right-[56px] bottom-[64px] z-40 flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full border bg-gradient-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
       onClick={onClick}
       title="Debug helpers — ⌃/⌘⇧D"
       type="button"
     >
-      <Bug className="h-[16px] w-[16px]" />
+      <DebugPanda className="h-[22px] w-[22px]" />
       {activeCount > 0 && (
         <CountDot className="absolute -top-1 -right-1" count={activeCount} size="sm" variant="warning" />
       )}
