@@ -65,6 +65,12 @@ import {
   getOverrides as getFlagOverrides,
   setOverride as setFlagOverride,
 } from './feature-flag-overrides';
+import {
+  clearVisualDebuggers,
+  getEnabledVisualDebuggers,
+  setVisualDebugger,
+  VISUAL_DEBUGGERS,
+} from './visual-debuggers';
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
@@ -321,6 +327,52 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
       </DebugSection>
 
       {renderThrow && <ErrorThrower />}
+    </div>
+  );
+}
+
+function VisualTab() {
+  const forceUpdate = useForceUpdate();
+  const enabled = getEnabledVisualDebuggers();
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="text-body-sm text-muted-foreground">
+        CSS-only overlays applied to the whole document, including this dialog. They persist for this browser tab and
+        re-apply on reload; a new tab starts clean.
+      </div>
+      <div>
+        <Button
+          disabled={enabled.length === 0}
+          icon={<Trash2 />}
+          onClick={() => {
+            clearVisualDebuggers();
+            toast.success('Disabled all visual debuggers');
+            forceUpdate();
+          }}
+          size="xs"
+          variant="destructive-ghost"
+        >
+          Disable all ({enabled.length})
+        </Button>
+      </div>
+      <div className="overflow-hidden rounded-md border">
+        {VISUAL_DEBUGGERS.map(({ id, label, description }) => (
+          <div className="flex items-center gap-2.5 border-b px-3 py-1.5 last:border-0" key={id}>
+            <Switch
+              checked={enabled.includes(id)}
+              onCheckedChange={(checked) => {
+                setVisualDebugger(id, checked);
+                forceUpdate();
+              }}
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div className="font-medium text-body-sm">{label}</div>
+              <div className="text-body-sm text-muted-foreground">{description}</div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -686,8 +738,9 @@ function OverviewTab() {
       <DebugSection title="What's inside">
         <ul className="flex flex-col gap-1.5">
           <li className="text-muted-foreground text-sm">
-            <strong className="text-foreground">General</strong> — simulate toasts and errors, inspect or clear browser
-            storage, and snapshot the build and runtime environment.
+            <strong className="text-foreground">General</strong> — simulate toasts and errors, toggle visual debug
+            overlays (grayscale, outlines, grid…), inspect or clear browser storage, and snapshot the build and runtime
+            environment.
           </li>
           <li className="text-muted-foreground text-sm">
             <strong className="text-foreground">Flags</strong> — override feature flags locally; changes persist to
@@ -725,6 +778,7 @@ function GeneralTab({ onClose }: { onClose: () => void }) {
           icon: <Zap className="mr-1 h-3 w-3" />,
           content: <SimulateTab onClose={onClose} />,
         },
+        { value: 'visual', label: 'Visual', icon: <Eye className="mr-1 h-3 w-3" />, content: <VisualTab /> },
         { value: 'storage', label: 'Storage', icon: <Trash2 className="mr-1 h-3 w-3" />, content: <StorageTab /> },
         { value: 'env', label: 'Env', icon: <Cog className="mr-1 h-3 w-3" />, content: <EnvironmentTab /> },
       ]}
