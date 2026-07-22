@@ -402,7 +402,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
         </CollapsibleTrigger>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
-            <code className="min-w-0 flex-1 truncate font-medium font-mono text-xs" title={storageKey}>
+            <code className="min-w-0 flex-1 truncate font-medium font-mono text-body-sm" title={storageKey}>
               {storageKey}
             </code>
             <Badge className="shrink-0" size="sm" variant="simple-outline">
@@ -410,7 +410,9 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             </Badge>
           </div>
           {!expanded && (
-            <div className="min-w-0 truncate font-mono text-muted-foreground text-xs">{formatted.split('\n')[0]}</div>
+            <div className="min-w-0 truncate font-mono text-body-sm text-muted-foreground">
+              {formatted.split('\n')[0]}
+            </div>
           )}
           <CollapsibleContent>
             <SimpleCodeBlock
@@ -602,7 +604,7 @@ function FlagToggle({
   return (
     <div
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 font-medium text-xs transition-colors',
+        'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 font-medium text-body-sm transition-colors',
         checked
           ? 'border-outline-success bg-background-success-subtle text-success'
           : 'border-border bg-background text-muted-foreground'
@@ -687,7 +689,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                 <div className="flex h-5 min-w-0 items-center gap-1.5">
                   <code
                     className={cn(
-                      'min-w-0 flex-1 truncate font-medium font-mono text-xs',
+                      'min-w-0 flex-1 truncate font-medium font-mono text-body-sm',
                       !effectiveValue && 'text-muted-foreground'
                     )}
                     title={key}
@@ -915,7 +917,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-2">
               {NAV_GROUPS.map(({ label, items }) => (
                 <div key={label}>
-                  <div className="px-2 pb-1 font-semibold text-[10px] text-muted-foreground/70 uppercase tracking-wider">
+                  <div className="px-2 pb-1 font-semibold text-caption text-muted-foreground/70 uppercase tracking-wider">
                     {label}
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -944,7 +946,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-1.5 border-t px-3 py-2 text-muted-foreground text-xs">
+            <div className="flex items-center gap-1.5 border-t px-3 py-2 text-body-sm text-muted-foreground">
               <KbdGroup>
                 <Kbd size="xs">⌃/⌘</Kbd>
                 <Kbd size="xs">⇧</Kbd>
