@@ -54,10 +54,10 @@ function RootLayout() {
         <ErrorBoundary>
           <RequireAuth>{isEmbedded() ? <EmbeddedLayout /> : <SelfHostedLayout />}</RequireAuth>
         </ErrorBoundary>
-        {IsDev && <DebugHelper />}
+        {IsDev ? <DebugHelper /> : null}
       </NuqsAdapter>
 
-      {IsDev && <TanStackRouterDevtools position="bottom-right" />}
+      {IsDev ? <TanStackRouterDevtools position="bottom-right" /> : null}
     </>
   );
 }
