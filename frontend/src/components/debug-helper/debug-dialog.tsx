@@ -12,52 +12,53 @@
 import { useRouterState } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from 'components/redpanda-ui/components/dialog';
+import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
+  ItemGroup,
   ItemHeader,
+  ItemMedia,
+  ItemSeparator,
   ItemTitle,
 } from 'components/redpanda-ui/components/item';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
+import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import {
-  AppWindow,
-  Bug,
   Check,
   ChevronDown,
   ChevronRight,
   Clipboard,
   ClipboardCopy,
   Cog,
+  Database,
   Eye,
   FileCode,
   Flag,
   Info,
   RotateCw,
   Trash2,
-  Wrench,
   Zap,
 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
+import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,
   getAllFlagKeys,
@@ -65,6 +66,12 @@ import {
   getOverrides as getFlagOverrides,
   setOverride as setFlagOverride,
 } from './feature-flag-overrides';
+import {
+  clearVisualDebuggers,
+  getEnabledVisualDebuggers,
+  setVisualDebugger,
+  VISUAL_DEBUGGERS,
+} from './visual-debuggers';
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
@@ -87,7 +94,7 @@ function copyToClipboard(text: string, successMsg = 'Copied to clipboard') {
 }
 
 function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string): void {
-  // biome-ignore lint/suspicious/noConsole: intentional debug helper for the Simulate tab
+  // biome-ignore lint/suspicious/noConsole: intentional debug helper for the Simulate panel
   console[level](message);
 }
 
@@ -99,7 +106,7 @@ function readStorageEntries(storage: Storage): { key: string; value: string }[] 
   const entries: { key: string; value: string }[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
-    if (key != null) {
+    if (key !== null) {
       entries.push({ key, value: storage.getItem(key) ?? '' });
     }
   }
@@ -111,8 +118,28 @@ function useForceUpdate(): () => void {
   return useCallback(() => setTick((n) => n + 1), []);
 }
 
+// Scale/fade pop for small elements that mount and unmount (badges, count dots).
+// Render inside an <AnimatePresence> so the exit animation can play.
+function PopIn({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <motion.span
+      animate={{ opacity: 1, scale: 1 }}
+      className={cn('inline-flex', className)}
+      exit={{ opacity: 0, scale: 0.5 }}
+      initial={{ opacity: 0, scale: 0.5 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.span>
+  );
+}
+
 function EmptyState({ children }: { children: React.ReactNode }) {
-  return <div className="px-3 py-6 text-center text-body-sm text-muted-foreground">{children}</div>;
+  return (
+    <Empty className="gap-2 md:p-6">
+      <EmptyDescription className="text-body-sm">{children}</EmptyDescription>
+    </Empty>
+  );
 }
 
 function DebugSection({
@@ -125,13 +152,19 @@ function DebugSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-md border bg-card">
-      <div className="border-b bg-muted/30 px-3 py-2">
-        <div className="font-medium text-body-sm">{title}</div>
-        {description ? <div className="text-body-sm text-muted-foreground">{description}</div> : null}
-      </div>
-      <div className="p-3">{children}</div>
-    </div>
+    <Card className="w-full max-w-full gap-0 overflow-hidden rounded-md p-0" variant="standard">
+      <CardHeader className="bg-muted/30 px-3 py-2" spacing="tight">
+        <CardTitle>
+          <span className="font-medium text-body-sm">{title}</span>
+        </CardTitle>
+        {description ? (
+          <CardDescription>
+            <span className="text-body-sm">{description}</span>
+          </CardDescription>
+        ) : null}
+      </CardHeader>
+      <CardContent className="border-t p-3">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -170,14 +203,14 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
           </Button>
         </ItemActions>
       </ItemHeader>
-      {previewing && (
+      {previewing ? (
         <SimpleCodeBlock className="my-0" code={fixture.yaml} language="yaml" maxHeight="sm" size="sm" width="full" />
-      )}
+      ) : null}
     </Item>
   );
 }
 
-function ConnectConfigsTab() {
+function ConnectConfigsPanel() {
   const [filter, setFilter] = useState('');
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -192,10 +225,6 @@ function ConnectConfigsTab() {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="text-body-sm text-muted-foreground">
-        Pre-built Connect pipeline YAMLs for stress-testing the editor and validation. Click <strong>Copy YAML</strong>,
-        then paste into the editor on the create or edit page.
-      </div>
       <Input
         onChange={(e) => setFilter(e.target.value)}
         placeholder="Filter by name, tag, or description…"
@@ -251,14 +280,10 @@ const TOAST_ACTIONS: { label: string; variant: ButtonVariant; run: () => void }[
   },
 ];
 
-function SimulateTab({ onClose }: { onClose: () => void }) {
+function SimulatePanel({ onClose }: { onClose: () => void }) {
   const [renderThrow, setRenderThrow] = useState(false);
   return (
     <div className="flex flex-col gap-4">
-      <div className="text-body-sm text-muted-foreground">
-        Trigger app-level side effects to verify toasts, error boundaries, and console output.
-      </div>
-
       <DebugSection
         description="Fire each toast variant to verify rendering, stacking, and rich colors."
         title="Toasts"
@@ -299,6 +324,7 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
             Throw in event handler
           </Button>
           <Button
+            // biome-ignore lint/complexity/noVoid: an unhandled rejection is the point of this button
             onClick={() => void Promise.reject(new Error('DebugDialog: synthetic unhandled rejection'))}
             size="sm"
             variant="destructive"
@@ -320,7 +346,48 @@ function SimulateTab({ onClose }: { onClose: () => void }) {
         </div>
       </DebugSection>
 
-      {renderThrow && <ErrorThrower />}
+      {renderThrow ? <ErrorThrower /> : null}
+    </div>
+  );
+}
+
+function VisualPanel({ onMutate }: { onMutate: () => void }) {
+  const enabled = getEnabledVisualDebuggers();
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div>
+        <Button
+          disabled={enabled.length === 0}
+          icon={<Trash2 />}
+          onClick={() => {
+            clearVisualDebuggers();
+            toast.success('Disabled all visual debuggers');
+            onMutate();
+          }}
+          size="xs"
+          variant="destructive-ghost"
+        >
+          Disable all ({enabled.length})
+        </Button>
+      </div>
+      <div className="overflow-hidden rounded-md border">
+        {VISUAL_DEBUGGERS.map(({ id, label, description }) => (
+          <div className="flex items-center gap-2.5 border-b px-3 py-1.5 last:border-0" key={id}>
+            <Switch
+              checked={enabled.includes(id)}
+              onCheckedChange={(checked) => {
+                setVisualDebugger(id, checked);
+                onMutate();
+              }}
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div className="font-medium text-body-sm">{label}</div>
+              <div className="text-body-sm text-muted-foreground">{description}</div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -354,15 +421,17 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
         </CollapsibleTrigger>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
-            <code className="min-w-0 flex-1 truncate font-medium font-mono text-xs" title={storageKey}>
+            <code className="min-w-0 flex-1 truncate font-medium font-mono text-body-sm" title={storageKey}>
               {storageKey}
             </code>
             <Badge className="shrink-0" size="sm" variant="simple-outline">
               {formatBytes(sizeBytes)}
             </Badge>
           </div>
-          {!expanded && (
-            <div className="min-w-0 truncate font-mono text-muted-foreground text-xs">{formatted.split('\n')[0]}</div>
+          {expanded ? null : (
+            <div className="min-w-0 truncate font-mono text-body-sm text-muted-foreground">
+              {formatted.split('\n')[0]}
+            </div>
           )}
           <CollapsibleContent>
             <SimpleCodeBlock
@@ -385,9 +454,9 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
           >
             Copy
           </Button>
-          {isMultiline && !expanded && (
+          {isMultiline && !expanded ? (
             <Button icon={<Eye />} onClick={() => setExpanded(true)} size="xs" variant="secondary-ghost" />
-          )}
+          ) : null}
         </div>
       </div>
     </Collapsible>
@@ -409,14 +478,12 @@ function StorageSection({
   onConfirmClear: () => void;
   filter: string;
 }) {
-  const entries = useMemo(() => {
-    const all = readStorageEntries(storage).sort((a, b) => a.key.localeCompare(b.key));
-    const q = filter.trim().toLowerCase();
-    if (!q) {
-      return all;
-    }
-    return all.filter((e) => e.key.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
-  }, [storage, filter]);
+  // Computed on every render (no memo): the Storage object is a stable reference,
+  // so memoizing on it would keep serving deleted entries after a Clear.
+  const q = filter.trim().toLowerCase();
+  const entries = readStorageEntries(storage)
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .filter((e) => !q || e.key.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
 
   return (
     <div className="overflow-hidden rounded-md border">
@@ -460,7 +527,7 @@ function StorageSection({
   );
 }
 
-function StorageTab() {
+function StoragePanel() {
   const [confirmingClear, setConfirmingClear] = useState<null | 'local' | 'session'>(null);
   const [filter, setFilter] = useState('');
   const forceUpdate = useForceUpdate();
@@ -476,9 +543,6 @@ function StorageTab() {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="text-body-sm text-muted-foreground">
-        Inspect or clear browser storage. Clearing will sign you out of preferences and reset feature toggles.
-      </div>
       <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by key or value…" value={filter} />
       <StorageSection
         confirming={confirmingClear === 'local'}
@@ -500,7 +564,7 @@ function StorageTab() {
   );
 }
 
-function EnvironmentTab() {
+function EnvironmentPanel() {
   const router = useRouterState();
   const info = {
     nodeEnv: process.env.NODE_ENV ?? '(unset)',
@@ -516,9 +580,6 @@ function EnvironmentTab() {
   };
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="text-body-sm text-muted-foreground">
-        Snapshot of build, route, and runtime env. Useful when filing bugs.
-      </div>
       <Table size="sm">
         <TableBody>
           {Object.entries(info).map(([k, v]) => (
@@ -546,9 +607,40 @@ function EnvironmentTab() {
   );
 }
 
-function FeatureFlagsTab() {
+// Control + status in one pill, mirroring the RPCN pipeline run toggle.
+function FlagToggle({
+  id,
+  checked,
+  onCheckedChange,
+}: {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 font-medium text-body-sm transition-colors',
+        checked
+          ? 'border-outline-success bg-background-success-subtle text-success'
+          : 'border-border bg-background text-muted-foreground'
+      )}
+    >
+      <Switch
+        checked={checked}
+        className={cn(checked && 'data-[checked]:bg-success')}
+        id={id}
+        onCheckedChange={onCheckedChange}
+      />
+      <Label className="cursor-pointer" htmlFor={id}>
+        {checked ? 'On' : 'Off'}
+      </Label>
+    </div>
+  );
+}
+
+function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
   const [filter, setFilter] = useState('');
-  const forceUpdate = useForceUpdate();
 
   const overrides = getFlagOverrides();
   const effective = getEffectiveFlags();
@@ -563,14 +655,10 @@ function FeatureFlagsTab() {
   }, [allKeys, filter]);
 
   const hasAnyOverride = Object.keys(overrides).length > 0;
+  const enabledCount = allKeys.filter((key) => effective[key]).length;
 
   return (
     <div className="flex flex-col gap-2.5">
-      <div className="text-body-sm text-muted-foreground">
-        Override <InlineCode>config.featureFlags</InlineCode> locally. Persists to <InlineCode>localStorage</InlineCode>{' '}
-        and re-applies on reload. Most components only read flags during render, so a reload is recommended after
-        toggling.
-      </div>
       <Input onChange={(e) => setFilter(e.target.value)} placeholder="Filter by flag name…" value={filter} />
       <div className="flex flex-wrap items-center gap-1.5">
         <Button icon={<RotateCw />} onClick={() => window.location.reload()} size="xs" variant="primary">
@@ -582,237 +670,378 @@ function FeatureFlagsTab() {
           onClick={() => {
             clearFlagOverrides();
             toast.success('Cleared all feature-flag overrides');
-            forceUpdate();
+            onMutate();
           }}
           size="xs"
           variant="destructive-ghost"
         >
           Clear all overrides ({Object.keys(overrides).length})
         </Button>
+        <div className="ml-auto text-body-sm text-muted-foreground">
+          {enabledCount} of {allKeys.length} on
+        </div>
       </div>
-      <div className="overflow-hidden rounded-md border">
-        {filtered.length === 0 ? (
+      {filtered.length === 0 ? (
+        <div className="rounded-md border">
           <EmptyState>No flags match “{filter}”.</EmptyState>
-        ) : (
-          filtered.map((key) => {
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {filtered.map((key) => {
             const isOverridden = key in overrides;
             const defaultValue = FEATURE_FLAGS[key];
             const effectiveValue = effective[key];
             return (
-              <div className="flex items-center gap-2.5 border-b px-3 py-1.5 last:border-0" key={key}>
-                <Switch
-                  checked={effectiveValue}
-                  onCheckedChange={(checked) => {
-                    setFlagOverride(key, checked);
-                    forceUpdate();
-                  }}
-                />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <code className="font-medium font-mono text-xs">{key}</code>
-                    {isOverridden && (
-                      <Badge size="sm" variant="warning-inverted">
-                        overridden
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-body-sm text-muted-foreground">
-                    default: <InlineCode>{String(defaultValue)}</InlineCode> · effective:{' '}
-                    <InlineCode>{String(effectiveValue)}</InlineCode>
-                  </div>
-                </div>
-                {isOverridden && (
-                  <Button
-                    onClick={() => {
-                      setFlagOverride(key, null);
-                      forceUpdate();
-                    }}
-                    size="xs"
-                    variant="secondary-ghost"
-                  >
-                    Reset
-                  </Button>
+              <Item
+                className={cn(
+                  'flex-col items-stretch gap-2 transition-colors',
+                  effectiveValue ? 'border-outline-success bg-background-success-subtle/50' : 'bg-muted/40'
                 )}
-              </div>
+                key={key}
+                size="xs"
+                variant="outline"
+              >
+                {/* h-5 matches the badge so the row doesn't grow when it appears */}
+                <div className="flex h-5 min-w-0 items-center gap-1.5">
+                  <code
+                    className={cn(
+                      'min-w-0 flex-1 truncate font-medium font-mono text-body-sm',
+                      !effectiveValue && 'text-muted-foreground'
+                    )}
+                    title={key}
+                  >
+                    {key}
+                  </code>
+                  <AnimatePresence initial={false}>
+                    {isOverridden ? (
+                      <PopIn className="shrink-0" key="overridden">
+                        <Badge size="sm" variant="warning-inverted">
+                          overridden
+                        </Badge>
+                      </PopIn>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <FlagToggle
+                    checked={effectiveValue}
+                    id={`flag-toggle-${key}`}
+                    onCheckedChange={(checked) => {
+                      setFlagOverride(key, checked);
+                      onMutate();
+                    }}
+                  />
+                  <AnimatePresence initial={false}>
+                    {isOverridden ? (
+                      <PopIn key="reset">
+                        <Button
+                          onClick={() => {
+                            setFlagOverride(key, null);
+                            onMutate();
+                          }}
+                          size="xs"
+                          variant="secondary-ghost"
+                        >
+                          Reset
+                        </Button>
+                      </PopIn>
+                    ) : null}
+                  </AnimatePresence>
+                  <span className="ml-auto shrink-0 text-body-sm text-muted-foreground">
+                    default {defaultValue ? 'on' : 'off'}
+                  </span>
+                </div>
+              </Item>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-type SubTab = { value: string; label: string; icon: React.ReactNode; content: React.ReactNode };
+type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs';
 
-// Second-level underline tabs, flush against the top-level bar. The inner content gets its own padding.
-function SubTabs({ tabs }: { tabs: SubTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.value ?? '');
+const PANEL_META: Record<PanelId, { title: string; description: string }> = {
+  overview: {
+    title: 'Overview',
+    description: 'Live status of every debug subsystem. Select a row to open it.',
+  },
+  simulate: {
+    title: 'Simulate',
+    description: 'Trigger app-level side effects to verify toasts, error boundaries, and console output.',
+  },
+  visual: {
+    title: 'Visual debuggers',
+    description:
+      'CSS-only overlays on the whole document, this dialog included. They persist for this browser tab and re-apply on reload.',
+  },
+  flags: {
+    title: 'Feature flags',
+    description:
+      'Override config.featureFlags locally. Overrides persist to localStorage; reload after toggling — most components read flags during render.',
+  },
+  storage: {
+    title: 'Storage',
+    description: 'Inspect or clear localStorage and sessionStorage. Clearing resets preferences and feature toggles.',
+  },
+  env: {
+    title: 'Environment',
+    description: 'Build, route, and runtime snapshot. Copy it into bug reports.',
+  },
+  configs: {
+    title: 'Connect configs',
+    description:
+      'Pre-built pipeline YAMLs for stress-testing the editor and validation. Copy one, then paste it into the editor on the create or edit page.',
+  },
+};
 
-  if (tabs.length <= 1) {
-    return <div className="px-4 py-4">{tabs[0]?.content}</div>;
-  }
+const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
+  {
+    label: 'General',
+    items: [
+      { id: 'overview', label: 'Overview', icon: <Info className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'simulate', label: 'Simulate', icon: <Zap className="h-3.5 w-3.5 shrink-0" /> },
+    ],
+  },
+  {
+    label: 'Toggles',
+    items: [
+      { id: 'visual', label: 'Visual', icon: <Eye className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'flags', label: 'Feature flags', icon: <Flag className="h-3.5 w-3.5 shrink-0" /> },
+    ],
+  },
+  {
+    label: 'Inspect',
+    items: [
+      { id: 'storage', label: 'Storage', icon: <Database className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'env', label: 'Environment', icon: <Cog className="h-3.5 w-3.5 shrink-0" /> },
+    ],
+  },
+  {
+    label: 'Connect',
+    items: [{ id: 'configs', label: 'Configs', icon: <FileCode className="h-3.5 w-3.5 shrink-0" /> }],
+  },
+];
+
+function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void }) {
+  const overlayCount = getEnabledVisualDebuggers().length;
+  const overrideCount = Object.keys(getFlagOverrides()).length;
+  const sha = env.REACT_APP_CONSOLE_GIT_SHA ? env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7) : 'local dev build';
+
+  const rows: { panel: PanelId; icon: React.ReactNode; label: string; value: string; active: boolean }[] = [
+    {
+      panel: 'visual',
+      icon: <Eye className="h-4 w-4" />,
+      label: 'Visual debuggers',
+      value: overlayCount > 0 ? `${overlayCount} overlay${overlayCount === 1 ? '' : 's'} enabled` : 'None enabled',
+      active: overlayCount > 0,
+    },
+    {
+      panel: 'flags',
+      icon: <Flag className="h-4 w-4" />,
+      label: 'Feature flags',
+      value: overrideCount > 0 ? `${overrideCount} overridden` : 'All defaults',
+      active: overrideCount > 0,
+    },
+    {
+      panel: 'storage',
+      icon: <Database className="h-4 w-4" />,
+      label: 'Browser storage',
+      value: `${window.localStorage.length} local · ${window.sessionStorage.length} session keys`,
+      active: false,
+    },
+    {
+      panel: 'env',
+      icon: <Cog className="h-4 w-4" />,
+      label: 'Build',
+      value: sha,
+      active: false,
+    },
+  ];
 
   return (
-    <Tabs className="gap-0" onValueChange={setActive} value={active}>
-      <div className="sticky top-10 z-10 bg-muted/40 backdrop-blur-sm">
-        <TabsList className="bg-transparent" variant="underline">
-          {tabs.map(({ value, label, icon }) => (
-            <TabsTrigger key={value} value={value} variant="underline">
-              {icon}
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
-      <div className="px-4 py-4">
-        {tabs.map(({ value, content }) => (
-          <TabsContent key={value} value={value}>
-            {content}
-          </TabsContent>
-        ))}
-      </div>
-    </Tabs>
+    <ItemGroup className="overflow-hidden rounded-md border">
+      {rows.map(({ panel, icon, label, value, active }, index) => (
+        <Fragment key={panel}>
+          {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
+          {index > 0 ? <ItemSeparator className="border-b bg-transparent" /> : null}
+          <Item
+            className="cursor-pointer rounded-none border-0 text-left hover:bg-muted/50"
+            render={<button onClick={() => onNavigate(panel)} type="button" />}
+            size="sm"
+          >
+            <ItemMedia variant="icon">{icon}</ItemMedia>
+            <ItemContent className="gap-0.5">
+              <ItemTitle>{label}</ItemTitle>
+              <ItemDescription>{value}</ItemDescription>
+            </ItemContent>
+            <AnimatePresence initial={false}>
+              {active ? (
+                <PopIn key="active">
+                  <Badge size="sm" variant="warning-inverted">
+                    active
+                  </Badge>
+                </PopIn>
+              ) : null}
+            </AnimatePresence>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </Item>
+        </Fragment>
+      ))}
+    </ItemGroup>
   );
 }
-
-function OverviewTab() {
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="text-body-sm text-muted-foreground">
-        A development-only toolbox for exercising Console's UI and inspecting local state. It ships in dev builds only
-        and is never bundled into production.
-      </div>
-
-      <DebugSection title="What's inside">
-        <ul className="flex flex-col gap-1.5">
-          <li className="text-muted-foreground text-sm">
-            <strong className="text-foreground">General</strong> — simulate toasts and errors, inspect or clear browser
-            storage, and snapshot the build and runtime environment.
-          </li>
-          <li className="text-muted-foreground text-sm">
-            <strong className="text-foreground">Flags</strong> — override feature flags locally; changes persist to
-            localStorage and re-apply on reload.
-          </li>
-          <li className="text-muted-foreground text-sm">
-            <strong className="text-foreground">Connect</strong> — copy pre-built pipeline YAMLs to stress-test the
-            editor and validation.
-          </li>
-        </ul>
-      </DebugSection>
-
-      <DebugSection title="Tips">
-        <span className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-sm">
-          Toggle this dialog anytime with
-          <KbdGroup>
-            <Kbd size="xs">⌃/⌘</Kbd>
-            <Kbd size="xs">⇧</Kbd>
-            <Kbd size="xs">D</Kbd>
-          </KbdGroup>
-        </span>
-      </DebugSection>
-    </div>
-  );
-}
-
-function GeneralTab({ onClose }: { onClose: () => void }) {
-  return (
-    <SubTabs
-      tabs={[
-        { value: 'overview', label: 'Overview', icon: <Info className="mr-1 h-3 w-3" />, content: <OverviewTab /> },
-        {
-          value: 'simulate',
-          label: 'Simulate',
-          icon: <Zap className="mr-1 h-3 w-3" />,
-          content: <SimulateTab onClose={onClose} />,
-        },
-        { value: 'storage', label: 'Storage', icon: <Trash2 className="mr-1 h-3 w-3" />, content: <StorageTab /> },
-        { value: 'env', label: 'Env', icon: <Cog className="mr-1 h-3 w-3" />, content: <EnvironmentTab /> },
-      ]}
-    />
-  );
-}
-
-function ConnectTab() {
-  return (
-    <SubTabs
-      tabs={[
-        {
-          value: 'configs',
-          label: 'Configs',
-          icon: <FileCode className="mr-1 h-3 w-3" />,
-          content: <ConnectConfigsTab />,
-        },
-      ]}
-    />
-  );
-}
-
-type Tab = 'general' | 'flags' | 'connect';
 
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [tab, setTab] = useState<Tab>('general');
+  const [panel, setPanel] = useState<PanelId>('overview');
+  const forceUpdate = useForceUpdate();
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
+  const railCounts: Partial<Record<PanelId, number>> = {
+    visual: getEnabledVisualDebuggers().length,
+    flags: Object.keys(getFlagOverrides()).length,
+  };
+
+  const renderPanel = () => {
+    switch (panel) {
+      case 'overview':
+        return <OverviewPanel onNavigate={setPanel} />;
+      case 'simulate':
+        return <SimulatePanel onClose={close} />;
+      case 'visual':
+        return <VisualPanel onMutate={forceUpdate} />;
+      case 'flags':
+        return <FeatureFlagsPanel onMutate={forceUpdate} />;
+      case 'storage':
+        return <StoragePanel />;
+      case 'env':
+        return <EnvironmentPanel />;
+      case 'configs':
+        return <ConnectConfigsPanel />;
+      default:
+        return null;
+    }
+  };
+
+  const { title, description } = PANEL_META[panel];
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent height="xl" size="xl">
+      <DialogContent className="sm:max-w-5xl" height="xl" size="xl">
         <DialogHeader align="left" spacing="tight">
           <DialogTitle className="flex items-center gap-2">
-            <Bug className="h-4 w-4" />
+            <DebugPanda className="h-5 w-5" />
             Debug helpers
+            <Badge size="sm" variant="simple-outline">
+              dev only
+            </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <DialogBody padding="none" scrollShadow={false}>
-          <Tabs className="gap-0" onValueChange={(v) => setTab(v as Tab)} value={tab}>
-            <div className="sticky top-0 z-20 bg-background">
-              <TabsList variant="underline">
-                <TabsTrigger value="general" variant="underline">
-                  <Wrench className="mr-1 h-3 w-3" /> General
-                </TabsTrigger>
-                <TabsTrigger value="flags" variant="underline">
-                  <Flag className="mr-1 h-3 w-3" /> Flags
-                </TabsTrigger>
-                <TabsTrigger value="connect" variant="underline">
-                  <AppWindow className="mr-1 h-3 w-3" /> Connect
-                </TabsTrigger>
-              </TabsList>
+        <div className="flex min-h-0 flex-1 border-t">
+          <nav aria-label="Debug sections" className="flex w-44 shrink-0 flex-col border-r bg-muted/30">
+            <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-2">
+              {NAV_GROUPS.map(({ label, items }) => (
+                <div key={label}>
+                  <div className="px-2 pb-1 font-semibold text-caption text-muted-foreground/70 uppercase tracking-wider">
+                    {label}
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {items.map(({ id, label: itemLabel, icon }) => {
+                      const count = railCounts[id] ?? 0;
+                      const active = panel === id;
+                      return (
+                        <button
+                          className={cn(
+                            'flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-body-sm transition-colors',
+                            active
+                              ? 'bg-muted font-medium text-foreground'
+                              : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                          )}
+                          key={id}
+                          onClick={() => setPanel(id)}
+                          type="button"
+                        >
+                          {icon}
+                          <span className="min-w-0 flex-1 truncate">{itemLabel}</span>
+                          <AnimatePresence initial={false}>
+                            {count > 0 ? (
+                              <PopIn key="count">
+                                <CountDot count={count} size="sm" variant="warning" />
+                              </PopIn>
+                            ) : null}
+                          </AnimatePresence>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
+            <div className="flex items-center gap-1.5 border-t px-3 py-2 text-body-sm text-muted-foreground">
+              <KbdGroup>
+                <Kbd size="xs">⌃/⌘</Kbd>
+                <Kbd size="xs">⇧</Kbd>
+                <Kbd size="xs">D</Kbd>
+              </KbdGroup>
+              toggles
+            </div>
+          </nav>
 
-            <TabsContent value="general">
-              <GeneralTab onClose={close} />
-            </TabsContent>
-            <TabsContent value="flags">
-              <div className="px-4 py-4">
-                <FeatureFlagsTab />
-              </div>
-            </TabsContent>
-            <TabsContent value="connect">
-              <ConnectTab />
-            </TabsContent>
-          </Tabs>
-        </DialogBody>
-
-        <DialogFooter direction="row" justify="between">
-          <span className="flex items-center gap-2">
-            <div className="text-body-sm text-muted-foreground">toggle</div>
-            <KbdGroup>
-              <Kbd size="xs">⌃/⌘</Kbd>
-              <Kbd size="xs">⇧</Kbd>
-              <Kbd size="xs">D</Kbd>
-            </KbdGroup>
-          </span>
-          <Button onClick={close} size="sm" variant="secondary-ghost">
-            Close
-          </Button>
-        </DialogFooter>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="border-b px-5 pt-4 pb-3">
+              <div className="font-semibold text-body">{title}</div>
+              <div className="text-body-sm text-muted-foreground">{description}</div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              <AnimatePresence initial={false} mode="wait">
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  key={panel}
+                  transition={{ duration: 0.12, ease: 'easeOut' }}
+                >
+                  {renderPanel()}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-export function DebugHelper() {
+// Floating launcher, portaled to document.body: in embedded mode this component
+// mounts inside a hidden host container (the dialog escapes via its own portal).
+function DebugLauncher({ onClick }: { onClick: () => void }) {
+  const activeCount = getEnabledVisualDebuggers().length + Object.keys(getFlagOverrides()).length;
+
+  return createPortal(
+    <button
+      aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
+      className="fixed right-[56px] bottom-[64px] z-40 flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full border bg-gradient-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
+      onClick={onClick}
+      title="Debug helpers — ⌃/⌘⇧D"
+      type="button"
+    >
+      <DebugPanda className="h-[22px] w-[22px]" />
+      <AnimatePresence initial={false}>
+        {activeCount > 0 ? (
+          <PopIn className="absolute -top-1 -right-1" key="count">
+            <CountDot count={activeCount} size="sm" variant="warning" />
+          </PopIn>
+        ) : null}
+      </AnimatePresence>
+    </button>,
+    document.body
+  );
+}
+
+export function DebugHelperRoot() {
   const [open, setOpen] = useState(false);
 
   useHotKey({
@@ -826,5 +1055,10 @@ export function DebugHelper() {
     return null;
   }
 
-  return <DebugDialog onOpenChange={setOpen} open={open} />;
+  return (
+    <MotionConfig reducedMotion="user">
+      {!open && <DebugLauncher onClick={() => setOpen(true)} />}
+      <DebugDialog onOpenChange={setOpen} open={open} />
+    </MotionConfig>
+  );
 }
