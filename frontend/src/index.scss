@@ -1248,11 +1248,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-// Fullscreen page mode (utils/page-expanded.ts): while data-page-expanded is stamped
-// on <html>, the shells release their horizontal constraints — the embedded
-// #mainLayout drops its gutter, the standalone container also releases its max-width
-// cap (100vw, not none, so the release can animate). Global CSS on purpose: Tailwind
-// arbitrary variants proved chunk-dependent and were missing on some routes.
+// Fullscreen page mode (utils/page-expanded.ts): the shells release their horizontal
+// constraints (max-width 100vw, not none, so the release can animate). Global CSS on
+// purpose — Tailwind arbitrary variants proved chunk-dependent across routes.
 html[data-page-expanded] {
   #mainLayout {
     padding-left: 0;

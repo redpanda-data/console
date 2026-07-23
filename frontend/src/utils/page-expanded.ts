@@ -10,16 +10,11 @@
  */
 
 /**
- * Full-width page mode ("expanded"), in normal document flow.
- *
- * While this attribute is on `<html>`, every shell around the page releases its
- * horizontal constraints via CSS, in lockstep: Console's page gutter and standalone
- * max-width cap (rules in index.scss), and Cloud UI's embedded layout wrapper
- * (`expandableWidth` in cloud-ui layout.tsx).
- *
- * Stamp for a page's lifetime, or toggle for a user-switchable mode (usually via
- * useExpandedPageMode). Always remove on unmount — the shells are shared, and a
- * stale attribute would bleed full-width onto the next page.
+ * Full-width page mode, in normal document flow. While this attribute is on
+ * `<html>`, every shell releases its horizontal constraints via CSS in lockstep:
+ * Console's gutter/max-width (index.scss) and Cloud UI's embedded wrapper
+ * (`expandableWidth` in cloud-ui layout.tsx). Always remove on unmount — a stale
+ * attribute bleeds full-width onto the next page.
  */
 export const PAGE_EXPANDED_ATTR = 'data-page-expanded';
 

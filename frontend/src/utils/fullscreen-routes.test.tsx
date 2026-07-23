@@ -60,9 +60,7 @@ describe('collectFullscreenPaths', () => {
   });
 
   test('the real route tree currently has no fullscreen routes', () => {
-    // The SQL studio is a normal in-flow route now (staticData.breadcrumbOnlyHeader +
-    // an in-page expanded mode via useExpandedPageMode) — it must NOT come back as a
-    // fullscreen route by accident. The machinery stays for future true-fullscreen pages.
+    // The SQL studio is a normal in-flow route now; it must not regress to fullscreen.
     expect(collectFullscreenPaths(routeTree)).not.toContain('/sql');
   });
 });

@@ -97,13 +97,9 @@ function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
   return result;
 }
 
-// Persisted studio layout mode. 'boxed' caps the studio to the standard page
-// width like every other page; 'full' is edge-to-edge (see useExpandedPageMode).
 const STUDIO_MODE_KEY = 'rp-sql-studio-mode';
 
-// Standalone console renders its own breadcrumb/title header for the SQL route;
-// populate it the way other pages do (no-op visually when embedded, where the
-// host supplies the header).
+// Standalone renders its own breadcrumb header; the embedded host supplies its own.
 const setStudioPageHeader = () => {
   uiState.pageTitle = 'SQL';
   uiState.pageBreadcrumbs = [{ title: 'SQL', linkTo: '/sql', heading: 'SQL' }];
@@ -144,8 +140,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const latestRunToken = useRef(0);
   const { expanded, toggleExpanded, ref: expandedModeRef } = useExpandedPageMode({ storageKey: STUDIO_MODE_KEY });
 
-  // Layout effect so the breadcrumb stamp lands before first paint (no flash of the
-  // previous route's title in the app header).
+  // Pre-paint so the previous route's title doesn't flash in the app header.
   useLayoutEffect(() => {
     setStudioPageHeader();
   }, []);
@@ -384,11 +379,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
 
   return (
     <div
-      // In flow (not an overlay): the footer renders below the studio, and expanded
-      // mode releases the shells' gutters (useExpandedPageMode). Viewport-bounded
-      // height matches the RPCN editor (7rem = app header + pt-8).
-      // Dark mode re-points the border tokens to visible grey-scale values — the
-      // registry's near-black theme renders borders effectively invisible.
+      // In-flow page (footer below); 7rem = app header + pt-8, matching the RPCN
+      // editor. Dark mode re-points the border tokens — the registry's near-black
+      // theme renders borders effectively invisible.
       className="flex h-[calc(100dvh-7rem)] min-h-[500px] flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
       ref={expandedModeRef}
     >
@@ -407,10 +400,8 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       <div
         className={cn(
           'flex min-h-0 flex-1 overflow-hidden bg-background transition-[margin,border-radius,border-color,box-shadow] duration-300 ease-in-out',
-          // The box lives here (not on the root) so the studio header stays above it.
-          // Boxed: rounded, bordered, shadowed card with a gap below the header.
-          // Full: flush at the sides, keeping the top/bottom borders so clipped
-          // scrollable content still has a visible edge.
+          // Boxed: rounded card below the studio header. Full: flush sides; top/bottom
+          // borders stay so clipped scrollable content keeps a visible edge.
           expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border pt-3 shadow-sm'
         )}
       >

@@ -87,12 +87,9 @@ function FederatedRootLayout() {
 }
 
 /**
- * Cancels the gutters the Cloud UI host puts around the federated Console outlet
- * (`p-10 pt-8` on its layout container) with equal negative margins, so Console owns
- * its own page spacing. Measured from the live DOM rather than hardcoded: either
- * project can deploy first — once the host removes its padding the compensation
- * measures 0. Top padding is left alone; cancelling it would pull Console under the
- * host's breadcrumb header.
+ * Cancels the host gutters around the federated Console outlet with equal negative
+ * margins. Measured, not hardcoded, so either project can deploy first. Top padding
+ * is left alone — cancelling it would pull Console under the host's header.
  */
 const useCancelHostGutters = (enabled: boolean) => {
   const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -103,8 +100,7 @@ const useCancelHostGutters = (enabled: boolean) => {
       return;
     }
 
-    // Applying identical margins would retrigger the ResizeObserver (the margins
-    // change ancestor sizes), so only write on change.
+    // Only write on change — the margins change ancestor sizes, re-firing the observer.
     let lastMargin: string | null = null;
     const update = () => {
       let left = 0;
@@ -126,8 +122,7 @@ const useCancelHostGutters = (enabled: boolean) => {
     update();
     const observer = new ResizeObserver(update);
     observer.observe(document.documentElement);
-    // A host padding change alters the ancestor's content-box even when its outer
-    // size is fixed, so observing the chain catches host-side padding swaps.
+    // Padding changes alter an ancestor's content-box even at fixed outer size.
     for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
       observer.observe(el);
     }
@@ -149,21 +144,16 @@ const useCancelHostGutters = (enabled: boolean) => {
 function FederatedAppContent() {
   const matches = useMatches();
   const { pathname } = useLocation();
-  // Fullscreen routes own their chrome — breadcrumb-only header, no padding/footer
-  // (none currently exist; the machinery stays for future true-fullscreen pages).
-  // staticData is the source of truth, but on soft navigation useMatches() lags
-  // useLocation() by a render or two, so fall back to a path check to avoid flashing
-  // full chrome on the way in. Single return with stable element positions keeps the
-  // <Outlet> mounted across fullscreen↔normal navigation.
+  // Fullscreen routes own their chrome (none exist today). The path check covers
+  // useMatches() lagging useLocation() on soft navigation; the single return keeps
+  // the <Outlet> mounted across fullscreen↔normal transitions.
   const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
   const layoutRef = useCancelHostGutters(!isFullscreen);
 
   return (
-    // Flex column so the footer's `margin-top: auto` pins it to the layout bottom
-    // (AppFooter stretches #mainLayout to the viewport via min-height). px-12 is
-    // Console's own gutter — the host gutter is cancelled above, and pages release
-    // it by stamping data-page-expanded on <html> (rule in index.scss).
+    // Flex column pins the footer via its margin-top:auto; px-12 is Console's own
+    // gutter, released by data-page-expanded (rule in index.scss).
     <div
       className={isFullscreen ? undefined : 'flex flex-col px-12 transition-[padding] duration-300 ease-in-out'}
       id="mainLayout"

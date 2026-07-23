@@ -171,8 +171,7 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-// Fullscreen keeps the header content off the viewport edges while the panel below
-// goes flush — same detail as the SQL studio.
+// Fullscreen insets the header while the panel below goes flush.
 const headerClassName = (expanded: boolean | undefined) =>
   cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
 
@@ -209,7 +208,6 @@ export function PipelineViewHeader({
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
-  /** Fullscreen page mode: insets the header content from the viewport edges. */
   expanded?: boolean;
 }) {
   const navigate = useNavigate();
@@ -299,7 +297,6 @@ export function PipelineEditHeader({
   onEditSettings: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
-  /** Fullscreen page mode: insets the header content from the viewport edges. */
   expanded?: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();

@@ -1114,8 +1114,6 @@ function PipelinePageContent() {
   const showViewTabs = mode === 'view' && Boolean(pipeline);
   const showEditTabs = mode !== 'view' && isVisualEditorEnabled;
 
-  // In-page fullscreen: releases the shells' gutters/width caps via data-page-expanded
-  // while the page stays in flow (footer keeps rendering below).
   const {
     expanded,
     toggleExpanded,
@@ -1179,19 +1177,16 @@ function PipelinePageContent() {
       ) : null}
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-        {/* Framed panel, mirroring the SQL studio card: boxed is a rounded frame;
-            fullscreen goes flush at the sides but keeps the top/bottom borders so
-            clipped scrollable content still has a visible edge. */}
+        {/* Boxed: rounded frame. Fullscreen: flush sides; top/bottom borders stay so
+            clipped scrollable content keeps a visible edge. */}
         <div
           className={cn(
             'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border border-border! transition-[border-radius,border-color] duration-300 ease-in-out',
             expanded ? 'rounded-none border-x-transparent!' : 'rounded-lg'
           )}
         >
-          {/* Panel top strip: lane tabs plus the fullscreen toggle in the surface's
-              top-right corner (same spot as the SQL studio, clear of the page actions).
-              Full-width lists so the underline divider spans; pr-12 keeps triggers out
-              from under the overlaid toggle. */}
+          {/* Lane tabs + fullscreen toggle at the surface's top-right corner; pr-12
+              keeps triggers clear of the overlaid toggle. */}
           <div className="relative shrink-0">
             {showViewTabs ? (
               <Tabs value={activeViewLane}>
@@ -1223,8 +1218,7 @@ function PipelinePageContent() {
               </Tabs>
             ) : null}
             {showViewTabs || showEditTabs ? null : (
-              // No lane tabs in this configuration — keep the strip so the toggle and
-              // divider have the same home in every mode.
+              // Tabless configurations keep the strip so the toggle/divider stay put.
               <div className="!border-border h-9 border-b bg-background" />
             )}
             <div className="absolute inset-y-0 right-1.5 flex items-center">
@@ -1293,7 +1287,7 @@ function PipelinePageContent() {
           </div>
         </div>
         {tipsContext ? (
-          // Same edge inset as the header in fullscreen — the frame above goes flush, text doesn't.
+          // Match the header's fullscreen inset.
           <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
             <EditorTipsBar context={tipsContext} readOnly={mode === 'view'} slashMenuEnabled={isSlashMenuEnabled} />
           </div>

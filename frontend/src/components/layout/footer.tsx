@@ -78,11 +78,8 @@ const measureReservedBelow = (target: HTMLElement): number => {
   return reserved;
 };
 
-/**
- * Stretch the layout to the viewport bottom so the footer's `margin-top: auto` pins it
- * there on short pages. Measured rather than expressed as a CSS flex chain because in
- * embedded mode the wrappers above `#mainLayout` belong to the host app.
- */
+// Measured rather than a CSS flex chain: in embedded mode the wrappers above
+// #mainLayout belong to the host app.
 const stretchLayoutToViewportBottom = (layoutEl: HTMLElement) => {
   const viewportHeight = document.documentElement.clientHeight;
   const minHeight = Math.round(viewportHeight - measureDocumentTop(layoutEl) - measureReservedBelow(layoutEl));
@@ -108,8 +105,7 @@ const useBottomPinnedFooter = (hidden: boolean) => {
     const observer = new ResizeObserver(update);
     observer.observe(document.documentElement);
     observer.observe(layoutEl);
-    // The layout's margins are adjusted after mount in embedded mode (useCancelHostGutters);
-    // the MutationObserver re-measures on that style write. update() is idempotent.
+    // Re-measure when useCancelHostGutters adjusts the layout's margins post-mount.
     const mutationObserver = new MutationObserver(update);
     mutationObserver.observe(layoutEl, { attributeFilter: ['style'], attributes: true });
     window.addEventListener('resize', update);

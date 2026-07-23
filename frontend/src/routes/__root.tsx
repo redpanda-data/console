@@ -75,8 +75,7 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          {/* px-12 is Console's page gutter; pages release it (and the max-width cap)
-              by stamping data-page-expanded on <html> — rule in index.scss. */}
+          {/* px-12 gutter + max-width cap, released by data-page-expanded (index.scss). */}
           <div className="page-expanded-release container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
           </div>

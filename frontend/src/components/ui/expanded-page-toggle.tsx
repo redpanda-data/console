@@ -13,11 +13,8 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Maximize2, Minimize2 } from 'lucide-react';
 
 /**
- * Fullscreen toggle for pages with an expanded page mode (see useExpandedPageMode).
- *
- * Placement convention: the top-right corner of the work surface it expands (the SQL
- * studio's title bar, the RPCN panel's tab strip) — never among the page actions,
- * where it would crowd primary buttons like Save.
+ * Fullscreen toggle for useExpandedPageMode pages. Place it at the top-right corner
+ * of the work surface it expands — never among the page actions next to Save.
  */
 export function ExpandedPageToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   return (

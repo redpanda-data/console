@@ -23,16 +23,12 @@ const readStoredMode = (storageKey: string): ExpandedPageMode => {
 };
 
 /**
- * Fullscreen ("expanded") mode for a work-surface page, in normal document flow.
+ * Fullscreen ("expanded") mode for a work-surface page, in normal document flow:
+ * while expanded and on screen, stamps `data-page-expanded` on `<html>` so the
+ * shells release their horizontal constraints. Persists under `storageKey`.
  *
- * While expanded and actually on screen, stamps `data-page-expanded` on `<html>`
- * (see utils/page-expanded.ts) so the shells around the page release their
- * horizontal constraints. The page stays in flow — the footer keeps rendering
- * below it. The mode persists per browser under `storageKey`.
- *
- * Attach `ref` to the page root. Embedded Cloud UI keeps Console mounted but
- * `display: none` on host routes, so the attribute is held only while the root
- * is visible: hiding releases it, showing re-asserts it, unmounting clears it.
+ * Attach `ref` to the page root — the attribute is held only while the root is
+ * visible (embedded Cloud UI keeps Console mounted but hidden on host routes).
  */
 export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
   expanded: boolean;
@@ -50,9 +46,8 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
     setPageExpanded(visible && modeRef.current === 'full');
   }, []);
 
-  // Callback ref: called with the node on mount and null on unmount. display:none
-  // collapses the root to 0x0, which fires the ResizeObserver — that's the
-  // visibility signal in embedded mode.
+  // display:none collapses the root to 0x0, firing the ResizeObserver — that's the
+  // visibility signal.
   const ref = useCallback(
     (el: HTMLElement | null) => {
       observerRef.current?.disconnect();
@@ -75,8 +70,7 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
     } catch {
       // ignore storage failures (private mode / quota)
     }
-    // Stamp the attribute in the same tick as the state flip so the shells' CSS
-    // transitions and the page's own mode styling animate together.
+    // Same-tick stamp so the shells and the page's own styling animate together.
     sync();
     setMode(next);
   }, [storageKey, sync]);
