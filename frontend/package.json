@@ -220,7 +220,11 @@
     "hono": "^4.12.25",
     "ip-address": "^10.2.0",
     "@babel/core": "^7.29.7",
-    "@isaacs/brace-expansion": "^5.0.1"
+    "@isaacs/brace-expansion": "^5.0.1",
+    "adm-zip": "^0.6.0",
+    "bn.js": "^5.2.3",
+    "brace-expansion": "^2.0.3",
+    "minimatch": "^9.0.7"
   },
   "resolutions": {
     "baseline-browser-mapping": "2.10.33",
@@ -240,6 +244,10 @@
     "hono": "^4.12.25",
     "ip-address": "^10.2.0",
     "@babel/core": "^7.29.7",
-    "@isaacs/brace-expansion": "^5.0.1"
+    "@isaacs/brace-expansion": "^5.0.1",
+    "adm-zip": "^0.6.0",
+    "bn.js": "^5.2.3",
+    "brace-expansion": "^2.0.3",
+    "minimatch": "^9.0.7"
   }
 }
