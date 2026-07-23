@@ -1248,6 +1248,24 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
+// Fullscreen page mode (utils/page-expanded.ts): while data-page-expanded is stamped
+// on <html>, the shells release their horizontal constraints — the embedded
+// #mainLayout drops its gutter, the standalone container also releases its max-width
+// cap (100vw, not none, so the release can animate). Global CSS on purpose: Tailwind
+// arbitrary variants proved chunk-dependent and were missing on some routes.
+html[data-page-expanded] {
+  #mainLayout {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .page-expanded-release {
+    max-width: 100vw;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 // when a some container containing a radio button is animated,
 // it sometimes causes the inner part (the "dot") of a radio button to become misaligned
 // adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
@@ -1260,7 +1278,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   gap: 10px;
   padding: 0;
   padding-top: 3em;
-  padding-bottom: 8px;
+  padding-bottom: 16px;
   margin-top: auto;
 
   color: hsl(216deg, 11%, 66%);

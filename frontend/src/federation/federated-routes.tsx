@@ -13,6 +13,7 @@ import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
+import { useLayoutEffect, useRef } from 'react';
 
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
@@ -86,24 +87,88 @@ function FederatedRootLayout() {
 }
 
 /**
+ * Cancels the gutters the Cloud UI host puts around the federated Console outlet
+ * (`p-10 pt-8` on its layout container) with equal negative margins, so Console owns
+ * its own page spacing. Measured from the live DOM rather than hardcoded: either
+ * project can deploy first — once the host removes its padding the compensation
+ * measures 0. Top padding is left alone; cancelling it would pull Console under the
+ * host's breadcrumb header.
+ */
+const useCancelHostGutters = (enabled: boolean) => {
+  const layoutRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const layoutEl = layoutRef.current;
+    if (!(enabled && layoutEl)) {
+      return;
+    }
+
+    // Applying identical margins would retrigger the ResizeObserver (the margins
+    // change ancestor sizes), so only write on change.
+    let lastMargin: string | null = null;
+    const update = () => {
+      let left = 0;
+      let right = 0;
+      let bottom = 0;
+      for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+        const style = getComputedStyle(el);
+        left += Number.parseFloat(style.paddingLeft) || 0;
+        right += Number.parseFloat(style.paddingRight) || 0;
+        bottom += Number.parseFloat(style.paddingBottom) || 0;
+      }
+      const margin = `0px ${-right}px ${-bottom}px ${-left}px`;
+      if (margin !== lastMargin) {
+        lastMargin = margin;
+        layoutEl.style.margin = margin;
+      }
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(document.documentElement);
+    // A host padding change alters the ancestor's content-box even when its outer
+    // size is fixed, so observing the chain catches host-side padding swaps.
+    for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+      observer.observe(el);
+    }
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+      layoutEl.style.margin = '';
+    };
+  }, [enabled]);
+
+  return layoutRef;
+};
+
+/**
  * App content for federated mode.
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
   const matches = useMatches();
   const { pathname } = useLocation();
-  // Fullscreen routes (SQL studio) own their chrome — breadcrumb-only header, no
-  // padding/footer. staticData is the source of truth, but on soft navigation
-  // useMatches() lags useLocation() by a render or two (matches resolve after
-  // pathname flips), so fall back to a path check to avoid flashing full chrome on
-  // the way in. Single return with stable element positions: toggling props/classes
-  // (not branching the tree) keeps the <Outlet> mounted across fullscreen↔normal
-  // navigation, so the embedded router doesn't reset to its default route.
+  // Fullscreen routes own their chrome — breadcrumb-only header, no padding/footer
+  // (none currently exist; the machinery stays for future true-fullscreen pages).
+  // staticData is the source of truth, but on soft navigation useMatches() lags
+  // useLocation() by a render or two, so fall back to a path check to avoid flashing
+  // full chrome on the way in. Single return with stable element positions keeps the
+  // <Outlet> mounted across fullscreen↔normal navigation.
   const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const layoutRef = useCancelHostGutters(!isFullscreen);
 
   return (
-    <div id="mainLayout">
+    // Flex column so the footer's `margin-top: auto` pins it to the layout bottom
+    // (AppFooter stretches #mainLayout to the viewport via min-height). px-12 is
+    // Console's own gutter — the host gutter is cancelled above, and pages release
+    // it by stamping data-page-expanded on <html> (rule in index.scss).
+    <div
+      className={isFullscreen ? undefined : 'flex flex-col px-12 transition-[padding] duration-300 ease-in-out'}
+      id="mainLayout"
+      ref={layoutRef}
+    >
       {!isFullscreen && (
         <NullFallbackBoundary>
           <LicenseNotification />

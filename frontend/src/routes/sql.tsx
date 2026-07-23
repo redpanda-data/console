@@ -19,7 +19,9 @@ export const Route = createFileRoute('/sql')({
   staticData: {
     title: 'SQL',
     icon: Database,
-    fullscreen: true,
+    // The studio has its own title bar; otherwise a normal in-flow page (gutter and
+    // footer included) with an in-page fullscreen mode.
+    breadcrumbOnlyHeader: true,
   },
   // Gate direct navigation to /sql on the same capability check as the sidebar.
   // isSupported() returns false both when SQLService is unsupported and when the

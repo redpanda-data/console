@@ -59,10 +59,11 @@ describe('collectFullscreenPaths', () => {
     expect(collectFullscreenPaths(undefined)).toEqual([]);
   });
 
-  test('derives /sql from the real route tree', () => {
-    // Guards against route-tree shape changes and against the SQL route losing
-    // its staticData.fullscreen flag.
-    expect(collectFullscreenPaths(routeTree)).toContain('/sql');
+  test('the real route tree currently has no fullscreen routes', () => {
+    // The SQL studio is a normal in-flow route now (staticData.breadcrumbOnlyHeader +
+    // an in-page expanded mode via useExpandedPageMode) — it must NOT come back as a
+    // fullscreen route by accident. The machinery stays for future true-fullscreen pages.
+    expect(collectFullscreenPaths(routeTree)).not.toContain('/sql');
   });
 });
 
@@ -100,9 +101,9 @@ describe('matchesFullscreenPath', () => {
 });
 
 describe('isFullscreenPath (wired to the real route tree)', () => {
-  test('recognizes the SQL studio, standalone and embedded', () => {
-    expect(isFullscreenPath('/sql')).toBe(true);
-    expect(isFullscreenPath('/clusters/abc123/sql')).toBe(true);
+  test('treats the SQL studio as a normal in-flow route', () => {
+    expect(isFullscreenPath('/sql')).toBe(false);
+    expect(isFullscreenPath('/clusters/abc123/sql')).toBe(false);
   });
 
   test('rejects non-fullscreen routes', () => {

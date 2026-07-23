@@ -171,6 +171,11 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
+// Fullscreen keeps the header content off the viewport edges while the panel below
+// goes flush — same detail as the SQL studio.
+const headerClassName = (expanded: boolean | undefined) =>
+  cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
+
 // Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
@@ -199,10 +204,13 @@ export function PipelineViewHeader({
   pipeline,
   onBack,
   onViewDetails,
+  expanded,
 }: {
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
+  /** Fullscreen page mode: insets the header content from the viewport edges. */
+  expanded?: boolean;
 }) {
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
@@ -228,7 +236,7 @@ export function PipelineViewHeader({
   ];
 
   return (
-    <header className="flex flex-col gap-3">
+    <header className={headerClassName(expanded)}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <BackButton onClick={onBack} />
@@ -281,6 +289,7 @@ export function PipelineEditHeader({
   onEditSettings,
   isSaving,
   hasUnsavedChanges,
+  expanded,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   mode: 'edit' | 'create';
@@ -290,6 +299,8 @@ export function PipelineEditHeader({
   onEditSettings: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
+  /** Fullscreen page mode: insets the header content from the viewport edges. */
+  expanded?: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
@@ -301,7 +312,7 @@ export function PipelineEditHeader({
   ];
 
   return (
-    <header className="flex flex-col gap-3">
+    <header className={headerClassName(expanded)}>
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">

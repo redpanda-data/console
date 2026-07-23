@@ -13,11 +13,11 @@ import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { isEmbedded } from 'config';
-import { Database, Maximize2, Minimize2 } from 'lucide-react';
+import { ExpandedPageToggle } from 'components/ui/expanded-page-toggle';
+import { useExpandedPageMode } from 'hooks/use-expanded-page-mode';
+import { Database } from 'lucide-react';
 import {
   CatalogType,
   ExecuteQueryRequestSchema,
@@ -25,7 +25,7 @@ import {
   type Row as SqlRow,
   type Value as SqlValue,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
   useExecuteQueryMutation,
@@ -97,38 +97,9 @@ function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
   return result;
 }
 
-// Studio layout mode. 'boxed' caps the studio to the standard page width like
-// every other page; 'full' is edge-to-edge. Persisted per browser.
-type StudioMode = 'boxed' | 'full';
-
+// Persisted studio layout mode. 'boxed' caps the studio to the standard page
+// width like every other page; 'full' is edge-to-edge (see useExpandedPageMode).
 const STUDIO_MODE_KEY = 'rp-sql-studio-mode';
-// Generic cloud-ui shell contract: any embedded page that sets this <html>
-// attribute makes the layout wrapper (and the breadcrumb header inside it)
-// animate to full width via CSS — see cloud-ui layout.tsx `expandableWidth`.
-// Presence = expanded. Set synchronously with the studio's own geometry change
-// so the wrapper and the studio animate in lockstep.
-const PAGE_EXPANDED_ATTR = 'data-page-expanded';
-const STUDIO_MAX_WIDTH = 1500; // boxed mode caps to the standard page column
-const STUDIO_SIDE_GAP = 40; // boxed inset from the centered max-width column
-const STUDIO_TOP_GAP = 16; // boxed gap between the breadcrumb header and the studio header; full mode has none
-const STUDIO_BOTTOM_GAP = 32;
-const STUDIO_EASE = '0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-const SCROLLABLE_OVERFLOW_RE = /(auto|scroll)/;
-// Root animates geometry only; the body card animates its own border/radius/shadow
-// via Tailwind (same easing/duration) so the studio header stays outside the box.
-const STUDIO_TRANSITION = `top ${STUDIO_EASE}, left ${STUDIO_EASE}, right ${STUDIO_EASE}, bottom ${STUDIO_EASE}`;
-
-const readStudioMode = (): StudioMode =>
-  (typeof localStorage !== 'undefined' ? localStorage.getItem(STUDIO_MODE_KEY) : null) === 'full' ? 'full' : 'boxed';
-
-const setPageExpanded = (expanded: boolean) => {
-  const root = document.documentElement;
-  if (expanded) {
-    root.setAttribute(PAGE_EXPANDED_ATTR, '');
-  } else {
-    root.removeAttribute(PAGE_EXPANDED_ATTR);
-  }
-};
 
 // Standalone console renders its own breadcrumb/title header for the SQL route;
 // populate it the way other pages do (no-op visually when embedded, where the
@@ -138,165 +109,6 @@ const setStudioPageHeader = () => {
   uiState.pageBreadcrumbs = [{ title: 'SQL', linkTo: '/sql', heading: 'SQL' }];
 };
 
-// Renders the workspace as a fixed overlay filling the area right of the
-// cluster sidebar, below the page header. This gives a true full-width,
-// full-height editor WITHOUT mutating any shared cloud-ui layout nodes — so it
-// never leaves residue on other pages (e.g. Overview) when you navigate away.
-// Works in both standalone console and embedded cloud-ui. `getMode` is read on
-// every layout pass so a mode toggle re-runs geometry; returns teardown +
-// relayout (the latter called by the component when the mode changes).
-function setupOverlayLayout(
-  el: HTMLDivElement,
-  getMode: () => StudioMode
-): { relayout: () => void; teardown: () => void } {
-  // Natural (in-flow) top sits just below the page header. Measured once
-  // while still in flow; horizontal resizes don't change it.
-  const naturalTop = el.getBoundingClientRect().top;
-
-  const findRegionLeft = () => {
-    // The content region is the INNERMOST ancestor that spans to the
-    // viewport's right edge — i.e. the main column right of the sidebar.
-    // (Outer ancestors like the sidebar wrapper also reach the right edge but
-    // start at x=0 and would put the editor under the sidebar.)
-    let node = el.parentElement;
-    while (node && node !== document.body) {
-      const r = node.getBoundingClientRect();
-      if (Math.abs(r.right - window.innerWidth) <= 2 && r.width > 200) {
-        return r.left;
-      }
-      node = node.parentElement;
-    }
-    return el.getBoundingClientRect().left;
-  };
-
-  const layout = () => {
-    const regionLeft = findRegionLeft();
-    el.style.position = 'fixed';
-    el.style.height = 'auto';
-    if (getMode() === 'full') {
-      // Edge-to-edge: fill the region right of the sidebar, flush under the header.
-      el.style.top = `${naturalTop}px`;
-      el.style.left = `${regionLeft}px`;
-      el.style.right = '0px';
-      el.style.bottom = '0px';
-      return;
-    }
-    // Boxed: centre a max-width column in the region, inset by the side gap, with a
-    // bottom gap. Standalone adds a top gap below the thin breadcrumb; embedded
-    // skips it because the cloud-ui shell's own header spacing already supplies the
-    // gap. The card border/radius/shadow live on the body element, so the studio
-    // header sits outside the box.
-    const regionWidth = window.innerWidth - regionLeft;
-    const capped = Math.min(STUDIO_MAX_WIDTH, regionWidth);
-    const centeredLeft = regionLeft + (regionWidth - capped) / 2;
-    el.style.top = `${naturalTop + (isEmbedded() ? 0 : STUDIO_TOP_GAP)}px`;
-    el.style.left = `${centeredLeft + STUDIO_SIDE_GAP}px`;
-    el.style.right = `${window.innerWidth - (centeredLeft + capped) + STUDIO_SIDE_GAP}px`;
-    el.style.bottom = `${STUDIO_BOTTOM_GAP}px`;
-  };
-
-  // The overlay is fixed, but the host page (cloud-ui chrome when embedded)
-  // still scrolls behind it — dragging the host page header up/down/sideways
-  // while the pinned editor stays put. Lock every scrollable ancestor (plus
-  // the document scroller) so nothing behind the overlay can scroll, keeping
-  // the host header static. No-op in standalone console, where nothing scrolls.
-  const locked: Array<{ node: HTMLElement; overflow: string }> = [];
-  const lock = (node: HTMLElement) => {
-    locked.push({ node, overflow: node.style.overflow });
-    node.style.overflow = 'hidden';
-  };
-  const lockAll = () => {
-    let node: HTMLElement | null = el.parentElement;
-    while (node && node !== document.body) {
-      const c = getComputedStyle(node);
-      const scrollable = SCROLLABLE_OVERFLOW_RE.test(c.overflowY + c.overflowX);
-      if (scrollable && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
-        lock(node);
-      }
-      node = node.parentElement;
-    }
-    const scroller = (document.scrollingElement ?? document.documentElement) as HTMLElement;
-    lock(scroller);
-    if (document.body) {
-      lock(document.body);
-    }
-  };
-  const unlockAll = () => {
-    for (const { node, overflow } of locked) {
-      node.style.overflow = overflow;
-    }
-    locked.length = 0;
-  };
-
-  // When embedded, the host keeps Console MOUNTED but display:none while on
-  // its own routes (e.g. /overview) — unmount cleanup never runs there, which
-  // would strand the scroll locks on a page that needs to scroll. Hold the
-  // locks only while actually on screen: display:none collapses the overlay
-  // to 0x0, which fires the ResizeObserver, and we release until shown again.
-  const isVisible = () => el.getClientRects().length > 0;
-  let active = false;
-  const sync = () => {
-    if (isVisible() && !active) {
-      layout();
-      lockAll();
-      // Re-assert the host expand attr on show — embedded cloud-ui keeps Console
-      // mounted+hidden, so this is the lifecycle that owns the attribute.
-      setPageExpanded(getMode() === 'full');
-      active = true;
-    } else if (!isVisible() && active) {
-      unlockAll();
-      // Clear it on hide so other cloud-ui pages don't render stuck full-width.
-      setPageExpanded(false);
-      active = false;
-    }
-  };
-  sync();
-  const visibilityObserver = new ResizeObserver(sync);
-  visibilityObserver.observe(el);
-
-  // Enable transitions one frame after first geometry so the initial mount
-  // snaps into place instead of animating from the unstyled position.
-  let transitionsReady = false;
-  requestAnimationFrame(() =>
-    requestAnimationFrame(() => {
-      el.style.transition = STUDIO_TRANSITION;
-      transitionsReady = true;
-    })
-  );
-
-  const onWindowResize = () => {
-    if (!active) {
-      return;
-    }
-    // Reposition instantly during resize — animating every resize tick trails.
-    if (transitionsReady) {
-      el.style.transition = 'none';
-    }
-    layout();
-    if (transitionsReady) {
-      requestAnimationFrame(() => {
-        el.style.transition = STUDIO_TRANSITION;
-      });
-    }
-  };
-  window.addEventListener('resize', onWindowResize);
-
-  return {
-    relayout: () => {
-      if (active) {
-        layout();
-      }
-    },
-    teardown: () => {
-      visibilityObserver.disconnect();
-      window.removeEventListener('resize', onWindowResize);
-      if (active) {
-        unlockAll();
-      }
-    },
-  };
-}
-
 export type SqlWorkspaceProps = {
   /**
    * Effective role of the caller. When omitted it's derived from the
@@ -305,59 +117,6 @@ export type SqlWorkspaceProps = {
    */
   sqlRole?: SqlRole;
 };
-
-// Studio layout mode + the callback ref that wires it to the imperative overlay.
-// The ref mirrors the mode so the overlay (set up once) reads the latest value
-// during async relayouts; toggleMode drives the geometry change directly — react
-// state only mirrors it so the toggle button's icon re-renders.
-function useStudioMode(): {
-  attachOverlay: (el: HTMLDivElement | null) => void;
-  mode: StudioMode;
-  toggleMode: () => void;
-} {
-  const [mode, setMode] = useState<StudioMode>(readStudioMode);
-  const modeRef = useRef(mode);
-  const overlayCleanup = useRef<(() => void) | null>(null);
-  const overlayRelayout = useRef<(() => void) | null>(null);
-
-  // Callback ref (no effect): React calls it with the node on mount and null
-  // on unmount, which maps 1:1 onto the overlay's setup/teardown. Must be
-  // identity-stable, or React would detach/reattach the overlay every render.
-  const attachOverlay = useCallback((el: HTMLDivElement | null) => {
-    overlayCleanup.current?.();
-    if (el) {
-      // Reflect the mode for the cloud-ui shell while the studio is mounted, and
-      // clear it on unmount so it leaves no residue on other pages.
-      setPageExpanded(modeRef.current === 'full');
-      setStudioPageHeader();
-      const handle = setupOverlayLayout(el, () => modeRef.current);
-      overlayCleanup.current = handle.teardown;
-      overlayRelayout.current = handle.relayout;
-    } else {
-      setPageExpanded(false);
-      overlayCleanup.current = null;
-      overlayRelayout.current = null;
-    }
-  }, []);
-
-  const toggleMode = useCallback(() => {
-    const next: StudioMode = modeRef.current === 'boxed' ? 'full' : 'boxed';
-    modeRef.current = next;
-    try {
-      localStorage.setItem(STUDIO_MODE_KEY, next);
-    } catch {
-      // ignore storage failures (private mode / quota)
-    }
-    // Update the <html> attr and the studio geometry in the same synchronous
-    // tick: the cloud-ui shell's wrapper transitions off the attr via CSS while
-    // the overlay transitions its inline geometry, so both animate together.
-    setPageExpanded(next === 'full');
-    overlayRelayout.current?.();
-    setMode(next);
-  }, []);
-
-  return { attachOverlay, mode, toggleMode };
-}
 
 export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const navigate = useNavigate();
@@ -383,7 +142,13 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   // Per-instance monotonic run token: drops out-of-order responses without
   // sharing state across concurrently-mounted SqlWorkspace instances.
   const latestRunToken = useRef(0);
-  const { mode, toggleMode, attachOverlay } = useStudioMode();
+  const { expanded, toggleExpanded, ref: expandedModeRef } = useExpandedPageMode({ storageKey: STUDIO_MODE_KEY });
+
+  // Layout effect so the breadcrumb stamp lands before first paint (no flash of the
+  // previous route's title in the app header).
+  useLayoutEffect(() => {
+    setStudioPageHeader();
+  }, []);
 
   const { data: catalogsData, isLoading } = useListCatalogsQuery();
   const executeQuery = useExecuteQueryMutation();
@@ -619,14 +384,15 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
 
   return (
     <div
-      // The registry's near-black dark theme renders borders at rgba(255,255,255,0.04)
-      // — effectively invisible. The SQL design uses visible grey dividers
-      // (grey-700/600/800), so re-point the border tokens to those registry grey
-      // scale values for this surface in dark mode only. Light mode is untouched.
-      className="flex h-full flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
-      ref={attachOverlay}
+      // In flow (not an overlay): the footer renders below the studio, and expanded
+      // mode releases the shells' gutters (useExpandedPageMode). Viewport-bounded
+      // height matches the RPCN editor (7rem = app header + pt-8).
+      // Dark mode re-points the border tokens to visible grey-scale values — the
+      // registry's near-black theme renders borders effectively invisible.
+      className="flex h-[calc(100dvh-7rem)] min-h-[500px] flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      ref={expandedModeRef}
     >
-      <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', mode === 'full' ? 'px-4' : 'mt-3')}>
+      <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', expanded ? 'px-4' : 'mt-3')}>
         <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
@@ -634,15 +400,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           <Badge size="sm" variant="simple">
             {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
-          <Button
-            aria-label={mode === 'boxed' ? 'Enter fullscreen' : 'Exit fullscreen'}
-            onClick={toggleMode}
-            size="icon-sm"
-            title={mode === 'boxed' ? 'Fullscreen' : 'Exit fullscreen'}
-            variant="secondary-ghost"
-          >
-            {mode === 'boxed' ? <Maximize2 /> : <Minimize2 />}
-          </Button>
+          <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />
         </div>
       </div>
 
@@ -651,11 +409,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           'flex min-h-0 flex-1 overflow-hidden bg-background transition-[margin,border-radius,border-color,box-shadow] duration-300 ease-in-out',
           // The box lives here (not on the root) so the studio header stays above it.
           // Boxed: rounded, bordered, shadowed card with a gap below the header.
-          // Full: flush, top divider only (sides/bottom border kept transparent so
-          // the radius/border transition has something to animate).
-          mode === 'boxed'
-            ? 'mt-3 rounded-xl border pt-3 shadow-sm'
-            : 'rounded-none border border-x-transparent border-b-transparent shadow-none'
+          // Full: flush at the sides, keeping the top/bottom borders so clipped
+          // scrollable content still has a visible edge.
+          expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border pt-3 shadow-sm'
         )}
       >
         <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">

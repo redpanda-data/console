@@ -67,12 +67,11 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
 
 function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean }) {
   useApiStoreHook((s) => s.userData); // re-render when userData changes
-  // Fullscreen routes (e.g. the SQL studio) carry their own title bar/toolbar, so
-  // they never want the title+actions row — only the breadcrumb. Robust to which
-  // layout branch renders the header (standalone vs embedded misdetection).
+  // Routes with their own title bar (fullscreen or breadcrumbOnlyHeader staticData)
+  // get only the breadcrumb row, regardless of which layout branch renders this.
   const matches = useMatches();
-  const isFullscreenRoute = matches.some((m) => m.staticData.fullscreen);
-  const hideTitleRow = breadcrumbOnly || isFullscreenRoute;
+  const routeOwnsTitleRow = matches.some((m) => m.staticData.fullscreen || m.staticData.breadcrumbOnlyHeader);
+  const hideTitleRow = breadcrumbOnly || routeOwnsTitleRow;
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
