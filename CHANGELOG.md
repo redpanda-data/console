@@ -2,6 +2,18 @@
 
 ## Master / Unreleased
 
+## v3.9.0 / 2026-07-23
+- [IMPROVEMENT] Add a visual view and editor for Redpanda Connect pipelines, including an interactive flow diagram and support for optional fields.
+- [IMPROVEMENT] Add a Schema Registry section to Shadow Link with a read-only view and editing support for sync options.
+- [IMPROVEMENT] Add visual debuggers to the debug dialog.
+- [IMPROVEMENT] Migrate the Produce Record page and delete-records modal to the UI registry, with an improved delete-records modal.
+- [CHANGE] Remove the user settings modal.
+- [BUGFIX] Default the topic message list to newest-first ordering.
+- [BUGFIX] Allow assigning OIDC and mTLS principals to a role.
+- [BUGFIX] Fix Shadow Link status handling so large clusters with slow status aggregation no longer crash the view.
+- [BUGFIX] Fix a key collision in the Redpanda Connect pipeline list.
+- [SECURITY] Resolve Snyk security vulnerabilities in frontend and backend dependencies.
+
 ## v3.8.0 / 2026-06-29
 - [IMPROVEMENT] Add a SQL query workspace with Iceberg bridge support, including a results grid and a JSON tree viewer for composite/record columns.
 - [IMPROVEMENT] Migrate the Quotas page to the new UI registry and fix out-of-range pagination while preserving zero-value quotas.
