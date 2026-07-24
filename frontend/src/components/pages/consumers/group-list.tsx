@@ -9,179 +9,340 @@
  * by the Apache License, Version 2.0
  */
 
-import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { parseAsString, useQueryState } from 'nuqs';
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type PaginationState,
+  type Row,
+  type SortingState,
+  type Updater,
+  useReactTable,
+} from '@tanstack/react-table';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { ListLayout, ListLayoutFilters, ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
+import { Search, UsersIcon, X } from 'lucide-react';
+import { parseAsArrayOf, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
+import { useLegacyListConsumerGroupsFullQuery } from 'react-query/api/consumer-group';
 
-import { GroupState } from './group-details';
+import type { ColumnMeta } from './column-meta';
 import { appGlobal } from '../../../state/app-global';
-import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription } from '../../../state/rest-interfaces';
-import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { setPageHeader } from '../../../state/ui-state';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
-import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
 import { ShortNum } from '../../misc/short-num';
-import { Statistic } from '../../misc/statistic';
-import { PageComponent, type PageInitHelper } from '../page';
+import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
+import { Badge } from '../../redpanda-ui/components/badge';
+import { Button } from '../../redpanda-ui/components/button';
+import {
+  DataTableColumnHeader,
+  DataTableFacetedFilter,
+  DataTablePagination,
+} from '../../redpanda-ui/components/data-table';
+import { Input, InputEnd, InputStart } from '../../redpanda-ui/components/input';
+import { Skeleton } from '../../redpanda-ui/components/skeleton';
+import { Stat } from '../../redpanda-ui/components/stat';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
+import {
+  ConsumerGroupStateCell,
+  consumerGroupStateFilterOptions,
+} from '../../ui/consumer-group/consumer-group-state-cell';
 
-class GroupList extends PageComponent {
-  initPage(p: PageInitHelper): void {
-    p.title = 'Consumer Groups';
-    p.addBreadcrumb('Consumer Groups', '/groups');
-
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
+const groupIdFilterFn = (row: Row<GroupDescription>, _columnId: string, filterValue: string) => {
+  if (!filterValue) {
+    return true;
   }
-
-  refreshData(force: boolean) {
-    api.refreshConsumerGroups(force);
-  }
-
-  render() {
-    return <GroupListContent />;
-  }
-}
-
-const GroupListContent: FC = () => {
-  const consumerGroups = useApiStoreHook((s) => s.consumerGroups);
-  const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
-
-  useEffect(() => {
-    api.refreshConsumerGroups(true);
-    appGlobal.onRefresh = () => api.refreshConsumerGroups(true);
-  }, []);
-
-  if (!consumerGroups) {
-    return DefaultSkeleton;
-  }
-
-  let groups = Array.from(consumerGroups.values());
-
+  const group = row.original;
   try {
-    const quickSearchRegExp = new RegExp(quickSearch, 'i');
-    groups = groups.filter(
-      (groupDescription) =>
-        groupDescription.groupId.match(quickSearchRegExp) || groupDescription.protocol.match(quickSearchRegExp)
-    );
-  } catch (_e) {
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.warn('Invalid expression');
+    const re = new RegExp(filterValue, 'i');
+    return re.test(group.groupId) || re.test(group.protocol);
+  } catch {
+    const term = filterValue.toLowerCase();
+    return group.groupId.toLowerCase().includes(term) || group.protocol.toLowerCase().includes(term);
   }
-
-  const stateGroups = groups.groupInto((g) => g.state);
-
-  return (
-    <PageContent>
-      <Section py={4}>
-        <Flex>
-          <Statistic title="Total Groups" value={groups.length} />
-          <div
-            style={{
-              width: '1px',
-              background: '#8883',
-              margin: '0 1.5rem',
-              marginLeft: 0,
-            }}
-          />
-          {stateGroups.map((g) => (
-            <Statistic key={g.key} marginRight={'1.5rem'} title={g.key} value={g.items.length} />
-          ))}
-        </Flex>
-      </Section>
-
-      <Section mt={4}>
-        <div
-          style={{
-            marginBottom: '.5rem',
-            padding: '0',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2em',
-          }}
-        >
-          <SearchField
-            placeholderText="Enter search term/regex"
-            searchText={quickSearch}
-            setSearchText={(x) => setQuickSearch(x || null)}
-            width="350px"
-          />
-        </div>
-        <DataTable<GroupDescription>
-          columns={[
-            {
-              header: 'State',
-              accessorKey: 'state',
-              size: 130,
-              cell: ({ row: { original } }) => <GroupState group={original} />,
-            },
-            {
-              header: 'ID',
-              accessorKey: 'groupId',
-              cell: ({ row: { original } }) => (
-                <Link
-                  params={{ groupId: encodeURIComponent(original.groupId) }}
-                  search={{} as never}
-                  to="/groups/$groupId"
-                >
-                  <GroupId group={original} />
-                </Link>
-              ),
-              size: Number.POSITIVE_INFINITY,
-            },
-            {
-              header: 'Coordinator',
-              accessorKey: 'coordinatorId',
-              size: 1,
-              cell: ({ row: { original } }) => <BrokerList brokerIds={[original.coordinatorId]} />,
-            },
-            {
-              header: 'Protocol',
-              accessorKey: 'protocol',
-              size: 1,
-            },
-            {
-              header: 'Members',
-              accessorKey: 'members',
-              size: 1,
-              cell: ({ row: { original } }) => original.members.length,
-            },
-            {
-              header: 'Offset Lag (Sum)',
-              accessorKey: 'lagSum',
-              cell: ({ row: { original } }) => ShortNum({ value: original.lagSum }),
-            },
-          ]}
-          data={groups}
-          pagination
-          sorting
-        />
-      </Section>
-    </PageContent>
-  );
 };
 
-const GroupId = (p: { group: GroupDescription }) => {
-  const protocol = p.group.protocolType;
+const stateFilterFn = (row: Row<GroupDescription>, columnId: string, filterValues: string[]) => {
+  if (!filterValues?.length) {
+    return true;
+  }
+  return filterValues.includes(String(row.getValue(columnId)));
+};
 
-  const groupIdEl = (
-    <Text whiteSpace="break-spaces" wordBreak="break-word">
-      {p.group.groupId}
-    </Text>
-  );
+const GroupList: FC = () => {
+  useLayoutEffect(() => {
+    setPageHeader('Consumer Groups', [{ title: 'Consumer Groups', linkTo: '/groups' }]);
+  }, []);
 
-  if (protocol === 'consumer') {
-    return groupIdEl;
+  const { data, isLoading, isError, error, refetch } = useLegacyListConsumerGroupsFullQuery();
+  const consumerGroups = data.consumerGroups;
+
+  useEffect(() => {
+    appGlobal.onRefresh = () => {
+      refetch();
+    };
+  }, [refetch]);
+
+  const [searchValue, setSearchValue] = useQueryState('q', parseAsString.withDefault(''));
+  const [stateFilter, setStateFilter] = useQueryState('state', parseAsArrayOf(parseAsString).withDefault([]));
+  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
+  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE));
+  const [sortId, setSortId] = useQueryState('sortId', parseAsString.withDefault(''));
+  const [sortDesc, setSortDesc] = useQueryState('sortDesc', parseAsString.withDefault(''));
+
+  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc === 'true' }] : [];
+
+  const handleSortingChange = (updater: Updater<SortingState>) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater;
+    if (next.length > 0) {
+      setSortId(next[0].id);
+      setSortDesc(next[0].desc ? 'true' : 'false');
+    } else {
+      setSortId('');
+      setSortDesc('');
+    }
+    void setPageIndex(0);
+  };
+
+  const columnFilters: ColumnFiltersState = [
+    ...(searchValue ? [{ id: 'groupId', value: searchValue }] : []),
+    ...(stateFilter.length ? [{ id: 'state', value: stateFilter }] : []),
+  ];
+
+  const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
+    const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+    const nameFilter = next.find((f) => f.id === 'groupId');
+    const stateColumnFilter = next.find((f) => f.id === 'state');
+    setSearchValue((nameFilter?.value as string) || null);
+    setStateFilter((stateColumnFilter?.value as string[])?.length ? (stateColumnFilter?.value as string[]) : null);
+    void setPageIndex(0);
+  };
+
+  const pagination: PaginationState = { pageIndex, pageSize };
+
+  const handlePaginationChange = (updater: Updater<PaginationState>) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater;
+    void setPageIndex(next.pageIndex);
+    void setPageSize(next.pageSize);
+  };
+
+  const statistics = useMemo(() => {
+    const byState = new Map<string, number>();
+    for (const group of consumerGroups) {
+      byState.set(group.state, (byState.get(group.state) ?? 0) + 1);
+    }
+    return {
+      total: consumerGroups.length,
+      byState: Array.from(byState.entries()).map(([state, count]) => ({ state, count })),
+    };
+  }, [consumerGroups]);
+
+  const columns: ColumnDef<GroupDescription>[] = [
+    {
+      accessorKey: 'state',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+      filterFn: stateFilterFn,
+      meta: { headWidth: 'md' as const },
+      cell: ({ row: { original: group } }) => <ConsumerGroupStateCell state={group.state} />,
+    },
+    {
+      accessorKey: 'groupId',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+      filterFn: groupIdFilterFn,
+      meta: { headWidth: 'full' as const },
+      cell: ({ row: { original: group } }) => (
+        <Link
+          className="flex items-center gap-2 text-inherit no-underline hover:no-underline"
+          data-testid={`consumer-group-link-${group.groupId}`}
+          params={{ groupId: encodeURIComponent(group.groupId) }}
+          search={{} as never}
+          to="/groups/$groupId"
+        >
+          {group.protocolType !== 'consumer' && <Badge variant="secondary">Protocol: {group.protocolType}</Badge>}
+          <span className="whitespace-break-spaces break-words">{group.groupId}</span>
+        </Link>
+      ),
+    },
+    {
+      accessorKey: 'coordinatorId',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Coordinator" />,
+      enableColumnFilter: false,
+      meta: { headWidth: 'sm' as const },
+      cell: ({ row: { original: group } }) => <BrokerList brokerIds={[group.coordinatorId]} />,
+    },
+    {
+      accessorKey: 'protocol',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Protocol" />,
+      enableColumnFilter: false,
+      meta: { headWidth: 'sm' as const },
+    },
+    {
+      id: 'members',
+      accessorFn: (group) => group.members.length,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Members" />,
+      enableColumnFilter: false,
+      meta: { headWidth: 'sm' as const },
+    },
+    {
+      accessorKey: 'lagSum',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Offset Lag (Sum)" />,
+      enableColumnFilter: false,
+      meta: { headWidth: 'sm' as const },
+      cell: ({ row: { original: group } }) => <ShortNum value={group.lagSum} />,
+    },
+  ];
+
+  const table = useReactTable({
+    data: consumerGroups,
+    columns,
+    state: { sorting, pagination, columnFilters },
+    onSortingChange: handleSortingChange,
+    onPaginationChange: handlePaginationChange,
+    onColumnFiltersChange: handleColumnFiltersChange,
+    autoResetPageIndex: false,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const groupIdFilter = (table.getColumn('groupId')?.getFilterValue() as string) ?? '';
+
+  if (isError && error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Failed to load consumer groups</AlertTitle>
+        <AlertDescription>{(error as Error).message}</AlertDescription>
+      </Alert>
+    );
   }
 
+  const renderBody = () => {
+    if (isLoading) {
+      return [0, 1, 2, 3, 4].map((i) => (
+        <TableRow key={i}>
+          {columns.map((_col, colIdx) => (
+            <TableCell key={colIdx}>
+              <Skeleton variant="text" width="md" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+
+    if (table.getRowModel().rows.length) {
+      return table.getRowModel().rows.map((row) => (
+        <TableRow key={row.id}>
+          {row.getVisibleCells().map((cell) => {
+            const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
+            return (
+              <TableCell align={meta?.align} key={cell.id} testId="data-table-cell">
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            );
+          })}
+        </TableRow>
+      ));
+    }
+
+    const isFiltered = columnFilters.length > 0;
+    return (
+      <TableRow>
+        <TableCell colSpan={columns.length}>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UsersIcon />
+              </EmptyMedia>
+              <EmptyTitle>{isFiltered ? 'No consumer groups match your search' : 'No consumer groups yet'}</EmptyTitle>
+              <EmptyDescription>
+                {isFiltered
+                  ? 'Try adjusting your search term or filters.'
+                  : 'Consumer groups appear here once clients start consuming from your topics.'}
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
   return (
-    <Grid alignItems="center" gap={2} templateColumns="auto 1fr">
-      <Tag>Protocol: {protocol}</Tag>
-      {groupIdEl}
-    </Grid>
+    <ListLayout className="my-4" data-testid="consumer-groups-table">
+      <div className="flex flex-wrap gap-8">
+        <Stat label="Total groups" mono size="lg" value={statistics.total} />
+        {statistics.byState.map(({ state, count }) => (
+          <Stat key={state} label={state} mono size="lg" value={count} />
+        ))}
+      </div>
+
+      <ListLayoutFilters>
+        <Input
+          containerClassName="w-full min-w-[140px] max-w-[300px] sm:w-[200px] lg:w-[250px]"
+          onChange={(e) => table.getColumn('groupId')?.setFilterValue(e.target.value || undefined)}
+          placeholder="Filter by group ID (regexp)..."
+          size="sm"
+          testId="search-field-input"
+          value={groupIdFilter}
+        >
+          <InputStart>
+            <Search className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
+          </InputStart>
+          {groupIdFilter !== '' && (
+            <InputEnd className="pointer-events-auto">
+              <Button
+                aria-label="Clear group ID filter"
+                data-testid="search-field-reset-icon"
+                onClick={() => table.getColumn('groupId')?.setFilterValue(undefined)}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <X />
+              </Button>
+            </InputEnd>
+          )}
+        </Input>
+        <DataTableFacetedFilter
+          column={table.getColumn('state')}
+          options={consumerGroupStateFilterOptions}
+          title="State"
+        />
+      </ListLayoutFilters>
+
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+                return (
+                  <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>{renderBody()}</TableBody>
+      </Table>
+
+      <ListLayoutPagination className="[&>*]:w-full">
+        <DataTablePagination table={table} />
+      </ListLayoutPagination>
+    </ListLayout>
   );
 };
 
