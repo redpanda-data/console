@@ -97,10 +97,13 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 
 	topicsEndOffsets, err := adminCl.ListEndOffsets(ctx, metadata.Topics.Names()...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list end offsets for topics: %w", err)
-	}
-	if tErr := topicsEndOffsets.Error(); tErr != nil && !errors.Is(tErr, kerr.UnknownTopicOrPartition) {
-		return nil, fmt.Errorf("failed to list end offsets for topics: %w", topicsEndOffsets.Error())
+		var shardErrors *kadm.ShardErrors
+		if !errors.As(err, &shardErrors) || shardErrors.AllFailed {
+			return nil, fmt.Errorf("failed to list end offsets for topics: %w", err)
+		}
+		s.logger.WarnContext(ctx, "failed to list end offsets from some shards",
+			slog.Int("failed_shards", len(shardErrors.Errs)),
+			slog.Any("error", err))
 	}
 
 	// Collect topics that don't exist (franz-go return an UnknownTopicOrPartition for these).
@@ -110,9 +113,6 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 			nonExistentTopics[lo.Topic] = struct{}{}
 		}
 	})
-
-	// topicPartitions whose high watermark shall be requested
-	topicPartitions := make(map[string][]int32, len(metadata.Topics))
 
 	type partitionInfo struct {
 		PartitionID   int32
@@ -125,22 +125,23 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, adminCl *kadm.Cli
 		partitionInfoByIDAndTopic[td.Topic] = make(map[int32]partitionInfo)
 		for _, partition := range td.Partitions {
 			var errMsg string
+			endOffset, hasEndOffset := topicsEndOffsets.Lookup(td.Topic, partition.Partition)
 			if partition.Err != nil {
 				errMsg = partition.Err.Error()
-			} else {
-				// Not an offline partition nor unauthorized, so let's add it to the list
-				// of partition high watermarks we want to request
-				topicPartitions[td.Topic] = append(topicPartitions[td.Topic], partition.Partition)
+			} else if hasEndOffset && endOffset.Err != nil {
+				errMsg = endOffset.Err.Error()
+			} else if !hasEndOffset && err != nil {
+				errMsg = err.Error()
 			}
 
-			endOffset := int64(-1)
-			if offset, exists := topicsEndOffsets.Lookup(td.Topic, partition.Partition); exists {
-				endOffset = offset.Offset
+			endOffsetValue := int64(-1)
+			if hasEndOffset && endOffset.Err == nil {
+				endOffsetValue = endOffset.Offset
 			}
 			partitionInfoByIDAndTopic[td.Topic][partition.Partition] = partitionInfo{
 				PartitionID:   partition.Partition,
 				Error:         errMsg,
-				HighWaterMark: endOffset,
+				HighWaterMark: endOffsetValue,
 			}
 		}
 	}
