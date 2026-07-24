@@ -13,6 +13,8 @@ import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
+  FilterType,
+  PatternType,
   type SchemaRegistrySyncOptionsSchema,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -153,6 +155,44 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
     });
 
     expect(api.destinationMapping).toEqual({ case: 'identity' });
+  });
+});
+
+describe('fromDataplaneShadowLink role sync options', () => {
+  test('should map role name filters', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        roleSyncOptions: {
+          roleNameFilters: [
+            { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+            { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+          ],
+        },
+      },
+    });
+
+    const result = fromDataplaneShadowLink(shadowLink);
+
+    expect(result.configurations?.roleSyncOptions).toEqual({
+      roleNameFilters: [
+        { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+        { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+      ],
+    });
+  });
+
+  test('should map absent role sync options to undefined', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {},
+    });
+
+    const result = fromDataplaneShadowLink(shadowLink);
+
+    expect(result.configurations?.roleSyncOptions).toBeUndefined();
   });
 });
 

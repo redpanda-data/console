@@ -20,6 +20,7 @@ import type {
   AuthenticationConfiguration,
   ConsumerOffsetSyncOptions,
   NameFilter,
+  RoleSyncOptions,
   SecuritySettingsSyncOptions,
   ShadowLinkClientOptions,
   ShadowLinkConfigurations,
@@ -41,6 +42,7 @@ import {
   type UnifiedAuthenticationConfiguration,
   type UnifiedClientOptions,
   type UnifiedConsumerOffsetSyncOptions,
+  type UnifiedRoleSyncOptions,
   type UnifiedSecuritySyncOptions,
   type UnifiedShadowLink,
   type UnifiedShadowLinkConfigurations,
@@ -152,6 +154,23 @@ function mapDataplaneConsumerOffsetSyncOptions(
 }
 
 /**
+ * Map dataplane role sync options to unified type
+ */
+function mapDataplaneRoleSyncOptions(options: RoleSyncOptions | undefined): UnifiedRoleSyncOptions | undefined {
+  if (!options) {
+    return;
+  }
+
+  return {
+    roleNameFilters: (options.roleNameFilters ?? []).map((f: NameFilter) => ({
+      name: f.name,
+      patternType: f.patternType,
+      filterType: f.filterType,
+    })),
+  };
+}
+
+/**
  * Map dataplane security sync options to unified type
  */
 function mapDataplaneSecuritySyncOptions(
@@ -196,6 +215,7 @@ function mapDataplaneConfigurations(
     clientOptions: mapDataplaneClientOptions(config.clientOptions),
     topicMetadataSyncOptions: mapDataplaneTopicMetadataSyncOptions(config.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapDataplaneConsumerOffsetSyncOptions(config.consumerOffsetSyncOptions),
+    roleSyncOptions: mapDataplaneRoleSyncOptions(config.roleSyncOptions),
     securitySyncOptions: mapDataplaneSecuritySyncOptions(config.securitySyncOptions),
     schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
   };

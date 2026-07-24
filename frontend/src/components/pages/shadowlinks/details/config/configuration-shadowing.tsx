@@ -29,9 +29,19 @@ export type ConfigurationShadowingProps = {
   shadowLink: UnifiedShadowLink;
 };
 
-// Component to display a single name filter (topic or consumer group)
-const NameFilterDisplay = ({ filter, index }: { filter: UnifiedNameFilter; index: number }) => {
-  const filterLabel = getFilterTypeLabel(filter.patternType, filter.filterType);
+// Component to display a single name filter (topic, consumer group, or role)
+const NameFilterDisplay = ({
+  filter,
+  index,
+  resourceType,
+  testId,
+}: {
+  filter: UnifiedNameFilter;
+  index: number;
+  resourceType: string;
+  testId: string;
+}) => {
+  const filterLabel = getFilterTypeLabel(filter.patternType, filter.filterType, resourceType);
 
   return (
     <Item>
@@ -57,11 +67,13 @@ const NameFilterSection = ({
   filters,
   testId,
   emptyMessage,
+  resourceType,
 }: {
   title: string;
   filters: UnifiedNameFilter[];
   testId: string;
   emptyMessage: string;
+  resourceType: string;
 }) => (
   <Card size="full" testId={`${testId}-card`}>
     <CardHeader>
@@ -74,7 +86,9 @@ const NameFilterSection = ({
             <NameFilterDisplay
               filter={filter}
               index={index}
-              key={`${testId}-${filter.name}-${filter.patternType}-${filter.filterType}`}
+              key={`${testId}-${index}-${filter.name}-${filter.patternType}-${filter.filterType}`}
+              resourceType={resourceType}
+              testId={testId}
             />
           ))}
         </ItemGroup>
@@ -176,6 +190,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
 export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
+  const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
   const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
@@ -201,10 +216,22 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
       {/* ACL Replication Section */}
       <ACLFilterSection filters={aclFilters} />
 
+      {/* Role Replication Section (hidden when the source API does not expose role sync) */}
+      {roleSyncOptions && (
+        <NameFilterSection
+          emptyMessage="No role filters configured"
+          filters={roleSyncOptions.roleNameFilters}
+          resourceType="roles"
+          testId="role-replication"
+          title="Role replication"
+        />
+      )}
+
       {/* Consumer Group Replication Section */}
       <NameFilterSection
         emptyMessage="No consumer group filters configured"
         filters={consumerFilters}
+        resourceType="consumer groups"
         testId="consumer-group-replication"
         title="Consumer group replication"
       />
