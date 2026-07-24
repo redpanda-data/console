@@ -39,18 +39,18 @@ import {
   ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, DatabaseIcon, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
+import type { ListTopicsResponse_Topic } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 
 import { CreateTopicDialog } from './create-topic-dialog';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import { type Topic, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
@@ -70,7 +70,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 import { DeleteResourceAlertDialog } from '../../ui/delete-resource-alert-dialog';
 
-const nameFilterFn = (row: Row<Topic>, columnId: string, filterValue: string) => {
+const nameFilterFn = (row: Row<ListTopicsResponse_Topic>, columnId: string, filterValue: string) => {
   if (!filterValue) {
     return true;
   }
@@ -98,8 +98,9 @@ const TopicList: FC = () => {
     parseAsBoolean
   );
 
-  const { data, isLoading, isError, error, refetch: refetchTopics } = useLegacyListTopicsQuery();
-  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  // pageSize -1 disables server-side pagination so the full topic list is returned for client-side filtering.
+  const { data, isLoading, isError, error, refetch: refetchTopics } = useListTopicsQuery({ pageSize: -1 });
+  const [topicToDelete, setTopicToDelete] = useState<ListTopicsResponse_Topic | null>(null);
   const [deletionPending, setDeletionPending] = useState(false);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
 
@@ -133,7 +134,7 @@ const TopicList: FC = () => {
   const allTopics = useMemo(() => {
     let filtered = data.topics ?? [];
     if (!showInternalTopics) {
-      filtered = filtered.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
+      filtered = filtered.filter((x) => !(x.internal || x.name.startsWith('_')));
     }
     return filtered;
   }, [data.topics, showInternalTopics]);
@@ -196,7 +197,7 @@ const TopicList: FC = () => {
     void setPageIndex(0);
   };
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    searchValue ? [{ id: 'topicName', value: searchValue }] : []
+    searchValue ? [{ id: 'name', value: searchValue }] : []
   );
 
   const pagination: PaginationState = { pageIndex, pageSize };
@@ -211,13 +212,13 @@ const TopicList: FC = () => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
     setColumnFilters(next);
     void setPageIndex(0);
-    const nameFilter = next.find((f) => f.id === 'topicName');
+    const nameFilter = next.find((f) => f.id === 'name');
     setSearchValue((nameFilter?.value as string) || null);
   };
 
-  const columns: ColumnDef<Topic>[] = [
+  const columns: ColumnDef<ListTopicsResponse_Topic>[] = [
     {
-      accessorKey: 'topicName',
+      accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       filterFn: nameFilterFn,
       meta: { headWidth: 'full' as const },
@@ -225,8 +226,8 @@ const TopicList: FC = () => {
         <div className="flex items-start gap-2">
           <Link
             className="text-inherit no-underline hover:no-underline"
-            data-testid={`topic-link-${topic.topicName}`}
-            params={{ topicName: encodeURIComponent(topic.topicName) }}
+            data-testid={`topic-link-${topic.name}`}
+            params={{ topicName: encodeURIComponent(topic.name) }}
             search={{} as never}
             to="/topics/$topicName"
           >
@@ -255,7 +256,7 @@ const TopicList: FC = () => {
     },
     {
       id: 'size',
-      accessorFn: (topic) => topic.logDirSummary?.totalSizeBytes ?? 0,
+      accessorFn: (topic) => Number(topic.logDirSummary?.totalSizeBytes ?? 0),
       header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
       meta: { headWidth: 'sm' as const },
       cell: ({ row: { original: topic } }) => renderLogDirSummary(topic.logDirSummary),
@@ -271,7 +272,7 @@ const TopicList: FC = () => {
             render={
               <Button
                 className="deleteButton"
-                data-testid={`topic-actions-trigger-${topic.topicName}`}
+                data-testid={`topic-actions-trigger-${topic.name}`}
                 size="icon-sm"
                 variant="ghost"
               >
@@ -281,7 +282,7 @@ const TopicList: FC = () => {
           />
           <DropdownMenuContent>
             <DropdownMenuItem
-              data-testid={`delete-topic-button-${topic.topicName}`}
+              data-testid={`delete-topic-button-${topic.name}`}
               disabled={!hasDeletePrivilege() || undefined}
               onClick={(e) => {
                 e.stopPropagation();
@@ -389,11 +390,11 @@ const TopicList: FC = () => {
           }
         }}
         open={topicToDelete !== null}
-        resourceId={topicToDelete?.topicName ?? ''}
-        resourceName={topicToDelete?.topicName ?? ''}
+        resourceId={topicToDelete?.name ?? ''}
+        resourceName={topicToDelete?.name ?? ''}
         resourceType="Topic"
       >
-        {topicToDelete?.isInternal ? (
+        {topicToDelete?.internal ? (
           <Alert className="mb-3" variant="destructive">
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>
@@ -427,7 +428,7 @@ const TopicList: FC = () => {
           }
         >
           <div className="relative">
-            {!(table.getColumn('topicName')?.getFilterValue() as string) && (
+            {!(table.getColumn('name')?.getFilterValue() as string) && (
               <span
                 className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground"
                 data-testid="search-field-search-icon"
@@ -436,17 +437,17 @@ const TopicList: FC = () => {
               </span>
             )}
             <ListLayoutSearchInput
-              className={(table.getColumn('topicName')?.getFilterValue() as string) ? 'pr-8' : 'pl-8'}
+              className={(table.getColumn('name')?.getFilterValue() as string) ? 'pr-8' : 'pl-8'}
               data-testid="search-field-input"
-              onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
+              onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
               placeholder="Filter by name (regexp)..."
-              value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
+              value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
             />
-            {(table.getColumn('topicName')?.getFilterValue() as string) && (
+            {(table.getColumn('name')?.getFilterValue() as string) && (
               <button
                 className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 data-testid="search-field-reset-icon"
-                onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
+                onClick={() => table.getColumn('name')?.setFilterValue(undefined)}
                 type="button"
               >
                 <X className="h-4 w-4" />
@@ -493,12 +494,12 @@ const TopicList: FC = () => {
   );
 };
 
-const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
+const TopicHealthIcons = ({ topic }: { topic: ListTopicsResponse_Topic }) => {
   const leaderlessPartitions = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName
+    ({ topicName }) => topicName === topic.name
   )?.partitionIds;
   const underReplicatedPartitions = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName
+    ({ topicName }) => topicName === topic.name
   )?.partitionIds;
 
   if (!(leaderlessPartitions || underReplicatedPartitions)) {
@@ -539,64 +540,9 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
   );
 };
 
-const iconAllowed = <span className="text-success">✓</span>;
-const iconForbidden = <span className="text-error">✗</span>;
-const iconClosedEye = (
-  <span className="ml-1 inline-block opacity-50">
-    <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />
-  </span>
-);
-
-const TopicName = ({ topic }: { topic: Topic }) => {
-  const actions = topic.allowedActions;
-
-  if (!actions || actions[0] === 'all') {
-    return <>{topic.topicName}</>;
-  }
-
-  let missing = 0;
-  for (const a of TopicActions) {
-    if (!actions.includes(a)) {
-      missing += 1;
-    }
-  }
-
-  if (missing === 0) {
-    return <>{topic.topicName}</>;
-  }
-
-  const popoverContent = (
-    <div className="text-sm">
-      <p className="mb-2 text-muted-foreground">
-        You&apos;re missing permissions to view one or more aspects of this topic.
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {TopicActions.map((a) => (
-          <div className="flex items-center justify-between gap-4" key={a}>
-            <span className="font-semibold text-xs capitalize">{a}</span>
-            {actions.includes(a) ? iconAllowed : iconForbidden}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <span className="whitespace-break-spaces break-words">
-              {topic.topicName}
-              {iconClosedEye}
-            </span>
-          }
-        />
-        <TooltipContent side="right">{popoverContent}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-};
+// The gRPC ListTopics endpoint does not return per-topic permissions, so the topic name is rendered
+// as-is (the previous REST-based permission popover was dead code — allowedActions was never set).
+const TopicName = ({ topic }: { topic: ListTopicsResponse_Topic }) => <>{topic.name}</>;
 
 function hasDeletePrivilege() {
   // TODO - we will provide ACL for this

@@ -21,7 +21,7 @@ import {
   ListTopicsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
-import { useCreateTopicMutation, useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useCreateTopicMutation, useListTopicsQuery } from 'react-query/api/topic';
 import { z } from 'zod';
 
 export const topicSchema = z.object({
@@ -41,7 +41,7 @@ export const DEFAULT_TOPIC_PARTITION_COUNT = 1;
 export const DEFAULT_TOPIC_REPLICATION_FACTOR = 3;
 
 export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => {
-  const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
+  const { data: topicList } = useListTopicsQuery(create(ListTopicsRequestSchema, { pageSize: -1 }), undefined, {
     hideInternalTopics: true,
   });
   const { mutateAsync: createTopic, isPending: isCreateTopicPending } = useCreateTopicMutation();
@@ -104,7 +104,7 @@ export const CreateTopicModal = ({ isOpen, onClose }: CreateTopicModalProps) => 
                   name="name"
                   validators={{
                     onChange: ({ value }) =>
-                      topicList?.topics?.some((topic) => topic?.topicName === value)
+                      topicList?.topics?.some((topic) => topic?.name === value)
                         ? { message: 'Name is already in use', path: 'name' }
                         : undefined,
                   }}

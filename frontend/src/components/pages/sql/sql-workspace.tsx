@@ -35,7 +35,7 @@ import {
   useListTablesQuery,
   useTopicIcebergQuery,
 } from 'react-query/api/sql';
-import { useLegacyListTopicsQuery } from 'react-query/api/topic';
+import { useListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
@@ -565,7 +565,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   // ---- Add-topic wizard ----
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
-  const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
+  const { data: topicsData } = useListTopicsQuery(undefined, undefined, { hideInternalTopics: true });
   const invalidateSqlCatalog = useInvalidateSqlCatalog();
 
   // Topics already exposed as tables in the Redpanda catalog — excluded from
@@ -584,8 +584,8 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const wizardTopics = useMemo<WizardTopic[]>(
     () =>
       (topicsData?.topics ?? [])
-        .filter((t) => !takenTopics.has(t.topicName))
-        .map((t) => ({ name: t.topicName, partitions: t.partitionCount })),
+        .filter((t) => !takenTopics.has(t.name))
+        .map((t) => ({ name: t.name, partitions: t.partitionCount })),
     [topicsData, takenTopics]
   );
 

@@ -15,9 +15,12 @@ import userEvent from '@testing-library/user-event';
 import type { editor } from 'monaco-editor';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import {
+  ListTopicsResponse_TopicSchema,
+  ListTopicsResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/console/v1alpha1/topic-TopicService_connectquery';
 import { SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { ListTopicsResponse_TopicSchema, ListTopicsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import { ListUsersResponse_UserSchema, ListUsersResponseSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { render, screen, waitFor } from 'test-utils';

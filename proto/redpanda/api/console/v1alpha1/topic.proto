@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/api/dataplane/v1/topic.proto";
+
+// ListTopicsRequest wraps the dataplane request so paging and filtering stay in sync with the
+// public API.
+message ListTopicsRequest {
+  redpanda.api.dataplane.v1.ListTopicsRequest request = 1;
+}
+
+// ListTopicsResponse is Console-specific rather than a wrapper of the dataplane response: it
+// enriches each topic with data the Console topic list renders but the public dataplane API
+// deliberately does not expose (cleanup policy and on-disk size).
+message ListTopicsResponse {
+  // ReplicaError describes a log dir query error for a single broker.
+  message ReplicaError {
+    // Broker that returned the error.
+    int32 broker_id = 1;
+    // Error message returned by the broker.
+    string error = 2;
+  }
+
+  // LogDirSummary describes the aggregated on-disk size of a topic. Gathering it fans out a
+  // DescribeLogDirs request to every broker, so it may be partial: brokers that failed are
+  // reported in replica_errors and total_size_bytes is then an estimate.
+  message LogDirSummary {
+    // Total size of the topic in bytes across all replicas.
+    int64 total_size_bytes = 1;
+    // Errors encountered while querying log dirs from individual brokers.
+    repeated ReplicaError replica_errors = 2;
+    // Optional human-readable hint explaining a partial or missing result.
+    string hint = 3;
+  }
+
+  message Topic {
+    // Topic name.
+    string name = 1;
+    // Whether the topic is internal.
+    bool internal = 2;
+    // Topic partition count.
+    int32 partition_count = 3;
+    // Topic replication factor.
+    int32 replication_factor = 4;
+    // Topic cleanup policy (e.g. `delete`, `compact`).
+    string cleanup_policy = 5;
+    // Aggregated log directory size for the topic across all replicas.
+    LogDirSummary log_dir_summary = 6;
+  }
+
+  repeated Topic topics = 1;
+  string next_page_token = 2;
+}
+
+// TopicService is the Console-facing topic API. It exists alongside the dataplane TopicService so
+// that Console-only enrichment does not leak into the public dataplane contract.
+service TopicService {
+  // ListTopics lists topics with the metadata the Console topic list renders.
+  rpc ListTopics(ListTopicsRequest) returns (ListTopicsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_KAFKA
+    };
+  }
+}
