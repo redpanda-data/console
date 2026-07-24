@@ -536,7 +536,7 @@ export const addACLFilterCreate = async (
     expect(scr.getByTestId('acls-specify-tab')).toBeInTheDocument();
   });
 
-  // Switch to specify mode
+  // Switch to specify mode (auto-expands the card and seeds an empty filter)
   const aclsSpecifyTab = scr.getByTestId('acls-specify-tab');
   await user.click(aclsSpecifyTab);
 
@@ -544,9 +544,11 @@ export const addACLFilterCreate = async (
     expect(scr.getByTestId('add-acl-filter-button')).toBeInTheDocument();
   });
 
-  // Add an ACL filter
-  const addAclFilterButton = scr.getByTestId('add-acl-filter-button');
-  await user.click(addAclFilterButton);
+  // Only add a filter when the mode switch did not seed one already
+  if (!scr.queryByTestId('acl-filter-0-principal')) {
+    const addAclFilterButton = scr.getByTestId('add-acl-filter-button');
+    await user.click(addAclFilterButton);
+  }
 
   await waitFor(() => {
     expect(scr.getByTestId('acl-filter-0-principal')).toBeInTheDocument();
@@ -554,6 +556,30 @@ export const addACLFilterCreate = async (
 
   const aclPrincipalInput = scr.getByTestId('acl-filter-0-principal');
   await user.type(aclPrincipalInput, principal);
+};
+
+/**
+ * Add a role filter (create form - without tab navigation)
+ */
+export const addRoleFilterCreate = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  name: string
+) => {
+  await waitFor(() => {
+    expect(scr.getByTestId('roles-specify-tab')).toBeInTheDocument();
+  });
+
+  // Switch to specify mode (auto-expands the card and seeds an empty filter)
+  const rolesSpecifyTab = scr.getByTestId('roles-specify-tab');
+  await user.click(rolesSpecifyTab);
+
+  await waitFor(() => {
+    expect(scr.getByTestId('role-filter-0-name')).toBeInTheDocument();
+  });
+
+  const roleFilterInput = scr.getByTestId('role-filter-0-name');
+  await user.type(roleFilterInput, name);
 };
 
 /**

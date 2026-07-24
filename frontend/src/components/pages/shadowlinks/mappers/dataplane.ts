@@ -464,6 +464,30 @@ export const buildDefaultConsumerGroupsValues = (
 };
 
 /**
+ * Build default form values for roles category from shadow link configurations.
+ * A link without role sync options hydrates to specify mode with no filters,
+ * so an untouched edit keeps role sync disabled.
+ */
+export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink): Pick<FormValues, 'rolesMode' | 'roles'> => {
+  const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
+  const roleNameFilters = roleSyncOptions?.roleNameFilters || [];
+
+  // Check if using "all roles" mode
+  const isAllMode = isAllNameFilter(roleNameFilters);
+
+  return {
+    rolesMode: isAllMode ? 'all' : 'specify',
+    roles: isAllMode
+      ? []
+      : roleNameFilters.map((filter) => ({
+          name: filter.name,
+          patternType: filter.patternType,
+          filterType: filter.filterType,
+        })),
+  };
+};
+
+/**
  * Build default form values for ACLs category from shadow link configurations
  */
 export const buildDefaultACLsValues = (
@@ -507,17 +531,16 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
   const connectionValues = buildDefaultConnectionValues(shadowLink);
   const topicsValues = buildDefaultTopicsValues(shadowLink);
   const consumerGroupsValues = buildDefaultConsumerGroupsValues(shadowLink);
+  const rolesValues = buildDefaultRolesValues(shadowLink);
   const aclsValues = buildDefaultACLsValues(shadowLink);
   const schemaRegistryValues = buildDefaultSchemaRegistryValues(shadowLink);
 
   return {
     name: shadowLink.name || '',
-    // Static defaults until role sync gets edit support
-    rolesMode: 'all',
-    roles: [],
     ...connectionValues,
     ...topicsValues,
     ...consumerGroupsValues,
+    ...rolesValues,
     ...aclsValues,
     ...schemaRegistryValues,
   };

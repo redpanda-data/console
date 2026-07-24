@@ -48,7 +48,7 @@ const NameFilterDisplay = ({
       <div className="font-medium text-sm">{filterLabel}</div>
       <div className="flex flex-wrap gap-2">
         {filter.name ? (
-          <Badge size="sm" testId={`filter-${index}-name`} variant="info-inverted">
+          <Badge size="sm" testId={`${testId}-filter-${index}-name`} variant="info-inverted">
             {filter.name}
           </Badge>
         ) : (
@@ -209,6 +209,7 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
       <NameFilterSection
         emptyMessage="No topic filters configured"
         filters={topicFilters}
+        resourceType="topics"
         testId="topic-replication"
         title="Topic replication"
       />

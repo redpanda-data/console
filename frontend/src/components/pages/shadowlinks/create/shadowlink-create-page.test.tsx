@@ -71,6 +71,7 @@ import {
   addACLFilterCreate,
   addBootstrapServer,
   addConsumerFilterCreate,
+  addRoleFilterCreate,
   addTopicFilterCreate,
   enableTLS,
   navigateToConfigurationStep,
@@ -105,6 +106,7 @@ type CreateAction =
   | { type: 'addTopicFilterCreate'; name: string; options?: { patternType?: PatternType; filterType?: FilterType } }
   | { type: 'addConsumerFilterCreate'; name: string }
   | { type: 'addACLFilterCreate'; principal: string }
+  | { type: 'addRoleFilterCreate'; name: string }
   | { type: 'enableSchemaRegistrySync' };
 
 /**
@@ -239,6 +241,9 @@ const performCreateAction = async (
     case 'addACLFilterCreate':
       await addACLFilterCreate(user, scr, action.principal);
       break;
+    case 'addRoleFilterCreate':
+      await addRoleFilterCreate(user, scr, action.name);
+      break;
     case 'enableSchemaRegistrySync': {
       const schemaRegistrySwitch = scr.getByTestId('sr-enable-switch');
       await user.click(schemaRegistrySwitch);
@@ -282,6 +287,10 @@ const testCases: CreateTestCase[] = [
       exp(scramConfig.username).toBe('admin');
       exp(scramConfig.password).toBe('admin-secret');
       exp(scramConfig.scramMechanism).toBeDefined();
+      // Untouched roles default to all: a single wildcard include filter
+      exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toEqual([
+        exp.objectContaining({ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }),
+      ]);
     },
   },
   {
@@ -324,6 +333,41 @@ const testCases: CreateTestCase[] = [
       exp(topicFilter.name).toBe('topic-exact');
       exp(topicFilter.patternType).toBe(PatternType.LITERAL);
       exp(topicFilter.filterType).toBe(FilterType.INCLUDE);
+    },
+  },
+  {
+    description: 'creates shadow link with role filters',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'addRoleFilterCreate', name: 'my-role' },
+    ],
+    verify: (createRequest, exp) => {
+      exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toHaveLength(1);
+      const roleFilter = createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters[0];
+      exp(roleFilter.name).toBe('my-role');
+      exp(roleFilter.patternType).toBe(PatternType.LITERAL);
+      exp(roleFilter.filterType).toBe(FilterType.INCLUDE);
+    },
+  },
+  {
+    description: 'creates shadow link with a specific ACL filter',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'addACLFilterCreate', principal: 'User:alice' },
+    ],
+    verify: (createRequest, exp) => {
+      // Specify mode must send the user's filter, not the match-all one
+      exp(createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters).toHaveLength(1);
+      const aclFilter = createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters[0];
+      exp(aclFilter.accessFilter?.principal).toBe('User:alice');
     },
   },
   {

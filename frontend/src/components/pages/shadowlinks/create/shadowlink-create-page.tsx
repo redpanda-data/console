@@ -20,7 +20,6 @@ import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
   CreateShadowLinkRequestSchema,
-  FilterType,
   NameFilterSchema,
   RoleSyncOptionsSchema,
   SecuritySettingsSyncOptionsSchema,
@@ -48,7 +47,7 @@ import {
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { getBasePath } from '../../../../utils/env';
-import { buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
+import { allNameFilter, buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -96,14 +95,6 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
     fetchMaxBytes: values.advanceClientOptions.fetchMaxBytes,
     fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
   });
-
-  const allNameFilter = [
-    create(NameFilterSchema, {
-      patternType: PatternType.LITERAL,
-      filterType: FilterType.INCLUDE,
-      name: '*',
-    }),
-  ];
 
   const allACLs = [
     create(ACLFilterSchema, {
@@ -166,23 +157,24 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
 
   // Build security sync options (ACL filters, ignore enabled field)
   const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
-    aclFilters: values.aclsMode
-      ? allACLs
-      : values.aclFilters?.map((acl) =>
-          create(ACLFilterSchema, {
-            resourceFilter: {
-              resourceType: acl.resourceType,
-              patternType: acl.resourcePattern,
-              name: acl.resourceName || '',
-            },
-            accessFilter: {
-              principal: acl.principal || '',
-              operation: acl.operation,
-              permissionType: acl.permissionType,
-              host: acl.host || '',
-            },
-          })
-        ),
+    aclFilters:
+      values.aclsMode === 'all'
+        ? allACLs
+        : values.aclFilters?.map((acl) =>
+            create(ACLFilterSchema, {
+              resourceFilter: {
+                resourceType: acl.resourceType,
+                patternType: acl.resourcePattern,
+                name: acl.resourceName || '',
+              },
+              accessFilter: {
+                principal: acl.principal || '',
+                operation: acl.operation,
+                permissionType: acl.permissionType,
+                host: acl.host || '',
+              },
+            })
+          ),
   });
 
   // Build schema registry sync options (api mode via the redesigned section,

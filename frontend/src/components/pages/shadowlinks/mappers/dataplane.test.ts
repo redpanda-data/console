@@ -196,6 +196,62 @@ describe('fromDataplaneShadowLink role sync options', () => {
   });
 });
 
+describe('buildDefaultFormValues role hydration', () => {
+  test('hydrates the wildcard include filter as all mode', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        roleSyncOptions: {
+          roleNameFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+        },
+      },
+    });
+
+    const formValues = buildDefaultFormValues(shadowLink);
+
+    expect(formValues.rolesMode).toBe('all');
+    expect(formValues.roles).toEqual([]);
+  });
+
+  test('hydrates specific filters as specify mode', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        roleSyncOptions: {
+          roleNameFilters: [
+            { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+            { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+          ],
+        },
+      },
+    });
+
+    const formValues = buildDefaultFormValues(shadowLink);
+
+    expect(formValues.rolesMode).toBe('specify');
+    expect(formValues.roles).toEqual([
+      { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+      { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+    ]);
+  });
+
+  test('hydrates absent role sync options as specify mode with no filters', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {},
+    });
+
+    const formValues = buildDefaultFormValues(shadowLink);
+
+    // Keeps role sync disabled: an untouched edit produces no role diff
+    expect(formValues.rolesMode).toBe('specify');
+    expect(formValues.roles).toEqual([]);
+  });
+});
+
 describe('buildDefaultFormValues schema registry hydration', () => {
   const buildLinkWithConnection = (
     schemaRegistrySyncOptions?: MessageInitShape<typeof SchemaRegistrySyncOptionsSchema>
