@@ -12,30 +12,44 @@
 import { Link } from '@tanstack/react-router';
 import {
   type ColumnDef,
+  type ColumnFiltersState,
+  type FilterFn,
   flexRender,
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   type PaginationState,
   type Updater,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArchiveIcon, EditIcon, InfoIcon, TrashIcon } from 'components/icons';
+import { ArchiveIcon, EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
+import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from 'components/redpanda-ui/components/drawer';
-import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
-import { Separator } from 'components/redpanda-ui/components/separator';
+import {
+  DataTableColumnHeader,
+  DataTableFacetedFilter,
+  DataTablePagination,
+} from 'components/redpanda-ui/components/data-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
+import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeftIcon, ChevronsRightIcon, SearchIcon } from 'lucide-react';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
+import { SearchIcon } from 'lucide-react';
+import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -57,21 +71,24 @@ import {
   useDeleteSchemaSubjectMutation,
   useListSchemasQuery,
   useSchemaCompatibilityQuery,
-  useSchemaDetailsQuery,
+  useSchemaDetailsByNameQuery,
   useSchemaModeQuery,
   useSchemaRegistryContextsQuery,
   useSchemaUsagesByIdQuery,
 } from '../../../react-query/api/schema-registry';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
+import {
+  SchemaRegistryCompatibilityModes,
+  type SchemaRegistrySubject,
+  type SchemaRegistrySubjectDetails,
+  SchemaType,
+} from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
-import { SmallStat } from '../../misc/small-stat';
 
 const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
@@ -79,13 +96,13 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   }
 
   return (
-    <Section>
+    <div className="flex flex-col gap-2">
       {requestErrors.map((errorMessage) => (
         <Alert className="mt-4" key={errorMessage} variant="destructive">
           <AlertTitle>{errorMessage}</AlertTitle>
         </Alert>
       ))}
-    </Section>
+    </div>
   );
 };
 
@@ -95,9 +112,34 @@ const SCHEMA_TYPE_BADGE_VARIANT: Record<string, string> = {
   JSON: 'warning-inverted',
 };
 
+const SCHEMA_TYPE_FILTER_OPTIONS = [
+  { label: 'Avro', value: SchemaType.AVRO },
+  { label: 'Protobuf', value: SchemaType.PROTOBUF },
+  { label: 'JSON', value: SchemaType.JSON },
+];
+
+const SCHEMA_COMPATIBILITY_FILTER_OPTIONS = Object.values(SchemaRegistryCompatibilityModes).map((mode) => ({
+  label: mode,
+  value: mode,
+}));
+
+// Subject rows enriched with per-subject details so type/compatibility can be filtered list-wide.
+type EnrichedSubject = SchemaRegistrySubject & {
+  details?: SchemaRegistrySubjectDetails;
+  detailsLoading: boolean;
+};
+
+// Faceted filters set an array of selected values; match rows whose column value is one of them.
+const multiSelectFilterFn: FilterFn<EnrichedSubject> = (row, columnId, filterValue) => {
+  const selected = filterValue as string[] | undefined;
+  if (!selected?.length) {
+    return true;
+  }
+  return selected.includes(String(row.getValue(columnId)));
+};
+
 const SchemaList: FC = () => {
   const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
-  const [isHelpSidebarOpen, setIsHelpSidebarOpen] = useState(false);
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
   const [showSoftDeleted, setShowSoftDeleted] = useQueryStateWithCallback<boolean>(
@@ -119,6 +161,11 @@ const SchemaList: FC = () => {
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
   const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
+  const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
+  const [compatibilityFilter, setCompatibilityFilter] = useQueryState(
+    'compatibility',
+    parseAsArrayOf(parseAsString).withDefault([])
+  );
   const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
   const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(10));
 
@@ -133,6 +180,30 @@ const SchemaList: FC = () => {
     [pagination, setPageIndex, setPageSize]
   );
 
+  // Faceted filter state lives in the URL, one param per column, so a filtered view
+  // survives a reload and can be shared — same as the search, context and page params.
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const filters: ColumnFiltersState = [];
+    if (typeFilter.length > 0) {
+      filters.push({ id: 'type', value: typeFilter });
+    }
+    if (compatibilityFilter.length > 0) {
+      filters.push({ id: 'compatibility', value: compatibilityFilter });
+    }
+    return filters;
+  }, [typeFilter, compatibilityFilter]);
+
+  const handleColumnFiltersChange = useCallback(
+    (updater: Updater<ColumnFiltersState>) => {
+      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+      const valuesFor = (id: string) => (next.find((filter) => filter.id === id)?.value as string[] | undefined) ?? [];
+      setTypeFilter(valuesFor('type'));
+      setCompatibilityFilter(valuesFor('compatibility'));
+      setPageIndex(0);
+    },
+    [columnFilters, setTypeFilter, setCompatibilityFilter, setPageIndex]
+  );
+
   // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
     const trimmedValue = quickSearch.trim();
@@ -141,6 +212,9 @@ const SchemaList: FC = () => {
   }, [quickSearch]);
 
   const { data: schemaUsages, isLoading: isLoadingSchemaVersionMatches } = useSchemaUsagesByIdQuery(schemaIdSearch);
+
+  const subjectNames = useMemo(() => (schemaSubjects ?? []).map((s) => s.name), [schemaSubjects]);
+  const detailsByName = useSchemaDetailsByNameQuery(subjectNames);
 
   const refreshData = useCallback(() => {
     refetchMode();
@@ -227,8 +301,17 @@ const SchemaList: FC = () => {
     return subjects;
   }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages, schemaRegistryContextsSupported, selectedContext]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: isAllContext and selectedContext drive conditional columns
-  const columns = useMemo<ColumnDef<SchemaRegistrySubject>[]>(
+  const enrichedSubjects = useMemo<EnrichedSubject[]>(
+    () =>
+      filteredSubjects.map((subject) => ({
+        ...subject,
+        details: detailsByName[subject.name]?.data,
+        detailsLoading: detailsByName[subject.name]?.isLoading ?? false,
+      })),
+    [filteredSubjects, detailsByName]
+  );
+
+  const columns = useMemo<ColumnDef<EnrichedSubject>[]>(
     () => [
       {
         accessorKey: 'name',
@@ -249,7 +332,7 @@ const SchemaList: FC = () => {
                   to="/schema-registry/subjects/$subjectName"
                 >
                   {isAllContext && parsed.context !== 'default' && (
-                    <span className="text-gray-400">:.{parsed.context}:</span>
+                    <span className="text-muted-foreground">:.{parsed.context}:</span>
                   )}
                   {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
                 </Link>
@@ -258,7 +341,7 @@ const SchemaList: FC = () => {
                     <TooltipTrigger
                       render={
                         <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
-                          <ArchiveIcon aria-hidden="true" height={16} style={{ color: 'dimgrey' }} width={16} />
+                          <ArchiveIcon aria-hidden="true" className="text-muted-foreground" height={16} width={16} />
                         </span>
                       }
                     />
@@ -278,7 +361,7 @@ const SchemaList: FC = () => {
               header: 'Context',
               id: 'context',
               enableSorting: false,
-              cell: ({ row }: { row: { original: SchemaRegistrySubject } }) => {
+              cell: ({ row }: { row: { original: EnrichedSubject } }) => {
                 const { context } = parseSubjectContext(row.original.name);
                 return (
                   <Badge size="sm" variant="neutral-inverted">
@@ -286,61 +369,109 @@ const SchemaList: FC = () => {
                   </Badge>
                 );
               },
-            } satisfies ColumnDef<SchemaRegistrySubject>,
+            } satisfies ColumnDef<EnrichedSubject>,
           ]
         : []),
       {
-        header: 'Type',
         id: 'type',
+        accessorFn: (subject) => subject.details?.type ?? '',
+        header: 'Type',
         enableSorting: false,
-        cell: ({ row: { original: r } }) => <SchemaTypeColumn name={r.name} />,
+        filterFn: multiSelectFilterFn,
+        cell: ({ row: { original: subject } }) => {
+          if (subject.detailsLoading) {
+            return <Skeleton variant="text" />;
+          }
+          if (!subject.details) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          const variant = SCHEMA_TYPE_BADGE_VARIANT[subject.details.type] ?? 'neutral-inverted';
+          return (
+            <Badge size="sm" variant={variant as 'info-inverted'}>
+              {subject.details.type}
+            </Badge>
+          );
+        },
       },
       {
-        header: 'Compatibility',
         id: 'compatibility',
+        accessorFn: (subject) => subject.details?.compatibility ?? '',
+        header: 'Compatibility',
         enableSorting: false,
-        cell: ({ row: { original: r } }) => <SchemaCompatibilityColumn name={r.name} />,
+        filterFn: multiSelectFilterFn,
+        cell: ({ row: { original: subject } }) => {
+          if (subject.detailsLoading) {
+            return <Skeleton variant="text" />;
+          }
+          if (!subject.details) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          return <>{subject.details.compatibility}</>;
+        },
       },
       {
-        header: 'Mode',
         id: 'mode',
+        header: 'Mode',
         enableSorting: false,
-        cell: ({ row: { original: r } }) => <SchemaModeColumn name={r.name} />,
+        cell: ({ row: { original: subject } }) => {
+          if (subject.detailsLoading) {
+            return <Skeleton variant="text" />;
+          }
+          if (!subject.details) {
+            return <span className="text-muted-foreground">—</span>;
+          }
+          return <>{subject.details.mode}</>;
+        },
       },
       {
-        header: 'Latest Version',
         id: 'latestVersion',
+        header: 'Latest Version',
         enableSorting: false,
-        cell: ({ row: { original: r } }) => <LatestVersionColumn name={r.name} />,
+        cell: ({ row: { original: subject } }) => {
+          if (subject.detailsLoading) {
+            return <Skeleton variant="text" />;
+          }
+          if (!subject.details || subject.details.latestActiveVersion < 0) {
+            return <span className="text-muted-foreground">None</span>;
+          }
+          return <>{subject.details.latestActiveVersion}</>;
+        },
       },
       {
         header: '',
         id: 'actions',
         enableSorting: false,
-        cell: ({ row: { original: r } }) => (
-          <Tooltip>
-            <TooltipTrigger
+        meta: { align: 'right' as const },
+        cell: ({ row: { original: subject } }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger
               render={
                 <Button
-                  aria-label="Delete schema"
-                  data-testid={`schema-list-delete-btn-${r.name}`}
-                  disabled={api.userData?.canDeleteSchemas === false}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    setDeleteTarget({ kind: r.isSoftDeleted ? 'permanent' : 'soft', name: r.name });
-                  }}
+                  aria-label="Schema actions"
+                  data-testid={`schema-list-actions-trigger-${subject.name}`}
                   size="icon-sm"
-                  variant="secondary-ghost"
+                  variant="ghost"
                 >
-                  <TrashIcon />
+                  <MoreHorizontalIcon className="h-4 w-4" />
                 </Button>
               }
             />
-            {api.userData?.canDeleteSchemas === false && (
-              <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
-            )}
-          </Tooltip>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                data-testid={`schema-list-delete-btn-${subject.name}`}
+                disabled={api.userData?.canDeleteSchemas === false || undefined}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setDeleteTarget({ kind: subject.isSoftDeleted ? 'permanent' : 'soft', name: subject.name });
+                }}
+                variant="destructive"
+              >
+                <TrashIcon />
+                {subject.isSoftDeleted ? 'Delete permanently' : 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ),
       },
     ],
@@ -348,16 +479,57 @@ const SchemaList: FC = () => {
   );
 
   const table = useReactTable({
-    data: filteredSubjects,
+    data: enrichedSubjects,
     columns,
-    state: { sorting, pagination },
+    state: { sorting, pagination, columnFilters },
     onSortingChange: setSorting,
     onPaginationChange: handlePaginationChange,
+    onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
     getPaginationRowModel: getPaginationRowModel(),
   });
+
+  const renderBody = () => {
+    if (isLoading) {
+      return [0, 1, 2, 3, 4].map((rowIdx) => (
+        <TableRow key={rowIdx}>
+          {columns.map((_col, colIdx) => (
+            <TableCell key={colIdx}>
+              <Skeleton variant="text" width="md" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+
+    if (table.getRowModel().rows.length) {
+      return table.getRowModel().rows.map((row) => (
+        <TableRow className={row.original.isSoftDeleted ? 'text-muted-foreground' : ''} key={row.id}>
+          {row.getVisibleCells().map((cell) => {
+            const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
+            return (
+              <TableCell align={meta?.align} key={cell.id}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            );
+          })}
+        </TableRow>
+      ));
+    }
+
+    return (
+      <TableRow>
+        <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
+          No schemas found.
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   if (schemaMode === null) {
     return <SchemaNotConfiguredPage />;
@@ -366,316 +538,222 @@ const SchemaList: FC = () => {
   return (
     <PageContent key="b">
       {/* Statistics Bar */}
-      <div className="flex items-center gap-4" data-testid="schema-list-stats">
-        <SmallStat title={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}>
-          <div className="flex items-center gap-1.5">
-            {displayMode ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Edit mode"
-                    data-testid="schema-list-edit-mode-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
-                    onClick={() =>
-                      isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                        ? appGlobal.historyPush(
-                            `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                          )
-                        : appGlobal.historyPush('/schema-registry/edit-mode')
-                    }
-                    size="icon-xs"
-                    variant="secondary-ghost"
-                  >
-                    <EditIcon />
-                  </Button>
-                }
-              />
-              {api.userData?.canManageSchemaRegistry === false && (
-                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-              )}
-            </Tooltip>
-          </div>
-        </SmallStat>
-        <Separator className="h-[2ch]" orientation="vertical" />
-        <SmallStat
-          title={
+      <StatGroup className="w-fit" columns={2} gap="lg" testId="schema-list-stats">
+        <Stat
+          label={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}
+          testId="schema-list-mode-stat"
+          value={
+            <div className="flex items-center gap-1.5">
+              {displayMode ?? <Skeleton variant="text" width="sm" />}
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Edit mode"
+                      data-testid="schema-list-edit-mode-btn"
+                      disabled={api.userData?.canManageSchemaRegistry === false}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                            )
+                          : appGlobal.historyPush('/schema-registry/edit-mode')
+                      }
+                      size="icon-xs"
+                      variant="secondary-ghost"
+                    >
+                      <EditIcon />
+                    </Button>
+                  }
+                />
+                {api.userData?.canManageSchemaRegistry === false && (
+                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+                )}
+              </Tooltip>
+            </div>
+          }
+        />
+        <Stat
+          label={
             isNamedContext(selectedContext) && schemaRegistryContextsSupported
               ? 'Context compatibility'
               : 'Compatibility'
           }
-        >
-          <div className="flex items-center gap-1.5">
-            {displayCompat ?? <Skeleton variant="text" width="sm" />}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    aria-label="Edit compatibility"
-                    data-testid="schema-list-edit-compatibility-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
-                    onClick={() =>
-                      isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                        ? appGlobal.historyPush(
-                            `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                          )
-                        : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                    }
-                    size="icon-xs"
-                    variant="secondary-ghost"
-                  >
-                    <EditIcon />
-                  </Button>
-                }
-              />
-              {api.userData?.canManageSchemaRegistry === false && (
-                <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-              )}
-            </Tooltip>
-          </div>
-        </SmallStat>
-      </div>
-      {schemaRegistryContextsSupported && (
-        <SchemaContextSelector
-          contexts={derivedContexts}
-          onContextChange={(ctx) => {
-            setSelectedContext(ctx);
-            setPageIndex(0);
-          }}
-          selectedContext={selectedContext}
-        />
-      )}
-      <div className="my-4 flex items-center gap-2">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                data-testid="schema-list-create-btn"
-                disabled={api.userData?.canCreateSchemas === false}
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`)
-                    : appGlobal.historyPush('/schema-registry/create')
-                }
-                variant="primary"
-              >
-                Create new schema
-              </Button>
-            }
-          />
-          {api.userData?.canCreateSchemas === false && (
-            <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
-          )}
-        </Tooltip>
-      </div>
-      <RequestErrors />
-      <Drawer direction="right" onOpenChange={setIsHelpSidebarOpen} open={isHelpSidebarOpen}>
-        <DrawerContent aria-labelledby="schema-help-title" className="w-[600px] sm:max-w-[600px]" role="dialog">
-          <DrawerHeader className="border-b">
-            <DrawerTitle data-testid="schema-help-title" id="schema-help-title">
-              Schema Search Help
-            </DrawerTitle>
-          </DrawerHeader>
-
-          <div className="space-y-6 p-4">
-            <section aria-labelledby="filtering-heading" className="space-y-3">
-              <h3 className="font-semibold text-gray-900" id="filtering-heading">
-                Filtering schemas
-              </h3>
-              <p className="text-base text-gray-600 leading-relaxed">
-                There are two ways to filter schemas, and they work a little differently.
-              </p>
-            </section>
-
-            <div className="space-y-4 pl-4">
-              <section aria-labelledby="schema-id-heading" className="space-y-2">
-                <h3 className="font-semibold text-base text-gray-900" id="schema-id-heading">
-                  Schema ID
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  If a number matches a schema ID, the results include all subjects referencing that schema.
-                </p>
-              </section>
-
-              <section aria-labelledby="subject-name-heading" className="space-y-2">
-                <h3 className="font-semibold text-base text-gray-900" id="subject-name-heading">
-                  Subject name
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  To search subject names, enter that specific name or a regex.
-                </p>
-              </section>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
-      {(() => {
-        if (isLoading) {
-          return (
-            <Section>
-              <Skeleton size="xl" width="full" />
-            </Section>
-          );
-        }
-
-        if (isError) {
-          return (
-            <Section>
-              <Alert variant="destructive">
-                <AlertTitle>Error loading schemas</AlertTitle>
-              </Alert>
-            </Section>
-          );
-        }
-
-        return (
-          <Section>
-            <div className="flex items-center justify-between pb-3">
-              <div className="flex items-center gap-2">
-                <div className="relative w-[350px]" data-testid="schema-list-search-field">
-                  <SearchIcon
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                  />
-                  <Input
-                    aria-label="Filter by subject name or schema ID"
-                    className="pl-9"
-                    onChange={(e) => {
-                      setQuickSearch(e.target.value);
-                      setPageIndex(0);
-                    }}
-                    placeholder="Filter by subject name or schema ID..."
-                    value={quickSearch ?? ''}
-                  />
-                </div>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <button
-                        aria-label="Search help"
-                        className="inline-flex cursor-pointer items-center"
-                        data-testid="schema-search-help"
-                        onClick={() => setIsHelpSidebarOpen(true)}
-                        type="button"
-                      >
-                        <InfoIcon aria-hidden="true" />
-                      </button>
-                    }
-                  />
-                  <TooltipContent side="top">Help with schema search</TooltipContent>
-                </Tooltip>
-                {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={showSoftDeleted}
-                  id="show-soft-deleted"
-                  onCheckedChange={(checked) => {
-                    setShowSoftDeleted(checked === true);
-                    setPageIndex(0);
-                  }}
-                  testId="schema-list-show-soft-deleted-checkbox"
+          testId="schema-list-compatibility-stat"
+          value={
+            <div className="flex items-center gap-1.5">
+              {displayCompat ?? <Skeleton variant="text" width="sm" />}
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label="Edit compatibility"
+                      data-testid="schema-list-edit-compatibility-btn"
+                      disabled={api.userData?.canManageSchemaRegistry === false}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                            )
+                          : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                      }
+                      size="icon-xs"
+                      variant="secondary-ghost"
+                    >
+                      <EditIcon />
+                    </Button>
+                  }
                 />
-                <Label htmlFor="show-soft-deleted">Show soft-deleted</Label>
-              </div>
+                {api.userData?.canManageSchemaRegistry === false && (
+                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+                )}
+              </Tooltip>
             </div>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+          }
+        />
+      </StatGroup>
+      <RequestErrors />
+      {isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Error loading schemas</AlertTitle>
+        </Alert>
+      ) : (
+        <ListLayout className="my-4" data-testid="schema-list-table">
+          <div className="text-muted-foreground text-sm sm:text-base">
+            <DescriptionWithHelp
+              short="Subjects and versions for the schemas that validate your topic records."
+              testId="schema-search-help"
+              title="Schema search help"
+              titleTestId="schema-help-title"
+            >
+              <section aria-labelledby="filtering-heading" className="space-y-3">
+                <h3 className="text-foreground text-heading-sm" id="filtering-heading">
+                  Filtering schemas
+                </h3>
+                <p className="text-body text-muted-foreground">
+                  There are two ways to filter schemas, and they work a little differently.
+                </p>
+              </section>
+
+              <div className="space-y-4 pl-4">
+                <section aria-labelledby="schema-id-heading" className="space-y-2">
+                  <h3 className="text-foreground text-heading-sm" id="schema-id-heading">
+                    Schema ID
+                  </h3>
+                  <p className="text-body text-muted-foreground">
+                    If a number matches a schema ID, the results include all subjects referencing that schema.
+                  </p>
+                </section>
+
+                <section aria-labelledby="subject-name-heading" className="space-y-2">
+                  <h3 className="text-foreground text-heading-sm" id="subject-name-heading">
+                    Subject name
+                  </h3>
+                  <p className="text-body text-muted-foreground">
+                    To search subject names, enter that specific name or a regex.
+                  </p>
+                </section>
+              </div>
+            </DescriptionWithHelp>
+          </div>
+          <ListLayoutFilters
+            actions={
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      data-testid="schema-list-create-btn"
+                      disabled={api.userData?.canCreateSchemas === false}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`
+                            )
+                          : appGlobal.historyPush('/schema-registry/create')
+                      }
+                      variant="primary"
+                    >
+                      Create new schema
+                    </Button>
+                  }
+                />
+                {api.userData?.canCreateSchemas === false && (
+                  <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+                )}
+              </Tooltip>
+            }
+          >
+            <div className="relative" data-testid="schema-list-search-field">
+              <SearchIcon
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <ListLayoutSearchInput
+                aria-label="Filter by subject name or schema ID"
+                className="pl-9"
+                onChange={(e) => {
+                  setQuickSearch(e.target.value);
+                  setPageIndex(0);
+                }}
+                placeholder="Filter by subject name or schema ID..."
+                value={quickSearch ?? ''}
+              />
+            </div>
+            {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
+            {schemaRegistryContextsSupported && (
+              <SchemaContextSelector
+                contexts={derivedContexts}
+                onContextChange={(ctx) => {
+                  setSelectedContext(ctx);
+                  setPageIndex(0);
+                }}
+                selectedContext={selectedContext}
+              />
+            )}
+            <DataTableFacetedFilter
+              column={table.getColumn('type')}
+              options={SCHEMA_TYPE_FILTER_OPTIONS}
+              testId="schema-list-type-filter"
+              title="Type"
+            />
+            <DataTableFacetedFilter
+              column={table.getColumn('compatibility')}
+              options={SCHEMA_COMPATIBILITY_FILTER_OPTIONS}
+              testId="schema-list-compatibility-filter"
+              title="Compatibility"
+            />
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={showSoftDeleted}
+                onCheckedChange={(checked) => {
+                  setShowSoftDeleted(checked === true);
+                  setPageIndex(0);
+                }}
+                testId="schema-list-show-soft-deleted-checkbox"
+              />
+              Show soft-deleted
+            </label>
+          </ListLayoutFilters>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    const meta = header.column.columnDef.meta as { align?: 'right' } | undefined;
+                    return (
+                      <TableHead align={meta?.align} key={header.id}>
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow className={row.original.isSoftDeleted ? 'text-gray-400' : ''} key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
-                      No schemas found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            <div className="mt-4 flex items-center justify-end px-2">
-              <div className="flex items-center space-x-6 lg:space-x-8">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium text-sm">Rows per page</span>
-                  <select
-                    aria-label="Rows per page"
-                    className="h-8 w-[70px] rounded-md border bg-transparent px-2 text-sm"
-                    onChange={(e) => table.setPageSize(Number(e.target.value))}
-                    value={table.getState().pagination.pageSize}
-                  >
-                    {[10, 20, 25, 30, 40, 50].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
-                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    className="hidden size-8 lg:flex"
-                    disabled={!table.getCanPreviousPage()}
-                    onClick={() => table.setPageIndex(0)}
-                    size="icon"
-                    variant="outline"
-                  >
-                    <span className="sr-only">Go to first page</span>
-                    <ChevronsLeftIcon />
-                  </Button>
-                  <Button
-                    className="size-8"
-                    disabled={!table.getCanPreviousPage()}
-                    onClick={() => table.previousPage()}
-                    size="icon"
-                    variant="outline"
-                  >
-                    <span className="sr-only">Go to previous page</span>
-                    <ChevronLeftIcon />
-                  </Button>
-                  <Button
-                    className="size-8"
-                    disabled={!table.getCanNextPage()}
-                    onClick={() => table.nextPage()}
-                    size="icon"
-                    variant="outline"
-                  >
-                    <span className="sr-only">Go to next page</span>
-                    <ChevronRightIcon />
-                  </Button>
-                  <Button
-                    className="hidden size-8 lg:flex"
-                    disabled={!table.getCanNextPage()}
-                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    size="icon"
-                    variant="outline"
-                  >
-                    <span className="sr-only">Go to last page</span>
-                    <ChevronsRightIcon />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Section>
-        );
-      })()}
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>{renderBody()}</TableBody>
+          </Table>
+          <DataTablePagination table={table} />
+        </ListLayout>
+      )}
       <DeleteDialog
         onConfirm={() => {
           if (!deleteTarget) return;
@@ -712,56 +790,6 @@ const SchemaList: FC = () => {
       />
     </PageContent>
   );
-};
-
-const SchemaTypeColumn: FC<{ name: string }> = ({ name }) => {
-  const { data: details, isLoading } = useSchemaDetailsQuery(name);
-
-  if (isLoading || !details) {
-    return <Skeleton variant="text" />;
-  }
-
-  const variant = SCHEMA_TYPE_BADGE_VARIANT[details.type] ?? 'neutral-inverted';
-
-  return (
-    <Badge size="sm" variant={variant as 'info-inverted'}>
-      {details.type}
-    </Badge>
-  );
-};
-
-const SchemaCompatibilityColumn: FC<{ name: string }> = ({ name }) => {
-  const { data: details, isLoading } = useSchemaDetailsQuery(name);
-
-  if (isLoading || !details) {
-    return <Skeleton variant="text" />;
-  }
-
-  return <>{details.compatibility}</>;
-};
-
-const SchemaModeColumn: FC<{ name: string }> = ({ name }) => {
-  const { data: details, isLoading } = useSchemaDetailsQuery(name);
-
-  if (isLoading || !details) {
-    return <Skeleton variant="text" />;
-  }
-
-  return <>{details.mode}</>;
-};
-
-const LatestVersionColumn: FC<{ name: string }> = ({ name }) => {
-  const { data: details, isLoading } = useSchemaDetailsQuery(name);
-
-  if (isLoading || !details) {
-    return <Skeleton variant="text" />;
-  }
-
-  if (details.latestActiveVersion < 0) {
-    return <span className="text-muted-foreground">None</span>;
-  }
-
-  return <>{details.latestActiveVersion}</>;
 };
 
 export default SchemaList;

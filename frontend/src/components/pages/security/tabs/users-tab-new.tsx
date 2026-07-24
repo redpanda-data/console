@@ -40,7 +40,6 @@ import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { KeyRoundIcon, ShieldIcon, Trash2Icon, UsersIcon } from 'lucide-react';
@@ -399,9 +398,7 @@ export const UsersTabNew: FC = () => {
           </Table>
         </ListLayoutContent>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
     </>
   );
