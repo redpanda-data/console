@@ -45,4 +45,87 @@ ignore:
           Re-triaged 2026-07-20 sweep — still present, still non-reachable.
         expires: 2026-10-20T00:00:00.000Z
         created: 2026-06-01T16:27:59.860Z
+  SNYK-JS-REACTROUTER-17137394:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REACTROUTER-17138887:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REACTROUTER-17137545:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REACTROUTER-17138701:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REACTROUTER-17138883:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REACTROUTER-17342510:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REACTROUTER-14908531:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-REMIXRUNROUTER-14908530:
+    - '*':
+        reason: >-
+          Non-reachable: client-only Module Federation SPA routed by TanStack
+          Router; the vulnerable SSR/RSC/data-router/single-fetch/prerender code
+          paths never run. Root fix tracked in redpanda-data/console#2567 (bump
+          @redpanda-data/ui to peer a fixed react-router).
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
+  SNYK-JS-ELLIPTIC-14908844:
+    - '*':
+        reason: >-
+          No upstream fix (Snyk: "There is no fix"; every published elliptic
+          release incl. latest 6.6.1 is in range). Transitive dev/build-only via
+          @rsbuild/plugin-node-polyfill › crypto-browserify › create-ecdh ›
+          elliptic — bundled into the browser crypto polyfill, never used for
+          signature verification with attacker-controlled curve parameters. Not
+          reachable. Revisit before expiry or when an elliptic fix ships.
+        expires: 2026-10-20T00:00:00.000Z
+        created: 2026-07-20T00:00:00.000Z
 patch: {}
