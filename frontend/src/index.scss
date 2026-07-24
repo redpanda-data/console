@@ -1248,6 +1248,23 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
+// Fullscreen page mode (utils/page-expanded.ts): the shells release their horizontal
+// constraints (max-width 100%, not none, so the release can animate; not 100vw, which
+// includes the scrollbar gutter). Global CSS on purpose — Tailwind arbitrary variants
+// proved chunk-dependent across routes.
+html[data-page-expanded] {
+  #mainLayout {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .page-expanded-release {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 // when a some container containing a radio button is animated,
 // it sometimes causes the inner part (the "dot") of a radio button to become misaligned
 // adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
@@ -1260,7 +1277,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   gap: 10px;
   padding: 0;
   padding-top: 3em;
-  padding-bottom: 8px;
+  padding-bottom: 16px;
   margin-top: auto;
 
   color: hsl(216deg, 11%, 66%);

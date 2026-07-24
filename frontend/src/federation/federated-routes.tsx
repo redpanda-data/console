@@ -13,6 +13,7 @@ import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
+import { useLayoutEffect, useRef } from 'react';
 
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
@@ -86,24 +87,78 @@ function FederatedRootLayout() {
 }
 
 /**
+ * Cancels the host gutters around the federated Console outlet with equal negative
+ * margins. Measured, not hardcoded, so either project can deploy first. Top padding
+ * is left alone — cancelling it would pull Console under the host's header.
+ */
+const useCancelHostGutters = (enabled: boolean) => {
+  const layoutRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const layoutEl = layoutRef.current;
+    if (!(enabled && layoutEl)) {
+      return;
+    }
+
+    // Only write on change — the margins change ancestor sizes, re-firing the observer.
+    let lastMargin: string | null = null;
+    const update = () => {
+      let left = 0;
+      let right = 0;
+      let bottom = 0;
+      for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+        const style = getComputedStyle(el);
+        left += Number.parseFloat(style.paddingLeft) || 0;
+        right += Number.parseFloat(style.paddingRight) || 0;
+        bottom += Number.parseFloat(style.paddingBottom) || 0;
+      }
+      const margin = `0px ${-right}px ${-bottom}px ${-left}px`;
+      if (margin !== lastMargin) {
+        lastMargin = margin;
+        layoutEl.style.margin = margin;
+      }
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(document.documentElement);
+    // Padding changes alter an ancestor's content-box even at fixed outer size.
+    for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+      observer.observe(el);
+    }
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+      layoutEl.style.margin = '';
+    };
+  }, [enabled]);
+
+  return layoutRef;
+};
+
+/**
  * App content for federated mode.
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
   const matches = useMatches();
   const { pathname } = useLocation();
-  // Fullscreen routes (SQL studio) own their chrome — breadcrumb-only header, no
-  // padding/footer. staticData is the source of truth, but on soft navigation
-  // useMatches() lags useLocation() by a render or two (matches resolve after
-  // pathname flips), so fall back to a path check to avoid flashing full chrome on
-  // the way in. Single return with stable element positions: toggling props/classes
-  // (not branching the tree) keeps the <Outlet> mounted across fullscreen↔normal
-  // navigation, so the embedded router doesn't reset to its default route.
+  // Fullscreen routes own their chrome (none exist today). The path check covers
+  // useMatches() lagging useLocation() on soft navigation; the single return keeps
+  // the <Outlet> mounted across fullscreen↔normal transitions.
   const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const layoutRef = useCancelHostGutters(!isFullscreen);
 
   return (
-    <div id="mainLayout">
+    // Flex column pins the footer via its margin-top:auto; px-12 is Console's own
+    // gutter, released by data-page-expanded (rule in index.scss).
+    <div
+      className={isFullscreen ? undefined : 'flex flex-col px-12 transition-[padding] duration-300 ease-in-out'}
+      id="mainLayout"
+      ref={layoutRef}
+    >
       {!isFullscreen && (
         <NullFallbackBoundary>
           <LicenseNotification />

@@ -110,6 +110,8 @@ declare module '@tanstack/react-router' {
     icon?: LucideIcon;
     /** Render the route with minimal chrome (no page header/footer/padding). */
     fullscreen?: boolean;
+    /** Route has its own title bar: the app header shows only the breadcrumb row. */
+    breadcrumbOnlyHeader?: boolean;
   }
 }
 

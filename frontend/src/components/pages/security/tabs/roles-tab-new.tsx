@@ -267,7 +267,7 @@ export const RolesTabNew: FC = () => {
   return (
     <>
       <SecurityTabsNav />
-      <ListLayout className="my-4">
+      <ListLayout className="my-4 min-h-0">
         <div className="text-muted-foreground text-sm sm:text-base">
           <NullFallbackBoundary>
             <div className="mb-4">

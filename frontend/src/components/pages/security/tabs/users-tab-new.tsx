@@ -346,7 +346,7 @@ export const UsersTabNew: FC = () => {
     <>
       <SecurityTabsNav />
       <CreateUserDialog key={createDialogKey} onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen} />
-      <ListLayout className="my-4">
+      <ListLayout className="my-4 min-h-0">
         <div className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp short="SASL-SCRAM user accounts managed by your cluster." title="Users">
             These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication

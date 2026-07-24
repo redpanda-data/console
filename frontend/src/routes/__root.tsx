@@ -75,7 +75,8 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          <div className="container mx-auto max-w-[1500px] px-12">
+          {/* px-12 gutter + max-width cap, released by data-page-expanded (index.scss). */}
+          <div className="page-expanded-release container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
           </div>
         </SidebarInset>
@@ -111,7 +112,8 @@ function AppContent() {
   }
 
   return (
-    <div id="mainLayout">
+    // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
+    <div className="flex flex-1 flex-col" id="mainLayout">
       <TooltipProvider>
         {/* Page */}
         <NullFallbackBoundary>
