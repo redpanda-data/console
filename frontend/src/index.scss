@@ -1249,8 +1249,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 }
 
 // Fullscreen page mode (utils/page-expanded.ts): the shells release their horizontal
-// constraints (max-width 100vw, not none, so the release can animate). Global CSS on
-// purpose — Tailwind arbitrary variants proved chunk-dependent across routes.
+// constraints (max-width 100%, not none, so the release can animate; not 100vw, which
+// includes the scrollbar gutter). Global CSS on purpose — Tailwind arbitrary variants
+// proved chunk-dependent across routes.
 html[data-page-expanded] {
   #mainLayout {
     padding-left: 0;
@@ -1258,7 +1259,7 @@ html[data-page-expanded] {
   }
 
   .page-expanded-release {
-    max-width: 100vw;
+    max-width: 100%;
     padding-left: 0;
     padding-right: 0;
   }
