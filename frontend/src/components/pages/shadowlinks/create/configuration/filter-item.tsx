@@ -23,6 +23,12 @@ import { useWatch } from 'react-hook-form';
 import { Item } from '../../../../redpanda-ui/components/item';
 import { getFilterTypeLabel } from '../../shadowlink-helpers';
 
+const RESOURCE_TYPE_BY_PREFIX: Record<string, string> = {
+  topics: 'topics',
+  roles: 'roles',
+  consumers: 'consumer groups',
+};
+
 type FilterItemProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   index: number;
@@ -55,11 +61,11 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   const showMatchAllMessage =
     patternValue === PatternType.LITERAL && filterValue === FilterType.INCLUDE && nameValue === '*';
 
-  const resourceType = fieldNamePrefix === 'topics' ? 'topics' : 'consumer groups';
+  const resourceType = RESOURCE_TYPE_BY_PREFIX[fieldNamePrefix] ?? 'consumer groups';
 
   // Resume/summary view (non-editable)
   if (!viewType) {
-    const filterLabel = getFilterTypeLabel(patternValue, filterValue);
+    const filterLabel = getFilterTypeLabel(patternValue, filterValue, resourceType);
 
     return (
       <div>
@@ -148,7 +154,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
                             data-testid={dataTestId ? `${dataTestId}-include-specific` : undefined}
                             value="include-specific"
                           >
-                            Include specific topics
+                            Include specific {resourceType}
                           </TabsTrigger>
                           <TabsTrigger
                             data-testid={dataTestId ? `${dataTestId}-include-prefix` : undefined}

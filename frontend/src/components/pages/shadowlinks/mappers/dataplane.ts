@@ -492,6 +492,9 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
 
   return {
     name: shadowLink.name || '',
+    // Static defaults until role sync gets edit support
+    rolesMode: 'all',
+    roles: [],
     ...connectionValues,
     ...topicsValues,
     ...consumerGroupsValues,

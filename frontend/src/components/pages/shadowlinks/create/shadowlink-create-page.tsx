@@ -22,7 +22,7 @@ import {
   CreateShadowLinkRequestSchema,
   FilterType,
   NameFilterSchema,
-  PatternType,
+  RoleSyncOptionsSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
@@ -150,6 +150,20 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
           ),
   });
 
+  // Build role sync options (no interval/paused exposed)
+  const roleSyncOptions = create(RoleSyncOptionsSchema, {
+    roleNameFilters:
+      values.rolesMode === 'all'
+        ? allNameFilter
+        : values.roles.map((role) =>
+            create(NameFilterSchema, {
+              patternType: role.patternType,
+              filterType: role.filterType,
+              name: role.name,
+            })
+          ),
+  });
+
   // Build security sync options (ACL filters, ignore enabled field)
   const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
     aclFilters: values.aclsMode
@@ -180,6 +194,7 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
     clientOptions,
     topicMetadataSyncOptions,
     consumerOffsetSyncOptions,
+    roleSyncOptions,
     securitySyncOptions,
     schemaRegistrySyncOptions,
   });

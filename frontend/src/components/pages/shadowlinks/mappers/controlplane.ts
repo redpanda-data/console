@@ -445,6 +445,11 @@ export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneS
 
   return {
     name: shadowLink.name ?? '',
+    // The controlplane proto does not ship role_sync_options yet, so hydrate
+    // like the dataplane absent case: specify mode with no filters keeps role
+    // sync disabled on untouched edits
+    rolesMode: 'specify',
+    roles: [],
     ...connectionValues,
     ...authSettings,
     ...topicsValues,
