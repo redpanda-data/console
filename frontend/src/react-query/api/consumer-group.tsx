@@ -56,7 +56,7 @@ export type GetConsumerGroupResponse = {
 
 /**
  * Fetches details for a specific consumer group using the legacy REST API.
- * Used for knowledge base indexer consumer group monitoring.
+ * Used for consumer group monitoring.
  */
 export const useLegacyConsumerGroupDetailsQuery = (groupId: string, options?: { enabled?: boolean }) => {
   return useTanstackQuery<GroupDescription>({

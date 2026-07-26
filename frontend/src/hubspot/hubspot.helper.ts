@@ -22,7 +22,6 @@ type Fields = {
 export const HUBSPOT_REGION = 'na1';
 export const HUBSPOT_PORTAL_ID = '7733588';
 export const HUBSPOT_TRACKING_COOKIE_TOKEN = 'hubspotutk';
-export const HUBSPOT_AI_AGENTS_FORM_ID = '79585297-4032-440e-bb62-4f3b72954e81';
 
 type HubspotSubmitProps = {
   fields: Fields;

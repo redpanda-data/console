@@ -15,7 +15,7 @@
  *
  * Kept separate from `src/test-utils.tsx` on purpose: that file transitively
  * imports `routeTree.gen` (and from there, nearly the whole app, including
- * `config` / `isEmbedded` / `isAdpEnabled` live bindings). Importing
+ * `config` / `isEmbedded` live bindings). Importing
  * `cleanupTestHarness` from here in `vitest.setup.integration.ts` avoids
  * pinning those bindings before any test file's `vi.mock('config', ...)`
  * has a chance to take effect.

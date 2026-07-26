@@ -1,8 +1,7 @@
 /**
  * Shared mock factories for Vitest browser mode tests.
  *
- * Mirrors apps/adp-ui/src/__tests__/browser-test-utils.tsx so console
- * visual regression tests follow the same patterns as ADP UI.
+ * Shared helpers for Console visual regression tests.
  */
 import { MotionConfig } from 'motion/react';
 import React from 'react';
@@ -61,7 +60,7 @@ export function ScreenshotFrame({ children, width = 1200 }: { children: React.Re
 
 /**
  * Default directory (relative to a browser test file) where PR showcase
- * screenshots are written. Mirrors the ADP UI convention of keeping
+ * screenshots are written. Keep
  * documentation screenshots in a single repository-level folder rather
  * than scattering them next to the tests.
  */
