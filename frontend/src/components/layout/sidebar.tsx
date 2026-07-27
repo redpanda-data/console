@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -38,8 +39,6 @@ import type React from 'react';
 import { useEffect } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
 
-import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
-import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../state/supported-features';
@@ -53,7 +52,10 @@ function SidebarLogo() {
 
   return (
     <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
-      <img alt="" className={isExpanded ? 'h-6' : 'h-6 w-6'} src={isExpanded ? RedpandaLogoWhite : RedpandaIcon} />
+      <RedpandaLogo
+        className={isExpanded ? 'h-6 w-auto text-white' : 'h-6 w-6'}
+        variant={isExpanded ? 'horizontal' : 'mark'}
+      />
     </Link>
   );
 }
