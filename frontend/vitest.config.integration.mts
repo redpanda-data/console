@@ -54,7 +54,6 @@ export default defineConfig(({ mode }) => {
         deps: {
           inline: [
             'katex',
-            'streamdown',
             'rehype-harden',
             'character-entities',
             'decode-named-character-reference',

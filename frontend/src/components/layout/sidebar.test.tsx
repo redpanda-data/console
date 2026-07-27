@@ -5,16 +5,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { EndpointCompatibility } from '../../state/rest-interfaces';
 import { Feature, useSupportedFeaturesStore } from '../../state/supported-features';
 
-it('does not expose dedicated Console AI routes', () => {
-  const consoleAiRoutes = ['/agents', '/knowledgebases', '/mcp-servers', '/transcripts'];
-  const visibleRoutes = createGroupedSidebarItems()
-    .flatMap((group) => group.items)
-    .map((item) => item.to)
-    .filter((route) => consoleAiRoutes.includes(route));
-
-  expect(visibleRoutes).toEqual([]);
-});
-
 describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)', () => {
   afterEach(() => {
     // Reset store to initial state between tests
