@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
+import { DataTable, Flex, SearchField, Tag, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -178,10 +178,10 @@ const GroupId = (p: { group: GroupDescription }) => {
   }
 
   return (
-    <Grid alignItems="center" gap={2} templateColumns="auto 1fr">
-      <Tag>Protocol: {protocol}</Tag>
+    <Flex alignItems="center" flexWrap="wrap" gap={2}>
+      <Tag flexShrink={0}>Protocol: {protocol}</Tag>
       {groupIdEl}
-    </Grid>
+    </Flex>
   );
 };
 
