@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import {
   flexRender,
   getCoreRowModel,
@@ -20,6 +20,7 @@ import {
   getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
@@ -27,7 +28,7 @@ import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import { DataTableColumnHeader, DataTablePagination } from 'components/redpanda-ui/components/data-table';
 import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
 import {
   DropdownMenu,
@@ -56,7 +57,7 @@ import {
   StopPipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { type Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
   useDeletePipelineMutation,
@@ -80,24 +81,39 @@ type Pipeline = {
   name: string;
   description: string;
   state: Pipeline_State;
-  configYaml: string;
   inputs: string[];
-  processors: string[];
   outputs: string[];
   tags: TagPair[];
 };
 
+// parseConfigComponents runs a full YAML parse, and the query cache hands back
+// fresh page arrays on every drain step and poll tick, so the list transform
+// re-runs over all rows. Memoize per config text to keep that pass O(n).
+const configComponentsCache = new Map<string, ReturnType<typeof parseConfigComponents>>();
+const CONFIG_COMPONENTS_CACHE_LIMIT = 10_000;
+
+const parseConfigComponentsCached = (configYaml: string): ReturnType<typeof parseConfigComponents> => {
+  const cached = configComponentsCache.get(configYaml);
+  if (cached) {
+    return cached;
+  }
+  if (configComponentsCache.size >= CONFIG_COMPONENTS_CACHE_LIMIT) {
+    configComponentsCache.clear();
+  }
+  const parsed = parseConfigComponents(configYaml);
+  configComponentsCache.set(configYaml, parsed);
+  return parsed;
+};
+
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
-  const { inputs, processors, outputs } = parseConfigComponents(apiPipeline.configYaml);
+  const { inputs, outputs } = parseConfigComponentsCached(apiPipeline.configYaml);
   const tags = getUserTagEntries(apiPipeline.tags);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
     description: apiPipeline.description,
     state: apiPipeline.state,
-    configYaml: apiPipeline.configYaml,
     inputs,
-    processors,
     outputs,
     tags,
   };
@@ -137,6 +153,18 @@ const pipelineStateFilterIcon: Record<string, React.ComponentType<{ className?: 
   [String(Pipeline_State.ERROR)]: (props) => <StatusDot variant="error" {...props} />,
   [String(Pipeline_State.RUNNING)]: (props) => <StatusDot variant="success" {...props} />,
   [String(Pipeline_State.UNSPECIFIED)]: (props) => <StatusDot variant="disabled" {...props} />,
+};
+
+// Attention-first ordering for the Status column: problems and transitions
+// surface before healthy pipelines, idle ones sink to the bottom.
+const pipelineStateSortPriority: Record<Pipeline_State, number> = {
+  [Pipeline_State.ERROR]: 0,
+  [Pipeline_State.STARTING]: 1,
+  [Pipeline_State.STOPPING]: 2,
+  [Pipeline_State.RUNNING]: 3,
+  [Pipeline_State.COMPLETED]: 4,
+  [Pipeline_State.STOPPED]: 5,
+  [Pipeline_State.UNSPECIFIED]: 6,
 };
 
 const PAGE_SIZE = 20;
@@ -353,7 +381,7 @@ const createColumns = ({
 }: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
   {
     accessorKey: 'name',
-    header: 'Pipeline',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: createFilterFn('text'),
     cell: ({ row }) => {
       const id = row.original.id;
@@ -401,34 +429,6 @@ const createColumns = ({
         >
           {inputs.map((input) => (
             <ComponentBadge key={input.key} name={input.name} />
-          ))}
-        </BadgeGroup>
-      );
-    },
-  },
-  {
-    accessorKey: 'processors',
-    header: 'Processors',
-    filterFn: createFilterFn('multiOption'),
-    cell: ({ row }) => {
-      const processors = toKeyedNames(row.getValue('processors') as string[]);
-      if (processors.length === 0) {
-        return null;
-      }
-      return (
-        <BadgeGroup
-          className="min-w-[174px]"
-          maxVisible={2}
-          renderOverflowContent={(overflow) => (
-            <List>
-              {processors.slice(-overflow.length).map((o) => (
-                <ListItem key={o.key}>{o.name}</ListItem>
-              ))}
-            </List>
-          )}
-        >
-          {processors.map((p) => (
-            <ComponentBadge key={p.key} name={p.name} />
           ))}
         </BadgeGroup>
       );
@@ -499,8 +499,10 @@ const createColumns = ({
   {
     id: 'state',
     accessorFn: (row) => String(row.state),
-    header: 'Status',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     filterFn: createFilterFn('option'),
+    sortingFn: (rowA, rowB) =>
+      pipelineStateSortPriority[rowA.original.state] - pipelineStateSortPriority[rowB.original.state],
     cell: ({ row }) => <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]} />,
   },
   {
@@ -522,6 +524,9 @@ const createColumns = ({
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetRpcnWizardStore = useResetRpcnWizardStore();
+  // Default to attention-first status order so error/transitioning pipelines
+  // surface on page 1 and stopped ones sink, even on large clusters.
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
   const {
     data: pipelinesData,
@@ -561,10 +566,6 @@ const PipelineListPageContent = () => {
       value: v,
       label: v,
     }));
-    const processorOptions = [...new Set(pipelines.flatMap((p) => p.processors))].map((v) => ({
-      value: v,
-      label: v,
-    }));
     const outputOptions = [...new Set(pipelines.flatMap((p) => p.outputs))].map((v) => ({
       value: v,
       label: v,
@@ -591,12 +592,6 @@ const PipelineListPageContent = () => {
         displayName: 'Input',
         type: 'multiOption' as const,
         options: inputOptions,
-      },
-      {
-        id: 'processors',
-        displayName: 'Processors',
-        type: 'multiOption' as const,
-        options: processorOptions,
       },
       {
         id: 'outputs',
@@ -629,6 +624,17 @@ const PipelineListPageContent = () => {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    onSortingChange: setSorting,
+    // Pages stream in while the list drains; autoResetPageIndex would yank the
+    // user back to page 1 on every arrival. Filter and sort changes still
+    // reset the page (layout effect below, keyed on user-facing filter state —
+    // table columnFilters churn identity on every data refresh), and a
+    // shrinking row set is clamped before paint.
+    autoResetPageIndex: false,
+    state: {
+      sorting,
+    },
     initialState: {
       pagination: {
         pageSize: PAGE_SIZE,
@@ -636,10 +642,25 @@ const PipelineListPageContent = () => {
     },
   });
 
+  const pageCount = table.getPageCount();
+  useLayoutEffect(() => {
+    const pageIndex = table.getState().pagination.pageIndex;
+    if (pageIndex > 0 && pageIndex >= pageCount) {
+      table.setPageIndex(Math.max(pageCount - 1, 0));
+    }
+  }, [pageCount, table]);
+
   const { filters, actions } = useDataTableFilter({
     columns: filterColumns,
     table,
   });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filters and sorting are intentional change-triggers — when the user edits either, jump back to page 1 (autoResetPageIndex is off).
+  useLayoutEffect(() => {
+    if (table.getState().pagination.pageIndex !== 0) {
+      table.setPageIndex(0);
+    }
+  }, [table, filters, sorting]);
 
   const handleCreateClick = useCallback(() => {
     resetRpcnWizardStore();
@@ -651,11 +672,18 @@ const PipelineListPageContent = () => {
     }
   }, [resetRpcnWizardStore, navigate]);
 
-  if (isLoading) {
+  // The hook keeps isLoading true until every page is drained; render as soon
+  // as the first page has rows and stream the rest in behind the table. On a
+  // mid-drain error the drain halts for good, so the error line replaces the
+  // spinner rather than showing next to it.
+  const isInitialLoading = isLoading && pipelines.length === 0 && !error;
+  const isLoadingMorePages = isLoading && pipelines.length > 0 && !error;
+
+  if (isInitialLoading) {
     return <PipelineListSkeleton />;
   }
 
-  if (error) {
+  if (error && pipelines.length === 0) {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-error">
         <AlertCircle className="h-4 w-4" />
@@ -686,11 +714,29 @@ const PipelineListPageContent = () => {
           {(() => {
             const rows = table.getRowModel().rows;
             if (rows.length === 0) {
-              const isFiltered = filters.length > 0;
+              if (isLoadingMorePages) {
+                return (
+                  <TableRow>
+                    <TableCell className="h-24 text-center" colSpan={columns.length}>
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Spinner /> Loading pipelines...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+              // Unfiltered but non-empty data means a stale page index is
+              // about to be clamped — don't flash the empty-state message.
+              let emptyText: string | null = null;
+              if (filters.length > 0) {
+                emptyText = 'No pipelines match the current filters';
+              } else if (pipelines.length === 0) {
+                emptyText = 'You have no Redpanda Connect pipelines';
+              }
               return (
                 <TableRow>
                   <TableCell className="h-24 text-center" colSpan={columns.length}>
-                    {isFiltered ? 'No pipelines match the current filters' : 'You have no Redpanda Connect pipelines'}
+                    {emptyText}
                   </TableCell>
                 </TableRow>
               );
@@ -705,6 +751,17 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
+      {isLoadingMorePages ? (
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <Spinner /> Loading more pipelines...
+        </div>
+      ) : null}
+      {error && pipelines.length > 0 ? (
+        <div className="flex items-center gap-2 text-error text-sm">
+          <AlertCircle className="h-4 w-4" />
+          Failed to load all pipelines: {error.message}
+        </div>
+      ) : null}
       {/* Hide the pagination footer's "X of N selected" text (no row selection here) but keep its space so controls stay right-aligned. */}
       <div className="[&>div>div:first-child]:invisible">
         <DataTablePagination table={table} />

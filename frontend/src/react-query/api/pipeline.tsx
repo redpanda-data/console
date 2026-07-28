@@ -34,12 +34,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useMemo } from 'react';
-import {
-  MAX_PAGE_SIZE,
-  type MessageInit,
-  type QueryOptions,
-  SHORT_POLLING_INTERVAL,
-} from 'react-query/react-query.utils';
+import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -47,6 +42,12 @@ export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 const transitionalStates: Pipeline_State[] = [Pipeline_State.STARTING, Pipeline_State.STOPPING];
+
+// The list is drained page-by-page before it can render, so larger pages mean
+// fewer sequential round trips. The server does the same work per call at any
+// page size (it lists everything and slices); 500 matches the legacy list page
+// and stays under the proto max of 1000.
+const LIST_PIPELINES_PAGE_SIZE = 500;
 
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
@@ -86,7 +87,7 @@ export const useListPipelinesQuery = (
   const listPipelinesRequestDataPlane = useMemo(
     () =>
       create(ListPipelinesRequestSchemaDataPlane, {
-        pageSize: MAX_PAGE_SIZE,
+        pageSize: LIST_PIPELINES_PAGE_SIZE,
         pageToken: '',
         ...input,
       }),
