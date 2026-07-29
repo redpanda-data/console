@@ -1213,12 +1213,7 @@ function PipelinePageContent() {
               // contribute intrinsic height (a huge pipeline would stretch the page far
               // past the metrics). Absolutely positioned, it adopts the metrics/logs
               // column's height and scrolls its tree internally.
-              <div
-                className={cn(
-                  isMonitorLane && 'relative w-[300px] shrink-0 self-stretch',
-                  !isMonitorLane && 'contents'
-                )}
-              >
+              <div className={cn(isMonitorLane && 'relative w-[300px] shrink-0', !isMonitorLane && 'contents')}>
                 <div className={cn(isMonitorLane ? 'absolute inset-0 flex' : 'contents')}>
                   <SidebarPanel
                     errorNodeIds={errorNodeIds}

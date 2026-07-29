@@ -98,7 +98,17 @@ const parseConfigComponentsCached = (configYaml: string): ReturnType<typeof pars
     return cached;
   }
   if (configComponentsCache.size >= CONFIG_COMPONENTS_CACHE_LIMIT) {
-    configComponentsCache.clear();
+    // Evict the oldest half (Map preserves insertion order): clearing
+    // everything mid-pass would make each refresh of a >10k dataset reparse
+    // the entire list — the exact cost this cache exists to avoid.
+    let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
+    for (const key of configComponentsCache.keys()) {
+      configComponentsCache.delete(key);
+      surplus -= 1;
+      if (surplus <= 0) {
+        break;
+      }
+    }
   }
   const parsed = parseConfigComponents(configYaml);
   configComponentsCache.set(configYaml, parsed);
@@ -501,8 +511,11 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     filterFn: createFilterFn('option'),
+    // The ?? guards against enum values a newer server may send that the
+    // generated Pipeline_State doesn't know yet — they sort last, not NaN.
     sortingFn: (rowA, rowB) =>
-      pipelineStateSortPriority[rowA.original.state] - pipelineStateSortPriority[rowB.original.state],
+      (pipelineStateSortPriority[rowA.original.state] ?? Number.MAX_SAFE_INTEGER) -
+      (pipelineStateSortPriority[rowB.original.state] ?? Number.MAX_SAFE_INTEGER),
     cell: ({ row }) => <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]} />,
   },
   {
@@ -532,6 +545,7 @@ const PipelineListPageContent = () => {
     data: pipelinesData,
     isLoading,
     error,
+    hasNextPage,
   } = useListPipelinesQuery(undefined, {
     enableSmartPolling: true,
   });
@@ -692,6 +706,8 @@ const PipelineListPageContent = () => {
     );
   }
 
+  const rows = table.getRowModel().rows;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -712,7 +728,6 @@ const PipelineListPageContent = () => {
         </TableHeader>
         <TableBody>
           {(() => {
-            const rows = table.getRowModel().rows;
             if (rows.length === 0) {
               if (isLoadingMorePages) {
                 return (
@@ -751,7 +766,7 @@ const PipelineListPageContent = () => {
           })()}
         </TableBody>
       </Table>
-      {isLoadingMorePages ? (
+      {isLoadingMorePages && rows.length > 0 ? (
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Spinner /> Loading more pipelines...
         </div>
@@ -759,7 +774,11 @@ const PipelineListPageContent = () => {
       {error && pipelines.length > 0 ? (
         <div className="flex items-center gap-2 text-error text-sm">
           <AlertCircle className="h-4 w-4" />
-          Failed to load all pipelines: {error.message}
+          {/* With pages still unfetched the shown data is partial; otherwise a
+              background refresh failed and the data is merely stale. */}
+          {hasNextPage
+            ? `Failed to load all pipelines: ${error.message}`
+            : `Couldn't refresh pipelines: ${error.message}`}
         </div>
       ) : null}
       {/* Hide the pagination footer's "X of N selected" text (no row selection here) but keep its space so controls stay right-aligned. */}

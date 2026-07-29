@@ -135,6 +135,27 @@ describe('PipelineThroughputCard', () => {
     );
   });
 
+  it('shows the unavailable state, not the empty state, when the query catalog fails', async () => {
+    const listQueriesMock = vi.fn().mockImplementation(() => {
+      throw new ConnectError('metrics service unreachable', Code.Internal);
+    });
+    const executeRangeQueryMock = vi.fn();
+
+    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
+
+    renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Throughput metrics aren't available right now")).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+      },
+      { timeout: 5000 }
+    );
+    expect(screen.queryByText('No throughput data yet')).not.toBeInTheDocument();
+    expect(executeRangeQueryMock).not.toHaveBeenCalled();
+  });
+
   it('shows empty state when queries return empty results', async () => {
     const listQueriesMock = vi
       .fn()

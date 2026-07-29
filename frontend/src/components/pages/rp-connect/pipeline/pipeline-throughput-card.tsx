@@ -177,7 +177,12 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: queriesData, isLoading: isLoadingQueries } = useListQueries({
+  const {
+    data: queriesData,
+    isLoading: isLoadingQueries,
+    isError: isErrorQueries,
+    refetch: refetchQueries,
+  } = useListQueries({
     filter: {
       tags: {
         component: 'redpanda-connect',
@@ -222,8 +227,11 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   );
 
   const handleRefresh = useCallback(() => {
+    // The query-catalog key carries no timestamps, so the refreshKey bump
+    // alone would never retry a failed ListQueries — refetch it explicitly.
+    refetchQueries();
     setRefreshKey((prev) => prev + 1);
-  }, []);
+  }, [refetchQueries]);
 
   const chartData = useMemo(
     () => mergeTimeSeries(ingressData?.results ?? [], egressData?.results ?? []),
@@ -232,7 +240,9 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
 
   // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
   const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
-  const isError = isErrorIngress || isErrorEgress;
+  // A failed catalog lookup means the metrics service is unreachable — that is
+  // the error state, not "no data yet" (the range queries never even run).
+  const isError = isErrorQueries || isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
