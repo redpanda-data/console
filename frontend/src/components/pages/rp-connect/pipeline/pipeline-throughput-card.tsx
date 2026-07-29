@@ -10,7 +10,7 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   type ChartConfig,
   ChartContainer,
@@ -28,7 +28,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import { RefreshButton } from 'components/ui/refresh-button';
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -56,23 +56,57 @@ type ThroughputContentProps = {
   id: string;
   // Full selected window [start, end] in ms, so the axis spans it even when data is sparse.
   domain: [number, number];
+  onRetry: () => void;
 };
 
-const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, hasData, chartData, id, domain }) => {
+// Placeholder that keeps the chart's footprint so the section doesn't jump
+// between the loading, empty, error, and chart states.
+const ThroughputPlaceholder: FC<{ title: string; description: string; action?: ReactNode }> = ({
+  title,
+  description,
+  action,
+}) => (
+  <div className="flex h-40 w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed text-center">
+    <div className="text-body">{title}</div>
+    <div className="text-muted-foreground text-sm">{description}</div>
+    {action}
+  </div>
+);
+
+const ThroughputContent: FC<ThroughputContentProps> = ({
+  isLoading,
+  isError,
+  hasData,
+  chartData,
+  id,
+  domain,
+  onRetry,
+}) => {
   if (isLoading) {
     return <ChartSkeleton className="h-40 w-full" variant="area" />;
   }
 
   if (isError) {
     return (
-      <Alert variant="warning">
-        <AlertDescription>Failed to load throughput metrics</AlertDescription>
-      </Alert>
+      <ThroughputPlaceholder
+        action={
+          <Button className="mt-2" onClick={onRetry} size="sm" variant="outline">
+            Try again
+          </Button>
+        }
+        description="The metrics service didn't respond. Data will appear once it's reachable."
+        title="Throughput metrics aren't available right now"
+      />
     );
   }
 
   if (!hasData) {
-    return <div className="text-body text-muted-foreground">Throughput metrics not available</div>;
+    return (
+      <ThroughputPlaceholder
+        description="Metrics appear here a few minutes after the pipeline starts processing messages."
+        title="No throughput data yet"
+      />
+    );
   }
 
   return (
@@ -236,6 +270,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
         id={id}
         isError={isError}
         isLoading={isLoading}
+        onRetry={handleRefresh}
       />
     </section>
   );

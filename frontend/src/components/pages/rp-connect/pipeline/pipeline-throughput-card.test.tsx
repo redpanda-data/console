@@ -113,7 +113,7 @@ function buildTransport({
 // ---------------------------------------------------------------------------
 
 describe('PipelineThroughputCard', () => {
-  it('shows warning alert when range queries error', async () => {
+  it('shows calm unavailable state with retry when range queries error', async () => {
     const listQueriesMock = vi
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
@@ -128,13 +128,14 @@ describe('PipelineThroughputCard', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('Failed to load throughput metrics')).toBeInTheDocument();
+        expect(screen.getByText("Throughput metrics aren't available right now")).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
       },
       { timeout: 5000 }
     );
   });
 
-  it('shows "not available" text when queries return empty results', async () => {
+  it('shows empty state when queries return empty results', async () => {
     const listQueriesMock = vi
       .fn()
       .mockImplementation(() => createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
@@ -151,7 +152,7 @@ describe('PipelineThroughputCard', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('Throughput metrics not available')).toBeInTheDocument();
+        expect(screen.getByText('No throughput data yet')).toBeInTheDocument();
       },
       { timeout: 5000 }
     );
@@ -176,7 +177,7 @@ describe('PipelineThroughputCard', () => {
 
     // Wait for the component to settle (empty state)
     await waitFor(() => {
-      expect(screen.getByText('Throughput metrics not available')).toBeInTheDocument();
+      expect(screen.getByText('No throughput data yet')).toBeInTheDocument();
     });
 
     await user.click(screen.getByRole('button', { name: 'Refresh' }));
@@ -185,7 +186,7 @@ describe('PipelineThroughputCard', () => {
     expect(screen.getByText('Throughput')).toBeInTheDocument();
   });
 
-  it('shows "not available" when listQueries returns no matching queries', async () => {
+  it('shows empty state when listQueries returns no matching queries', async () => {
     // When listQueries has no connect queries, range queries are disabled (enabled: false),
     // so they never load and never error -- resulting in empty chart data.
     const listQueriesMock = vi.fn().mockReturnValue(createListQueriesResponse([]));
@@ -197,7 +198,7 @@ describe('PipelineThroughputCard', () => {
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
     await waitFor(() => {
-      expect(screen.getByText('Throughput metrics not available')).toBeInTheDocument();
+      expect(screen.getByText('No throughput data yet')).toBeInTheDocument();
     });
 
     // Range queries should never have been called since they're disabled
@@ -235,9 +236,9 @@ describe('PipelineThroughputCard', () => {
     });
 
     // Verify the warning alert is NOT present
-    expect(screen.queryByText('Failed to load throughput metrics')).not.toBeInTheDocument();
+    expect(screen.queryByText("Throughput metrics aren't available right now")).not.toBeInTheDocument();
     // Verify the empty state is NOT present
-    expect(screen.queryByText('Throughput metrics not available')).not.toBeInTheDocument();
+    expect(screen.queryByText('No throughput data yet')).not.toBeInTheDocument();
   });
 
   it('passes pipeline_id filter in range query params', async () => {

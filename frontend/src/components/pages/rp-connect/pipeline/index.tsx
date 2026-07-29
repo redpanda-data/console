@@ -540,7 +540,7 @@ function YamlViewPanel({
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
+      <div className="flex min-h-96 items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
     );
   }
   const showThroughput =
@@ -549,7 +549,9 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
       : isFeatureFlagEnabled('enableDataplaneObservability'));
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    // Natural height on purpose: this lane scrolls with the page (see the container note in
+    // PipelineEditorPage), so logs pagination sits reachable right below the table.
+    <div className="flex flex-col p-6">
       {showThroughput ? (
         <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
@@ -1129,10 +1131,20 @@ function PipelinePageContent() {
     [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane, editorStore]
   );
 
+  const isMonitorLane = mode === 'view' && activeViewLane === 'monitor';
+
   return (
-    // Viewport-bounded height (7rem = app header + pt-8) so a tall lane scrolls within the framed panel.
+    // Editor lanes get a viewport-bounded height (7rem = app header + pt-8): Monaco needs a bounded
+    // box, and a tall lane scrolls within the framed panel. The Monitor lane instead flows with the
+    // document — chart, logs, and pagination at natural height, one page-level scroll context — so
+    // its controls are never trapped behind an inner fold.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
-    <div className="-ml-3.5 flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5">
+    <div
+      className={cn(
+        '-ml-3.5 flex min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
+        !isMonitorLane && 'h-[calc(100dvh-7rem)]'
+      )}
+    >
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
           onBack={handleCancel}
@@ -1197,16 +1209,29 @@ function PipelinePageContent() {
           {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
           <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             {showSidebar ? (
-              <SidebarPanel
-                errorNodeIds={errorNodeIds}
-                isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
-                mode={mode}
-                onAddConnector={(type) => setAddConnectorType(type)}
-                onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
-                onOpenCommandMenu={handleCommandMenuOpen}
-                unsavedNodeIds={unsavedNodeIds}
-                yamlContent={yamlContent}
-              />
+              // The monitor lane is document-height, so the structure tree must not
+              // contribute intrinsic height (a huge pipeline would stretch the page far
+              // past the metrics). Absolutely positioned, it adopts the metrics/logs
+              // column's height and scrolls its tree internally.
+              <div
+                className={cn(
+                  isMonitorLane && 'relative w-[300px] shrink-0 self-stretch',
+                  !isMonitorLane && 'contents'
+                )}
+              >
+                <div className={cn(isMonitorLane ? 'absolute inset-0 flex' : 'contents')}>
+                  <SidebarPanel
+                    errorNodeIds={errorNodeIds}
+                    isPipelineDiagramsEnabled={isPipelineDiagramsEnabled}
+                    mode={mode}
+                    onAddConnector={(type) => setAddConnectorType(type)}
+                    onBrowseTemplates={isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined}
+                    onOpenCommandMenu={handleCommandMenuOpen}
+                    unsavedNodeIds={unsavedNodeIds}
+                    yamlContent={yamlContent}
+                  />
+                </div>
+              </div>
             ) : null}
             <div className="min-w-0 flex-1">
               {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
