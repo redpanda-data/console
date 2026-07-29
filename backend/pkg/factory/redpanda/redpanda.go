@@ -222,4 +222,6 @@ type AdminAPIClient interface {
 
 	// SingleKeyConfig returns the value for a Redpanda Cluster config property
 	SingleKeyConfig(ctx context.Context, key string) (rpadmin.Config, error)
+
+	IcebergService(opts ...connect.ClientOption) adminv2connect.IcebergServiceClient
 }
