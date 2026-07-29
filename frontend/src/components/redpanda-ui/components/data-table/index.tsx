@@ -123,7 +123,7 @@ export function DataTableFacetedFilter<TData, TValue>({
             {title}
             {selectedValues?.size > 0 && (
               <>
-                <Separator className="mx-2 h-4" orientation="vertical" />
+                <Separator className="mx-2 h-4 self-center" orientation="vertical" />
                 <Badge className="rounded-sm px-1 font-normal lg:hidden" variant="secondary">
                   {selectedValues.size}
                 </Badge>

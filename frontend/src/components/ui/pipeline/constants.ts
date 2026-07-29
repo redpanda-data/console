@@ -32,18 +32,6 @@ export const PIPELINE_STATE_LABELS: Partial<Record<Pipeline_State, string>> = {
 };
 
 /**
- * Pipeline state options for filtering.
- */
-export const PIPELINE_STATE_OPTIONS = [
-  Pipeline_State.RUNNING,
-  Pipeline_State.STARTING,
-  Pipeline_State.STOPPING,
-  Pipeline_State.STOPPED,
-  Pipeline_State.ERROR,
-  Pipeline_State.COMPLETED,
-].map((state) => ({ label: PIPELINE_STATE_LABELS[state] ?? 'Unknown', value: String(state) }));
-
-/**
  * Issue filter options for filtering pipelines by log severity.
  */
 export const ISSUE_FILTER_OPTIONS = [

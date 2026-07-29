@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import type { ColumnDef, FilterFn, SortingState } from '@tanstack/react-table';
 import {
   flexRender,
   getCoreRowModel,
@@ -28,8 +28,7 @@ import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTableColumnHeader, DataTablePagination } from 'components/redpanda-ui/components/data-table';
-import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
+import { DataTableFacetedFilter, DataTablePagination } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,27 +36,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
-import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
-import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
-import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
-import { PIPELINE_STATE_OPTIONS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
+import { STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { AlertCircle, Box, MoreHorizontal } from 'lucide-react';
+import { AlertCircle, Box, MoreHorizontal, Search } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
   StopPipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { type Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { memo, useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { type MouseEvent, memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
   useDeletePipelineMutation,
@@ -70,6 +66,14 @@ import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import {
+  aggregateConnectors,
+  countPipelinesPerTab,
+  matchesNameOrId,
+  PIPELINE_STATE_TABS,
+  type PipelineStateTabId,
+} from './list-utils';
+import { SortableColumnHeader } from './sortable-column-header';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { parseConfigComponents } from '../utils/yaml';
@@ -129,21 +133,35 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   };
 };
 
-/**
- * Pairs each name with a unique React key by suffixing its occurrence index,
- * since component names can repeat (e.g. two `redpanda` inputs).
- *
- * @param names - Component names, possibly containing duplicates.
- * @returns One entry per input name, e.g. `["redpanda", "redpanda"]` →
- *   `[{ name: "redpanda", key: "redpanda-0" }, { name: "redpanda", key: "redpanda-1" }]`.
- */
-const toKeyedNames = (names: string[]): { name: string; key: string }[] => {
-  const seen = new Map<string, number>();
-  return names.map((name) => {
-    const occurrence = seen.get(name) ?? 0;
-    seen.set(name, occurrence + 1);
-    return { name, key: `${name}-${occurrence}` };
-  });
+const EmptyCell = () => <span className="text-muted-foreground">—</span>;
+
+// Duplicate connectors collapse into one badge with a multiplier ("redpanda ×2")
+// so wide fan-in/fan-out pipelines don't spend the column on repeats.
+const ConnectorBadges = ({ names }: { names: string[] }) => {
+  const connectors = aggregateConnectors(names);
+  if (connectors.length === 0) {
+    return <EmptyCell />;
+  }
+  return (
+    <BadgeGroup
+      maxVisible={2}
+      renderOverflowContent={(overflow) => (
+        <List>
+          {connectors.slice(-overflow.length).map((c) => (
+            <ListItem key={c.name}>{c.count > 1 ? `${c.name} ×${c.count}` : c.name}</ListItem>
+          ))}
+        </List>
+      )}
+    >
+      {connectors.map((c) => (
+        <Badge key={c.name} variant="neutral-inverted">
+          <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
+          {c.name}
+          {c.count > 1 ? <span className="text-muted-foreground">×{c.count}</span> : null}
+        </Badge>
+      ))}
+    </BadgeGroup>
+  );
 };
 
 const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> = {
@@ -155,15 +173,12 @@ const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> =
   [Pipeline_State.RUNNING]: 'success',
   [Pipeline_State.UNSPECIFIED]: 'disabled',
 };
-const pipelineStateFilterIcon: Record<string, React.ComponentType<{ className?: string }>> = {
-  [String(Pipeline_State.COMPLETED)]: (props) => <StatusDot variant="success" {...props} />,
-  [String(Pipeline_State.STARTING)]: (props) => <Spinner className={cn('text-success', props.className)} />,
-  [String(Pipeline_State.STOPPING)]: (props) => <Spinner className={cn('text-destructive', props.className)} />,
-  [String(Pipeline_State.STOPPED)]: (props) => <StatusDot variant="disabled" {...props} />,
-  [String(Pipeline_State.ERROR)]: (props) => <StatusDot variant="error" {...props} />,
-  [String(Pipeline_State.RUNNING)]: (props) => <StatusDot variant="success" {...props} />,
-  [String(Pipeline_State.UNSPECIFIED)]: (props) => <StatusDot variant="disabled" {...props} />,
-};
+
+// Scalar-in-set matcher for the status tabs. autoRemove mirrors the built-in
+// array filters: an empty selection means "no filter", not "match nothing".
+const stateInFilterFn: FilterFn<Pipeline> = (row, columnId, filterValue: string[]) =>
+  filterValue.includes(row.getValue<string>(columnId));
+stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
 // Attention-first ordering for the Status column: problems and transitions
 // surface before healthy pipelines, idle ones sink to the bottom.
@@ -183,6 +198,12 @@ const PipelineListSkeleton = () => (
   <div className="flex flex-col gap-4">
     <div className="flex items-center justify-between gap-4">
       <Skeleton className="h-8 w-[200px]" />
+      <Skeleton className="h-8 w-20" />
+    </div>
+    <div className="flex items-center gap-2">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-8 w-20" />
+      <Skeleton className="h-8 w-20" />
       <Skeleton className="h-8 w-20" />
     </div>
     <Table>
@@ -375,12 +396,11 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-const ComponentBadge = ({ name }: { name: string }) => (
-  <Badge variant="neutral-inverted">
-    <ConnectorLogo className="size-3.5" fallback={Box} name={name as ComponentName} />
-    {name}
-  </Badge>
-);
+const connectorOption = (name: string) => ({
+  value: name,
+  label: name,
+  icon: (props: { className?: string }) => <ConnectorLogo fallback={Box} name={name as ComponentName} {...props} />,
+});
 
 const createColumns = ({
   navigate,
@@ -391,8 +411,8 @@ const createColumns = ({
 }: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
   {
     accessorKey: 'name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
-    filterFn: createFilterFn('text'),
+    header: ({ column }) => <SortableColumnHeader column={column} title="Pipeline" />,
+    filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
     cell: ({ row }) => {
       const id = row.original.id;
       const name = row.getValue('name') as string;
@@ -419,73 +439,33 @@ const createColumns = ({
   {
     accessorKey: 'inputs',
     header: 'Input',
-    filterFn: createFilterFn('multiOption'),
-    cell: ({ row }) => {
-      const inputs = toKeyedNames(row.getValue('inputs') as string[]);
-      if (inputs.length === 0) {
-        return null;
-      }
-      return (
-        <BadgeGroup
-          className="min-w-[174px]"
-          maxVisible={2}
-          renderOverflowContent={(overflow) => (
-            <List>
-              {inputs.slice(-overflow.length).map((o) => (
-                <ListItem key={o.key}>{o.name}</ListItem>
-              ))}
-            </List>
-          )}
-        >
-          {inputs.map((input) => (
-            <ComponentBadge key={input.key} name={input.name} />
-          ))}
-        </BadgeGroup>
-      );
-    },
+    filterFn: 'arrIncludesSome',
+    // Without this, faceting keys on the array itself and per-option counts
+    // in the filter popover never resolve.
+    getUniqueValues: (row) => row.inputs,
+    cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs') as string[]} />,
   },
   {
     accessorKey: 'outputs',
     header: 'Output',
-    filterFn: createFilterFn('multiOption'),
-    cell: ({ row }) => {
-      const outputs = toKeyedNames(row.getValue('outputs') as string[]);
-      if (outputs.length === 0) {
-        return null;
-      }
-      return (
-        <BadgeGroup
-          className="min-w-[174px]"
-          maxVisible={2}
-          renderOverflowContent={(overflow) => (
-            <List>
-              {outputs.slice(-overflow.length).map((o) => (
-                <ListItem key={o.key}>{o.name}</ListItem>
-              ))}
-            </List>
-          )}
-        >
-          {outputs.map((o) => (
-            <ComponentBadge key={o.key} name={o.name} />
-          ))}
-        </BadgeGroup>
-      );
-    },
+    filterFn: 'arrIncludesSome',
+    getUniqueValues: (row) => row.outputs,
+    cell: ({ row }) => <ConnectorBadges names={row.getValue('outputs') as string[]} />,
   },
   {
     id: 'tags',
     accessorFn: (row) => row.tags.map((t) => `${t.key}:${t.value}`),
     header: 'Tags',
-    filterFn: createFilterFn('multiOption'),
+    filterFn: 'arrIncludesSome',
+    getUniqueValues: (row) => row.tags.map((t) => `${t.key}:${t.value}`),
     cell: ({ row }) => {
       const tags = row.original.tags;
       if (tags.length === 0) {
-        return null;
+        return <EmptyCell />;
       }
       return (
         <BadgeGroup
-          className="min-w-[174px]"
-          maxVisible={3}
+          maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
               {tags.slice(-overflow.length).map((t) => (
@@ -509,8 +489,8 @@ const createColumns = ({
   {
     id: 'state',
     accessorFn: (row) => String(row.state),
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    filterFn: createFilterFn('option'),
+    header: ({ column }) => <SortableColumnHeader column={column} title="Status" />,
+    filterFn: stateInFilterFn,
     // The ?? guards against enum values a newer server may send that the
     // generated Pipeline_State doesn't know yet — they sort last, not NaN.
     sortingFn: (rowA, rowB) =>
@@ -575,60 +555,23 @@ const PipelineListPageContent = () => {
     [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline]
   );
 
-  const filterColumns = useMemo<FilterColumnConfig[]>(() => {
-    const inputOptions = [...new Set(pipelines.flatMap((p) => p.inputs))].map((v) => ({
-      value: v,
-      label: v,
-    }));
-    const outputOptions = [...new Set(pipelines.flatMap((p) => p.outputs))].map((v) => ({
-      value: v,
-      label: v,
-    }));
-    const tagOptions = [...new Set(pipelines.flatMap((p) => p.tags.map((t) => `${t.key}:${t.value}`)))].map((v) => ({
-      value: v,
-      label: v,
-    }));
-    const stateOptions = PIPELINE_STATE_OPTIONS.map((o) => ({
-      value: o.value,
-      label: o.label,
-      icon: pipelineStateFilterIcon[o.value],
-    }));
-
-    return [
-      {
-        id: 'name',
-        displayName: 'Name',
-        type: 'text' as const,
-        placeholder: 'Search by name...',
-      },
-      {
-        id: 'inputs',
-        displayName: 'Input',
-        type: 'multiOption' as const,
-        options: inputOptions,
-      },
-      {
-        id: 'outputs',
-        displayName: 'Output',
-        type: 'multiOption' as const,
-        options: outputOptions,
-      },
-      {
-        id: 'tags',
-        displayName: 'Tag',
-        displayNamePlural: 'Tags',
-        type: 'multiOption' as const,
-        options: tagOptions,
-      },
-      {
-        id: 'state',
-        displayName: 'Status',
-        displayNamePlural: 'Statuses',
-        type: 'option' as const,
-        options: stateOptions,
-      },
-    ];
-  }, [pipelines]);
+  const inputOptions = useMemo(
+    () => [...new Set(pipelines.flatMap((p) => p.inputs))].map(connectorOption),
+    [pipelines]
+  );
+  const outputOptions = useMemo(
+    () => [...new Set(pipelines.flatMap((p) => p.outputs))].map(connectorOption),
+    [pipelines]
+  );
+  const tagOptions = useMemo(
+    () =>
+      [...new Set(pipelines.flatMap((p) => p.tags.map((t) => `${t.key}:${t.value}`)))].map((v) => ({
+        value: v,
+        label: v,
+      })),
+    [pipelines]
+  );
+  const tabCounts = useMemo(() => countPipelinesPerTab(pipelines.map((p) => p.state)), [pipelines]);
 
   const table = useReactTable({
     data: pipelines,
@@ -642,9 +585,8 @@ const PipelineListPageContent = () => {
     onSortingChange: setSorting,
     // Pages stream in while the list drains; autoResetPageIndex would yank the
     // user back to page 1 on every arrival. Filter and sort changes still
-    // reset the page (layout effect below, keyed on user-facing filter state —
-    // table columnFilters churn identity on every data refresh), and a
-    // shrinking row set is clamped before paint.
+    // reset the page via the layout effect below, and a shrinking row set is
+    // clamped before paint.
     autoResetPageIndex: false,
     state: {
       sorting,
@@ -664,17 +606,76 @@ const PipelineListPageContent = () => {
     }
   }, [pageCount, table]);
 
-  const { filters, actions } = useDataTableFilter({
-    columns: filterColumns,
-    table,
-  });
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: filters and sorting are intentional change-triggers — when the user edits either, jump back to page 1 (autoResetPageIndex is off).
+  // Only user actions (tabs, search, facets, sort) mutate filter state here, so
+  // keying on columnFilters identity is a safe back-to-page-1 trigger.
+  const { columnFilters } = table.getState();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are intentional change-triggers — when the user edits either, jump back to page 1 (autoResetPageIndex is off).
   useLayoutEffect(() => {
     if (table.getState().pagination.pageIndex !== 0) {
       table.setPageIndex(0);
     }
-  }, [table, filters, sorting]);
+  }, [table, columnFilters, sorting]);
+
+  const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
+  const [search, setSearch] = useState('');
+
+  const handleTabChange = useCallback(
+    (tabId: PipelineStateTabId) => {
+      if (tabId === activeTab) {
+        return;
+      }
+      setActiveTab(tabId);
+      const states = PIPELINE_STATE_TABS.find((t) => t.id === tabId)?.states;
+      table.getColumn('state')?.setFilterValue(states ? states.map(String) : undefined);
+    },
+    [table, activeTab]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const column = table.getColumn('name');
+      const next = search.trim() ? search : undefined;
+      // setFilterValue(undefined) on an unfiltered column still produces a new
+      // columnFilters array, which would trip the page-reset effect — skip
+      // writes that don't change anything (including the post-mount tick).
+      if (column && column.getFilterValue() !== next) {
+        column.setFilterValue(next);
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [search, table]);
+
+  // The status tabs are views, not filters — only search and the facet
+  // pickers count toward "filtered" (and get wiped by Clear filters).
+  const hasActiveFilters = columnFilters.some((f) => f.id !== 'state');
+  const clearFilters = useCallback(() => {
+    setSearch('');
+    for (const columnId of ['name', 'inputs', 'outputs', 'tags']) {
+      table.getColumn(columnId)?.setFilterValue(undefined);
+    }
+  }, [table]);
+
+  const handleRowClick = useCallback(
+    (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
+      const target = event.target as Node;
+      // Clicks on portaled children (menus, dialogs, tooltips) bubble through
+      // the React tree but live outside the <tr> in the DOM — never navigate
+      // for those, e.g. a click on the delete-confirm backdrop.
+      if (!event.currentTarget.contains(target)) {
+        return;
+      }
+      // Links and buttons inside the row handle their own clicks; a mouseup
+      // that ends a text selection (copying the id) isn't a navigation intent.
+      if ((target as HTMLElement).closest('a') || (target as HTMLElement).closest('button')) {
+        return;
+      }
+      if (window.getSelection()?.toString()) {
+        return;
+      }
+      navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } });
+    },
+    [navigate]
+  );
 
   const handleCreateClick = useCallback(() => {
     resetRpcnWizardStore();
@@ -711,8 +712,37 @@ const PipelineListPageContent = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
+        <Tabs onValueChange={(value) => handleTabChange(value as PipelineStateTabId)} value={activeTab}>
+          <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+            {PIPELINE_STATE_TABS.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id} variant="underline">
+                {tab.label}
+                <span className="text-muted-foreground text-xs tabular-nums">{tabCounts[tab.id]}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <Button onClick={handleCreateClick}>Create a pipeline</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          className="w-64"
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or ID..."
+          value={search}
+        >
+          <InputStart>
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </InputStart>
+        </Input>
+        <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
+        <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
+        <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
+        {hasActiveFilters ? (
+          <Button onClick={clearFilters} size="sm" variant="ghost">
+            Clear filters
+          </Button>
+        ) : null}
       </div>
       <Table>
         <TableHeader>
@@ -743,8 +773,10 @@ const PipelineListPageContent = () => {
               // Unfiltered but non-empty data means a stale page index is
               // about to be clamped — don't flash the empty-state message.
               let emptyText: string | null = null;
-              if (filters.length > 0) {
+              if (hasActiveFilters) {
                 emptyText = 'No pipelines match the current filters';
+              } else if (activeTab !== 'all') {
+                emptyText = PIPELINE_STATE_TABS.find((t) => t.id === activeTab)?.emptyText ?? null;
               } else if (pipelines.length === 0) {
                 emptyText = 'You have no Redpanda Connect pipelines';
               }
@@ -757,7 +789,12 @@ const PipelineListPageContent = () => {
               );
             }
             return rows.map((row) => (
-              <TableRow data-state={row.getIsSelected() && 'selected'} key={row.id}>
+              <TableRow
+                className="cursor-pointer"
+                data-state={row.getIsSelected() && 'selected'}
+                key={row.id}
+                onClick={(event) => handleRowClick(row.original.id, event)}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                 ))}
