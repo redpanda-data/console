@@ -202,8 +202,8 @@
     "vitest-browser-react": "^2.2.0"
   },
   "resolutions": {
-    "dompurify": "3.4.12",
-    "fast-uri": "3.1.4",
-    "prismjs": "1.30.0"
+    "dompurify": "^3.4.12",
+    "fast-uri": "^3.1.4",
+    "prismjs": "^1.30.0"
   }
 }

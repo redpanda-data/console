@@ -160,9 +160,9 @@
     },
   },
   "overrides": {
-    "dompurify": "3.4.12",
-    "fast-uri": "3.1.4",
-    "prismjs": "1.30.0",
+    "dompurify": "^3.4.12",
+    "fast-uri": "^3.1.4",
+    "prismjs": "^1.30.0",
   },
   "packages": {
     "@a2a-js/sdk": ["@a2a-js/sdk@0.3.13", "", { "dependencies": { "uuid": "^11.1.0" }, "peerDependencies": { "@bufbuild/protobuf": "^2.10.2", "@grpc/grpc-js": "^1.11.0", "express": "^4.21.2 || ^5.1.0" }, "optionalPeers": ["@bufbuild/protobuf", "@grpc/grpc-js", "express"] }, "sha512-BZr0f9JVNQs3GKOM9xINWCh6OKIJWZFPyqqVqTym5mxO2Eemc6I/0zL7zWnljHzGdaf5aZQyQN5xa6PSH62q+A=="],

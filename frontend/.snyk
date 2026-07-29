@@ -18,34 +18,37 @@ ignore:
   SNYK-JS-BODYPARSER-17906397:
     - '*':
         reason: >-
-          Not reachable in Console UI: body-parser is only under the MCP SDK
-          Express server path. Frontend imports MCP client modules and never
-          starts Express or accepts HTTP request bodies.
+          Not reachable in Console UI: source imports only MCP SDK client and
+          shared-auth subpaths, so the server module graph is excluded from the
+          browser bundle. The Express body-parser path is never imported or
+          executed.
         expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:36:53.133Z
+        created: 2026-07-29T12:58:44.547Z
   SNYK-JS-HONONODESERVER-18170326:
     - '*':
         reason: >-
-          Not reachable in Console UI: @hono/node-server is only an MCP SDK
-          server transport. Frontend imports MCP client modules and never serves
-          files through Hono. Fixed 1.19.17 is also inside the 72-hour
-          release-age gate.
-        expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:36:55.470Z
+          Not reachable in Console UI: source imports only MCP SDK client and
+          shared-auth subpaths, so the Hono server transport is excluded from
+          the browser bundle. Revisit promptly after fixed 1.19.17 clears the
+          72-hour release-age gate.
+        expires: 2026-08-12T00:00:00.000Z
+        created: 2026-07-29T12:58:46.098Z
   SNYK-JS-IPADDRESS-16636412:
     - '*':
         reason: >-
-          Not reachable in Console UI: ip-address is only under the MCP SDK
-          Express rate-limit server path. Frontend never starts that server or
-          renders ip-address HTML helpers.
+          Not reachable in Console UI: source imports only MCP SDK client and
+          shared-auth subpaths, so the Express rate-limit server path is
+          excluded from the browser bundle. No ip-address HTML helper is
+          imported or rendered.
         expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:36:57.976Z
+        created: 2026-07-29T12:58:47.607Z
   SNYK-JS-POSTCSS-18313038:
     - '*':
         reason: >-
           Not reachable from attacker input in Console UI: vulnerable PostCSS is
-          under Vue compiler-sfc tooling pulled by Milkdown. The browser UI does
-          not compile or write attacker-controlled CSS or source maps.
+          build/compiler tooling used by Rsbuild Sass and Vue compiler-sfc
+          through Milkdown. The build consumes repository-controlled CSS and
+          does not write attacker-controlled CSS or source maps.
         expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:37:00.008Z
+        created: 2026-07-29T12:58:49.133Z
 patch: {}
