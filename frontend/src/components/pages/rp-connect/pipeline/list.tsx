@@ -28,7 +28,7 @@ import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTableFacetedFilter, DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,9 +44,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
+import { FadePresence } from 'components/ui/fade-presence';
 import { STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
-import { AlertCircle, Box, MoreHorizontal, Search } from 'lucide-react';
+import { AlertCircle, Box, MoreHorizontal, Search, X } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
   StartPipelineRequestSchema,
@@ -66,6 +67,7 @@ import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { FacetedFilter } from './faceted-filter';
 import {
   aggregateConnectors,
   countPipelinesPerTab,
@@ -156,8 +158,12 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       {connectors.map((c) => (
         <Badge key={c.name} variant="neutral-inverted">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
-          {c.name}
-          {c.count > 1 ? <span className="text-muted-foreground">×{c.count}</span> : null}
+          {/* One text node so name and multiplier share a baseline — as sibling
+              flex items they get box-centered a pixel apart. */}
+          <span>
+            {c.name}
+            {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
+          </span>
         </Badge>
       ))}
     </BadgeGroup>
@@ -417,10 +423,12 @@ const createColumns = ({
       const id = row.original.id;
       const name = row.getValue('name') as string;
       return (
-        <div className="flex max-w-[200px] flex-col gap-0.5 overflow-hidden">
+        <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
+          {/* Rows navigate on click, so the name link stays quiet until hovered
+              — twenty dotted underlines per page read as noise. */}
           <Link
             as={TanStackRouterLink}
-            className="block truncate text-base text-primary"
+            className="block truncate text-base text-primary no-underline hover:underline"
             params={{ pipelineId: encodeURIComponent(id) }}
             title={name}
             to="/rp-connect/$pipelineId"
@@ -428,7 +436,9 @@ const createColumns = ({
             {name}
           </Link>
           {id !== name ? (
-            <span className="truncate font-mono text-muted-foreground text-xs" title={id}>
+            // select-all: one click selects the whole id for copying; the row's
+            // selection guard keeps that click from navigating.
+            <span className="cursor-text select-all truncate font-mono text-muted-foreground text-xs" title={id}>
               {id}
             </span>
           ) : null}
@@ -709,6 +719,15 @@ const PipelineListPageContent = () => {
 
   const rows = table.getRowModel().rows;
 
+  // With pages still unfetched the shown data is partial; otherwise a
+  // background refresh failed and the data is merely stale.
+  let listErrorMessage: string | null = null;
+  if (error) {
+    listErrorMessage = hasNextPage
+      ? `Failed to load all pipelines: ${error.message}`
+      : `Couldn't refresh pipelines: ${error.message}`;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -717,7 +736,9 @@ const PipelineListPageContent = () => {
             {PIPELINE_STATE_TABS.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} variant="underline">
                 {tab.label}
-                <span className="text-muted-foreground text-xs tabular-nums">{tabCounts[tab.id]}</span>
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums">
+                  {tabCounts[tab.id]}
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -735,14 +756,17 @@ const PipelineListPageContent = () => {
             <Search className="h-4 w-4 text-muted-foreground" />
           </InputStart>
         </Input>
-        <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
-        <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
-        <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
-        {hasActiveFilters ? (
+        <FacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
+        <FacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
+        <FacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
+        <FadePresence className="flex items-center gap-2" show={hasActiveFilters}>
+          <span className="text-muted-foreground text-sm tabular-nums">
+            {table.getFilteredRowModel().rows.length.toLocaleString()} of {pipelines.length.toLocaleString()} pipelines
+          </span>
           <Button onClick={clearFilters} size="sm" variant="ghost">
-            Clear filters
+            <X /> Clear filters
           </Button>
-        ) : null}
+        </FadePresence>
       </div>
       <Table>
         <TableHeader>
@@ -796,28 +820,28 @@ const PipelineListPageContent = () => {
                 onClick={(event) => handleRowClick(row.original.id, event)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  <TableCell className="py-3" key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
                 ))}
               </TableRow>
             ));
           })()}
         </TableBody>
       </Table>
-      {isLoadingMorePages && rows.length > 0 ? (
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Spinner /> Loading more pipelines...
-        </div>
-      ) : null}
-      {error && pipelines.length > 0 ? (
-        <div className="flex items-center gap-2 text-error text-sm">
-          <AlertCircle className="h-4 w-4" />
-          {/* With pages still unfetched the shown data is partial; otherwise a
-              background refresh failed and the data is merely stale. */}
-          {hasNextPage
-            ? `Failed to load all pipelines: ${error.message}`
-            : `Couldn't refresh pipelines: ${error.message}`}
-        </div>
-      ) : null}
+      <FadePresence
+        className="flex items-center gap-2 text-muted-foreground text-sm"
+        show={isLoadingMorePages && rows.length > 0}
+      >
+        <Spinner /> Loading more pipelines...
+      </FadePresence>
+      <FadePresence
+        className="flex items-center gap-2 text-error text-sm"
+        show={Boolean(listErrorMessage) && pipelines.length > 0}
+      >
+        <AlertCircle className="h-4 w-4" />
+        {listErrorMessage}
+      </FadePresence>
       {/* Hide the pagination footer's "X of N selected" text (no row selection here) but keep its space so controls stay right-aligned. */}
       <div className="[&>div>div:first-child]:invisible">
         <DataTablePagination table={table} />

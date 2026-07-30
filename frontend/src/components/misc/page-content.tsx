@@ -1,4 +1,3 @@
-import { Stack } from '@redpanda-data/ui';
 import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 
@@ -12,7 +11,7 @@ export type PageContentProps = {
 function PageContent(props: PageContentProps) {
   return (
     <motion.div {...animProps} className={props.className}>
-      <Stack gap={3}>{props.children}</Stack>
+      <div className="flex flex-col gap-3">{props.children}</div>
     </motion.div>
   );
 }

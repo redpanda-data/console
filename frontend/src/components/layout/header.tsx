@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
+// ColorModeSwitch is the last Chakra holdout here: dev-only, standalone-only,
+// and pointless to port until the standalone theme toggle moves off Chakra.
+import { ColorModeSwitch } from '@redpanda-data/ui';
 import { Link, useLocation, useMatches, useMatchRoute } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
@@ -28,8 +30,10 @@ import {
   BreadcrumbSeparator,
 } from '../redpanda-ui/components/breadcrumb';
 import { Button as RegistryButton } from '../redpanda-ui/components/button';
+import { CopyButton } from '../redpanda-ui/components/copy-button';
 import { Separator } from '../redpanda-ui/components/separator';
 import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../redpanda-ui/components/tooltip';
 
 type BreadcrumbHeaderRowProps = {
   useNewSidebar: boolean;
@@ -140,21 +144,27 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isEmbedded() && api.isRedpanda && (
-              <Link to="/debug-bundle">
-                <Button
-                  isDisabled={!api.userData?.canViewDebugBundle}
-                  tooltip={
-                    api.userData?.canViewDebugBundle
-                      ? null
-                      : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
-                  }
-                  variant="ghost"
-                >
-                  Debug bundle
-                </Button>
-              </Link>
-            )}
+            {!isEmbedded() &&
+              api.isRedpanda &&
+              (api.userData?.canViewDebugBundle ? (
+                <RegistryButton render={<Link to="/debug-bundle">Debug bundle</Link>} variant="ghost" />
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    {/* span wrapper: a disabled button swallows pointer events, so it can't anchor the tooltip itself */}
+                    <TooltipTrigger
+                      render={
+                        <span className="inline-flex">
+                          <RegistryButton disabled variant="ghost">
+                            Debug bundle
+                          </RegistryButton>
+                        </span>
+                      }
+                    />
+                    <TooltipContent>You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
             {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
           </div>
         </div>
