@@ -171,8 +171,8 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-// Fullscreen insets the header while the panel below goes flush.
-const headerClassName = (expanded: boolean | undefined) =>
+// Expanded mode insets the header while the panel below it goes flush.
+const headerClassName = (expanded: boolean) =>
   cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
 
 // Inline-editable pipeline name, bound to the same form field as the settings dialog.
@@ -208,7 +208,7 @@ export function PipelineViewHeader({
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
-  expanded?: boolean;
+  expanded: boolean;
 }) {
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
@@ -297,7 +297,7 @@ export function PipelineEditHeader({
   onEditSettings: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
-  expanded?: boolean;
+  expanded: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });

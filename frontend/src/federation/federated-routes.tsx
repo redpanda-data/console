@@ -11,7 +11,7 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { useLayoutEffect, useRef } from 'react';
 
@@ -27,7 +27,6 @@ import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
-import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
 /**
@@ -86,53 +85,82 @@ function FederatedRootLayout() {
   );
 }
 
+/** Distance from the document top. Unlike getBoundingClientRect, scroll-independent. */
+const documentTop = (target: HTMLElement): number => {
+  let top = 0;
+  let el: HTMLElement | null = target;
+  while (el) {
+    top += el.offsetTop;
+    el = el.offsetParent instanceof HTMLElement ? el.offsetParent : null;
+  }
+  return top;
+};
+
 /**
- * Cancels the host gutters around the federated Console outlet with equal negative
- * margins. Measured, not hardcoded, so either project can deploy first. Top padding
- * is left alone — cancelling it would pull Console under the host's header.
+ * Fits `#mainLayout` into the host's shell. Neither half can be CSS: every wrapper
+ * above it belongs to the host app, so there is no chain to inherit from.
+ *
+ * - Cancels the host's side/bottom padding with equal negative margins, leaving
+ *   Console's own gutter as the only one. Measured, not hardcoded, so either project
+ *   can deploy first. Top padding stays — cancelling it would pull Console under the
+ *   host's header.
+ * - Stretches the layout to the viewport bottom so the footer's `margin-top: auto`
+ *   lands there instead of trailing short pages.
  */
-const useCancelHostGutters = (enabled: boolean) => {
-  const layoutRef = useRef<HTMLDivElement | null>(null);
+const useHostShellFit = () => {
+  const layoutRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const layoutEl = layoutRef.current;
-    if (!(enabled && layoutEl)) {
+    if (!layoutEl) {
       return;
     }
 
-    // Only write on change — the margins change ancestor sizes, re-firing the observer.
-    let lastMargin: string | null = null;
-    const update = () => {
+    const hostWrappers: HTMLElement[] = [];
+    for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+      hostWrappers.push(el);
+    }
+
+    // Both writes resize the wrappers being observed, so only write on change.
+    let lastMargin = '';
+    let lastMinHeight = '';
+    const applyFit = () => {
       let left = 0;
       let right = 0;
       let bottom = 0;
-      for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+      for (const el of hostWrappers) {
         const style = getComputedStyle(el);
         left += Number.parseFloat(style.paddingLeft) || 0;
         right += Number.parseFloat(style.paddingRight) || 0;
         bottom += Number.parseFloat(style.paddingBottom) || 0;
       }
+
       const margin = `0px ${-right}px ${-bottom}px ${-left}px`;
       if (margin !== lastMargin) {
         lastMargin = margin;
         layoutEl.style.margin = margin;
       }
+      // dvh, so viewport changes need no JS; only the offset from the top can move.
+      const minHeight = `calc(100dvh - ${documentTop(layoutEl)}px)`;
+      if (minHeight !== lastMinHeight) {
+        lastMinHeight = minHeight;
+        layoutEl.style.minHeight = minHeight;
+      }
     };
 
-    update();
-    const observer = new ResizeObserver(update);
+    applyFit();
+    // Padding changes alter a wrapper's content box even at a fixed outer size.
+    const observer = new ResizeObserver(applyFit);
     observer.observe(document.documentElement);
-    // Padding changes alter an ancestor's content-box even at fixed outer size.
-    for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
+    for (const el of hostWrappers) {
       observer.observe(el);
     }
-    window.addEventListener('resize', update);
     return () => {
       observer.disconnect();
-      window.removeEventListener('resize', update);
       layoutEl.style.margin = '';
+      layoutEl.style.minHeight = '';
     };
-  }, [enabled]);
+  }, []);
 
   return layoutRef;
 };
@@ -142,38 +170,30 @@ const useCancelHostGutters = (enabled: boolean) => {
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
-  const matches = useMatches();
-  const { pathname } = useLocation();
-  // Fullscreen routes own their chrome (none exist today). The path check covers
-  // useMatches() lagging useLocation() on soft navigation; the single return keeps
-  // the <Outlet> mounted across fullscreen↔normal transitions.
-  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
-  const layoutRef = useCancelHostGutters(!isFullscreen);
+  const layoutRef = useHostShellFit();
 
   return (
-    // Flex column pins the footer via its margin-top:auto; px-12 is Console's own
-    // gutter, released by data-page-expanded (rule in index.scss).
+    // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
+    // Console's own gutter, released while a page is expanded (index.scss).
     <div
-      className={isFullscreen ? undefined : 'flex flex-col px-12 transition-[padding] duration-300 ease-in-out'}
+      className="page-expanded-flush flex flex-col px-12 transition-[padding] duration-300 ease-in-out"
       id="mainLayout"
       ref={layoutRef}
     >
-      {!isFullscreen && (
-        <NullFallbackBoundary>
-          <LicenseNotification />
-        </NullFallbackBoundary>
-      )}
+      <NullFallbackBoundary>
+        <LicenseNotification />
+      </NullFallbackBoundary>
       <ModalContainer />
-      <AppPageHeader breadcrumbOnly={isFullscreen} />
+      <AppPageHeader />
 
       <ErrorDisplay>
-        <div className={isFullscreen ? undefined : 'pt-8'}>
+        <div className="pt-8">
           <Outlet />
         </div>
       </ErrorDisplay>
 
-      {!isFullscreen && <AppFooter />}
+      <AppFooter />
 
       <ErrorModalsRenderer />
 

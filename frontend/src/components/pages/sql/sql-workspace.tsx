@@ -97,8 +97,6 @@ function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
   return result;
 }
 
-const STUDIO_MODE_KEY = 'rp-sql-studio-mode';
-
 // Standalone renders its own breadcrumb header; the embedded host supplies its own.
 const setStudioPageHeader = () => {
   uiState.pageTitle = 'SQL';
@@ -138,7 +136,13 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   // Per-instance monotonic run token: drops out-of-order responses without
   // sharing state across concurrently-mounted SqlWorkspace instances.
   const latestRunToken = useRef(0);
-  const { expanded, toggleExpanded, ref: expandedModeRef } = useExpandedPageMode({ storageKey: STUDIO_MODE_KEY });
+  const {
+    expanded,
+    toggleExpanded,
+    ref: expandedModeRef,
+  } = useExpandedPageMode({
+    storageKey: 'rp-sql-studio-mode',
+  });
 
   // Pre-paint so the previous route's title doesn't flash in the app header.
   useLayoutEffect(() => {

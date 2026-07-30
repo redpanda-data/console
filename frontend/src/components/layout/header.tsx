@@ -10,7 +10,7 @@
  */
 
 import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
-import { Link, useLocation, useMatches, useMatchRoute } from '@tanstack/react-router';
+import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
@@ -65,13 +65,9 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
   );
 }
 
-function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean }) {
+function AppPageHeader() {
   useApiStoreHook((s) => s.userData); // re-render when userData changes
-  // Routes with their own title bar (fullscreen or breadcrumbOnlyHeader staticData)
-  // get only the breadcrumb row, regardless of which layout branch renders this.
-  const matches = useMatches();
-  const routeOwnsTitleRow = matches.some((m) => m.staticData.fullscreen || m.staticData.breadcrumbOnlyHeader);
-  const hideTitleRow = breadcrumbOnly || routeOwnsTitleRow;
+  const hideTitleRow = useRouteOwnsTitleRow();
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
@@ -163,6 +159,22 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
 }
 
 export default AppPageHeader;
+
+/**
+ * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`),
+ * so the header shows only the breadcrumb row.
+ *
+ * Resolved from the pathname rather than `useMatches()`: committed matches lag the
+ * location by a render on soft navigation, which would flash the title row on the way in.
+ */
+function useRouteOwnsTitleRow() {
+  const router = useRouter();
+  const { pathname } = useLocation();
+
+  return router
+    .getMatchedRoutes(pathname)
+    .matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
+}
 
 /**
  * Custom React Hook: Determines whether to show the refresh button based on route matches.

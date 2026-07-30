@@ -1248,18 +1248,16 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-// Fullscreen page mode (utils/page-expanded.ts): the shells release their horizontal
-// constraints (max-width 100%, not none, so the release can animate; not 100vw, which
-// includes the scrollbar gutter). Global CSS on purpose — Tailwind arbitrary variants
-// proved chunk-dependent across routes.
+// Expanded page mode (hooks/use-expanded-page-mode.ts): the page shell drops the
+// constraints that keep a normal page in a centered column. Global CSS on purpose —
+// Tailwind arbitrary variants proved chunk-dependent across routes.
 html[data-page-expanded] {
-  #mainLayout {
-    padding-left: 0;
-    padding-right: 0;
+  // 100%, not none, so the release animates; not 100vw, which includes the scrollbar gutter.
+  .page-expanded-uncap {
+    max-width: 100%;
   }
 
-  .page-expanded-release {
-    max-width: 100%;
+  .page-expanded-flush {
     padding-left: 0;
     padding-right: 0;
   }

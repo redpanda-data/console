@@ -11,7 +11,7 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
@@ -33,7 +33,6 @@ import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
 import { IsDev } from '../utils/env';
-import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
 export type RouterContext = {
@@ -75,8 +74,9 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          {/* px-12 gutter + max-width cap, released by data-page-expanded (index.scss). */}
-          <div className="page-expanded-release container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
+          {/* Centered page column; the gutter and the width cap are released while a
+              page is expanded (index.scss). */}
+          <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
           </div>
         </SidebarInset>
@@ -90,26 +90,7 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
-  const matches = useMatches();
-  const { pathname } = useLocation();
-  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
-
-  if (isFullscreen) {
-    return (
-      <div id="mainLayout">
-        <TooltipProvider>
-          <ModalContainer />
-          {!isEmbedded() && <AppPageHeader breadcrumbOnly />}
-          <ErrorDisplay>
-            <Outlet />
-          </ErrorDisplay>
-          <ErrorModalsRenderer />
-          <Toaster position="top-right" richColors theme={toasterTheme} />
-        </TooltipProvider>
-      </div>
-    );
-  }
 
   return (
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
