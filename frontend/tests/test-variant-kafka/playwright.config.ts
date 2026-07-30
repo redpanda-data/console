@@ -5,7 +5,7 @@ dotenv.config();
 
 const reporters = process.env.CI
   ? [['github' as const], ['html' as const, { outputFolder: 'playwright-report' }]]
-  : [['markdown' as const], ['html' as const, { outputFolder: 'playwright-report' }]];
+  : [['list' as const], ['html' as const, { outputFolder: 'playwright-report' }]];
 
 const config = defineConfig({
   expect: {
