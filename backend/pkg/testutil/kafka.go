@@ -271,10 +271,10 @@ func GetMappedHostPort(ctx context.Context, c testcontainers.Container, port nat
 		return "", fmt.Errorf("failed to get hostIP: %w", err)
 	}
 
-	mappedPort, err := c.MappedPort(ctx, port)
+	mappedPort, err := c.MappedPort(ctx, string(port))
 	if err != nil {
 		return "", fmt.Errorf("failed to get mapped port: %w", err)
 	}
 
-	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Int()), nil
+	return fmt.Sprintf("%v:%d", hostIP, mappedPort.Num()), nil
 }
