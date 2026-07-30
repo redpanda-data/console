@@ -36,17 +36,27 @@ export const resolveSortingMode = (sorting: false | true | SortingState | undefi
 
 export type DisplayState = 'loading' | 'empty' | 'data';
 
+// Feed this the FILTERED row count, not the page row count: a stale page index can leave the
+// current page empty while matches exist, and that transient state must not read as 'empty'.
 // When isLoading but rows already exist (background refetch), returns 'data' so stale rows show instead of a spinner.
-export const deriveDisplayState = (rowCount: number, isLoading: boolean): DisplayState => {
-  if (isLoading && rowCount === 0) {
+export const deriveDisplayState = (filteredRowCount: number, isLoading: boolean): DisplayState => {
+  if (isLoading && filteredRowCount === 0) {
     return 'loading';
   }
-  if (rowCount === 0) {
+  if (filteredRowCount === 0) {
     return 'empty';
   }
   return 'data';
 };
 
-export const isPaginationState = (
-  pagination: false | true | PaginationState | undefined
-): pagination is PaginationState => typeof pagination === 'object' && pagination !== null && 'pageIndex' in pagination;
+const INTERACTIVE_TARGET_SELECTOR =
+  'a,button,input,select,textarea,label,[role="button"],[role="checkbox"],[role="switch"],[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"],[role="option"],[role="combobox"]';
+
+// `boundary` scopes the check so interactive ancestors outside the row never match.
+export const isInteractiveTarget = (target: EventTarget | null, boundary?: Element | null): boolean => {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  const interactive = target.closest(INTERACTIVE_TARGET_SELECTOR);
+  return interactive !== null && (boundary ? boundary.contains(interactive) : true);
+};

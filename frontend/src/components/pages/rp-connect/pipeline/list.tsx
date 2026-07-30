@@ -28,7 +28,11 @@ import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  DataTableColumnHeader,
+  DataTableFacetedFilter,
+  DataTablePagination,
+} from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +71,6 @@ import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { FacetedFilter } from './faceted-filter';
 import {
   aggregateConnectors,
   countPipelinesPerTab,
@@ -75,7 +78,6 @@ import {
   PIPELINE_STATE_TABS,
   type PipelineStateTabId,
 } from './list-utils';
-import { SortableColumnHeader } from './sortable-column-header';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { parseConfigComponents } from '../utils/yaml';
@@ -417,7 +419,7 @@ const createColumns = ({
 }: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
   {
     accessorKey: 'name',
-    header: ({ column }) => <SortableColumnHeader column={column} title="Pipeline" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
     cell: ({ row }) => {
       const id = row.original.id;
@@ -499,7 +501,7 @@ const createColumns = ({
   {
     id: 'state',
     accessorFn: (row) => String(row.state),
-    header: ({ column }) => <SortableColumnHeader column={column} title="Status" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     filterFn: stateInFilterFn,
     // The ?? guards against enum values a newer server may send that the
     // generated Pipeline_State doesn't know yet — they sort last, not NaN.
@@ -581,11 +583,12 @@ const PipelineListPageContent = () => {
       })),
     [pipelines]
   );
-  const tabCounts = useMemo(() => countPipelinesPerTab(pipelines.map((p) => p.state)), [pipelines]);
 
   const table = useReactTable({
     data: pipelines,
     columns,
+    // No column-visibility UI on this page; disabling hiding also drops the Hide item from the column header menus.
+    enableHiding: false,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
@@ -628,6 +631,15 @@ const PipelineListPageContent = () => {
 
   const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
   const [search, setSearch] = useState('');
+
+  // GitHub-style tab counts: each tab shows how many rows selecting it would
+  // yield under the current search/facets. The state column's faceted model
+  // applies every filter except its own — exactly those semantics.
+  const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
+  const tabCounts = useMemo(
+    () => countPipelinesPerTab((stateFacetedRows ?? []).map((r) => r.original.state)),
+    [stateFacetedRows]
+  );
 
   const handleTabChange = useCallback(
     (tabId: PipelineStateTabId) => {
@@ -756,13 +768,10 @@ const PipelineListPageContent = () => {
             <Search className="h-4 w-4 text-muted-foreground" />
           </InputStart>
         </Input>
-        <FacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
-        <FacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
-        <FacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
-        <FadePresence className="flex items-center gap-2" show={hasActiveFilters}>
-          <span className="text-muted-foreground text-sm tabular-nums">
-            {table.getFilteredRowModel().rows.length.toLocaleString()} of {pipelines.length.toLocaleString()} pipelines
-          </span>
+        <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
+        <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
+        <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
+        <FadePresence show={hasActiveFilters}>
           <Button onClick={clearFilters} size="sm" variant="ghost">
             <X /> Clear filters
           </Button>
