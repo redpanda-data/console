@@ -18,6 +18,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
+import { PageColumn } from '../components/layout/page-column';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
@@ -27,8 +28,7 @@ import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
-import { usePageTopOffset } from '../hooks/use-page-top-offset';
-import { chainToBody, documentTop } from '../utils/element-offset';
+import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
 
 /**
@@ -94,7 +94,7 @@ function FederatedRootLayout() {
  * - Cancels the host's side/bottom padding with equal negative margins, leaving
  *   Console's own gutter as the only one. Measured, not hardcoded, so either project
  *   can deploy first. Top padding stays — cancelling it would pull Console under the
- *   host's header; pages size themselves off it instead (use-page-top-offset.ts).
+ *   host's header; pages size themselves off it instead (layout/page-column.tsx).
  * - Stretches the layout to the viewport bottom so the footer's `margin-top: auto`
  *   lands there instead of trailing short pages.
  *
@@ -166,7 +166,6 @@ const useHostShellFit = () => {
 function FederatedAppContent() {
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
   const layoutRef = useHostShellFit();
-  const outletRef = usePageTopOffset();
 
   return (
     // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
@@ -183,9 +182,9 @@ function FederatedAppContent() {
       <AppPageHeader />
 
       <ErrorDisplay>
-        <div className="pt-8" ref={outletRef}>
+        <PageColumn>
           <Outlet />
-        </div>
+        </PageColumn>
       </ErrorDisplay>
 
       <AppFooter />

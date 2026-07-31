@@ -22,6 +22,7 @@ import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
+import { PageColumn } from '../components/layout/page-column';
 import { SidebarLayout } from '../components/layout/sidebar';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
@@ -32,7 +33,6 @@ import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
-import { usePageTopOffset } from '../hooks/use-page-top-offset';
 import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -91,7 +91,6 @@ function EmbeddedLayout() {
 
 function AppContent() {
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
-  const outletRef = usePageTopOffset();
 
   return (
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
@@ -105,9 +104,9 @@ function AppContent() {
         <AppPageHeader />
 
         <ErrorDisplay>
-          <div className="pt-8" ref={outletRef}>
+          <PageColumn>
             <Outlet />
-          </div>
+          </PageColumn>
         </ErrorDisplay>
 
         <AppFooter />
