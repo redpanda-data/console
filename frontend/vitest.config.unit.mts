@@ -15,13 +15,12 @@ export default defineConfig(({ mode }) => {
     experimental: { fsModuleCache: true },
     test: {
       fileParallelism: true,
-      vmMemoryLimit: '1000Mb',
       testTimeout: 30_000,
       globals: true,
       environment: 'node', // Unit tests use node environment
-      include: ['src/**/*.test.ts'], // Only .test.ts files (unit tests)
+      include: ['src/**/*.test.ts', 'tests/**/*.test.ts'], // Pure unit tests, including test-harness contracts
       setupFiles: './vitest.setup.unit.ts',
-      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
+      reporters: ['default', ...(process.env.CI ? ['github-actions' as const] : [])],
       coverage: {
         // Default off so local dev watch/test runs stay fast. Enable via
         // `--coverage` flag (see `test:coverage` script).
