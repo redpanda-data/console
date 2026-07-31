@@ -592,10 +592,13 @@ func (s *APISuite) TestDeleteTopic_v1() {
 		_, err = client.DeleteTopic(ctx, connect.NewRequest(&req))
 		require.NoError(err)
 
-		// 4. Ensure that Kafka topic no longer exists
-		topicDetails, err = s.kafkaAdminClient.ListTopics(ctx, topicName)
-		require.NoError(err)
-		assert.Falsef(topicDetails.Has(topicName), "Topic should no longer exist, but it still exists")
+		// 4. Ensure that Kafka topic no longer exists. The admin client serves
+		// metadata from a client-side cache (kadm v1.18+) that may briefly
+		// still contain the topic, so poll until the deletion is observed.
+		assert.Eventuallyf(func() bool {
+			topicDetails, err = s.kafkaAdminClient.ListTopics(ctx, topicName)
+			return err == nil && !topicDetails.Has(topicName)
+		}, 5*time.Second, 50*time.Millisecond, "Topic should no longer exist, but it still exists")
 	})
 
 	t.Run("delete topic with valid request (http)", func(t *testing.T) {
@@ -637,10 +640,13 @@ func (s *APISuite) TestDeleteTopic_v1() {
 		assert.Empty(errResponse)
 		require.NoError(err)
 
-		// 4. Ensure that Kafka topic no longer exists
-		topicDetails, err = s.kafkaAdminClient.ListTopics(ctx, topicName)
-		require.NoError(err)
-		assert.Falsef(topicDetails.Has(topicName), "Topic should no longer exist, but it still exists")
+		// 4. Ensure that Kafka topic no longer exists. The admin client serves
+		// metadata from a client-side cache (kadm v1.18+) that may briefly
+		// still contain the topic, so poll until the deletion is observed.
+		assert.Eventuallyf(func() bool {
+			topicDetails, err = s.kafkaAdminClient.ListTopics(ctx, topicName)
+			return err == nil && !topicDetails.Has(topicName)
+		}, 5*time.Second, 50*time.Millisecond, "Topic should no longer exist, but it still exists")
 	})
 
 	t.Run("try to delete a non-existent topic (connect-go)", func(t *testing.T) {

@@ -542,14 +542,18 @@ tr.consumerGroupNoMemberAssigned {
   border-left: 1px solid hsla(205, 100%, 90%, 0.5);
 }
 
-svg {
-  display: inline-block;
-  height: 100%;
-}
+// Must stay in @layer base: unlayered, this element selector outranks Tailwind
+// utilities (here and in the embedding Cloud UI document), zeroing utility-sized SVGs.
+@layer base {
+  svg {
+    display: inline-block;
+    height: 100%;
+  }
 
-// Exception for react-flow SVGs to prevent edges from being hidden
-.react-flow svg {
-  height: auto;
+  // Exception for react-flow SVGs to prevent edges from being hidden
+  .react-flow svg {
+    height: auto;
+  }
 }
 
 .quickTable {

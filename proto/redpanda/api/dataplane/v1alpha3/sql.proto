@@ -315,10 +315,7 @@ message ExecuteQueryRequest {
     lte: 10000
   }];
   // Per-query timeout. When unset, the server default applies.
-  optional google.protobuf.Duration timeout = 3 [(buf.validate.field).duration = {
-    gte: {seconds: 1}
-    lte: {seconds: 300}
-  }];
+  optional google.protobuf.Duration timeout = 3 [(buf.validate.field).duration = {gte: {seconds: 1}}];
 }
 
 message ExecuteQueryResponse {

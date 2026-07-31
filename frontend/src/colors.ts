@@ -14,7 +14,7 @@ const colors = {
   debugRed: '#FF0000',
 
   brandBlack: '#101828',
-  brandOrange: '#E14226',
+  brandOrange: '#E2401B',
   brandOrange2: '#EE6237',
   brandError: '#CF3131',
   brandWarning: '#FFBE00',

@@ -25,10 +25,14 @@ type SQL struct {
 	Authentication HTTPAuthentication `yaml:"authentication"`
 	TLS            TLS                `yaml:"tls"`
 
-	// MaxConnections is the global cap on physical connections Console holds
-	// against Redpanda SQL across all connection pools, guarding the engine's
-	// shared max_connections budget. Default: 100.
+	// MaxConnections caps the physical connections Console holds against
+	// Redpanda SQL: the shared pool size in static-credential mode, the global
+	// ceiling across all per-user pools in impersonation mode. Default: 100.
 	MaxConnections int `yaml:"maxConnections"`
+
+	// MaxConnectionsPerUser is each caller's pool size in impersonation mode.
+	// Default: 10.
+	MaxConnectionsPerUser int `yaml:"maxConnectionsPerUser"`
 }
 
 // RegisterFlags registers flags for sensitive SQL authentication inputs.
@@ -42,6 +46,9 @@ func (c *SQL) SetDefaults() {
 	c.TLS.SetDefaults()
 	if c.MaxConnections == 0 {
 		c.MaxConnections = 100
+	}
+	if c.MaxConnectionsPerUser == 0 {
+		c.MaxConnectionsPerUser = 10
 	}
 }
 
@@ -68,6 +75,15 @@ func (c *SQL) Validate() error {
 
 	if c.MaxConnections <= 0 {
 		return fmt.Errorf("sql.maxConnections must be positive, got %d", c.MaxConnections)
+	}
+
+	if c.MaxConnectionsPerUser <= 0 {
+		return fmt.Errorf("sql.maxConnectionsPerUser must be positive, got %d", c.MaxConnectionsPerUser)
+	}
+
+	if c.MaxConnectionsPerUser > c.MaxConnections {
+		return fmt.Errorf("sql.maxConnectionsPerUser (%d) must not exceed sql.maxConnections (%d)",
+			c.MaxConnectionsPerUser, c.MaxConnections)
 	}
 
 	return nil

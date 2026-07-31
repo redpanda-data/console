@@ -62,7 +62,7 @@ Playwright's globalSetup will automatically:
 2. Wait for services to be healthy
 3. Start backend and frontend servers
 4. Run the Playwright tests
-5. Clean up everything after tests complete (via globalTeardown)
+5. Clean up everything after tests complete (via the teardown returned by globalSetup)
 
 ### Run Individual Tests (Development Workflow)
 
@@ -272,8 +272,9 @@ tests/
 ├── variants.config.mjs           # Single source of truth for all variants
 ├── playwright-config-factory.mjs # Generates variant-specific configs
 ├── variant-cli.mjs               # Management CLI
-├── global-setup.mjs              # Variant-aware container setup
-├── global-teardown.mjs           # Variant-aware cleanup
+├── shared/
+│   ├── global-setup.mjs          # Variant-aware setup and normal cleanup
+│   └── global-teardown.mjs       # Crash-recovery cleanup
 ├── config/
 │   ├── console.config.yaml       # OSS config
 │   ├── console.enterprise.config.yaml  # Enterprise config
@@ -366,16 +367,16 @@ The backend configuration is in `tests/config/console.config.yaml` and matches t
 
 The E2E test setup uses Playwright's lifecycle hooks:
 
-- **`global-setup.mjs`**: Runs once before all tests
+- **`shared/global-setup.mjs`**: Runs once before all tests
   - Starts Docker containers (Redpanda, Kafka Connect, OwlShop)
   - Waits for services to be healthy
-  - Starts backend (Go) and frontend (Bun) servers
-  - Saves process IDs for cleanup
-
-- **`global-teardown.mjs`**: Runs once after all tests
-  - Stops backend and frontend servers
+  - Starts the backend container
+  - Returns a teardown that reuses the live Testcontainers handles
   - Stops and removes Docker containers
-  - Cleans up state files
+  - Removes Docker networks, temporary licenses, and state files
+
+- **`shared/global-teardown.mjs`**: Manual crash-recovery fallback
+  - Cleans serialized resources left by a process that could not run normal teardown
 
 ## Manual Management
 
@@ -383,12 +384,12 @@ If you need to manually manage the environment:
 
 ### Start everything
 ```bash
-cd tests && node -e "import('./global-setup.mjs').then(m => m.default())"
+cd tests && node -e "import('./shared/global-setup.mjs').then(m => m.default())"
 ```
 
 ### Stop everything
 ```bash
-cd tests && node -e "import('./global-teardown.mjs').then(m => m.default())"
+cd tests && node -e "import('./shared/global-teardown.mjs').then(m => m.default())"
 ```
 
 ### Check status
@@ -448,14 +449,14 @@ If services take longer than expected:
 
 ## Files
 
-- **`global-setup.mjs`** - Playwright globalSetup hook
+- **`shared/global-setup.mjs`** - Playwright globalSetup hook
   - Starts Docker containers
-  - Starts backend and frontend servers
+  - Starts the backend container
   - Waits for all services to be ready
+  - Returns normal teardown
 
-- **`global-teardown.mjs`** - Playwright globalTeardown hook
-  - Stops web servers
-  - Stops and removes Docker containers
+- **`shared/global-teardown.mjs`** - Manual recovery cleanup
+  - Removes containers and networks recorded by an interrupted run
 
 - **`config/docker-compose.yaml`** - Docker Compose configuration
   - Redpanda with SASL authentication
