@@ -34,6 +34,21 @@
   --chakra-colors-chakra-border-color: var(--color-border);
 }
 
+/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width
+   cap. Not a Tailwind variant: the generated variant CSS went missing on some routes in
+   the federated build. Layered, so it beats those utilities on specificity alone. */
+@layer utilities {
+  /* 100%, not none — so the release animates. */
+  html[data-page-expanded] .page-expanded-uncap {
+    max-width: 100%;
+  }
+
+  html[data-page-expanded] .page-expanded-flush {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
 /* Dev-only bottom-right cluster for floating debug triggers, raised clear of the
    host's Feedback tab: router-devtools pill at the bottom, query-devtools circle
    and the debug-helpers launcher (positioned via its own classes) in a row above.

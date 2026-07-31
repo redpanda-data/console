@@ -175,7 +175,7 @@ function FederatedAppContent() {
 
   return (
     // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
-    // Console's own gutter, released while a page is expanded (index.scss).
+    // Console's own gutter, released while a page is expanded (globals.css).
     <div
       className="page-expanded-flush flex flex-col px-12 transition-[padding] duration-300 ease-in-out"
       id="mainLayout"

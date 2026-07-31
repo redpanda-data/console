@@ -14,11 +14,13 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 /**
  * Set on `<html>` while an expanded page is on screen. Every shell releases its
  * horizontal constraints off this attribute in CSS, in lockstep: Console's gutter and
- * width cap (`page-expanded-*` in index.scss) and Cloud UI's embedded wrapper
+ * width cap (`page-expanded-*` in globals.css) and Cloud UI's embedded wrapper
  * (`expandableWidth` in cloud-ui layout.tsx). It must never outlive the page — a stale
  * attribute bleeds full width onto the next one.
  */
 const PAGE_EXPANDED_ATTR = 'data-page-expanded';
+
+const clearPageExpanded = () => document.documentElement.removeAttribute(PAGE_EXPANDED_ATTR);
 
 const readStoredExpanded = (storageKey: string): boolean => {
   try {
@@ -45,10 +47,11 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
   const [pageRoot, setPageRoot] = useState<HTMLElement | null>(null);
 
   // Layout effect: the attribute lands in the same frame as the page's own geometry
-  // change, so the shells and the page animate together.
+  // change, so the shells and the page animate together. Its cleanup is the only unset —
+  // it covers unmount (navigating away), `ref` detaching and `expanded` flipping off.
   useLayoutEffect(() => {
     if (!pageRoot) {
-      return;
+      return clearPageExpanded;
     }
 
     // display:none collapses the root to 0x0, which fires the observer — that is the
@@ -63,7 +66,7 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
     observer.observe(pageRoot);
     return () => {
       observer.disconnect();
-      document.documentElement.removeAttribute(PAGE_EXPANDED_ATTR);
+      clearPageExpanded();
     };
   }, [pageRoot, expanded]);
 

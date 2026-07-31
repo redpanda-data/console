@@ -74,8 +74,7 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          {/* Centered page column; the gutter and the width cap are released while a
-              page is expanded (index.scss). */}
+          {/* Centered page column; `page-expanded-*` release the gutter and cap (globals.css). */}
           <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
           </div>
