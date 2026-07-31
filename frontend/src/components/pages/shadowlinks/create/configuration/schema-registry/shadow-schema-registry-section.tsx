@@ -29,16 +29,32 @@ const MODE_DESCRIPTIONS: Record<SchemaRegistryMode, string> = {
     'Schema Registry shadowing is off. The shadow cluster keeps its own independent Schema Registry.',
 };
 
-export const ShadowSchemaRegistrySection = () => {
+type ShadowSchemaRegistrySectionProps = {
+  /**
+   * Modes the user cannot switch to (edit page: direct topic<->api switches
+   * are not supported).
+   */
+  disabledModes?: SchemaRegistryMode[];
+  /** Rendered under the mode tabs (edit page: transition warnings). */
+  modeNotice?: React.ReactNode;
+};
+
+export const ShadowSchemaRegistrySection = ({ disabledModes = [], modeNotice }: ShadowSchemaRegistrySectionProps) => {
   const { control, getValues, setValue } = useFormContext<FormValues>();
   const mode = useWatch({ control, name: 'schemaRegistry.mode' });
 
-  // Migrate a legacy-switch choice into this UI: the boolean may already be on
-  // (toggled while the gate was closed), and leaving mode at 'none' would make
-  // the tabs disagree with what gets submitted.
+  // Migrate a legacy-switch choice into this UI (the switch may have been
+  // toggled either way while the gate was closed): the boolean is the legacy
+  // source of truth, so reconcile the mode with it in both directions —
+  // otherwise the tabs would disagree with what gets submitted.
   useEffect(() => {
-    if (getValues('enableSchemaRegistrySync') && getValues('schemaRegistry.mode') === SCHEMA_REGISTRY_MODE.NONE) {
+    const enabled = getValues('enableSchemaRegistrySync');
+    const currentMode = getValues('schemaRegistry.mode');
+    if (enabled && currentMode === SCHEMA_REGISTRY_MODE.NONE) {
       setValue('schemaRegistry.mode', SCHEMA_REGISTRY_MODE.TOPIC);
+    }
+    if (!enabled && currentMode === SCHEMA_REGISTRY_MODE.TOPIC) {
+      setValue('schemaRegistry.mode', SCHEMA_REGISTRY_MODE.NONE);
     }
   }, [getValues, setValue]);
 
@@ -64,13 +80,25 @@ export const ShadowSchemaRegistrySection = () => {
           <div className="flex flex-col gap-2">
             <Tabs onValueChange={handleModeChange} value={mode}>
               <TabsList>
-                <TabsTrigger testId="sr-mode-topic-tab" value={SCHEMA_REGISTRY_MODE.TOPIC}>
-                  _schemas topic
+                <TabsTrigger
+                  disabled={disabledModes.includes(SCHEMA_REGISTRY_MODE.TOPIC)}
+                  testId="sr-mode-topic-tab"
+                  value={SCHEMA_REGISTRY_MODE.TOPIC}
+                >
+                  Redpanda
                 </TabsTrigger>
-                <TabsTrigger testId="sr-mode-api-tab" value={SCHEMA_REGISTRY_MODE.API}>
-                  Sync over API
+                <TabsTrigger
+                  disabled={disabledModes.includes(SCHEMA_REGISTRY_MODE.API)}
+                  testId="sr-mode-api-tab"
+                  value={SCHEMA_REGISTRY_MODE.API}
+                >
+                  Other
                 </TabsTrigger>
-                <TabsTrigger testId="sr-mode-none-tab" value={SCHEMA_REGISTRY_MODE.NONE}>
+                <TabsTrigger
+                  disabled={disabledModes.includes(SCHEMA_REGISTRY_MODE.NONE)}
+                  testId="sr-mode-none-tab"
+                  value={SCHEMA_REGISTRY_MODE.NONE}
+                >
                   None
                 </TabsTrigger>
               </TabsList>
@@ -78,6 +106,12 @@ export const ShadowSchemaRegistrySection = () => {
             <div className="text-body-sm text-muted-foreground" data-testid="sr-mode-description">
               {MODE_DESCRIPTIONS[mode]}
             </div>
+            {disabledModes.length > 0 && (
+              <div className="text-body-sm text-muted-foreground" data-testid="sr-mode-locked-hint">
+                Switching between Redpanda and Other isn't supported.
+              </div>
+            )}
+            {modeNotice}
           </div>
 
           {mode === SCHEMA_REGISTRY_MODE.API && (

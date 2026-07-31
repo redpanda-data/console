@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import {
   FormControl,
@@ -29,7 +30,7 @@ import {
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-import { useFormContext, useFormState } from 'react-hook-form';
+import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import type { FormValues } from '../../model';
 
@@ -54,6 +55,20 @@ export const SyncBehaviorSection = () => {
   // collapsed panel would block submit with no visible feedback.
   const open = isOpen || Boolean(errors.schemaRegistry?.syncBehavior);
 
+  const [tailInterval, fullSyncInterval, maxSourceRequestRate, unsupportedSchemaFeatures] = useWatch({
+    control,
+    name: [
+      'schemaRegistry.syncBehavior.tailInterval',
+      'schemaRegistry.syncBehavior.fullSyncInterval',
+      'schemaRegistry.syncBehavior.maxSourceRequestRate',
+      'schemaRegistry.syncBehavior.unsupportedSchemaFeatures',
+    ],
+  });
+  // Signal non-default values while collapsed (e.g. a hydrated link being
+  // edited) so customization isn't mistaken for cluster defaults.
+  const isCustomized =
+    Boolean(tailInterval || fullSyncInterval || maxSourceRequestRate) || unsupportedSchemaFeatures === 'remove';
+
   return (
     <Collapsible onOpenChange={setIsOpen} open={open} testId="sr-sync-behavior">
       <CollapsibleTrigger
@@ -67,7 +82,14 @@ export const SyncBehaviorSection = () => {
               className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
             />
             <div className="flex-1">
-              <span className="font-medium text-sm">Sync behavior</span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">Sync behavior</span>
+                {!open && isCustomized && (
+                  <Badge size="sm" testId="sr-sync-behavior-customized-badge" variant="success-inverted">
+                    Customized
+                  </Badge>
+                )}
+              </div>
               <div className="mt-0.5 text-body-sm text-muted-foreground">
                 Polling intervals, rate limits, and how to handle unsupported schema features. Cluster defaults apply if
                 unset.

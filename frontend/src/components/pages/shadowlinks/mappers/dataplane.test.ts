@@ -18,7 +18,8 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { describe, expect, test } from 'vitest';
 
-import { fromDataplaneShadowLink } from './dataplane';
+import { buildDefaultFormValues, fromDataplaneShadowLink } from './dataplane';
+import { FormSchema, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
 import type { UnifiedSchemaRegistryApiOptions } from '../model';
 
 const buildShadowLink = (schemaRegistrySyncOptions?: MessageInitShape<typeof SchemaRegistrySyncOptionsSchema>) =>
@@ -152,5 +153,66 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
     });
 
     expect(api.destinationMapping).toEqual({ case: 'identity' });
+  });
+});
+
+describe('buildDefaultFormValues schema registry hydration', () => {
+  const buildLinkWithConnection = (
+    schemaRegistrySyncOptions?: MessageInitShape<typeof SchemaRegistrySyncOptionsSchema>
+  ) =>
+    create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        clientOptions: { bootstrapServers: ['localhost:9092'] },
+        schemaRegistrySyncOptions,
+      },
+    });
+
+  test('hydrates an api-mode link and stays form-valid', () => {
+    const formValues = buildDefaultFormValues(
+      buildLinkWithConnection({
+        schemaRegistryShadowingMode: {
+          case: 'shadowSchemaRegistryApi',
+          value: {
+            sourceUrl: 'https://sr.example.com',
+            tlsSettings: {
+              enabled: true,
+              tlsSettings: {
+                case: 'tlsPemSettings',
+                value: { ca: 'CA_PEM', cert: 'CERT_PEM', keyFingerprint: 'fp=' },
+              },
+            },
+            tailInterval: { seconds: 10n },
+            sourceFilter: { contexts: ['.prod'] },
+            paused: true,
+          },
+        },
+      })
+    );
+
+    expect(formValues.enableSchemaRegistrySync).toBe(false);
+    expect(formValues.schemaRegistry.mode).toBe(SCHEMA_REGISTRY_MODE.API);
+    expect(formValues.schemaRegistry.sourceUrl).toBe('https://sr.example.com');
+    expect(formValues.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
+    expect(formValues.schemaRegistry.scopeMode).toBe('specify');
+    expect(formValues.schemaRegistry.syncBehavior.tailInterval).toBe('10s');
+    expect(formValues.schemaRegistry.paused).toBe(true);
+    // The hydrated form must be submittable without touching unrelated fields.
+    expect(FormSchema.safeParse(formValues).success).toBe(true);
+  });
+
+  test('hydrates topic and none modes and stays form-valid', () => {
+    const topicValues = buildDefaultFormValues(
+      buildLinkWithConnection({ schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} } })
+    );
+    expect(topicValues.enableSchemaRegistrySync).toBe(true);
+    expect(topicValues.schemaRegistry.mode).toBe(SCHEMA_REGISTRY_MODE.TOPIC);
+    expect(FormSchema.safeParse(topicValues).success).toBe(true);
+
+    const noneValues = buildDefaultFormValues(buildLinkWithConnection(undefined));
+    expect(noneValues.enableSchemaRegistrySync).toBe(false);
+    expect(noneValues.schemaRegistry).toEqual(initialValues.schemaRegistry);
+    expect(FormSchema.safeParse(noneValues).success).toBe(true);
   });
 });

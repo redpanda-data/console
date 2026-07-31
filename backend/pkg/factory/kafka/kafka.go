@@ -138,8 +138,13 @@ func NewKgoConfig(cfg config.Kafka, logger *slog.Logger, metricsNamespace string
 		// We keep control records because we need to consume them in order to know whether the last message in a
 		// partition is worth waiting for or not (because it's a control record which we would never receive otherwise)
 		kgo.KeepControlRecords(),
-		// Refresh metadata more often than the default, when the client notices that it's stale.
-		kgo.MetadataMinAge(time.Second),
+		// Refresh metadata more often than the default, when the client notices
+		// that it's stale. Since kadm v1.18, admin metadata lookups (topic
+		// lists etc.) are served from a client-side cache refreshed only once
+		// entries are older than this, so read-after-write flows such as
+		// create topic -> list topics would return stale results for up to
+		// this duration. 10ms is the lowest value franz-go accepts.
+		kgo.MetadataMinAge(10 * time.Millisecond),
 		kgo.WithLogger(kslog.New(loggerpkg.Named(logger, "kafka_client"))),
 		kgo.WithHooks(metricHooks),
 	}

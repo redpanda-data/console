@@ -40,11 +40,16 @@ vi.mock('./controlplane/shadowlink', () => ({
   })),
 }));
 
-// Mock the controlplane mapper for fallback scenario
-vi.mock('components/pages/shadowlinks/mappers/controlplane', () => ({
-  fromControlplaneShadowLink: vi.fn(),
-  buildDefaultFormValuesFromControlplane: vi.fn(),
-}));
+// Mock the controlplane mapper for the fallback scenario. Form-value building
+// delegates to the real mapper so useEditShadowLink tests exercise actual
+// hydration (vi.clearAllMocks clears calls, not this implementation).
+vi.mock('components/pages/shadowlinks/mappers/controlplane', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('components/pages/shadowlinks/mappers/controlplane')>();
+  return {
+    fromControlplaneShadowLink: vi.fn(),
+    buildDefaultFormValuesFromControlplane: vi.fn(actual.buildDefaultFormValuesFromControlplane),
+  };
+});
 
 import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers/controlplane';
 // Import after mocks are set up
@@ -284,7 +289,10 @@ describe('useEditShadowLink', () => {
     return renderHook(() => useEditShadowLink('test-shadow-link'), { wrapper });
   };
 
-  test('detects API mode from controlplane data in embedded mode', async () => {
+  // The edit page derives all API-mode behavior (locked tabs, gate-off
+  // read-only card) from the hydrated form values, so the mode must survive
+  // hydration from controlplane data.
+  test('hydrates API mode from controlplane data in embedded mode', async () => {
     mockIsEmbedded.mockReturnValue(true);
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: {
@@ -306,10 +314,10 @@ describe('useEditShadowLink', () => {
     await waitFor(() => {
       expect(result.current.hasData).toBe(true);
     });
-    expect(result.current.isSchemaRegistryApiMode).toBe(true);
+    expect(result.current.formValues?.schemaRegistry.mode).toBe('api');
   });
 
-  test('does not flag API mode for a topic-mode controlplane link in embedded mode', async () => {
+  test('hydrates topic mode (not api) for a topic-mode controlplane link in embedded mode', async () => {
     mockIsEmbedded.mockReturnValue(true);
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: {
@@ -328,7 +336,7 @@ describe('useEditShadowLink', () => {
     await waitFor(() => {
       expect(result.current.hasData).toBe(true);
     });
-    expect(result.current.isSchemaRegistryApiMode).toBe(false);
+    expect(result.current.formValues?.schemaRegistry.mode).toBe('topic');
   });
 });
 

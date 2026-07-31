@@ -12,6 +12,26 @@
 import { waitFor } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { Feature, useSupportedFeaturesStore } from 'state/supported-features';
+
+/**
+ * Seed the real supported-features store the way the app does at boot, so the
+ * Schema Registry sync gate exercises the actual endpoint-compatibility
+ * fail-closed logic instead of a mock: a supported endpoint opens the gate,
+ * anything else (unsupported, absent, or a never-loaded null store) closes it.
+ */
+export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
+  useSupportedFeaturesStore.getState().setEndpointCompatibility({
+    kafkaVersion: 'v26.2.0',
+    endpoints: [
+      {
+        endpoint: Feature.ShadowLinkSchemaRegistrySync.endpoint,
+        method: Feature.ShadowLinkSchemaRegistrySync.method,
+        isSupported,
+      },
+    ],
+  });
+};
 
 /**
  * Regex patterns for test IDs

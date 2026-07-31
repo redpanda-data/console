@@ -13,7 +13,7 @@ import {
   ShadowLinkUpdateSchema as CpShadowLinkUpdateSchema,
   UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
-import { create } from '@bufbuild/protobuf';
+import { create, equals } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
@@ -24,7 +24,7 @@ import {
   NameFilterSchema,
   PatternType,
   PlainConfigSchema,
-  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
+  type SchemaRegistrySyncOptions,
   SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
@@ -43,6 +43,7 @@ import {
 
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, TLS_MODE } from '../create/model';
+import { buildSchemaRegistrySyncOptions } from '../create/schema-registry-request';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
 /**
@@ -463,36 +464,33 @@ export const getUpdateValuesForACLs = (
   };
 };
 
+const srSyncOptionsChanged = (
+  next: SchemaRegistrySyncOptions | undefined,
+  previous: SchemaRegistrySyncOptions | undefined
+): boolean => {
+  if (next === undefined || previous === undefined) {
+    return next !== previous;
+  }
+  return !equals(SchemaRegistrySyncOptionsSchema, next, previous);
+};
+
 /**
- * Get update values for Schema Registry category
- * Compares form values with original values and returns schema + field mask paths
+ * Get update values for Schema Registry category.
+ * Both sides of the comparison are built from form values (current vs
+ * hydrated originals), so hydration normalizations cancel out and scratch
+ * values typed into a mode that isn't submitted never produce a mask. The
+ * mask replaces the whole message, hence the single parent path.
  */
 export const getUpdateValuesForSchemaRegistry = (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof SchemaRegistrySyncOptionsSchema>> | undefined> => {
-  const fieldMaskPaths: string[] = [];
-
-  // Compare schema registry sync enabled state
-  const schemaRegistryChanged = values.enableSchemaRegistrySync !== originalValues.enableSchemaRegistrySync;
-
-  if (schemaRegistryChanged) {
-    fieldMaskPaths.push('configurations.schema_registry_sync_options');
-  }
-
-  // Build schema registry sync options (only set if enabled)
-  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
-    ? create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: {
-          case: 'shadowSchemaRegistryTopic',
-          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
-        },
-      })
-    : undefined;
+): UpdateResult<SchemaRegistrySyncOptions | undefined> => {
+  const value = buildSchemaRegistrySyncOptions(values);
+  const original = buildSchemaRegistrySyncOptions(originalValues);
 
   return {
-    value: schemaRegistrySyncOptions,
-    fieldMaskPaths,
+    value,
+    fieldMaskPaths: srSyncOptionsChanged(value, original) ? ['configurations.schema_registry_sync_options'] : [],
   };
 };
 

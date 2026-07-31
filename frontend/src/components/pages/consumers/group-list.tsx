@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { DataTable, Flex, Grid, SearchField, Tag, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import {
   type ColumnDef,
@@ -280,69 +281,10 @@ const GroupList: FC = () => {
   };
 
   return (
-    <ListLayout className="my-4" data-testid="consumer-groups-table">
-      <div className="flex flex-wrap gap-8">
-        <Stat label="Total groups" mono size="lg" value={statistics.total} />
-        {statistics.byState.map(({ state, count }) => (
-          <Stat key={state} label={state} mono size="lg" value={count} />
-        ))}
-      </div>
-
-      <ListLayoutFilters>
-        <Input
-          containerClassName="w-full min-w-[140px] max-w-[300px] sm:w-[200px] lg:w-[250px]"
-          onChange={(e) => table.getColumn('groupId')?.setFilterValue(e.target.value || undefined)}
-          placeholder="Filter by group ID (regexp)..."
-          size="sm"
-          testId="search-field-input"
-          value={groupIdFilter}
-        >
-          <InputStart>
-            <Search className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
-          </InputStart>
-          {groupIdFilter !== '' && (
-            <InputEnd className="pointer-events-auto">
-              <Button
-                aria-label="Clear group ID filter"
-                data-testid="search-field-reset-icon"
-                onClick={() => table.getColumn('groupId')?.setFilterValue(undefined)}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <X />
-              </Button>
-            </InputEnd>
-          )}
-        </Input>
-        <DataTableFacetedFilter
-          column={table.getColumn('state')}
-          options={consumerGroupStateFilterOptions}
-          title="State"
-        />
-      </ListLayoutFilters>
-
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
-                return (
-                  <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>{renderBody()}</TableBody>
-      </Table>
-
-      <ListLayoutPagination className="[&>*]:w-full">
-        <DataTablePagination table={table} />
-      </ListLayoutPagination>
-    </ListLayout>
+    <Grid alignItems="center" gap={2} templateColumns="auto 1fr">
+      <Tag>Protocol: {protocol}</Tag>
+      {groupIdEl}
+    </Grid>
   );
 };
 

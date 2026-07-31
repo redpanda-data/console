@@ -335,7 +335,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
     badges = (
       <>
         <Badge testId="schema-registry-mode-badge" tone="info" variant="subtle">
-          Sync over API
+          Other
         </Badge>
         {statusBadge}
       </>
@@ -344,8 +344,8 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
   } else if (mode?.case === 'shadowSchemaRegistryTopic') {
     badges = (
       <>
-        <Badge className="font-mono" testId="schema-registry-mode-badge" tone="info" variant="subtle">
-          _schemas topic
+        <Badge testId="schema-registry-mode-badge" tone="info" variant="subtle">
+          Redpanda
         </Badge>
         <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
           Enabled

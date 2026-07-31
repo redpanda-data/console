@@ -12,11 +12,24 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
+import { isEmbedded } from 'config';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
+import { vi } from 'vitest';
 
 import { SourceConnectionSection } from './source-connection-section';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD } from '../../model';
+
+vi.mock('config', () => ({
+  isEmbedded: vi.fn(() => false),
+  isFeatureFlagEnabled: vi.fn(() => false),
+}));
+
+let mockSecretsData: { secrets: { id: string }[] } | undefined;
+vi.mock('react-query/api/secret', () => ({
+  useCreateSecretMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useListSecretsQuery: () => ({ data: mockSecretsData }),
+}));
 
 const apiModeValues: FormValues = {
   ...initialValues,
@@ -93,6 +106,61 @@ describe('SourceConnectionSection', () => {
       expect(formValues?.schemaRegistry?.authMethod).toBe(SR_AUTH_METHOD.BASIC);
       expect(formValues?.schemaRegistry?.basicCredentials?.username).toBe('sr-replicator');
       expect(formValues?.schemaRegistry?.basicCredentials?.password).toBe('p@ssw0rd!');
+    });
+  });
+
+  describe('HTTP Basic password in embedded mode (Cloud)', () => {
+    beforeEach(() => {
+      vi.mocked(isEmbedded).mockReturnValue(true);
+    });
+
+    afterEach(() => {
+      vi.mocked(isEmbedded).mockReturnValue(false);
+      mockSecretsData = undefined;
+    });
+
+    test('should render a secret selector instead of a raw password input and store a secret reference', async () => {
+      mockSecretsData = { secrets: [{ id: 'SR_PASSWORD' }, { id: 'OTHER_SECRET' }] };
+      const user = userEvent.setup();
+      let formValues: FormValues | undefined;
+
+      render(
+        <TestWrapper
+          onFormChange={(values) => {
+            formValues = values;
+          }}
+        />
+      );
+
+      await user.click(screen.getByTestId('sr-auth-basic-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sr-basic-auth-fields')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('sr-basic-password-input')).not.toBeInTheDocument();
+
+      // Queried by accessible name: form wiring must reach the trigger.
+      await user.click(screen.getByRole('combobox', { name: /password/i }));
+      await user.click(await screen.findByRole('option', { name: 'SR_PASSWORD' }));
+
+      await waitFor(() => {
+        expect(formValues?.schemaRegistry?.basicCredentials?.password).toBe('${secrets.SR_PASSWORD}');
+      });
+    });
+
+    test('should show the create-secret empty state when no secrets exist', async () => {
+      mockSecretsData = { secrets: [] };
+      const user = userEvent.setup();
+
+      render(<TestWrapper />);
+
+      await user.click(screen.getByTestId('sr-auth-basic-tab'));
+
+      await waitFor(() => {
+        expect(screen.getByText('No secrets available')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Create a secret to securely store your Schema Registry password')).toBeInTheDocument();
+      expect(screen.queryByTestId('sr-basic-password-input')).not.toBeInTheDocument();
     });
   });
 
