@@ -19,9 +19,5 @@ export const Route = createFileRoute('/groups/')({
     title: 'Consumer Groups',
     icon: FilterIcon,
   },
-  component: GroupListWrapper,
+  component: GroupList,
 });
-
-function GroupListWrapper() {
-  return <GroupList matchedPath="/groups" />;
-}
