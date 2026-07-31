@@ -383,10 +383,10 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
 
   return (
     <div
-      // In-flow page (footer below); 7rem = app header + pt-8, matching the RPCN
-      // editor. Dark mode re-points the border tokens — the registry's near-black
-      // theme renders borders effectively invisible.
-      className="flex h-[calc(100dvh-7rem)] min-h-[500px] flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      // In-flow page (footer below), viewport-bounded like the RPCN editor
+      // (page-fill-viewport, globals.css). Dark mode re-points the border tokens — the
+      // registry's near-black theme renders borders effectively invisible.
+      className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
       ref={expandedModeRef}
     >
       <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', expanded ? 'px-4' : 'mt-3')}>

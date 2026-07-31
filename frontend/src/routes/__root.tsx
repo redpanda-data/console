@@ -32,6 +32,7 @@ import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { usePageTopOffset } from '../hooks/use-page-top-offset';
 import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -90,6 +91,7 @@ function EmbeddedLayout() {
 
 function AppContent() {
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const outletRef = usePageTopOffset();
 
   return (
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
@@ -103,7 +105,7 @@ function AppContent() {
         <AppPageHeader />
 
         <ErrorDisplay>
-          <div className="pt-8">
+          <div className="pt-8" ref={outletRef}>
             <Outlet />
           </div>
         </ErrorDisplay>

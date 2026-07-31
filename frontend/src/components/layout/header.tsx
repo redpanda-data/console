@@ -97,8 +97,16 @@ function AppPageHeader() {
     return null;
   }
 
+  // Embedded, the breadcrumb row holds nothing — the host draws the breadcrumb and there
+  // is no sidebar trigger — so with the title row hidden this would be a bare divider
+  // above a page that already has its own title bar.
+  if (hideTitleRow && isEmbedded()) {
+    return null;
+  }
+
   return (
-    <div>
+    // Expanded pages release #mainLayout's gutter; keep the header off the viewport edge.
+    <div className="page-expanded-inset transition-[padding] duration-300 ease-in-out">
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
       {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
           studio, which carries its own title bar and toolbar). */}

@@ -27,6 +27,8 @@ import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { usePageTopOffset } from '../hooks/use-page-top-offset';
+import { chainToBody, documentTop } from '../utils/element-offset';
 import { ModalContainer } from '../utils/modal-container';
 
 /**
@@ -85,17 +87,6 @@ function FederatedRootLayout() {
   );
 }
 
-/** Distance from the document top. Unlike getBoundingClientRect, scroll-independent. */
-const documentTop = (target: HTMLElement): number => {
-  let top = 0;
-  let el: HTMLElement | null = target;
-  while (el) {
-    top += el.offsetTop;
-    el = el.offsetParent instanceof HTMLElement ? el.offsetParent : null;
-  }
-  return top;
-};
-
 /**
  * Fits `#mainLayout` into the host's shell. Neither half can be CSS: every wrapper
  * above it belongs to the host app, so there is no chain to inherit from.
@@ -103,9 +94,15 @@ const documentTop = (target: HTMLElement): number => {
  * - Cancels the host's side/bottom padding with equal negative margins, leaving
  *   Console's own gutter as the only one. Measured, not hardcoded, so either project
  *   can deploy first. Top padding stays — cancelling it would pull Console under the
- *   host's header.
+ *   host's header; pages size themselves off it instead (use-page-top-offset.ts).
  * - Stretches the layout to the viewport bottom so the footer's `margin-top: auto`
  *   lands there instead of trailing short pages.
+ *
+ * Three things the host (Cloud UI `common/layout/layout.tsx`) has to hold up: spacing
+ * expressed as `padding` — margin, gap or a narrower `max-width` isn't cancellable here
+ * and would double up with Console's gutter; no `overflow` on those ancestors, which
+ * would clip the negative margins; and the `html[data-page-expanded]` `max-width`
+ * release, the half of expanded mode Console can't do for itself.
  */
 const useHostShellFit = () => {
   const layoutRef = useRef<HTMLDivElement>(null);
@@ -116,10 +113,7 @@ const useHostShellFit = () => {
       return;
     }
 
-    const hostWrappers: HTMLElement[] = [];
-    for (let el = layoutEl.parentElement; el && el !== document.body; el = el.parentElement) {
-      hostWrappers.push(el);
-    }
+    const hostWrappers = chainToBody(layoutEl.parentElement);
 
     // Both writes resize the wrappers being observed, so only write on change.
     let lastMargin = '';
@@ -172,6 +166,7 @@ const useHostShellFit = () => {
 function FederatedAppContent() {
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
   const layoutRef = useHostShellFit();
+  const outletRef = usePageTopOffset();
 
   return (
     // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
@@ -188,7 +183,7 @@ function FederatedAppContent() {
       <AppPageHeader />
 
       <ErrorDisplay>
-        <div className="pt-8">
+        <div className="pt-8" ref={outletRef}>
           <Outlet />
         </div>
       </ErrorDisplay>
