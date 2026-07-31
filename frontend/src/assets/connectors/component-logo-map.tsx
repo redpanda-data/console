@@ -12,7 +12,7 @@ import SiOpenai from '@icons-pack/react-simple-icons/icons/SiOpenai.mjs';
 import SiSalesforce from '@icons-pack/react-simple-icons/icons/SiSalesforce.mjs';
 import SiSplunk from '@icons-pack/react-simple-icons/icons/SiSplunk.mjs';
 import SiTrino from '@icons-pack/react-simple-icons/icons/SiTrino.mjs';
-import { RedpandaUILetterIcon } from 'components/redpanda-ui/components/icons';
+import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import {
   Activity,
   Archive,
@@ -129,9 +129,7 @@ import {
   XmlLogo,
 } from './logos';
 
-const RedpandaLetterLogo = (props: SVGProps<SVGSVGElement>) => (
-  <RedpandaUILetterIcon {...props} style={{ color: '#E14226', ...props.style }} />
-);
+const RedpandaMarkLogo = (props: SVGProps<SVGSVGElement>) => <RedpandaLogo variant="mark" {...props} />;
 
 export const componentLogoMap = {
   custom: Settings,
@@ -162,7 +160,7 @@ export const componentLogoMap = {
   batched: Package,
   beanstalkd: BeanstalkdLogo,
   benchmark: Activity,
-  bloblang: RedpandaLetterLogo,
+  bloblang: RedpandaMarkLogo,
   bounds_check: Ruler,
   branch: GitFork,
   broker: Share2,
@@ -294,12 +292,12 @@ export const componentLogoMap = {
   redis_scan: RedisLogo,
   redis_script: RedisLogo,
   redis_streams: RedisLogo,
-  redpanda: RedpandaLetterLogo,
-  redpanda_common: RedpandaLetterLogo,
-  redpanda_data_transform: RedpandaLetterLogo,
-  redpanda_migrator: RedpandaLetterLogo,
-  redpanda_migrator_bundle: RedpandaLetterLogo,
-  redpanda_migrator_offsets: RedpandaLetterLogo,
+  redpanda: RedpandaMarkLogo,
+  redpanda_common: RedpandaMarkLogo,
+  redpanda_data_transform: RedpandaMarkLogo,
+  redpanda_migrator: RedpandaMarkLogo,
+  redpanda_migrator_bundle: RedpandaMarkLogo,
+  redpanda_migrator_offsets: RedpandaMarkLogo,
   reject: Ban,
   reject_errored: Ban,
   resource: Package,
