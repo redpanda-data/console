@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
+import type { CustomTestOptions } from './fixtures';
+
 dotenv.config();
 
 // Configure reporters based on environment
@@ -11,7 +13,7 @@ const reporters = process.env.CI
 /**
  * Playwright Test configuration for Enterprise (console-enterprise) variant
  */
-const config = defineConfig({
+const config = defineConfig<CustomTestOptions>({
   // Extended timeout for shadowlink tests
   timeout: 120 * 1000,
 
@@ -69,7 +71,7 @@ const config = defineConfig({
 
     /* Shadowlink destination backend URL (port 3101) */
     shadowBackendURL: 'http://localhost:3101',
-  } as any,
+  },
 
   /* Configure projects */
   projects: [
