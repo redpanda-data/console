@@ -74,7 +74,10 @@ function SelfHostedLayout() {
     <>
       <AnnouncementBar />
       <SidebarLayout>
-        <SidebarInset>
+        {/* min-w-0: the inset is a row-flex item; without it, wide page content
+            (e.g. the messages table) floors its min-width and pushes the page
+            past the viewport, adding a horizontal scrollbar. */}
+        <SidebarInset className="min-w-0">
           <div className="container mx-auto max-w-[1500px] px-12">
             <AppContent />
           </div>

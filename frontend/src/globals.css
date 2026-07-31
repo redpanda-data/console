@@ -78,3 +78,17 @@ button[aria-label="Open TanStack Router Devtools"]:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* Topic messages live tail: freshly arrived rows flash green then fade.
+   Respects prefers-reduced-motion via the global override above. */
+@keyframes message-flash {
+  0% {
+    background-color: var(--color-green-100, #d1fadf);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.animate-message-flash {
+  animation: message-flash 2.6s ease-out;
+}
