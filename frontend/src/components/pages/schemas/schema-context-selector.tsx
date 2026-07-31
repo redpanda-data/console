@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Command,
@@ -19,10 +18,9 @@ import {
   CommandList,
 } from 'components/redpanda-ui/components/command';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
-import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { CheckIcon, InfoIcon } from 'lucide-react';
+import { CheckIcon, ChevronsUpDownIcon, InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 
@@ -50,12 +48,9 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={
-            <Button className="h-8 border-dashed" data-testid="schema-context-selector" size="sm" variant="outline">
-              Context
-              <Separator className="mx-2 h-4 self-center" orientation="vertical" />
-              <Badge className="max-w-32 truncate rounded-sm px-1 font-normal" variant="secondary">
-                {selectedLabel}
-              </Badge>
+            <Button className="h-7 px-2 font-normal" data-testid="schema-context-selector" size="sm" variant="outline">
+              <span className="max-w-40 truncate">{selectedLabel}</span>
+              <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
             </Button>
           }
         />
@@ -95,8 +90,9 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
             </span>
           }
         />
-        <TooltipContent side="top">
-          Schema Registry contexts allow grouping subjects into isolated namespaces
+        <TooltipContent className="max-w-64" side="top">
+          Schema Registry contexts group subjects into isolated namespaces. The selected context determines the mode and
+          compatibility shown here, which schemas are listed, and where new schemas are created.
         </TooltipContent>
       </Tooltip>
     </div>

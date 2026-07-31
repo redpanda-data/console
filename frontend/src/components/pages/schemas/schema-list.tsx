@@ -537,8 +537,31 @@ const SchemaList: FC = () => {
 
   return (
     <PageContent key="b">
-      {/* Statistics Bar */}
-      <StatGroup className="w-fit" columns={2} gap="lg" testId="schema-list-stats">
+      {/* Statistics Bar — the context selector lives here, not in the table filters,
+          because switching context changes the whole page (mode, compatibility,
+          create-schema default), not just the rows shown. */}
+      <StatGroup
+        className="w-fit"
+        columns={schemaRegistryContextsSupported ? 3 : 2}
+        gap="lg"
+        testId="schema-list-stats"
+      >
+        {schemaRegistryContextsSupported && (
+          <Stat
+            label="Context"
+            testId="schema-list-context-stat"
+            value={
+              <SchemaContextSelector
+                contexts={derivedContexts}
+                onContextChange={(ctx) => {
+                  setSelectedContext(ctx);
+                  setPageIndex(0);
+                }}
+                selectedContext={selectedContext}
+              />
+            }
+          />
+        )}
         <Stat
           label={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}
           testId="schema-list-mode-stat"
@@ -664,13 +687,17 @@ const SchemaList: FC = () => {
                     <Button
                       data-testid="schema-list-create-btn"
                       disabled={api.userData?.canCreateSchemas === false}
-                      onClick={() =>
-                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                          ? appGlobal.historyPush(
-                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/create`
-                            )
-                          : appGlobal.historyPush('/schema-registry/create')
-                      }
+                      onClick={() => {
+                        // Carry the selected context into the create page URL so the
+                        // form pre-fills it and survives a reload. "All" has no single
+                        // context to pre-fill, so it uses the plain create page.
+                        if (schemaRegistryContextsSupported && selectedContext !== ALL_CONTEXT_ID) {
+                          const contextName = selectedContext === DEFAULT_CONTEXT_ID ? 'default' : selectedContext;
+                          appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(contextName)}/create`);
+                        } else {
+                          appGlobal.historyPush('/schema-registry/create');
+                        }
+                      }}
                       variant="primary"
                     >
                       Create new schema
@@ -700,16 +727,6 @@ const SchemaList: FC = () => {
               />
             </div>
             {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
-            {schemaRegistryContextsSupported && (
-              <SchemaContextSelector
-                contexts={derivedContexts}
-                onContextChange={(ctx) => {
-                  setSelectedContext(ctx);
-                  setPageIndex(0);
-                }}
-                selectedContext={selectedContext}
-              />
-            )}
             <DataTableFacetedFilter
               column={table.getColumn('type')}
               options={SCHEMA_TYPE_FILTER_OPTIONS}
