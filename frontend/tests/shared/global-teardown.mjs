@@ -1,110 +1,55 @@
-import { exec } from 'node:child_process';
-import fs from 'node:fs';
+import { cleanupSerializedResources } from './test-environment-state.mjs';
+import { execFile } from 'node:child_process';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
+const MISSING_DOCKER_RESOURCE_PATTERN = /No such (container|network)/i;
 
+function isAlreadyRemoved(error) {
+  const output = `${error?.message ?? ''}\n${error?.stderr ?? ''}`;
+  return MISSING_DOCKER_RESOURCE_PATTERN.test(output);
+}
+
+async function runDocker(args) {
+  try {
+    await execFileAsync('docker', args);
+  } catch (error) {
+    if (!isAlreadyRemoved(error)) {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Crash-recovery fallback for a serialized state file.
+ *
+ * Normal Playwright runs use the teardown returned by global-setup.mjs so
+ * Testcontainers can stop resources through their live handles. Invoke this
+ * module manually only when a previous process exited before that teardown.
+ */
 export default async function globalTeardown(config = {}) {
   const variantName = config?.metadata?.variantName ?? 'console';
-  const CONTAINER_STATE_FILE = getStateFile(variantName);
+  const stateFile = getStateFile(variantName);
 
-  console.log(`\n🛑 TEARDOWN: ${variantName}...`);
+  console.log(`\n🛑 RECOVERY TEARDOWN: ${variantName}...`);
 
-  try {
-    if (!fs.existsSync(CONTAINER_STATE_FILE)) {
-      console.log('No container state file found, skipping teardown');
-      return;
-    }
-
-    const state = JSON.parse(fs.readFileSync(CONTAINER_STATE_FILE, 'utf8'));
-
-    // Stop backend containers
-    if (state.sourceBackendId) {
-      console.log('Stopping source backend container...');
-      await execAsync(`docker stop ${state.sourceBackendId}`).catch(() => {
-        // Ignore errors - container might already be stopped
-      });
-      await execAsync(`docker rm ${state.sourceBackendId}`).catch(() => {
-        // Ignore errors - container might already be removed
-      });
-    }
-
-    if (state.backendId) {
-      console.log('Stopping backend container...');
-      await execAsync(`docker stop ${state.backendId}`).catch(() => {
-        // Ignore errors - container might already be stopped
-      });
-      await execAsync(`docker rm ${state.backendId}`).catch(() => {
-        // Ignore errors - container might already be removed
-      });
-    }
-
-    // Stop Docker containers (testcontainers)
-    if (state.connectId) {
-      console.log('Stopping Kafka Connect container...');
-      await execAsync(`docker stop ${state.connectId}`).catch(() => {
-        // Ignore errors - container might already be stopped
-      });
-      await execAsync(`docker rm ${state.connectId}`).catch(() => {
-        // Ignore errors - container might already be removed
-      });
-    }
-
-    if (state.owlshopId) {
-      console.log('Stopping OwlShop container...');
-      await execAsync(`docker stop ${state.owlshopId}`).catch(() => {
-        // Ignore errors - container might already be stopped
-      });
-      await execAsync(`docker rm ${state.owlshopId}`).catch(() => {
-        // Ignore errors - container might already be removed
-      });
-    }
-
-    // Stop destination cluster if it exists (shadowlink tests)
-    if (state.destRedpandaId) {
-      console.log('Stopping destination Redpanda container...');
-      await execAsync(`docker stop ${state.destRedpandaId}`).catch(() => {
-        // Ignore errors - container might already be stopped
-      });
-      await execAsync(`docker rm ${state.destRedpandaId}`).catch(() => {
-        // Ignore errors - container might already be removed
-      });
-    }
-
-    if (state.kafkaId) {
-      console.log('Stopping Kafka container...');
-      await execAsync(`docker stop ${state.kafkaId}`).catch(() => {});
-      await execAsync(`docker rm ${state.kafkaId}`).catch(() => {});
-    }
-
-    // Stop source cluster (existing/main redpanda)
-    if (state.redpandaId) {
-      console.log('Stopping source Redpanda container...');
-      await execAsync(`docker stop ${state.redpandaId}`).catch(() => {
-        // Ignore errors - container might already be stopped
-      });
-      await execAsync(`docker rm ${state.redpandaId}`).catch(() => {
-        // Ignore errors - container might already be removed
-      });
-    }
-
-    if (state.networkId) {
-      console.log('Removing Docker network...');
-      await execAsync(`docker network rm ${state.networkId}`).catch(() => {
-        // Ignore errors - network might already be removed
-      });
-    }
-
-    fs.unlinkSync(CONTAINER_STATE_FILE);
-
-    console.log('✅ Test environment stopped successfully\n');
-  } catch (error) {
-    console.error('Failed to stop test environment:', error);
+  if (!existsSync(stateFile)) {
+    console.log('No container state file found, skipping teardown');
+    return;
   }
+
+  const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+  await cleanupSerializedResources(state, {
+    removeContainer: (id) => runDocker(['rm', '--force', '--volumes', id]),
+    removeNetwork: (id) => runDocker(['network', 'rm', id]),
+  });
+  rmSync(stateFile, { force: true });
+  console.log('✅ Test environment stopped successfully\n');
 }

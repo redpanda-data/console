@@ -17,6 +17,21 @@ import './tests/mock-document';
 import './tests/mock-react-select';
 
 import { cleanupTestHarness } from './tests/harness-cleanup';
+import { createMemoryStorage } from './tests/memory-storage';
+
+// Node 24 exposes an opt-in global localStorage getter that returns undefined
+// unless --localstorage-file is provided. Install a deterministic per-worker
+// Storage implementation instead of letting that host getter shadow
+// happy-dom's storage.
+const testLocalStorage = createMemoryStorage();
+Object.defineProperty(globalThis, 'localStorage', {
+  configurable: true,
+  value: testLocalStorage,
+});
+Object.defineProperty(window, 'localStorage', {
+  configurable: true,
+  value: testLocalStorage,
+});
 
 // ── Chakra + userEvent compatibility ─────────────────────────────────
 // userEvent.setup() patches HTMLElement.prototype.focus as a getter-only
@@ -160,9 +175,10 @@ vi.mock('lottie-react', () => ({
 // store pins `isEmbedded`/`isAdpEnabled` live bindings before test files'
 // `vi.mock('config', ...)` hoists can take effect. Tests that accumulate
 // store state should reset it explicitly in their own setup.
-afterEach(() => {
+afterEach(async () => {
   cleanup();
-  cleanupTestHarness();
+  await cleanupTestHarness();
+  testLocalStorage.clear();
   vi.clearAllMocks();
   vi.clearAllTimers();
 });

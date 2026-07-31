@@ -1,18 +1,13 @@
 import { test as base } from '@playwright/test';
 
 // Extend test fixtures to include shadowBackendURL and featureFlags
-type CustomFixtures = {
+export type CustomTestOptions = {
   shadowBackendURL: string;
   featureFlags: Record<string, boolean>;
 };
 
-export const test = base.extend<CustomFixtures>({
-  shadowBackendURL: async ({}, use, testInfo) => {
-    // Get shadowBackendURL from the project's use options
-    const projectUse = testInfo.project.use as any;
-    const url = projectUse.shadowBackendURL || 'http://localhost:3001';
-    await use(url);
-  },
+export const test = base.extend<CustomTestOptions>({
+  shadowBackendURL: ['http://localhost:3001', { option: true }],
   featureFlags: [{}, { option: true }],
   page: async ({ page, featureFlags }, use) => {
     if (Object.keys(featureFlags).length > 0) {
