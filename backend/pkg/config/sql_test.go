@@ -27,6 +27,7 @@ func TestSQL_SetDefaults(t *testing.T) {
 		t.Error("expected TLS defaults to be applied")
 	}
 	require.Equal(t, 100, c.MaxConnections)
+	require.Equal(t, 10, c.MaxConnectionsPerUser)
 }
 
 func TestSQL_Validate(t *testing.T) {
@@ -46,21 +47,40 @@ func TestSQL_Validate(t *testing.T) {
 		},
 		{
 			name: "enabled with url is valid",
-			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 100},
+			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 100, MaxConnectionsPerUser: 4},
 		},
 		{
 			name:    "zero maxConnections is invalid",
-			cfg:     SQL{Enabled: true, URL: "rpsql:5432"},
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnectionsPerUser: 10},
 			wantErr: true,
 		},
 		{
 			name:    "negative maxConnections is invalid",
-			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: -1},
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: -1, MaxConnectionsPerUser: 10},
 			wantErr: true,
 		},
 		{
 			name: "custom maxConnections is valid",
-			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 250},
+			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 250, MaxConnectionsPerUser: 10},
+		},
+		{
+			name:    "zero maxConnectionsPerUser is invalid",
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 100},
+			wantErr: true,
+		},
+		{
+			name:    "negative maxConnectionsPerUser is invalid",
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 100, MaxConnectionsPerUser: -1},
+			wantErr: true,
+		},
+		{
+			name:    "maxConnectionsPerUser exceeding maxConnections is invalid",
+			cfg:     SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 10, MaxConnectionsPerUser: 11},
+			wantErr: true,
+		},
+		{
+			name: "maxConnectionsPerUser equal to maxConnections is valid",
+			cfg:  SQL{Enabled: true, URL: "rpsql:5432", MaxConnections: 10, MaxConnectionsPerUser: 10},
 		},
 		{
 			name: "impersonateUser with static bearer is invalid",
@@ -83,10 +103,11 @@ func TestSQL_Validate(t *testing.T) {
 		{
 			name: "impersonateUser alone is valid",
 			cfg: SQL{
-				Enabled:        true,
-				URL:            "rpsql:5432",
-				MaxConnections: 100,
-				Authentication: HTTPAuthentication{ImpersonateUser: true},
+				Enabled:               true,
+				URL:                   "rpsql:5432",
+				MaxConnections:        100,
+				MaxConnectionsPerUser: 10,
+				Authentication:        HTTPAuthentication{ImpersonateUser: true},
 			},
 		},
 	}

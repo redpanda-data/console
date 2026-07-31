@@ -339,7 +339,6 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
   // In embedded mode, override state from controlplane
   if (embedded && unifiedData && controlplaneQuery.data) {
     unifiedData.state = mapControlplaneStateToUnified(controlplaneQuery.data.state);
-    unifiedData.resourceGroupId = controlplaneQuery.data.resourceGroupId;
     unifiedData.shadowRedpandaId = controlplaneQuery.data.shadowRedpandaId;
     unifiedData.createdAt = controlplaneQuery.data.createdAt
       ? timestampDate(controlplaneQuery.data.createdAt)
@@ -395,7 +394,6 @@ export const useEditShadowLink = (
   error: ConnectError | null;
   isUpdating: boolean;
   hasData: boolean;
-  isSchemaRegistryApiMode: boolean;
   updateShadowLink: (values: FormValues) => Promise<unknown>;
   dataplaneUpdate: ReturnType<typeof useUpdateShadowLinkMutation>;
   controlplaneUpdate: ReturnType<typeof useControlplaneUpdateShadowLinkMutation>;
@@ -447,21 +445,12 @@ export const useEditShadowLink = (
   // Check if data is available based on mode
   const hasData = embedded ? !!controlplaneShadowLink : !!shadowLink;
 
-  // API-mode sync only exists on the dataplane proto — the controlplane/Cloud
-  // SchemaRegistrySyncOptions models only the legacy topic case, and the create
-  // wizard that produces API-mode links redirects away in embedded mode — so
-  // only the dataplane shape needs checking here.
-  const isSchemaRegistryApiMode =
-    shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case ===
-    'shadowSchemaRegistryApi';
-
   return {
     formValues,
     isLoading: embedded ? controlplaneQuery.isLoading : dataplaneQuery.isLoading,
     error: embedded ? controlplaneQuery.error : dataplaneQuery.error,
     isUpdating: embedded ? controlplaneUpdate.isPending : dataplaneUpdate.isPending,
     hasData,
-    isSchemaRegistryApiMode,
     updateShadowLink: submitUpdate,
     dataplaneUpdate,
     controlplaneUpdate,

@@ -48,6 +48,7 @@ import {
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 import { pluralizeWithNumber } from 'utils/string';
 
 import ErrorResult from '../../../../components/misc/error-result';
@@ -472,11 +473,7 @@ export const PermissionsListTabNew: FC = () => {
                 <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
                 <Button
                   render={
-                    <a
-                      href="https://docs.redpanda.com/current/manage/security/authorization/acl/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
+                    <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
                       Read the docs →
                     </a>
                   }

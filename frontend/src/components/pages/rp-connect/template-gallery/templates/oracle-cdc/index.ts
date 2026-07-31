@@ -18,12 +18,12 @@ export const oracleCdcTemplate: PipelineTemplate = {
   name: 'Oracle CDC to Redpanda',
   description: 'Capture LogMiner-based row changes from Oracle into a Redpanda topic.',
   category: 'cdc',
-  source: { component: 'oracle_cdc', type: 'input' },
+  source: { component: 'oracledb_cdc', type: 'input' },
   sink: { component: 'redpanda', type: 'output' },
   setupTimeMinutes: 12,
   defaultPipelineName: 'oracle-cdc-pipeline',
   slots: [
-    dsnSlot('dsn', 'Oracle', 'ORACLE_DSN', 'dsn'),
+    dsnSlot('dsn', 'Oracle', 'ORACLE_DSN', 'connection_string'),
     {
       id: 'includedTable',
       section: 'source',
@@ -32,7 +32,7 @@ export const oracleCdcTemplate: PipelineTemplate = {
       description: 'Schema-qualified table to capture (e.g. HR.EMPLOYEES). Add more in the YAML editor afterwards.',
       placeholder: 'HR.EMPLOYEES',
       required: true,
-      schemaField: 'tables',
+      schemaField: 'include',
     },
     targetTopicSlot,
   ],

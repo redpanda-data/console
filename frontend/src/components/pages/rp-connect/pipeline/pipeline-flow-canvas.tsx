@@ -112,7 +112,8 @@ function miniMapNodeColor(node: Node): string {
 }
 
 // Overview minimap; draws only the pan-reachable world (see `world`). Click/drag re-centres.
-function PipelineMiniMap({
+// Exported for tests.
+export function PipelineMiniMap({
   nodes,
   translateExtent,
 }: {
@@ -147,13 +148,16 @@ function PipelineMiniMap({
 
   // Per axis: viewport smaller than extent → whole extent is reachable, show it; else the axis is
   // locked, so show the live visible window (RF pins an oversized viewport to an edge).
+  // The extent is unioned with the viewport because RF doesn't re-clamp the transform when
+  // `translateExtent` moves (an insert re-runs Dagre), so the viewport can sit partly outside the
+  // extent until the next pan — without the union its rect would draw past the svg edge and clip.
   const canPanX = vw < ext.maxX - ext.minX;
   const canPanY = vh < ext.maxY - ext.minY;
   const world = {
-    minX: canPanX ? ext.minX : viewLeft,
-    maxX: canPanX ? ext.maxX : viewLeft + vw,
-    minY: canPanY ? ext.minY : viewTop,
-    maxY: canPanY ? ext.maxY : viewTop + vh,
+    minX: canPanX ? Math.min(ext.minX, viewLeft) : viewLeft,
+    maxX: canPanX ? Math.max(ext.maxX, viewLeft + vw) : viewLeft + vw,
+    minY: canPanY ? Math.min(ext.minY, viewTop) : viewTop,
+    maxY: canPanY ? Math.max(ext.maxY, viewTop + vh) : viewTop + vh,
   };
   const worldW = Math.max(world.maxX - world.minX, 1);
   const worldH = Math.max(world.maxY - world.minY, 1);
@@ -167,7 +171,8 @@ function PipelineMiniMap({
   const offsetX = MINIMAP_PAD - world.minX * scaleX;
   const offsetY = MINIMAP_PAD - world.minY * scaleY;
 
-  // The world always contains the viewport, so the rect needs no clamping; on a locked axis it fills edge-to-edge.
+  // The world is built to contain the viewport (union above), so the rect needs no clamping; on a
+  // locked axis it fills edge-to-edge.
   const view = { x: viewLeft * scaleX + offsetX, y: viewTop * scaleY + offsetY, w: vw * scaleX, h: vh * scaleY };
 
   const panToEvent = (e: ReactPointerEvent<SVGSVGElement>) => {

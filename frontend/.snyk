@@ -11,45 +11,44 @@ ignore:
           streamdown, @hookform/devtools via @redpanda-data/ui, SockJS
           dev-server tooling, and Docker test tooling; none expose the
           vulnerable external-buffer API to user input. Revisit before expiry or
-          if direct uuid buffer APIs are introduced.
-        expires: 2026-08-11T09:58:05.000Z
+          if direct uuid buffer APIs are introduced. Re-triaged 2026-07-20 sweep
+          — still present, still non-reachable.
+        expires: 2026-10-20T00:00:00.000Z
         created: 2026-05-13T09:58:12.566Z
-  SNYK-JS-AI-16734889:
+  SNYK-JS-BODYPARSER-17906397:
     - '*':
         reason: >-
-          No upstream fix. Vulnerable validateDownloadUrl()/download-blob.ts
-          SSRF path is server-side file-download feature; Console frontend is a
-          browser-rendered Module Federation remote that only imports ai types +
-          streamText against trusted Redpanda backends, never the download API.
-          Not reachable.
-        expires: 2026-08-30T16:27:56.000Z
-        created: 2026-06-01T16:27:56.999Z
-  SNYK-JS-AISDKPROVIDERUTILS-16734888:
+          Not reachable in Console UI: source imports only MCP SDK client and
+          shared-auth subpaths, so the server module graph is excluded from the
+          browser bundle. The Express body-parser path is never imported or
+          executed.
+        expires: 2026-10-27T00:00:00.000Z
+        created: 2026-07-29T12:58:44.547Z
+  SNYK-JS-HONONODESERVER-18170326:
     - '*':
         reason: >-
-          No upstream fix. Same validateDownloadUrl() SSRF download path as
-          SNYK-JS-AI-16734889; download/blob feature not imported in this
-          browser MF remote. Not reachable.
-        expires: 2026-08-30T16:27:56.000Z
-        created: 2026-06-01T16:27:58.517Z
-  SNYK-JS-AISDKPROVIDERUTILS-16735288:
-    - '*':
-        reason: >-
-          No upstream fix. Unbounded response.text() buffering in
-          response-handler.ts requires an attacker-controlled LLM provider
-          endpoint; this browser MF remote calls only trusted Redpanda backend
-          endpoints via streamText. Not reachable.
-        expires: 2026-08-30T16:27:56.000Z
-        created: 2026-06-01T16:27:59.860Z
+          Not reachable in Console UI: source imports only MCP SDK client and
+          shared-auth subpaths, so the Hono server transport is excluded from
+          the browser bundle. Revisit promptly after fixed 1.19.17 clears the
+          72-hour release-age gate.
+        expires: 2026-08-12T00:00:00.000Z
+        created: 2026-07-29T12:58:46.098Z
   SNYK-JS-IPADDRESS-16636412:
     - '*':
         reason: >-
-          Server-side only: ip-address reaches the graph solely via
-          @modelcontextprotocol/sdk > express-rate-limit (Node MCP server),
-          which exact-pins ip-address@10.1.0. The XSS sink is not invoked by
-          this browser-rendered Module Federation remote, which only imports MCP
-          types, never runs the rate-limiter. Not reachable. express-rate-limit
-          will float to a fixed ip-address upstream; revisit before expiry.
-        expires: 2026-08-30T00:00:00.000Z
-        created: 2026-06-02T13:28:08.996Z
+          Not reachable in Console UI: source imports only MCP SDK client and
+          shared-auth subpaths, so the Express rate-limit server path is
+          excluded from the browser bundle. No ip-address HTML helper is
+          imported or rendered.
+        expires: 2026-10-27T00:00:00.000Z
+        created: 2026-07-29T12:58:47.607Z
+  SNYK-JS-POSTCSS-18313038:
+    - '*':
+        reason: >-
+          Not reachable from attacker input in Console UI: vulnerable PostCSS is
+          build/compiler tooling used by Rsbuild Sass and Vue compiler-sfc
+          through Milkdown. The build consumes repository-controlled CSS and
+          does not write attacker-controlled CSS or source maps.
+        expires: 2026-10-27T00:00:00.000Z
+        created: 2026-07-29T12:58:49.133Z
 patch: {}

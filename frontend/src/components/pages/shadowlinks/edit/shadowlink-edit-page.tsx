@@ -18,13 +18,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
 import { ShadowingTab } from './shadowing-tab';
 import { SourceTab } from './source-tab';
 import { TopicConfigTab } from './topic-config-tab';
 import { useEditShadowLink } from '../../../../react-query/api/shadowlink';
-import { FormSchema, type FormValues } from '../create/model';
+import { FormSchema, FormSchemaWithoutSchemaRegistryRules, type FormValues } from '../create/model';
 import { ShadowLinkLoadErrorState } from '../list/shadowlink-empty-state';
 
 /**
@@ -50,6 +51,7 @@ const getTabForField = (fieldName: string): string => {
     aclsMode: 'shadowing',
     aclFilters: 'shadowing',
     enableSchemaRegistrySync: 'shadowing',
+    schemaRegistry: 'shadowing',
     // Topic config tab fields
     topicProperties: 'topic-config',
     excludeDefault: 'topic-config',
@@ -77,17 +79,8 @@ export const ShadowLinkEditPage = () => {
   }
 
   // Use the unified edit hook that handles embedded/dataplane logic
-  const {
-    formValues,
-    isLoading,
-    error,
-    isUpdating,
-    hasData,
-    isSchemaRegistryApiMode,
-    updateShadowLink,
-    dataplaneUpdate,
-    controlplaneUpdate,
-  } = useEditShadowLink(name);
+  const { formValues, isLoading, error, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
+    useEditShadowLink(name);
 
   // Set up mutation callbacks
   useEffect(() => {
@@ -120,9 +113,15 @@ export const ShadowLinkEditPage = () => {
   // Track current active tab
   const [currentTab, setCurrentTab] = useState<string>('source');
 
+  // While the SR feature gate is closed, the redesigned Schema Registry
+  // section isn't rendered, so its rules must not run: an api-mode link
+  // hydrates a basic-auth password that is never returned and has no input
+  // to re-enter it, which would otherwise block saving every other field.
+  const srGateOpen = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
+
   // Initialize form with values that automatically update when shadowLink data changes
   const form = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+    resolver: zodResolver(srGateOpen ? FormSchema : FormSchemaWithoutSchemaRegistryRules),
     values: formValues,
     mode: 'onChange',
   });
@@ -213,7 +212,7 @@ export const ShadowLinkEditPage = () => {
             <TabsContent value="all">
               <div className="space-y-4">
                 <SourceTab />
-                <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
+                <ShadowingTab schemaRegistryOriginalMode={formValues?.schemaRegistry.mode} />
                 <TopicConfigTab />
               </div>
             </TabsContent>
@@ -223,7 +222,7 @@ export const ShadowLinkEditPage = () => {
             </TabsContent>
 
             <TabsContent value="shadowing">
-              <ShadowingTab schemaRegistryApiMode={isSchemaRegistryApiMode} />
+              <ShadowingTab schemaRegistryOriginalMode={formValues?.schemaRegistry.mode} />
             </TabsContent>
 
             <TabsContent value="topic-config">

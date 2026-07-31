@@ -1,6 +1,7 @@
 import { Link } from 'components/redpanda-ui/components/typography';
 import { ExternalLink } from 'lucide-react';
 import { MCPServer_Tool_ComponentType } from 'protogen/redpanda/api/dataplane/v1alpha3/mcp_pb';
+import { docsLinks } from 'utils/docs-links';
 
 type RemoteMCPComponentTypeDescriptionProps = {
   componentType?: MCPServer_Tool_ComponentType;
@@ -23,7 +24,7 @@ const getComponentTypeDescription = (componentType: MCPServer_Tool_ComponentType
 };
 
 const getComponentTypeDocumentationUrl = (componentType: MCPServer_Tool_ComponentType) => {
-  const url = 'https://docs.redpanda.com/redpanda-connect/components/';
+  const url = docsLinks.cloud.connectComponents;
   switch (componentType) {
     case MCPServer_Tool_ComponentType.PROCESSOR:
       return `${url}/processors/about/`;

@@ -15,8 +15,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { appGlobal } from '../../../../state/app-global';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backend-api';
-import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
+
+const AUTO_REFRESH_INTERVAL_SECS = 10;
 
 export const DataRefreshButton = () => {
   const [isActive, setIsActive] = useState(false);
@@ -44,18 +45,18 @@ export const DataRefreshButton = () => {
       if (stateRef.current.isActive && currentRequests === 0) {
         if (currentRequests > 0) {
           // Active requests — delay the next refresh
-          stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+          stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
         } else {
           const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
           if (timeUntilRefresh > 0) {
             newRemainingSeconds = Math.ceil(timeUntilRefresh / 1000);
           } else {
-            stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+            stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
             appGlobal.onRefresh();
           }
         }
       } else if (stateRef.current.isActive && currentRequests > 0) {
-        stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+        stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
       }
 
       setRefreshState({
@@ -72,7 +73,7 @@ export const DataRefreshButton = () => {
     const newActive = !stateRef.current.isActive;
     stateRef.current.isActive = newActive;
     if (newActive) {
-      stateRef.current.nextRefresh = Date.now() + uiSettings.autoRefreshIntervalSecs * 1000;
+      stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
     } else {
       appGlobal.onRefresh();
     }
@@ -87,8 +88,7 @@ export const DataRefreshButton = () => {
         <Popover
           content={
             <div>
-              Enable or disable automatic refresh every{' '}
-              <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
+              Enable or disable automatic refresh every <span className="codeBox">{AUTO_REFRESH_INTERVAL_SECS}s</span>.
             </div>
           }
           hideCloseButton={true}

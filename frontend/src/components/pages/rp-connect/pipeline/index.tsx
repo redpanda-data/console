@@ -60,7 +60,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
-import { useGetPipelineServiceConfigSchemaQuery, useListComponentsQuery } from 'react-query/api/connect';
+import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
@@ -107,8 +107,8 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
-import { parseSchema } from '../utils/schema';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
+import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
 import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
 
@@ -925,11 +925,7 @@ function PipelinePageContent() {
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
-  const { data: componentListResponse } = useListComponentsQuery();
-  const components = useMemo(
-    () => (componentListResponse?.components ? parseSchema(componentListResponse.components) : []),
-    [componentListResponse]
-  );
+  const { components, componentList } = useEnrichedComponents();
 
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
@@ -1134,10 +1130,9 @@ function PipelinePageContent() {
   );
 
   return (
-    // Definite viewport-bounded height (7rem = app header + pt-8; the footer intentionally sits below
-    // the fold) so a tall lane scrolls within the framed panel instead of stretching the page.
-    // overflow-x-clip (not hidden) blocks stray horizontal overflow but keeps overflow-y.
-    <div className="flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip">
+    // Viewport-bounded height (7rem = app header + pt-8) so a tall lane scrolls within the framed panel.
+    // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
+    <div className="-ml-3.5 flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5">
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
           onBack={handleCancel}
@@ -1220,7 +1215,7 @@ function PipelinePageContent() {
               ) : null}
               {mode === 'view' && pipeline && activeViewLane === 'visual' ? (
                 <VisualEditorPanel
-                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  componentList={componentList ?? ({} as ComponentList)}
                   components={components}
                   lintHints={Object.values(lintHints)}
                   mode="view"
@@ -1231,7 +1226,7 @@ function PipelinePageContent() {
               ) : null}
               {mode !== 'view' && activeEditLane === 'visual' ? (
                 <VisualEditorPanel
-                  componentList={componentListResponse?.components ?? ({} as ComponentList)}
+                  componentList={componentList ?? ({} as ComponentList)}
                   components={components}
                   // Only edit mode waits on server hydration; create shows its empty state, not a skeleton.
                   isLoading={mode === 'edit' && initialYaml === null}
@@ -1425,7 +1420,7 @@ function PipelinePageContent() {
       </Dialog>
 
       <AddConnectorDialog
-        components={componentListResponse?.components ?? ({} as ComponentList)}
+        components={componentList ?? ({} as ComponentList)}
         connectorType={
           addConnectorType === 'resource'
             ? (['cache', 'rate_limit', 'buffer', 'scanner', 'tracer', 'metrics'] satisfies ConnectComponentType[])

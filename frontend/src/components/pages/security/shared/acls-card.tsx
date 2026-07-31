@@ -21,6 +21,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 
 import {
   type AclDetail,
@@ -258,11 +259,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
               <EmptyContent>
                 <Button
                   render={
-                    <a
-                      href="https://docs.redpanda.com/current/manage/security/authorization/acl/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
+                    <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
                       Read the docs →
                     </a>
                   }

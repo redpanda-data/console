@@ -21,6 +21,7 @@ import { Search } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { docsLinks } from 'utils/docs-links';
 
 import { ConnectTile } from './connect-tile';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
@@ -344,11 +345,7 @@ export const ConnectTiles = memo(
                     that drive real-time analytics and actionable business insights. Integrate data across systems with
                     hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable
                     pipelines.{' '}
-                    <Link
-                      href="https://docs.redpanda.com/redpanda-connect/home/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
+                    <Link href={docsLinks.cloud.connectAbout} rel="noopener noreferrer" target="_blank">
                       Learn more
                     </Link>
                   </div>

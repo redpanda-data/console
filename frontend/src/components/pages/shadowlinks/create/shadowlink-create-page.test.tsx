@@ -63,8 +63,7 @@ vi.mock('sonner', () => ({
 }));
 
 import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
-import type { EndpointCompatibility } from 'state/rest-interfaces';
-import { Feature, useSupportedFeaturesStore } from 'state/supported-features';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
@@ -75,25 +74,8 @@ import {
   addTopicFilterCreate,
   enableTLS,
   navigateToConfigurationStep,
+  setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
 } from '../shadowlink-test-helpers';
-
-/**
- * Pin the SR sync gate so the Schema Registry section renders deterministically:
- * supported=false shows the legacy switch, supported=true the redesigned section.
- */
-const seedSchemaRegistrySyncGate = (isSupported: boolean) => {
-  const compatibility: EndpointCompatibility = {
-    kafkaVersion: 'v26.2.0',
-    endpoints: [
-      {
-        endpoint: Feature.ShadowLinkSchemaRegistrySync.endpoint,
-        method: Feature.ShadowLinkSchemaRegistrySync.method,
-        isSupported,
-      },
-    ],
-  };
-  useSupportedFeaturesStore.getState().setEndpointCompatibility(compatibility);
-};
 
 const pristineFeatureStoreState = useSupportedFeaturesStore.getState();
 const resetSchemaRegistrySyncGate = () => {

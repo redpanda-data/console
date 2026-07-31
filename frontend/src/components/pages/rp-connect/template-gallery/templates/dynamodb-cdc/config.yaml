@@ -1,20 +1,21 @@
 input:
-  aws_dynamodb_stream:
+  aws_dynamodb_cdc:
     # ── Connection (filled in from the form) ────────────────────────────────
-    table: ${slot.tableName}
+    tables:
+      - ${slot.tableName}
     region: ${slot.region}
     credentials:
       id: ${slot.awsAccessKey}
       secret: ${slot.awsSecretKey}
 
-    # ── Stream tuning ───────────────────────────────────────────────────────
-    # batching:
-    #   count: 100
-    #   period: 1s
-    # checkpoint_limit: 1024
+    # ── Where to start + snapshots ──────────────────────────────────────────
+    start_from: trim_horizon               # or 'latest' for new records only
+    snapshot_mode: none                    # 'snapshot_and_cdc' scans the table before streaming
+    # checkpoint_table: redpanda_dynamodb_checkpoints   # created if it doesn't exist
 
-    # ── Error handling ──────────────────────────────────────────────────────
-    auto_replay_nacks: true                # re-deliver NACKed messages
+    # ── Stream tuning ───────────────────────────────────────────────────────
+    # batch_size: 1000                     # records per shard read (1-1000)
+    # checkpoint_limit: 1000               # unacked messages before a checkpoint update
 
 output:
   redpanda:

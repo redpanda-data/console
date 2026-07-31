@@ -29,12 +29,12 @@ import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { docsLinks } from 'utils/docs-links';
 
 import { extractSecretId, toSecretReference } from './secret-reference';
 import { AUTH_METHOD, type AuthMethod, type FormValues } from '../model';
 
-const SHADOW_LINK_DOCS_URL =
-  'https://docs.redpanda.com/current/manage/disaster-recovery/shadowing/setup/#replication-service-permissions';
+const SHADOW_LINK_DOCS_URL = docsLinks.selfManaged.shadowingReplicationPermissions;
 
 // Base UI's <Select.Value> can't resolve an item's label until the popup
 // mounts, so an enum-backed controlled value renders as the raw string ("1")

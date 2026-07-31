@@ -22,6 +22,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { ExternalLinkIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
@@ -106,11 +107,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
               <EmptyContent>
                 <Button
                   render={
-                    <a
-                      href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
+                    <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
                       Read the docs →
                     </a>
                   }

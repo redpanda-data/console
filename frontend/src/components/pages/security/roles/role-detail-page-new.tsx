@@ -19,6 +19,7 @@ import {
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useLayoutEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
@@ -163,11 +164,7 @@ export const RoleDetailPageNew = () => {
                       <EmptyContent>
                         <Button
                           render={
-                            <a
-                              href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
+                            <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
                               Read the docs →
                             </a>
                           }

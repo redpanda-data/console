@@ -526,6 +526,26 @@ export const mockAvroScanner = create(ComponentSpecSchema, {
 });
 
 /**
+ * Drop Output Component — a field-less component (no config fields at all).
+ *
+ * Mirrors the production spec exactly: the config root FieldSpec arrives with name '' and an
+ * empty children list. Template generation must still emit `drop: {}` — losing the component
+ * key leaves an `output:` with only a label, which nothing downstream can render or lint.
+ */
+export const mockDropOutput = create(ComponentSpecSchema, {
+  name: 'drop',
+  type: 'output',
+  status: ComponentStatus.STABLE,
+  summary: 'Drops all messages.',
+  config: createField({
+    name: '',
+    type: 'object',
+    kind: 'scalar',
+    children: [],
+  }),
+});
+
+/**
  * Redpanda Output Component — tests ancestor-optional propagation
  *
  * Based on actual raw schema (rp-connect-schema-full.json).
@@ -759,6 +779,7 @@ export function mockComponentToConnectSpec(
  */
 export const mockComponents = {
   kafkaOutput: mockComponentToConnectSpec(mockKafkaOutput, 'output'),
+  dropOutput: mockComponentToConnectSpec(mockDropOutput, 'output'),
   redpandaOutput: mockComponentToConnectSpec(mockRedpandaOutput, 'output'),
   redpandaMigratorOutput: mockComponentToConnectSpec(mockRedpandaMigratorOutput, 'output'),
   redpandaInput: mockComponentToConnectSpec(mockRedpandaInput, 'input'),

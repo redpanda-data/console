@@ -13,20 +13,35 @@ input:
 
 output:
   iceberg:
-    # ── Catalog (filled in from the form) ───────────────────────────────────
-    catalog_uri: ${slot.catalogUri}
-    warehouse: ${slot.warehouse}
+    # ── REST catalog (filled in from the form) ──────────────────────────────
+    catalog:
+      url: ${slot.catalogUri}
+      warehouse: ${slot.warehouse}
+      # auth:                              # pick one method if your catalog needs it
+      #   oauth2:
+      #     server_uri: https://auth.example.com/oauth/token
+      #     client_id: my-client
+      #     client_secret: ${secrets.ICEBERG_CLIENT_SECRET}
     namespace: ${slot.namespace}
     table: ${slot.tableName}
 
+    # ── Storage — exactly one backend is required ────────────────────────────
+    storage:
+      aws_s3:
+        bucket: ${slot.storageBucket}
+        region: ${slot.storageRegion}
+      # gcp_cloud_storage: / azure_blob_storage: — replace aws_s3 for other clouds
+
     # ── Write tuning — Iceberg is happiest with sizable batches ─────────────
     batching:
-      count: 1000
+      count: 10000                         # benchmark-tuned sweet spot
       period: 10s
-    # write_mode: append                   # append | overwrite
-    # partition_spec: ""                   # e.g. 'days(event_time)'
+    # max_in_flight: 16                    # biggest throughput knob (default 4); with insert-only
+    #                                      # data, 32 + input unordered_processing goes further
+    # row_operation: insert                # insert | upsert | delete (keyed writes cap in-flight at 1)
+    # commit:
+    #   max_snapshot_age: 24h              # default — keep enabled so table metadata stays bounded
 
     # ── Schema handling ─────────────────────────────────────────────────────
     # schema_evolution:
     #   enabled: true                      # auto-add columns from incoming records
-    # mapping: ""                          # bloblang to reshape records before write

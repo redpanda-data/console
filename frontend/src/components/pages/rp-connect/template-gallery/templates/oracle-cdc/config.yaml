@@ -1,17 +1,19 @@
 input:
-  oracle_cdc:
+  oracledb_cdc:
     # ── Connection (filled in from the form) ────────────────────────────────
-    dsn: ${slot.dsn}
-    tables:
+    connection_string: ${slot.dsn}
+    include:
       - ${slot.includedTable}
+    # exclude:
+    #   - SCHEMA.PRIVATETABLE
 
     # ── Snapshot of existing rows before streaming changes ──────────────────
     stream_snapshot: true                  # capture current rows on first run
 
-    # ── LogMiner tuning ─────────────────────────────────────────────────────
+    # ── LogMiner + checkpointing ────────────────────────────────────────────
     checkpoint_limit: 1024                 # outstanding messages before backpressure
-    # log_mining_batch_size: 0             # 0 = let the connector decide
-    # poll_interval: 1s
+    # pdb_name: MYPDB                      # set when connecting to a CDB root
+    # checkpoint_cache: my_cache           # cache resource persisting the current SCN
 
     # ── Error handling ──────────────────────────────────────────────────────
     auto_replay_nacks: true                # re-deliver NACKed messages

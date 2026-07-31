@@ -9,10 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
+import { useEffect } from 'react';
 import { render, screen } from 'test-utils';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { MAX_REGION_PIECE_PX, PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
 const JOIN_TITLE_RE = /branches reconverge/i;
@@ -80,6 +82,9 @@ const ADD_OUTPUT_RE = /add output/i;
 const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
 const NO_OUTPUT_NOTE_RE = /no output configured/i;
 const STALE_LAYOUT_RE = /showing the last valid layout/i;
+
+// The minimap svg's accessible name.
+const OVERVIEW_LABEL_RE = /pipeline overview/i;
 
 // A complete valid pipeline used as the last-good baseline for the resilient-parse test.
 const VALID_PIPELINE_YAML = `input:
@@ -188,5 +193,60 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     }
     // Split into several stacked pieces — proof the capping engaged (a single giant div would be one).
     expect(pieces.length).toBeGreaterThan(3);
+  });
+});
+
+// Drives the RF store directly so the test controls pane size and transform without RF measuring jsdom.
+function SetFlowState({
+  transform,
+  width,
+  height,
+}: {
+  transform: [number, number, number];
+  width: number;
+  height: number;
+}) {
+  const store = useStoreApi();
+  useEffect(() => {
+    store.setState({ transform, width, height });
+  }, [store, transform, width, height]);
+  return null;
+}
+
+describe('PipelineMiniMap — viewport outside the pan extent', () => {
+  it('keeps the viewport rect fully inside the svg when the transform sticks out of the extent', () => {
+    // An insert re-runs Dagre and moves `translateExtent`, but RF doesn't re-clamp the current
+    // transform — so the live viewport can sit partly outside the extent until the next pan.
+    // tx=150 → viewLeft = -150, left of the extent's minX=0 (and viewTop = -80 above minY=0).
+    render(
+      <ReactFlowProvider>
+        <SetFlowState height={800} transform={[150, 80, 1]} width={1200} />
+        <PipelineMiniMap
+          nodes={[]}
+          translateExtent={[
+            [0, 0],
+            [2000, 1500],
+          ]}
+        />
+      </ReactFlowProvider>
+    );
+
+    const svg = screen.getByRole('img', { name: OVERVIEW_LABEL_RE });
+    const svgWidth = Number(svg.getAttribute('width'));
+    const svgHeight = Number(svg.getAttribute('height'));
+    // With no nodes there are no blips, so the only rect is the viewport rect.
+    const view = svg.querySelector('rect');
+    if (!view) {
+      throw new Error('viewport rect not rendered');
+    }
+    const x = Number(view.getAttribute('x'));
+    const y = Number(view.getAttribute('y'));
+    const w = Number(view.getAttribute('width'));
+    const h = Number(view.getAttribute('height'));
+
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(y).toBeGreaterThanOrEqual(0);
+    expect(x + w).toBeLessThanOrEqual(svgWidth);
+    expect(y + h).toBeLessThanOrEqual(svgHeight);
   });
 });

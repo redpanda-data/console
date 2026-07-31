@@ -383,8 +383,7 @@ describe('Shadow Link Form Validation', () => {
       const keyOnly = FormSchema.safeParse(
         createApiModeValues({
           mtls: {
-            ca: undefined,
-            clientCert: undefined,
+            ...initialValues.schemaRegistry.mtls,
             clientKey: { pemContent: '-----BEGIN PRIVATE KEY-----\nKEY...', fileName: 'client.key' },
           },
         })
@@ -394,13 +393,82 @@ describe('Shadow Link Form Validation', () => {
       const certOnly = FormSchema.safeParse(
         createApiModeValues({
           mtls: {
-            ca: undefined,
+            ...initialValues.schemaRegistry.mtls,
             clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nCERT...', fileName: 'client.crt' },
-            clientKey: undefined,
           },
         })
       );
       expect(issueMessages(certOnly)).toContain('Client private key is required when client certificate is provided');
+    });
+
+    test('accepts a hydrated certificate paired with a key kept server-side', () => {
+      const result = FormSchema.safeParse(
+        createApiModeValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nCERT...', fileName: '' },
+            existingKeyConfigured: true,
+            existingKeyFingerprint: 'abc123=',
+          },
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    test('requires a new key when replacing the certificate over a kept key', () => {
+      // A freshly uploaded cert (fileName set) cannot pair with the key
+      // stored server-side.
+      const result = FormSchema.safeParse(
+        createApiModeValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nNEW...', fileName: 'client.crt' },
+            existingKeyConfigured: true,
+            existingKeyFingerprint: 'abc123=',
+          },
+        })
+      );
+      expect(issueMessages(result)).toContain('Upload the matching private key when replacing the client certificate');
+    });
+
+    test('accepts a replaced certificate together with a new key', () => {
+      const result = FormSchema.safeParse(
+        createApiModeValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nNEW...', fileName: 'client.crt' },
+            clientKey: { pemContent: '-----BEGIN PRIVATE KEY-----\nNEW...', fileName: 'client.key' },
+            existingKeyConfigured: true,
+            existingKeyFingerprint: 'abc123=',
+          },
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    test('requires a certificate when only the server-side key remains', () => {
+      const result = FormSchema.safeParse(
+        createApiModeValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            existingKeyConfigured: true,
+          },
+        })
+      );
+      expect(issueMessages(result)).toContain('Client certificate is required when client private key is provided');
+    });
+
+    test('skips the mtls pair rule for file-path TLS settings', () => {
+      const result = FormSchema.safeParse(
+        createApiModeValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nCERT...', fileName: 'client.crt' },
+            filePaths: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
+          },
+        })
+      );
+      expect(result.success).toBe(true);
     });
 
     test('ignores leftover mtls uploads while TLS is off', () => {
@@ -410,8 +478,7 @@ describe('Shadow Link Form Validation', () => {
           sourceUrl: 'http://schema-registry.example.com:8081',
           useTls: false,
           mtls: {
-            ca: undefined,
-            clientCert: undefined,
+            ...initialValues.schemaRegistry.mtls,
             clientKey: { pemContent: '-----BEGIN PRIVATE KEY-----\nKEY...', fileName: 'client.key' },
           },
         })

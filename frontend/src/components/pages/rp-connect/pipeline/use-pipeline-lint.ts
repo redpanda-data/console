@@ -24,12 +24,16 @@ import { localYamlLintHints, mergeLintHints } from '../utils/pipeline-lint';
  */
 export function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
+  // A blank config has nothing to lint — the server would only reject it with
+  // "config_yaml: value is required", which is noise before the user has typed anything.
+  // Save-error hints still surface: failing an explicit save on empty content is real feedback.
+  const lintEnabled = enabled && debouncedYamlContent.trim() !== '';
   const {
     data: lintResponse,
     isPending: isLintPending,
     isError: isLintError,
     error: lintError,
-  } = useLintPipelineConfigQuery(debouncedYamlContent, { enabled });
+  } = useLintPipelineConfigQuery(debouncedYamlContent, { enabled: lintEnabled });
 
   // The server can't lint an unparseable doc, so without these it would read as "No issues found".
   const syntaxHints = useMemo(
@@ -53,5 +57,6 @@ export function usePipelineLint(yamlContent: string, errorLintHints: Record<stri
     return mergeLintHints(errorLintHints, lintResponse?.lintHints ?? [], rejection);
   }, [syntaxHints, isLintError, lintError, errorLintHints, lintResponse]);
 
-  return { lintHints, isLintPending };
+  // A disabled query reports isPending forever; only surface pending when a lint can actually run.
+  return { lintHints, isLintPending: lintEnabled && isLintPending };
 }

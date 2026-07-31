@@ -135,10 +135,54 @@ export type UnifiedSecuritySyncOptions = {
 };
 
 /**
+ * Plain TypeScript HTTP Basic auth interface for the source Schema Registry.
+ * The password itself is never mapped — only whether/when it was set.
+ */
+export type UnifiedSchemaRegistryBasicAuth = {
+  username: string;
+  passwordSet: boolean;
+  passwordSetAt?: Date;
+};
+
+/**
+ * Plain TypeScript source-to-destination Schema Registry context mapping
+ */
+export type UnifiedSchemaRegistryContextMapping = {
+  source: string;
+  destination: string;
+};
+
+/**
+ * Plain TypeScript options for Schema Registry replication over the REST API.
+ * Durations are seconds; undefined means unset/zero, so the cluster default applies.
+ */
+export type UnifiedSchemaRegistryApiOptions = {
+  sourceUrl: string;
+  /** undefined = requests are sent without authentication */
+  basicAuth?: UnifiedSchemaRegistryBasicAuth;
+  tlsSettings?: UnifiedTLSSettings;
+  tailIntervalSeconds?: number;
+  effectiveTailIntervalSeconds?: number;
+  fullSyncIntervalSeconds?: number;
+  effectiveFullSyncIntervalSeconds?: number;
+  maxSourceRequestsPerSecond?: number;
+  effectiveMaxSourceRequestsPerSecond?: number;
+  /** undefined = the entire source Schema Registry is replicated */
+  sourceFilter?: { contexts: string[]; subjects: string[] };
+  /** undefined = source context names are preserved (same as identity) */
+  destinationMapping?: { case: 'identity' } | { case: 'exact'; mappings: UnifiedSchemaRegistryContextMapping[] };
+  unsupportedSchemaFeaturePolicy: number; // UnsupportedSchemaFeaturePolicy enum: 0=UNSPECIFIED, 1=FAIL, 2=REMOVE
+  paused: boolean;
+};
+
+/**
  * Plain TypeScript schema registry sync options interface
  */
 export type UnifiedSchemaRegistrySyncOptions = {
-  schemaRegistryShadowingMode?: { case: 'shadowSchemaRegistryTopic'; value: object } | { case: undefined };
+  schemaRegistryShadowingMode?:
+    | { case: 'shadowSchemaRegistryTopic'; value: object }
+    | { case: 'shadowSchemaRegistryApi'; value: UnifiedSchemaRegistryApiOptions }
+    | { case: undefined };
 };
 
 /**
@@ -192,7 +236,6 @@ export type UnifiedShadowLink = {
   tasksStatus: ShadowLinkTaskStatus[];
   syncedShadowTopicProperties: string[];
   // Controlplane-only fields
-  resourceGroupId?: string;
   shadowRedpandaId?: string;
   createdAt?: Date;
   updatedAt?: Date;

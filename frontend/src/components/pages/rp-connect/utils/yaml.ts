@@ -696,6 +696,30 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
     .join('\n');
 }
 
+// Inputs use `topics` (array), outputs use `topic` (string) — per the Redpanda schemas. An existing
+// list is appended to in place (never rebuilt): creating a topic from the inspector must not
+// disturb the entries — or their comments — already configured. Returns the patched key.
+function patchTopicName(
+  doc: Document.Parsed,
+  section: RedpandaSection,
+  componentName: string,
+  topicName: string
+): string {
+  if (section === 'output') {
+    doc.setIn([section, componentName, 'topic'], topicName);
+    return 'topic';
+  }
+  const existing = doc.getIn([section, componentName, 'topics']);
+  if (isSeq(existing)) {
+    if (!existing.toJSON().some((t: unknown) => String(t) === topicName)) {
+      doc.addIn([section, componentName, 'topics'], topicName);
+    }
+  } else {
+    doc.setIn([section, componentName, 'topics'], [topicName]);
+  }
+  return 'topics';
+}
+
 export function patchRedpandaConfig(
   existingYaml: string,
   section: RedpandaSection,
@@ -716,14 +740,7 @@ export function patchRedpandaConfig(
   const patchedKeys: string[] = [];
 
   if (patch.topicName) {
-    // Inputs use `topics` (array), outputs use `topic` (string) — per the Redpanda schemas.
-    if (section === 'output') {
-      doc.setIn([section, componentName, 'topic'], patch.topicName);
-      patchedKeys.push('topic');
-    } else {
-      doc.setIn([section, componentName, 'topics'], [patch.topicName]);
-      patchedKeys.push('topics');
-    }
+    patchedKeys.push(patchTopicName(doc, section, componentName, patch.topicName));
   }
 
   if (patch.sasl) {
