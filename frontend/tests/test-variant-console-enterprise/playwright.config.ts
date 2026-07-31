@@ -30,6 +30,7 @@ const config = defineConfig({
 
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
+  retryStrategy: process.env.CI ? 'isolated' : 'immediate',
 
   /* Reduced workers for enterprise/shadowlink setup */
   workers: process.env.CI ? 4 : undefined,
@@ -37,9 +38,8 @@ const config = defineConfig({
   /* Reporter to use */
   reporter: reporters,
 
-  /* Global setup and teardown */
+  /* Global setup returns its teardown so live Testcontainers handles are reused. */
   globalSetup: '../shared/global-setup.mjs',
-  globalTeardown: '../shared/global-teardown.mjs',
 
   /* Custom metadata for setup/teardown */
   metadata: {
