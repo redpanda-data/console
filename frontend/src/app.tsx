@@ -49,10 +49,7 @@ import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
 import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
-import {
-  applyOverrides as applyDebugFeatureFlagOverrides,
-  getEffectiveFlags,
-} from './components/debug-helper/feature-flag-overrides';
+import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
@@ -133,11 +130,9 @@ const App = () => {
     };
   }, []);
 
-  // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp.
-  // Standalone dev seeds from the effective flags (constants.ts defaults overlaid
-  // with debug-dialog localStorage overrides); E2E globals keep the last word.
+  // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
-    <CustomFeatureFlagProvider initialFlags={{ ...getEffectiveFlags(), ...window.__E2E_FEATURE_FLAGS__ }}>
+    <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
       <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
         <TransportProvider transport={dataplaneTransport}>
