@@ -13,12 +13,12 @@ import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
-  AIAgentSchema,
-  type ListAIAgentsRequest,
-  ListAIAgentsRequestSchema,
-  ListAIAgentsResponseSchema,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent_pb';
-import { listAIAgents } from 'protogen/redpanda/api/dataplane/v1alpha3/ai_agent-AIAgentService_connectquery';
+  type ListUsersRequest,
+  ListUsersRequestSchema,
+  ListUsersResponse_UserSchema,
+  ListUsersResponseSchema,
+} from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
 import { describe, expect, test } from 'vitest';
 
@@ -29,27 +29,27 @@ describe('useInfiniteQueryWithAllPages', () => {
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, (req) => {
+      rpc(listUsers, (req) => {
         callCount += 1;
         const pageToken = req.pageToken;
 
         if (pageToken === '') {
           // First page
-          return create(ListAIAgentsResponseSchema, {
-            aiAgents: [create(AIAgentSchema, { id: 'agent-1', displayName: 'Agent 1' })],
+          return create(ListUsersResponseSchema, {
+            users: [create(ListUsersResponse_UserSchema, { name: 'user-1' })],
             nextPageToken: 'page2',
           });
         }
         if (pageToken === 'page2') {
           // Second page
-          return create(ListAIAgentsResponseSchema, {
-            aiAgents: [create(AIAgentSchema, { id: 'agent-2', displayName: 'Agent 2' })],
+          return create(ListUsersResponseSchema, {
+            users: [create(ListUsersResponse_UserSchema, { name: 'user-2' })],
             nextPageToken: 'page3',
           });
         }
         // Last page - no nextPageToken
-        return create(ListAIAgentsResponseSchema, {
-          aiAgents: [create(AIAgentSchema, { id: 'agent-3', displayName: 'Agent 3' })],
+        return create(ListUsersResponseSchema, {
+          users: [create(ListUsersResponse_UserSchema, { name: 'user-3' })],
           nextPageToken: '',
         });
       });
@@ -57,14 +57,14 @@ describe('useInfiniteQueryWithAllPages', () => {
 
     const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const request = create(ListAIAgentsRequestSchema, {
+    const request = create(ListUsersRequestSchema, {
       pageToken: '',
       pageSize: 1,
-    }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>;
+    }) as ListUsersRequest & Required<Pick<ListUsersRequest, 'pageToken'>>;
 
     const { result } = renderHook(
       () =>
-        useInfiniteQueryWithAllPages(listAIAgents, request, {
+        useInfiniteQueryWithAllPages(listUsers, request, {
           getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
           pageParamKey: 'pageToken',
         }),
@@ -89,14 +89,14 @@ describe('useInfiniteQueryWithAllPages', () => {
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, (req) => {
+      rpc(listUsers, (req) => {
         callCount += 1;
         const pageToken = req.pageToken;
 
         if (pageToken === '') {
           // First page succeeds
-          return create(ListAIAgentsResponseSchema, {
-            aiAgents: [create(AIAgentSchema, { id: 'agent-1', displayName: 'Agent 1' })],
+          return create(ListUsersResponseSchema, {
+            users: [create(ListUsersResponse_UserSchema, { name: 'user-1' })],
             nextPageToken: 'page2',
           });
         }
@@ -107,14 +107,14 @@ describe('useInfiniteQueryWithAllPages', () => {
 
     const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const request = create(ListAIAgentsRequestSchema, {
+    const request = create(ListUsersRequestSchema, {
       pageToken: '',
       pageSize: 1,
-    }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>;
+    }) as ListUsersRequest & Required<Pick<ListUsersRequest, 'pageToken'>>;
 
     const { result } = renderHook(
       () =>
-        useInfiniteQueryWithAllPages(listAIAgents, request, {
+        useInfiniteQueryWithAllPages(listUsers, request, {
           getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
           pageParamKey: 'pageToken',
         }),
@@ -146,10 +146,10 @@ describe('useInfiniteQueryWithAllPages', () => {
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listAIAgents, () => {
+      rpc(listUsers, () => {
         callCount += 1;
-        return create(ListAIAgentsResponseSchema, {
-          aiAgents: [],
+        return create(ListUsersResponseSchema, {
+          users: [],
           nextPageToken: '',
         });
       });
@@ -157,14 +157,14 @@ describe('useInfiniteQueryWithAllPages', () => {
 
     const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const request = create(ListAIAgentsRequestSchema, {
+    const request = create(ListUsersRequestSchema, {
       pageToken: '',
       pageSize: 1,
-    }) as ListAIAgentsRequest & Required<Pick<ListAIAgentsRequest, 'pageToken'>>;
+    }) as ListUsersRequest & Required<Pick<ListUsersRequest, 'pageToken'>>;
 
     renderHook(
       () =>
-        useInfiniteQueryWithAllPages(listAIAgents, request, {
+        useInfiniteQueryWithAllPages(listUsers, request, {
           enabled: false,
           getNextPageParam: (lastPage) => lastPage?.nextPageToken || undefined,
           pageParamKey: 'pageToken',

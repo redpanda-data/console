@@ -15,13 +15,13 @@ import { Link } from '@tanstack/react-router';
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 
 type NotFoundContentProps = {
-  /** The type of resource that wasn't found (e.g., "AI Agent", "Shadow Link") */
+  /** The type of resource that wasn't found (for example, "Shadow Link") */
   resourceType: string;
   /** The ID or name of the resource that wasn't found */
   resourceId?: string;
-  /** The link to navigate back to (e.g., "/agents") */
+  /** The link to navigate back to (for example, "/shadowlinks") */
   backLink?: string;
-  /** The text for the back link (e.g., "Back to AI Agents") */
+  /** The text for the back link (for example, "Back to Shadow Links") */
   backLinkText?: string;
 };
 

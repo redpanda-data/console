@@ -25,8 +25,7 @@ type TagsFieldListProps<TFieldValues extends FieldValues> = {
 };
 
 /**
- * Reusable tags field list component for managing key-value tags
- * Can be used in AI Agents, MCP Servers, and any other resource that needs tags
+ * Reusable tags field list component for managing key-value tags.
  *
  * @example
  * // In your form component:

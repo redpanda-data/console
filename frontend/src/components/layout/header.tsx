@@ -252,7 +252,7 @@ function useShouldHideHeader() {
   }
 
   // Pages that have their own header components - hide AppPageHeader for these
-  const pagesWithOwnHeaders = ['/mcp-servers', '/agents', '/knowledgebases', '/secrets', '/transcripts'];
+  const pagesWithOwnHeaders = ['/secrets'];
 
   // Check if current path starts with any of the pages that have their own headers
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));

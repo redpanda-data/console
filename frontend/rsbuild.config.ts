@@ -93,18 +93,6 @@ export default defineConfig({
       credentials: true,
     },
     proxy: {
-      // AIGW v2 API - proxy to new AI Gateway management API (LLMProviderService, ModelService)
-      ...(process.env.AIGW_URL
-        ? {
-            '/.aigw/api': {
-              target: process.env.AIGW_URL,
-              changeOrigin: true,
-              secure: false,
-              logLevel: 'debug',
-              pathRewrite: { '^/\\.aigw/api': '' },
-            },
-          }
-        : {}),
       // All other APIs - proxy to Console backend
       '/api': {
         target: process.env.PROXY_TARGET || 'http://localhost:9090',

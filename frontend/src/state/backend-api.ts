@@ -160,11 +160,6 @@ import {
   type Secret,
   type UpdateSecretRequest,
 } from '../protogen/redpanda/api/dataplane/v1/secret_pb';
-import type {
-  KnowledgeBase,
-  KnowledgeBaseCreate,
-  KnowledgeBaseUpdate,
-} from '../protogen/redpanda/api/dataplane/v1alpha3/knowledge_base_pb';
 import { appendWithSlackCap, boundedAppend, pruneMapToKeys } from '../utils/bounded-array';
 import { getBuildDate } from '../utils/env';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
@@ -2394,108 +2389,6 @@ export const pipelinesApi = new Proxy<ReturnType<typeof _pipelinesCreator>>(
   }
 );
 
-const _knowledgebaseCreator = (set: any, _get: any) => ({
-  knowledgeBases: undefined as undefined | KnowledgeBase[],
-  knowledgeBasesError: null as ConnectError | null,
-
-  async refreshKnowledgeBases(_force: boolean): Promise<void> {
-    const client = appConfig.knowledgebaseClient;
-    if (!client) {
-      throw new Error('knowledgebase client is not initialized');
-    }
-
-    const knowledgeBases: KnowledgeBase[] = [];
-    set({ knowledgeBasesError: null });
-
-    let nextPageToken = '';
-    while (true) {
-      const res = await client
-        .listKnowledgeBases({ pageSize: 10, pageToken: nextPageToken })
-        .catch((error: ConnectError) => {
-          set({ knowledgeBasesError: error });
-          return;
-        });
-
-      // Handle response structure (some APIs return res.response, others return res directly)
-      const response = ((res as { response?: unknown })?.response || res) as {
-        knowledgeBases: KnowledgeBase[];
-        nextPageToken?: string;
-      };
-      if (!response) {
-        break;
-      }
-
-      knowledgeBases.push(...response.knowledgeBases);
-
-      if (!response.nextPageToken || response.nextPageToken.length === 0) {
-        break;
-      }
-      nextPageToken = response.nextPageToken;
-    }
-
-    set({ knowledgeBases });
-  },
-
-  async deleteKnowledgeBase(id: string) {
-    const client = appConfig.knowledgebaseClient;
-    if (!client) {
-      throw new Error('knowledgebase client is not initialized');
-    }
-
-    await client.deleteKnowledgeBase({ id });
-  },
-  async createKnowledgeBase(knowledgeBase: KnowledgeBaseCreate) {
-    const client = appConfig.knowledgebaseClient;
-    if (!client) {
-      throw new Error('knowledgebase client is not initialized');
-    }
-    const result = await client.createKnowledgeBase({ knowledgeBase });
-    return result;
-  },
-  async updateKnowledgeBase(id: string, knowledgeBaseUpdate: KnowledgeBaseUpdate, updateMask?: string[]) {
-    const client = appConfig.knowledgebaseClient;
-    if (!client) {
-      throw new Error('knowledgebase client is not initialized');
-    }
-
-    await client.updateKnowledgeBase({
-      id,
-      knowledgeBase: knowledgeBaseUpdate,
-      updateMask: updateMask
-        ? {
-            paths: updateMask,
-          }
-        : undefined,
-    });
-  },
-  async getKnowledgeBase(id: string): Promise<KnowledgeBase> {
-    const client = appConfig.knowledgebaseClient;
-    if (!client) {
-      throw new Error('knowledgebase client is not initialized');
-    }
-
-    const response = await client.getKnowledgeBase({ id });
-    if (!response.knowledgeBase) {
-      throw new Error('Knowledge base not found');
-    }
-    return response.knowledgeBase;
-  },
-});
-const useKnowledgebaseStore = zustandCreate(_knowledgebaseCreator);
-
-export const knowledgebaseApi = new Proxy<ReturnType<typeof _knowledgebaseCreator>>(
-  {} as ReturnType<typeof _knowledgebaseCreator>,
-  {
-    get(_: any, prop: string | symbol) {
-      return (useKnowledgebaseStore.getState() as any)[prop as string];
-    },
-    set(_: any, prop: string | symbol, value: unknown) {
-      useKnowledgebaseStore.setState({ [prop as string]: value } as any);
-      return true;
-    },
-  }
-);
-
 const _rpcnSecretManagerCreator = (set: any, get: any) => ({
   secrets: undefined as undefined | Secret[],
   secretsByPipeline: undefined as { secretId: string; pipelines: Pipeline[] }[] | undefined,
@@ -3124,7 +3017,6 @@ export {
   useApiStoreHook,
   useRolesStore,
   usePipelinesStore,
-  useKnowledgebaseStore,
   useRpcnSecretManagerStore,
   useTransformsStore,
 };
