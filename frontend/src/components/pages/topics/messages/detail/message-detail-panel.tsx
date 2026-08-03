@@ -170,7 +170,7 @@ export const MessageDetailPanel = ({
             title="Drag to resize"
           />
           <SheetHeader className="shrink-0 flex-row items-center gap-1 border-b px-4 py-2.5">
-            <SheetTitle className="min-w-0 flex-1 font-semibold text-[13px]">Message</SheetTitle>
+            <SheetTitle className="min-w-0 flex-1 font-semibold text-label">Message</SheetTitle>
             <Button
               onClick={() => onExpandedChange(false)}
               size="icon-xs"
@@ -205,7 +205,7 @@ export const MessageDetailPanel = ({
   return (
     <div className="flex h-full min-h-0 flex-col rounded-lg border bg-card" data-testid="message-detail-panel">
       <div className="flex shrink-0 items-center gap-1 border-b px-3 py-2">
-        <span className="min-w-0 flex-1 font-semibold text-[13px]">Message</span>
+        <span className="min-w-0 flex-1 font-semibold text-label">Message</span>
         <Button
           onClick={() => onExpandedChange(true)}
           size="icon-xs"

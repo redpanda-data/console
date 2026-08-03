@@ -54,10 +54,10 @@ const DetailSection = ({
         <ChevronRightIcon
           className={`size-3 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-90' : ''}`}
         />
-        <span className="font-semibold text-[10.5px] text-muted-foreground uppercase tracking-wider">{label}</span>
+        <span className="font-semibold text-caption text-muted-foreground uppercase tracking-wider">{label}</span>
       </CollapsibleTrigger>
       <div className="flex items-center gap-2">
-        {meta && <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">{meta}</span>}
+        {meta && <span className="whitespace-nowrap font-mono text-caption text-muted-foreground">{meta}</span>}
         {copyContent !== undefined && <CopyButton className="size-6" content={copyContent} size="sm" variant="ghost" />}
       </div>
     </div>
@@ -69,8 +69,10 @@ const DetailSection = ({
 
 const MetaRow = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="grid grid-cols-[minmax(110px,42%)_1fr] border-b last:border-b-0">
-    <div className="px-2.5 py-1.5 font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
-    <div className="min-w-0 break-all border-l px-2.5 py-1.5 font-mono text-xs">{children}</div>
+    <div className="px-2.5 py-1.5 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+      {label}
+    </div>
+    <div className="min-w-0 break-all border-l px-2.5 py-1.5 font-mono text-body-sm">{children}</div>
   </div>
 );
 
@@ -112,13 +114,13 @@ const TroubleshootNote = ({ payload }: { payload: Payload }) => {
   }
   return (
     <div className="mt-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2">
-      <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive text-xs">
+      <div className="mb-1 flex items-center gap-1.5 font-semibold text-body-sm text-destructive">
         <AlertTriangleIcon className="size-3.5 shrink-0" />
         Errors were encountered when deserializing this payload
       </div>
       <div className="flex flex-col gap-1">
         {report.map((entry) => (
-          <div className="break-words font-mono text-[11px] leading-relaxed" key={entry.serdeName}>
+          <div className="break-words font-mono text-body-sm leading-relaxed" key={entry.serdeName}>
             <span className="font-semibold capitalize">{entry.serdeName}:</span> {entry.message}
           </div>
         ))}
@@ -143,7 +145,7 @@ export const KeySection = ({ msg, open, onOpenChange }: SectionProps) => (
     open={open}
     testId="detail-key-section"
   >
-    <div className="break-all rounded-md border bg-muted px-2.5 py-1.5 font-mono text-[12.5px]">
+    <div className="break-all rounded-md border bg-muted px-2.5 py-1.5 font-mono text-body-sm">
       {msg.key.isPayloadNull ? <span className="text-muted-foreground italic">null</span> : msg.keyJson}
     </div>
     <TroubleshootNote payload={msg.key} />
@@ -161,8 +163,8 @@ const headerValueText = (value: Payload) => {
 const HeaderGrid = ({ headers }: { headers: TopicMessage['headers'] }) => (
   <div className="overflow-hidden rounded-md border bg-card">
     <div className="grid grid-cols-[minmax(110px,42%)_1fr] border-b">
-      <div className="px-2.5 py-1 font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">Key</div>
-      <div className="border-l px-2.5 py-1 font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">
+      <div className="px-2.5 py-1 font-semibold text-caption text-muted-foreground uppercase tracking-wide">Key</div>
+      <div className="border-l px-2.5 py-1 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
         Value
       </div>
     </div>
@@ -170,7 +172,7 @@ const HeaderGrid = ({ headers }: { headers: TopicMessage['headers'] }) => (
       const text = headerValueText(header.value);
       return (
         <div
-          className="grid grid-cols-[minmax(110px,42%)_1fr] border-b font-mono text-xs last:border-b-0"
+          className="grid grid-cols-[minmax(110px,42%)_1fr] border-b font-mono text-body-sm last:border-b-0"
           // biome-ignore lint/suspicious/noArrayIndexKey: header keys can repeat; order is stable
           key={`${header.key}-${i}`}
         >
@@ -196,7 +198,7 @@ export const HeadersSection = ({ msg, open, onOpenChange }: SectionProps) => (
     {msg.headers.length > 0 ? (
       <HeaderGrid headers={msg.headers} />
     ) : (
-      <div className="py-2 text-muted-foreground text-xs">This record carries no headers.</div>
+      <div className="py-2 text-body-sm text-muted-foreground">This record carries no headers.</div>
     )}
   </DetailSection>
 );
@@ -221,7 +223,7 @@ export const ValueSection = ({
     open={open}
     testId="detail-value-section"
   >
-    <div className={cn('font-mono text-[12.5px] leading-relaxed', fill && 'min-h-0 flex-1')}>
+    <div className={cn('font-mono text-body-sm leading-relaxed', fill && 'min-h-0 flex-1')}>
       <PayloadComponent
         loadLargeMessage={loadLargeMessage}
         payload={msg.value}
