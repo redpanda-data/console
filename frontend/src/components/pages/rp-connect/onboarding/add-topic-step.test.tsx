@@ -12,6 +12,8 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError, createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
+import { ListTopicsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/console/v1alpha1/topic-TopicService_connectquery';
 import { CreateTopicResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { ComponentProps } from 'react';
@@ -60,23 +62,7 @@ import { AddTopicStep } from './add-topic-step';
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-/** REST response for useLegacyListTopicsQuery */
-function createTopicsResponse(topicNames: string[]) {
-  return {
-    topics: topicNames.map((name) => ({
-      topicName: name,
-      isInternal: false,
-      partitionCount: 1,
-      replicationFactor: 3,
-      cleanupPolicy: 'delete',
-      documentation: 'UNKNOWN' as const,
-      logDirSummary: { totalSizeBytes: 0, partitionCount: 0, replicaErrors: [] },
-      allowedActions: undefined,
-    })),
-  };
-}
-
-function createTransport(overrides?: { createTopicMock?: ReturnType<typeof vi.fn> }) {
+function createTransport(overrides?: { createTopicMock?: ReturnType<typeof vi.fn>; topicNames?: string[] }) {
   return createRouterTransport(({ rpc }) => {
     rpc(
       createTopic,
@@ -88,6 +74,20 @@ function createTransport(overrides?: { createTopicMock?: ReturnType<typeof vi.fn
             replicationFactor: 3,
           })
         )
+    );
+    // useListTopicsQuery resolves topics over the gRPC transport, so seed them here.
+    rpc(listTopics, () =>
+      create(ListTopicsResponseSchema, {
+        topics: (overrides?.topicNames ?? []).map((name) => ({
+          name,
+          internal: false,
+          partitionCount: 1,
+          replicationFactor: 3,
+          cleanupPolicy: 'delete',
+          logDirSummary: { totalSizeBytes: 0n, replicaErrors: [], hint: '' },
+        })),
+        nextPageToken: '',
+      })
     );
   });
 }
@@ -113,22 +113,13 @@ function TestHarness({ onResult, ...props }: HarnessProps) {
 describe('AddTopicStep', () => {
   beforeEach(() => {
     mockFetch.mockReset();
-    // Default: return empty topic list
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse([])),
-    });
   });
 
   it('existing topic returns name via triggerSubmit', async () => {
     const user = userEvent.setup();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
-    });
 
     let result: unknown;
-    const transport = createTransport();
+    const transport = createTransport({ topicNames: ['my-topic', 'other-topic'] });
 
     render(
       <TestHarness
@@ -139,11 +130,6 @@ describe('AddTopicStep', () => {
       />,
       { transport }
     );
-
-    // Wait for topics to load so the combobox has options
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled();
-    });
 
     // The component starts in "Existing" mode when topics exist.
     // Open the combobox, type to filter, then click the matching option.
@@ -285,11 +271,7 @@ describe('AddTopicStep', () => {
   });
 
   it('selectionMode=existing shows combobox', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
-    });
-    const transport = createTransport();
+    const transport = createTransport({ topicNames: ['topic-a'] });
 
     render(<TestHarness onResult={() => {}} selectionMode="existing" />, { transport });
 
@@ -299,18 +281,9 @@ describe('AddTopicStep', () => {
 
   it('existing topic alert shown in create mode when name matches', async () => {
     const user = userEvent.setup();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
-    });
-    const transport = createTransport();
+    const transport = createTransport({ topicNames: ['existing-topic'] });
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
-
-    // Wait for topics to load
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled();
-    });
 
     // Switch to "New" tab (single-select ToggleGroupItem renders as a Base UI toggle button (aria-pressed))
     const newButton = await screen.findByRole('button', { name: 'New' });
@@ -359,11 +332,7 @@ describe('AddTopicStep', () => {
   });
 
   it('selectionMode=both renders toggle group', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['t1'])),
-    });
-    const transport = createTransport();
+    const transport = createTransport({ topicNames: ['t1'] });
 
     render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 

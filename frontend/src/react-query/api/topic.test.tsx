@@ -9,51 +9,88 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { renderHook, waitFor } from '@testing-library/react';
-import { config } from 'config';
+import { ListTopicsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
+import { listTopics } from 'protogen/redpanda/api/console/v1alpha1/topic-TopicService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
-import { useLegacyListTopicsQuery } from './topic';
+import { useListTopicsQuery } from './topic';
 
 // Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
 
-const jsonResponse = (body: unknown, init?: ResponseInit) =>
-  new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
-    ...init,
-  });
+describe('useListTopicsQuery', () => {
+  test('returns the native gRPC topic shape on a successful response', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listTopics, () =>
+        create(ListTopicsResponseSchema, {
+          topics: [
+            {
+              name: 'orders',
+              internal: false,
+              partitionCount: 3,
+              replicationFactor: 2,
+              cleanupPolicy: 'delete',
+              logDirSummary: { totalSizeBytes: 1024n, hint: '', replicaErrors: [] },
+            },
+          ],
+          nextPageToken: '',
+        })
+      );
+    });
 
-describe('useLegacyListTopicsQuery', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
-    // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
-    // so without an explicit response.ok check the query settles as a success and the
-    // error UI never renders — the user sees 0 topics instead of an auth failure.
-    vi.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeInstanceOf(Error);
-  });
-
-  test('returns topics on a successful response', async () => {
-    vi.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ topics: [{ topicName: 'orders', isInternal: false }] }, { status: 200 })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
+    const { wrapper } = connectQueryWrapper(NO_RETRY, transport);
+    const { result } = renderHook(() => useListTopicsQuery(), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
+    const topics = result.current.data.topics ?? [];
+    expect(topics).toHaveLength(1);
+    expect(topics[0]).toMatchObject({
+      name: 'orders',
+      internal: false,
+      partitionCount: 3,
+      replicationFactor: 2,
+      cleanupPolicy: 'delete',
+    });
+    expect(topics[0]?.logDirSummary?.totalSizeBytes).toBe(1024n);
+  });
+
+  test('filters internal topics when hideInternalTopics is set', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listTopics, () =>
+        create(ListTopicsResponseSchema, {
+          topics: [
+            { name: 'orders', internal: false, partitionCount: 1, replicationFactor: 1 },
+            { name: '_schemas', internal: true, partitionCount: 1, replicationFactor: 1 },
+          ],
+          nextPageToken: '',
+        })
+      );
+    });
+
+    const { wrapper } = connectQueryWrapper(NO_RETRY, transport);
+    const { result } = renderHook(() => useListTopicsQuery(undefined, undefined, { hideInternalTopics: true }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data.topics?.map((t) => t.name)).toEqual(['orders']);
+  });
+
+  test('surfaces an error when the topics endpoint fails', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listTopics, () => {
+        throw new ConnectError('forbidden', Code.PermissionDenied);
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper(NO_RETRY, transport);
+    const { result } = renderHook(() => useListTopicsQuery(), { wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(ConnectError);
   });
 });

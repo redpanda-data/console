@@ -101,7 +101,7 @@ vi.mock('react-query/api/remote-mcp', () => ({
 }));
 
 vi.mock('react-query/api/topic', () => ({
-  useLegacyListTopicsQuery: () => mocks.listTopics(),
+  useListTopicsQuery: () => mocks.listTopics(),
   useCreateTopicMutation: () => ({ mutateAsync: mocks.createTopic }),
 }));
 
