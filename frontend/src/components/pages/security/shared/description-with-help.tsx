@@ -18,9 +18,13 @@ type Props = {
   short: string;
   title: string;
   children: React.ReactNode;
+  /** Optional test id for the info trigger button. */
+  testId?: string;
+  /** Optional test id for the drawer title. */
+  titleTestId?: string;
 };
 
-export function DescriptionWithHelp({ short, title, children }: Props) {
+export function DescriptionWithHelp({ short, title, children, testId, titleTestId }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -30,6 +34,7 @@ export function DescriptionWithHelp({ short, title, children }: Props) {
         <button
           aria-label="More information"
           className="inline-flex cursor-pointer items-center text-muted-foreground hover:text-foreground"
+          data-testid={testId}
           onClick={() => setOpen(true)}
           type="button"
         >
@@ -39,7 +44,9 @@ export function DescriptionWithHelp({ short, title, children }: Props) {
       <Drawer direction="right" onOpenChange={setOpen} open={open}>
         <DrawerContent aria-labelledby="help-drawer-title" className="w-[520px] sm:max-w-[520px]" role="dialog">
           <DrawerHeader className="border-b">
-            <DrawerTitle id="help-drawer-title">{title}</DrawerTitle>
+            <DrawerTitle data-testid={titleTestId} id="help-drawer-title">
+              {title}
+            </DrawerTitle>
           </DrawerHeader>
           <div className="space-y-4 p-6">{children}</div>
         </DrawerContent>

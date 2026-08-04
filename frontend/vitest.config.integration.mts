@@ -40,7 +40,6 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'happy-dom', // Aligns with cloud-ui / adp-ui; required to run Chakra + Radix integration tests consistently
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
-      exclude: ['src/**/*.browser.test.tsx'], // Browser mode tests run via vitest.config.browser.mts
       setupFiles: './vitest.setup.integration.ts',
       deps: {
         registerNodeLoader: true,
@@ -54,7 +53,6 @@ export default defineConfig(({ mode }) => {
         deps: {
           inline: [
             'katex',
-            'streamdown',
             'rehype-harden',
             'character-entities',
             'decode-named-character-reference',
@@ -82,7 +80,6 @@ export default defineConfig(({ mode }) => {
           'src/routeTree.gen.ts',
           '**/*.test.{ts,tsx}',
           '**/*.spec.{ts,tsx}',
-          '**/*.browser.test.tsx',
           'src/**/*.stories.tsx',
         ],
         // Thresholds are enforced on the merged (unit + integration) summary

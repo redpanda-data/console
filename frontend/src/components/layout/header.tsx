@@ -47,7 +47,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
-            <Separator className="mr-2 h-4" orientation="vertical" />
+            <Separator className="mr-2 h-4 self-center" orientation="vertical" />
           </>
         ) : null}
         {isEmbedded() ? null : (
@@ -262,7 +262,7 @@ function useShouldHideHeader() {
   }
 
   // Pages that have their own header components - hide AppPageHeader for these
-  const pagesWithOwnHeaders = ['/mcp-servers', '/agents', '/knowledgebases', '/secrets', '/transcripts'];
+  const pagesWithOwnHeaders = ['/secrets'];
 
   // Check if current path starts with any of the pages that have their own headers
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));

@@ -1,6 +1,6 @@
 /**
  * Shared JSON Schema utilities for generating defaults and working with schemas
- * Used by both remote-mcp and rp-connect features
+ * Used by Redpanda Connect features
  */
 
 import type { JsonObject, JsonValue } from './json-utils';
@@ -45,7 +45,6 @@ export type JsonSchemaType = {
 
 /**
  * Generates a default value based on a JSON schema type
- * Moved from remote-mcp/schema-utils.tsx to be shared across features
  *
  * @param schema The JSON schema definition
  * @param propertyName Optional property name for checking if it's required in parent schema

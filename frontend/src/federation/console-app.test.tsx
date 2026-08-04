@@ -151,9 +151,7 @@ describe('ConsoleApp', () => {
       },
     };
 
-    render(
-      <ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enableKnowledgeBaseInConsoleUi: true }} />
-    );
+    render(<ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enableRpcnTiles: true }} />);
 
     await waitFor(() => {
       expect(setup).toHaveBeenCalledWith(
@@ -162,7 +160,7 @@ describe('ConsoleApp', () => {
           clusterId: 'test-cluster-id',
           setSidebarItems: mockOnSidebarItemsChange,
           setBreadcrumbs: mockOnBreadcrumbsChange,
-          featureFlags: { enableKnowledgeBaseInConsoleUi: true },
+          featureFlags: { enableRpcnTiles: true },
           urlOverride: { grpc: 'http://custom-grpc:9090' },
         })
       );
@@ -243,7 +241,7 @@ describe('ConsoleApp', () => {
 
   describe('Feature Flags', () => {
     test('passes feature flags to setup()', async () => {
-      const flags = { schemaRegistry: true, enableKnowledgeBaseInConsoleUi: false };
+      const flags = { enableNewSecurityPage: false, enableRpcnTiles: true };
       render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
 
       await waitFor(() => {

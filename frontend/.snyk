@@ -7,48 +7,20 @@ ignore:
         reason: >-
           Not reachable in browser UI: frontend source has no direct uuid
           runtime imports and does not call uuid v3/v5/v6 with caller-provided
-          output buffers/offsets. Remaining paths are @a2a-js/sdk, Mermaid via
-          streamdown, @hookform/devtools via @redpanda-data/ui, SockJS
-          dev-server tooling, and Docker test tooling; none expose the
-          vulnerable external-buffer API to user input. Revisit before expiry or
-          if direct uuid buffer APIs are introduced. Re-triaged 2026-07-20 sweep
-          — still present, still non-reachable.
+          output buffers/offsets. Remaining paths are @hookform/devtools via
+          @redpanda-data/ui and Docker test tooling; neither exposes the
+          vulnerable external-buffer API to user input. Revisit before expiry
+          or if direct uuid buffer APIs are introduced. Re-triaged 2026-07-20
+          sweep — still present, still non-reachable.
         expires: 2026-10-20T00:00:00.000Z
         created: 2026-05-13T09:58:12.566Z
-  SNYK-JS-BODYPARSER-17906397:
-    - '*':
-        reason: >-
-          Not reachable in Console UI: source imports only MCP SDK client and
-          shared-auth subpaths, so the server module graph is excluded from the
-          browser bundle. The Express body-parser path is never imported or
-          executed.
-        expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:58:44.547Z
-  SNYK-JS-HONONODESERVER-18170326:
-    - '*':
-        reason: >-
-          Not reachable in Console UI: source imports only MCP SDK client and
-          shared-auth subpaths, so the Hono server transport is excluded from
-          the browser bundle. Revisit promptly after fixed 1.19.17 clears the
-          72-hour release-age gate.
-        expires: 2026-08-12T00:00:00.000Z
-        created: 2026-07-29T12:58:46.098Z
-  SNYK-JS-IPADDRESS-16636412:
-    - '*':
-        reason: >-
-          Not reachable in Console UI: source imports only MCP SDK client and
-          shared-auth subpaths, so the Express rate-limit server path is
-          excluded from the browser bundle. No ip-address HTML helper is
-          imported or rendered.
-        expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:58:47.607Z
   SNYK-JS-POSTCSS-18313038:
     - '*':
         reason: >-
           Not reachable from attacker input in Console UI: vulnerable PostCSS is
-          build/compiler tooling used by Rsbuild Sass and Vue compiler-sfc
-          through Milkdown. The build consumes repository-controlled CSS and
-          does not write attacker-controlled CSS or source maps.
+          build tooling used by Rsbuild and Vite. The build consumes
+          repository-controlled CSS and source maps; no server endpoint
+          processes user-submitted CSS or returns generated source maps.
         expires: 2026-10-27T00:00:00.000Z
         created: 2026-07-29T12:58:49.133Z
 patch: {}

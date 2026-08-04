@@ -13,7 +13,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
-import { AI_AGENT_SECRET_TEXT, SecretSelector } from './secret-selector';
+import { SecretSelector, type SecretSelectorCustomText } from './secret-selector';
 
 const mockCreateSecret = vi.fn().mockResolvedValue({});
 
@@ -26,32 +26,40 @@ vi.mock('react-query/api/secret', () => ({
 }));
 
 const availableSecrets = [
-  { id: 'OPENAI_API_KEY', name: 'OPENAI_API_KEY' },
-  { id: 'COHERE_API_KEY', name: 'COHERE_API_KEY' },
+  { id: 'CLIENT_KEY', name: 'CLIENT_KEY' },
+  { id: 'CLIENT_PASSWORD', name: 'CLIENT_PASSWORD' },
 ];
+
+const customText: SecretSelectorCustomText = {
+  dialogDescription: 'Create a new secret. The secret will be stored securely.',
+  secretNamePlaceholder: 'CLIENT_KEY',
+  secretValuePlaceholder: 'Secret value',
+  secretValueDescription: 'Your secret value',
+  emptyStateDescription: 'Create a secret to store a sensitive value securely.',
+};
 
 const defaultProps = {
   onChange: vi.fn(),
   availableSecrets,
   scopes: [],
-  customText: AI_AGENT_SECRET_TEXT,
+  customText,
 } as const;
 
 describe('SecretSelector', () => {
   test('displays secret name when value is in template format "${secrets.NAME}"', () => {
-    render(<SecretSelector {...defaultProps} value="${secrets.OPENAI_API_KEY}" />);
+    render(<SecretSelector {...defaultProps} value="${secrets.CLIENT_KEY}" />);
 
     // The trigger should show the secret name, not the raw template string
     const trigger = screen.getByRole('combobox');
-    expect(trigger).toHaveTextContent('OPENAI_API_KEY');
-    expect(trigger).not.toHaveTextContent('${secrets.OPENAI_API_KEY}');
+    expect(trigger).toHaveTextContent('CLIENT_KEY');
+    expect(trigger).not.toHaveTextContent('${secrets.CLIENT_KEY}');
   });
 
   test('displays secret name when value is already a plain ID', () => {
-    render(<SecretSelector {...defaultProps} value="COHERE_API_KEY" />);
+    render(<SecretSelector {...defaultProps} value="CLIENT_PASSWORD" />);
 
     const trigger = screen.getByRole('combobox');
-    expect(trigger).toHaveTextContent('COHERE_API_KEY');
+    expect(trigger).toHaveTextContent('CLIENT_PASSWORD');
   });
 
   test('shows placeholder when value is empty', () => {
