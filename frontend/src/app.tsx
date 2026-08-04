@@ -93,16 +93,6 @@ declare module '@tanstack/react-router' {
   }
 
   // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
-  interface HistoryState {
-    // Knowledge base document details state
-    chunkId?: string;
-    topic?: string;
-    documentName?: string;
-    content?: string;
-    score?: number;
-  }
-
-  // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
   interface StaticDataRouteOption {
     /** Route title shown in the page header/breadcrumbs. */
     title?: string;

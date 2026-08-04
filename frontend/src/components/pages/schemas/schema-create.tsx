@@ -533,6 +533,8 @@ const SchemaEditor = (p: {
   const [contextWarning, setContextWarning] = useState('');
   const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<string | null>(null);
+  // Only surface "required" errors after the user has interacted with a field, not on mount.
+  const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
 
   const availableContexts = useMemo(() => {
     if (!(srContextsEnabled && apiContexts && subjects)) return [];
@@ -575,7 +577,7 @@ const SchemaEditor = (p: {
       )}
       <div className="flex max-w-[650px] flex-col gap-8">
         {srContextsEnabled && !isAddVersion && (
-          <Field data-invalid={!state.context || undefined}>
+          <Field data-invalid={(touched.context && !state.context) || undefined}>
             <FieldLabel>Context</FieldLabel>
             <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
             <Combobox
@@ -585,6 +587,7 @@ const SchemaEditor = (p: {
               createLabel="context"
               onChange={(value) => {
                 const contextId = contextLabelToId(value);
+                setTouched((t) => ({ ...t, context: true }));
                 setContextWarning('');
                 p.onStateChange((prev) => ({
                   ...prev,
@@ -605,7 +608,7 @@ const SchemaEditor = (p: {
               value={contextIdToLabel(state.context)}
             />
             {contextWarning && <div className="mt-1 text-body text-destructive">{contextWarning}</div>}
-            {!state.context && <FieldError>Context is required</FieldError>}
+            {touched.context && !state.context && <FieldError>Context is required</FieldError>}
           </Field>
         )}
 
@@ -627,6 +630,7 @@ const SchemaEditor = (p: {
               CUSTOM: 'Custom',
             }}
             onValueChange={(e) => {
+              setTouched((t) => ({ ...t, topic: false }));
               p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
             }}
             value={state.strategy}
@@ -644,11 +648,12 @@ const SchemaEditor = (p: {
         </Field>
 
         {showTopicNameInput && (
-          <Field data-invalid={!state.userInput || undefined}>
+          <Field data-invalid={(touched.topic && !state.userInput) || undefined}>
             <FieldLabel>Topic name</FieldLabel>
             <Select
               disabled={isAddVersion}
               onValueChange={(e) => {
+                setTouched((t) => ({ ...t, topic: true }));
                 p.onStateChange((prev) => ({ ...prev, userInput: e }));
               }}
               value={state.userInput}
@@ -664,7 +669,7 @@ const SchemaEditor = (p: {
                 ))}
               </SelectContent>
             </Select>
-            {!state.userInput && <FieldError>Topic name is required</FieldError>}
+            {touched.topic && !state.userInput && <FieldError>Topic name is required</FieldError>}
           </Field>
         )}
 

@@ -292,10 +292,6 @@ type UISettings = {
     quickSearch: string;
   };
 
-  knowledgeBaseList: {
-    quickSearch: string;
-  };
-
   rpcnSecretList: {
     quickSearch: string;
   };
@@ -476,10 +472,6 @@ const defaultUiSettings: UISettings = {
   },
 
   pipelinesList: {
-    quickSearch: '',
-  },
-
-  knowledgeBaseList: {
     quickSearch: '',
   },
 

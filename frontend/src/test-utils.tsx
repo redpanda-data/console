@@ -35,7 +35,7 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
 //
 // `cleanupTestHarness` is kept in a separate module so that
 // `vitest.setup.integration.ts` does not transitively import `routeTree.gen`
-// (and therefore `config`), which would pin `isEmbedded`/`isAdpEnabled` live
+// (and therefore `config`), which would pin `isEmbedded` live
 // bindings before test files' `vi.mock('config', ...)` hoists can take
 // effect.
 import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';

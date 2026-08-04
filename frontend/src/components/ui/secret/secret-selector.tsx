@@ -55,13 +55,6 @@ import { base64ToUInt8Array, encodeBase64 } from "utils/utils";
 import { z } from "zod";
 import { extractSecretName } from "./secret-utils";
 
-// OpenAI API key validation pattern
-export const OPENAI_API_KEY_PATTERN = {
-	regex: /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
-	message:
-		'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters',
-};
-
 // Generic validation that accepts any non-empty string
 export const GENERIC_SECRET_VALUE_PATTERN = {
 	regex: /.+/,
@@ -79,17 +72,6 @@ export type SecretSelectorCustomText = {
 	secretValueDescription: string;
 	/** Description shown in empty state when no secrets are available */
 	emptyStateDescription: string;
-};
-
-/** Default text for AI agent API key secrets */
-export const AI_AGENT_SECRET_TEXT: SecretSelectorCustomText = {
-	dialogDescription:
-		"Create a new secret for your OpenAI API key. The secret will be stored securely.",
-	secretNamePlaceholder: "e.g., OPENAI_API_KEY",
-	secretValuePlaceholder: "sk-...",
-	secretValueDescription: "Your OpenAI API key",
-	emptyStateDescription:
-		"Create a secret to securely store your OpenAI API key",
 };
 
 type SecretSelectorProps = {

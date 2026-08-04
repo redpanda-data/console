@@ -32,7 +32,6 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
-import { ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
@@ -318,9 +317,7 @@ const QuotasList = () => {
           </TableBody>
         </Table>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </PageContent>
     </TooltipProvider>
   );

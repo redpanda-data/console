@@ -1,7 +1,7 @@
 /**
  * Shared mock factories for TanStack Router + ConnectRPC route tests.
  *
- * Ported from apps/adp-ui to give console tests one place to stub
+ * Gives Console tests one place to stub
  * `createFileRoute`, `Link`, and common connect-query helpers without
  * repeating the same boilerplate across every route integration spec.
  *

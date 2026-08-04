@@ -33,7 +33,6 @@ export default defineConfig(({ mode }) => {
           'src/routeTree.gen.ts',
           '**/*.test.{ts,tsx}',
           '**/*.spec.{ts,tsx}',
-          '**/*.browser.test.tsx',
           'src/**/*.stories.tsx',
         ],
         // Thresholds are only enforced on the combined (merged) run; per-config
