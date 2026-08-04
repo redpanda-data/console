@@ -16,7 +16,6 @@ export const FEATURE_FLAGS = {
   enablePipelineDiagrams: false,
   enableConnectSlashMenu: false,
   enableNewSecurityPage: true,
-  enableTeamsBridge: false,
   enableNewTopicMessagesPage: false,
 };
 
