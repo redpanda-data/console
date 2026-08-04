@@ -10,7 +10,7 @@
  */
 
 import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
-import { Link, useLocation, useMatches, useMatchRoute } from '@tanstack/react-router';
+import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
@@ -43,7 +43,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
-            <Separator className="mr-2 h-4" orientation="vertical" />
+            <Separator className="mr-2 h-4 self-center" orientation="vertical" />
           </>
         ) : null}
         {isEmbedded() ? null : (
@@ -65,14 +65,9 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
   );
 }
 
-function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean }) {
+function AppPageHeader() {
   useApiStoreHook((s) => s.userData); // re-render when userData changes
-  // Fullscreen routes (e.g. the SQL studio) carry their own title bar/toolbar, so
-  // they never want the title+actions row — only the breadcrumb. Robust to which
-  // layout branch renders the header (standalone vs embedded misdetection).
-  const matches = useMatches();
-  const isFullscreenRoute = matches.some((m) => m.staticData.fullscreen);
-  const hideTitleRow = breadcrumbOnly || isFullscreenRoute;
+  const hideTitleRow = useRouteOwnsTitleRow();
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
@@ -102,8 +97,16 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
     return null;
   }
 
+  // Embedded, the breadcrumb row holds nothing — the host draws the breadcrumb and there
+  // is no sidebar trigger — so with the title row hidden this would be a bare divider
+  // above a page that already has its own title bar.
+  if (hideTitleRow && isEmbedded()) {
+    return null;
+  }
+
   return (
-    <div>
+    // Expanded pages release #mainLayout's gutter; keep the header off the viewport edge.
+    <div className="page-expanded-inset transition-[padding] duration-300 ease-in-out">
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
       {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
           studio, which carries its own title bar and toolbar). */}
@@ -164,6 +167,22 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
 }
 
 export default AppPageHeader;
+
+/**
+ * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`),
+ * so the header shows only the breadcrumb row.
+ *
+ * Resolved from the pathname rather than `useMatches()`: committed matches lag the
+ * location by a render on soft navigation, which would flash the title row on the way in.
+ */
+function useRouteOwnsTitleRow() {
+  const router = useRouter();
+  const { pathname } = useLocation();
+
+  return router
+    .getMatchedRoutes(pathname)
+    .matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
+}
 
 /**
  * Custom React Hook: Determines whether to show the refresh button based on route matches.

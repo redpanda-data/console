@@ -33,12 +33,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
-import {
-  ListLayout,
-  ListLayoutFilters,
-  ListLayoutPagination,
-  ListLayoutSearchInput,
-} from 'components/redpanda-ui/components/list-layout';
+import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -403,7 +398,7 @@ const TopicList: FC = () => {
         ) : null}
       </DeleteResourceAlertDialog>
 
-      <ListLayout className="my-4" data-testid="topics-table">
+      <ListLayout className="my-4 min-h-0" data-testid="topics-table">
         <div className="flex flex-wrap gap-8">
           {(
             [
@@ -485,9 +480,7 @@ const TopicList: FC = () => {
           <TableBody>{renderBody()}</TableBody>
         </Table>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
     </>
   );

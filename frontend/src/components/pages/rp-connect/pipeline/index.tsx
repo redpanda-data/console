@@ -36,9 +36,11 @@ import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/t
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { LogExplorer } from 'components/ui/connect/log-explorer';
 import { DeleteResourceAlertDialog } from 'components/ui/delete-resource-alert-dialog';
+import { ExpandedPageToggle } from 'components/ui/expanded-page-toggle';
 import { LintHintList } from 'components/ui/lint-hint/lint-hint-list';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
+import { useExpandedPageMode } from 'hooks/use-expanded-page-mode';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
 import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
@@ -839,6 +841,9 @@ function SidebarPanel({
   );
 }
 
+/** One tab of the editor surface's lane strip. */
+type LaneTab = { value: string; label: string; onSelect: () => void };
+
 // The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
 // embedded Cloud UI.
 const isVisualEditorFeatureEnabled = (): boolean =>
@@ -1110,6 +1115,12 @@ function PipelinePageContent() {
   const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
   const showSidebar = !(isViewVisualLane || isEditVisualLane);
 
+  const {
+    expanded,
+    toggleExpanded,
+    ref: expandedModeRef,
+  } = useExpandedPageMode({ storageKey: 'rp-pipeline-editor-mode' });
+
   // Open the YAML lane and reveal a node: explicit id, else the selected node. Routes per mode.
   const goToYamlNode = useCallback(
     (nodeId?: string) => {
@@ -1129,19 +1140,49 @@ function PipelinePageContent() {
     [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane, editorStore]
   );
 
+  // Empty while a view-mode pipeline is still loading, or in edit mode without the visual editor.
+  const lanes = useMemo<LaneTab[]>(() => {
+    if (mode === 'view') {
+      if (!pipeline) {
+        return [];
+      }
+      const viewLanes: LaneTab[] = [
+        { value: 'monitor', label: 'Monitor', onSelect: () => setActiveViewLane('monitor') },
+        { value: 'configuration', label: 'YAML', onSelect: () => goToYamlNode() },
+      ];
+      if (isVisualEditorEnabled) {
+        viewLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveViewLane('visual') });
+      }
+      return viewLanes;
+    }
+    if (!isVisualEditorEnabled) {
+      return [];
+    }
+    return [
+      { value: 'yaml', label: 'YAML', onSelect: () => goToYamlNode() },
+      { value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') },
+    ];
+  }, [mode, pipeline, isVisualEditorEnabled, goToYamlNode, setActiveViewLane, setActiveEditLane]);
+
   return (
-    // Viewport-bounded height (7rem = app header + pt-8) so a tall lane scrolls within the framed panel.
+    // Viewport-bounded height (page-fill-viewport, globals.css) so a tall lane scrolls
+    // within the framed panel.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
-    <div className="-ml-3.5 flex h-[calc(100dvh-7rem)] min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5">
+    <div
+      className="page-fill-viewport -ml-3.5 flex min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5"
+      ref={expandedModeRef}
+    >
       {mode === 'view' && pipeline ? (
         <PipelineViewHeader
+          expanded={expanded}
           onBack={handleCancel}
           onViewDetails={() => setIsViewConfigDialogOpen(true)}
           pipeline={pipeline}
         />
       ) : null}
       {mode === 'view' && !pipeline ? (
-        <div className="flex items-center gap-2">
+        // Same inset as the loaded header, so nothing shifts when the pipeline arrives.
+        <div className={cn('flex items-center gap-2', expanded && 'px-4')}>
           <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
@@ -1150,6 +1191,7 @@ function PipelinePageContent() {
       ) : null}
       {mode !== 'view' ? (
         <PipelineEditHeader
+          expanded={expanded}
           form={form}
           hasUnsavedChanges={hasUnsavedChanges}
           isSaving={isSaving}
@@ -1162,38 +1204,34 @@ function PipelinePageContent() {
       ) : null}
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-        {/* Framed panel: the lane tabs sit flush at the top, their underline as the internal divider. */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border!">
-          {mode === 'view' && pipeline ? (
-            <Tabs value={activeViewLane}>
-              {/* Full-width list (so the underline divider spans) with content-width triggers so tabs pack left. */}
-              <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
-                <TabsTrigger onClick={() => setActiveViewLane('monitor')} value="monitor" variant="underline">
-                  Monitor
-                </TabsTrigger>
-                <TabsTrigger onClick={() => goToYamlNode()} value="configuration" variant="underline">
-                  YAML
-                </TabsTrigger>
-                {isVisualEditorEnabled ? (
-                  <TabsTrigger onClick={() => setActiveViewLane('visual')} value="visual" variant="underline">
-                    Visual
-                  </TabsTrigger>
-                ) : null}
-              </TabsList>
-            </Tabs>
-          ) : null}
-          {mode !== 'view' && isVisualEditorEnabled ? (
-            <Tabs value={activeEditLane}>
-              <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
-                <TabsTrigger onClick={() => goToYamlNode()} value="yaml" variant="underline">
-                  YAML
-                </TabsTrigger>
-                <TabsTrigger onClick={() => setActiveEditLane('visual')} value="visual" variant="underline">
-                  Visual
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          ) : null}
+        {/* Boxed: rounded frame. Fullscreen: flush sides, top/bottom borders kept so the
+            clipped scroll area still has a visible edge. */}
+        <div
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border border-border! transition-[border-radius,border-color] duration-300 ease-in-out',
+            expanded ? 'rounded-none border-x-transparent!' : 'rounded-lg'
+          )}
+        >
+          {/* Lane tabs with the fullscreen toggle overlaid at the right end (pr-12 keeps the
+              triggers clear of it). Lane-less modes keep an empty strip so it stays put. */}
+          <div className="relative shrink-0">
+            {lanes.length > 0 ? (
+              <Tabs value={mode === 'view' ? activeViewLane : activeEditLane}>
+                <TabsList className="pr-12 [&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+                  {lanes.map((lane) => (
+                    <TabsTrigger key={lane.value} onClick={lane.onSelect} value={lane.value} variant="underline">
+                      {lane.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            ) : (
+              <div className="h-9 border-border! border-b bg-background" />
+            )}
+            <div className="absolute inset-y-0 right-1.5 flex items-center">
+              <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />
+            </div>
+          </div>
           {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
           <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             {showSidebar ? (
@@ -1256,7 +1294,10 @@ function PipelinePageContent() {
           </div>
         </div>
         {tipsContext ? (
-          <EditorTipsBar context={tipsContext} readOnly={mode === 'view'} slashMenuEnabled={isSlashMenuEnabled} />
+          // Match the header's fullscreen inset.
+          <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
+            <EditorTipsBar context={tipsContext} readOnly={mode === 'view'} slashMenuEnabled={isSlashMenuEnabled} />
+          </div>
         ) : null}
       </div>
 
