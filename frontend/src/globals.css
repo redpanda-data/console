@@ -32,6 +32,37 @@
   --chakra-colors-chakra-border-color: var(--color-border);
 }
 
+@layer utilities {
+  /* A work surface filling the viewport below whatever chrome sits above it
+     (--console-page-top, measured by hooks/use-page-top-offset.ts). The 1rem keeps its
+     bottom border off the viewport edge. Pair with a min-height for short viewports. */
+  .page-fill-viewport {
+    height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
+  }
+}
+
+/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width
+   cap. Not a Tailwind variant: the generated variant CSS went missing on some routes in
+   the federated build. Layered, so it beats those utilities on specificity alone. */
+@layer utilities {
+  /* 100%, not none — so the release animates. */
+  html[data-page-expanded] .page-expanded-uncap {
+    max-width: 100%;
+  }
+
+  html[data-page-expanded] .page-expanded-flush {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Chrome that stays put while the page beneath it goes edge-to-edge, re-inset by the
+     same amount the expanded pages give their own headers. */
+  html[data-page-expanded] .page-expanded-inset {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 /* Dev-only bottom-right cluster for floating debug triggers, raised clear of the
    host's Feedback tab: router-devtools pill at the bottom, query-devtools circle
    and the debug-helpers launcher (positioned via its own classes) in a row above.

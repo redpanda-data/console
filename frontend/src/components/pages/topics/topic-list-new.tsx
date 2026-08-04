@@ -398,7 +398,7 @@ const TopicList: FC = () => {
         ) : null}
       </DeleteResourceAlertDialog>
 
-      <ListLayout className="my-4" data-testid="topics-table">
+      <ListLayout className="my-4 min-h-0" data-testid="topics-table">
         <div className="flex flex-wrap gap-8">
           {(
             [
