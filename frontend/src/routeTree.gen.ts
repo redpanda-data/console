@@ -35,7 +35,6 @@ import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
 import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
 import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility';
 import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create';
-import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard';
 import { Route as RpConnectCreateRouteImport } from './routes/rp-connect/create';
 import { Route as OverviewBrokerIdRouteImport } from './routes/overview/$brokerId';
 import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId';
@@ -204,11 +203,6 @@ const SchemaRegistryEditCompatibilityRoute =
 const SchemaRegistryCreateRoute = SchemaRegistryCreateRouteImport.update({
   id: '/schema-registry/create',
   path: '/schema-registry/create',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const RpConnectWizardRoute = RpConnectWizardRouteImport.update({
-  id: '/rp-connect/wizard',
-  path: '/rp-connect/wizard',
   getParentRoute: () => rootRouteImport,
 } as any);
 const RpConnectCreateRoute = RpConnectCreateRouteImport.update({
@@ -436,7 +430,6 @@ export interface FileRoutesByFullPath {
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
-  '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
@@ -502,7 +495,6 @@ export interface FileRoutesByTo {
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
-  '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
@@ -570,7 +562,6 @@ export interface FileRoutesById {
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
-  '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
@@ -639,7 +630,6 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
-    | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
@@ -705,7 +695,6 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
-    | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
@@ -772,7 +761,6 @@ export interface FileRouteTypes {
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
-    | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
@@ -840,7 +828,6 @@ export interface RootRouteChildren {
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute;
   OverviewBrokerIdRoute: typeof OverviewBrokerIdRoute;
   RpConnectCreateRoute: typeof RpConnectCreateRoute;
-  RpConnectWizardRoute: typeof RpConnectWizardRoute;
   SchemaRegistryCreateRoute: typeof SchemaRegistryCreateRoute;
   SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute;
   SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute;
@@ -1063,13 +1050,6 @@ declare module '@tanstack/react-router' {
       path: '/schema-registry/create';
       fullPath: '/schema-registry/create';
       preLoaderRoute: typeof SchemaRegistryCreateRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/rp-connect/wizard': {
-      id: '/rp-connect/wizard';
-      path: '/rp-connect/wizard';
-      fullPath: '/rp-connect/wizard';
-      preLoaderRoute: typeof RpConnectWizardRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/rp-connect/create': {
@@ -1393,7 +1373,6 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   OverviewBrokerIdRoute: OverviewBrokerIdRoute,
   RpConnectCreateRoute: RpConnectCreateRoute,
-  RpConnectWizardRoute: RpConnectWizardRoute,
   SchemaRegistryCreateRoute: SchemaRegistryCreateRoute,
   SchemaRegistryEditCompatibilityRoute: SchemaRegistryEditCompatibilityRoute,
   SchemaRegistryEditModeRoute: SchemaRegistryEditModeRoute,

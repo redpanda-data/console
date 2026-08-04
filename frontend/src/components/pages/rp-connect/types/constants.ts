@@ -1,5 +1,4 @@
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import type { MotionProps } from 'motion/react';
 
 /**
  * Components that include keys for redpanda topics and users/sasl/acls
@@ -54,39 +53,6 @@ export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, '_');
 
 export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
-
-export const WizardStep = {
-  ADD_INPUT: 'add-input-step',
-  ADD_OUTPUT: 'add-output-step',
-  ADD_TOPIC: 'add-topic-step',
-  ADD_USER: 'add-user-step',
-  CREATE_CONFIG: 'create-config-step',
-} as const;
-
-export type WizardStepType = (typeof WizardStep)[keyof typeof WizardStep];
-
-export const wizardStepDefinitions = [
-  {
-    id: WizardStep.ADD_INPUT,
-    title: 'Add an input',
-  },
-  { id: WizardStep.ADD_OUTPUT, title: 'Add an output' },
-  { id: WizardStep.ADD_TOPIC, title: 'Add a topic' },
-  { id: WizardStep.ADD_USER, title: 'Add permissions' },
-
-  { id: WizardStep.CREATE_CONFIG, title: 'Edit pipeline' },
-];
-
-const Stepper = defineStepper(...wizardStepDefinitions);
-export const WizardStepper = Stepper.Stepper;
-export type WizardStepperSteps = typeof Stepper.Steps;
-
-export const stepMotionProps: MotionProps = {
-  initial: { opacity: 0, x: 20 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -20 },
-  transition: { duration: 0.3, ease: 'easeInOut' },
-};
 
 export const RedpandaConnectorSetupStep = {
   ADD_TOPIC: 'redpanda-connector-add-topic',

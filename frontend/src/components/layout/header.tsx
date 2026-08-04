@@ -198,7 +198,6 @@ function useShouldShowRefresh() {
   const schemaCreateMatch = matchRoute({ to: '/schema-registry/create' });
   const topicProduceRecordMatch = matchRoute({ to: '/topics/$topicName/produce-record' });
   const secretsMatch = matchRoute({ to: '/secrets', fuzzy: false });
-  const connectWizardPagesMatch = matchRoute({ to: '/rp-connect/wizard' });
 
   // matches acls
   const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
@@ -234,10 +233,6 @@ function useShouldShowRefresh() {
   if (userDetailMatch) {
     return false;
   }
-  if (connectWizardPagesMatch) {
-    return false;
-  }
-
   return true;
 }
 function useShouldHideHeader() {
