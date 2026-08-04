@@ -29,7 +29,7 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -42,7 +42,6 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import Tabs, { type Tab } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
-import { PipelineListPage } from '../rp-connect/pipeline/list';
 import RpConnectPipelinesList from '../rp-connect/pipelines-list';
 import { RedpandaConnectIntro } from '../rp-connect/redpanda-connect-intro';
 
@@ -141,9 +140,6 @@ class KafkaConnectOverview extends PageComponent<{
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelineListPage />;
-    }
     if (this.props.isLoadingKafkaConnectors) {
       return <WaitingRedpanda />;
     }

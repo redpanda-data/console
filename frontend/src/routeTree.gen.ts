@@ -39,7 +39,6 @@ import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard'
 import { Route as RpConnectCreateRouteImport } from './routes/rp-connect/create';
 import { Route as OverviewBrokerIdRouteImport } from './routes/overview/$brokerId';
 import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId';
-import { Route as GetStartedApiRouteImport } from './routes/get-started/api';
 import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topicName/index';
 import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index';
 import { Route as SecurityUsersIndexRouteImport } from './routes/security/users/index';
@@ -225,11 +224,6 @@ const OverviewBrokerIdRoute = OverviewBrokerIdRouteImport.update({
 const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   id: '/groups/$groupId',
   path: '/groups/$groupId',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const GetStartedApiRoute = GetStartedApiRouteImport.update({
-  id: '/get-started/api',
-  path: '/get-started/api',
   getParentRoute: () => rootRouteImport,
 } as any);
 const TopicsTopicNameIndexRoute = TopicsTopicNameIndexRouteImport.update({
@@ -439,7 +433,6 @@ export interface FileRoutesByFullPath {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
@@ -506,7 +499,6 @@ export interface FileRoutesByTo {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
@@ -575,7 +567,6 @@ export interface FileRoutesById {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
@@ -645,7 +636,6 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/get-started/api'
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
@@ -712,7 +702,6 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/get-started/api'
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
@@ -780,7 +769,6 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/get-started/api'
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
@@ -849,7 +837,6 @@ export interface RootRouteChildren {
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
-  GetStartedApiRoute: typeof GetStartedApiRoute;
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute;
   OverviewBrokerIdRoute: typeof OverviewBrokerIdRoute;
   RpConnectCreateRoute: typeof RpConnectCreateRoute;
@@ -1104,13 +1091,6 @@ declare module '@tanstack/react-router' {
       path: '/groups/$groupId';
       fullPath: '/groups/$groupId';
       preLoaderRoute: typeof GroupsGroupIdRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/get-started/api': {
-      id: '/get-started/api';
-      path: '/get-started/api';
-      fullPath: '/get-started/api';
-      preLoaderRoute: typeof GetStartedApiRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/topics/$topicName/': {
@@ -1410,7 +1390,6 @@ const rootRouteChildren: RootRouteChildren = {
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,
-  GetStartedApiRoute: GetStartedApiRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   OverviewBrokerIdRoute: OverviewBrokerIdRoute,
   RpConnectCreateRoute: RpConnectCreateRoute,

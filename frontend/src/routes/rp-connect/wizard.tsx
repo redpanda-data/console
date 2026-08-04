@@ -27,7 +27,7 @@ export const Route = createFileRoute('/rp-connect/wizard')({
   validateSearch: searchSchema,
   beforeLoad: ({ search }) => {
     // Tier 1: enablePipelineDiagrams → redirect to pipeline editor, skip wizard entirely
-    // Tier 2/3: render wizard (enableRpcnTiles check happens inside the wizard's PipelinePage embed)
+    // Tier 2: render wizard
     if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
       throw redirect({
         to: '/rp-connect/create',
