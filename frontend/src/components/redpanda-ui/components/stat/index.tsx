@@ -99,55 +99,72 @@ export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
       </span>
     );
 
+    /**
+     * Root is a 2-row grid (label + value block) so that `StatGroup` can opt each stat into
+     * `grid-rows-subgrid`, aligning every value on a shared baseline across a row regardless of
+     * label wrapping. Standalone (no grid parent), `grid-rows-subgrid`/`row-span` are inert and
+     * this renders identically to a flex-col.
+     */
     return (
-      <div className={cn('flex flex-col gap-1', className)} data-slot="stat" data-testid={testId} ref={ref} {...props}>
+      <div className={cn('grid gap-y-0.5', className)} data-slot="stat" data-testid={testId} ref={ref} {...props}>
         {labelNode}
-        <div className="flex items-baseline gap-2">
-          <span className={cn(statValueVariants({ size, tone, mono }))} data-slot="stat-value">
-            {value}
-          </span>
-          {delta && DeltaIcon ? (
-            <span
-              className={cn(
-                'inline-flex items-center gap-0.5 font-medium text-xs',
-                deltaToneClasses[deltaTone ?? 'muted']
-              )}
-              data-slot="stat-delta"
-            >
-              <DeltaIcon className="size-3" />
-              {delta.value}
+        <div className="flex flex-col gap-0.5" data-slot="stat-value-block">
+          <div className="flex items-baseline gap-2">
+            <span className={cn(statValueVariants({ size, tone, mono }))} data-slot="stat-value">
+              {value}
+            </span>
+            {delta && DeltaIcon ? (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-0.5 font-medium text-xs',
+                  deltaToneClasses[deltaTone ?? 'muted']
+                )}
+                data-slot="stat-delta"
+              >
+                <DeltaIcon className="size-3" />
+                {delta.value}
+              </span>
+            ) : null}
+          </div>
+          {sublabel ? (
+            <span className="font-normal text-muted-foreground text-xs" data-slot="stat-sublabel">
+              {sublabel}
             </span>
           ) : null}
         </div>
-        {sublabel ? (
-          <span className="font-normal text-muted-foreground text-xs" data-slot="stat-sublabel">
-            {sublabel}
-          </span>
-        ) : null}
       </div>
     );
   }
 );
 Stat.displayName = 'Stat';
 
-export const statGroupVariants = cva('grid', {
-  variants: {
-    columns: {
-      2: 'grid-cols-2',
-      3: 'grid-cols-1 sm:grid-cols-3',
-      4: 'grid-cols-2 md:grid-cols-4',
+/**
+ * Base establishes CSS subgrid row tracks and opts every child `[data-slot=stat]` into
+ * `grid-rows-subgrid` spanning two rows. All labels in a row share one track height and all
+ * values align, independent of label wrapping; `gap-y-0.5` keeps the label→value gap tight
+ * regardless of the group's inter-cell `gap`.
+ */
+export const statGroupVariants = cva(
+  'grid [&>[data-slot=stat]]:row-span-2 [&>[data-slot=stat]]:grid [&>[data-slot=stat]]:grid-rows-subgrid [&>[data-slot=stat]]:gap-y-0.5',
+  {
+    variants: {
+      columns: {
+        2: 'grid-cols-2',
+        3: 'grid-cols-1 sm:grid-cols-3',
+        4: 'grid-cols-2 md:grid-cols-4',
+      },
+      gap: {
+        sm: 'gap-3',
+        md: 'gap-4',
+        lg: 'gap-6',
+      },
     },
-    gap: {
-      sm: 'gap-3',
-      md: 'gap-4',
-      lg: 'gap-6',
+    defaultVariants: {
+      columns: 4,
+      gap: 'md',
     },
-  },
-  defaultVariants: {
-    columns: 4,
-    gap: 'md',
-  },
-});
+  }
+);
 
 export interface StatGroupProps
   extends React.ComponentProps<'div'>,
