@@ -517,7 +517,6 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
       {jsDialog && (
         <JsFilterDialog
           filter={jsDialog.filter}
-          messages={search.messages}
           onClose={() => setJsDialog(null)}
           onSave={(saved) =>
             setJsFilters((prev) =>
