@@ -126,9 +126,22 @@ export const useListPipelinesQuery = (
     pageParamKey: 'request',
   });
 
+  // Deduplicated by id: the dataplane's keyset page token names the first id of
+  // the next page, and a server that resolves it by exact match restarts at page
+  // one when that pipeline is deleted mid-drain — replaying rows we already have.
+  // Later pages win so a row reflects the freshest response that carried it.
   const pipelines = useMemo(() => {
-    const allPipelines = listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []);
-    return allPipelines ?? [];
+    const pages = listPipelinesResult?.data?.pages;
+    if (!pages) {
+      return [];
+    }
+    const byId = new Map<string, Pipeline>();
+    for (const page of pages) {
+      for (const pipeline of page?.response?.pipelines ?? []) {
+        byId.set(pipeline.id, pipeline);
+      }
+    }
+    return [...byId.values()];
   }, [listPipelinesResult.data]);
 
   const data = useMemo(() => ({ pipelines }), [pipelines]);

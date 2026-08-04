@@ -33,6 +33,7 @@ import {
   DataTableFacetedFilter,
   DataTablePagination,
 } from 'components/redpanda-ui/components/data-table';
+import { isInteractiveTarget } from 'components/redpanda-ui/components/data-table/data-table-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,7 +59,16 @@ import {
   StopPipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { type Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type MouseEvent, memo, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  type MouseEvent,
+  memo,
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
   useDeletePipelineMutation,
@@ -404,10 +414,28 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
+// Facet options are rebuilt whenever the row set changes — every drain page and
+// every poll tick. Cache the icon component per connector name so its identity
+// survives that: a fresh function type would make React remount every logo in
+// the open popover, flashing them mid-poll.
+const connectorIcons = new Map<string, (props: { className?: string }) => ReactElement>();
+
+const connectorIcon = (name: string) => {
+  const cached = connectorIcons.get(name);
+  if (cached) {
+    return cached;
+  }
+  const Icon = (props: { className?: string }) => (
+    <ConnectorLogo fallback={Box} name={name as ComponentName} {...props} />
+  );
+  connectorIcons.set(name, Icon);
+  return Icon;
+};
+
 const connectorOption = (name: string) => ({
   value: name,
   label: name,
-  icon: (props: { className?: string }) => <ConnectorLogo fallback={Box} name={name as ComponentName} {...props} />,
+  icon: connectorIcon(name),
 });
 
 const createColumns = ({
@@ -587,8 +615,16 @@ const PipelineListPageContent = () => {
   const table = useReactTable({
     data: pipelines,
     columns,
+    // Pipeline ids are unique and stable, so keying rows on them (rather than the
+    // default row index) keeps a row's identity fixed while pages stream in and
+    // the sort re-runs — React reuses each row's DOM for the same pipeline instead
+    // of repainting a shifted window of them.
+    getRowId: (row) => row.id,
     // No column-visibility UI on this page; disabling hiding also drops the Hide item from the column header menus.
     enableHiding: false,
+    // Rows aren't selectable, which also drops the pagination footer's
+    // "X of N row(s) selected." text — its ml-auto keeps the controls right-aligned.
+    enableRowSelection: false,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
@@ -686,11 +722,13 @@ const PipelineListPageContent = () => {
       if (!event.currentTarget.contains(target)) {
         return;
       }
-      // Links and buttons inside the row handle their own clicks; a mouseup
-      // that ends a text selection (copying the id) isn't a navigation intent.
-      if ((target as HTMLElement).closest('a') || (target as HTMLElement).closest('button')) {
+      // Interactive descendants handle their own clicks. Same helper DataTable
+      // uses for its row-click guard, so this row behaves like every other
+      // clickable row and covers more than links and buttons.
+      if (isInteractiveTarget(target, event.currentTarget)) {
         return;
       }
+      // A mouseup that ends a text selection (copying the id) isn't navigation intent.
       if (window.getSelection()?.toString()) {
         return;
       }
@@ -851,10 +889,7 @@ const PipelineListPageContent = () => {
         <AlertCircle className="h-4 w-4" />
         {listErrorMessage}
       </FadePresence>
-      {/* Hide the pagination footer's "X of N selected" text (no row selection here) but keep its space so controls stay right-aligned. */}
-      <div className="[&>div>div:first-child]:invisible">
-        <DataTablePagination table={table} />
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 };

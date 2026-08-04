@@ -28,7 +28,8 @@ export function DataTablePagination<TData>({
           selected.
         </div>
       )}
-      <div className="flex items-center space-x-6 lg:space-x-8">
+      {/* ml-auto holds the controls right when the selection count is not rendered. */}
+      <div className="ml-auto flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
           <div className="font-medium text-body">Rows per page</div>
           <Select

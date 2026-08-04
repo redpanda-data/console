@@ -91,6 +91,8 @@ export function DataTableFacetedFilter<TData, TValue>({
                         : [...Array.from(selectedValues), option.value];
                       column?.setFilterValue(filterValues.length ? filterValues : undefined);
                     }}
+                    // Explicit value keeps cmdk typeahead off the sr-only marker and facet count.
+                    value={option.label}
                   >
                     <div
                       className={cn(
@@ -104,6 +106,8 @@ export function DataTableFacetedFilter<TData, TValue>({
                     </div>
                     {option.icon ? <option.icon className="size-4 shrink-0 text-muted-foreground" /> : null}
                     <span className={cn(labelClassName)}>{option.label}</span>
+                    {/* cmdk reserves aria-selected for highlight, so this is the only SR signal. */}
+                    {isSelected ? <span className="sr-only">, selected</span> : null}
                     {facets?.get(option.value) ? (
                       <span className="ml-auto flex size-4 items-center justify-center font-mono text-muted-foreground text-xs">
                         {facets.get(option.value)}

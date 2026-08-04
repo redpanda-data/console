@@ -2,6 +2,7 @@
 
 import type { Column } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from 'lucide-react';
+import type React from 'react';
 
 import { Button } from '../button';
 import {
@@ -13,10 +14,9 @@ import {
 } from '../dropdown-menu';
 import { cn, type SharedProps } from '../../lib/utils';
 
-interface DataTableColumnHeaderProps<TData, TValue> extends SharedProps {
+interface DataTableColumnHeaderProps<TData, TValue> extends React.HTMLAttributes<HTMLDivElement>, SharedProps {
   column: Column<TData, TValue>;
   title: string;
-  className?: string;
 }
 
 export function DataTableColumnHeader<TData, TValue>({
@@ -24,17 +24,18 @@ export function DataTableColumnHeader<TData, TValue>({
   title,
   className,
   testId,
+  ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort()) {
     return (
-      <div className={cn(className)} data-testid={testId}>
+      <div className={cn(className)} data-testid={testId} {...props}>
         {title}
       </div>
     );
   }
 
   return (
-    <div className={cn('flex items-center gap-2', className)} data-testid={testId}>
+    <div className={cn('flex items-center gap-2', className)} data-testid={testId} {...props}>
       <DropdownMenu>
         <DropdownMenuTrigger
           render={

@@ -126,4 +126,46 @@ describe('useListPipelinesQuery', () => {
     expect(callCount).toBe(1);
     expect(result.current.data.pipelines).toHaveLength(0);
   });
+
+  test('deduplicates pipelines a replayed page returns twice', async () => {
+    // A dataplane that resolves the keyset page token by exact id match restarts
+    // at page one when the token's pipeline is deleted mid-drain, so page two
+    // repeats page one. The drain still terminates; the rows must not double up.
+    const page = (ids: string[], nextPageToken: string) =>
+      create(ListPipelinesResponseSchema, {
+        response: create(DataPlaneListPipelinesResponseSchema, {
+          pipelines: ids.map((id) => create(PipelineSchema, { id, displayName: id })),
+          nextPageToken,
+        }),
+      });
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listPipelines, (req) => {
+        switch (req.request?.pageToken ?? '') {
+          case '':
+            return page(['pipeline-1', 'pipeline-2'], 'pipeline-3');
+          // The boundary pipeline is gone, so this restarts at the top.
+          case 'pipeline-3':
+            return page(['pipeline-1', 'pipeline-2'], 'pipeline-4');
+          default:
+            return page(['pipeline-4', 'pipeline-5'], '');
+        }
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(() => useListPipelinesQuery(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.data.pipelines.map((p) => p.id)).toEqual([
+      'pipeline-1',
+      'pipeline-2',
+      'pipeline-4',
+      'pipeline-5',
+    ]);
+  });
 });
