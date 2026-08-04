@@ -11,7 +11,7 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
@@ -22,6 +22,7 @@ import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
+import { PageColumn } from '../components/layout/page-column';
 import { SidebarLayout } from '../components/layout/sidebar';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
@@ -33,7 +34,6 @@ import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
 import { IsDev } from '../utils/env';
-import { isFullscreenPath } from '../utils/fullscreen-routes';
 import { ModalContainer } from '../utils/modal-container';
 
 export type RouterContext = {
@@ -75,7 +75,8 @@ function SelfHostedLayout() {
       <AnnouncementBar />
       <SidebarLayout>
         <SidebarInset>
-          <div className="container mx-auto max-w-[1500px] px-12">
+          {/* Centered page column; `page-expanded-*` release the gutter and cap (globals.css). */}
+          <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
           </div>
         </SidebarInset>
@@ -89,29 +90,11 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
-  const matches = useMatches();
-  const { pathname } = useLocation();
-  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
 
-  if (isFullscreen) {
-    return (
-      <div id="mainLayout">
-        <TooltipProvider>
-          <ModalContainer />
-          {!isEmbedded() && <AppPageHeader breadcrumbOnly />}
-          <ErrorDisplay>
-            <Outlet />
-          </ErrorDisplay>
-          <ErrorModalsRenderer />
-          <Toaster position="top-right" richColors theme={toasterTheme} />
-        </TooltipProvider>
-      </div>
-    );
-  }
-
   return (
-    <div id="mainLayout">
+    // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
+    <div className="flex flex-1 flex-col" id="mainLayout">
       <TooltipProvider>
         {/* Page */}
         <NullFallbackBoundary>
@@ -121,9 +104,9 @@ function AppContent() {
         <AppPageHeader />
 
         <ErrorDisplay>
-          <div className="pt-8">
+          <PageColumn>
             <Outlet />
-          </div>
+          </PageColumn>
         </ErrorDisplay>
 
         <AppFooter />

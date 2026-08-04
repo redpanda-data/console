@@ -11,12 +11,14 @@
 
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, useLocation, useMatches } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
+import { useLayoutEffect, useRef } from 'react';
 
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
+import { PageColumn } from '../components/layout/page-column';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
 import { ErrorDisplay } from '../components/misc/error-display';
@@ -26,7 +28,7 @@ import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
 import { useIsDarkMode } from '../hooks/use-is-dark-mode';
-import { isFullscreenPath } from '../utils/fullscreen-routes';
+import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
 
 /**
@@ -86,39 +88,106 @@ function FederatedRootLayout() {
 }
 
 /**
+ * Fits `#mainLayout` into the host's shell. Neither half can be CSS: every wrapper
+ * above it belongs to the host app, so there is no chain to inherit from.
+ *
+ * - Cancels the host's side/bottom padding with equal negative margins, leaving
+ *   Console's own gutter as the only one. Measured, not hardcoded, so either project
+ *   can deploy first. Top padding stays — cancelling it would pull Console under the
+ *   host's header; pages size themselves off it instead (layout/page-column.tsx).
+ * - Stretches the layout to the viewport bottom so the footer's `margin-top: auto`
+ *   lands there instead of trailing short pages.
+ *
+ * Three things the host (Cloud UI `common/layout/layout.tsx`) has to hold up: spacing
+ * expressed as `padding` — margin, gap or a narrower `max-width` isn't cancellable here
+ * and would double up with Console's gutter; no `overflow` on those ancestors, which
+ * would clip the negative margins; and the `html[data-page-expanded]` `max-width`
+ * release, the half of expanded mode Console can't do for itself.
+ */
+const useHostShellFit = () => {
+  const layoutRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const layoutEl = layoutRef.current;
+    if (!layoutEl) {
+      return;
+    }
+
+    const hostWrappers = chainToBody(layoutEl.parentElement);
+
+    // Both writes resize the wrappers being observed, so only write on change.
+    let lastMargin = '';
+    let lastMinHeight = '';
+    const applyFit = () => {
+      let left = 0;
+      let right = 0;
+      let bottom = 0;
+      for (const el of hostWrappers) {
+        const style = getComputedStyle(el);
+        left += Number.parseFloat(style.paddingLeft) || 0;
+        right += Number.parseFloat(style.paddingRight) || 0;
+        bottom += Number.parseFloat(style.paddingBottom) || 0;
+      }
+
+      const margin = `0px ${-right}px ${-bottom}px ${-left}px`;
+      if (margin !== lastMargin) {
+        lastMargin = margin;
+        layoutEl.style.margin = margin;
+      }
+      // dvh, so viewport changes need no JS; only the offset from the top can move.
+      const minHeight = `calc(100dvh - ${documentTop(layoutEl)}px)`;
+      if (minHeight !== lastMinHeight) {
+        lastMinHeight = minHeight;
+        layoutEl.style.minHeight = minHeight;
+      }
+    };
+
+    applyFit();
+    // Padding changes alter a wrapper's content box even at a fixed outer size.
+    const observer = new ResizeObserver(applyFit);
+    observer.observe(document.documentElement);
+    for (const el of hostWrappers) {
+      observer.observe(el);
+    }
+    return () => {
+      observer.disconnect();
+      layoutEl.style.margin = '';
+      layoutEl.style.minHeight = '';
+    };
+  }, []);
+
+  return layoutRef;
+};
+
+/**
  * App content for federated mode.
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
-  const matches = useMatches();
-  const { pathname } = useLocation();
-  // Fullscreen routes (SQL studio) own their chrome — breadcrumb-only header, no
-  // padding/footer. staticData is the source of truth, but on soft navigation
-  // useMatches() lags useLocation() by a render or two (matches resolve after
-  // pathname flips), so fall back to a path check to avoid flashing full chrome on
-  // the way in. Single return with stable element positions: toggling props/classes
-  // (not branching the tree) keeps the <Outlet> mounted across fullscreen↔normal
-  // navigation, so the embedded router doesn't reset to its default route.
-  const isFullscreen = matches.some((m) => m.staticData.fullscreen) || isFullscreenPath(pathname);
   const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const layoutRef = useHostShellFit();
 
   return (
-    <div id="mainLayout">
-      {!isFullscreen && (
-        <NullFallbackBoundary>
-          <LicenseNotification />
-        </NullFallbackBoundary>
-      )}
+    // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
+    // Console's own gutter, released while a page is expanded (globals.css).
+    <div
+      className="page-expanded-flush flex flex-col px-12 transition-[padding] duration-300 ease-in-out"
+      id="mainLayout"
+      ref={layoutRef}
+    >
+      <NullFallbackBoundary>
+        <LicenseNotification />
+      </NullFallbackBoundary>
       <ModalContainer />
-      <AppPageHeader breadcrumbOnly={isFullscreen} />
+      <AppPageHeader />
 
       <ErrorDisplay>
-        <div className={isFullscreen ? undefined : 'pt-8'}>
+        <PageColumn>
           <Outlet />
-        </div>
+        </PageColumn>
       </ErrorDisplay>
 
-      {!isFullscreen && <AppFooter />}
+      <AppFooter />
 
       <ErrorModalsRenderer />
 

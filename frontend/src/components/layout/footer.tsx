@@ -53,6 +53,7 @@ export const VersionInfo = () => {
   );
 };
 
+// Bottom placement is CSS: `.footer` has `margin-top: auto` inside #mainLayout's flex column.
 export const AppFooter = () => {
   const gitHub = (link: string, title: string) => (
     <>
