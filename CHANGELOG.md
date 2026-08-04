@@ -2,6 +2,8 @@
 
 ## Master / Unreleased
 
+- [CHANGE] Remove the Console AI Agents, AI Gateway, Knowledge Bases, Remote MCP, and Transcripts frontend surfaces, and direct former AI links to Redpanda AI.
+
 ## v3.9.0 / 2026-07-23
 - [IMPROVEMENT] Add a Redpanda Connect pipeline visual view and editor, including support for optional fields.
 - [IMPROVEMENT] Make the Shadow Link schema registry section editable, with read-only viewing and a backend sync endpoint.

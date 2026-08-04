@@ -5,7 +5,7 @@ dotenv.config();
 
 const reporters = process.env.CI
   ? [['github' as const], ['html' as const, { outputFolder: 'playwright-report' }]]
-  : [['markdown' as const], ['html' as const, { outputFolder: 'playwright-report' }]];
+  : [['list' as const], ['html' as const, { outputFolder: 'playwright-report' }]];
 
 const config = defineConfig({
   expect: {
@@ -19,13 +19,13 @@ const config = defineConfig({
   forbidOnly: !!process.env.CI,
 
   retries: process.env.CI ? 1 : 0,
+  retryStrategy: process.env.CI ? 'isolated' : 'immediate',
 
   workers: process.env.CI ? 4 : undefined,
 
   reporter: reporters,
 
   globalSetup: '../shared/global-setup.mjs',
-  globalTeardown: '../shared/global-teardown.mjs',
 
   metadata: {
     variant: 'kafka',
@@ -44,9 +44,9 @@ const config = defineConfig({
 
     baseURL: process.env.REACT_APP_ORIGIN ?? 'http://localhost:3002',
 
-    trace: 'retain-on-failure',
+    trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'on-first-retry',
   },
 
   projects: [

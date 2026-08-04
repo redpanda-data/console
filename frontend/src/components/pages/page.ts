@@ -13,7 +13,6 @@ import React from 'react';
 
 import {
   useApiStore,
-  useKnowledgebaseStore,
   usePipelinesStore,
   useRolesStore,
   useRpcnSecretManagerStore,
@@ -62,7 +61,6 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
       useApiStore.subscribe(update),
       useRolesStore.subscribe(update),
       usePipelinesStore.subscribe(update),
-      useKnowledgebaseStore.subscribe(update),
       useRpcnSecretManagerStore.subscribe(update),
       useTransformsStore.subscribe(update),
     ];

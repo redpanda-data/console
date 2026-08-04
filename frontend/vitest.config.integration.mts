@@ -9,9 +9,22 @@ import { defineConfig } from 'vitest/config';
 import { sharedAliases } from './vitest.shared.mts';
 
 const ENV_PREFIX = 'REACT_APP_';
+const MONACO_EDITOR_REACT_PATTERN = /^@monaco-editor\/react$/;
+const MONACO_EDITOR_PATTERN = /^monaco-editor$/;
 
 export default defineConfig(({ mode }) => {
   loadEnv(mode, 'env', ENV_PREFIX);
+  const integrationAliases = [
+    {
+      find: MONACO_EDITOR_REACT_PATTERN,
+      replacement: new URL('./tests/mocks/monaco-editor-react.ts', import.meta.url).pathname,
+    },
+    {
+      find: MONACO_EDITOR_PATTERN,
+      replacement: new URL('./tests/mocks/monaco-editor.ts', import.meta.url).pathname,
+    },
+    ...sharedAliases,
+  ];
 
   return {
     // fsModuleCache caches filesystem module resolution between runs of the
@@ -23,12 +36,10 @@ export default defineConfig(({ mode }) => {
       fileParallelism: true,
       isolate: true,
       pool: 'forks',
-      vmMemoryLimit: '4096Mb', // Force GC when memory limit is reached (4GB allows headroom for parallel forks)
       testTimeout: 30_000,
       globals: true,
       environment: 'happy-dom', // Aligns with cloud-ui / adp-ui; required to run Chakra + Radix integration tests consistently
       include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
-      exclude: ['src/**/*.browser.test.tsx'], // Browser mode tests run via vitest.config.browser.mts
       setupFiles: './vitest.setup.integration.ts',
       deps: {
         registerNodeLoader: true,
@@ -42,7 +53,6 @@ export default defineConfig(({ mode }) => {
         deps: {
           inline: [
             'katex',
-            'streamdown',
             'rehype-harden',
             'character-entities',
             'decode-named-character-reference',
@@ -53,8 +63,8 @@ export default defineConfig(({ mode }) => {
           ],
         },
       },
-      alias: sharedAliases,
-      reporters: ['verbose', ...(process.env.CI ? ['github-actions' as const] : [])],
+      alias: integrationAliases,
+      reporters: ['default', ...(process.env.CI ? ['github-actions' as const] : [])],
       typecheck: {
         enabled: false,
       },
@@ -70,7 +80,6 @@ export default defineConfig(({ mode }) => {
           'src/routeTree.gen.ts',
           '**/*.test.{ts,tsx}',
           '**/*.spec.{ts,tsx}',
-          '**/*.browser.test.tsx',
           'src/**/*.stories.tsx',
         ],
         // Thresholds are enforced on the merged (unit + integration) summary

@@ -106,7 +106,12 @@ func (s *APISuite) SetupSuite() {
 	s.kConnectContainer = kConnectContainer
 
 	// 4. Create Kafka clients
-	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
+	// kadm v1.18+ serves metadata from a client-side cache that is refreshed
+	// only once it is older than MetadataMinAge. Tests mutate topics and
+	// immediately verify the result via metadata lookups, so use the lowest
+	// allowed age to keep those lookups fresh.
+	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker},
+		kgo.MetadataMinAge(10*time.Millisecond))
 
 	kConnectClusterURL, err := kConnectContainer.PortEndpoint(ctx, "8083/tcp", "http")
 	require.NoError(err)

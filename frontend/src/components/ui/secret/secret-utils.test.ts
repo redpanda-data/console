@@ -16,7 +16,7 @@ import { extractSecretName, formatSecretTemplate, SECRET_TEMPLATE_REGEX } from '
 describe('SECRET_TEMPLATE_REGEX', () => {
   test('should match valid secret template format', () => {
     expect(SECRET_TEMPLATE_REGEX.test('${secrets.MY_SECRET}')).toBe(true);
-    expect(SECRET_TEMPLATE_REGEX.test('${secrets.OPENAI_API_KEY}')).toBe(true);
+    expect(SECRET_TEMPLATE_REGEX.test('${secrets.CLIENT_KEY}')).toBe(true);
     expect(SECRET_TEMPLATE_REGEX.test('${secrets.DB_PASSWORD_123}')).toBe(true);
   });
 
@@ -32,14 +32,14 @@ describe('SECRET_TEMPLATE_REGEX', () => {
 describe('extractSecretName', () => {
   test('should extract secret name from template format', () => {
     expect(extractSecretName('${secrets.MY_SECRET}')).toBe('MY_SECRET');
-    expect(extractSecretName('${secrets.OPENAI_API_KEY}')).toBe('OPENAI_API_KEY');
+    expect(extractSecretName('${secrets.CLIENT_KEY}')).toBe('CLIENT_KEY');
     expect(extractSecretName('${secrets.POSTGRES_DSN}')).toBe('POSTGRES_DSN');
-    expect(extractSecretName('${secrets.COHERE_API_KEY}')).toBe('COHERE_API_KEY');
+    expect(extractSecretName('${secrets.DATABASE_PASSWORD}')).toBe('DATABASE_PASSWORD');
   });
 
   test('should return original string if not in template format', () => {
     expect(extractSecretName('MY_SECRET')).toBe('MY_SECRET');
-    expect(extractSecretName('OPENAI_API_KEY')).toBe('OPENAI_API_KEY');
+    expect(extractSecretName('CLIENT_KEY')).toBe('CLIENT_KEY');
   });
 
   test('should return empty string for empty input', () => {
@@ -55,9 +55,9 @@ describe('extractSecretName', () => {
 describe('formatSecretTemplate', () => {
   test('should wrap secret ID with template format', () => {
     expect(formatSecretTemplate('MY_SECRET')).toBe('${secrets.MY_SECRET}');
-    expect(formatSecretTemplate('OPENAI_API_KEY')).toBe('${secrets.OPENAI_API_KEY}');
+    expect(formatSecretTemplate('CLIENT_KEY')).toBe('${secrets.CLIENT_KEY}');
     expect(formatSecretTemplate('POSTGRES_DSN')).toBe('${secrets.POSTGRES_DSN}');
-    expect(formatSecretTemplate('COHERE_API_KEY')).toBe('${secrets.COHERE_API_KEY}');
+    expect(formatSecretTemplate('DATABASE_PASSWORD')).toBe('${secrets.DATABASE_PASSWORD}');
   });
 
   test('should handle various secret name formats', () => {
@@ -73,7 +73,7 @@ describe('formatSecretTemplate', () => {
 
 describe('Round-trip conversion', () => {
   test('should maintain secret name integrity through format and extract', () => {
-    const secretNames = ['OPENAI_API_KEY', 'POSTGRES_DSN', 'REDPANDA_PASSWORD', 'COHERE_API_KEY', 'SECRET_123'];
+    const secretNames = ['CLIENT_KEY', 'POSTGRES_DSN', 'REDPANDA_PASSWORD', 'DATABASE_PASSWORD', 'SECRET_123'];
 
     for (const secretName of secretNames) {
       const formatted = formatSecretTemplate(secretName);

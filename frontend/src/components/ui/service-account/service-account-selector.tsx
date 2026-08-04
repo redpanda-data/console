@@ -42,7 +42,7 @@ type ServiceAccountSelectorProps = {
   // Callback to notify parent of pending state changes
   onPendingChange?: (isPending: boolean) => void;
   // Optional customization
-  resourceType?: string; // e.g., "AI agent", "pipeline", etc.
+  resourceType?: string;
   secretScopes?: Scope[];
 };
 
@@ -58,7 +58,7 @@ const ServiceAccountSelectorComponent = forwardRef<ServiceAccountSelectorRef, Se
       createSecret,
       onPendingChange,
       resourceType = 'resource',
-      secretScopes = [Scope.AI_AGENT, Scope.MCP_SERVER],
+      secretScopes = [Scope.REDPANDA_CONNECT],
     },
     ref
   ) => {

@@ -33,6 +33,7 @@ import {
   VStack,
 } from '@redpanda-data/ui';
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
+import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { type CSSProperties, type JSX, useRef, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
@@ -55,7 +56,6 @@ import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
 import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
 import PostgresqlLogo from '../../../assets/connectors/postgres.png';
-import RedpandaLogo from '../../../assets/connectors/redpanda.svg';
 import SalesforceLogo from '../../../assets/connectors/salesforce.png';
 import ServicenowLogo from '../../../assets/connectors/servicenow.png';
 import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
@@ -79,7 +79,7 @@ type ConnectorMetadata = {
   readonly className?: string; // match by exact match
   readonly classNamePrefix?: string; // match by prefix
 
-  readonly logo?: JSX.Element; // img element for the connector
+  readonly logo?: JSX.Element;
   readonly friendlyName?: string; // override display name (instead of just 'className without namespace')
   readonly description?: string;
   readonly learnMoreLink?: string;
@@ -87,7 +87,7 @@ type ConnectorMetadata = {
 };
 
 const fallbackConnector: ConnectorMetadata = {
-  logo: <img alt="Redpanda logo" className="connectorLogo" src={RedpandaLogo} />,
+  logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
 };
 
 // Order of entries matters:
@@ -226,7 +226,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   } as const,
   {
     classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSourceConnector',
-    logo: <img alt="Redpanda logo" className="connectorLogo" src={RedpandaLogo} />,
+    logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
     author: 'Redpanda',
     friendlyName: 'JDBC',
     description: 'Imports batches of rows from MySQL, PostgreSQL, SQLite and SQL Server',
@@ -234,7 +234,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   } as const,
   {
     classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSinkConnector',
-    logo: <img alt="Redpanda logo" className="connectorLogo" src={RedpandaLogo} />,
+    logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
     author: 'Redpanda',
     friendlyName: 'JDBC',
     description: 'Exports messages to tables in MySQL, PostgreSQL, SQLite and SQL Server',
@@ -299,7 +299,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   // JMS Connectors
   {
     classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
-    logo: <img alt="Redpanda Logo" className="connectorLogo" src={RedpandaLogo} />,
+    logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
     author: 'MacroNova',
     friendlyName: 'JMS',
     description: 'Exports messages to JMS queue',
@@ -307,7 +307,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   } as const,
   {
     classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSourceConnector',
-    logo: <img alt="Redpanda Logo" className="connectorLogo" src={RedpandaLogo} />,
+    logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
     author: 'MacroNova',
     friendlyName: 'JMS',
     description: 'Imports messages from JMS queue',
@@ -345,7 +345,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   } as const,
   {
     classNamePrefix: 'com.github.castorm.kafka.connect.http.HttpSourceConnector',
-    logo: <img alt="Redpanda Logo" className="connectorLogo" src={RedpandaLogo} />,
+    logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
     author: 'Cástor Rodríguez',
     friendlyName: 'HTTP',
     description: 'Imports data from HTTP services as batches or increments',
@@ -365,7 +365,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   } as const,
   {
     classNamePrefix: 'com.redpanda.',
-    logo: <img alt="Redpanda logo" className="connectorLogo" src={RedpandaLogo} />,
+    logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
     author: 'Redpanda',
   } as const,
   {

@@ -2,8 +2,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@source "../node_modules/streamdown/dist/index.js";
-
 /* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
    which collides with Monaco's internal .monaco-hover.fade-in class,
    forcing hover widgets to be invisible. Override to restore opacity. */

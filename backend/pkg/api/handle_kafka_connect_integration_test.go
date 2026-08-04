@@ -16,11 +16,11 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
 	con "github.com/cloudhut/connect-client"
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -82,7 +82,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 		_ = testNetwork.Remove(cleanupCtx)
 	})
 
-	connectPort, err := connectContainer.MappedPort(ctx, nat.Port("8083"))
+	connectPort, err := connectContainer.MappedPort(ctx, "8083")
 	require.NoError(err)
 
 	connectHost, err := connectContainer.Host(ctx)
@@ -100,7 +100,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateConnector() {
 	connectCfg.Clusters = []config.KafkaConnectCluster{
 		{
 			Name: "redpanda_connect",
-			URL:  "http://" + connectHost + ":" + connectPort.Port(),
+			URL:  "http://" + connectHost + ":" + strconv.Itoa(int(connectPort.Num())),
 		},
 	}
 
