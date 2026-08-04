@@ -14,9 +14,11 @@ import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useForm } from 'react-hook-form';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { render, screen, waitFor } from 'test-utils';
 
 import { RolesStep } from './roles-step';
+import { setShadowLinkGatesSupported } from '../../shadowlink-test-helpers';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
 const ROLE_FILTER_PATTERN = /^role-filter-\d+$/;
@@ -37,6 +39,32 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 };
 
 describe('RolesStep', () => {
+  beforeEach(() => {
+    // Reset the shared store, then open the role sync gate, these tests
+    // exercise the card itself, which only renders on Redpanda >= 26.2.0.
+    useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkRoleSync: false });
+    setShadowLinkGatesSupported({ roleSync: true });
+  });
+
+  describe('Feature gate', () => {
+    test('should render nothing when the cluster does not support role sync', () => {
+      setShadowLinkGatesSupported({ roleSync: false });
+
+      render(<TestWrapper />);
+
+      expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('roles-all-tab')).not.toBeInTheDocument();
+    });
+
+    test('should render nothing when endpoint compatibility has not loaded (fails closed)', () => {
+      useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkRoleSync: false });
+
+      render(<TestWrapper />);
+
+      expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Filter type options', () => {
     test('should show all filter type options when in specify roles mode', async () => {
       const user = userEvent.setup();

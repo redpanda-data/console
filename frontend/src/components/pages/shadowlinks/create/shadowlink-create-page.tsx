@@ -32,6 +32,7 @@ import { TLSSettingsSchema } from 'protogen/redpanda/core/common/v1/tls_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
 import { ConfigurationStep } from './configuration/configuration-step';
@@ -73,7 +74,7 @@ export const updatePageTitle = () => {
 /**
  * Transform form values to CreateShadowLinkRequest protobuf message
  */
-const buildCreateShadowLinkRequest = (values: FormValues) => {
+const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }: { roleSyncSupported: boolean }) => {
   // Build TLS settings from certificate configuration
   const tlsSettings = buildTLSSettings(values);
 
@@ -141,19 +142,23 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
           ),
   });
 
-  // Build role sync options (no interval/paused exposed)
-  const roleSyncOptions = create(RoleSyncOptionsSchema, {
-    roleNameFilters:
-      values.rolesMode === 'all'
-        ? allNameFilter
-        : values.roles.map((role) =>
-            create(NameFilterSchema, {
-              patternType: role.patternType,
-              filterType: role.filterType,
-              name: role.name,
-            })
-          ),
-  });
+  // Build role sync options (no interval/paused exposed). Left unset on
+  // clusters without role sync (Redpanda < 26.2.0). The default 'all' mode
+  // would otherwise send an include-all filter the cluster can't handle.
+  const roleSyncOptions = roleSyncSupported
+    ? create(RoleSyncOptionsSchema, {
+        roleNameFilters:
+          values.rolesMode === 'all'
+            ? allNameFilter
+            : values.roles.map((role) =>
+                create(NameFilterSchema, {
+                  patternType: role.patternType,
+                  filterType: role.filterType,
+                  name: role.name,
+                })
+              ),
+      })
+    : undefined;
 
   // Build security sync options (ACL filters, ignore enabled field)
   const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
@@ -213,6 +218,8 @@ export const ShadowLinkCreatePage = () => {
     }
   }, []);
 
+  const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
+
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created');
@@ -226,7 +233,7 @@ export const ShadowLinkCreatePage = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    const request = buildCreateShadowLinkRequest(values);
+    const request = buildCreateShadowLinkRequest(values, { roleSyncSupported });
     await createShadowLink(request);
   };
 

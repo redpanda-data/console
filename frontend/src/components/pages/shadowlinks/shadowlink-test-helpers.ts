@@ -16,21 +16,40 @@ import { Feature, useSupportedFeaturesStore } from 'state/supported-features';
 
 /**
  * Seed the real supported-features store the way the app does at boot, so the
- * Schema Registry sync gate exercises the actual endpoint-compatibility
- * fail-closed logic instead of a mock: a supported endpoint opens the gate,
+ * shadow link feature gates exercise the actual endpoint-compatibility
+ * fail-closed logic instead of a mock: a supported endpoint opens its gate,
  * anything else (unsupported, absent, or a never-loaded null store) closes it.
+ *
+ * setEndpointCompatibility replaces the whole endpoints array, so seed every
+ * gate a test needs in one call — sequential per-gate calls would clobber
+ * each other.
  */
-export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
+export const setShadowLinkGatesSupported = ({
+  schemaRegistrySync = false,
+  roleSync = false,
+}: {
+  schemaRegistrySync?: boolean;
+  roleSync?: boolean;
+}) => {
   useSupportedFeaturesStore.getState().setEndpointCompatibility({
     kafkaVersion: 'v26.2.0',
     endpoints: [
       {
         endpoint: Feature.ShadowLinkSchemaRegistrySync.endpoint,
         method: Feature.ShadowLinkSchemaRegistrySync.method,
-        isSupported,
+        isSupported: schemaRegistrySync,
+      },
+      {
+        endpoint: Feature.ShadowLinkRoleSync.endpoint,
+        method: Feature.ShadowLinkRoleSync.method,
+        isSupported: roleSync,
       },
     ],
   });
+};
+
+export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
+  setShadowLinkGatesSupported({ schemaRegistrySync: isSupported });
 };
 
 /**

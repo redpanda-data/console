@@ -594,22 +594,28 @@ export const buildControlplaneUpdateRequest = (
  * Transform form values to UpdateShadowLinkRequest protobuf message (dataplane)
  * Only includes fields that have changed from the original shadow link
  */
-export const buildDataplaneUpdateRequest = (name: string, values: FormValues, originalShadowLink: ShadowLink) => {
+export const buildDataplaneUpdateRequest = (
+  name: string,
+  values: FormValues,
+  originalShadowLink: ShadowLink,
+  { roleSyncSupported }: { roleSyncSupported: boolean }
+) => {
   // Build original form values for comparison
   const originalValues = buildDefaultFormValues(originalShadowLink);
 
-  // Get update values for all categories
+  // Get update values for all categories. Roles are skipped entirely on
+  // clusters without role sync (Redpanda < 26.2.0): no value, no mask path.
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
-  const rolesUpdate = getUpdateValuesForRoles(values, originalValues);
+  const rolesUpdate = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
   const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
 
   // No UI exposes interval/paused: round-trip them from the fetched link so
   // the whole-message mask path doesn't unpause a paused role sync task or
   // reset a custom interval
   const originalRoleSyncOptions = originalShadowLink.configurations?.roleSyncOptions;
-  if (originalRoleSyncOptions) {
+  if (rolesUpdate && originalRoleSyncOptions) {
     rolesUpdate.value.interval = originalRoleSyncOptions.interval;
     rolesUpdate.value.paused = originalRoleSyncOptions.paused;
   }
@@ -620,7 +626,7 @@ export const buildDataplaneUpdateRequest = (name: string, values: FormValues, or
     clientOptions: connectionUpdate.value,
     topicMetadataSyncOptions: topicsUpdate.value,
     consumerOffsetSyncOptions: consumerGroupsUpdate.value,
-    roleSyncOptions: rolesUpdate.value,
+    roleSyncOptions: rolesUpdate?.value,
     securitySyncOptions: aclsUpdate.value,
     schemaRegistrySyncOptions: schemaRegistryUpdate.value,
   });
@@ -637,7 +643,7 @@ export const buildDataplaneUpdateRequest = (name: string, values: FormValues, or
       ...connectionUpdate.fieldMaskPaths,
       ...topicsUpdate.fieldMaskPaths,
       ...consumerGroupsUpdate.fieldMaskPaths,
-      ...rolesUpdate.fieldMaskPaths,
+      ...(rolesUpdate?.fieldMaskPaths ?? []),
       ...aclsUpdate.fieldMaskPaths,
       ...schemaRegistryUpdate.fieldMaskPaths,
     ],

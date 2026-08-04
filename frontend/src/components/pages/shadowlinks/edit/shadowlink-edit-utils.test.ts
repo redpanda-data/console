@@ -89,7 +89,9 @@ describe('buildDataplaneUpdateRequest', () => {
       bootstrapServers: [...defaultFormValues.bootstrapServers, { value: 'localhost:9093' }],
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toEqual(['configurations.client_options']);
     expect(request.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual([
@@ -108,7 +110,9 @@ describe('buildDataplaneUpdateRequest', () => {
       },
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toHaveLength(2);
     expect(request.updateMask?.paths).toContain('configurations.client_options.tls_settings');
@@ -138,7 +142,9 @@ describe('buildDataplaneUpdateRequest', () => {
       ],
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toHaveLength(3);
     expect(request.updateMask?.paths).toContain('configurations.topic_metadata_sync_options');
@@ -187,7 +193,9 @@ describe('buildDataplaneUpdateRequest', () => {
       ],
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
     expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toHaveLength(3);
@@ -214,7 +222,9 @@ describe('buildDataplaneUpdateRequest', () => {
       },
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toHaveLength(4);
     expect(request.updateMask?.paths).toContain('configurations.client_options.metadata_max_age_ms');
@@ -239,7 +249,9 @@ describe('buildDataplaneUpdateRequest', () => {
       consumers: [{ name: 'cross-consumer', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toHaveLength(3);
     expect(request.updateMask?.paths).toContain('configurations.client_options');
@@ -263,7 +275,9 @@ describe('buildDataplaneUpdateRequest', () => {
       consumers: [{ name: 'selective-consumer', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
     };
 
-    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink);
+    const request = buildDataplaneUpdateRequest('test-shadow-link', formValues, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toHaveLength(2);
     expect(request.updateMask?.paths).toContain('configurations.topic_metadata_sync_options');

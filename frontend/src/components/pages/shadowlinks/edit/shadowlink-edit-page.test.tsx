@@ -314,8 +314,12 @@ describe('ShadowLinkEditPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateShadowLink.mockImplementation((_request) => Promise.resolve({}));
-    // The SR feature gate defaults to closed; api-mode tests seed it open.
-    useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkSchemaRegistrySync: false });
+    // The SR and role sync feature gates default to closed; api-mode tests seed SR open.
+    useSupportedFeaturesStore.setState({
+      endpointCompatibility: null,
+      shadowLinkSchemaRegistrySync: false,
+      shadowLinkRoleSync: false,
+    });
   });
 
   test.each(testCases)('$description', async ({ actions, expectedFieldMaskPaths, verify }) => {
@@ -352,7 +356,9 @@ describe('ShadowLinkEditPage', () => {
     // The test verifies form values, but the hook now builds the request internally
     // We need to build the request from form values to verify the update request structure
     const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-    const updateRequest = buildDataplaneUpdateRequest('test-shadow-link', formValuesArg, mockShadowLink);
+    const updateRequest = buildDataplaneUpdateRequest('test-shadow-link', formValuesArg, mockShadowLink, {
+      roleSyncSupported: true,
+    });
 
     // Verify field mask includes all expected paths
     const fieldMaskPaths = updateRequest?.updateMask?.paths;
@@ -424,7 +430,9 @@ describe('ShadowLinkEditPage', () => {
 
       const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
       const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink);
+      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
+        roleSyncSupported: true,
+      });
 
       expect(updateRequest.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
       const mode = updateRequest.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
@@ -493,7 +501,9 @@ describe('ShadowLinkEditPage', () => {
 
       const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
       const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink);
+      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
+        roleSyncSupported: true,
+      });
 
       // Only the topic change goes out; the untouched SR slice emits no mask.
       expect(updateRequest.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);

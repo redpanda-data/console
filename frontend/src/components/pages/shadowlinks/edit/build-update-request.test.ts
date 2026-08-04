@@ -403,7 +403,9 @@ describe('buildDataplaneUpdateRequest', () => {
       const baseShadowLink = createBaseShadowLink();
       const updatedValues = { ...baseFormValues, ...changes };
 
-      const result = buildDataplaneUpdateRequest('test-shadow-link', updatedValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest('test-shadow-link', updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       expect(result.updateMask?.paths).toContain(expectedPath);
     });
@@ -415,7 +417,9 @@ describe('buildDataplaneUpdateRequest', () => {
       const baseShadowLink = createBaseShadowLink();
       const updatedValues = { ...baseFormValues, bootstrapServers: [{ value: 'changed:9092' }] };
 
-      const result = buildDataplaneUpdateRequest(shadowLinkName, updatedValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest(shadowLinkName, updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       expect(result.shadowLink?.name).toBe(shadowLinkName);
     });
@@ -424,7 +428,9 @@ describe('buildDataplaneUpdateRequest', () => {
       const baseShadowLink = createBaseShadowLink();
       const updatedValues = { ...baseFormValues, bootstrapServers: [{ value: 'changed:9092' }] };
 
-      const result = buildDataplaneUpdateRequest('test-name', updatedValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest('test-name', updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       // Dataplane uses nested structure - configurations object contains all options
       expect(result.shadowLink?.configurations).toBeDefined();
@@ -442,7 +448,9 @@ describe('buildDataplaneUpdateRequest', () => {
         bootstrapServers: [{ value: 'kafka1:9092' }, { value: 'kafka2:9092' }],
       };
 
-      const result = buildDataplaneUpdateRequest('test-name', updatedValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest('test-name', updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual([
         'kafka1:9092',
@@ -497,7 +505,9 @@ describe('buildDataplaneUpdateRequest', () => {
       const baseShadowLink = createBaseShadowLink();
       const updatedValues = { ...baseFormValues, ...changes };
 
-      const result = buildDataplaneUpdateRequest('test-name', updatedValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest('test-name', updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       expect(result.updateMask?.paths?.length).toBe(expectedPathCount);
     });
@@ -507,9 +517,42 @@ describe('buildDataplaneUpdateRequest', () => {
     test('should have empty updateMask paths when no changes from original', () => {
       const baseShadowLink = createBaseShadowLink();
 
-      const result = buildDataplaneUpdateRequest('test-shadow-link', baseFormValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest('test-shadow-link', baseFormValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       expect(result.updateMask?.paths).toEqual([]);
+    });
+  });
+
+  describe('role sync feature gate', () => {
+    test('should carry no role sync value or mask path when the cluster does not support role sync', () => {
+      const baseShadowLink = createBaseShadowLink();
+      const updatedValues = {
+        ...baseFormValues,
+        rolesMode: 'specify' as const,
+        roles: [{ name: 'test-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+      };
+
+      const result = buildDataplaneUpdateRequest('test-shadow-link', updatedValues, baseShadowLink, {
+        roleSyncSupported: false,
+      });
+
+      expect(result.shadowLink?.configurations?.roleSyncOptions).toBeUndefined();
+      expect(result.updateMask?.paths).not.toContain('configurations.role_sync_options');
+    });
+
+    test('should leave other categories untouched when role sync is unsupported', () => {
+      const baseShadowLink = createBaseShadowLink();
+      const updatedValues = { ...baseFormValues, bootstrapServers: [{ value: 'changed:9092' }] };
+
+      const result = buildDataplaneUpdateRequest('test-shadow-link', updatedValues, baseShadowLink, {
+        roleSyncSupported: false,
+      });
+
+      expect(result.updateMask?.paths).toEqual(['configurations.client_options']);
+      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
+      expect(result.shadowLink?.configurations?.roleSyncOptions).toBeUndefined();
     });
   });
 
@@ -529,7 +572,9 @@ describe('buildDataplaneUpdateRequest', () => {
         roles: [{ name: 'test-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
       };
 
-      const result = buildDataplaneUpdateRequest('test-shadow-link', updatedValues, baseShadowLink);
+      const result = buildDataplaneUpdateRequest('test-shadow-link', updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
 
       // The whole role_sync_options message is replaced by the mask path, so
       // the fields the UI never exposes must carry over from the fetched link
@@ -568,7 +613,9 @@ describe('schema registry api mode through both builders', () => {
   });
 
   test('dataplane request carries the api oneof with the prefixed mask path', () => {
-    const request = buildDataplaneUpdateRequest('test-shadow-link', apiFormValues(), createBaseShadowLink());
+    const request = buildDataplaneUpdateRequest('test-shadow-link', apiFormValues(), createBaseShadowLink(), {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
     const mode = request.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;

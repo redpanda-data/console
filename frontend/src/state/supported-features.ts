@@ -76,6 +76,10 @@ export class Feature {
     endpoint: '/api/shadow-links/schema-registry-sync',
     method: 'GET',
   };
+  static readonly ShadowLinkRoleSync: FeatureEntry = {
+    endpoint: '/api/shadow-links/role-sync',
+    method: 'GET',
+  };
   static readonly SchemaRegistryContexts: FeatureEntry = {
     endpoint: '/api/schema-registry/contexts',
     method: 'GET',
@@ -96,6 +100,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
       case Feature.ShadowLinkSchemaRegistrySync.endpoint:
+      case Feature.ShadowLinkRoleSync.endpoint:
       case Feature.GetQuotas.endpoint:
       case Feature.SchemaRegistryContexts.endpoint:
       case Feature.SQLService.endpoint:
@@ -115,7 +120,8 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
     f.endpoint.includes('.SecurityService') ||
     f.endpoint.includes('.SecretService') ||
     f.endpoint.includes('.SQLService') ||
-    f.endpoint === Feature.ShadowLinkSchemaRegistrySync.endpoint
+    f.endpoint === Feature.ShadowLinkSchemaRegistrySync.endpoint ||
+    f.endpoint === Feature.ShadowLinkRoleSync.endpoint
   ) {
     return { supported: false };
   }
@@ -178,6 +184,7 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
     schemaRegistryACLApi: compute(Feature.SchemaRegistryACLApi),
     shadowLinkService: compute(Feature.ShadowLinkService),
     shadowLinkSchemaRegistrySync: compute(Feature.ShadowLinkSchemaRegistrySync),
+    shadowLinkRoleSync: compute(Feature.ShadowLinkRoleSync),
     schemaRegistryContexts: compute(Feature.SchemaRegistryContexts),
     sqlApi: compute(Feature.SQLService),
     featureErrors: errors,
@@ -208,6 +215,7 @@ type SupportedFeaturesStore = {
   schemaRegistryACLApi: boolean;
   shadowLinkService: boolean;
   shadowLinkSchemaRegistrySync: boolean;
+  shadowLinkRoleSync: boolean;
   schemaRegistryContexts: boolean;
   sqlApi: boolean;
 
@@ -293,6 +301,9 @@ const Features = {
   },
   get shadowLinkSchemaRegistrySync() {
     return useSupportedFeaturesStore.getState().shadowLinkSchemaRegistrySync;
+  },
+  get shadowLinkRoleSync() {
+    return useSupportedFeaturesStore.getState().shadowLinkRoleSync;
   },
   get schemaRegistryContexts() {
     return useSupportedFeaturesStore.getState().schemaRegistryContexts;

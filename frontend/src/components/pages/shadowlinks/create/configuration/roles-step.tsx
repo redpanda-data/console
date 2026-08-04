@@ -19,6 +19,7 @@ import { ChevronDown } from 'lucide-react';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useState } from 'react';
 import { type Control, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import { FilterItem } from './filter-item';
 import type { FormValues } from '../model';
@@ -59,6 +60,7 @@ export const RolesStep = () => {
     control,
     name: 'roles',
   });
+  const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
 
   const handleModeChange = (mode: string) => {
     setValue('rolesMode', mode as 'all' | 'specify');
@@ -81,6 +83,10 @@ export const RolesStep = () => {
       replace([]);
     }
   };
+
+  if (!roleSyncSupported) {
+    return null;
+  }
 
   return (
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
