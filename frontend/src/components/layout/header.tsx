@@ -198,8 +198,6 @@ function useShouldShowRefresh() {
   const schemaCreateMatch = matchRoute({ to: '/schema-registry/create' });
   const topicProduceRecordMatch = matchRoute({ to: '/topics/$topicName/produce-record' });
   const secretsMatch = matchRoute({ to: '/secrets', fuzzy: false });
-  const connectWizardPagesMatch = matchRoute({ to: '/rp-connect/wizard' });
-  const getStartedApiMatch = matchRoute({ to: '/get-started/api' });
 
   // matches acls
   const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
@@ -235,13 +233,6 @@ function useShouldShowRefresh() {
   if (userDetailMatch) {
     return false;
   }
-  if (connectWizardPagesMatch) {
-    return false;
-  }
-  if (getStartedApiMatch) {
-    return false;
-  }
-
   return true;
 }
 function useShouldHideHeader() {
@@ -254,14 +245,11 @@ function useShouldHideHeader() {
     matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
     matchRoute({ to: '/rp-connect/create' });
 
-  // Both flags are cloud-only (schema requires embedded mode).
-  // enablePipelineDiagrams: full new pipeline layout with diagrams.
-  // enableRpcnTiles: new tiles-based create flow embedded in legacy layout.
-  if (
-    isPipelineRoute &&
-    isEmbedded() &&
-    (isFeatureFlagEnabled('enablePipelineDiagrams') || isFeatureFlagEnabled('enableRpcnTiles'))
-  ) {
+  /**
+   * Flag is cloud-only (schema requires embedded mode).
+   * enablePipelineDiagrams: full new pipeline layout with diagrams.
+   */
+  if (isPipelineRoute && isEmbedded() && isFeatureFlagEnabled('enablePipelineDiagrams')) {
     return true;
   }
 

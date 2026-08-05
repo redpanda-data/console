@@ -35,11 +35,9 @@ import { Route as SecretsCreateRouteImport } from './routes/secrets/create';
 import { Route as SchemaRegistryEditModeRouteImport } from './routes/schema-registry/edit-mode';
 import { Route as SchemaRegistryEditCompatibilityRouteImport } from './routes/schema-registry/edit-compatibility';
 import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create';
-import { Route as RpConnectWizardRouteImport } from './routes/rp-connect/wizard';
 import { Route as RpConnectCreateRouteImport } from './routes/rp-connect/create';
 import { Route as OverviewBrokerIdRouteImport } from './routes/overview/$brokerId';
 import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId';
-import { Route as GetStartedApiRouteImport } from './routes/get-started/api';
 import { Route as TopicsTopicNameIndexRouteImport } from './routes/topics/$topicName/index';
 import { Route as ShadowlinksNameIndexRouteImport } from './routes/shadowlinks/$name/index';
 import { Route as SecurityUsersIndexRouteImport } from './routes/security/users/index';
@@ -207,11 +205,6 @@ const SchemaRegistryCreateRoute = SchemaRegistryCreateRouteImport.update({
   path: '/schema-registry/create',
   getParentRoute: () => rootRouteImport,
 } as any);
-const RpConnectWizardRoute = RpConnectWizardRouteImport.update({
-  id: '/rp-connect/wizard',
-  path: '/rp-connect/wizard',
-  getParentRoute: () => rootRouteImport,
-} as any);
 const RpConnectCreateRoute = RpConnectCreateRouteImport.update({
   id: '/rp-connect/create',
   path: '/rp-connect/create',
@@ -225,11 +218,6 @@ const OverviewBrokerIdRoute = OverviewBrokerIdRouteImport.update({
 const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
   id: '/groups/$groupId',
   path: '/groups/$groupId',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const GetStartedApiRoute = GetStartedApiRouteImport.update({
-  id: '/get-started/api',
-  path: '/get-started/api',
   getParentRoute: () => rootRouteImport,
 } as any);
 const TopicsTopicNameIndexRoute = TopicsTopicNameIndexRouteImport.update({
@@ -439,11 +427,9 @@ export interface FileRoutesByFullPath {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
-  '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
@@ -506,11 +492,9 @@ export interface FileRoutesByTo {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
-  '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
@@ -575,11 +559,9 @@ export interface FileRoutesById {
   '/transforms-setup': typeof TransformsSetupRoute;
   '/trial-expired': typeof TrialExpiredRoute;
   '/upload-license': typeof UploadLicenseRoute;
-  '/get-started/api': typeof GetStartedApiRoute;
   '/groups/$groupId': typeof GroupsGroupIdRoute;
   '/overview/$brokerId': typeof OverviewBrokerIdRoute;
   '/rp-connect/create': typeof RpConnectCreateRoute;
-  '/rp-connect/wizard': typeof RpConnectWizardRoute;
   '/schema-registry/create': typeof SchemaRegistryCreateRoute;
   '/schema-registry/edit-compatibility': typeof SchemaRegistryEditCompatibilityRoute;
   '/schema-registry/edit-mode': typeof SchemaRegistryEditModeRoute;
@@ -645,11 +627,9 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/get-started/api'
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
-    | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
@@ -712,11 +692,9 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/get-started/api'
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
-    | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
@@ -780,11 +758,9 @@ export interface FileRouteTypes {
     | '/transforms-setup'
     | '/trial-expired'
     | '/upload-license'
-    | '/get-started/api'
     | '/groups/$groupId'
     | '/overview/$brokerId'
     | '/rp-connect/create'
-    | '/rp-connect/wizard'
     | '/schema-registry/create'
     | '/schema-registry/edit-compatibility'
     | '/schema-registry/edit-mode'
@@ -849,11 +825,9 @@ export interface RootRouteChildren {
   TransformsSetupRoute: typeof TransformsSetupRoute;
   TrialExpiredRoute: typeof TrialExpiredRoute;
   UploadLicenseRoute: typeof UploadLicenseRoute;
-  GetStartedApiRoute: typeof GetStartedApiRoute;
   GroupsGroupIdRoute: typeof GroupsGroupIdRoute;
   OverviewBrokerIdRoute: typeof OverviewBrokerIdRoute;
   RpConnectCreateRoute: typeof RpConnectCreateRoute;
-  RpConnectWizardRoute: typeof RpConnectWizardRoute;
   SchemaRegistryCreateRoute: typeof SchemaRegistryCreateRoute;
   SchemaRegistryEditCompatibilityRoute: typeof SchemaRegistryEditCompatibilityRoute;
   SchemaRegistryEditModeRoute: typeof SchemaRegistryEditModeRoute;
@@ -1078,13 +1052,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SchemaRegistryCreateRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/rp-connect/wizard': {
-      id: '/rp-connect/wizard';
-      path: '/rp-connect/wizard';
-      fullPath: '/rp-connect/wizard';
-      preLoaderRoute: typeof RpConnectWizardRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
     '/rp-connect/create': {
       id: '/rp-connect/create';
       path: '/rp-connect/create';
@@ -1104,13 +1071,6 @@ declare module '@tanstack/react-router' {
       path: '/groups/$groupId';
       fullPath: '/groups/$groupId';
       preLoaderRoute: typeof GroupsGroupIdRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/get-started/api': {
-      id: '/get-started/api';
-      path: '/get-started/api';
-      fullPath: '/get-started/api';
-      preLoaderRoute: typeof GetStartedApiRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/topics/$topicName/': {
@@ -1410,11 +1370,9 @@ const rootRouteChildren: RootRouteChildren = {
   TransformsSetupRoute: TransformsSetupRoute,
   TrialExpiredRoute: TrialExpiredRoute,
   UploadLicenseRoute: UploadLicenseRoute,
-  GetStartedApiRoute: GetStartedApiRoute,
   GroupsGroupIdRoute: GroupsGroupIdRoute,
   OverviewBrokerIdRoute: OverviewBrokerIdRoute,
   RpConnectCreateRoute: RpConnectCreateRoute,
-  RpConnectWizardRoute: RpConnectWizardRoute,
   SchemaRegistryCreateRoute: SchemaRegistryCreateRoute,
   SchemaRegistryEditCompatibilityRoute: SchemaRegistryEditCompatibilityRoute,
   SchemaRegistryEditModeRoute: SchemaRegistryEditModeRoute,

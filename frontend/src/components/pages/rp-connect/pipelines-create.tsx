@@ -19,7 +19,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
@@ -29,7 +29,6 @@ import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
-import PipelinePage from './pipeline';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
@@ -62,9 +61,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelinePage />;
-    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }

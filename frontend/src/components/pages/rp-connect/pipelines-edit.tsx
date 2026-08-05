@@ -13,7 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { Button, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import {
   type Pipeline,
   type Pipeline_ServiceAccount,
@@ -23,7 +22,6 @@ import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
-import PipelinePage from './pipeline';
 import { PipelineEditor } from './pipelines-create';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { appGlobal } from '../../../state/app-global';
@@ -51,9 +49,6 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelinePage />;
-    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }

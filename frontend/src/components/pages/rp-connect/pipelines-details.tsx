@@ -14,14 +14,12 @@ import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, 
 import { Link } from '@tanstack/react-router';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
-import PipelinePage from './pipeline';
 import { PipelineStatus } from './pipelines-list';
 import { cpuToTasks } from './tasks';
 import usePaginationParams from '../../../hooks/use-pagination-params';
@@ -72,10 +70,6 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelinePage />;
-    }
-
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
