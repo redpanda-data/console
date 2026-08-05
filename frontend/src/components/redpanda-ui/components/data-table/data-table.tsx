@@ -152,7 +152,7 @@ export function DataTable<TData>({
   tableOptions: tableOptionsProp,
   className,
   testId,
-  // Destructure discriminated-union props explicitly: TS can't narrow intersected unions in the body, so this keeps renames compile-checked.
+  // The union props are destructured explicitly — TS can't narrow intersected unions in the body.
   pagination: paginationProp,
   onPaginationChange: onPaginationChangeProp,
   defaultPageSize: defaultPageSizeProp,
@@ -297,23 +297,30 @@ export function DataTable<TData>({
   const totalColumns = table.getVisibleFlatColumns().length;
 
   // autoResetPageIndex is off, so a shrinking filtered set can strand the user past the last page.
-  // Only clamp when getPageCount() is trustworthy: with manualPagination and no pageCount/rowCount
-  // it is derived from the current page's data and would fight the consumer's controlled state.
+  // Only clamp when getPageCount() is trustworthy: under manualPagination without pageCount/rowCount
+  // it is derived from the current page and would fight the consumer's controlled state.
   const pageCount = table.getPageCount();
   const pageIndex = effectivePagination.pageIndex;
   const pageCountIsKnown =
     !table.options.manualPagination || table.options.pageCount !== undefined || table.options.rowCount !== undefined;
+  const clampPending = paginationMode.enabled && pageCountIsKnown && pageCount > 0 && pageIndex >= pageCount;
   React.useEffect(() => {
-    if (paginationMode.enabled && pageCountIsKnown && !isLoading && pageCount > 0 && pageIndex >= pageCount) {
+    if (clampPending && !isLoading) {
       table.setPageIndex(pageCount - 1);
     }
-  }, [paginationMode.enabled, pageCountIsKnown, isLoading, pageCount, pageIndex, table]);
+  }, [clampPending, isLoading, pageCount, table]);
+
+  // The filtered count can be non-zero while the page slice is empty (e.g. `pageCount` without
+  // `manualPagination`, which leaves rows locally sliced) — show the empty state, not a bare header.
+  // Not while a clamp is pending, though: that page index is about to change, and "no results" for
+  // the frame in between is the flash this whole guard exists to prevent.
+  const showEmptyState = displayState === 'empty' || (displayState === 'data' && rows.length === 0 && !clampPending);
 
   const toolbarContent = typeof toolbar === 'function' ? toolbar(table) : toolbar;
 
   return (
     <div className={cn('flex flex-col gap-4', classNames?.root, className)} data-testid={testId}>
-      {toolbarContent && <div className={classNames?.toolbar}>{toolbarContent}</div>}
+      {toolbarContent ? <div className={classNames?.toolbar}>{toolbarContent}</div> : null}
 
       <Table className={classNames?.table} size={size} variant={variant}>
         <TableHeader className={classNames?.header}>
@@ -340,7 +347,7 @@ export function DataTable<TData>({
             </TableRow>
           )}
 
-          {displayState === 'empty' && (
+          {showEmptyState ? (
             <TableRow>
               <TableCell className={cn('h-24', classNames?.empty)} colSpan={totalColumns}>
                 <div className="flex flex-col items-center justify-center gap-2">
@@ -349,7 +356,7 @@ export function DataTable<TData>({
                 </div>
               </TableCell>
             </TableRow>
-          )}
+          ) : null}
 
           {displayState === 'data' &&
             rows.map((row) => {
@@ -362,39 +369,41 @@ export function DataTable<TData>({
                 onRow?.(row);
               };
 
+              const handleClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
+                // Containment drops portaled content (menus, popovers) and targets already unmounted.
+                if (!event.currentTarget.contains(event.target as Node)) {
+                  return;
+                }
+                if (isInteractiveTarget(event.target, event.currentTarget)) {
+                  return;
+                }
+                activateRow();
+              };
+
+              const handleKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+                const isActivationKey = event.key === 'Enter' || event.key === ' ';
+                // `repeat` filters auto-repeat from a held key: one press is one activation.
+                if (!isActivationKey || event.repeat || event.target !== event.currentTarget) {
+                  return;
+                }
+                event.preventDefault();
+                activateRow();
+              };
+
               return (
                 <React.Fragment key={row.id}>
                   <TableRow
                     aria-expanded={expandRowByClick && row.getCanExpand() ? row.getIsExpanded() : undefined}
-                    className={cn(rowIsActivatable && 'cursor-pointer', classNames?.row, rowClassName?.(row))}
+                    className={cn(
+                      // Outline, not ring: box-shadows don't paint on <tr> under border-collapse.
+                      rowIsActivatable &&
+                        'cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:-outline-offset-2',
+                      classNames?.row,
+                      rowClassName?.(row)
+                    )}
                     data-state={row.getIsSelected() && 'selected'}
-                    onClick={
-                      rowIsActivatable
-                        ? (event) => {
-                            // Content portaled out of the row (menus, popovers) still bubbles here
-                            // through the React tree — containment filters it out.
-                            const target = event.target as Node;
-                            if (!event.currentTarget.contains(target)) {
-                              return;
-                            }
-                            if (isInteractiveTarget(event.target, event.currentTarget)) {
-                              return;
-                            }
-                            activateRow();
-                          }
-                        : undefined
-                    }
-                    onKeyDown={
-                      rowIsActivatable
-                        ? (event) => {
-                            if ((event.key !== 'Enter' && event.key !== ' ') || event.target !== event.currentTarget) {
-                              return;
-                            }
-                            event.preventDefault();
-                            activateRow();
-                          }
-                        : undefined
-                    }
+                    onClick={rowIsActivatable ? handleClick : undefined}
+                    onKeyDown={rowIsActivatable ? handleKeyDown : undefined}
                     tabIndex={rowIsActivatable ? 0 : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (

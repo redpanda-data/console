@@ -36,9 +36,9 @@ export const resolveSortingMode = (sorting: false | true | SortingState | undefi
 
 export type DisplayState = 'loading' | 'empty' | 'data';
 
-// Feed this the FILTERED row count, not the page row count: a stale page index can leave the
-// current page empty while matches exist, and that transient state must not read as 'empty'.
-// When isLoading but rows already exist (background refetch), returns 'data' so stale rows show instead of a spinner.
+// Takes the filtered count, not the page count: a stale page index leaves the page empty while
+// matches exist, which must not read as 'empty'. Rows + isLoading is a background refetch, so it
+// returns 'data' and stale rows stay visible instead of a spinner.
 export const deriveDisplayState = (filteredRowCount: number, isLoading: boolean): DisplayState => {
   if (isLoading && filteredRowCount === 0) {
     return 'loading';

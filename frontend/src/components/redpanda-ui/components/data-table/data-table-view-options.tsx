@@ -26,14 +26,15 @@ export function DataTableViewOptions<TData>({ table, testId }: { table: Table<TD
             </Button>
           }
         />
-        <DropdownMenuContent align="end" className="w-[150px]">
+        <DropdownMenuContent align="end" className="min-w-[150px] max-w-[300px]">
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {table
             .getAllColumns()
             .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
             .map((column) => {
-              // Loose cast: augmenting TanStack's ColumnMeta would weak-type it and break consumers with their own unaugmented meta keys.
+              // Loose cast, not a ColumnMeta augmentation: that would weak-type the interface and
+              // reject consumers who stash their own meta keys.
               const label = (column.columnDef.meta as { label?: string } | undefined)?.label;
               return (
                 <DropdownMenuCheckboxItem

@@ -50,7 +50,7 @@ import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'componen
 import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { FadePresence } from 'components/ui/fade-presence';
-import { STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
+import { PIPELINE_STATE_LABELS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, Box, MoreHorizontal, Search, X } from 'lucide-react';
 import {
@@ -480,15 +480,17 @@ const createColumns = ({
     header: 'Input',
     filterFn: 'arrIncludesSome',
     // Without this, faceting keys on the array itself and per-option counts
-    // in the filter popover never resolve.
-    getUniqueValues: (row) => row.inputs,
+    // in the filter popover never resolve. Deduplicated per row: the facet count
+    // sums these arrays, so two `redpanda` inputs on one pipeline would report 2
+    // against a filter that yields a single row.
+    getUniqueValues: (row) => [...new Set(row.inputs)],
     cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs') as string[]} />,
   },
   {
     accessorKey: 'outputs',
     header: 'Output',
     filterFn: 'arrIncludesSome',
-    getUniqueValues: (row) => row.outputs,
+    getUniqueValues: (row) => [...new Set(row.outputs)],
     cell: ({ row }) => <ConnectorBadges names={row.getValue('outputs') as string[]} />,
   },
   {
@@ -534,7 +536,13 @@ const createColumns = ({
     sortingFn: (rowA, rowB) =>
       (pipelineStateSortPriority[rowA.original.state] ?? Number.MAX_SAFE_INTEGER) -
       (pipelineStateSortPriority[rowB.original.state] ?? Number.MAX_SAFE_INTEGER),
-    cell: ({ row }) => <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]} />,
+    // Label from the state, not from the badge variant: COMPLETED and RUNNING share the
+    // `success` variant, whose default copy is "Running" — wrong for a completed pipeline.
+    cell: ({ row }) => (
+      <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]}>
+        {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
+      </StatusBadge>
+    ),
   },
   {
     id: 'actions',
@@ -782,6 +790,7 @@ const PipelineListPageContent = () => {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Input
+          aria-label="Search pipelines by name or ID"
           className="w-64"
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or ID..."
@@ -827,6 +836,9 @@ const PipelineListPageContent = () => {
             </TableRow>
           ) : (
             rows.map((row) => (
+              // Click-to-navigate is a pointer shortcut only — no tabIndex/Enter handler like
+              // DataTable's activatable rows carry, because the name cell already holds the same
+              // link. A row tab stop here would just duplicate it on every row.
               <TableRow
                 className="cursor-pointer"
                 data-state={row.getIsSelected() && 'selected'}
