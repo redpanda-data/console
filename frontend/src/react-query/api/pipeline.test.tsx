@@ -157,6 +157,44 @@ describe('useListPipelinesQuery', () => {
     expect(result.current.data.pipelines.map((p) => p.id)).toEqual(['pipeline-1']);
   });
 
+  test('stops draining on a token cycle, not just an immediate repeat', async () => {
+    // A deletion mid-drain can send the keyset token back to an earlier page: page A points at B,
+    // B points back at A. Nothing repeats consecutively, so the drain would alternate forever.
+    let callCount = 0;
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listPipelines, (req) => {
+        callCount += 1;
+        const pageToken = req.request?.pageToken ?? '';
+        return create(ListPipelinesResponseSchema, {
+          response: create(DataPlaneListPipelinesResponseSchema, {
+            pipelines: [
+              create(PipelineSchema, { id: `pipeline-${pageToken || 'first'}`, displayName: 'cycling' }),
+            ],
+            // '' → token-a, token-a → token-b, token-b → token-a, …
+            nextPageToken: pageToken === 'token-a' ? 'token-b' : 'token-a',
+          }),
+        });
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(() => useListPipelinesQuery(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Three calls: '' → token-a → token-b, whose token-a is already spent. The drain stops there.
+    expect(callCount).toBe(3);
+    expect(result.current.data.pipelines.map((p) => p.id)).toEqual([
+      'pipeline-first',
+      'pipeline-token-a',
+      'pipeline-token-b',
+    ]);
+  });
+
   test('deduplicates pipelines a replayed page returns twice', async () => {
     // A dataplane that resolves the keyset page token by exact id match restarts
     // at page one when the token's pipeline is deleted mid-drain, so page two

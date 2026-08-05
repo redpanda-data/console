@@ -112,11 +112,13 @@ export const useListPipelinesQuery = (
           return hasTransitional ? SHORT_POLLING_INTERVAL : false;
         }
       : false,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+    getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
-      // Stop on a token the server just served us: the drain would otherwise refetch that same
-      // page forever, growing the query cache with every round.
-      if (!nextPageToken || nextPageToken === lastPageParam?.pageToken) {
+      // Stop on any token this drain already requested, not just the one it was handed last.
+      // Keyset tokens only ever move forward, so a token we've seen means the server sent us
+      // backwards — A→A, or a longer A→B→A cycle — and the drain would loop forever, adding a
+      // page to the query cache every round. O(pages) per step, ~20 for 10k pipelines.
+      if (!nextPageToken || allPageParams.some((param) => param?.pageToken === nextPageToken)) {
         return;
       }
       return create(ListPipelinesRequestSchemaDataPlane, {

@@ -141,7 +141,8 @@ class KafkaConnectOverview extends PageComponent<{
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+    // Tier 1: enablePipelineDiagrams → new pipelines list (it draws the Kafka Connect tab itself).
+    if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
       return <PipelineListPage />;
     }
     if (this.props.isLoadingKafkaConnectors) {

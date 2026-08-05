@@ -36,7 +36,6 @@ export const moduleFederationConfig: ModuleFederationPluginOptions = {
     // Legacy: Keep for backward compat with old Cloud UI
     './EmbeddedApp': './src/embedded-app.tsx',
     './injectApp': './src/inject-app.tsx',
-    './connect-tiles': './src/components/pages/rp-connect/onboarding/connect-tiles.tsx',
     './config': './src/config.ts',
   },
 
