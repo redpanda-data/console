@@ -32,8 +32,8 @@ import {
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTablePagination,
+  isRowActivationClick,
 } from 'components/redpanda-ui/components/data-table';
-import { isInteractiveTarget } from 'components/redpanda-ui/components/data-table/data-table-utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -732,14 +732,10 @@ const PipelineListPageContent = () => {
       if (isModifiedClick(event)) {
         return;
       }
-      const target = event.target as Node;
-      // Clicks on portaled children (menus, dialogs, tooltips) bubble through the React tree
-      // but live outside the <tr> in the DOM — a click on the delete-confirm backdrop, say.
-      if (!event.currentTarget.contains(target)) {
-        return;
-      }
-      // Interactive descendants handle their own clicks — same helper DataTable's guard uses.
-      if (isInteractiveTarget(target, event.currentTarget)) {
+      // Registry guard, same one DataTable's rows use: drops portaled children (open menus, the
+      // delete-confirm backdrop) that bubble through React but sit outside the <tr>, and clicks a
+      // control in the row has already handled.
+      if (!isRowActivationClick(event.target, event.currentTarget)) {
         return;
       }
       // A mouseup that ends a text selection (copying the id) isn't navigation intent.

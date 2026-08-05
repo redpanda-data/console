@@ -26,11 +26,18 @@ import React from 'react';
 
 import { Checkbox } from '../checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../table';
+import { useLayoutEffect } from '../../lib/use-layout-effect';
 import { cn } from '../../lib/utils';
 
 import { DataTablePagination } from './data-table-pagination';
 import { createInitialState, type DataTableInitialConfig, dataTableReducer } from './data-table-reducer';
-import { deriveDisplayState, isInteractiveTarget, resolvePaginationMode, resolveSortingMode } from './data-table-utils';
+import {
+  deriveDisplayState,
+  isRowActivationClick,
+  resolvePageDisplayState,
+  resolvePaginationMode,
+  resolveSortingMode,
+} from './data-table-utils';
 
 export type DataTableClassNames = {
   root?: string;
@@ -293,7 +300,6 @@ export function DataTable<TData>({
   const table = useReactTable(options);
   const rows = table.getRowModel().rows;
   const filteredRowCount = table.getFilteredRowModel().rows.length;
-  const displayState = deriveDisplayState(filteredRowCount, isLoading);
   const totalColumns = table.getVisibleFlatColumns().length;
 
   // autoResetPageIndex is off, so a shrinking filtered set can strand the user past the last page.
@@ -304,17 +310,20 @@ export function DataTable<TData>({
   const pageCountIsKnown =
     !table.options.manualPagination || table.options.pageCount !== undefined || table.options.rowCount !== undefined;
   const clampPending = paginationMode.enabled && pageCountIsKnown && pageCount > 0 && pageIndex >= pageCount;
-  React.useEffect(() => {
+  // Layout, not passive: a post-paint clamp flashes a body holding neither rows nor a state.
+  useLayoutEffect(() => {
     if (clampPending && !isLoading) {
       table.setPageIndex(pageCount - 1);
     }
   }, [clampPending, isLoading, pageCount, table]);
 
-  // The filtered count can be non-zero while the page slice is empty (e.g. `pageCount` without
-  // `manualPagination`, which leaves rows locally sliced) — show the empty state, not a bare header.
-  // Not while a clamp is pending, though: that page index is about to change, and "no results" for
-  // the frame in between is the flash this whole guard exists to prevent.
-  const showEmptyState = displayState === 'empty' || (displayState === 'data' && rows.length === 0 && !clampPending);
+  // Layered on the clamp, not replaced by it: the clamp only beats paint when it applies
+  // synchronously, and it never runs while isLoading or when onPaginationChange is async.
+  const displayState = resolvePageDisplayState(
+    deriveDisplayState(filteredRowCount, isLoading),
+    rows.length,
+    clampPending
+  );
 
   const toolbarContent = typeof toolbar === 'function' ? toolbar(table) : toolbar;
 
@@ -347,7 +356,7 @@ export function DataTable<TData>({
             </TableRow>
           )}
 
-          {showEmptyState ? (
+          {displayState === 'empty' ? (
             <TableRow>
               <TableCell className={cn('h-24', classNames?.empty)} colSpan={totalColumns}>
                 <div className="flex flex-col items-center justify-center gap-2">
@@ -370,14 +379,9 @@ export function DataTable<TData>({
               };
 
               const handleClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
-                // Containment drops portaled content (menus, popovers) and targets already unmounted.
-                if (!event.currentTarget.contains(event.target as Node)) {
-                  return;
+                if (isRowActivationClick(event.target, event.currentTarget)) {
+                  activateRow();
                 }
-                if (isInteractiveTarget(event.target, event.currentTarget)) {
-                  return;
-                }
-                activateRow();
               };
 
               const handleKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
