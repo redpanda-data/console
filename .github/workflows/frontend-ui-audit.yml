@@ -25,7 +25,12 @@ permissions:
 jobs:
   audit:
     name: Audit registry usage
-    timeout-minutes: 5
+    # Advisory, and that has to hold for infrastructure too: a PR that moves a lot of registry files
+    # (a data-table resync, say) gives the audit far more work, and a job that overruns its timeout
+    # reports as a failed check no matter how forgiving the steps below are. Hence the generous
+    # budget here, a tighter cap on the audit itself, and continue-on-error at both levels.
+    timeout-minutes: 15
+    continue-on-error: true
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Checkout console
@@ -54,11 +59,11 @@ jobs:
           ref: ${{ env.UI_REGISTRY_REF }}
           # The audit resolves component versions via `git show v<tag>:<path>`,
           # so it needs full history and all v* tags (fetch-depth: 0).
-          # filter: blob:none makes it a blobless partial clone — commit and tag
-          # metadata is fetched, but file blobs are pulled lazily only when
-          # `git show` touches them, keeping the checkout fast.
+          #
+          # Deliberately NOT a blobless clone: `git show` per component per tag is exactly the
+          # access pattern that defeats filter=blob:none, turning each file read into its own
+          # lazy fetch. The whole repo is ~75MB in one transfer, against hundreds of round trips.
           fetch-depth: 0
-          filter: blob:none
           path: ui-registry
           token: ${{ env.ACTIONS_BOT_TOKEN }}
       - name: Setup Bun
@@ -72,6 +77,10 @@ jobs:
           bun run registry:build
       - name: Run audit (markdown report + exit code)
         id: audit
+        # Capped below the job budget so a slow or hung audit is contained here, leaving the
+        # steps after it free to report what did come back.
+        timeout-minutes: 8
+        continue-on-error: true
         run: |
           set +e
           # Exit code only feeds the warning step below; the job never fails on findings.
@@ -83,11 +92,18 @@ jobs:
             > /tmp/audit-body.md
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
       - name: Post or update sticky PR comment
+        if: always()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
+          # The audit can be cut short by its own cap, leaving no report — say so rather than
+          # letting `cat` of a missing file take the job down with it.
+          if [ ! -s /tmp/audit-body.md ]; then
+            echo "_UI audit did not finish within its time budget — no findings reported._" > /tmp/audit-body.md
+          fi
           marker='<!-- ui-audit-frontend -->'
           { echo "$marker"; cat /tmp/audit-body.md; } > /tmp/body.md
           existing=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
