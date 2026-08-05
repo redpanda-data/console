@@ -10,15 +10,14 @@
  */
 
 import { act, renderWithFileRoutes, screen, waitFor } from 'test-utils';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import KafkaConnectOverview from './overview';
 import { type EndpointCompatibility, Feature, useSupportedFeaturesStore } from '../../../state/supported-features';
 
-// The Connect page swaps wholesale between the new pipelines list and the legacy tabs, keyed on
-// whether the backend serves the managed pipelines API. Self-hosted reports it unsupported, and its
-// install intro lives behind the legacy path — so a mount regression here silently hides one or the
-// other. Asserted through the real store rather than a mock, since the branch reads it reactively.
+// The page swaps wholesale between the new list and the legacy tabs on whether the backend serves
+// the pipelines API, so a mount regression silently hides one or the other. Driven through the real
+// store, since the branch reads it reactively.
 const setPipelineServiceSupport = (isSupported: boolean) => {
   const compatibility: EndpointCompatibility = {
     kafkaVersion: '3.6.0',
@@ -38,12 +37,6 @@ const setPipelineServiceSupport = (isSupported: boolean) => {
 // The status tabs belong to the new list and nothing else on this page renders them.
 const RUNNING_TAB_RE = /^Running/;
 const newListMarker = () => screen.queryByRole('tab', { name: RUNNING_TAB_RE });
-
-afterEach(() => {
-  act(() => {
-    useSupportedFeaturesStore.getState().setEndpointCompatibility(null as unknown as EndpointCompatibility);
-  });
-});
 
 describe('Connect overview mount', () => {
   it('renders the new pipelines list wherever the pipelines API is served', async () => {

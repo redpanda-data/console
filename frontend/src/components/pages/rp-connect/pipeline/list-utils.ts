@@ -16,10 +16,7 @@ export type ConnectorCount = {
   count: number;
 };
 
-/**
- * Collapses repeated connector names into one counted entry, in first-appearance order:
- * ["redpanda", "redpanda", "s3"] → [{ name: "redpanda", count: 2 }, { name: "s3", count: 1 }].
- */
+/** ["redpanda", "redpanda", "s3"] → [{ name: "redpanda", count: 2 }, { name: "s3", count: 1 }]. */
 export function aggregateConnectors(names: string[]): ConnectorCount[] {
   const byName = new Map<string, ConnectorCount>();
   for (const name of names) {
@@ -43,8 +40,7 @@ export type PipelineStateTab = {
   emptyText: string;
 };
 
-// Transitional states ride with their destination: starting counts as running, stopping as
-// stopped.
+// Transitional states ride with their destination: starting counts as running, stopping as stopped.
 export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   { id: 'all', label: 'All', emptyText: 'You have no Redpanda Connect pipelines' },
   {
@@ -67,19 +63,25 @@ export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   },
 ];
 
+// Inverted once, so counting is a single pass over the rows rather than one scan per tab.
+const TAB_BY_STATE = new Map<Pipeline_State, PipelineStateTabId>(
+  PIPELINE_STATE_TABS.flatMap((tab) => (tab.states ?? []).map((state) => [state, tab.id] as const))
+);
+
 export function countPipelinesPerTab(states: Pipeline_State[]): Record<PipelineStateTabId, number> {
   const counts: Record<PipelineStateTabId, number> = { all: states.length, running: 0, stopped: 0, error: 0 };
-  for (const tab of PIPELINE_STATE_TABS) {
-    if (tab.states) {
-      counts[tab.id] = states.filter((s) => tab.states?.includes(s)).length;
+  for (const state of states) {
+    const tabId = TAB_BY_STATE.get(state);
+    if (tabId) {
+      counts[tabId] += 1;
     }
   }
   return counts;
 }
 
 /**
- * What to show when no rows are visible. Null when an unfiltered All view has pipelines but shows
- * none — a stale page index about to be clamped, which must not flash an empty message.
+ * What to show when no rows are visible. Null for an unfiltered All view that has pipelines — a
+ * stale page index about to be clamped, which must not flash an empty message.
  */
 export function pipelineListEmptyText({
   hasActiveFilters,
