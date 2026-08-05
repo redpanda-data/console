@@ -17,9 +17,8 @@ export type ConnectorCount = {
 };
 
 /**
- * Collapses repeated connector names into one entry with a count, preserving
- * first-appearance order: ["redpanda", "redpanda", "s3"] →
- * [{ name: "redpanda", count: 2 }, { name: "s3", count: 1 }].
+ * Collapses repeated connector names into one counted entry, in first-appearance order:
+ * ["redpanda", "redpanda", "s3"] → [{ name: "redpanda", count: 2 }, { name: "s3", count: 1 }].
  */
 export function aggregateConnectors(names: string[]): ConnectorCount[] {
   const byName = new Map<string, ConnectorCount>();
@@ -44,8 +43,8 @@ export type PipelineStateTab = {
   emptyText: string;
 };
 
-// Transitional states ride with their destination: a pipeline that is
-// starting belongs with the running ones, a stopping one with the stopped.
+// Transitional states ride with their destination: starting counts as running, stopping as
+// stopped.
 export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   { id: 'all', label: 'All', emptyText: 'You have no Redpanda Connect pipelines' },
   {

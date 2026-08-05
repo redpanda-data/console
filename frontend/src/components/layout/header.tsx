@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// ColorModeSwitch is the last Chakra holdout here: dev-only, standalone-only,
-// and pointless to port until the standalone theme toggle moves off Chakra.
 import { ColorModeSwitch } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -101,9 +99,8 @@ function AppPageHeader() {
     return null;
   }
 
-  // Embedded, the breadcrumb row holds nothing — the host draws the breadcrumb and there
-  // is no sidebar trigger — so with the title row hidden this would be a bare divider
-  // above a page that already has its own title bar.
+  // Embedded, the breadcrumb row holds nothing (the host draws the breadcrumb, and there is
+  // no sidebar trigger), so without the title row the header is a bare divider.
   if (hideTitleRow && isEmbedded()) {
     return null;
   }
@@ -179,11 +176,10 @@ function AppPageHeader() {
 export default AppPageHeader;
 
 /**
- * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`),
- * so the header shows only the breadcrumb row.
+ * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`).
  *
  * Resolved from the pathname rather than `useMatches()`: committed matches lag the
- * location by a render on soft navigation, which would flash the title row on the way in.
+ * location by a render on soft navigation, flashing the title row on the way in.
  */
 function useRouteOwnsTitleRow() {
   const router = useRouter();

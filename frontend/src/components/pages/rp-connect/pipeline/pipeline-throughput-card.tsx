@@ -59,8 +59,7 @@ type ThroughputContentProps = {
   onRetry: () => void;
 };
 
-// Placeholder that keeps the chart's footprint so the section doesn't jump
-// between the loading, empty, error, and chart states.
+// Keeps the chart's footprint so the section doesn't jump between states.
 const ThroughputPlaceholder: FC<{ title: string; description: string; action?: ReactNode }> = ({
   title,
   description,

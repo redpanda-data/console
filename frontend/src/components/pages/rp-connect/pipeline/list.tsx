@@ -116,9 +116,8 @@ const parseConfigComponentsCached = (configYaml: string): ReturnType<typeof pars
     return cached;
   }
   if (configComponentsCache.size >= CONFIG_COMPONENTS_CACHE_LIMIT) {
-    // Evict the oldest half (Map preserves insertion order): clearing
-    // everything mid-pass would make each refresh of a >10k dataset reparse
-    // the entire list — the exact cost this cache exists to avoid.
+    // Evict the oldest half (Map preserves insertion order). Clearing everything instead
+    // would make every refresh of a >10k dataset reparse the whole list.
     let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
     for (const key of configComponentsCache.keys()) {
       configComponentsCache.delete(key);
@@ -149,8 +148,7 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
 
 const EmptyCell = () => <span className="text-muted-foreground">—</span>;
 
-// Duplicate connectors collapse into one badge with a multiplier ("redpanda ×2")
-// so wide fan-in/fan-out pipelines don't spend the column on repeats.
+// Duplicate connectors collapse into one badge with a multiplier ("redpanda ×2").
 const ConnectorBadges = ({ names }: { names: string[] }) => {
   const connectors = aggregateConnectors(names);
   if (connectors.length === 0) {
@@ -198,8 +196,7 @@ const stateInFilterFn: FilterFn<Pipeline> = (row, columnId, filterValue: string[
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-// Attention-first ordering for the Status column: problems and transitions
-// surface before healthy pipelines, idle ones sink to the bottom.
+// Status column order: problems and transitions before healthy pipelines, idle last.
 const pipelineStateSortPriority: Record<Pipeline_State, number> = {
   [Pipeline_State.ERROR]: 0,
   [Pipeline_State.STARTING]: 1,
@@ -414,10 +411,9 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-// Facet options are rebuilt whenever the row set changes — every drain page and
-// every poll tick. Cache the icon component per connector name so its identity
-// survives that: a fresh function type would make React remount every logo in
-// the open popover, flashing them mid-poll.
+// Facet options are rebuilt on every drain page and poll tick. Cache the icon component
+// per connector name so its identity survives that — a fresh function type would remount
+// every logo in the open popover, flashing them mid-poll.
 const connectorIcons = new Map<string, (props: { className?: string }) => ReactElement>();
 
 const connectorIcon = (name: string) => {
@@ -454,8 +450,7 @@ const createColumns = ({
       const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
-          {/* Rows navigate on click, so the name link stays quiet until hovered
-              — twenty dotted underlines per page read as noise. */}
+          {/* Rows navigate on click, so the name link underlines on hover only. */}
           <Link
             as={TanStackRouterLink}
             className="block truncate text-base text-primary no-underline hover:underline"
@@ -531,8 +526,7 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     filterFn: stateInFilterFn,
-    // The ?? guards against enum values a newer server may send that the
-    // generated Pipeline_State doesn't know yet — they sort last, not NaN.
+    // Enum values the generated Pipeline_State doesn't know yet sort last, not NaN.
     sortingFn: (rowA, rowB) =>
       (pipelineStateSortPriority[rowA.original.state] ?? Number.MAX_SAFE_INTEGER) -
       (pipelineStateSortPriority[rowB.original.state] ?? Number.MAX_SAFE_INTEGER),
@@ -557,8 +551,7 @@ const createColumns = ({
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetRpcnWizardStore = useResetRpcnWizardStore();
-  // Default to attention-first status order so error/transitioning pipelines
-  // surface on page 1 and stopped ones sink, even on large clusters.
+  // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
   const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
   const {
@@ -615,15 +608,13 @@ const PipelineListPageContent = () => {
   const table = useReactTable({
     data: pipelines,
     columns,
-    // Pipeline ids are unique and stable, so keying rows on them (rather than the
-    // default row index) keeps a row's identity fixed while pages stream in and
-    // the sort re-runs — React reuses each row's DOM for the same pipeline instead
-    // of repainting a shifted window of them.
+    // Keying rows on the pipeline id rather than the row index keeps a row's identity fixed
+    // while pages stream in and the sort re-runs, so React reuses its DOM instead of
+    // repainting a shifted window of rows.
     getRowId: (row) => row.id,
-    // No column-visibility UI on this page; disabling hiding also drops the Hide item from the column header menus.
+    // No column-visibility UI here; this also drops Hide from the column header menus.
     enableHiding: false,
-    // Rows aren't selectable, which also drops the pagination footer's
-    // "X of N row(s) selected." text — its ml-auto keeps the controls right-aligned.
+    // Also drops the pagination footer's "X of N row(s) selected." text.
     enableRowSelection: false,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -632,10 +623,9 @@ const PipelineListPageContent = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-    // Pages stream in while the list drains; autoResetPageIndex would yank the
-    // user back to page 1 on every arrival. Filter and sort changes still
-    // reset the page via the layout effect below, and a shrinking row set is
-    // clamped before paint.
+    // Pages stream in while the list drains, and autoResetPageIndex would yank the user back
+    // to page 1 on every arrival. The layout effects below reset the page on filter and sort
+    // changes, and clamp a shrinking row set before paint.
     autoResetPageIndex: false,
     state: {
       sorting,
@@ -668,9 +658,8 @@ const PipelineListPageContent = () => {
   const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
   const [search, setSearch] = useState('');
 
-  // GitHub-style tab counts: each tab shows how many rows selecting it would
-  // yield under the current search/facets. The state column's faceted model
-  // applies every filter except its own — exactly those semantics.
+  // Each tab counts the rows selecting it would yield under the current search and facets.
+  // The state column's faceted model applies every filter except its own — those semantics.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
   const tabCounts = useMemo(
     () => countPipelinesPerTab((stateFacetedRows ?? []).map((r) => r.original.state)),
@@ -693,9 +682,8 @@ const PipelineListPageContent = () => {
     const timer = setTimeout(() => {
       const column = table.getColumn('name');
       const next = search.trim() ? search : undefined;
-      // setFilterValue(undefined) on an unfiltered column still produces a new
-      // columnFilters array, which would trip the page-reset effect — skip
-      // writes that don't change anything (including the post-mount tick).
+      // setFilterValue(undefined) on an unfiltered column still produces a new columnFilters
+      // array, tripping the page-reset effect — skip no-op writes (the post-mount tick too).
       if (column && column.getFilterValue() !== next) {
         column.setFilterValue(next);
       }
@@ -716,15 +704,13 @@ const PipelineListPageContent = () => {
   const handleRowClick = useCallback(
     (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
       const target = event.target as Node;
-      // Clicks on portaled children (menus, dialogs, tooltips) bubble through
-      // the React tree but live outside the <tr> in the DOM — never navigate
-      // for those, e.g. a click on the delete-confirm backdrop.
+      // Clicks on portaled children (menus, dialogs, tooltips) bubble through the React tree
+      // but live outside the <tr> in the DOM — a click on the delete-confirm backdrop, say.
       if (!event.currentTarget.contains(target)) {
         return;
       }
-      // Interactive descendants handle their own clicks. Same helper DataTable
-      // uses for its row-click guard, so this row behaves like every other
-      // clickable row and covers more than links and buttons.
+      // Interactive descendants handle their own clicks. Same helper DataTable's row-click
+      // guard uses, so this row behaves like every other clickable row.
       if (isInteractiveTarget(target, event.currentTarget)) {
         return;
       }
@@ -747,10 +733,9 @@ const PipelineListPageContent = () => {
     }
   }, [resetRpcnWizardStore, navigate]);
 
-  // The hook keeps isLoading true until every page is drained; render as soon
-  // as the first page has rows and stream the rest in behind the table. On a
-  // mid-drain error the drain halts for good, so the error line replaces the
-  // spinner rather than showing next to it.
+  // The hook keeps isLoading true until every page is drained, so render as soon as the first
+  // page has rows and stream the rest in behind the table. A mid-drain error halts the drain
+  // for good, so the error line replaces the spinner rather than sitting next to it.
   const isInitialLoading = isLoading && pipelines.length === 0 && !error;
   const isLoadingMorePages = isLoading && pipelines.length > 0 && !error;
 
