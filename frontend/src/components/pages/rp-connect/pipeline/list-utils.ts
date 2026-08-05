@@ -77,6 +77,28 @@ export function countPipelinesPerTab(states: Pipeline_State[]): Record<PipelineS
   return counts;
 }
 
+/**
+ * What to show when no rows are visible. Null when an unfiltered All view has pipelines but shows
+ * none — a stale page index about to be clamped, which must not flash an empty message.
+ */
+export function pipelineListEmptyText({
+  hasActiveFilters,
+  activeTab,
+  totalPipelines,
+}: {
+  hasActiveFilters: boolean;
+  activeTab: PipelineStateTabId;
+  totalPipelines: number;
+}): string | null {
+  if (hasActiveFilters) {
+    return 'No pipelines match the current filters';
+  }
+  if (activeTab === 'all' && totalPipelines > 0) {
+    return null;
+  }
+  return PIPELINE_STATE_TABS.find((t) => t.id === activeTab)?.emptyText ?? null;
+}
+
 /** Case-insensitive substring match over a pipeline's display name and id. */
 export function matchesNameOrId(search: string, name: string, id: string): boolean {
   const needle = search.trim().toLowerCase();

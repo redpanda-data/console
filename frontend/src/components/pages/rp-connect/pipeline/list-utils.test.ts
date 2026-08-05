@@ -12,7 +12,13 @@
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, it } from 'vitest';
 
-import { aggregateConnectors, countPipelinesPerTab, matchesNameOrId, PIPELINE_STATE_TABS } from './list-utils';
+import {
+  aggregateConnectors,
+  countPipelinesPerTab,
+  matchesNameOrId,
+  PIPELINE_STATE_TABS,
+  pipelineListEmptyText,
+} from './list-utils';
 
 describe('aggregateConnectors', () => {
   it('collapses duplicates into counts, preserving first-appearance order', () => {
@@ -61,6 +67,27 @@ describe('countPipelinesPerTab', () => {
       Pipeline_State.UNSPECIFIED,
     ]);
     expect(counts).toEqual({ all: 5, running: 2, stopped: 1, error: 1 });
+  });
+});
+
+describe('pipelineListEmptyText', () => {
+  it('reports the filter miss whenever filters are active', () => {
+    expect(pipelineListEmptyText({ hasActiveFilters: true, activeTab: 'all', totalPipelines: 12 })).toBe(
+      'No pipelines match the current filters'
+    );
+  });
+
+  it('stays silent on an unfiltered All view that still has pipelines (page index about to clamp)', () => {
+    expect(pipelineListEmptyText({ hasActiveFilters: false, activeTab: 'all', totalPipelines: 12 })).toBeNull();
+  });
+
+  it('uses the tab copy for an empty tab and for no pipelines at all', () => {
+    expect(pipelineListEmptyText({ hasActiveFilters: false, activeTab: 'error', totalPipelines: 12 })).toBe(
+      'No pipelines with errors'
+    );
+    expect(pipelineListEmptyText({ hasActiveFilters: false, activeTab: 'all', totalPipelines: 0 })).toBe(
+      'You have no Redpanda Connect pipelines'
+    );
   });
 });
 

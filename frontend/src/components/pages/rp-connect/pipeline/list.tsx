@@ -87,6 +87,7 @@ import {
   matchesNameOrId,
   PIPELINE_STATE_TABS,
   type PipelineStateTabId,
+  pipelineListEmptyText,
 } from './list-utils';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
@@ -147,6 +148,9 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
 };
 
 const EmptyCell = () => <span className="text-muted-foreground">—</span>;
+
+// One string per tag pair, so `arrIncludesSome` and the facet counts agree on the value.
+const tagFilterValue = (tag: TagPair) => `${tag.key}:${tag.value}`;
 
 // Duplicate connectors collapse into one badge with a multiplier ("redpanda ×2").
 const ConnectorBadges = ({ names }: { names: string[] }) => {
@@ -489,10 +493,10 @@ const createColumns = ({
   },
   {
     id: 'tags',
-    accessorFn: (row) => row.tags.map((t) => `${t.key}:${t.value}`),
+    accessorFn: (row) => row.tags.map(tagFilterValue),
     header: 'Tags',
     filterFn: 'arrIncludesSome',
-    getUniqueValues: (row) => row.tags.map((t) => `${t.key}:${t.value}`),
+    getUniqueValues: (row) => row.tags.map(tagFilterValue),
     cell: ({ row }) => {
       const tags = row.original.tags;
       if (tags.length === 0) {
@@ -597,11 +601,7 @@ const PipelineListPageContent = () => {
     [pipelines]
   );
   const tagOptions = useMemo(
-    () =>
-      [...new Set(pipelines.flatMap((p) => p.tags.map((t) => `${t.key}:${t.value}`)))].map((v) => ({
-        value: v,
-        label: v,
-      })),
+    () => [...new Set(pipelines.flatMap((p) => p.tags.map(tagFilterValue)))].map((v) => ({ value: v, label: v })),
     [pipelines]
   );
 
@@ -813,38 +813,20 @@ const PipelineListPageContent = () => {
           ))}
         </TableHeader>
         <TableBody>
-          {(() => {
-            if (rows.length === 0) {
-              if (isLoadingMorePages) {
-                return (
-                  <TableRow>
-                    <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <Spinner /> Loading pipelines...
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              }
-              // Unfiltered but non-empty data means a stale page index is
-              // about to be clamped — don't flash the empty-state message.
-              let emptyText: string | null = null;
-              if (hasActiveFilters) {
-                emptyText = 'No pipelines match the current filters';
-              } else if (activeTab !== 'all') {
-                emptyText = PIPELINE_STATE_TABS.find((t) => t.id === activeTab)?.emptyText ?? null;
-              } else if (pipelines.length === 0) {
-                emptyText = 'You have no Redpanda Connect pipelines';
-              }
-              return (
-                <TableRow>
-                  <TableCell className="h-24 text-center" colSpan={columns.length}>
-                    {emptyText}
-                  </TableCell>
-                </TableRow>
-              );
-            }
-            return rows.map((row) => (
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell className="h-24 text-center" colSpan={columns.length}>
+                {isLoadingMorePages ? (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <Spinner /> Loading pipelines...
+                  </div>
+                ) : (
+                  pipelineListEmptyText({ hasActiveFilters, activeTab, totalPipelines: pipelines.length })
+                )}
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row) => (
               <TableRow
                 className="cursor-pointer"
                 data-state={row.getIsSelected() && 'selected'}
@@ -857,8 +839,8 @@ const PipelineListPageContent = () => {
                   </TableCell>
                 ))}
               </TableRow>
-            ));
-          })()}
+            ))
+          )}
         </TableBody>
       </Table>
       <FadePresence

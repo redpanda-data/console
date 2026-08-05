@@ -112,9 +112,11 @@ export const useListPipelinesQuery = (
           return hasTransitional ? SHORT_POLLING_INTERVAL : false;
         }
       : false,
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
-      if (!nextPageToken) {
+      // Stop on a token the server just served us: the drain would otherwise refetch that same
+      // page forever, growing the query cache with every round.
+      if (!nextPageToken || nextPageToken === lastPageParam?.pageToken) {
         return;
       }
       return create(ListPipelinesRequestSchemaDataPlane, {

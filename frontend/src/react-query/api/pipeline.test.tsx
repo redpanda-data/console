@@ -127,6 +127,36 @@ describe('useListPipelinesQuery', () => {
     expect(result.current.data.pipelines).toHaveLength(0);
   });
 
+  test('stops draining when the server repeats the page token it was given', async () => {
+    // A server that echoes back the token it just resolved would drain forever, appending the
+    // same page to the cache each round.
+    let callCount = 0;
+
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listPipelines, () => {
+        callCount += 1;
+        return create(ListPipelinesResponseSchema, {
+          response: create(DataPlaneListPipelinesResponseSchema, {
+            pipelines: [create(PipelineSchema, { id: 'pipeline-1', displayName: 'pipeline-1' })],
+            nextPageToken: 'stuck-token',
+          }),
+        });
+      });
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(() => useListPipelinesQuery(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // First page, then the one page that reveals the repeat — and no further.
+    expect(callCount).toBe(2);
+    expect(result.current.data.pipelines.map((p) => p.id)).toEqual(['pipeline-1']);
+  });
+
   test('deduplicates pipelines a replayed page returns twice', async () => {
     // A dataplane that resolves the keyset page token by exact id match restarts
     // at page one when the token's pipeline is deleted mid-drain, so page two
