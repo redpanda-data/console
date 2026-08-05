@@ -29,7 +29,7 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -83,12 +83,18 @@ const WrapKafkaConnectOverview: FunctionComponent<{
   defaultTab?: ConnectView;
 }> = (props) => {
   const { data: kafkaConnectors, isLoading: isLoadingKafkaConnectors } = useKafkaConnectConnectorsQuery();
+  // Read through the store (not `Features`) so the class below re-renders when endpoint
+  // detection resolves — these arrive as props for exactly that reason.
+  const hasPipelinesApi = useSupportedFeaturesStore((s) => s.pipelinesApi);
+  const isDetectingFeatures = useSupportedFeaturesStore((s) => s.endpointCompatibility === null);
 
   const isKafkaConnectEnabled = kafkaConnectors?.isConfigured === true;
 
   return (
     <KafkaConnectOverview
       defaultView={props.defaultTab ?? ''}
+      hasPipelinesApi={hasPipelinesApi}
+      isDetectingFeatures={isDetectingFeatures}
       isKafkaConnectEnabled={isKafkaConnectEnabled}
       isLoadingKafkaConnectors={isLoadingKafkaConnectors}
       matchedPath={props.matchedPath}
@@ -103,6 +109,8 @@ const RpConnectTabContent = () => {
 
 class KafkaConnectOverview extends PageComponent<{
   defaultView: string;
+  hasPipelinesApi: boolean;
+  isDetectingFeatures: boolean;
   isKafkaConnectEnabled: boolean;
   isLoadingKafkaConnectors: boolean;
 }> {
@@ -141,12 +149,17 @@ class KafkaConnectOverview extends PageComponent<{
   }
 
   render() {
-    // Tier 1: enablePipelineDiagrams → new pipelines list (it draws the Kafka Connect tab itself).
-    if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
-      return <PipelineListPage />;
-    }
-    if (this.props.isLoadingKafkaConnectors) {
+    // The managed pipelines API is the new list's only hard requirement, so it renders wherever
+    // that API exists — no feature flag. Self-hosted advertises PipelineService as unsupported
+    // (backend endpoint_compatibility.go, OSS defaults) and keeps the tabs + install intro below.
+    // Waiting on detection first: rendering the legacy tabs and then swapping would flip the whole
+    // page a frame in, and this page already shows the same spinner while Kafka Connect loads.
+    if (this.props.isDetectingFeatures || this.props.isLoadingKafkaConnectors) {
       return <WaitingRedpanda />;
+    }
+    if (this.props.hasPipelinesApi) {
+      // Draws its own Kafka Connect tab, so it replaces this page rather than sitting in a tab.
+      return <PipelineListPage />;
     }
     const tabs = [
       {
