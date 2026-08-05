@@ -168,9 +168,7 @@ describe('useListPipelinesQuery', () => {
         const pageToken = req.request?.pageToken ?? '';
         return create(ListPipelinesResponseSchema, {
           response: create(DataPlaneListPipelinesResponseSchema, {
-            pipelines: [
-              create(PipelineSchema, { id: `pipeline-${pageToken || 'first'}`, displayName: 'cycling' }),
-            ],
+            pipelines: [create(PipelineSchema, { id: `pipeline-${pageToken || 'first'}`, displayName: 'cycling' })],
             // '' → token-a, token-a → token-b, token-b → token-a, …
             nextPageToken: pageToken === 'token-a' ? 'token-b' : 'token-a',
           }),

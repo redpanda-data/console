@@ -212,6 +212,41 @@ const pipelineStateSortPriority: Record<Pipeline_State, number> = {
 
 const PAGE_SIZE = 20;
 
+// Modified and non-primary clicks mean "open elsewhere" — a row must leave those to the browser
+// rather than soft-navigating the current tab. The name cell is a real link, so ⌘-click and
+// middle-click still open a new tab from there.
+const isModifiedClick = (event: MouseEvent<HTMLElement>) =>
+  event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+
+// The rows render outside the Tabs subtree (one table, filtered per tab — not four panels), so the
+// tabs carry no panel of their own. These wire each tab to the table region explicitly: without an
+// `aria-controls` target a screen reader announces "tab, 1 of 4" with nowhere to move into.
+const STATUS_PANEL_ID = 'pipeline-status-panel';
+const statusTabId = (tabId: PipelineStateTabId) => `pipeline-status-tab-${tabId}`;
+
+/**
+ * Screen-reader counterpart to the drain and refresh-failure lines below the table. Those mount and
+ * unmount as they animate, and a live region only announces changes made while it is already in the
+ * DOM — so the announcement lives here, always present. `sr-only` is absolutely positioned, so
+ * these cost no layout.
+ */
+const ListStatusAnnouncements = ({
+  isLoadingMorePages,
+  listErrorMessage,
+}: {
+  isLoadingMorePages: boolean;
+  listErrorMessage: string | null;
+}) => (
+  <>
+    <div aria-live="polite" className="sr-only">
+      {isLoadingMorePages ? 'Loading more pipelines' : ''}
+    </div>
+    <div className="sr-only" role="alert">
+      {listErrorMessage ?? ''}
+    </div>
+  </>
+);
+
 const PipelineListSkeleton = () => (
   <div className="flex flex-col gap-4">
     <div className="flex items-center justify-between gap-4">
@@ -700,7 +735,9 @@ const PipelineListPageContent = () => {
 
   // The status tabs are views, not filters — only search and the facet
   // pickers count toward "filtered" (and get wiped by Clear filters).
-  const hasActiveFilters = columnFilters.some((f) => f.id !== 'state');
+  // Read from `search`, not just the committed column filter: the filter lands 200ms behind the
+  // input, and Clear filters must be there to click as soon as the user has typed something.
+  const hasActiveFilters = search.trim() !== '' || columnFilters.some((f) => f.id !== 'state');
   const clearFilters = useCallback(() => {
     setSearch('');
     for (const columnId of ['name', 'inputs', 'outputs', 'tags']) {
@@ -710,6 +747,9 @@ const PipelineListPageContent = () => {
 
   const handleRowClick = useCallback(
     (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
+      if (isModifiedClick(event)) {
+        return;
+      }
       const target = event.target as Node;
       // Clicks on portaled children (menus, dialogs, tooltips) bubble through the React tree
       // but live outside the <tr> in the DOM — a click on the delete-confirm backdrop, say.
@@ -771,7 +811,13 @@ const PipelineListPageContent = () => {
         <Tabs onValueChange={(value) => handleTabChange(value as PipelineStateTabId)} value={activeTab}>
           <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
             {PIPELINE_STATE_TABS.map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id} variant="underline">
+              <TabsTrigger
+                aria-controls={STATUS_PANEL_ID}
+                id={statusTabId(tab.id)}
+                key={tab.id}
+                value={tab.id}
+                variant="underline"
+              >
                 {tab.label}
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums">
                   {tabCounts[tab.id]}
@@ -803,52 +849,55 @@ const PipelineListPageContent = () => {
           </Button>
         </FadePresence>
       </div>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {rows.length === 0 ? (
-            <TableRow>
-              <TableCell className="h-24 text-center" colSpan={columns.length}>
-                {isLoadingMorePages ? (
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                    <Spinner /> Loading pipelines...
-                  </div>
-                ) : (
-                  pipelineListEmptyText({ hasActiveFilters, activeTab, totalPipelines: pipelines.length })
-                )}
-              </TableCell>
-            </TableRow>
-          ) : (
-            rows.map((row) => (
-              // Click-to-navigate is a pointer shortcut only — no tabIndex/Enter handler like
-              // DataTable's activatable rows carry, because the name cell already holds the same
-              // link. A row tab stop here would just duplicate it on every row.
-              <TableRow
-                className="cursor-pointer"
-                data-state={row.getIsSelected() && 'selected'}
-                key={row.id}
-                onClick={(event) => handleRowClick(row.original.id, event)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell className="py-3" key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+      {/* The status tabs' panel (see STATUS_PANEL_ID) — the region a tab hands the reader off to. */}
+      <div aria-labelledby={statusTabId(activeTab)} id={STATUS_PANEL_ID} role="tabpanel">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell className="h-24 text-center" colSpan={columns.length}>
+                  {isLoadingMorePages ? (
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <Spinner /> Loading pipelines...
+                    </div>
+                  ) : (
+                    pipelineListEmptyText({ hasActiveFilters, activeTab, totalPipelines: pipelines.length })
+                  )}
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((row) => (
+                // Click-to-navigate is a pointer shortcut only — no tabIndex/Enter handler like
+                // DataTable's activatable rows carry, because the name cell already holds the same
+                // link. A row tab stop here would just duplicate it on every row.
+                // No `data-state`: row selection is off, so it only ever rendered "false".
+                <TableRow
+                  className="cursor-pointer"
+                  key={row.id}
+                  onClick={(event) => handleRowClick(row.original.id, event)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell className="py-3" key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       <FadePresence
         className="flex items-center gap-2 text-muted-foreground text-sm"
         show={isLoadingMorePages && rows.length > 0}
@@ -862,6 +911,7 @@ const PipelineListPageContent = () => {
         <AlertCircle className="h-4 w-4" />
         {listErrorMessage}
       </FadePresence>
+      <ListStatusAnnouncements isLoadingMorePages={isLoadingMorePages} listErrorMessage={listErrorMessage} />
       <DataTablePagination table={table} />
     </div>
   );

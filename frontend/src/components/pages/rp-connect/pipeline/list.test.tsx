@@ -122,6 +122,9 @@ const rowFor = (displayName: string) => {
   return row;
 };
 
+const SEARCH_INPUT_RE = /search pipelines/i;
+const CLEAR_FILTERS_RE = /clear filters/i;
+
 // Every row links to its pipeline, so the link text is the visible row set.
 const visibleLinkNames = () =>
   screen
@@ -185,7 +188,7 @@ describe('PipelineListPage', () => {
     });
 
     // Matches an id, not a display name — the search covers both.
-    await user.type(screen.getByRole('textbox', { name: /search pipelines/i }), 'bbb2');
+    await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'bbb2');
 
     await waitFor(() => {
       expect(visibleLinkNames()).toEqual(['clickstream-sink']);
@@ -193,7 +196,7 @@ describe('PipelineListPage', () => {
     expect(tab('All')).toHaveTextContent('1');
     expect(tab('Running')).toHaveTextContent('0');
 
-    await user.click(screen.getByRole('button', { name: /clear filters/i }));
+    await user.click(screen.getByRole('button', { name: CLEAR_FILTERS_RE }));
 
     await waitFor(() => {
       expect(visibleLinkNames()).toHaveLength(3);
@@ -208,7 +211,7 @@ describe('PipelineListPage', () => {
       expect(screen.getByText('nightly-export')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByRole('textbox', { name: /search pipelines/i }), 'orders');
+    await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'orders');
     await user.click(tab('Error'));
 
     await waitFor(() => {
@@ -226,6 +229,50 @@ describe('PipelineListPage', () => {
     expect(within(rowFor('orders-enrichment')).getByText('Running')).toBeInTheDocument();
     expect(within(rowFor('clickstream-sink')).getByText('Error')).toBeInTheDocument();
     expect(within(rowFor('nightly-export')).getByText('Stopped')).toBeInTheDocument();
+  });
+
+  it('points every status tab at the table region, labelled by the active tab', async () => {
+    const user = userEvent.setup();
+    renderList();
+
+    await waitFor(() => {
+      expect(screen.getByText('nightly-export')).toBeInTheDocument();
+    });
+
+    // One panel, filtered per tab — so every tab hands the reader off to the same region.
+    const panel = screen.getByRole('tabpanel');
+    expect(panel).toContainElement(rowFor('nightly-export'));
+    for (const name of ['All', 'Running', 'Stopped', 'Error']) {
+      expect(tab(name)).toHaveAttribute('aria-controls', panel.id);
+    }
+    expect(panel).toHaveAttribute('aria-labelledby', tab('All').id);
+
+    // The label follows the selection.
+    await user.click(tab('Error'));
+    await waitFor(() => {
+      expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', tab('Error').id);
+    });
+  });
+
+  it('leaves modified clicks to the browser and navigates on a plain one', async () => {
+    const user = userEvent.setup();
+    const { router } = renderList();
+
+    await waitFor(() => {
+      expect(screen.getByText('nightly-export')).toBeInTheDocument();
+    });
+
+    // ⌘-click means "open in a new tab" — soft-navigating here would swallow it.
+    const description = within(rowFor('orders-enrichment')).getByText('aaa111');
+    await user.keyboard('{Meta>}');
+    await user.click(description);
+    await user.keyboard('{/Meta}');
+    expect(router.state.location.pathname).toBe('/');
+
+    await user.click(description);
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/rp-connect/aaa111');
+    });
   });
 
   it('collapses repeated connectors into a single badge with a multiplier', async () => {
