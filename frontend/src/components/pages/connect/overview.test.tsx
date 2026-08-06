@@ -9,53 +9,45 @@
  * by the Apache License, Version 2.0
  */
 
-import { act, renderWithFileRoutes, screen, waitFor } from 'test-utils';
-import { describe, expect, it } from 'vitest';
+import { create } from '@bufbuild/protobuf';
+import { createRouterTransport } from '@connectrpc/connect';
+import { isEmbedded } from 'config';
+import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('config')>()),
+  isEmbedded: vi.fn(),
+}));
 
 import KafkaConnectOverview from './overview';
-import { type EndpointCompatibility, Feature, useSupportedFeaturesStore } from '../../../state/supported-features';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
 
-// The page swaps wholesale between the new list and the legacy tabs on whether the backend serves
-// the pipelines API, so a mount regression silently hides one or the other. Driven through the real
-// store, since the branch reads it reactively.
-const setPipelineServiceSupport = (isSupported: boolean) => {
-  const compatibility: EndpointCompatibility = {
-    kafkaVersion: '3.6.0',
-    endpoints: [
-      {
-        endpoint: Feature.PipelineService.endpoint,
-        method: Feature.PipelineService.method,
-        isSupported,
-      },
-    ],
-  };
-  act(() => {
-    useSupportedFeaturesStore.getState().setEndpointCompatibility(compatibility);
-  });
+const NEW_LIST_CTA = 'Create a pipeline';
+
+const transport = createRouterTransport(({ rpc }) => {
+  rpc(listPipelines, () => create(ListPipelinesResponseSchema, { response: {} }));
+});
+
+const renderPage = (embedded: boolean) => {
+  vi.mocked(isEmbedded).mockReturnValue(embedded);
+  renderWithFileRoutes(<KafkaConnectOverview matchedPath="/connect-clusters" />, { transport });
 };
 
-// The status tabs belong to the new list and nothing else on this page renders them.
-const RUNNING_TAB_RE = /^Running/;
-const newListMarker = () => screen.queryByRole('tab', { name: RUNNING_TAB_RE });
-
 describe('Connect overview mount', () => {
-  it('renders the new pipelines list wherever the pipelines API is served', async () => {
-    renderWithFileRoutes(<KafkaConnectOverview matchedPath="/connect-clusters" />);
-    setPipelineServiceSupport(true);
+  it('renders the new pipelines list in Cloud', async () => {
+    renderPage(true);
 
-    await waitFor(() => {
-      expect(newListMarker()).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByRole('button', { name: NEW_LIST_CTA })).toBeInTheDocument());
   });
 
-  it('keeps the legacy path when the backend does not serve it', async () => {
-    renderWithFileRoutes(<KafkaConnectOverview matchedPath="/connect-clusters" />);
-    setPipelineServiceSupport(false);
+  it('keeps the legacy path when not embedded', async () => {
+    useSupportedFeaturesStore.setState({ pipelinesApi: false });
+    renderPage(false);
 
-    // Self-hosted lands on the legacy path's install intro, not an errored pipelines table.
-    await waitFor(() => {
-      expect(screen.getByText('Using Redpanda Connect')).toBeInTheDocument();
-    });
-    expect(newListMarker()).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Using Redpanda Connect')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: NEW_LIST_CTA })).not.toBeInTheDocument();
   });
 });

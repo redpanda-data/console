@@ -29,7 +29,7 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isServerless } from '../../../config';
+import { isEmbedded, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -83,15 +83,12 @@ const WrapKafkaConnectOverview: FunctionComponent<{
   defaultTab?: ConnectView;
 }> = (props) => {
   const { data: kafkaConnectors, isLoading: isLoadingKafkaConnectors } = useKafkaConnectConnectorsQuery();
-  // Read through the store, not `Features`, so the class below re-renders when detection resolves.
-  const hasPipelinesApi = useSupportedFeaturesStore((s) => s.pipelinesApi);
 
   const isKafkaConnectEnabled = kafkaConnectors?.isConfigured === true;
 
   return (
     <KafkaConnectOverview
       defaultView={props.defaultTab ?? ''}
-      hasPipelinesApi={hasPipelinesApi}
       isKafkaConnectEnabled={isKafkaConnectEnabled}
       isLoadingKafkaConnectors={isLoadingKafkaConnectors}
       matchedPath={props.matchedPath}
@@ -106,7 +103,6 @@ const RpConnectTabContent = () => {
 
 class KafkaConnectOverview extends PageComponent<{
   defaultView: string;
-  hasPipelinesApi: boolean;
   isKafkaConnectEnabled: boolean;
   isLoadingKafkaConnectors: boolean;
 }> {
@@ -145,15 +141,8 @@ class KafkaConnectOverview extends PageComponent<{
   }
 
   render() {
-    // The pipelines API is the new list's only hard requirement, so it renders wherever that API
-    // exists — no feature flag. Self-hosted reports PipelineService unsupported (backend
-    // endpoint_compatibility.go) and keeps the tabs + install intro below.
-    //
-    // Ahead of the spinner deliberately: the list handles a pending Kafka Connect probe itself, and
-    // a failed `/console/endpoints` leaves detection pending forever — falling through beats
-    // blocking on a flag that may never arrive.
-    if (this.props.hasPipelinesApi) {
-      // Draws its own Kafka Connect tab, so it replaces this page rather than sitting in a tab.
+    // Cloud gets the new list; self-hosted keeps the tabs below.
+    if (isEmbedded()) {
       return <PipelineListPage />;
     }
     if (this.props.isLoadingKafkaConnectors) {
