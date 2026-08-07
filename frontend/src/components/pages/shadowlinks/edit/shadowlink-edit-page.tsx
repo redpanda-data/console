@@ -46,6 +46,8 @@ const getTabForField = (fieldName: string): string => {
     // Shadowing tab fields
     topicsMode: 'shadowing',
     topics: 'shadowing',
+    rolesMode: 'shadowing',
+    roles: 'shadowing',
     consumersMode: 'shadowing',
     consumers: 'shadowing',
     aclsMode: 'shadowing',

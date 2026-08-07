@@ -13,6 +13,8 @@ import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
+  FilterType,
+  PatternType,
   type SchemaRegistrySyncOptionsSchema,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -153,6 +155,100 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
     });
 
     expect(api.destinationMapping).toEqual({ case: 'identity' });
+  });
+});
+
+describe('fromDataplaneShadowLink role sync options', () => {
+  test('should map role name filters', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        roleSyncOptions: {
+          roleNameFilters: [
+            { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+            { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+          ],
+        },
+      },
+    });
+
+    const result = fromDataplaneShadowLink(shadowLink);
+
+    expect(result.configurations?.roleSyncOptions).toEqual({
+      roleNameFilters: [
+        { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+        { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+      ],
+    });
+  });
+
+  test('should map absent role sync options to undefined', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {},
+    });
+
+    const result = fromDataplaneShadowLink(shadowLink);
+
+    expect(result.configurations?.roleSyncOptions).toBeUndefined();
+  });
+});
+
+describe('buildDefaultFormValues role hydration', () => {
+  test('hydrates the wildcard include filter as all mode', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        roleSyncOptions: {
+          roleNameFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+        },
+      },
+    });
+
+    const formValues = buildDefaultFormValues(shadowLink);
+
+    expect(formValues.rolesMode).toBe('all');
+    expect(formValues.roles).toEqual([]);
+  });
+
+  test('hydrates specific filters as specify mode', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {
+        roleSyncOptions: {
+          roleNameFilters: [
+            { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+            { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+          ],
+        },
+      },
+    });
+
+    const formValues = buildDefaultFormValues(shadowLink);
+
+    expect(formValues.rolesMode).toBe('specify');
+    expect(formValues.roles).toEqual([
+      { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+      { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+    ]);
+  });
+
+  test('hydrates absent role sync options as specify mode with no filters', () => {
+    const shadowLink = create(ShadowLinkSchema, {
+      name: 'test-link',
+      uid: 'uid-1',
+      configurations: {},
+    });
+
+    const formValues = buildDefaultFormValues(shadowLink);
+
+    // Keeps role sync disabled: an untouched edit produces no role diff
+    expect(formValues.rolesMode).toBe('specify');
+    expect(formValues.roles).toEqual([]);
   });
 });
 
