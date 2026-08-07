@@ -98,11 +98,10 @@ function FederatedRootLayout() {
  * - Stretches the layout to the viewport bottom so the footer's `margin-top: auto`
  *   lands there instead of trailing short pages.
  *
- * Three things the host (Cloud UI `common/layout/layout.tsx`) has to hold up: spacing
- * expressed as `padding` — margin, gap or a narrower `max-width` isn't cancellable here
- * and would double up with Console's gutter; no `overflow` on those ancestors, which
- * would clip the negative margins; and the `html[data-page-expanded]` `max-width`
- * release, the half of expanded mode Console can't do for itself.
+ * Requires of the host (Cloud UI `common/layout/layout.tsx`): spacing as `padding`, since
+ * margin, gap and `max-width` aren't cancellable here; no `overflow` on those ancestors,
+ * which clips the negative margins; and its own `html[data-page-expanded]` `max-width`
+ * release for expanded mode.
  */
 const useHostShellFit = () => {
   const layoutRef = useRef<HTMLDivElement>(null);

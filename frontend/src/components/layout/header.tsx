@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
+import { ColorModeSwitch } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
@@ -28,8 +28,10 @@ import {
   BreadcrumbSeparator,
 } from '../redpanda-ui/components/breadcrumb';
 import { Button as RegistryButton } from '../redpanda-ui/components/button';
+import { CopyButton } from '../redpanda-ui/components/copy-button';
 import { Separator } from '../redpanda-ui/components/separator';
 import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../redpanda-ui/components/tooltip';
 
 type BreadcrumbHeaderRowProps = {
   useNewSidebar: boolean;
@@ -97,9 +99,8 @@ function AppPageHeader() {
     return null;
   }
 
-  // Embedded, the breadcrumb row holds nothing — the host draws the breadcrumb and there
-  // is no sidebar trigger — so with the title row hidden this would be a bare divider
-  // above a page that already has its own title bar.
+  // Embedded, the breadcrumb row holds nothing (the host draws the breadcrumb, and there is
+  // no sidebar trigger), so without the title row the header is a bare divider.
   if (hideTitleRow && isEmbedded()) {
     return null;
   }
@@ -143,21 +144,27 @@ function AppPageHeader() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isEmbedded() && api.isRedpanda && (
-              <Link to="/debug-bundle">
-                <Button
-                  isDisabled={!api.userData?.canViewDebugBundle}
-                  tooltip={
-                    api.userData?.canViewDebugBundle
-                      ? null
-                      : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
-                  }
-                  variant="ghost"
-                >
-                  Debug bundle
-                </Button>
-              </Link>
-            )}
+            {!isEmbedded() &&
+              api.isRedpanda &&
+              (api.userData?.canViewDebugBundle ? (
+                <RegistryButton render={<Link to="/debug-bundle">Debug bundle</Link>} variant="ghost" />
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    {/* span wrapper: a disabled button swallows pointer events, so it can't anchor the tooltip itself */}
+                    <TooltipTrigger
+                      render={
+                        <span className="inline-flex">
+                          <RegistryButton disabled variant="ghost">
+                            Debug bundle
+                          </RegistryButton>
+                        </span>
+                      }
+                    />
+                    <TooltipContent>You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
             {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
           </div>
         </div>
@@ -169,11 +176,10 @@ function AppPageHeader() {
 export default AppPageHeader;
 
 /**
- * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`),
- * so the header shows only the breadcrumb row.
+ * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`).
  *
  * Resolved from the pathname rather than `useMatches()`: committed matches lag the
- * location by a render on soft navigation, which would flash the title row on the way in.
+ * location by a render on soft navigation, flashing the title row on the way in.
  */
 function useRouteOwnsTitleRow() {
   const router = useRouter();
