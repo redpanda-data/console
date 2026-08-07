@@ -46,7 +46,6 @@ describe('Connect overview mount', () => {
   it('keeps the legacy path when not embedded', async () => {
     useSupportedFeaturesStore.setState({ pipelinesApi: false });
     renderPage(false);
-
     await waitFor(() => expect(screen.getByText('Using Redpanda Connect')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: NEW_LIST_CTA })).not.toBeInTheDocument();
   });
