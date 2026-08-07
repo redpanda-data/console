@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,7 +23,8 @@ import {
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../../state/ui';
 import type { FieldFilterToken } from '../types';
-import { formatTokenText, tokenEditText } from '../utils/filter-token';
+import { formatFilterLine, type LineWord, parseFilterLine, tokenizeLine, wordRangeAtCaret } from '../utils/filter-line';
+import { formatTokenText, parseFilterInput, tokenEditText } from '../utils/filter-token';
 
 const MAX_RECENTS = 4;
 
@@ -34,37 +34,28 @@ export type FilterBarProps = {
   onQuickSearchChange: (query: string) => void;
   fieldTokens: FieldFilterToken[];
   onFieldTokensChange: (tokens: FieldFilterToken[]) => void;
-  /** Partition selection lives in the URL (`p`); shown here as a removable chip when set. */
+  /** Partition selection lives in the URL (`p`); shown here as a `partition:N` word when set. */
   partitionId: number;
   onPartitionIdChange: (partitionId: number) => void;
   jsFilters: FilterEntry[];
-  onEditJsFilter: (filter: FilterEntry | null, seedCode?: string) => void;
+  onEditJsFilter: (filter: FilterEntry | null, seedCode?: string, seedName?: string) => void;
   onRemoveJsFilter: (id: string) => void;
   canUseJsFilters: boolean;
 };
 
-const Chip = ({
-  text,
-  title,
-  onEdit,
-  onRemove,
-}: {
-  text: string;
-  title: string;
-  onEdit?: () => void;
-  onRemove: () => void;
-}) => (
-  <span className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border bg-muted py-0.5 pr-1 pl-2 text-[13px]">
+/** JS predicates are multi-line code edited in a dialog — they can't live inline in the free-text line, so they keep their own small chip. */
+const JsChip = ({ filter, onEdit, onRemove }: { filter: FilterEntry; onEdit: () => void; onRemove: () => void }) => (
+  <span className="flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border/60 py-0.5 pr-0.5 pl-1.5 font-mono text-[13px] text-foreground/90">
     <button
-      className={cn('rounded-sm px-0.5 font-mono', onEdit && 'cursor-pointer hover:bg-border')}
+      className="cursor-pointer rounded-sm px-0.5 hover:text-foreground"
       onClick={onEdit}
-      title={title}
+      title={filter.name ? `${filter.name}: ${filter.code}` : 'Edit JavaScript filter'}
       type="button"
     >
-      {text}
+      ƒ {filter.name || filter.code}
     </button>
     <button
-      className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-border hover:text-foreground"
+      className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
       onClick={onRemove}
       title="Remove filter"
       type="button"
@@ -74,7 +65,55 @@ const Chip = ({
   </span>
 );
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: single interactive control combining chips, ghost completion and keyboard navigation
+type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
+
+const sameFieldTokens = (a: FieldFilterToken[], b: FieldFilterToken[]) =>
+  a.length === b.length && a.every((t, i) => formatTokenText(t) === formatTokenText(b[i]));
+
+const sameEmittedState = (a: EmittedState, b: EmittedState) =>
+  a.partitionId === b.partitionId && a.quickSearch === b.quickSearch && sameFieldTokens(a.fieldTokens, b.fieldTokens);
+
+// The overlay and the real input beneath it must render `rawText` at the exact same width,
+// character for character, or the pill highlights drift out from under their text. Monospace
+// gives every character (including the space between two adjacent pills) a fixed, generous
+// width to work with — on a proportional font a single space is only ~4px, not enough room for
+// both a pill's own padding and a visible gap to its neighbor at the same time.
+const OVERLAY_FONT_CLASS = 'font-mono text-sm';
+
+// Padding on the horizontal axis adds to an inline element's layout width, so it's offset by an
+// equal negative margin — net effect on the real input's character positions is zero, which is
+// what keeps the overlay pixel-aligned. Vertical padding on an inline element paints past the
+// line box without affecting line height, so it's free and needs no such compensation.
+//
+// The horizontal value is capped by actual measurement, not guessing: this font/size renders a
+// single space at ~7.4px (measured via getBoundingClientRect on a probe span — see the filter
+// bar's design notes), and that one space is the entire budget shared by two adjacent pills. At
+// 2px/side, two neighbors consume 4px of it, leaving a ~3.4px visible gap; going past ~3px/side
+// (6px total) leaves no gap at all and the pills visually fuse.
+const PILL_HIGHLIGHT_CLASS = 'rounded-md bg-muted px-0.5 py-1 -mx-0.5';
+
+/** Ranges of `text` that currently parse as a recognized field/partition token — drives the highlight overlay. */
+const highlightRanges = (text: string): { start: number; end: number }[] =>
+  tokenizeLine(text)
+    .filter((word) => parseFilterInput(word.text) !== null)
+    .map((word) => ({ start: word.start, end: word.end }));
+
+/** Text a suggestion/ghost action should splice in at the current word, or `null` for actions handled specially (opening the JS dialog). */
+const replacementTextFor = (action: SuggestionAction): string | null => {
+  switch (action.type) {
+    case 'set-pending':
+      return `${action.field}:`;
+    case 'commit-field':
+      return tokenEditText({ kind: 'field', field: action.field, op: action.op, value: action.value });
+    case 'fill-text':
+      return action.text;
+    case 'open-js':
+      return null;
+    default:
+      return null;
+  }
+};
+
 export const FilterBar = ({
   messages,
   quickSearch,
@@ -89,21 +128,80 @@ export const FilterBar = ({
   canUseJsFilters,
 }: FilterBarProps) => {
   const [open, setOpen] = useState(false);
-  const [pendingField, setPendingField] = useState<string | null>(null);
-  const [pendingValue, setPendingValue] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
+  // Whether the user explicitly moved the active item with ArrowUp/ArrowDown/hover since it
+  // was last reset — Enter only auto-applies the top suggestion when they typed something
+  // (non-empty query) or explicitly chose it this way; otherwise a stray Enter (e.g. right
+  // after committing, when the caret sits past a trailing space with an empty query) would
+  // silently apply whatever default suggestion happens to be first.
+  const [navigated, setNavigated] = useState(false);
   const [recents, setRecents] = useState<RecentSearch[]>([]);
+  const [rawText, setRawText] = useState(() => formatFilterLine(partitionId, fieldTokens, quickSearch));
+  const [caretPos, setCaretPos] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // While a chip is unwrapped for textual editing, remembers its position in
-  // fieldTokens so recommitting puts it back in place instead of appending.
-  const editSlotRef = useRef<number | null>(null);
+  // What we last reported upward, so the resync effect below can tell "the
+  // parent just echoed what we told it" apart from a genuinely external
+  // change (initial mount, Clear all, browser back/forward) — the former
+  // must never reformat `rawText` mid-edit, or it'll fight the user's typing.
+  const lastEmittedRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
 
-  const query = pendingField ? pendingValue : quickSearch;
+  useEffect(() => {
+    const incoming: EmittedState = { partitionId, fieldTokens, quickSearch };
+    if (!sameEmittedState(incoming, lastEmittedRef.current)) {
+      lastEmittedRef.current = incoming;
+      setRawText(formatFilterLine(partitionId, fieldTokens, quickSearch));
+    }
+  }, [partitionId, fieldTokens, quickSearch]);
+
+  const deriveAndEmit = useCallback(
+    (text: string) => {
+      const parsed = parseFilterLine(text);
+      const nextPartitionId = parsed.partitionId ?? -1;
+      lastEmittedRef.current = {
+        partitionId: nextPartitionId,
+        fieldTokens: parsed.fieldTokens,
+        quickSearch: parsed.remainder,
+      };
+      // Only call up when a piece actually changed — typing inside plain text
+      // (no field tokens involved) shouldn't fire onPartitionIdChange(-1) etc.
+      // on every keystroke just because nothing there changed.
+      if (nextPartitionId !== partitionId) {
+        onPartitionIdChange(nextPartitionId);
+      }
+      if (!sameFieldTokens(parsed.fieldTokens, fieldTokens)) {
+        onFieldTokensChange(parsed.fieldTokens);
+      }
+      if (parsed.remainder !== quickSearch) {
+        onQuickSearchChange(parsed.remainder);
+      }
+    },
+    [partitionId, fieldTokens, quickSearch, onPartitionIdChange, onFieldTokensChange, onQuickSearchChange]
+  );
+
+  const currentWord = useMemo(() => wordRangeAtCaret(rawText, caretPos), [rawText, caretPos]);
+  const query = currentWord?.text ?? '';
+  const caretAtEnd = caretPos === rawText.length;
+
+  const recordRecent = useCallback((recent: RecentSearch) => {
+    setRecents((prev) => [recent, ...prev.filter((r) => r.label !== recent.label)].slice(0, MAX_RECENTS));
+  }, []);
+
+  // Never suggest re-adding something that's already an active filter — besides being a
+  // pointless suggestion, it's what let a stray Enter re-insert (duplicate) the filter you
+  // just typed: right after committing, the caret sits past the trailing space with an empty
+  // current word, so the just-recorded recent became the top "active" suggestion.
+  const visibleRecents = useMemo(() => {
+    const activeLabels = new Set(fieldTokens.map((t) => formatTokenText(t)));
+    if (partitionId >= 0) {
+      activeLabels.add(`partition:${partitionId}`);
+    }
+    return recents.filter((r) => !activeLabels.has(r.label));
+  }, [recents, fieldTokens, partitionId]);
 
   const suggestionsInput = useMemo(
-    () => ({ query, pendingField, messages, recents, canUseJsFilters }),
-    [query, pendingField, messages, recents, canUseJsFilters]
+    () => ({ query, pendingField: null, messages, recents: visibleRecents, canUseJsFilters }),
+    [query, messages, visibleRecents, canUseJsFilters]
   );
   const { heading, items } = useMemo(() => buildSuggestions(suggestionsInput), [suggestionsInput]);
   const ghost = useMemo(() => computeGhost(suggestionsInput), [suggestionsInput]);
@@ -112,240 +210,139 @@ export const FilterBar = ({
     [items]
   );
 
+  const overlaySegments = useMemo(() => {
+    const ranges = highlightRanges(rawText);
+    const segments: { text: string; highlighted: boolean }[] = [];
+    let cursor = 0;
+    for (const range of ranges) {
+      if (range.start > cursor) {
+        segments.push({ text: rawText.slice(cursor, range.start), highlighted: false });
+      }
+      segments.push({ text: rawText.slice(range.start, range.end), highlighted: true });
+      cursor = range.end;
+    }
+    if (cursor < rawText.length) {
+      segments.push({ text: rawText.slice(cursor), highlighted: false });
+    }
+    return segments;
+  }, [rawText]);
+
   // Close on outside click
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
-        setPendingField(null);
-        setPendingValue('');
-        editSlotRef.current = null;
       }
     };
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, []);
 
-  const recordRecent = useCallback((recent: RecentSearch) => {
-    setRecents((prev) => [recent, ...prev.filter((r) => r.label !== recent.label)].slice(0, MAX_RECENTS));
-  }, []);
-
-  // Unwrap a committed badge back into plain text in the input, caret at the
-  // end, so it can be edited textually and recommitted with Enter.
-  const editChipAsText = useCallback(
-    (text: string) => {
-      onQuickSearchChange(text);
-      setOpen(true);
+  const applySuggestionAt = useCallback(
+    (action: SuggestionAction, range: LineWord | Pick<LineWord, 'start' | 'end'>) => {
+      if (action.type === 'open-js') {
+        const next = rawText.slice(0, range.start) + rawText.slice(range.end);
+        setRawText(next);
+        deriveAndEmit(next);
+        setOpen(false);
+        setNavigated(false);
+        onEditJsFilter(null, action.code, action.name);
+        return;
+      }
+      const replacement = replacementTextFor(action);
+      if (replacement === null) {
+        return;
+      }
+      // A complete token gets a trailing separator so typing continues naturally into the
+      // next term — unless one is already there (e.g. inserting mid-line, before existing text).
+      const needsSeparator = action.type === 'commit-field' && rawText[range.end] !== ' ';
+      const withSpace = needsSeparator ? `${replacement} ` : replacement;
+      const next = rawText.slice(0, range.start) + withSpace + rawText.slice(range.end);
+      const caret = range.start + withSpace.length;
+      setRawText(next);
+      deriveAndEmit(next);
+      if (action.type === 'commit-field') {
+        recordRecent({
+          label: formatTokenText({ kind: 'field', field: action.field, op: action.op, value: action.value }),
+          action,
+        });
+      }
+      setActiveIdx(0);
+      setNavigated(false);
       const el = inputRef.current;
       el?.focus();
       // caret placement must wait for the controlled value to render
-      setTimeout(() => el?.setSelectionRange(text.length, text.length), 0);
+      setTimeout(() => el?.setSelectionRange(caret, caret), 0);
+      setCaretPos(caret);
     },
-    [onQuickSearchChange]
+    [rawText, deriveAndEmit, onEditJsFilter, recordRecent]
   );
 
-  const applyAction = useCallback(
+  const applySuggestion = useCallback(
     (action: SuggestionAction) => {
-      switch (action.type) {
-        case 'set-pending':
-          setPendingField(action.field);
-          setPendingValue('');
-          setActiveIdx(0);
-          inputRef.current?.focus();
-          break;
-        case 'commit-field': {
-          if (action.field === 'partition') {
-            onPartitionIdChange(Number(action.value));
-          } else {
-            const token = { kind: 'field', field: action.field, op: action.op, value: action.value } as const;
-            const next = [...fieldTokens];
-            const slot = editSlotRef.current;
-            next.splice(slot !== null && slot >= 0 && slot <= next.length ? slot : next.length, 0, token);
-            onFieldTokensChange(next);
-          }
-          editSlotRef.current = null;
-          recordRecent({ label: formatTokenText({ kind: 'field', ...action }), action });
-          setPendingField(null);
-          setPendingValue('');
-          onQuickSearchChange('');
-          setActiveIdx(0);
-          // keep typing where the badge just landed — the input sits right after it
-          inputRef.current?.focus();
-          break;
-        }
-        case 'fill-text':
-          setPendingField(null);
-          setPendingValue('');
-          editChipAsText(action.text);
-          break;
-        case 'open-js':
-          setOpen(false);
-          setPendingField(null);
-          setPendingValue('');
-          onQuickSearchChange('');
-          onEditJsFilter(null, action.code);
-          break;
-        default:
-          break;
-      }
+      const range = currentWord ?? { start: caretPos, end: caretPos };
+      applySuggestionAt(action, range);
     },
-    [
-      fieldTokens,
-      onFieldTokensChange,
-      onPartitionIdChange,
-      onQuickSearchChange,
-      onEditJsFilter,
-      recordRecent,
-      editChipAsText,
-    ]
+    [currentWord, caretPos, applySuggestionAt]
   );
 
-  // One ordered model for every badge — rendering and keyboard editing share it.
-  const chipDescriptors = useMemo(() => {
-    const chips: { key: string; text: string; title: string; edit?: () => void; remove: () => void }[] = [];
-    if (partitionId >= 0) {
-      chips.push({
-        key: 'partition',
-        text: `partition:${partitionId}`,
-        title: 'Click to edit the partition filter',
-        edit: () => {
-          editSlotRef.current = null;
-          onPartitionIdChange(-1);
-          editChipAsText(`partition:${partitionId}`);
-        },
-        remove: () => onPartitionIdChange(-1),
-      });
-    }
-    fieldTokens.forEach((token, i) => {
-      chips.push({
-        key: `field-${formatTokenText(token)}`,
-        text: formatTokenText(token),
-        title: 'Click to edit this filter',
-        edit: () => {
-          editSlotRef.current = i;
-          onFieldTokensChange(fieldTokens.filter((_, idx) => idx !== i));
-          editChipAsText(tokenEditText(token));
-        },
-        remove: () => onFieldTokensChange(fieldTokens.filter((_, idx) => idx !== i)),
-      });
-    });
-    for (const filter of jsFilters) {
-      chips.push({
-        key: `js-${filter.id}`,
-        text: `ƒ ${filter.name || filter.code}`,
-        title: filter.name ? `${filter.name}: ${filter.code}` : 'Edit JavaScript filter',
-        edit: () => onEditJsFilter(filter),
-        remove: () => onRemoveJsFilter(filter.id),
-      });
-    }
-    return chips;
-  }, [
-    partitionId,
-    onPartitionIdChange,
-    editChipAsText,
-    fieldTokens,
-    onFieldTokensChange,
-    jsFilters,
-    onEditJsFilter,
-    onRemoveJsFilter,
-  ]);
-
-  const removeLastChip = useCallback(() => {
-    if (fieldTokens.length > 0) {
-      onFieldTokensChange(fieldTokens.slice(0, -1));
-      return;
-    }
-    const lastJs = jsFilters.at(-1);
-    if (lastJs) {
-      onRemoveJsFilter(lastJs.id);
-      return;
-    }
-    if (partitionId >= 0) {
-      onPartitionIdChange(-1);
-    }
-  }, [fieldTokens, onFieldTokensChange, jsFilters, onRemoveJsFilter, partitionId, onPartitionIdChange]);
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one keyboard state machine for suggestions + chip cursor
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      const caretAtStart = e.currentTarget.selectionStart === 0 && e.currentTarget.selectionEnd === 0;
-
       switch (e.key) {
-        case 'ArrowLeft': {
-          // ArrowLeft on an empty input walks back into the last badge: it
-          // unwraps into editable text so the value can be changed in place.
-          const last = chipDescriptors.at(-1);
-          if (caretAtStart && !pendingField && query.length === 0 && last?.edit) {
-            e.preventDefault();
-            last.edit();
-          }
-          break;
-        }
         case 'ArrowDown':
           e.preventDefault();
           setOpen(true);
+          setNavigated(true);
           setActiveIdx((i) => Math.min(i + 1, actionableItems.length - 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
+          setNavigated(true);
           setActiveIdx((i) => Math.max(i - 1, 0));
           break;
         case 'Enter': {
           const active = actionableItems[activeIdx];
-          if (open && active) {
+          if (open && active && (query || navigated)) {
             e.preventDefault();
-            applyAction(active.action);
+            applySuggestion(active.action);
+            setNavigated(false);
           } else {
             setOpen(false);
           }
           break;
         }
         case 'Tab':
-          if (ghost) {
+          if (ghost && caretAtEnd) {
             e.preventDefault();
-            applyAction(ghost.action);
-          }
-          break;
-        case 'Backspace':
-          if (query.length === 0) {
-            e.preventDefault();
-            if (pendingField) {
-              setPendingField(null);
-            } else {
-              removeLastChip();
-            }
+            applySuggestion(ghost.action);
           }
           break;
         case 'Escape':
           setOpen(false);
-          setPendingField(null);
-          setPendingValue('');
-          editSlotRef.current = null;
+          setNavigated(false);
           inputRef.current?.blur();
           break;
         default:
           break;
       }
     },
-    [actionableItems, activeIdx, open, applyAction, ghost, query, pendingField, removeLastChip, chipDescriptors]
+    [actionableItems, activeIdx, open, query, navigated, applySuggestion, ghost, caretAtEnd]
   );
 
-  const hasChips = fieldTokens.length > 0 || jsFilters.length > 0 || partitionId >= 0;
+  const hasChips = jsFilters.length > 0 || fieldTokens.length > 0 || partitionId >= 0 || rawText.length > 0;
 
   const clearAll = useCallback(() => {
+    setRawText('');
+    lastEmittedRef.current = { partitionId: -1, fieldTokens: [], quickSearch: '' };
     onFieldTokensChange([]);
+    onPartitionIdChange(-1);
+    onQuickSearchChange('');
     for (const filter of jsFilters) {
       onRemoveJsFilter(filter.id);
     }
-    onPartitionIdChange(-1);
-    onQuickSearchChange('');
-  }, [onFieldTokensChange, jsFilters, onRemoveJsFilter, onPartitionIdChange, onQuickSearchChange]);
+  }, [onFieldTokensChange, onPartitionIdChange, onQuickSearchChange, jsFilters, onRemoveJsFilter]);
 
-  const placeholder = pendingField
-    ? `Select or type ${pendingField}…`
-    : hasChips
-      ? 'Add another filter…'
-      : 'Filter — type or pick a field…';
+  const placeholder = jsFilters.length > 0 ? 'Add another filter…' : 'Filter — type or pick a field…';
 
   let itemIdx = -1;
 
@@ -362,46 +359,51 @@ export const FilterBar = ({
         }}
       >
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
-        {chipDescriptors.map((chip) => (
-          <Chip key={chip.key} onEdit={chip.edit} onRemove={chip.remove} text={chip.text} title={chip.title} />
+        {jsFilters.map((filter) => (
+          <JsChip
+            filter={filter}
+            key={filter.id}
+            onEdit={() => onEditJsFilter(filter)}
+            onRemove={() => onRemoveJsFilter(filter.id)}
+          />
         ))}
-        {pendingField && (
-          <span className="flex shrink-0 items-center gap-1 rounded-md border border-primary bg-muted py-0.5 pr-1 pl-2 font-mono text-[13px]">
-            {pendingField}:
-            <button
-              className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-border"
-              onClick={() => setPendingField(null)}
-              title="Cancel"
-              type="button"
-            >
-              <XIcon className="size-3" />
-            </button>
-          </span>
-        )}
         <span className="relative min-w-24 flex-1">
-          {ghost && (
-            <span className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre py-1 text-sm">
-              <span className="invisible">{query}</span>
-              <span className="text-muted-foreground/60">{ghost.rest}</span>
-            </span>
-          )}
+          <div
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute inset-0 flex items-center whitespace-pre py-1',
+              OVERLAY_FONT_CLASS
+            )}
+            data-testid="messages-filter-highlight-overlay"
+          >
+            {overlaySegments.map((seg, i) => (
+              <span
+                className={cn('text-transparent', seg.highlighted && PILL_HIGHLIGHT_CLASS)}
+                key={`${i}-${seg.text}`}
+              >
+                {seg.text}
+              </span>
+            ))}
+            {ghost && caretAtEnd ? <span className="text-muted-foreground/60">{ghost.rest}</span> : null}
+          </div>
           <input
-            className="relative w-full bg-transparent py-1 text-sm outline-none"
+            className={cn('relative w-full bg-transparent py-1 outline-none', OVERLAY_FONT_CLASS)}
             data-testid="messages-filter-input"
             onChange={(e) => {
-              if (pendingField) {
-                setPendingValue(e.target.value);
-              } else {
-                onQuickSearchChange(e.target.value);
-              }
+              const next = e.target.value;
+              setRawText(next);
+              deriveAndEmit(next);
               setActiveIdx(0);
+              setNavigated(false);
               setOpen(true);
+              setCaretPos(e.currentTarget.selectionStart ?? next.length);
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
+            onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
             placeholder={placeholder}
             ref={inputRef}
-            value={query}
+            value={rawText}
           />
         </span>
         {hasChips && (
@@ -441,8 +443,11 @@ export const FilterBar = ({
                   isActive ? 'bg-accent' : 'hover:bg-accent/60'
                 )}
                 key={`${item.label}-${i}`}
-                onClick={() => applyAction(item.action)}
-                onMouseEnter={() => setActiveIdx(itemIdx)}
+                onClick={() => applySuggestion(item.action)}
+                onMouseEnter={() => {
+                  setActiveIdx(itemIdx);
+                  setNavigated(true);
+                }}
                 type="button"
               >
                 <span className="whitespace-nowrap rounded-md border bg-background px-2 py-0.5 font-mono text-[13px]">
@@ -454,23 +459,6 @@ export const FilterBar = ({
               </button>
             );
           })}
-          <div className="mt-1 flex items-center gap-3 border-t px-2.5 pt-2 pb-1 text-[11px] text-muted-foreground">
-            <span>
-              <Kbd>↑↓</Kbd> navigate
-            </span>
-            <span>
-              <Kbd>↵</Kbd> select
-            </span>
-            <span>
-              <Kbd>←</Kbd> edit last
-            </span>
-            <span>
-              <Kbd>⌫</Kbd> remove last
-            </span>
-            <span className="ml-auto">
-              <Kbd>esc</Kbd> close
-            </span>
-          </div>
         </div>
       )}
     </div>

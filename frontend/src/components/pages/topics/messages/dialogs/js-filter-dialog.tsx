@@ -39,13 +39,21 @@ export type JsFilterDialogProps = {
   filter: FilterEntry | null;
   /** Code seeded from the filter bar (`js:` input), for new filters. */
   seedCode?: string;
+  /** Name seeded from the filter bar when the typed `js:` text read as a label rather than code (e.g. `js:dach-region`). */
+  seedName?: string;
   onClose: () => void;
   onSave: (filter: FilterEntry) => void;
 };
 
-export const JsFilterDialog = ({ filter, seedCode, onClose, onSave }: JsFilterDialogProps) => {
+export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: JsFilterDialogProps) => {
   const [draft, setDraft] = useState<FilterEntry>(
-    () => filter ?? createFilterEntry({ code: seedCode ?? 'return true', transpiledCode: seedCode ?? 'return true' })
+    () =>
+      filter ??
+      createFilterEntry({
+        code: seedCode ?? 'return true',
+        transpiledCode: seedCode ?? 'return true',
+        name: seedName ?? '',
+      })
   );
 
   const apply = () => {

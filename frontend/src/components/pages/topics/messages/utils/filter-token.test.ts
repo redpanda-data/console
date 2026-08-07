@@ -14,6 +14,7 @@ import { describe, expect, test } from 'vitest';
 import {
   formatTokenText,
   looksLikeJs,
+  looksLikeJsCode,
   parseFilterInput,
   stripJsPrefix,
   tokenEditText,
@@ -51,6 +52,16 @@ describe('parseFilterInput', () => {
     expect(parseFilterInput('partition:')).toBeNull();
     expect(parseFilterInput('')).toBeNull();
   });
+
+  test('quoted values keep internal spaces', () => {
+    expect(parseFilterInput('value:"New York"')).toEqual({ field: 'value', op: 'contains', value: 'New York' });
+    expect(parseFilterInput('key!="New York"')).toEqual({ field: 'key', op: 'neq', value: 'New York' });
+  });
+
+  test('an unterminated quote is treated as incomplete input', () => {
+    expect(parseFilterInput('value:"New')).toBeNull();
+    expect(parseFilterInput('value:"')).toBeNull();
+  });
 });
 
 describe('formatTokenText / tokenEditText', () => {
@@ -73,6 +84,12 @@ describe('formatTokenText / tokenEditText', () => {
 
   test('tokenEditText returns raw code for js tokens', () => {
     expect(tokenEditText({ kind: 'js', code: 'return true', name: 'all' })).toBe('return true');
+  });
+
+  test('tokenEditText quote-wraps multi-word values and round-trips', () => {
+    const token = { kind: 'field' as const, field: 'value', op: 'contains' as const, value: 'New York' };
+    expect(tokenEditText(token)).toBe('value:"New York"');
+    expect(parseFilterInput(tokenEditText(token))).toEqual({ field: 'value', op: 'contains', value: 'New York' });
   });
 });
 
@@ -131,5 +148,20 @@ describe('looksLikeJs / stripJsPrefix', () => {
     expect(stripJsPrefix('js: return true')).toBe('return true');
     expect(stripJsPrefix('javascript: return true')).toBe('return true');
     expect(stripJsPrefix('return true')).toBe('return true');
+  });
+});
+
+describe('looksLikeJsCode', () => {
+  test('a plain label is not code', () => {
+    expect(looksLikeJsCode('dach-region')).toBe(false);
+    expect(looksLikeJsCode('my filter name')).toBe(false);
+  });
+
+  test('operators, keywords, and punctuation all read as code', () => {
+    expect(looksLikeJsCode('value != null')).toBe(true);
+    expect(looksLikeJsCode('value.version === 0')).toBe(true);
+    expect(looksLikeJsCode('return true')).toBe(true);
+    expect(looksLikeJsCode('offset % 2 === 0')).toBe(true);
+    expect(looksLikeJsCode('key === "example"')).toBe(true);
   });
 });

@@ -94,7 +94,9 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
   const { fieldTokens, setFieldTokens } = urlState;
   // JavaScript push-down filters, persisted in sessionStorage per topic
   const [jsFilters, setJsFilters] = useState<FilterEntry[]>(() => getTopicFilters(topicName));
-  const [jsDialog, setJsDialog] = useState<{ filter: FilterEntry | null; seedCode?: string } | null>(null);
+  const [jsDialog, setJsDialog] = useState<{ filter: FilterEntry | null; seedCode?: string; seedName?: string } | null>(
+    null
+  );
 
   useEffect(() => {
     setTopicFilters(topicName, jsFilters);
@@ -330,7 +332,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             fieldTokens={fieldTokens}
             jsFilters={jsFilters.filter((f) => f.isActive)}
             messages={search.messages}
-            onEditJsFilter={(filter, seedCode) => setJsDialog({ filter, seedCode })}
+            onEditJsFilter={(filter, seedCode, seedName) => setJsDialog({ filter, seedCode, seedName })}
             onFieldTokensChange={setFieldTokens}
             onPartitionIdChange={(partitionId) => {
               urlState.setPartitionId(partitionId);
@@ -524,6 +526,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             )
           }
           seedCode={jsDialog.seedCode}
+          seedName={jsDialog.seedName}
         />
       )}
       {saveDialogOpen && (

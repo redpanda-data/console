@@ -12,14 +12,14 @@
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterOp } from '../types';
 import { distinctFieldValues, matchesFieldFilter, valuePaths } from '../utils/client-match';
-import { looksLikeJs, parseFilterInput, stripJsPrefix } from '../utils/filter-token';
+import { looksLikeJs, looksLikeJsCode, parseFilterInput, stripJsPrefix } from '../utils/filter-token';
 
 /** What selecting a suggestion does; interpreted by the filter bar. */
 export type SuggestionAction =
   | { type: 'set-pending'; field: string }
   | { type: 'commit-field'; field: string; op: FilterOp; value: string }
   | { type: 'fill-text'; text: string }
-  | { type: 'open-js'; code?: string };
+  | { type: 'open-js'; code?: string; name?: string };
 
 export type SuggestionItem =
   | { kind: 'header'; label: string }
@@ -188,6 +188,26 @@ const defaultGroupItems = ({ query, recents, canUseJsFilters, messages }: Sugges
   return items;
 };
 
+/** An explicit `js:`/`javascript:` prefix routes straight to the editor — as code if the rest reads like an expression, otherwise as the new filter's name. */
+const explicitJsPrefixItems = (input: SuggestionsInput): { heading: string; items: SuggestionItem[] } | null => {
+  if (!(input.canUseJsFilters && (input.query.startsWith('js:') || input.query.startsWith('javascript:')))) {
+    return null;
+  }
+  const stripped = stripJsPrefix(input.query);
+  const isCode = looksLikeJsCode(stripped);
+  return {
+    heading: 'JavaScript',
+    items: [
+      {
+        kind: 'item',
+        label: `ƒ ${stripped || 'new filter'}`,
+        sub: isCode ? 'open editor' : 'open editor, named',
+        action: isCode ? { type: 'open-js', code: stripped } : { type: 'open-js', name: stripped },
+      },
+    ],
+  };
+};
+
 /** Heading + item list for the autocomplete dropdown, given the current input state. */
 export function buildSuggestions(input: SuggestionsInput): { heading: string; items: SuggestionItem[] } {
   if (input.pendingField) {
@@ -201,8 +221,10 @@ export function buildSuggestions(input: SuggestionsInput): { heading: string; it
   }
 
   // A bare `field:` with no value yet behaves like picking the field from the
-  // list: show the possible values right away (`value:` is handled above).
-  const emptyValueField = /^(partition|key|offset):$/.exec(input.query.trim());
+  // list: show the possible values right away. Nested `value.<path>:` counts
+  // too (bare `value:` is intentionally excluded — it's a free-text substring
+  // search over the whole value, not an enumerable field).
+  const emptyValueField = /^(partition|key|offset|value\.[\w.*-]+):$/.exec(input.query.trim());
   if (emptyValueField) {
     const field = emptyValueField[1];
     return {
@@ -211,18 +233,9 @@ export function buildSuggestions(input: SuggestionsInput): { heading: string; it
     };
   }
 
-  if (input.canUseJsFilters && (input.query.startsWith('js:') || input.query.startsWith('javascript:'))) {
-    return {
-      heading: 'JavaScript',
-      items: [
-        {
-          kind: 'item',
-          label: `ƒ ${stripJsPrefix(input.query) || 'new filter'}`,
-          sub: 'open editor',
-          action: { type: 'open-js', code: stripJsPrefix(input.query) },
-        },
-      ],
-    };
+  const explicitJs = explicitJsPrefixItems(input);
+  if (explicitJs) {
+    return explicitJs;
   }
 
   const typed = typedTokenItems(input);

@@ -106,6 +106,19 @@ describe('buildSuggestions', () => {
     expect(itemLabels(keyResult).length).toBeGreaterThan(0);
   });
 
+  test('typing a bare nested value.<path>: also lists its possible values', () => {
+    const result = buildSuggestions(input({ query: 'value.type:' }));
+    expect(result.heading).toBe('Value for value.type');
+    const items = result.items.filter((i) => i.kind === 'item');
+    expect(items[0]).toMatchObject({ label: 'INVOICE', sub: '2 msgs' });
+    expect(items[1]).toMatchObject({ label: 'ORDER', sub: '1 msg' });
+  });
+
+  test('bare value: is left as a free-text prefix, not an enumerable field', () => {
+    const result = buildSuggestions(input({ query: 'value:' }));
+    expect(result.heading).not.toBe('Value for value');
+  });
+
   test('typed field token shows the parsed filter with match count', () => {
     const result = buildSuggestions(input({ query: 'partition:1' }));
     const item = result.items.find((i) => i.kind === 'item');

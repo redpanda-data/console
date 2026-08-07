@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
@@ -83,7 +83,7 @@ const renderBar = (overrides: Partial<FilterBarProps> = {}) => {
   return spies;
 };
 
-const input = () => screen.getByTestId('messages-filter-input');
+const input = () => screen.getByTestId('messages-filter-input') as HTMLInputElement;
 
 describe('FilterBar', () => {
   test('focusing opens grouped suggestions', async () => {
@@ -98,10 +98,12 @@ describe('FilterBar', () => {
     const props = renderBar();
     await userEvent.click(input());
     await userEvent.click(screen.getByText('partition:'));
-    // Pending mode lists distinct partition values with counts
+    // picking the bare field just inserts "partition:" text, nothing committed yet
+    expect(input()).toHaveValue('partition:');
+    expect(props.onPartitionIdChange).not.toHaveBeenCalled();
+    // Value list now shows distinct partition values with counts
     await userEvent.click(screen.getByText('1'));
     expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
-    // focus returns to the input, right after the freshly committed badge
     expect(input()).toHaveFocus();
   });
 
@@ -113,13 +115,12 @@ describe('FilterBar', () => {
     expect(props.onFieldTokensChange).toHaveBeenCalledWith([{ kind: 'field', field: 'offset', op: 'gt', value: '1' }]);
   });
 
-  test('Tab accepts the ghost completion into pending mode', async () => {
+  test('Tab accepts the ghost completion, inserting the field name', async () => {
     const props = renderBar();
     await userEvent.click(input());
     await userEvent.keyboard('par');
     await userEvent.keyboard('{Tab}');
-    // pending pill for partition appears, nothing committed yet
-    expect(screen.getByText('partition:')).toBeInTheDocument();
+    expect(input()).toHaveValue('partition:');
     expect(props.onPartitionIdChange).not.toHaveBeenCalled();
   });
 
@@ -127,93 +128,190 @@ describe('FilterBar', () => {
     const props = renderBar();
     await userEvent.click(input());
     await userEvent.keyboard('partition:');
-    // distinct partition values appear with counts, like pending mode
     expect(screen.getAllByText('1 msg')).toHaveLength(2);
     await userEvent.click(screen.getByText('1'));
     expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
   });
 
-  test('typed partition:1 commits the partition badge', async () => {
+  test('pressing Enter twice after committing a token does not duplicate it', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('key:abc');
+    await userEvent.keyboard('{Enter}');
+    // caret now sits past the trailing space with an empty current word; the dropdown may
+    // still be open showing default suggestions, but a stray Enter must not re-insert anything
+    await userEvent.keyboard('{Enter}');
+    expect(input()).toHaveValue('key:abc ');
+    expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
+      { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
+    ]);
+  });
+
+  test('typing key:value continuously derives the token — no Enter or trailing space needed', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('key:abc');
+    expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
+      { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
+    ]);
+    expect(input()).toHaveValue('key:abc');
+  });
+
+  test('typed partition:1 paints a pill highlight and commits on Enter', async () => {
     const props = renderBar();
     await userEvent.click(input());
     await userEvent.keyboard('partition:1');
     await userEvent.keyboard('{ArrowDown}{Enter}');
     expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
-    expect(screen.getByTitle('Click to edit the partition filter')).toHaveTextContent('partition:1');
+    expect(input()).toHaveValue('partition:1 ');
+    // the overlay paints a highlight span with the exact recognized substring
+    const overlay = within(screen.getByTestId('messages-filter-highlight-overlay'));
+    expect(overlay.getByText('partition:1')).toHaveClass('bg-muted');
   });
 
-  test('ArrowLeft unwraps the last chip into editable text', async () => {
-    const props = renderBar({ partitionId: 1 });
+  test('a quoted value keeps its internal space as one token', async () => {
+    const props = renderBar();
     await userEvent.click(input());
-    await userEvent.keyboard('{ArrowLeft}');
-    // the badge turns back into text: partition cleared, its token in the input
-    expect(props.onPartitionIdChange).toHaveBeenCalledWith(-1);
-    expect(input()).toHaveValue('partition:1');
-  });
-
-  test('unwrapped chip can be edited and recommitted (partition:1 -> partition:2)', async () => {
-    const props = renderBar({ partitionId: 1 });
-    await userEvent.click(input());
-    await userEvent.keyboard('{ArrowLeft}');
-    expect(input()).toHaveValue('partition:1');
-    await userEvent.clear(input());
-    await userEvent.type(input(), 'partition:2');
-    await userEvent.keyboard('{Enter}');
-    expect(props.onPartitionIdChange).toHaveBeenLastCalledWith(2);
-    expect(screen.getByTitle('Click to edit the partition filter')).toHaveTextContent('partition:2');
-  });
-
-  test('editing a middle chip keeps its position on recommit', async () => {
-    const props = renderBar({
-      fieldTokens: [
-        { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
-        { kind: 'field', field: 'value', op: 'contains', value: 'x' },
-      ],
-    });
-    // click the first chip to unwrap it into the input
-    await userEvent.click(screen.getByText('key:abc'));
-    expect(input()).toHaveValue('key:abc');
-    await userEvent.clear(input());
-    await userEvent.type(input(), 'key:zzz');
-    await userEvent.keyboard('{Enter}');
-    // the edited filter stays first — it must not jump to the end
+    await userEvent.keyboard('value:"New York"');
     expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
-      { kind: 'field', field: 'key', op: 'contains', value: 'zzz' },
-      { kind: 'field', field: 'value', op: 'contains', value: 'x' },
+      { kind: 'field', field: 'value', op: 'contains', value: 'New York' },
+    ]);
+    expect(props.onQuickSearchChange).toHaveBeenLastCalledWith('');
+  });
+
+  test('an unquoted value stops at the first space; the rest stays plain search text', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('value:New York');
+    expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
+      { kind: 'field', field: 'value', op: 'contains', value: 'New' },
+    ]);
+    expect(props.onQuickSearchChange).toHaveBeenLastCalledWith('York');
+  });
+
+  test('while a quote is open, the value keeps growing without prematurely becoming a token', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('value:"New ');
+    // still empty, same as the initial state — no spurious call
+    expect(props.onFieldTokensChange).not.toHaveBeenCalled();
+    expect(input()).toHaveValue('value:"New ');
+    await userEvent.keyboard('York"');
+    expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
+      { kind: 'field', field: 'value', op: 'contains', value: 'New York' },
     ]);
   });
 
-  test('Backspace on empty input removes the last chip', async () => {
-    const tokens: FieldFilterToken[] = [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }];
-    const props = renderBar({ fieldTokens: tokens });
-    await userEvent.click(input());
-    await userEvent.keyboard('{Backspace}');
-    expect(props.onFieldTokensChange).toHaveBeenCalledWith([]);
-  });
-
-  test('chips render and clear-all removes everything', async () => {
+  test('the caret can be placed anywhere and typing inserts there — free browsing', async () => {
     const props = renderBar({
       fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
-      partitionId: 2,
     });
-    expect(screen.getByText('key:abc')).toBeInTheDocument();
-    expect(screen.getByText('partition:2')).toBeInTheDocument();
-    await userEvent.click(screen.getByTitle('Clear all filters'));
-    expect(props.onFieldTokensChange).toHaveBeenCalledWith([]);
-    expect(props.onPartitionIdChange).toHaveBeenCalledWith(-1);
-    expect(props.onQuickSearchChange).toHaveBeenCalledWith('');
+    const el = input();
+    await userEvent.click(el);
+    expect(el).toHaveValue('key:abc');
+    // place the caret right after "key:", in the middle of the existing text
+    el.setSelectionRange(4, 4);
+    fireEvent.select(el);
+    await userEvent.keyboard('X');
+    expect(el).toHaveValue('key:Xabc');
+    expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
+      { kind: 'field', field: 'key', op: 'contains', value: 'Xabc' },
+    ]);
+  });
+
+  test('Backspace deletes native characters — no special removal logic, un-highlights on its own', async () => {
+    const props = renderBar({
+      fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
+    });
+    const el = input();
+    await userEvent.click(el);
+    el.setSelectionRange(el.value.length, el.value.length);
+    fireEvent.select(el);
+    await userEvent.keyboard('{Backspace}{Backspace}{Backspace}');
+    expect(el).toHaveValue('key:');
+    expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([]);
+  });
+
+  test('suggestions reflect the word under the caret, not the whole line', async () => {
+    const props = renderBar();
+    const el = input();
+    await userEvent.click(el);
+    await userEvent.keyboard('partition: value:def');
+    // move the caret back into the "partition:" word
+    el.setSelectionRange(5, 5);
+    fireEvent.select(el);
+    expect(screen.getByText('Value for Partition')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('1'));
+    expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
+    // the rest of the line is untouched by the mid-line splice
+    expect(el).toHaveValue('partition:1 value:def');
   });
 
   test('js suggestion opens the editor; hidden without permission', async () => {
     const props = renderBar();
     await userEvent.click(input());
     await userEvent.click(screen.getByText('js:'));
-    expect(props.onEditJsFilter).toHaveBeenCalledWith(null, undefined);
+    expect(props.onEditJsFilter).toHaveBeenCalledWith(null, undefined, undefined);
+  });
+
+  test('typing js:dach-region seeds the filter name, not the code', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('js:dach-region');
+    await userEvent.click(screen.getByText('ƒ dach-region'));
+    expect(props.onEditJsFilter).toHaveBeenCalledWith(null, undefined, 'dach-region');
+  });
+
+  test('typing js: followed by an actual expression seeds the code, not the name', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    // no spaces — the dropdown's suggestions are scoped to the word under the caret, so a
+    // multi-word expression is written in the dialog's own editor, not typed inline here
+    await userEvent.keyboard('js:value!=null');
+    await userEvent.click(screen.getByText('ƒ value!=null'));
+    expect(props.onEditJsFilter).toHaveBeenCalledWith(null, 'value!=null', undefined);
   });
 
   test('js: is not offered when JS filters are unavailable', async () => {
     renderBar({ canUseJsFilters: false });
     await userEvent.click(input());
     expect(screen.queryByText('js:')).not.toBeInTheDocument();
+  });
+
+  test('JS filter chip: edit opens the dialog, remove removes it', async () => {
+    const jsFilter = { id: 'js-1', code: 'return true', name: 'always' };
+    const props = renderBar({ jsFilters: [jsFilter] });
+    await userEvent.click(screen.getByText('ƒ always'));
+    expect(props.onEditJsFilter).toHaveBeenCalledWith(jsFilter);
+    await userEvent.click(screen.getByTitle('Remove filter'));
+    expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
+  });
+
+  test('clear-all resets the line and removes JS filters', async () => {
+    const jsFilter = { id: 'js-1', code: 'return true' };
+    const props = renderBar({
+      fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
+      partitionId: 2,
+      jsFilters: [jsFilter],
+    });
+    expect(input()).toHaveValue('partition:2 key:abc');
+    await userEvent.click(screen.getByTitle('Clear all filters'));
+    expect(props.onFieldTokensChange).toHaveBeenCalledWith([]);
+    expect(props.onPartitionIdChange).toHaveBeenCalledWith(-1);
+    expect(props.onQuickSearchChange).toHaveBeenCalledWith('');
+    expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
+    expect(input()).toHaveValue('');
+  });
+
+  test('mounting with existing filters renders the combined line', () => {
+    renderBar({
+      fieldTokens: [
+        { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
+        { kind: 'field', field: 'value', op: 'contains', value: 'New York' },
+      ],
+      partitionId: 2,
+      quickSearch: 'hello',
+    });
+    expect(input()).toHaveValue('partition:2 key:abc value:"New York" hello');
   });
 });
