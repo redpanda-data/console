@@ -10,13 +10,16 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
-import { useQueryClient } from '@tanstack/react-query';
+import type { ConnectError } from '@connectrpc/connect';
+import { callUnaryMethod, createConnectQueryKey, useQuery, useTransport } from '@connectrpc/connect-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { GetTopicConfigurationsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { getTopicConfigurations } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   type DescribeTableRequest,
   DescribeTableRequestSchema,
+  type ExecuteQueryRequest,
+  type ExecuteQueryResponse,
   GetSqlIdentityRequestSchema,
   type ListCatalogsRequest,
   ListCatalogsRequestSchema,
@@ -93,7 +96,15 @@ export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOption
 };
 
 // Errors surface inline (run panel / wizard), so no toast on failure.
-export const useExecuteQueryMutation = () => useMutation(executeQuery);
+// A plain TanStack mutation over callUnaryMethod rather than connect-query's
+// useMutation, which exposes no per-call AbortSignal; aborting the request is
+// what lets the Cancel button stop the query on the engine.
+export const useExecuteQueryMutation = () => {
+  const transport = useTransport();
+  return useMutation<ExecuteQueryResponse, ConnectError, { request: ExecuteQueryRequest; signal?: AbortSignal }>({
+    mutationFn: ({ request, signal }) => callUnaryMethod(transport, executeQuery, request, { signal }),
+  });
+};
 
 // Returns a function that refreshes the catalog/table listings, e.g. after a
 // CREATE TABLE so the new table shows up in the tree.
