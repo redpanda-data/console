@@ -86,6 +86,8 @@ export type BridgeInfo = {
 
 type QueryRunIdle = { state: 'idle' };
 type QueryRunRunning = { state: 'running'; token: number };
+/** The caller stopped the run via the Cancel button. */
+type QueryRunCanceled = { state: 'canceled'; token: number };
 type QueryRunError = {
   state: 'error';
   token: number;
@@ -109,7 +111,7 @@ export type QueryRunSuccess = {
   bridge?: BridgeInfo;
 };
 
-export type QueryRun = QueryRunIdle | QueryRunRunning | QueryRunError | QueryRunSuccess;
+export type QueryRun = QueryRunIdle | QueryRunRunning | QueryRunCanceled | QueryRunError | QueryRunSuccess;
 
 // Drives admin-only affordances (e.g. the "Add a topic" CTA).
 export type SqlRole = 'admin' | 'viewer';

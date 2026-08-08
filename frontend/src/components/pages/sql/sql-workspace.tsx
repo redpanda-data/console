@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { Code } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
@@ -136,6 +137,12 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   // Per-instance monotonic run token: drops out-of-order responses without
   // sharing state across concurrently-mounted SqlWorkspace instances.
   const latestRunToken = useRef(0);
+  // Aborter for the in-flight editor run. Aborting the request cancels the
+  // query on the engine (the backend sends a wire-protocol CancelRequest when
+  // the caller disconnects), so this powers the Cancel button, supersession by
+  // a newer run, and unmount cleanup.
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
   const {
     expanded,
     toggleExpanded,
@@ -290,33 +297,53 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
 
       setRun({ state: 'running', token });
       const start = performance.now();
-      executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement: sql }), {
-        onSuccess: (res) => {
-          if (latestRunToken.current !== token) {
-            return;
-          }
-          const columns = res.columns.map(columnDefFromProto);
-          const rows = res.rows.map((row) => resultRowFromProto(row, columns));
-          setRun({
-            state: 'success',
-            token,
-            columns,
-            rows,
-            totalRows: rows.length,
-            elapsedMs: Math.round(performance.now() - start),
-            truncated: res.truncated,
-          });
-        },
-        onError: (error) => {
-          if (latestRunToken.current !== token) {
-            return;
-          }
-          setRun({ state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) });
-        },
-      });
+      // Abort a still-running previous run: its response would be dropped by the
+      // token guard anyway, and aborting also stops it on the engine.
+      abortRef.current?.abort();
+      const aborter = new AbortController();
+      abortRef.current = aborter;
+      executeQuery.mutate(
+        { request: create(ExecuteQueryRequestSchema, { statement: sql }), signal: aborter.signal },
+        {
+          onSuccess: (res) => {
+            if (latestRunToken.current !== token) {
+              return;
+            }
+            const columns = res.columns.map(columnDefFromProto);
+            const rows = res.rows.map((row) => resultRowFromProto(row, columns));
+            setRun({
+              state: 'success',
+              token,
+              columns,
+              rows,
+              totalRows: rows.length,
+              elapsedMs: Math.round(performance.now() - start),
+              truncated: res.truncated,
+            });
+          },
+          onError: (error) => {
+            if (latestRunToken.current !== token) {
+              return;
+            }
+            if (error.code === Code.Canceled) {
+              setRun({ state: 'canceled', token });
+              return;
+            }
+            setRun({
+              state: 'error',
+              token,
+              title: 'Query failed',
+              message: error.message,
+              hint: hintFromError(error),
+            });
+          },
+        }
+      );
     },
     [completionCatalogs, executeQuery]
   );
+
+  const onCancelRun = useCallback(() => abortRef.current?.abort(), []);
 
   const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
     // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
@@ -369,14 +396,17 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       // Shares one builder with the wizard's "this will run" preview so the two
       // can't drift.
       const statement = createTableSql(tableName, topic);
-      executeQuery.mutate(create(ExecuteQueryRequestSchema, { statement }), {
-        onSuccess: async () => {
-          await invalidateSqlCatalog();
-          toast.success(`Table ${tableName} created`);
-          closeWizard();
-        },
-        onError: (error) => setWizardError(error.message),
-      });
+      executeQuery.mutate(
+        { request: create(ExecuteQueryRequestSchema, { statement }) },
+        {
+          onSuccess: async () => {
+            await invalidateSqlCatalog();
+            toast.success(`Table ${tableName} created`);
+            closeWizard();
+          },
+          onError: (error) => setWizardError(error.message),
+        }
+      );
     },
     [executeQuery, invalidateSqlCatalog, closeWizard]
   );
@@ -441,6 +471,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
                 <SqlResults
                   hasTables={hasTables}
                   onAddTable={openWizard}
+                  onCancel={onCancelRun}
                   run={run.state === 'success' ? { ...run, bridge } : run}
                   sqlRole={sqlRole}
                 />
