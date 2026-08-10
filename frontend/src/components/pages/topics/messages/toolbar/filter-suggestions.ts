@@ -12,7 +12,7 @@
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterOp } from '../types';
 import { distinctFieldValues, matchesFieldFilter, valuePaths } from '../utils/client-match';
-import { looksLikeJs, looksLikeJsCode, parseFilterInput, stripJsPrefix } from '../utils/filter-token';
+import { looksLikeJs, looksLikeJsCode, NUMERIC_FIELDS, parseFilterInput, stripJsPrefix } from '../utils/filter-token';
 
 /** What selecting a suggestion does; interpreted by the filter bar. */
 export type SuggestionAction =
@@ -36,6 +36,11 @@ export type SuggestionsInput = {
 };
 
 const msgs = (n: number) => (n === 1 ? '1 msg' : `${n} msgs`);
+
+/** A completed `offset:N`/`offset>N`/`offset<N`/`offset=N` word — matched so the dropdown can
+ * offer all three comparison alternatives (with match counts) instead of silently committing to
+ * whichever operator happened to be typed. */
+const OFFSET_COMPARISON_PATTERN = /^offset[:><=](\d+)$/;
 
 const countMatches = (messages: TopicMessage[], field: string, op: FilterOp, value: string) =>
   messages.filter((m) => matchesFieldFilter(m, field, op, value)).length;
@@ -62,10 +67,10 @@ const pendingValueItems = ({ query, pendingField, messages }: SuggestionsInput):
       kind: 'item',
       label: value,
       sub: msgs(count),
-      action: { type: 'commit-field', field, op: field === 'partition' ? 'eq' : 'contains', value },
+      action: { type: 'commit-field', field, op: NUMERIC_FIELDS.has(field) ? 'eq' : 'contains', value },
     });
   }
-  if (query && field !== 'partition') {
+  if (query && !NUMERIC_FIELDS.has(field)) {
     items.push({
       kind: 'item',
       label: `${field} contains "${query}"`,
@@ -230,6 +235,14 @@ export function buildSuggestions(input: SuggestionsInput): { heading: string; it
     return {
       heading: `Value for ${field === 'partition' ? 'Partition' : field}`,
       items: pendingValueItems({ ...input, pendingField: field, query: '' }),
+    };
+  }
+
+  const offsetComparison = OFFSET_COMPARISON_PATTERN.exec(input.query.trim());
+  if (offsetComparison) {
+    return {
+      heading: 'Compare offset',
+      items: pendingValueItems({ ...input, pendingField: 'offset', query: offsetComparison[1] }),
     };
   }
 

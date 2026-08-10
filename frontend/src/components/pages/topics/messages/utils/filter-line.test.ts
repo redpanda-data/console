@@ -39,6 +39,14 @@ describe('tokenizeLine', () => {
     expect(tokenizeLine('value:"New York')).toEqual([{ text: 'value:"New York', start: 0, end: 15 }]);
   });
 
+  test('a stray literal quote mid-word does not swallow the rest of the line', () => {
+    expect(tokenizeLine('key:a"b partition:1 offset>5')).toEqual([
+      { text: 'key:a"b', start: 0, end: 7 },
+      { text: 'partition:1', start: 8, end: 19 },
+      { text: 'offset>5', start: 20, end: 28 },
+    ]);
+  });
+
   test('empty and whitespace-only input yields no words', () => {
     expect(tokenizeLine('')).toEqual([]);
     expect(tokenizeLine('   ')).toEqual([]);
@@ -69,6 +77,37 @@ describe('parseFilterLine', () => {
       tokenRanges: [
         { start: 0, end: 7 },
         { start: 8, end: 19 },
+      ],
+    });
+  });
+
+  test('a non-numeric partition word falls into the remainder instead of producing NaN', () => {
+    expect(parseFilterLine('partition:a')).toEqual({
+      partitionId: null,
+      fieldTokens: [],
+      remainder: 'partition:a',
+      tokenRanges: [],
+    });
+    expect(parseFilterLine('partition:-1')).toEqual({
+      partitionId: null,
+      fieldTokens: [],
+      remainder: 'partition:-1',
+      tokenRanges: [],
+    });
+  });
+
+  test('a stray literal quote mid-word does not swallow the tokens after it', () => {
+    expect(parseFilterLine('key:a"b partition:1 offset>5')).toEqual({
+      partitionId: 1,
+      fieldTokens: [
+        { kind: 'field', field: 'key', op: 'contains', value: 'a"b' },
+        { kind: 'field', field: 'offset', op: 'gt', value: '5' },
+      ],
+      remainder: '',
+      tokenRanges: [
+        { start: 0, end: 7 },
+        { start: 8, end: 19 },
+        { start: 20, end: 28 },
       ],
     });
   });

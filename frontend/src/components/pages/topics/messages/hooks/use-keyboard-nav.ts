@@ -57,7 +57,10 @@ export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText
         onSelect(visibleKeys[nextIndex]);
         return;
       }
-      if (e.key === 'c' && selectedKey) {
+      // A modifier held down means the browser's own copy shortcut (Cmd/Ctrl+C) — or another
+      // OS/browser binding — not this row-copy shortcut; clobbering the user's real clipboard
+      // selection with the row's JSON would otherwise be a very unpleasant surprise.
+      if (e.key === 'c' && selectedKey && !(e.metaKey || e.ctrlKey || e.altKey)) {
         const text = getCopyText(selectedKey);
         if (text !== undefined) {
           navigator.clipboard

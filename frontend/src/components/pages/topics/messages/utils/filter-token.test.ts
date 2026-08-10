@@ -34,6 +34,16 @@ describe('parseFilterInput', () => {
     expect(parseFilterInput('offset<100')).toEqual({ field: 'offset', op: 'lt', value: '100' });
   });
 
+  test('offset: means equality, not substring containment — offset:12 must not match offset 1123', () => {
+    expect(parseFilterInput('offset:12')).toEqual({ field: 'offset', op: 'eq', value: '12' });
+  });
+
+  test('rejects a non-numeric offset value the same way as partition', () => {
+    expect(parseFilterInput('offset:a')).toBeNull();
+    expect(parseFilterInput('offset:-1')).toBeNull();
+    expect(parseFilterInput('offset>abc')).toBeNull();
+  });
+
   test('parses key/value contains and not-equals', () => {
     expect(parseFilterInput('key:abc')).toEqual({ field: 'key', op: 'contains', value: 'abc' });
     expect(parseFilterInput('key!=abc')).toEqual({ field: 'key', op: 'neq', value: 'abc' });
@@ -54,6 +64,13 @@ describe('parseFilterInput', () => {
     expect(parseFilterInput('')).toBeNull();
   });
 
+  test('rejects a non-numeric partition value instead of producing NaN downstream', () => {
+    expect(parseFilterInput('partition:a')).toBeNull();
+    expect(parseFilterInput('partition:-1')).toBeNull();
+    expect(parseFilterInput('partition:-')).toBeNull();
+    expect(parseFilterInput('partition:1.5')).toBeNull();
+  });
+
   test('quoted values keep internal spaces', () => {
     expect(parseFilterInput('value:"New York"')).toEqual({ field: 'value', op: 'contains', value: 'New York' });
     expect(parseFilterInput('key!="New York"')).toEqual({ field: 'key', op: 'neq', value: 'New York' });
@@ -62,6 +79,18 @@ describe('parseFilterInput', () => {
   test('an unterminated quote is treated as incomplete input', () => {
     expect(parseFilterInput('value:"New')).toBeNull();
     expect(parseFilterInput('value:"')).toBeNull();
+  });
+
+  test('an escaped quote inside a quoted value decodes to a literal quote', () => {
+    expect(parseFilterInput('key:"a\\"b"')).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
+  });
+
+  test('an escaped backslash inside a quoted value decodes to a literal backslash', () => {
+    expect(parseFilterInput('key:"a\\\\b"')).toEqual({ field: 'key', op: 'contains', value: 'a\\b' });
+  });
+
+  test('a literal quote mid-word outside quote position is kept as-is, not treated as opening a quote', () => {
+    expect(parseFilterInput('key:a"b')).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
   });
 });
 
@@ -92,6 +121,18 @@ describe('formatTokenText / tokenEditText', () => {
     expect(tokenEditText(token)).toBe('value:"New York"');
     expect(parseFilterInput(tokenEditText(token))).toEqual({ field: 'value', op: 'contains', value: 'New York' });
   });
+
+  test('tokenEditText escapes an embedded quote and round-trips', () => {
+    const token = { kind: 'field' as const, field: 'key', op: 'contains' as const, value: 'a"b' };
+    expect(tokenEditText(token)).toBe('key:"a\\"b"');
+    expect(parseFilterInput(tokenEditText(token))).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
+  });
+
+  test('tokenEditText quote-wraps leading/trailing whitespace and round-trips', () => {
+    const token = { kind: 'field' as const, field: 'value', op: 'contains' as const, value: ' Berlin' };
+    expect(tokenEditText(token)).toBe('value:" Berlin"');
+    expect(parseFilterInput(tokenEditText(token))).toEqual({ field: 'value', op: 'contains', value: ' Berlin' });
+  });
 });
 
 describe('tokenQueryText / fieldTokensParser (URL persistence)', () => {
@@ -120,6 +161,21 @@ describe('tokenQueryText / fieldTokensParser (URL persistence)', () => {
       { kind: 'field', field: 'value', op: 'contains', value: 'hello, world' },
       { kind: 'field', field: 'key', op: 'contains', value: '100%' },
     ];
+    expect(fieldTokensParser.parse(fieldTokensParser.serialize(tokens))).toEqual(tokens);
+  });
+
+  test('round-trips a value with leading/trailing whitespace instead of trimming it away', () => {
+    const tokens: FieldFilterToken[] = [{ kind: 'field', field: 'value.city', op: 'contains', value: ' Berlin' }];
+    expect(fieldTokensParser.parse(fieldTokensParser.serialize(tokens))).toEqual(tokens);
+  });
+
+  test('round-trips a value containing an embedded quote', () => {
+    const tokens: FieldFilterToken[] = [{ kind: 'field', field: 'key', op: 'contains', value: '"quoted"' }];
+    expect(fieldTokensParser.parse(fieldTokensParser.serialize(tokens))).toEqual(tokens);
+  });
+
+  test('round-trips a value containing a backslash', () => {
+    const tokens: FieldFilterToken[] = [{ kind: 'field', field: 'key', op: 'contains', value: 'a\\b' }];
     expect(fieldTokensParser.parse(fieldTokensParser.serialize(tokens))).toEqual(tokens);
   });
 

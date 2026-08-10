@@ -81,6 +81,14 @@ describe('buildSuggestions', () => {
     expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
   });
 
+  test('a completed offset:N/offset>N/offset<N word offers all three comparison alternatives', () => {
+    // pendingField is always null in the free-text bar — this is the reachable path
+    for (const query of ['offset:2', 'offset>2', 'offset<2', 'offset=2']) {
+      const result = buildSuggestions(input({ query }));
+      expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
+    }
+  });
+
   test('value path traversal suggests nested fields', () => {
     const result = buildSuggestions(input({ query: 'value.add' }));
     expect(itemLabels(result)).toContain('value.address');

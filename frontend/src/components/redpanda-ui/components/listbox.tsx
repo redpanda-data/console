@@ -15,6 +15,7 @@ function Listbox({ className, testId, ...props }: React.ComponentProps<'div'> & 
       className={cn('max-h-[340px] w-[380px] overflow-auto rounded-lg border bg-popover p-1.5 shadow-lg', className)}
       data-slot="listbox"
       data-testid={testId}
+      role="listbox"
       {...props}
     />
   );
@@ -25,6 +26,9 @@ function ListboxGroupLabel({ className, ...props }: React.ComponentProps<'div'>)
     <div
       className={cn('px-2.5 pt-1.5 pb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wider', className)}
       data-slot="listbox-group-label"
+      // Not a selectable option — role="presentation" keeps assistive tech from treating this
+      // heading text as a row inside the listbox it's interleaved with.
+      role="presentation"
       {...props}
     />
   );
@@ -38,6 +42,7 @@ type ListboxOptionProps = React.ComponentProps<'button'> & {
 function ListboxOption({ className, active, type = 'button', ...props }: ListboxOptionProps) {
   return (
     <button
+      aria-selected={active}
       className={cn(
         'flex w-full items-baseline gap-2 rounded-md px-1.5 py-1 text-left',
         active ? 'bg-accent' : 'hover:bg-accent/60',
@@ -45,6 +50,7 @@ function ListboxOption({ className, active, type = 'button', ...props }: Listbox
       )}
       data-active={active}
       data-slot="listbox-option"
+      role="option"
       type={type}
       {...props}
     />

@@ -15,7 +15,7 @@ import { HighlightedInput } from 'components/redpanda-ui/components/highlighted-
 import { Listbox, ListboxGroupLabel, ListboxOption } from 'components/redpanda-ui/components/listbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, XIcon } from 'lucide-react';
-import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import {
   buildSuggestions,
@@ -58,8 +58,30 @@ const FILTER_BADGE_TEXT_CLASS = 'font-mono text-sm';
 
 type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
 
-const sameEmittedState = (a: EmittedState, b: EmittedState) =>
-  a.partitionId === b.partitionId && a.quickSearch === b.quickSearch && sameFieldTokens(a.fieldTokens, b.fieldTokens);
+/**
+ * A piece only counts as genuinely external when it both changed since the previous render AND
+ * differs from what the bar itself last emitted — one that's merely still catching up to its own
+ * emission is neither (it hasn't changed since last render).
+ */
+const externalChanges = (incoming: EmittedState, prev: EmittedState, last: EmittedState) => ({
+  partitionId: incoming.partitionId !== prev.partitionId && incoming.partitionId !== last.partitionId,
+  fieldTokens: !(
+    sameFieldTokens(incoming.fieldTokens, prev.fieldTokens) || sameFieldTokens(incoming.fieldTokens, last.fieldTokens)
+  ),
+  quickSearch: incoming.quickSearch !== prev.quickSearch && incoming.quickSearch !== last.quickSearch,
+});
+
+/** Picks, per piece, the external incoming value or a fallback — shared by the "what should
+ * `rawText` become" and "what should we now consider last-emitted" resync computations. */
+const mergeExternal = (
+  external: ReturnType<typeof externalChanges>,
+  incoming: EmittedState,
+  fallback: { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string }
+): EmittedState => ({
+  partitionId: external.partitionId ? incoming.partitionId : fallback.partitionId,
+  fieldTokens: external.fieldTokens ? incoming.fieldTokens : fallback.fieldTokens,
+  quickSearch: external.quickSearch ? incoming.quickSearch : fallback.quickSearch,
+});
 
 // The overlay and the real input beneath it must render `rawText` at the exact same width,
 // character for character, or the pill highlights drift out from under their text. Monospace
@@ -128,19 +150,42 @@ export const FilterBar = ({
   const [caretPos, setCaretPos] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
   // What we last reported upward, so the resync effect below can tell "the
   // parent just echoed what we told it" apart from a genuinely external
   // change (initial mount, Clear all, browser back/forward) — the former
   // must never reformat `rawText` mid-edit, or it'll fight the user's typing.
   const lastEmittedRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
+  // Props as of the previous render, independent of `lastEmittedRef` — lets the effect below
+  // tell "this piece hasn't caught up to our own emission yet" apart from "this piece changed."
+  // Comparing only against `lastEmittedRef` breaks the moment the three onChange calls echo
+  // back as separate renders instead of one atomic update: a piece that simply hasn't arrived
+  // yet still differs from `lastEmittedRef` and used to be misread as an external change that
+  // then wiped whatever the *other* two pieces held mid-edit.
+  const prevPropsRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
 
   useEffect(() => {
     const incoming: EmittedState = { partitionId, fieldTokens, quickSearch };
-    if (!sameEmittedState(incoming, lastEmittedRef.current)) {
-      lastEmittedRef.current = incoming;
-      setRawText(formatFilterLine(partitionId, fieldTokens, quickSearch));
+    const prev = prevPropsRef.current;
+    const last = lastEmittedRef.current;
+    prevPropsRef.current = incoming;
+
+    const external = externalChanges(incoming, prev, last);
+    if (!(external.partitionId || external.fieldTokens || external.quickSearch)) {
+      return;
     }
-  }, [partitionId, fieldTokens, quickSearch]);
+
+    // Only the genuinely external piece(s) get applied; every other piece is re-derived from
+    // the text already on screen rather than a possibly-still-catching-up prop.
+    const current = parseFilterLine(rawText);
+    lastEmittedRef.current = mergeExternal(external, incoming, last);
+    const resynced = mergeExternal(external, incoming, {
+      partitionId: current.partitionId ?? -1,
+      fieldTokens: current.fieldTokens,
+      quickSearch: current.remainder,
+    });
+    setRawText(formatFilterLine(resynced.partitionId, resynced.fieldTokens, resynced.quickSearch));
+  }, [partitionId, fieldTokens, quickSearch, rawText]);
 
   const deriveAndEmit = useCallback(
     (text: string) => {
@@ -197,6 +242,7 @@ export const FilterBar = ({
     () => items.filter((i): i is SuggestionItem & { kind: 'item' } => i.kind === 'item'),
     [items]
   );
+  const activeOptionId = open && actionableItems[activeIdx] ? `${listboxId}-option-${activeIdx}` : undefined;
 
   const highlightRanges = useMemo(() => parseFilterLine(rawText).tokenRanges, [rawText]);
 
@@ -345,6 +391,10 @@ export const FilterBar = ({
           </Chip>
         ))}
         <HighlightedInput
+          aria-activedescendant={activeOptionId}
+          aria-autocomplete="list"
+          aria-controls={open ? listboxId : undefined}
+          aria-expanded={open}
           className="min-w-24 flex-1"
           ghostText={ghost && caretAtEnd ? ghost.rest : undefined}
           highlightClassName={PILL_HIGHLIGHT_CLASS}
@@ -364,6 +414,7 @@ export const FilterBar = ({
           overlayTestId="messages-filter-highlight-overlay"
           placeholder={placeholder}
           ref={inputRef}
+          role="combobox"
           testId="messages-filter-input"
           textClassName={cn('py-1', OVERLAY_FONT_CLASS)}
           value={rawText}
@@ -382,7 +433,7 @@ export const FilterBar = ({
       </div>
 
       {open && items.length > 0 && (
-        <Listbox className="absolute top-full left-0 z-30 mt-1.5">
+        <Listbox aria-label={heading} className="absolute top-full left-0 z-30 mt-1.5" id={listboxId}>
           <ListboxGroupLabel>{heading}</ListboxGroupLabel>
           {items.map((item, i) => {
             if (item.kind === 'header') {
@@ -397,6 +448,7 @@ export const FilterBar = ({
             return (
               <ListboxOption
                 active={isActive}
+                id={`${listboxId}-option-${itemIdx}`}
                 key={`${item.label}-${i}`}
                 onClick={() => applySuggestion(item.action)}
                 onMouseEnter={() => {

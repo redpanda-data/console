@@ -98,4 +98,14 @@ describe('ReadScopePopover', () => {
     expect(props.onLiveTailChange).toHaveBeenCalledWith(false);
     expect(props.onModeChange).toHaveBeenCalledWith('oldest');
   });
+
+  test('onOpenChange reports open/closed so a caller can gate other keyboard shortcuts on it', async () => {
+    const onOpenChange = vi.fn();
+    renderPopover({ onOpenChange });
+    await userEvent.click(screen.getByTestId('read-scope-button'));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // picking "Live tail" is one of the paths that explicitly closes the popover
+    await userEvent.click(screen.getByTestId('read-scope-mode-live'));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
 });

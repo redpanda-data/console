@@ -11,7 +11,7 @@
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { describe, expect, test, vi } from 'vitest';
 
 import { FilterBar, type FilterBarProps } from './filter-bar';
@@ -65,6 +65,50 @@ const StatefulBar = (props: Partial<FilterBarProps> & { spies: FilterBarProps })
   );
 };
 
+/**
+ * Simulates a parent whose three pieces of state don't all echo back in the same render — e.g.
+ * separate URL-state setters that each trigger their own history/render cycle instead of one
+ * atomic update. `fieldTokens` here is held back until `flushSignal` changes, deterministically
+ * reproducing "one piece catches up a render behind the others" without racing a real timer
+ * against the ongoing typing simulation.
+ */
+const StaggeredBar = (props: { spies: FilterBarProps; flushSignal: number }) => {
+  const [quickSearch, setQuickSearch] = useState('');
+  const [fieldTokens, setFieldTokens] = useState<FieldFilterToken[]>([]);
+  const [partitionId, setPartitionId] = useState(-1);
+  const pendingFieldTokensRef = useRef<FieldFilterToken[] | null>(null);
+  const { spies, flushSignal } = props;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: flushSignal is a deliberate re-run trigger, not read in the body
+  useEffect(() => {
+    if (pendingFieldTokensRef.current) {
+      setFieldTokens(pendingFieldTokensRef.current);
+      pendingFieldTokensRef.current = null;
+    }
+  }, [flushSignal]);
+
+  return (
+    <FilterBar
+      {...spies}
+      fieldTokens={fieldTokens}
+      onFieldTokensChange={(tokens) => {
+        pendingFieldTokensRef.current = tokens;
+        spies.onFieldTokensChange(tokens);
+      }}
+      onPartitionIdChange={(id) => {
+        setPartitionId(id);
+        spies.onPartitionIdChange(id);
+      }}
+      onQuickSearchChange={(q) => {
+        setQuickSearch(q);
+        spies.onQuickSearchChange(q);
+      }}
+      partitionId={partitionId}
+      quickSearch={quickSearch}
+    />
+  );
+};
+
 const renderBar = (overrides: Partial<FilterBarProps> = {}) => {
   const spies: FilterBarProps = {
     messages,
@@ -92,6 +136,24 @@ describe('FilterBar', () => {
     expect(screen.getByText('partition:')).toBeInTheDocument();
     expect(screen.getByText('js:')).toBeInTheDocument();
     expect(screen.getByText('value:')).toBeInTheDocument();
+  });
+
+  test('the input exposes combobox semantics wired to the open listbox', async () => {
+    renderBar();
+    expect(input()).toHaveAttribute('role', 'combobox');
+    expect(input()).toHaveAttribute('aria-expanded', 'false');
+    expect(input()).not.toHaveAttribute('aria-controls');
+    expect(input()).not.toHaveAttribute('aria-activedescendant');
+
+    await userEvent.click(input());
+    const listbox = screen.getByRole('listbox');
+    expect(input()).toHaveAttribute('aria-expanded', 'true');
+    expect(input()).toHaveAttribute('aria-controls', listbox.id);
+
+    await userEvent.keyboard('{ArrowDown}');
+    const activeOption = screen.getAllByRole('option').find((o) => o.getAttribute('aria-selected') === 'true');
+    expect(activeOption).toBeDefined();
+    expect(input()).toHaveAttribute('aria-activedescendant', activeOption?.id);
   });
 
   test('partition flow: pick field, pick value, commits partition id', async () => {
@@ -167,6 +229,23 @@ describe('FilterBar', () => {
     // the overlay paints a highlight span with the exact recognized substring
     const overlay = within(screen.getByTestId('messages-filter-highlight-overlay'));
     expect(overlay.getByText('partition:1')).toHaveClass('outline-1');
+  });
+
+  test('a non-numeric partition value stays as typed text instead of wiping the input', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('partition:a');
+    expect(input()).toHaveValue('partition:a');
+    expect(props.onPartitionIdChange).not.toHaveBeenCalled();
+  });
+
+  test('typing "partition:-1" never emits NaN and never wipes what was typed', async () => {
+    const props = renderBar();
+    await userEvent.click(input());
+    // the intermediate "partition:-" is exactly the state that used to produce NaN
+    await userEvent.keyboard('partition:-1');
+    expect(props.onPartitionIdChange).not.toHaveBeenCalledWith(Number.NaN);
+    expect(input()).toHaveValue('partition:-1');
   });
 
   test('a quoted value keeps its internal space as one token', async () => {
@@ -287,6 +366,16 @@ describe('FilterBar', () => {
     expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
   });
 
+  test('removing a JS filter chip does not bubble into the container and open the suggestion dropdown', async () => {
+    const jsFilter = { id: 'js-1', code: 'return true', name: 'always' };
+    const props = renderBar({ jsFilters: [jsFilter] });
+    await userEvent.click(screen.getByTitle('Remove filter'));
+    expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
+    // the container's onClick focuses the input, which opens the dropdown — removing a chip
+    // must not trigger that via a bubbled click.
+    expect(input()).not.toHaveFocus();
+  });
+
   test('clear-all resets the line and removes JS filters', async () => {
     const jsFilter = { id: 'js-1', code: 'return true' };
     const props = renderBar({
@@ -313,5 +402,29 @@ describe('FilterBar', () => {
       quickSearch: 'hello',
     });
     expect(input()).toHaveValue('partition:2 key:abc value:"New York" hello');
+  });
+
+  test('a piece of state that echoes back a render behind the others does not wipe the rest of the line', async () => {
+    const spies: FilterBarProps = {
+      messages,
+      quickSearch: '',
+      onQuickSearchChange: vi.fn(),
+      fieldTokens: [],
+      onFieldTokensChange: vi.fn(),
+      partitionId: -1,
+      onPartitionIdChange: vi.fn(),
+      jsFilters: [],
+      onEditJsFilter: vi.fn(),
+      onRemoveJsFilter: vi.fn(),
+      canUseJsFilters: true,
+    };
+    const { rerender } = render(<StaggeredBar flushSignal={0} spies={spies} />);
+    await userEvent.click(input());
+    await userEvent.keyboard('key:abc value:xyz');
+    // fieldTokens hasn't caught up to what was emitted yet — text must still be intact
+    expect(input()).toHaveValue('key:abc value:xyz');
+    // now let the deliberately-held-back fieldTokens echo land, a render behind the rest
+    rerender(<StaggeredBar flushSignal={1} spies={spies} />);
+    expect(input()).toHaveValue('key:abc value:xyz');
   });
 });

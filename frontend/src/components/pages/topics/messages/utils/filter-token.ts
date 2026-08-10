@@ -23,7 +23,23 @@ export const OP_LABELS: Record<FilterOp, string> = {
 export const FILTER_FIELDS = ['key', 'value', 'partition', 'offset'] as const;
 
 const FIELD_PATTERN = /^(key|value(?:\.[\w.*-]+)?|partition|offset)/;
-const QUOTED_VALUE_PATTERN = /^"([^"]*)"$/;
+const INTEGER_VALUE_PATTERN = /^\d+$/;
+const NEEDS_QUOTING_PATTERN = /["\s]/;
+
+/** Fields whose value must be a plain non-negative integer, and whose bare `:` means equality
+ * rather than substring containment (`offset:12` must not match offset 1123). */
+export const NUMERIC_FIELDS = new Set(['partition', 'offset']);
+
+/** Backslash-escapes `\` and `"` so the result can sit safely inside a `"..."`-quoted value. */
+const escapeForQuoting = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+/**
+ * Quotes a value when it needs to be — contains whitespace (including just leading/trailing) or
+ * an embedded `"` — so it round-trips exactly through `parseFilterInput` instead of being split
+ * on a space or misread at an embedded quote.
+ */
+const quoteIfNeeded = (value: string): string =>
+  NEEDS_QUOTING_PATTERN.test(value) ? `"${escapeForQuoting(value)}"` : value;
 
 const fieldTokenText = (token: FieldFilterToken, value: string): string => {
   switch (token.op) {
@@ -55,16 +71,17 @@ export function tokenEditText(token: FilterToken): string {
   if (token.kind === 'js') {
     return token.code;
   }
-  return fieldTokenText(token, token.value.includes(' ') ? `"${token.value}"` : token.value);
+  return fieldTokenText(token, quoteIfNeeded(token.value));
 }
 
 /**
- * Lossless text form for URL persistence: unlike the display text (which
- * collapses `eq` to `:`), `eq` serializes as `=` so `parseFilterInput`
- * round-trips the operator exactly.
+ * Lossless text form for URL persistence: unlike the display text (which collapses `eq` to `:`),
+ * `eq` serializes as `=` so `parseFilterInput` round-trips the operator exactly, and the value is
+ * quoted whenever needed (see `quoteIfNeeded`) so it round-trips exactly too, not just the op.
  */
 export function tokenQueryText(token: FieldFilterToken): string {
-  return token.op === 'eq' ? `${token.field}=${token.value}` : formatTokenText(token);
+  const value = quoteIfNeeded(token.value);
+  return token.op === 'eq' ? `${token.field}=${value}` : fieldTokenText(token, value);
 }
 
 /**
@@ -113,31 +130,63 @@ export function parseFilterInput(text: string): { field: string; op: FilterOp; v
     op = 'eq';
     rawValue = rest.slice(1);
   } else if (rest.startsWith(':')) {
-    // `:` means equality for enumerable fields (partition) and contains for text fields
-    op = field === 'partition' ? 'eq' : 'contains';
+    // `:` means equality for enumerable/numeric fields (partition, offset) and contains for
+    // free-text fields — `offset:12` matching offset 1123 via substring containment is not
+    // what anyone typing an offset means.
+    op = NUMERIC_FIELDS.has(field) ? 'eq' : 'contains';
     rawValue = rest.slice(1);
   } else {
     return null;
   }
 
-  rawValue = rawValue.trim();
-
-  let value: string;
-  if (rawValue.startsWith('"')) {
-    const closed = QUOTED_VALUE_PATTERN.exec(rawValue);
-    if (!closed) {
-      return null;
-    }
-    value = closed[1];
-  } else {
-    value = rawValue;
-  }
-
-  if (value.length === 0) {
+  const value = decodeValue(rawValue.trim());
+  if (value === null || (NUMERIC_FIELDS.has(field) && !INTEGER_VALUE_PATTERN.test(value))) {
+    // A non-numeric value for a numeric field (typo, or the incomplete "partition:-" while
+    // typing "partition:-1") must stay unrecognized rather than becoming a token —
+    // `Number(value)` downstream would be NaN, and NaN can never compare equal to
+    // itself, which desyncs every "did this change" check built on top of this.
     return null;
   }
 
   return { field, op, value };
+}
+
+/**
+ * Reads a `"`-delimited value starting at index 0 of `rawValue` (which must itself start with
+ * `"`), honoring `\"`/`\\` escapes. Returns the decoded value and how many characters of
+ * `rawValue` the quoted span consumed, or null when the quote never closes.
+ */
+function readQuotedValue(rawValue: string): { value: string; length: number } | null {
+  let value = '';
+  let i = 1;
+  while (i < rawValue.length) {
+    const ch = rawValue[i];
+    if (ch === '\\' && i + 1 < rawValue.length) {
+      value += rawValue[i + 1];
+      i += 2;
+      continue;
+    }
+    if (ch === '"') {
+      return { value, length: i + 1 };
+    }
+    value += ch;
+    i += 1;
+  }
+  return null;
+}
+
+/** Strips a value's surrounding quotes if present; null for an empty or unterminated-quote value, or
+ * for trailing content after the closing quote (shouldn't happen given a whole tokenized word, but
+ * guarded rather than silently dropped). */
+function decodeValue(rawValue: string): string | null {
+  if (!rawValue.startsWith('"')) {
+    return rawValue.length > 0 ? rawValue : null;
+  }
+  const read = readQuotedValue(rawValue);
+  if (!read || read.length !== rawValue.length) {
+    return null;
+  }
+  return read.value.length > 0 ? read.value : null;
 }
 
 /** True when the text looks like a JavaScript predicate rather than a field token or plain text. */

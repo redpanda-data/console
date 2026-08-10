@@ -71,6 +71,8 @@ export type ReadScopePopoverProps = {
   liveTail: boolean;
   onLiveTailChange: (enabled: boolean) => void;
   onOpenDocs: () => void;
+  /** Lets a caller (e.g. keyboard-nav gating) know when this popover is open. */
+  onOpenChange?: (open: boolean) => void;
 };
 
 const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: boolean; onSelect: () => void }) => {
@@ -115,8 +117,13 @@ export const ReadScopePopover = ({
   liveTail,
   onLiveTailChange,
   onOpenDocs,
+  onOpenChange,
 }: ReadScopePopoverProps) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const setOpen = (next: boolean) => {
+    setOpenState(next);
+    onOpenChange?.(next);
+  };
   const meta = READ_SCOPE_META[mode];
   const Icon = liveTail ? RadioIcon : meta.icon;
   const continuousAvailable = supportsContinuous(mode) && !liveTail;

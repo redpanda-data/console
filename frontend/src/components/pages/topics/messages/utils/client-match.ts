@@ -59,7 +59,9 @@ const asComparableString = (resolved: unknown): string =>
 export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterOp, value: string): boolean {
   const resolved = resolveField(msg, field);
   if (resolved === undefined) {
-    return false;
+    // A field that isn't present doesn't equal the filter value either — `neq` should keep
+    // the message, not hide it. Every other operator has nothing to compare against.
+    return op === 'neq';
   }
   switch (op) {
     case 'contains':

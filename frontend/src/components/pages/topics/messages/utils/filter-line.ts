@@ -13,14 +13,54 @@ import { parseFilterInput, tokenEditText } from './filter-token';
 import type { FieldFilterToken } from '../types';
 
 const WHITESPACE_PATTERN = /\s/;
+const VALUE_START_PATTERN = /[:=<>]/;
 
 export type LineWord = { text: string; start: number; end: number };
 
 /**
- * Splits a line into whitespace-delimited words, quote-aware: a `"..."` span
- * (even unterminated) counts as one word so a still-being-typed multi-word
- * value never gets split into separate words mid-edit.
+ * A `"` opens quote mode only where a value can actually start — right at `start`, or right after
+ * a `:`/`=`/`<`/`>` operator — so a stray/literal quote elsewhere in a word (`key:a"b`) doesn't get
+ * misread as opening a multi-word span and swallow the rest of the line.
  */
+const opensQuote = (text: string, i: number, start: number): boolean =>
+  text[i] === '"' && (i === start || VALUE_START_PATTERN.test(text[i - 1]));
+
+/**
+ * Scans forward from `start` (a word's first character) to find where it ends — see `opensQuote`
+ * for when a `"` starts a multi-word quoted span. Once inside a quote, `\"`/`\\` escapes are
+ * skipped over rather than treated as the closing quote, matching how `parseFilterInput`/
+ * `decodeValue` decode an escaped value. An unterminated quote (no closing `"` anywhere later)
+ * counts as still-being-typed and swallows the rest of the line into one word.
+ */
+function findWordEnd(text: string, start: number): number {
+  const n = text.length;
+  let i = start;
+  let inQuote = false;
+  while (i < n) {
+    const ch = text[i];
+    if (inQuote) {
+      if (ch === '\\' && i + 1 < n) {
+        i += 2;
+        continue;
+      }
+      inQuote = ch !== '"';
+      i += 1;
+      continue;
+    }
+    if (opensQuote(text, i, start)) {
+      inQuote = true;
+      i += 1;
+      continue;
+    }
+    if (WHITESPACE_PATTERN.test(ch)) {
+      break;
+    }
+    i += 1;
+  }
+  return i;
+}
+
+/** Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules. */
 export function tokenizeLine(text: string): LineWord[] {
   const words: LineWord[] = [];
   const n = text.length;
@@ -33,19 +73,7 @@ export function tokenizeLine(text: string): LineWord[] {
       break;
     }
     const start = i;
-    let inQuote = false;
-    while (i < n) {
-      const ch = text[i];
-      if (ch === '"') {
-        inQuote = !inQuote;
-        i += 1;
-        continue;
-      }
-      if (!inQuote && WHITESPACE_PATTERN.test(ch)) {
-        break;
-      }
-      i += 1;
-    }
+    i = findWordEnd(text, start);
     words.push({ text: text.slice(start, i), start, end: i });
   }
   return words;

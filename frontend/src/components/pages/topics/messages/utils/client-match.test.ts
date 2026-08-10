@@ -66,6 +66,25 @@ describe('matchesFieldFilter', () => {
     expect(matchesFieldFilter(msg, 'offset', 'lt', '99')).toBe(false);
     expect(matchesFieldFilter(msg, 'key', 'gt', '5')).toBe(false);
   });
+
+  test('neq keeps a message whose field is absent — it genuinely does not equal the value', () => {
+    expect(matchesFieldFilter(msg, 'value.missing', 'neq', 'X')).toBe(true);
+    const nullKeyMsg = makeMsg({ key: null });
+    expect(matchesFieldFilter(nullKeyMsg, 'key', 'neq', 'abc')).toBe(true);
+  });
+
+  test('offset eq does not match via substring containment (offset:12 must not match offset 1123)', () => {
+    const bigOffsetMsg = makeMsg({ offset: 1123 });
+    expect(matchesFieldFilter(bigOffsetMsg, 'offset', 'eq', '12')).toBe(false);
+    expect(matchesFieldFilter(makeMsg({ offset: 12 }), 'offset', 'eq', '12')).toBe(true);
+  });
+
+  test('every other operator still excludes a message whose field is absent', () => {
+    expect(matchesFieldFilter(msg, 'value.missing', 'eq', 'X')).toBe(false);
+    expect(matchesFieldFilter(msg, 'value.missing', 'contains', 'X')).toBe(false);
+    expect(matchesFieldFilter(msg, 'value.missing', 'gt', '1')).toBe(false);
+    expect(matchesFieldFilter(msg, 'value.missing', 'lt', '1')).toBe(false);
+  });
 });
 
 describe('distinctFieldValues', () => {

@@ -1,5 +1,6 @@
 import { XIcon } from 'lucide-react';
 import type React from 'react';
+import type { MouseEventHandler } from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -19,6 +20,20 @@ export type ChipProps = React.ComponentProps<'span'> &
  * supplies the label content and decides what editing or removing actually means.
  */
 function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Remove', testId, ...props }: ChipProps) {
+  // Chips commonly sit inside a clickable row/container (e.g. a filter bar that focuses its
+  // input on container click) — without stopping propagation, clicking edit/remove also
+  // triggers whatever the ancestor's own click handler does.
+  const handleEdit: MouseEventHandler<HTMLButtonElement> = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onEdit?.();
+  };
+  const handleRemove: MouseEventHandler<HTMLButtonElement> = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onRemove?.();
+  };
+
   return (
     <span
       className={cn(
@@ -30,7 +45,13 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
       {...props}
     >
       {onEdit ? (
-        <button className="cursor-pointer rounded-sm px-0.5 hover:text-foreground" onClick={onEdit} title={title} type="button">
+        <button
+          aria-label={title}
+          className="cursor-pointer rounded-sm px-0.5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          onClick={handleEdit}
+          title={title}
+          type="button"
+        >
           {children}
         </button>
       ) : (
@@ -40,8 +61,9 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
       )}
       {onRemove ? (
         <button
-          className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          onClick={onRemove}
+          aria-label={removeLabel}
+          className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring"
+          onClick={handleRemove}
           title={removeLabel}
           type="button"
         >

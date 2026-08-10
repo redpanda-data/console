@@ -63,6 +63,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
   const [docSheetOpen, setDocSheetOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [viewSettingsOpen, setViewSettingsOpen] = useState(false);
+  const [readScopeOpen, setReadScopeOpen] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Selection lives in the URL (`selected=partition-offset`) so reloads and
@@ -320,7 +321,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     selectedKey,
     onSelect: setSelectedKey,
     getCopyText,
-    enabled: !(saveDialogOpen || jsDialog),
+    enabled: !(saveDialogOpen || jsDialog || viewSettingsOpen || docSheetOpen || readScopeOpen),
   });
 
   return (
@@ -368,7 +369,13 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             urlState.setPageIndex(0);
           },
           continuousMode: urlState.continuousMode,
-          onContinuousModeChange: urlState.setContinuousMode,
+          onContinuousModeChange: (enabled) => {
+            urlState.setContinuousMode(enabled);
+            // Continuous mode's page holds every loaded row in one page (see
+            // messages-table.tsx) — staying on a later pageIndex than that yields a
+            // permanently blank table with no page controls to get back with.
+            urlState.setPageIndex(0);
+          },
           partitionId: urlState.partitionId,
           onPartitionIdChange: (partitionId) => {
             urlState.setPartitionId(partitionId);
@@ -385,6 +392,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             urlState.setLiveTail(enabled);
           },
           onOpenDocs: () => setDocSheetOpen(true),
+          onOpenChange: setReadScopeOpen,
         }}
       />
 
