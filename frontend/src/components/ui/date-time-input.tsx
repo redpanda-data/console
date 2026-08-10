@@ -12,7 +12,9 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Calendar } from 'components/redpanda-ui/components/calendar';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { CalendarIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -26,6 +28,8 @@ export type DateTimeInputProps = {
   disabled?: boolean;
   defaultMode?: DateTimeInputMode;
   hideTimezoneToggle?: boolean;
+  /** Render the calendar/time panel as normal flowed content below the input instead of behind a click-to-open popup — for callers that are already inside their own popup and don't want a nested one. */
+  inline?: boolean;
   className?: string;
   placeholder?: string;
   'data-testid'?: string;
@@ -77,19 +81,18 @@ type ModeToggleProps = {
 };
 
 const ModeToggle = ({ mode, onModeChange }: ModeToggleProps) => (
-  <div className="flex w-fit gap-1 rounded-md border p-1">
-    <Button
-      onClick={() => onModeChange('local')}
-      size="sm"
-      type="button"
-      variant={mode === 'local' ? 'outline' : 'ghost'}
-    >
-      Local
-    </Button>
-    <Button onClick={() => onModeChange('utc')} size="sm" type="button" variant={mode === 'utc' ? 'outline' : 'ghost'}>
-      UTC
-    </Button>
-  </div>
+  <ToggleGroup
+    onValueChange={(value: string[]) => {
+      if (value[0]) {
+        onModeChange(value[0] as DateTimeInputMode);
+      }
+    }}
+    size="sm"
+    value={[mode]}
+  >
+    <ToggleGroupItem value="local">Local</ToggleGroupItem>
+    <ToggleGroupItem value="utc">UTC</ToggleGroupItem>
+  </ToggleGroup>
 );
 
 type DateTimePickerPanelProps = {
@@ -159,21 +162,32 @@ const DateTimePickerPanel = ({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <Calendar mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
-      <div className="flex items-center gap-2">
-        <Input
-          className="flex-1"
-          disabled={disabled}
-          onChange={(e) => setFromTime(e.target.value)}
-          step={1}
-          type="time"
-          value={timeInputValue}
-        />
-        <Button disabled={disabled} onClick={() => onChange(Date.now())} size="sm" type="button" variant="primary">
-          Now
-        </Button>
+      {/* Scoped override: the registry's `--color-selected` token (indigo-800) reads as a
+      disconnected dark navy next to this panel's other indigo-600 selection affordances —
+      repaint the selected day with the same shade instead of touching the shared Calendar
+      component. `p-0` strips Calendar's own built-in padding, which otherwise stacks on top
+      of this panel's own spacing and insets the grid from its siblings. */}
+      <div className="[--color-selected-foreground:var(--color-primary-foreground)] [--color-selected:var(--color-primary)]">
+        <Calendar className="p-0" mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
       </div>
-      {!hideTimezoneToggle && <ModeToggle mode={mode} onModeChange={onModeChange} />}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-1 items-center gap-2">
+          <Input
+            className="flex-1"
+            disabled={disabled}
+            onChange={(e) => setFromTime(e.target.value)}
+            step={1}
+            type="time"
+            value={timeInputValue}
+          />
+          {/* variant="secondary" resolves to indigo-600 (bg-surface-primary), matching the
+          selected-day override above — variant="primary" is a dark navy token unrelated to it. */}
+          <Button disabled={disabled} onClick={() => onChange(Date.now())} size="sm" type="button" variant="secondary">
+            Now
+          </Button>
+        </div>
+        {!hideTimezoneToggle && <ModeToggle mode={mode} onModeChange={onModeChange} />}
+      </div>
     </div>
   );
 };
@@ -190,6 +204,7 @@ export const DateTimeInput = ({
   disabled,
   defaultMode = 'local',
   hideTimezoneToggle = false,
+  inline = false,
   className,
   placeholder = DEFAULT_PLACEHOLDER,
   ...rest
@@ -214,26 +229,55 @@ export const DateTimeInput = ({
     setDraft('');
   };
 
+  const panel = (
+    <DateTimePickerPanel
+      disabled={disabled}
+      hideTimezoneToggle={hideTimezoneToggle}
+      mode={mode}
+      onChange={onChange}
+      onModeChange={setMode}
+      value={value}
+    />
+  );
+
+  const numberInputProps = {
+    className,
+    'data-testid': rest['data-testid'],
+    disabled,
+    onBlur: commitNumeric,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.target.value),
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitNumeric();
+      }
+    },
+    placeholder,
+    size: 'lg' as const,
+    type: 'number' as const,
+    value: displayedNumber,
+  };
+
+  if (inline) {
+    return (
+      <div className="flex flex-col gap-3">
+        {panel}
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-[11px] uppercase tracking-wide">Unix timestamp</Label>
+          <Input {...numberInputProps}>
+            <InputEnd>
+              <CalendarIcon className="size-4 text-muted-foreground" />
+            </InputEnd>
+          </Input>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Popover>
       <PopoverAnchor
-        render={<Input
-          className={className}
-          data-testid={rest['data-testid']}
-          disabled={disabled}
-          onBlur={commitNumeric}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commitNumeric();
-            }
-          }}
-          placeholder={placeholder}
-          size="lg"
-          type="number"
-          value={displayedNumber}
-        >
+        render={<Input {...numberInputProps}>
           <InputEnd className="pointer-events-auto">
             <PopoverTrigger
               render={<button
@@ -247,14 +291,7 @@ export const DateTimeInput = ({
           </InputEnd>
         </Input>} />
       <PopoverContent align="start" className="w-auto p-3">
-        <DateTimePickerPanel
-          disabled={disabled}
-          hideTimezoneToggle={hideTimezoneToggle}
-          mode={mode}
-          onChange={onChange}
-          onModeChange={setMode}
-          value={value}
-        />
+        {panel}
       </PopoverContent>
     </Popover>
   );

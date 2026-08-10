@@ -174,9 +174,12 @@ export default defineConfig({
 
       config.output.publicPath = 'auto';
 
-      // Prevent rebuild loop by ignoring generated route tree file
+      // Prevent rebuild loop by ignoring generated route tree file and Playwright MCP's
+      // scratch output (screenshots/console logs it writes into the project root while
+      // driving the dev server) — rspack's incremental build panics on rapid rebuilds
+      // triggered by files that never touch the actual module graph.
       config.watchOptions = {
-        ignored: ['**/routeTree.gen.ts'],
+        ignored: ['**/routeTree.gen.ts', '**/.playwright-mcp/**'],
       };
 
       const plugins = [

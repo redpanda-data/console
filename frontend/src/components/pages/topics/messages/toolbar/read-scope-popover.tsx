@@ -238,6 +238,7 @@ export const ReadScopePopover = ({
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[11px] uppercase tracking-wide">Start timestamp</Label>
                 <StartOffsetDateTimePicker
+                  inline
                   onChange={onStartTimestampChange}
                   topicName={topicName}
                   value={startTimestamp}
