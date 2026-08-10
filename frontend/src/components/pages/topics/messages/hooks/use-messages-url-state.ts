@@ -19,7 +19,7 @@ import { PartitionOffsetOrigin } from '../../../../../state/ui';
 import { DEFAULT_SORTING, useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
 import { sortingParser } from '../../../../../utils/sorting-parser';
 import type { FieldFilterToken, ReadScopeMode } from '../types';
-import { parseFilterInput, tokenQueryText } from '../utils/filter-token';
+import { parseFilterInput, sameFieldTokens, tokenQueryText } from '../utils/filter-token';
 
 const DEFAULT_MAX_RESULTS = 50;
 
@@ -41,7 +41,7 @@ export const fieldTokensParser = createParser<FieldFilterToken[]>({
     return tokens;
   },
   serialize: (tokens) => tokens.map((t) => escapeToken(tokenQueryText(t))).join(','),
-  eq: (a, b) => a.length === b.length && a.every((t, i) => tokenQueryText(t) === tokenQueryText(b[i])),
+  eq: sameFieldTokens,
 });
 
 /** Maps the persisted/URL start offset sentinel to the read-scope mode shown in the toolbar. */

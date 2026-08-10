@@ -57,19 +57,28 @@ export type ParsedFilterLine = {
   fieldTokens: FieldFilterToken[];
   /** Words that didn't parse as a field token, rejoined with single spaces. */
   remainder: string;
+  /**
+   * Character ranges of every word that parsed as a token (partition or
+   * field) — the filter bar's highlight overlay paints a pill over each of
+   * these. Exposed here rather than left for a caller to re-derive so there
+   * is exactly one place that decides "is this word a recognized token."
+   */
+  tokenRanges: { start: number; end: number }[];
 };
 
 /**
- * Parses an entire line into the three pieces the rest of the app already
- * expects: a partition id, structured field tokens, and leftover full-text.
- * A token is "committed" the instant a word is syntactically complete —
- * there's no separate commit step, just continuous re-parsing on every edit.
+ * Parses an entire line into the pieces the rest of the app already expects:
+ * a partition id, structured field tokens, leftover full-text, and the
+ * character ranges of the recognized words. A token is "committed" the
+ * instant a word is syntactically complete — there's no separate commit
+ * step, just continuous re-parsing on every edit.
  */
 export function parseFilterLine(text: string): ParsedFilterLine {
   const words = tokenizeLine(text);
   let partitionId: number | null = null;
   const fieldTokens: FieldFilterToken[] = [];
   const remainderParts: string[] = [];
+  const tokenRanges: { start: number; end: number }[] = [];
 
   for (const word of words) {
     const parsed = parseFilterInput(word.text);
@@ -77,6 +86,7 @@ export function parseFilterLine(text: string): ParsedFilterLine {
       remainderParts.push(word.text);
       continue;
     }
+    tokenRanges.push({ start: word.start, end: word.end });
     if (parsed.field === 'partition') {
       partitionId = Number(parsed.value);
       continue;
@@ -84,7 +94,7 @@ export function parseFilterLine(text: string): ParsedFilterLine {
     fieldTokens.push({ kind: 'field', field: parsed.field, op: parsed.op, value: parsed.value });
   }
 
-  return { partitionId, fieldTokens, remainder: remainderParts.join(' ') };
+  return { partitionId, fieldTokens, remainder: remainderParts.join(' '), tokenRanges };
 }
 
 /**

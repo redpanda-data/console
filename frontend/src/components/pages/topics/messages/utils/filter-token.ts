@@ -68,6 +68,16 @@ export function tokenQueryText(token: FieldFilterToken): string {
 }
 
 /**
+ * Structural equality for two field-token arrays — same field/op/value in
+ * the same order. The single comparator for "did this token list actually
+ * change," shared by the filter bar's own resync check and the URL
+ * persistence layer's `eq`, so a fix to one always reaches the other.
+ */
+export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]): boolean {
+  return a.length === b.length && a.every((t, i) => tokenQueryText(t) === tokenQueryText(b[i]));
+}
+
+/**
  * Parse a typed token like `partition:2`, `offset>48210`, `value.address.city:Berlin`
  * or `key!=abc`. Returns null when the text is not a recognized `field op value` form
  * (plain full-text stays live in the bar instead of becoming a token).

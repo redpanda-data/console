@@ -16,6 +16,7 @@ import {
   looksLikeJs,
   looksLikeJsCode,
   parseFilterInput,
+  sameFieldTokens,
   stripJsPrefix,
   tokenEditText,
   tokenQueryText,
@@ -127,6 +128,39 @@ describe('tokenQueryText / fieldTokensParser (URL persistence)', () => {
       { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
       { kind: 'field', field: 'offset', op: 'gt', value: '1' },
     ]);
+  });
+});
+
+describe('sameFieldTokens', () => {
+  test('true for identical arrays, false when a value, op, or order differs', () => {
+    const a: FieldFilterToken[] = [
+      { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
+      { kind: 'field', field: 'offset', op: 'gt', value: '5' },
+    ];
+    const sameValues: FieldFilterToken[] = [
+      { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
+      { kind: 'field', field: 'offset', op: 'gt', value: '5' },
+    ];
+    expect(sameFieldTokens(a, sameValues)).toBe(true);
+
+    const differentValue: FieldFilterToken[] = [
+      { kind: 'field', field: 'key', op: 'contains', value: 'abc' },
+      { kind: 'field', field: 'offset', op: 'gt', value: '6' },
+    ];
+    expect(sameFieldTokens(a, differentValue)).toBe(false);
+
+    const reordered: FieldFilterToken[] = [a[1], a[0]];
+    expect(sameFieldTokens(a, reordered)).toBe(false);
+  });
+
+  test('false when lengths differ, true for two empty arrays', () => {
+    const a: FieldFilterToken[] = [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }];
+    expect(sameFieldTokens(a, [])).toBe(false);
+    expect(sameFieldTokens([], [])).toBe(true);
+  });
+
+  test('is the same comparator fieldTokensParser.eq uses for URL persistence', () => {
+    expect(fieldTokensParser.eq).toBe(sameFieldTokens);
   });
 });
 

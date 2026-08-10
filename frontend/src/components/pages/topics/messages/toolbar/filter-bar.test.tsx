@@ -166,7 +166,7 @@ describe('FilterBar', () => {
     expect(input()).toHaveValue('partition:1 ');
     // the overlay paints a highlight span with the exact recognized substring
     const overlay = within(screen.getByTestId('messages-filter-highlight-overlay'));
-    expect(overlay.getByText('partition:1')).toHaveClass('bg-muted');
+    expect(overlay.getByText('partition:1')).toHaveClass('outline-1');
   });
 
   test('a quoted value keeps its internal space as one token', async () => {

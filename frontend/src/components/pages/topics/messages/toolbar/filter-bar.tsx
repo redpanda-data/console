@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,8 +24,8 @@ import {
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../../state/ui';
 import type { FieldFilterToken } from '../types';
-import { formatFilterLine, type LineWord, parseFilterLine, tokenizeLine, wordRangeAtCaret } from '../utils/filter-line';
-import { formatTokenText, parseFilterInput, tokenEditText } from '../utils/filter-token';
+import { formatFilterLine, type LineWord, parseFilterLine, wordRangeAtCaret } from '../utils/filter-line';
+import { formatTokenText, sameFieldTokens, tokenEditText } from '../utils/filter-token';
 
 const MAX_RECENTS = 4;
 
@@ -43,9 +44,26 @@ export type FilterBarProps = {
   canUseJsFilters: boolean;
 };
 
+// Shared "this is a filter" text style across the JS chip, the suggestion dropdown's preview
+// labels, and (via inheritance from OVERLAY_FONT_CLASS below) the highlighted pills in the
+// free-text line — one constant instead of three independent copies, so they can't quietly
+// drift the way the JS chip's text already had (13px next to the pills' enforced 14px). Must
+// stay `text-sm` to match OVERLAY_FONT_CLASS: the pills get their size by inheriting the
+// overlay's own font, not from a class on the pill span itself, so this is the one value that
+// keeps all three in lockstep.
+const FILTER_BADGE_TEXT_CLASS = 'font-mono text-sm';
+
 /** JS predicates are multi-line code edited in a dialog — they can't live inline in the free-text line, so they keep their own small chip. */
 const JsChip = ({ filter, onEdit, onRemove }: { filter: FilterEntry; onEdit: () => void; onRemove: () => void }) => (
-  <span className="flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border/60 py-0.5 pr-0.5 pl-1.5 font-mono text-[13px] text-foreground/90">
+  <span
+    className={cn(
+      'flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border/60 py-0.5 pr-0.5 pl-1.5 text-foreground/90',
+      FILTER_BADGE_TEXT_CLASS
+    )}
+  >
+    {/* Raw <button>, not registry Button: this needs to sit inline inside the chip's own
+    padded row at its natural text height — the registry component's shortest preset
+    (icon-xs, size-6/24px) is taller than the whole chip. */}
     <button
       className="cursor-pointer rounded-sm px-0.5 hover:text-foreground"
       onClick={onEdit}
@@ -67,9 +85,6 @@ const JsChip = ({ filter, onEdit, onRemove }: { filter: FilterEntry; onEdit: () 
 
 type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
 
-const sameFieldTokens = (a: FieldFilterToken[], b: FieldFilterToken[]) =>
-  a.length === b.length && a.every((t, i) => formatTokenText(t) === formatTokenText(b[i]));
-
 const sameEmittedState = (a: EmittedState, b: EmittedState) =>
   a.partitionId === b.partitionId && a.quickSearch === b.quickSearch && sameFieldTokens(a.fieldTokens, b.fieldTokens);
 
@@ -77,7 +92,9 @@ const sameEmittedState = (a: EmittedState, b: EmittedState) =>
 // character for character, or the pill highlights drift out from under their text. Monospace
 // gives every character (including the space between two adjacent pills) a fixed, generous
 // width to work with — on a proportional font a single space is only ~4px, not enough room for
-// both a pill's own padding and a visible gap to its neighbor at the same time.
+// both a pill's own padding and a visible gap to its neighbor at the same time. Keep this in
+// sync with FILTER_BADGE_TEXT_CLASS above — same size, so the pills painted here read as the
+// same "filter" language as the JS chip and the suggestion dropdown's labels.
 const OVERLAY_FONT_CLASS = 'font-mono text-sm';
 
 // Padding on the horizontal axis adds to an inline element's layout width, so it's offset by an
@@ -90,13 +107,11 @@ const OVERLAY_FONT_CLASS = 'font-mono text-sm';
 // bar's design notes), and that one space is the entire budget shared by two adjacent pills. At
 // 2px/side, two neighbors consume 4px of it, leaving a ~3.4px visible gap; going past ~3px/side
 // (6px total) leaves no gap at all and the pills visually fuse.
-const PILL_HIGHLIGHT_CLASS = 'rounded-md bg-muted px-0.5 py-1 -mx-0.5';
-
-/** Ranges of `text` that currently parse as a recognized field/partition token — drives the highlight overlay. */
-const highlightRanges = (text: string): { start: number; end: number }[] =>
-  tokenizeLine(text)
-    .filter((word) => parseFilterInput(word.text) !== null)
-    .map((word) => ({ start: word.start, end: word.end }));
+//
+// Border-only look, matching the JS filter chip (border, no fill) rather than a flat highlight —
+// `outline` instead of `border` because outline is a pure paint effect that (like box-shadow)
+// never participates in box-model layout, so it needs no width compensation of its own.
+const PILL_HIGHLIGHT_CLASS = 'rounded-md px-0.5 py-1 -mx-0.5 outline-1 outline-border/60';
 
 /** Text a suggestion/ghost action should splice in at the current word, or `null` for actions handled specially (opening the JS dialog). */
 const replacementTextFor = (action: SuggestionAction): string | null => {
@@ -211,7 +226,7 @@ export const FilterBar = ({
   );
 
   const overlaySegments = useMemo(() => {
-    const ranges = highlightRanges(rawText);
+    const { tokenRanges: ranges } = parseFilterLine(rawText);
     const segments: { text: string; highlighted: boolean }[] = [];
     let cursor = 0;
     for (const range of ranges) {
@@ -407,27 +422,28 @@ export const FilterBar = ({
           />
         </span>
         {hasChips && (
-          <button
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+          <Button
+            className="shrink-0"
             onClick={clearAll}
+            size="icon-xs"
             title="Clear all filters"
-            type="button"
+            variant="secondary-ghost"
           >
-            <XIcon className="size-3.5" />
-          </button>
+            <XIcon />
+          </Button>
         )}
       </div>
 
       {open && items.length > 0 && (
         <div className="absolute top-full left-0 z-30 mt-1.5 max-h-[340px] w-[380px] overflow-auto rounded-lg border bg-popover p-1.5 shadow-lg">
-          <div className="px-2.5 pt-1.5 pb-1 font-semibold text-[10.5px] text-muted-foreground uppercase tracking-wider">
+          <div className="px-2.5 pt-1.5 pb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wider">
             {heading}
           </div>
           {items.map((item, i) => {
             if (item.kind === 'header') {
               return (
                 <div
-                  className="px-2.5 pt-2 pb-1 font-semibold text-[10.5px] text-muted-foreground uppercase tracking-wider"
+                  className="px-2.5 pt-2 pb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wider"
                   key={`h-${item.label}-${i}`}
                 >
                   {item.label}
@@ -436,6 +452,9 @@ export const FilterBar = ({
             }
             itemIdx += 1;
             const isActive = itemIdx === activeIdx;
+            // Raw <button>, not registry Button: this is a listbox row (badge + sub-label side
+            // by side, full width, left-aligned, keyboard-driven active state) — none of that is
+            // what the Button component's centered fixed-height presets are built for.
             return (
               <button
                 className={cn(
@@ -450,11 +469,16 @@ export const FilterBar = ({
                 }}
                 type="button"
               >
-                <span className="whitespace-nowrap rounded-md border bg-background px-2 py-0.5 font-mono text-[13px]">
+                <span
+                  className={cn(
+                    'whitespace-nowrap rounded-md border bg-background px-2 py-0.5',
+                    FILTER_BADGE_TEXT_CLASS
+                  )}
+                >
                   {item.label}
                 </span>
                 {item.sub && (
-                  <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">{item.sub}</span>
+                  <span className="whitespace-nowrap font-mono text-caption text-muted-foreground">{item.sub}</span>
                 )}
               </button>
             );

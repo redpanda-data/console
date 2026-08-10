@@ -54,6 +54,10 @@ describe('parseFilterLine', () => {
         { kind: 'field', field: 'value', op: 'contains', value: 'def' },
       ],
       remainder: '',
+      tokenRanges: [
+        { start: 0, end: 7 },
+        { start: 8, end: 17 },
+      ],
     });
   });
 
@@ -62,6 +66,10 @@ describe('parseFilterLine', () => {
       partitionId: 2,
       fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
       remainder: '',
+      tokenRanges: [
+        { start: 0, end: 7 },
+        { start: 8, end: 19 },
+      ],
     });
   });
 
@@ -70,6 +78,8 @@ describe('parseFilterLine', () => {
       partitionId: null,
       fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
       remainder: 'hello world',
+      // "hello" and "world" don't parse, so only the middle word contributes a range
+      tokenRanges: [{ start: 6, end: 13 }],
     });
   });
 
@@ -78,6 +88,7 @@ describe('parseFilterLine', () => {
       partitionId: null,
       fieldTokens: [{ kind: 'field', field: 'value', op: 'contains', value: 'New York' }],
       remainder: '',
+      tokenRanges: [{ start: 0, end: 16 }],
     });
   });
 
@@ -86,11 +97,12 @@ describe('parseFilterLine', () => {
       partitionId: null,
       fieldTokens: [],
       remainder: 'value:"New York',
+      tokenRanges: [],
     });
   });
 
   test('empty line has no tokens and an empty remainder', () => {
-    expect(parseFilterLine('')).toEqual({ partitionId: null, fieldTokens: [], remainder: '' });
+    expect(parseFilterLine('')).toEqual({ partitionId: null, fieldTokens: [], remainder: '', tokenRanges: [] });
   });
 });
 
@@ -112,6 +124,11 @@ describe('formatFilterLine', () => {
         { kind: 'field', field: 'value', op: 'contains', value: 'New York' },
       ],
       remainder: 'hello',
+      tokenRanges: [
+        { start: 0, end: 11 },
+        { start: 12, end: 19 },
+        { start: 20, end: 36 },
+      ],
     });
   });
 
