@@ -10,6 +10,9 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { Chip } from 'components/redpanda-ui/components/chip';
+import { HighlightedInput } from 'components/redpanda-ui/components/highlighted-input';
+import { Listbox, ListboxGroupLabel, ListboxOption } from 'components/redpanda-ui/components/listbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -52,36 +55,6 @@ export type FilterBarProps = {
 // overlay's own font, not from a class on the pill span itself, so this is the one value that
 // keeps all three in lockstep.
 const FILTER_BADGE_TEXT_CLASS = 'font-mono text-sm';
-
-/** JS predicates are multi-line code edited in a dialog — they can't live inline in the free-text line, so they keep their own small chip. */
-const JsChip = ({ filter, onEdit, onRemove }: { filter: FilterEntry; onEdit: () => void; onRemove: () => void }) => (
-  <span
-    className={cn(
-      'flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border/60 py-0.5 pr-0.5 pl-1.5 text-foreground/90',
-      FILTER_BADGE_TEXT_CLASS
-    )}
-  >
-    {/* Raw <button>, not registry Button: this needs to sit inline inside the chip's own
-    padded row at its natural text height — the registry component's shortest preset
-    (icon-xs, size-6/24px) is taller than the whole chip. */}
-    <button
-      className="cursor-pointer rounded-sm px-0.5 hover:text-foreground"
-      onClick={onEdit}
-      title={filter.name ? `${filter.name}: ${filter.code}` : 'Edit JavaScript filter'}
-      type="button"
-    >
-      ƒ {filter.name || filter.code}
-    </button>
-    <button
-      className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-      onClick={onRemove}
-      title="Remove filter"
-      type="button"
-    >
-      <XIcon className="size-3" />
-    </button>
-  </span>
-);
 
 type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
 
@@ -225,22 +198,7 @@ export const FilterBar = ({
     [items]
   );
 
-  const overlaySegments = useMemo(() => {
-    const { tokenRanges: ranges } = parseFilterLine(rawText);
-    const segments: { text: string; highlighted: boolean }[] = [];
-    let cursor = 0;
-    for (const range of ranges) {
-      if (range.start > cursor) {
-        segments.push({ text: rawText.slice(cursor, range.start), highlighted: false });
-      }
-      segments.push({ text: rawText.slice(range.start, range.end), highlighted: true });
-      cursor = range.end;
-    }
-    if (cursor < rawText.length) {
-      segments.push({ text: rawText.slice(cursor), highlighted: false });
-    }
-    return segments;
-  }, [rawText]);
+  const highlightRanges = useMemo(() => parseFilterLine(rawText).tokenRanges, [rawText]);
 
   // Close on outside click
   useEffect(() => {
@@ -375,52 +333,41 @@ export const FilterBar = ({
       >
         <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
         {jsFilters.map((filter) => (
-          <JsChip
-            filter={filter}
+          <Chip
+            className={FILTER_BADGE_TEXT_CLASS}
             key={filter.id}
             onEdit={() => onEditJsFilter(filter)}
             onRemove={() => onRemoveJsFilter(filter.id)}
-          />
-        ))}
-        <span className="relative min-w-24 flex-1">
-          <div
-            aria-hidden="true"
-            className={cn(
-              'pointer-events-none absolute inset-0 flex items-center whitespace-pre py-1',
-              OVERLAY_FONT_CLASS
-            )}
-            data-testid="messages-filter-highlight-overlay"
+            removeLabel="Remove filter"
+            title={filter.name ? `${filter.name}: ${filter.code}` : 'Edit JavaScript filter'}
           >
-            {overlaySegments.map((seg, i) => (
-              <span
-                className={cn('text-transparent', seg.highlighted && PILL_HIGHLIGHT_CLASS)}
-                key={`${i}-${seg.text}`}
-              >
-                {seg.text}
-              </span>
-            ))}
-            {ghost && caretAtEnd ? <span className="text-muted-foreground/60">{ghost.rest}</span> : null}
-          </div>
-          <input
-            className={cn('relative w-full bg-transparent py-1 outline-none', OVERLAY_FONT_CLASS)}
-            data-testid="messages-filter-input"
-            onChange={(e) => {
-              const next = e.target.value;
-              setRawText(next);
-              deriveAndEmit(next);
-              setActiveIdx(0);
-              setNavigated(false);
-              setOpen(true);
-              setCaretPos(e.currentTarget.selectionStart ?? next.length);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={onKeyDown}
-            onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
-            placeholder={placeholder}
-            ref={inputRef}
-            value={rawText}
-          />
-        </span>
+            ƒ {filter.name || filter.code}
+          </Chip>
+        ))}
+        <HighlightedInput
+          className="min-w-24 flex-1"
+          ghostText={ghost && caretAtEnd ? ghost.rest : undefined}
+          highlightClassName={PILL_HIGHLIGHT_CLASS}
+          highlightRanges={highlightRanges}
+          onChange={(e) => {
+            const next = e.target.value;
+            setRawText(next);
+            deriveAndEmit(next);
+            setActiveIdx(0);
+            setNavigated(false);
+            setOpen(true);
+            setCaretPos(e.currentTarget.selectionStart ?? next.length);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+          overlayTestId="messages-filter-highlight-overlay"
+          placeholder={placeholder}
+          ref={inputRef}
+          testId="messages-filter-input"
+          textClassName={cn('py-1', OVERLAY_FONT_CLASS)}
+          value={rawText}
+        />
         {hasChips && (
           <Button
             className="shrink-0"
@@ -435,39 +382,27 @@ export const FilterBar = ({
       </div>
 
       {open && items.length > 0 && (
-        <div className="absolute top-full left-0 z-30 mt-1.5 max-h-[340px] w-[380px] overflow-auto rounded-lg border bg-popover p-1.5 shadow-lg">
-          <div className="px-2.5 pt-1.5 pb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wider">
-            {heading}
-          </div>
+        <Listbox className="absolute top-full left-0 z-30 mt-1.5">
+          <ListboxGroupLabel>{heading}</ListboxGroupLabel>
           {items.map((item, i) => {
             if (item.kind === 'header') {
               return (
-                <div
-                  className="px-2.5 pt-2 pb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wider"
-                  key={`h-${item.label}-${i}`}
-                >
+                <ListboxGroupLabel className="pt-2" key={`h-${item.label}-${i}`}>
                   {item.label}
-                </div>
+                </ListboxGroupLabel>
               );
             }
             itemIdx += 1;
             const isActive = itemIdx === activeIdx;
-            // Raw <button>, not registry Button: this is a listbox row (badge + sub-label side
-            // by side, full width, left-aligned, keyboard-driven active state) — none of that is
-            // what the Button component's centered fixed-height presets are built for.
             return (
-              <button
-                className={cn(
-                  'flex w-full items-baseline gap-2 rounded-md px-1.5 py-1 text-left',
-                  isActive ? 'bg-accent' : 'hover:bg-accent/60'
-                )}
+              <ListboxOption
+                active={isActive}
                 key={`${item.label}-${i}`}
                 onClick={() => applySuggestion(item.action)}
                 onMouseEnter={() => {
                   setActiveIdx(itemIdx);
                   setNavigated(true);
                 }}
-                type="button"
               >
                 <span
                   className={cn(
@@ -480,10 +415,10 @@ export const FilterBar = ({
                 {item.sub && (
                   <span className="whitespace-nowrap font-mono text-caption text-muted-foreground">{item.sub}</span>
                 )}
-              </button>
+              </ListboxOption>
             );
           })}
-        </div>
+        </Listbox>
       )}
     </div>
   );
