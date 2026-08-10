@@ -2,7 +2,17 @@
 
 ## Master / Unreleased
 
+## v3.10.0 / 2026-08-10
+- [IMPROVEMENT] Cancel a running SQL query directly from the results pane.
+- [IMPROVEMENT] Add a full-screen page mode for the SQL and Redpanda Connect editors.
+- [IMPROVEMENT] Rework the Schema Registry list to match the topic and security listings, with the context now a page-level selector instead of a filter, and type and compatibility filters persisted in the URL.
+- [IMPROVEMENT] Update Console to the latest Redpanda branding and logo.
 - [CHANGE] Remove the Console AI Agents, AI Gateway, Knowledge Bases, Remote MCP, and Transcripts frontend surfaces, and direct former AI links to Redpanda AI.
+- [CHANGE] Add a `maxConnectionsPerUser` setting for per-user SQL connection pools, and remove the upper bound on the SQL query timeout.
+- [CHANGE] Remove the `/rp-connect/wizard` route in favor of the Redpanda Connect create page.
+- [BUGFIX] Stop the Schema Registry create form from showing required-field errors before any interaction.
+- [BUGFIX] Lower the Kafka client metadata min age so admin reads reflect recent cluster changes instead of stale cached metadata.
+- [SECURITY] Resolve Snyk findings in backend (gRPC, go-git, compress) and frontend dependencies.
 
 ## v3.9.0 / 2026-07-23
 - [IMPROVEMENT] Add a Redpanda Connect pipeline visual view and editor, including support for optional fields.
