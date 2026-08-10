@@ -96,6 +96,21 @@ describe('parseFilterLine', () => {
     });
   });
 
+  test('partition>2 stays in the remainder instead of silently collapsing to exact partition 2', () => {
+    expect(parseFilterLine('partition>2')).toEqual({
+      partitionId: null,
+      fieldTokens: [],
+      remainder: 'partition>2',
+      tokenRanges: [],
+    });
+    expect(parseFilterLine('partition!=2')).toEqual({
+      partitionId: null,
+      fieldTokens: [],
+      remainder: 'partition!=2',
+      tokenRanges: [],
+    });
+  });
+
   test('a stray literal quote mid-word does not swallow the tokens after it', () => {
     expect(parseFilterLine('key:a"b partition:1 offset>5')).toEqual({
       partitionId: 1,

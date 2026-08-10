@@ -29,6 +29,7 @@ const renderPanel = (overrides: Partial<ViewSettingsPanelProps> = {}) => {
     onValueDeserializerChange: vi.fn(),
     onResetDeserializers: vi.fn(),
     valuePathHints: ['address', 'address.city'],
+    liveTail: false,
     ...overrides,
   };
   render(<ViewSettingsPanel {...props} />);
@@ -64,6 +65,20 @@ describe('ViewSettingsPanel', () => {
     await userEvent.click(screen.getByTestId('column-config-value'));
     await userEvent.click(screen.getByTestId('preview-tag-add'));
     expect(useTopicSettingsStore.getState().getPreviewTags(TOPIC)).toHaveLength(1);
+  });
+
+  test('key/value deserializers are disabled while live tail is active, since changes only apply on the next (re)start', async () => {
+    renderPanel({ liveTail: true });
+    await userEvent.click(screen.getByTestId('column-config-key'));
+    expect(screen.getByTestId('view-settings-key-deser')).toBeDisabled();
+    await userEvent.click(screen.getByTestId('column-config-value'));
+    expect(screen.getByTestId('view-settings-value-deser')).toBeDisabled();
+  });
+
+  test('key/value deserializers stay enabled outside live tail', async () => {
+    renderPanel({ liveTail: false });
+    await userEvent.click(screen.getByTestId('column-config-key'));
+    expect(screen.getByTestId('view-settings-key-deser')).toBeEnabled();
   });
 
   test('reset restores defaults and resets deserializers', async () => {

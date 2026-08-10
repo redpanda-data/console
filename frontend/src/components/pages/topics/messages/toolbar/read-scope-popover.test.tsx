@@ -99,6 +99,20 @@ describe('ReadScopePopover', () => {
     expect(props.onModeChange).toHaveBeenCalledWith('oldest');
   });
 
+  test('partition and max-results controls are disabled while live tail is active', async () => {
+    renderPopover({ liveTail: true });
+    await userEvent.click(screen.getByTestId('read-scope-button'));
+    expect(screen.getByTestId('read-scope-partition-select')).toBeDisabled();
+    expect(screen.getByTestId('read-scope-limit-100')).toBeDisabled();
+  });
+
+  test('partition and max-results controls stay enabled outside live tail', async () => {
+    renderPopover({ liveTail: false });
+    await userEvent.click(screen.getByTestId('read-scope-button'));
+    expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
+    expect(screen.getByTestId('read-scope-limit-100')).toBeEnabled();
+  });
+
   test('onOpenChange reports open/closed so a caller can gate other keyboard shortcuts on it', async () => {
     const onOpenChange = vi.fn();
     renderPopover({ onOpenChange });

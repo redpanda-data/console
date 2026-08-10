@@ -139,6 +139,14 @@ export function parseFilterInput(text: string): { field: string; op: FilterOp; v
     return null;
   }
 
+  // Partition is a single exact match, not a range — `partition>2`/`partition<2`/`partition!=2`
+  // would otherwise silently collapse to "partition equals 2" downstream (parseFilterLine only
+  // ever reads the value, never the operator, for this field). Reject rather than misparse so the
+  // text stays live in the bar instead of quietly doing something other than what was typed.
+  if (field === 'partition' && op !== 'eq') {
+    return null;
+  }
+
   const value = decodeValue(rawValue.trim());
   if (value === null || (NUMERIC_FIELDS.has(field) && !INTEGER_VALUE_PATTERN.test(value))) {
     // A non-numeric value for a numeric field (typo, or the incomplete "partition:-" while

@@ -29,6 +29,13 @@ describe('parseFilterInput', () => {
     expect(parseFilterInput('partition:2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
   });
 
+  test('rejects partition comparisons — partition is exact-match only, unlike offset', () => {
+    expect(parseFilterInput('partition>2')).toBeNull();
+    expect(parseFilterInput('partition<2')).toBeNull();
+    expect(parseFilterInput('partition!=2')).toBeNull();
+    expect(parseFilterInput('partition=2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
+  });
+
   test('parses offset comparisons', () => {
     expect(parseFilterInput('offset>48210')).toEqual({ field: 'offset', op: 'gt', value: '48210' });
     expect(parseFilterInput('offset<100')).toEqual({ field: 'offset', op: 'lt', value: '100' });

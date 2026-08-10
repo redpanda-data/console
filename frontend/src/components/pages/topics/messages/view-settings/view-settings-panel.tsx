@@ -42,13 +42,15 @@ const DeserializerSelect = ({
   id,
   value,
   onChange,
+  disabled,
 }: {
   id: string;
   value: PayloadEncoding;
   onChange: (encoding: PayloadEncoding) => void;
+  disabled?: boolean;
 }) => (
-  <Select onValueChange={(v) => onChange(Number(v) as PayloadEncoding)} value={String(value)}>
-    <SelectTrigger className="w-full" testId={id}>
+  <Select disabled={disabled} onValueChange={(v) => onChange(Number(v) as PayloadEncoding)} value={String(value)}>
+    <SelectTrigger className="w-full" testId={id} title={disabled ? 'Stop live tail to change this' : undefined}>
       <SelectValue>
         {(v: unknown) => PAYLOAD_ENCODING_PAIRS.find((p) => String(p.value) === String(v))?.label}
       </SelectValue>
@@ -73,6 +75,8 @@ export type ViewSettingsPanelProps = {
   onResetDeserializers: () => void;
   /** Dotted paths seen in loaded values — autocomplete hints for preview patterns. */
   valuePathHints: string[];
+  /** Deserializer changes only take effect on the next (re)start — disable them while streaming. */
+  liveTail: boolean;
 };
 
 /**
@@ -88,6 +92,7 @@ export const ViewSettingsPanel = ({
   onValueDeserializerChange,
   onResetDeserializers,
   valuePathHints,
+  liveTail,
 }: ViewSettingsPanelProps) => {
   const {
     getRowDensity,
@@ -144,6 +149,7 @@ export const ViewSettingsPanel = ({
           <div className="flex flex-col gap-1.5">
             <Label className="text-[10px] uppercase tracking-wide">Deserializer</Label>
             <DeserializerSelect
+              disabled={liveTail}
               id="view-settings-key-deser"
               onChange={onKeyDeserializerChange}
               value={keyDeserializer}
@@ -159,6 +165,7 @@ export const ViewSettingsPanel = ({
             <div className="flex flex-col gap-1.5">
               <Label className="text-[10px] uppercase tracking-wide">Deserializer</Label>
               <DeserializerSelect
+                disabled={liveTail}
                 id="view-settings-value-deser"
                 onChange={onValueDeserializerChange}
                 value={valueDeserializer}

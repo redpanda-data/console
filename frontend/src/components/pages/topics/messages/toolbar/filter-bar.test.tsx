@@ -156,6 +156,19 @@ describe('FilterBar', () => {
     expect(input()).toHaveAttribute('aria-activedescendant', activeOption?.id);
   });
 
+  test('hovering a suggestion row highlights that row, not always the last one', async () => {
+    renderBar();
+    await userEvent.click(input());
+    const options = screen.getAllByRole('option');
+    expect(options.length).toBeGreaterThan(1);
+    const firstOption = options[0];
+    fireEvent.mouseEnter(firstOption);
+    expect(firstOption).toHaveAttribute('aria-selected', 'true');
+    for (const other of options.slice(1)) {
+      expect(other).toHaveAttribute('aria-selected', 'false');
+    }
+  });
+
   test('partition flow: pick field, pick value, commits partition id', async () => {
     const props = renderBar();
     await userEvent.click(input());

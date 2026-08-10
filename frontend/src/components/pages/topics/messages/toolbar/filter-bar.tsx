@@ -444,15 +444,16 @@ export const FilterBar = ({
               );
             }
             itemIdx += 1;
-            const isActive = itemIdx === activeIdx;
+            const optionIdx = itemIdx;
+            const isActive = optionIdx === activeIdx;
             return (
               <ListboxOption
                 active={isActive}
-                id={`${listboxId}-option-${itemIdx}`}
+                id={`${listboxId}-option-${optionIdx}`}
                 key={`${item.label}-${i}`}
                 onClick={() => applySuggestion(item.action)}
                 onMouseEnter={() => {
-                  setActiveIdx(itemIdx);
+                  setActiveIdx(optionIdx);
                   setNavigated(true);
                 }}
               >

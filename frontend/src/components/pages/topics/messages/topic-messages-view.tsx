@@ -31,6 +31,7 @@ import { FilterBar } from './toolbar/filter-bar';
 import { MessagesToolbar } from './toolbar/messages-toolbar';
 import { ReadScopeDocSheet } from './toolbar/read-scope-doc-sheet';
 import { valuePaths } from './utils/client-match';
+import { visibleJsFilters } from './utils/js-filters';
 import { applyDisplayWindow } from './utils/live-window';
 import { ViewSettingsPanel } from './view-settings/view-settings-panel';
 import { isServerless } from '../../../../config';
@@ -331,15 +332,21 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
           <FilterBar
             canUseJsFilters={canUseJsFilters}
             fieldTokens={fieldTokens}
-            jsFilters={jsFilters.filter((f) => f.isActive)}
+            jsFilters={visibleJsFilters(jsFilters, canUseJsFilters)}
             messages={search.messages}
             onEditJsFilter={(filter, seedCode, seedName) => setJsDialog({ filter, seedCode, seedName })}
-            onFieldTokensChange={setFieldTokens}
+            onFieldTokensChange={(tokens) => {
+              setFieldTokens(tokens);
+              urlState.setPageIndex(0);
+            }}
             onPartitionIdChange={(partitionId) => {
               urlState.setPartitionId(partitionId);
               urlState.setPageIndex(0);
             }}
-            onQuickSearchChange={urlState.setQuickSearch}
+            onQuickSearchChange={(value) => {
+              urlState.setQuickSearch(value);
+              urlState.setPageIndex(0);
+            }}
             onRemoveJsFilter={(id) => setJsFilters((prev) => prev.filter((f) => f.id !== id))}
             partitionId={urlState.partitionId}
             quickSearch={urlState.quickSearch}
@@ -428,6 +435,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             <MessagesTable
               columnConfig={columnConfig}
               density={density}
+              error={search.error?.message ?? null}
               hasActiveFilter={
                 urlState.quickSearch.trim().length > 0 || fieldTokens.length > 0 || filterInterpreterCode !== ''
               }
@@ -436,6 +444,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
               messages={tableData}
               newKeys={search.newKeys}
               onPaginationChange={handlePaginationChange}
+              onRetry={handleRefresh}
               onRowClick={handleRowClick}
               onSortingChange={handleSortingChange}
               pagination={pagination}
@@ -504,6 +513,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         >
           <ViewSettingsPanel
             keyDeserializer={urlState.keyDeserializer}
+            liveTail={urlState.liveTail}
             onClose={() => setViewSettingsOpen(false)}
             onKeyDeserializerChange={urlState.setKeyDeserializer}
             onResetDeserializers={() => {

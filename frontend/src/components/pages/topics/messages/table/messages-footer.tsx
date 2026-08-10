@@ -11,6 +11,7 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, DownloadIcon, Trash2Icon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 import { prettyBytes } from '../../../../../utils/utils';
 
@@ -89,6 +90,31 @@ export const MessagesFooter = ({
 }: MessagesFooterProps) => {
   const pageCount = Math.max(1, Math.ceil(totalLoaded / pageSize));
 
+  // The footer is the natural bottom-of-list marker for infinite scroll (the table itself
+  // doesn't scroll independently — the page does). Scrolling this sentinel into view loads
+  // the next page automatically; the button below stays as an explicit, always-available
+  // affordance rather than the only way to load more.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!(continuousMode && canLoadMore)) {
+      return;
+    }
+    const el = sentinelRef.current;
+    if (!el) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isLoadingMore) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [continuousMode, canLoadMore, isLoadingMore, onLoadMore]);
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -118,6 +144,7 @@ export const MessagesFooter = ({
                 Load {loadMoreCount} more
               </Button>
             )}
+            <div aria-hidden="true" className="h-px w-px" data-testid="messages-load-more-sentinel" ref={sentinelRef} />
           </div>
         ) : (
           <nav className="flex items-center gap-2" data-testid="messages-pagination">

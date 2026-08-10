@@ -282,12 +282,14 @@ export const ReadScopePopover = ({
                   </div>
                 </div>
                 <ToggleGroup
+                  disabled={liveTail}
                   onValueChange={(value: string[]) => {
                     if (value.length > 0) {
                       onMaxResultsChange(Number(value[0]));
                     }
                   }}
                   size="sm"
+                  title={liveTail ? 'Stop live tail to change this' : undefined}
                   value={[String(maxResults)]}
                 >
                   {limitValues.map((limit) => (
@@ -305,8 +307,16 @@ export const ReadScopePopover = ({
 
               <div className="mt-2 flex items-center justify-between gap-3">
                 <div className="font-semibold text-sm">Partition</div>
-                <Select onValueChange={(value) => onPartitionIdChange(Number(value))} value={String(partitionId)}>
-                  <SelectTrigger className="w-40" testId="read-scope-partition-select">
+                <Select
+                  disabled={liveTail}
+                  onValueChange={(value) => onPartitionIdChange(Number(value))}
+                  value={String(partitionId)}
+                >
+                  <SelectTrigger
+                    className="w-40"
+                    testId="read-scope-partition-select"
+                    title={liveTail ? 'Stop live tail to change this' : undefined}
+                  >
                     <SelectValue>
                       {(value: unknown) => (Number(value) === -1 ? 'All partitions' : `Partition ${value}`)}
                     </SelectValue>

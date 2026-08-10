@@ -20,11 +20,19 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, TriangleAlertIcon } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
 import { KeyCell, OffsetCell, SizeCell, TimestampCell, ValueCell, type ValuePreviewConfig } from './message-cells';
@@ -57,6 +65,11 @@ export type MessagesTableProps = {
   liveSeparatorKey?: string | null;
   /** Preview-fields rendering for the value column (from view settings). */
   valuePreview?: ValuePreviewConfig;
+  /** Set when the search stream failed outright (network/auth/timeout) — takes priority over
+   * the empty/waiting states, which would otherwise make a failed request look like a topic
+   * that genuinely has no matching messages. */
+  error?: string | null;
+  onRetry?: () => void;
 };
 
 const buildColumn = (
@@ -120,6 +133,25 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
   </>
 );
 
+const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+  <Empty className="py-14" data-testid="messages-error">
+    <EmptyHeader>
+      <EmptyMedia variant="icon">
+        <TriangleAlertIcon />
+      </EmptyMedia>
+      <EmptyTitle>Couldn't load messages</EmptyTitle>
+      <EmptyDescription>{message}</EmptyDescription>
+    </EmptyHeader>
+    {onRetry ? (
+      <EmptyContent>
+        <Button onClick={onRetry} size="sm" testId="messages-error-retry" variant="outline">
+          Retry
+        </Button>
+      </EmptyContent>
+    ) : null}
+  </Empty>
+);
+
 const LiveWaitingState = () => (
   <Empty className="py-14" data-testid="messages-live-waiting">
     <EmptyHeader>
@@ -166,6 +198,8 @@ export const MessagesTable = ({
   newKeys,
   liveSeparatorKey,
   valuePreview,
+  error,
+  onRetry,
 }: MessagesTableProps) => {
   // All configured columns are registered (so sorting can reference hidden ones,
   // e.g. the offset tiebreaker); visibility is controlled through table state.
@@ -196,7 +230,10 @@ export const MessagesTable = ({
 
   const rows = table.getRowModel().rows;
   const visibleColumnCount = table.getVisibleLeafColumns().length;
-  const showEmpty = !isLoading && rows.length === 0;
+  // A failed request has nothing to show either, but it must never look like the empty/waiting
+  // states below — those read as "this topic genuinely has no matching messages," which is not
+  // what a network/auth/timeout failure means.
+  const showEmpty = !(error || isLoading) && rows.length === 0;
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
@@ -233,7 +270,7 @@ export const MessagesTable = ({
           ))}
         </TableHeader>
         <TableBody>
-          {isLoading && rows.length === 0 && <LoadingRows columnCount={visibleColumnCount} />}
+          {!error && isLoading && rows.length === 0 && <LoadingRows columnCount={visibleColumnCount} />}
           {rows.map((row) => {
             const key = messageKey(row.original);
             return (
@@ -261,6 +298,7 @@ export const MessagesTable = ({
           })}
         </TableBody>
       </Table>
+      {error ? <ErrorState message={error} onRetry={onRetry} /> : null}
       {showEmpty && isLiveWaiting && <LiveWaitingState />}
       {showEmpty && !isLiveWaiting && (
         <Empty className="py-14" data-testid="messages-empty">
