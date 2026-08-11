@@ -17,7 +17,7 @@ service IcebergService {
   // lag (live-log high watermark minus the translated offset) is a
   // client-side join with the Kafka API and is not returned here.
   rpc GetIcebergStatus(GetIcebergStatusRequest) returns (GetIcebergStatusResponse) {
-    option (google.api.http) = {get: "/v1/iceberg"};
+    option (google.api.http) = {get: "/v1alpha3/iceberg/status"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Get Iceberg Status"
       description: "Get Iceberg Status. Optional: filter based on topic names."

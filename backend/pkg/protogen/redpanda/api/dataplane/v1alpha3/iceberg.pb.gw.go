@@ -82,7 +82,7 @@ func RegisterIcebergServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.IcebergService/GetIcebergStatus", runtime.WithHTTPPathPattern("/v1/iceberg"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.IcebergService/GetIcebergStatus", runtime.WithHTTPPathPattern("/v1alpha3/iceberg/status"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -140,7 +140,7 @@ func RegisterIcebergServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.IcebergService/GetIcebergStatus", runtime.WithHTTPPathPattern("/v1/iceberg"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/redpanda.api.dataplane.v1alpha3.IcebergService/GetIcebergStatus", runtime.WithHTTPPathPattern("/v1alpha3/iceberg/status"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -157,7 +157,7 @@ func RegisterIcebergServiceHandlerClient(ctx context.Context, mux *runtime.Serve
 }
 
 var (
-	pattern_IcebergService_GetIcebergStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "iceberg"}, ""))
+	pattern_IcebergService_GetIcebergStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha3", "iceberg", "status"}, ""))
 )
 
 var (

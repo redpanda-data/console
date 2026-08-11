@@ -2486,36 +2486,6 @@ info:
   version: v1
 openapi: 3.0.3
 paths:
-  /v1/iceberg:
-    get:
-      description: 'Get Iceberg Status. Optional: filter based on topic names.'
-      operationId: IcebergService_GetIcebergStatus
-      parameters:
-        - description: |-
-            Names of Iceberg topics to report on. If empty, returns all Iceberg
-            topics known to the coordinator.
-          in: query
-          name: topics_filter
-          schema:
-            items:
-              type: string
-            type: array
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetIcebergStatusResponse'
-          description: OK
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/rpc.Status'
-          description: An unexpected error response.
-      summary: Get Iceberg Status
-      tags:
-        - IcebergService
   /v1alpha3/ai-agents:
     get:
       description: 'List AI agents. Optional: filter based on AI agent name.'
@@ -2764,6 +2734,36 @@ paths:
       summary: Stop AI Agent
       tags:
         - AI Agents
+  /v1alpha3/iceberg/status:
+    get:
+      description: 'Get Iceberg Status. Optional: filter based on topic names.'
+      operationId: IcebergService_GetIcebergStatus
+      parameters:
+        - description: |-
+            Names of Iceberg topics to report on. If empty, returns all Iceberg
+            topics known to the coordinator.
+          in: query
+          name: topics_filter
+          schema:
+            items:
+              type: string
+            type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetIcebergStatusResponse'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get Iceberg Status
+      tags:
+        - IcebergService
   /v1alpha3/knowledge-bases:
     get:
       operationId: KnowledgeBaseService_ListKnowledgeBases
