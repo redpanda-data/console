@@ -15,20 +15,28 @@ import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
+import { ButtonGroup } from 'components/redpanda-ui/components/button-group';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
-import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { BookOpen, ChevronDown, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
+import type { Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 import { docsLinks } from 'utils/docs-links';
 
 import { PipelineStatusToggle } from './pipeline-status-toggle';
+import { alternateRunIntent, RUN_INTENT_LABELS, type SaveIntent, saveRunHint } from './save-actions';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
@@ -278,6 +286,52 @@ export function PipelineViewHeader({
   );
 }
 
+/**
+ * Save control: the primary click never starts or stops anything the user didn't ask for — creating
+ * leaves the pipeline stopped, editing keeps whatever state it was in — and the menu holds the
+ * explicit run action plus a draft-only save for work that isn't ready to deploy.
+ */
+const SaveActions = ({
+  mode,
+  pipelineState,
+  isSaving,
+  onSave,
+}: {
+  mode: 'edit' | 'create';
+  pipelineState?: Pipeline_State;
+  isSaving?: boolean;
+  onSave: (intent?: SaveIntent) => void;
+}) => {
+  const alternate = alternateRunIntent(mode, pipelineState);
+  return (
+    <ButtonGroup>
+      <Button disabled={isSaving} onClick={() => onSave()} testId="save-pipeline">
+        Save
+        {isSaving ? <Spinner /> : null}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button aria-label="More save options" disabled={isSaving} size="icon" testId="save-pipeline-options">
+              <ChevronDown />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          {alternate ? (
+            <DropdownMenuItem onClick={() => onSave({ target: 'server', run: alternate })}>
+              {RUN_INTENT_LABELS[alternate]}
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem onClick={() => onSave({ target: 'draft', run: 'keep' })}>
+            Save as draft (this browser only)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </ButtonGroup>
+  );
+};
+
 export function PipelineEditHeader({
   form,
   mode,
@@ -288,20 +342,27 @@ export function PipelineEditHeader({
   isSaving,
   hasUnsavedChanges,
   expanded,
+  pipelineState,
+  isDraft,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   mode: 'edit' | 'create';
   url?: string;
   onBack: () => void;
-  onSave: () => void;
+  onSave: (intent?: SaveIntent) => void;
   onEditSettings: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   expanded: boolean;
+  /** Current run state, for the save hint and the alternate run action. Absent while creating. */
+  pipelineState?: Pipeline_State;
+  /** Creating from a local draft rather than from scratch. */
+  isDraft?: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
+  const runHint = saveRunHint(mode, pipelineState);
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -315,12 +376,12 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
-            {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
+            {mode === 'create' ? <Badge variant="simple-outline">{isDraft ? 'Draft' : 'New'}</Badge> : null}
             <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
               Edit settings
             </Button>
           </div>
-          {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
+          {/* Relative anchor: the hints sit below (absolute) so toggling them never shifts the buttons. */}
           <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"
@@ -332,19 +393,17 @@ export function PipelineEditHeader({
             >
               Docs
             </Button>
-            <Button disabled={isSaving} onClick={onSave}>
-              Save
-              {isSaving ? <Spinner /> : null}
-            </Button>
-            {hasUnsavedChanges ? (
-              <span
-                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
-                title="You have unsaved changes"
-              >
-                <span aria-hidden className="size-2 rounded-full bg-informative" />
-                Unsaved changes
-              </span>
-            ) : null}
+            <SaveActions isSaving={isSaving} mode={mode} onSave={onSave} pipelineState={pipelineState} />
+            <span className="absolute top-full right-0 mt-1.5 flex items-center gap-2 whitespace-nowrap text-muted-foreground text-xs">
+              {hasUnsavedChanges ? (
+                <span className="flex items-center gap-1.5" title="You have unsaved changes">
+                  <span aria-hidden className="size-2 rounded-full bg-informative" />
+                  Unsaved changes
+                </span>
+              ) : null}
+              {hasUnsavedChanges && runHint ? <span aria-hidden>·</span> : null}
+              {runHint ? <span>{runHint}</span> : null}
+            </span>
           </div>
         </div>
       </div>

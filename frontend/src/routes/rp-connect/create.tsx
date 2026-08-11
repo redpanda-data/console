@@ -20,6 +20,8 @@ const PipelinePage = lazy(() => import('../../components/pages/rp-connect/pipeli
 
 const searchSchema = z.object({
   serverless: z.string().optional().catch(undefined),
+  // Resumes a local pipeline draft (see state/rpcn-pipeline-drafts).
+  draft: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/rp-connect/create')({

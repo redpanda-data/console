@@ -19,6 +19,7 @@ import {
   Pipeline_State,
   PipelineSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { rpcnPipelineDrafts, useRpcnPipelineDraftStore } from 'state/rpcn-pipeline-drafts';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 vi.mock('config', async (importOriginal) => {
@@ -286,5 +287,83 @@ describe('PipelineListPage', () => {
     // Two `redpanda` inputs render as one badge carrying ×2.
     expect(within(row).getByText('×2')).toBeInTheDocument();
     expect(within(row).getAllByText('redpanda')).toHaveLength(1);
+  });
+
+  describe('local drafts', () => {
+    const saveDraft = (overrides: Partial<Parameters<typeof rpcnPipelineDrafts.save>[0]> = {}) =>
+      rpcnPipelineDrafts.save({
+        id: 'draft-1',
+        name: 'half-built-pipeline',
+        description: '',
+        computeUnits: 1,
+        tags: [],
+        configYaml: 'input:\n  generate: {}\n',
+        ...overrides,
+      });
+
+    beforeEach(() => {
+      localStorage.clear();
+      useRpcnPipelineDraftStore.getState().refresh();
+    });
+
+    // Cleared here rather than refreshed: touching the store after a test would update a still-mounted tree.
+    afterEach(() => localStorage.clear());
+
+    it('hides the Drafts tab when there are none', async () => {
+      renderList();
+
+      await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
+      expect(screen.queryByRole('tab', { name: /^Drafts/ })).not.toBeInTheDocument();
+    });
+
+    it('lists a draft alongside deployed pipelines, marked as a draft', async () => {
+      saveDraft();
+      renderList();
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      const row = rowFor('half-built-pipeline');
+      expect(within(row).getByText('Draft')).toBeInTheDocument();
+      // Its connectors are parsed from the drafted YAML like any other row.
+      expect(within(row).getByText('generate')).toBeInTheDocument();
+      // Drafts sort ahead of deployed pipelines — they're the rows with work still owed.
+      expect(visibleLinkNames()[0]).toBe('half-built-pipeline');
+    });
+
+    it('resumes a draft in the editor rather than opening a pipeline page', async () => {
+      saveDraft();
+      renderList();
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      const link = within(rowFor('half-built-pipeline')).getByRole('link', { name: 'half-built-pipeline' });
+      expect(link).toHaveAttribute('href', expect.stringContaining('draft=draft-1'));
+    });
+
+    it('counts drafts in their own tab and narrows to them', async () => {
+      const user = userEvent.setup();
+      saveDraft();
+      renderList();
+
+      // Both pages drained (3 pipelines, the agent filtered out) plus the draft.
+      await waitFor(() => expect(tab('All')).toHaveTextContent('All4'));
+      expect(tab('Drafts')).toHaveTextContent('Drafts1');
+      // Drafts count into All, but never into a run-state tab.
+      expect(tab('Stopped')).toHaveTextContent('Stopped1');
+
+      await user.click(tab('Drafts'));
+      await waitFor(() => expect(visibleLinkNames()).toEqual(['half-built-pipeline']));
+    });
+
+    it('flags a deployed pipeline that has undeployed local edits', async () => {
+      saveDraft({ id: 'draft-edit', pipelineId: 'aaa111', name: 'orders-enrichment' });
+      renderList();
+
+      await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
+
+      expect(within(rowFor('orders-enrichment')).getByText('Draft changes')).toBeInTheDocument();
+      // An edit draft belongs to an existing row, so it never becomes a row of its own.
+      expect(screen.queryByRole('tab', { name: /^Drafts/ })).not.toBeInTheDocument();
+    });
   });
 });
