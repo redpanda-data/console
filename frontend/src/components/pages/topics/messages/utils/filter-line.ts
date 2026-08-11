@@ -101,7 +101,7 @@ export type ParsedFilterLine = {
  * instant a word is syntactically complete — there's no separate commit
  * step, just continuous re-parsing on every edit.
  */
-export function parseFilterLine(text: string): ParsedFilterLine {
+export function parseFilterLine(text: string, options?: { partitionCount?: number }): ParsedFilterLine {
   const words = tokenizeLine(text);
   let partitionId: number | null = null;
   const fieldTokens: FieldFilterToken[] = [];
@@ -109,7 +109,7 @@ export function parseFilterLine(text: string): ParsedFilterLine {
   const tokenRanges: { start: number; end: number }[] = [];
 
   for (const word of words) {
-    const parsed = parseFilterInput(word.text);
+    const parsed = parseFilterInput(word.text, options);
     if (!parsed) {
       remainderParts.push(word.text);
       continue;

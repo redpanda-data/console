@@ -12,7 +12,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { type MessageSearchParams, messageKey, useMessageSearch } from './use-message-search';
+import { type MessageSearchParams, useMessageSearch } from './use-message-search';
+import { messageKey } from '../utils/message-key';
 
 // The hook feeds raw data frames through convertListMessageData; identity-mock it so
 // tests can use plain {partitionID, offset} stubs without building full proto payloads.

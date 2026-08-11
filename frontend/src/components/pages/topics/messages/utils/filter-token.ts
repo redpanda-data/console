@@ -95,6 +95,37 @@ export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]): b
 }
 
 /**
+ * Reads the operator and raw (still-encoded) value off `rest` — the text immediately following
+ * the matched field name. Null when `rest` doesn't start with a recognized operator.
+ */
+function parseOperator(field: string, rest: string): { op: FilterOp; rawValue: string } | null {
+  if (rest.startsWith('!=')) {
+    return { op: 'neq', rawValue: rest.slice(2) };
+  }
+  if (rest.startsWith('>')) {
+    return { op: 'gt', rawValue: rest.slice(1) };
+  }
+  if (rest.startsWith('<')) {
+    return { op: 'lt', rawValue: rest.slice(1) };
+  }
+  if (rest.startsWith('=')) {
+    return { op: 'eq', rawValue: rest.slice(1) };
+  }
+  if (rest.startsWith(':')) {
+    // `:` means equality for enumerable/numeric fields (partition, offset) and contains for
+    // free-text fields — `offset:12` matching offset 1123 via substring containment is not
+    // what anyone typing an offset means.
+    return { op: NUMERIC_FIELDS.has(field) ? 'eq' : 'contains', rawValue: rest.slice(1) };
+  }
+  return null;
+}
+
+/** True when a partition value is outside `[0, partitionCount)` — unknowable, so unchecked, when `partitionCount` is omitted. */
+function isOutOfRangePartition(field: string, value: string, partitionCount: number | undefined): boolean {
+  return field === 'partition' && partitionCount !== undefined && Number(value) >= partitionCount;
+}
+
+/**
  * Parse a typed token like `partition:2`, `offset>48210`, `value.address.city:Berlin`
  * or `key!=abc`. Returns null when the text is not a recognized `field op value` form
  * (plain full-text stays live in the bar instead of becoming a token).
@@ -105,7 +136,10 @@ export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]): b
  * what lets the filter bar's space-triggered auto-commit safely skip spaces typed
  * inside an open quote without any separate "is a quote open" tracking.
  */
-export function parseFilterInput(text: string): { field: string; op: FilterOp; value: string } | null {
+export function parseFilterInput(
+  text: string,
+  options?: { partitionCount?: number }
+): { field: string; op: FilterOp; value: string } | null {
   const trimmed = text.trim();
   const fieldMatch = FIELD_PATTERN.exec(trimmed);
   if (!fieldMatch) {
@@ -113,31 +147,11 @@ export function parseFilterInput(text: string): { field: string; op: FilterOp; v
   }
 
   const field = fieldMatch[1];
-  const rest = trimmed.slice(field.length);
-
-  let op: FilterOp;
-  let rawValue: string;
-  if (rest.startsWith('!=')) {
-    op = 'neq';
-    rawValue = rest.slice(2);
-  } else if (rest.startsWith('>')) {
-    op = 'gt';
-    rawValue = rest.slice(1);
-  } else if (rest.startsWith('<')) {
-    op = 'lt';
-    rawValue = rest.slice(1);
-  } else if (rest.startsWith('=')) {
-    op = 'eq';
-    rawValue = rest.slice(1);
-  } else if (rest.startsWith(':')) {
-    // `:` means equality for enumerable/numeric fields (partition, offset) and contains for
-    // free-text fields — `offset:12` matching offset 1123 via substring containment is not
-    // what anyone typing an offset means.
-    op = NUMERIC_FIELDS.has(field) ? 'eq' : 'contains';
-    rawValue = rest.slice(1);
-  } else {
+  const operator = parseOperator(field, trimmed.slice(field.length));
+  if (!operator) {
     return null;
   }
+  const { op, rawValue } = operator;
 
   // Partition is a single exact match, not a range — `partition>2`/`partition<2`/`partition!=2`
   // would otherwise silently collapse to "partition equals 2" downstream (parseFilterLine only
@@ -153,6 +167,13 @@ export function parseFilterInput(text: string): { field: string; op: FilterOp; v
     // typing "partition:-1") must stay unrecognized rather than becoming a token —
     // `Number(value)` downstream would be NaN, and NaN can never compare equal to
     // itself, which desyncs every "did this change" check built on top of this.
+    return null;
+  }
+
+  // Out-of-range partition, when the topic's partition count is known — `partition:9999` on a
+  // 3-partition topic would otherwise reach the backend as a real request instead of staying
+  // live text the user can still correct.
+  if (isOutOfRangePartition(field, value, options?.partitionCount)) {
     return null;
   }
 

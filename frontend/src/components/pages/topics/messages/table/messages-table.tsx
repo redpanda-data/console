@@ -39,8 +39,8 @@ import { KeyCell, OffsetCell, SizeCell, TimestampCell, ValueCell, type ValuePrev
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { TimestampDisplayFormat } from '../../../../../state/ui';
 import { COLUMN_LABELS } from '../constants';
-import { messageKey } from '../hooks/use-message-search';
 import type { MessageColumnConfig, RowDensity } from '../types';
+import { messageKey } from '../utils/message-key';
 
 export type MessagesTableProps = {
   messages: TopicMessage[];

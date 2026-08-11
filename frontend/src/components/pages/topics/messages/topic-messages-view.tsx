@@ -22,7 +22,7 @@ import { MessageDetailPanel } from './detail/message-detail-panel';
 import { JsFilterDialog } from './dialogs/js-filter-dialog';
 import { useClientFilters } from './hooks/use-client-filters';
 import { useKeyboardNav } from './hooks/use-keyboard-nav';
-import { type MessageSearchParams, messageKey, useMessageSearch } from './hooks/use-message-search';
+import { type MessageSearchParams, useMessageSearch } from './hooks/use-message-search';
 import { useMessagesUrlState } from './hooks/use-messages-url-state';
 import type { ValuePreviewConfig } from './table/message-cells';
 import { MessagesFooter } from './table/messages-footer';
@@ -33,6 +33,8 @@ import { ReadScopeDocSheet } from './toolbar/read-scope-doc-sheet';
 import { valuePaths } from './utils/client-match';
 import { visibleJsFilters } from './utils/js-filters';
 import { applyDisplayWindow } from './utils/live-window';
+import { messageKey } from './utils/message-key';
+import { visiblePageKeys } from './utils/message-order';
 import { ViewSettingsPanel } from './view-settings/view-settings-panel';
 import { isServerless } from '../../../../config';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -295,22 +297,17 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     };
   }, []);
 
-  // Keyboard nav follows the on-screen order: current sort, then current page
-  const visibleKeys = useMemo(() => {
-    const sorted = [...windowedMessages].sort((a, b) => {
-      for (const sort of urlState.sorting) {
-        const direction = sort.desc ? -1 : 1;
-        const left = sort.id === 'timestamp' ? a.timestamp : a.offset;
-        const right = sort.id === 'timestamp' ? b.timestamp : b.offset;
-        if (left !== right) {
-          return left < right ? -direction : direction;
-        }
-      }
-      return 0;
-    });
-    const start = pagination.pageIndex * pagination.pageSize;
-    return sorted.slice(start, start + pagination.pageSize).map(messageKey);
-  }, [windowedMessages, urlState.sorting, pagination]);
+  // Keyboard nav follows the on-screen order: current sort, then current page.
+  const visibleKeys = useMemo(
+    () =>
+      visiblePageKeys(windowedMessages, {
+        sorting: urlState.sorting,
+        sortingDisabled: continuousActive,
+        pageIndex: pagination.pageIndex,
+        pageSize: pagination.pageSize,
+      }),
+    [windowedMessages, urlState.sorting, continuousActive, pagination]
+  );
 
   const getCopyText = useCallback(
     (key: string) => search.messages.find((m) => messageKey(m) === key)?.valueJson,
@@ -348,6 +345,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
               urlState.setPageIndex(0);
             }}
             onRemoveJsFilter={(id) => setJsFilters((prev) => prev.filter((f) => f.id !== id))}
+            partitionCount={topic.partitionCount}
             partitionId={urlState.partitionId}
             quickSearch={urlState.quickSearch}
           />

@@ -111,6 +111,21 @@ describe('parseFilterLine', () => {
     });
   });
 
+  test('an out-of-range partition falls into the remainder when the partition count is known', () => {
+    expect(parseFilterLine('partition:9999', { partitionCount: 3 })).toEqual({
+      partitionId: null,
+      fieldTokens: [],
+      remainder: 'partition:9999',
+      tokenRanges: [],
+    });
+    expect(parseFilterLine('partition:2', { partitionCount: 3 })).toEqual({
+      partitionId: 2,
+      fieldTokens: [],
+      remainder: '',
+      tokenRanges: [{ start: 0, end: 11 }],
+    });
+  });
+
   test('a stray literal quote mid-word does not swallow the tokens after it', () => {
     expect(parseFilterLine('key:a"b partition:1 offset>5')).toEqual({
       partitionId: 1,

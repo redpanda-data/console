@@ -20,6 +20,7 @@ import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../../../../state/ui';
 import { appendWithSlackCap } from '../../../../../utils/bounded-array';
 import { convertListMessageData } from '../../../../../utils/message-converters';
+import { messageKey } from '../utils/message-key';
 
 /** Memory bound for live-tail / filtered streams (mirrors the legacy engine's cap). */
 const LIVE_BUFFER_MAX = 50_000;
@@ -68,8 +69,6 @@ export type MessageSearchResult = {
   loadMore: (pageSize?: number) => Promise<void>;
   loadLargeMessage: (partitionId: number, offset: number) => Promise<void>;
 };
-
-export const messageKey = (m: Pick<TopicMessage, 'partitionID' | 'offset'>) => `${m.partitionID}-${m.offset}`;
 
 const buildListMessagesRequest = (topicName: string, params: MessageSearchParams) => {
   const req = create(ListMessagesRequestSchema);

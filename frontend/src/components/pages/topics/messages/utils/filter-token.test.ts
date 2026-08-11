@@ -36,6 +36,28 @@ describe('parseFilterInput', () => {
     expect(parseFilterInput('partition=2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
   });
 
+  test('rejects a partition value at or beyond the known partition count', () => {
+    expect(parseFilterInput('partition:2', { partitionCount: 3 })).toEqual({
+      field: 'partition',
+      op: 'eq',
+      value: '2',
+    });
+    expect(parseFilterInput('partition:3', { partitionCount: 3 })).toBeNull();
+    expect(parseFilterInput('partition:9999', { partitionCount: 3 })).toBeNull();
+  });
+
+  test('does not range-check partition when the count is unknown — omitting the option skips the check', () => {
+    expect(parseFilterInput('partition:9999')).toEqual({ field: 'partition', op: 'eq', value: '9999' });
+  });
+
+  test('never range-checks offset, only partition', () => {
+    expect(parseFilterInput('offset:9999', { partitionCount: 3 })).toEqual({
+      field: 'offset',
+      op: 'eq',
+      value: '9999',
+    });
+  });
+
   test('parses offset comparisons', () => {
     expect(parseFilterInput('offset>48210')).toEqual({ field: 'offset', op: 'gt', value: '48210' });
     expect(parseFilterInput('offset<100')).toEqual({ field: 'offset', op: 'lt', value: '100' });

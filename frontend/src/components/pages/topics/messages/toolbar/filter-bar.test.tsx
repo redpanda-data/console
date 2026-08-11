@@ -182,6 +182,14 @@ describe('FilterBar', () => {
     expect(input()).toHaveFocus();
   });
 
+  test('typing an out-of-range partition never commits it, when the partition count is known', async () => {
+    const props = renderBar({ partitionCount: 3 });
+    await userEvent.click(input());
+    await userEvent.keyboard('partition:9999');
+    expect(props.onPartitionIdChange).not.toHaveBeenCalled();
+    expect(props.onQuickSearchChange).toHaveBeenLastCalledWith('partition:9999');
+  });
+
   test('typed offset token commits a field token on Enter', async () => {
     const props = renderBar();
     await userEvent.click(input());

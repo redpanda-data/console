@@ -41,6 +41,9 @@ export type FilterBarProps = {
   /** Partition selection lives in the URL (`p`); shown here as a `partition:N` word when set. */
   partitionId: number;
   onPartitionIdChange: (partitionId: number) => void;
+  /** Rejects an out-of-range typed `partition:N` word (e.g. `partition:9999` on a 3-partition
+   * topic) instead of letting it become a real request. Omit when unknown. */
+  partitionCount?: number;
   jsFilters: FilterEntry[];
   onEditJsFilter: (filter: FilterEntry | null, seedCode?: string, seedName?: string) => void;
   onRemoveJsFilter: (id: string) => void;
@@ -132,6 +135,7 @@ export const FilterBar = ({
   onFieldTokensChange,
   partitionId,
   onPartitionIdChange,
+  partitionCount,
   jsFilters,
   onEditJsFilter,
   onRemoveJsFilter,
@@ -177,7 +181,7 @@ export const FilterBar = ({
 
     // Only the genuinely external piece(s) get applied; every other piece is re-derived from
     // the text already on screen rather than a possibly-still-catching-up prop.
-    const current = parseFilterLine(rawText);
+    const current = parseFilterLine(rawText, { partitionCount });
     lastEmittedRef.current = mergeExternal(external, incoming, last);
     const resynced = mergeExternal(external, incoming, {
       partitionId: current.partitionId ?? -1,
@@ -185,11 +189,11 @@ export const FilterBar = ({
       quickSearch: current.remainder,
     });
     setRawText(formatFilterLine(resynced.partitionId, resynced.fieldTokens, resynced.quickSearch));
-  }, [partitionId, fieldTokens, quickSearch, rawText]);
+  }, [partitionId, fieldTokens, quickSearch, rawText, partitionCount]);
 
   const deriveAndEmit = useCallback(
     (text: string) => {
-      const parsed = parseFilterLine(text);
+      const parsed = parseFilterLine(text, { partitionCount });
       const nextPartitionId = parsed.partitionId ?? -1;
       lastEmittedRef.current = {
         partitionId: nextPartitionId,
@@ -209,7 +213,15 @@ export const FilterBar = ({
         onQuickSearchChange(parsed.remainder);
       }
     },
-    [partitionId, fieldTokens, quickSearch, onPartitionIdChange, onFieldTokensChange, onQuickSearchChange]
+    [
+      partitionId,
+      fieldTokens,
+      quickSearch,
+      onPartitionIdChange,
+      onFieldTokensChange,
+      onQuickSearchChange,
+      partitionCount,
+    ]
   );
 
   const currentWord = useMemo(() => wordRangeAtCaret(rawText, caretPos), [rawText, caretPos]);
@@ -244,7 +256,10 @@ export const FilterBar = ({
   );
   const activeOptionId = open && actionableItems[activeIdx] ? `${listboxId}-option-${activeIdx}` : undefined;
 
-  const highlightRanges = useMemo(() => parseFilterLine(rawText).tokenRanges, [rawText]);
+  const highlightRanges = useMemo(
+    () => parseFilterLine(rawText, { partitionCount }).tokenRanges,
+    [rawText, partitionCount]
+  );
 
   // Close on outside click
   useEffect(() => {
