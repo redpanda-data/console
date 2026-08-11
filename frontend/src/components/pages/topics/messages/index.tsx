@@ -10,7 +10,7 @@
  */
 
 import { TopicMessagesView } from './topic-messages-view';
-import { useBooleanFlagValue } from '../../../../custom-feature-flag-provider';
+import { isFeatureFlagEnabled } from '../../../../config';
 import type { Topic } from '../../../../state/rest-interfaces';
 import { TopicMessageView } from '../Tab.Messages';
 
@@ -24,7 +24,7 @@ export type TopicMessagesTabProps = {
  * `enableNewTopicMessagesPage` is on, otherwise the legacy `TopicMessageView`.
  */
 export const TopicMessagesTab = ({ topic, refreshTopicData }: TopicMessagesTabProps) => {
-  const useNewMessagesPage = useBooleanFlagValue('enableNewTopicMessagesPage');
+  const useNewMessagesPage = isFeatureFlagEnabled('enableNewTopicMessagesPage');
 
   if (useNewMessagesPage) {
     return <TopicMessagesView topic={topic} />;
