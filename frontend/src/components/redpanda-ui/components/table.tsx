@@ -99,7 +99,7 @@ function TableHeader({ className, testId, ...props }: React.ComponentProps<'thea
 function TableBody({ className, testId, ...props }: React.ComponentProps<'tbody'> & SharedProps) {
   return (
     <tbody
-      className={cn('[&_tr:hover]:bg-selected/10 [&_tr:last-child]:border-0', className)}
+      className={cn('[&_tr:hover]:bg-muted/50 [&_tr:last-child]:border-0', className)}
       data-slot="table-body"
       data-testid={testId}
       {...props}

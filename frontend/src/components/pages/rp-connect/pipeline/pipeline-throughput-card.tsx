@@ -10,7 +10,7 @@
  */
 
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   type ChartConfig,
   ChartContainer,
@@ -20,6 +20,13 @@ import {
   ChartTooltipContent,
 } from 'components/redpanda-ui/components/chart';
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,7 +35,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { ChartSkeleton } from 'components/ui/chart-skeleton';
 import { RefreshButton } from 'components/ui/refresh-button';
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useExecuteRangeQuery, useListQueries } from 'react-query/api/observability';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -56,23 +63,59 @@ type ThroughputContentProps = {
   id: string;
   // Full selected window [start, end] in ms, so the axis spans it even when data is sparse.
   domain: [number, number];
+  onRetry: () => void;
 };
 
-const ThroughputContent: FC<ThroughputContentProps> = ({ isLoading, isError, hasData, chartData, id, domain }) => {
+// h-40 matches the chart so the section doesn't jump between states. Empty's own padding and title
+// scale are built for full-page empties, and would crowd the text out of a box this size.
+const ThroughputPlaceholder: FC<{ title: string; description: string; action?: ReactNode }> = ({
+  title,
+  description,
+  action,
+}) => (
+  <Empty className="h-40 gap-2 rounded-md border border-dashed p-4 md:p-4">
+    <EmptyHeader className="gap-1">
+      <EmptyTitle className="text-body">{title}</EmptyTitle>
+      <EmptyDescription className="text-sm">{description}</EmptyDescription>
+    </EmptyHeader>
+    {action ? <EmptyContent>{action}</EmptyContent> : null}
+  </Empty>
+);
+
+const ThroughputContent: FC<ThroughputContentProps> = ({
+  isLoading,
+  isError,
+  hasData,
+  chartData,
+  id,
+  domain,
+  onRetry,
+}) => {
   if (isLoading) {
     return <ChartSkeleton className="h-40 w-full" variant="area" />;
   }
 
   if (isError) {
     return (
-      <Alert variant="warning">
-        <AlertDescription>Failed to load throughput metrics</AlertDescription>
-      </Alert>
+      <ThroughputPlaceholder
+        action={
+          <Button onClick={onRetry} size="sm" variant="outline">
+            Try again
+          </Button>
+        }
+        description="The metrics service didn't respond. Data will appear once it's reachable."
+        title="Throughput metrics aren't available right now"
+      />
     );
   }
 
   if (!hasData) {
-    return <div className="text-body text-muted-foreground">Throughput metrics not available</div>;
+    return (
+      <ThroughputPlaceholder
+        description="Metrics appear here a few minutes after the pipeline starts processing messages."
+        title="No throughput data yet"
+      />
+    );
   }
 
   return (
@@ -143,7 +186,12 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: queriesData, isLoading: isLoadingQueries } = useListQueries({
+  const {
+    data: queriesData,
+    isLoading: isLoadingQueries,
+    isError: isErrorQueries,
+    refetch: refetchQueries,
+  } = useListQueries({
     filter: {
       tags: {
         component: 'redpanda-connect',
@@ -188,8 +236,11 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   );
 
   const handleRefresh = useCallback(() => {
+    // The query-catalog key carries no timestamps, so a refreshKey bump alone never retries a failed
+    // ListQueries.
+    refetchQueries();
     setRefreshKey((prev) => prev + 1);
-  }, []);
+  }, [refetchQueries]);
 
   const chartData = useMemo(
     () => mergeTimeSeries(ingressData?.results ?? [], egressData?.results ?? []),
@@ -198,7 +249,8 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
 
   // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
   const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
-  const isError = isErrorIngress || isErrorEgress;
+  // A failed catalog lookup is the error state, not "no data yet": the range queries never run.
+  const isError = isErrorQueries || isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;
 
@@ -236,6 +288,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
         id={id}
         isError={isError}
         isLoading={isLoading}
+        onRetry={handleRefresh}
       />
     </section>
   );

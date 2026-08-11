@@ -51,7 +51,7 @@ const BadgeGroup = React.forwardRef<HTMLDivElement, BadgeGroupProps>(
       wrap,
       testId,
       children,
-      maxVisible,
+      maxVisible = 3,
       size = 'sm',
       tone,
       variant = 'subtle',
