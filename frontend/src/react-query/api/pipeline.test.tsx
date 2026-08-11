@@ -128,8 +128,7 @@ describe('useListPipelinesQuery', () => {
   });
 
   test('stops draining when the server repeats the page token it was given', async () => {
-    // A server that echoes back the token it just resolved would drain forever, appending the
-    // same page to the cache each round.
+    // Unguarded, this drains forever, appending the same page each round.
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -158,8 +157,8 @@ describe('useListPipelinesQuery', () => {
   });
 
   test('stops draining on a token cycle, not just an immediate repeat', async () => {
-    // A deletion mid-drain can send the keyset token back to an earlier page: page A points at B,
-    // B points back at A. Nothing repeats consecutively, so the drain would alternate forever.
+    // Page A points at B, B back at A. Nothing repeats consecutively, so a guard that only checks the
+    // last token would alternate forever.
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -194,9 +193,8 @@ describe('useListPipelinesQuery', () => {
   });
 
   test('deduplicates pipelines a replayed page returns twice', async () => {
-    // A dataplane that resolves the keyset page token by exact id match restarts
-    // at page one when the token's pipeline is deleted mid-drain, so page two
-    // repeats page one. The drain still terminates; the rows must not double up.
+    // A dataplane resolving the token by exact id match restarts at page one when that pipeline is
+    // deleted mid-drain, so page two repeats page one.
     const page = (ids: string[], nextPageToken: string) =>
       create(ListPipelinesResponseSchema, {
         response: create(DataPlaneListPipelinesResponseSchema, {

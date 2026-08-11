@@ -63,7 +63,7 @@ export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   },
 ];
 
-// Inverted once, so counting is a single pass over the rows rather than one scan per tab.
+// Inverted once, so counting is one pass over the rows rather than one scan per tab.
 const TAB_BY_STATE = new Map<Pipeline_State, PipelineStateTabId>(
   PIPELINE_STATE_TABS.flatMap((tab) => (tab.states ?? []).map((state) => [state, tab.id] as const))
 );
@@ -80,8 +80,8 @@ export function countPipelinesPerTab(states: Pipeline_State[]): Record<PipelineS
 }
 
 /**
- * What to show when no rows are visible. Null for an unfiltered All view that has pipelines — a
- * stale page index about to be clamped, which must not flash an empty message.
+ * What to show when no rows are visible. Null for an unfiltered All view that has pipelines — that is
+ * a stale page index about to be clamped, and it must not flash an empty message.
  */
 export function pipelineListEmptyText({
   hasActiveFilters,

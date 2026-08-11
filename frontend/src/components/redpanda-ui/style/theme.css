@@ -1,3 +1,11 @@
+/*
+ * Fonts ship with the theme so the font tokens below always resolve without
+ * any host-app configuration:
+ *   - Inter / Geist Mono: @fontsource packages (unicode-range subset files,
+ *     one @font-face per weight, served from node_modules at build time).
+ *   - Inter Display: inter-ui (rsms's official npm distribution — no
+ *     @fontsource equivalent exists). Family name is "InterDisplay" (no space).
+ */
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';

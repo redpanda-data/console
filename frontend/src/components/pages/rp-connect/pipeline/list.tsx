@@ -79,8 +79,10 @@ import {
 import { toast } from 'sonner';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
+import { isModifiedClick } from 'utils/mouse-events';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { parseConfigComponentsCached } from './config-components-cache';
 import {
   aggregateConnectors,
   countPipelinesPerTab,
@@ -91,7 +93,6 @@ import {
 } from './list-utils';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
-import { parseConfigComponents } from '../utils/yaml';
 
 type TagPair = { key: string; value: string };
 
@@ -103,32 +104,6 @@ type Pipeline = {
   inputs: string[];
   outputs: string[];
   tags: TagPair[];
-};
-
-// parseConfigComponents is a full YAML parse, and the transform re-runs over every row on each
-// drain step and poll tick. Memoized per config text to keep that pass O(n).
-const configComponentsCache = new Map<string, ReturnType<typeof parseConfigComponents>>();
-const CONFIG_COMPONENTS_CACHE_LIMIT = 10_000;
-
-const parseConfigComponentsCached = (configYaml: string): ReturnType<typeof parseConfigComponents> => {
-  const cached = configComponentsCache.get(configYaml);
-  if (cached) {
-    return cached;
-  }
-  if (configComponentsCache.size >= CONFIG_COMPONENTS_CACHE_LIMIT) {
-    // Oldest half (Map preserves insertion order) — clearing all would reparse everything next refresh.
-    let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
-    for (const key of configComponentsCache.keys()) {
-      configComponentsCache.delete(key);
-      surplus -= 1;
-      if (surplus <= 0) {
-        break;
-      }
-    }
-  }
-  const parsed = parseConfigComponents(configYaml);
-  configComponentsCache.set(configYaml, parsed);
-  return parsed;
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
@@ -150,9 +125,7 @@ const EmptyCell = () => <span className="text-muted-foreground">—</span>;
 // One string per tag pair, so `arrIncludesSome` and the facet counts agree on the value.
 const tagFilterValue = (tag: TagPair) => `${tag.key}:${tag.value}`;
 
-// Duplicate connectors collapse into one badge with a multiplier ("redpanda ×2").
 const ConnectorBadges = ({ names }: { names: string[] }) => {
-  // `names` comes from the memoized transform, so this recomputes only when the pipeline changes.
   const connectors = useMemo(() => aggregateConnectors(names), [names]);
   if (connectors.length === 0) {
     return <EmptyCell />;
@@ -171,7 +144,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       {connectors.map((c) => (
         <Badge key={c.name} variant="neutral-inverted">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
-          {/* One text node so name and multiplier share a baseline (as siblings they sit a pixel apart). */}
+          {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
             {c.name}
             {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
@@ -192,12 +165,12 @@ const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> =
   [Pipeline_State.UNSPECIFIED]: 'disabled',
 };
 
-// autoRemove mirrors the built-in array filters: an empty selection means "no filter", not "match nothing".
+// autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
 const stateInFilterFn: FilterFn<Pipeline> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-// Status column order: problems and transitions before healthy pipelines, idle last.
+// Problems and transitions first, idle last.
 const pipelineStateSortPriority: Record<Pipeline_State, number> = {
   [Pipeline_State.ERROR]: 0,
   [Pipeline_State.STARTING]: 1,
@@ -210,20 +183,13 @@ const pipelineStateSortPriority: Record<Pipeline_State, number> = {
 
 const PAGE_SIZE = 20;
 
-// Modified and non-primary clicks mean "open elsewhere", so a row leaves them to the browser —
-// the name cell is a real link, so ⌘-click and middle-click still work there.
-const isModifiedClick = (event: MouseEvent<HTMLElement>) =>
-  event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
-
-// One table filtered per tab, not four panels, so the tabs own no panel of their own. Without an
-// `aria-controls` target a screen reader announces "tab, 1 of 4" with nowhere to move into.
+// One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
+// reader announces "tab, 1 of 4" with nowhere to move into.
 const STATUS_PANEL_ID = 'pipeline-status-panel';
 const statusTabId = (tabId: PipelineStateTabId) => `pipeline-status-tab-${tabId}`;
 
-/**
- * Screen-reader counterpart to the status lines below the table. Those unmount as they animate, and a
- * live region only announces changes made while already mounted. `sr-only` costs no layout.
- */
+// The status lines below the table unmount as they animate, and a live region only announces changes
+// made while already mounted — so these stay mounted for the reader.
 const ListStatusAnnouncements = ({
   isLoadingMorePages,
   listErrorMessage,
@@ -241,7 +207,6 @@ const ListStatusAnnouncements = ({
   </>
 );
 
-// One entry per real column, in order: header bar width paired with the cell placeholder beneath it.
 const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
   {
     head: 'w-24',
@@ -304,6 +269,12 @@ const PipelineListSkeleton = () => (
         ))}
       </TableBody>
     </Table>
+    {/* Stands in for the pagination footer: without it, the first real paint lifts the table. */}
+    <div className="flex items-center justify-end gap-6 px-2">
+      <Skeleton className="h-8 w-36" />
+      <Skeleton className="h-8 w-24" />
+      <Skeleton className="h-8 w-32" />
+    </div>
   </div>
 );
 
@@ -439,8 +410,8 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-// Facet options are rebuilt on every drain page and poll tick, and a fresh function type would
-// remount every logo in the open popover — so the icon component is cached per connector name.
+// Facet options are rebuilt on every drain page and poll tick, and a fresh component type per render
+// remounts every logo in the open popover.
 const connectorIcons = new Map<string, (props: { className?: string }) => ReactElement>();
 
 const connectorIcon = (name: string) => {
@@ -477,7 +448,7 @@ const createColumns = ({
       const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
-          {/* Rows navigate on click, so the name link underlines on hover only. */}
+          {/* Rows navigate on click, so the link underlines on hover only. */}
           <Link
             as={TanStackRouterLink}
             className="block truncate text-base text-primary no-underline hover:underline"
@@ -488,8 +459,7 @@ const createColumns = ({
             {name}
           </Link>
           {id !== name ? (
-            // select-all: one click selects the whole id for copying; the row's
-            // selection guard keeps that click from navigating.
+            // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
             <span className="cursor-text select-all truncate font-mono text-muted-foreground text-xs" title={id}>
               {id}
             </span>
@@ -502,8 +472,8 @@ const createColumns = ({
     accessorKey: 'inputs',
     header: 'Input',
     filterFn: 'arrIncludesSome',
-    // Without this, faceting keys on the array itself and the popover's per-option counts never
-    // resolve. Deduplicated per row, or two `redpanda` inputs would count 2 against a single row.
+    // Without this, faceting keys on the array itself and the per-option counts never resolve.
+    // Deduplicated per row, or two `redpanda` inputs would count 2 against a single row.
     getUniqueValues: (row) => [...new Set(row.inputs)],
     cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs') as string[]} />,
   },
@@ -557,8 +527,8 @@ const createColumns = ({
     sortingFn: (rowA, rowB) =>
       (pipelineStateSortPriority[rowA.original.state] ?? Number.MAX_SAFE_INTEGER) -
       (pipelineStateSortPriority[rowB.original.state] ?? Number.MAX_SAFE_INTEGER),
-    // Label from the state, not from the badge variant: COMPLETED and RUNNING share the
-    // `success` variant, whose default copy is "Running" — wrong for a completed pipeline.
+    // Label from the state, not the variant: COMPLETED and RUNNING share `success`, whose default
+    // copy is "Running".
     cell: ({ row }) => (
       <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]}>
         {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
@@ -637,10 +607,10 @@ const PipelineListPageContent = () => {
   const table = useReactTable({
     data: pipelines,
     columns,
-    // Id rather than row index keeps a row's identity fixed while pages stream in and the sort
-    // re-runs, so React reuses its DOM instead of repainting a shifted window.
+    // Id rather than row index: a row keeps its identity while pages stream in and the sort re-runs,
+    // so React reuses its DOM.
     getRowId: (row) => row.id,
-    // No column-visibility UI here; this also drops Hide from the column header menus.
+    // No column-visibility UI here; also drops Hide from the column header menus.
     enableHiding: false,
     // Also drops the pagination footer's "X of N row(s) selected." text.
     enableRowSelection: false,
@@ -651,8 +621,8 @@ const PipelineListPageContent = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-    // autoResetPageIndex would yank the user to page 1 on every drained page. The layout effects
-    // below reset on filter/sort changes instead, and clamp a shrinking row set before paint.
+    // autoResetPageIndex would yank the user to page 1 on every drained page; the layout effects below
+    // reset on filter/sort changes instead.
     autoResetPageIndex: false,
     state: {
       sorting,
@@ -673,7 +643,7 @@ const PipelineListPageContent = () => {
   }, [pageCount, table]);
 
   const { columnFilters } = table.getState();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are intentional change-triggers — when the user edits either, jump back to page 1 (autoResetPageIndex is off).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are the change-triggers — editing either jumps back to page 1.
   useLayoutEffect(() => {
     if (table.getState().pagination.pageIndex !== 0) {
       table.setPageIndex(0);
@@ -683,8 +653,7 @@ const PipelineListPageContent = () => {
   const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
   const [search, setSearch] = useState('');
 
-  // Each tab counts what selecting it would yield: the state column's faceted model applies every
-  // filter except its own.
+  // Each tab counts what selecting it would yield: the faceted model applies every filter but its own.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
   const tabCounts = useMemo(
     () => countPipelinesPerTab((stateFacetedRows ?? []).map((r) => r.original.state)),
@@ -707,8 +676,8 @@ const PipelineListPageContent = () => {
     const timer = setTimeout(() => {
       const column = table.getColumn('name');
       const next = search.trim() ? search : undefined;
-      // setFilterValue(undefined) on an unfiltered column still makes a new columnFilters array,
-      // tripping the page-reset effect — so skip no-op writes, including the post-mount tick.
+      // setFilterValue(undefined) on an unfiltered column still makes a new columnFilters array, which
+      // trips the page-reset effect — so skip no-op writes, including the post-mount tick.
       if (column && column.getFilterValue() !== next) {
         column.setFilterValue(next);
       }
@@ -716,9 +685,8 @@ const PipelineListPageContent = () => {
     return () => clearTimeout(timer);
   }, [search, table]);
 
-  // Status tabs are views, not filters — only search and the facet pickers count as "filtered".
-  // Read from `search` too: the committed filter lands 200ms later, and Clear filters must be
-  // clickable as soon as the user has typed.
+  // Status tabs are views, not filters. Read `search` directly, not its column filter: that lands
+  // 200ms later, and Clear filters must be clickable as soon as the user has typed.
   const hasActiveFilters = search.trim() !== '' || columnFilters.some((f) => f.id !== 'state');
   const clearFilters = useCallback(() => {
     setSearch('');
@@ -729,12 +697,12 @@ const PipelineListPageContent = () => {
 
   const handleRowClick = useCallback(
     (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
+      // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
       if (isModifiedClick(event)) {
         return;
       }
-      // Registry guard, same one DataTable's rows use: drops portaled children (open menus, the
-      // delete-confirm backdrop) that bubble through React but sit outside the <tr>, and clicks a
-      // control in the row has already handled.
+      // Registry guard, same one DataTable's rows use: drops clicks on a control in the row, and
+      // portaled children (open menus, the delete-confirm backdrop) that bubble outside the <tr>.
       if (!isRowActivationClick(event.target, event.currentTarget)) {
         return;
       }
@@ -752,8 +720,8 @@ const PipelineListPageContent = () => {
     navigate({ to: '/rp-connect/create', search: { serverless: undefined } });
   }, [resetRpcnWizardStore, navigate]);
 
-  // The hook holds isLoading until every page is drained, so render the first page and stream the
-  // rest in behind it. A mid-drain error halts the drain for good, so it replaces the spinner.
+  // isLoading stays true until every page is drained, so render page one and stream the rest in behind
+  // it. A mid-drain error halts the drain for good, so it replaces the spinner.
   const isInitialLoading = isLoading && pipelines.length === 0 && !error;
   const isLoadingMorePages = isLoading && pipelines.length > 0 && !error;
 
@@ -852,8 +820,8 @@ const PipelineListPageContent = () => {
               </TableRow>
             ) : (
               rows.map((row) => (
-                // Pointer shortcut only — no tab stop or Enter handler, since the name cell already
-                // holds the same link and a row tab stop would duplicate it on every row.
+                // Pointer shortcut only: the name cell holds the same link, so a row tab stop would
+                // duplicate it on every row.
                 <TableRow
                   className="cursor-pointer"
                   key={row.id}
@@ -939,8 +907,8 @@ export const PipelineListPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContents className="p-6">
-          {/* keepMounted: panels unmount by default, dropping the user's search/facets/page on a
-              trip to the Kafka Connect tab and back. */}
+          {/* keepMounted: panels unmount by default, dropping search/facets/page on a trip to the
+              Kafka Connect tab and back. */}
           <TabsContent keepMounted value="redpanda-connect">
             <RedpandaConnectContent />
           </TabsContent>

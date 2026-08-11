@@ -125,7 +125,7 @@ const rowFor = (displayName: string) => {
 const SEARCH_INPUT_RE = /search pipelines/i;
 const CLEAR_FILTERS_RE = /clear filters/i;
 
-// Every row links to its pipeline, so the link text is the visible row set.
+// Every row links to its pipeline, so the link text is the visible rows.
 const visibleLinkNames = () =>
   screen
     .getAllByRole('link')
@@ -239,7 +239,7 @@ describe('PipelineListPage', () => {
       expect(screen.getByText('nightly-export')).toBeInTheDocument();
     });
 
-    // One panel, filtered per tab — so every tab hands the reader off to the same region.
+    // One panel, filtered per tab, so every tab points at the same region.
     const panel = screen.getByRole('tabpanel');
     expect(panel).toContainElement(rowFor('nightly-export'));
     for (const name of ['All', 'Running', 'Stopped', 'Error']) {
@@ -262,7 +262,7 @@ describe('PipelineListPage', () => {
       expect(screen.getByText('nightly-export')).toBeInTheDocument();
     });
 
-    // ⌘-click means "open in a new tab" — soft-navigating here would swallow it.
+    // ⌘-click means "open in a new tab": soft-navigating would swallow it.
     const description = within(rowFor('orders-enrichment')).getByText('aaa111');
     await user.keyboard('{Meta>}');
     await user.click(description);

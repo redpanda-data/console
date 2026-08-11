@@ -13,9 +13,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { ReactNode } from 'react';
 
 /**
- * Mount/unmount transition for conditional UI chrome — toolbar chips, status lines,
- * inline hints. Exit is quicker than enter, `initial={false}` animates changes but not
- * the first render, and reduced-motion collapses the movement to a pure fade.
+ * Mount/unmount transition for conditional UI chrome — toolbar chips, status lines, inline hints.
+ * `initial={false}` animates changes but not the first render, and reduced-motion drops the movement.
  */
 export function FadePresence({
   show,

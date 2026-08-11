@@ -20,6 +20,13 @@ import {
   ChartTooltipContent,
 } from 'components/redpanda-ui/components/chart';
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -59,17 +66,20 @@ type ThroughputContentProps = {
   onRetry: () => void;
 };
 
-// Keeps the chart's footprint so the section doesn't jump between states.
+// h-40 matches the chart so the section doesn't jump between states. Empty's own padding and title
+// scale are built for full-page empties, and would crowd the text out of a box this size.
 const ThroughputPlaceholder: FC<{ title: string; description: string; action?: ReactNode }> = ({
   title,
   description,
   action,
 }) => (
-  <div className="flex h-40 w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed text-center">
-    <div className="text-body">{title}</div>
-    <div className="text-muted-foreground text-sm">{description}</div>
-    {action}
-  </div>
+  <Empty className="h-40 gap-2 rounded-md border border-dashed p-4 md:p-4">
+    <EmptyHeader className="gap-1">
+      <EmptyTitle className="text-body">{title}</EmptyTitle>
+      <EmptyDescription className="text-sm">{description}</EmptyDescription>
+    </EmptyHeader>
+    {action ? <EmptyContent>{action}</EmptyContent> : null}
+  </Empty>
 );
 
 const ThroughputContent: FC<ThroughputContentProps> = ({
@@ -89,7 +99,7 @@ const ThroughputContent: FC<ThroughputContentProps> = ({
     return (
       <ThroughputPlaceholder
         action={
-          <Button className="mt-2" onClick={onRetry} size="sm" variant="outline">
+          <Button onClick={onRetry} size="sm" variant="outline">
             Try again
           </Button>
         }
@@ -226,8 +236,8 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   );
 
   const handleRefresh = useCallback(() => {
-    // The query-catalog key carries no timestamps, so the refreshKey bump
-    // alone would never retry a failed ListQueries — refetch it explicitly.
+    // The query-catalog key carries no timestamps, so a refreshKey bump alone never retries a failed
+    // ListQueries.
     refetchQueries();
     setRefreshKey((prev) => prev + 1);
   }, [refetchQueries]);
@@ -239,8 +249,7 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
 
   // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
   const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
-  // A failed catalog lookup means the metrics service is unreachable — that is
-  // the error state, not "no data yet" (the range queries never even run).
+  // A failed catalog lookup is the error state, not "no data yet": the range queries never run.
   const isError = isErrorQueries || isErrorIngress || isErrorEgress;
   const isFetching = isFetchingIngress || isFetchingEgress;
   const hasData = chartData.length > 0;

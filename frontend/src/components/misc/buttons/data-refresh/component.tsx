@@ -86,11 +86,12 @@ export const DataRefreshButton = () => {
         <Tooltip>
           <TooltipTrigger
             render={
+              // Size variants also set `[&_svg]:size-*`, so a box size from className alone would
+              // leave the glyph oversized.
               <Button
                 aria-label={isActive ? 'Pause auto refresh' : 'Start auto refresh'}
-                className="size-7"
                 onClick={toggleAutorefresh}
-                size="icon"
+                size="icon-sm"
                 variant="ghost"
               >
                 {isActive ? <Pause /> : <Play />}
@@ -110,13 +111,7 @@ export const DataRefreshButton = () => {
           <Tooltip>
             <TooltipTrigger
               render={
-                <Button
-                  aria-label="Force refresh"
-                  className="size-7"
-                  onClick={() => appGlobal.onRefresh()}
-                  size="icon"
-                  variant="ghost"
-                >
+                <Button aria-label="Force refresh" onClick={() => appGlobal.onRefresh()} size="icon-sm" variant="ghost">
                   <RefreshCw />
                 </Button>
               }
