@@ -15,7 +15,14 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, it } from 'vitest';
 
-import { alternateRunIntent, isInvalidConfigError, saveRunHint, saveSuccessMessage } from './save-actions';
+import {
+  alternateRunIntent,
+  draftEvictionMessage,
+  isBlankConfig,
+  isInvalidConfigError,
+  saveRunHint,
+  saveSuccessMessage,
+} from './save-actions';
 
 /**
  * A ConnectError as it arrives off the wire: details are decoded into `{ type, value, debug }`
@@ -95,8 +102,12 @@ describe('alternateRunIntent', () => {
 });
 
 describe('saveRunHint', () => {
-  it('says a new pipeline will not start itself', () => {
-    expect(saveRunHint('create', undefined)).toMatch(/without starting/i);
+  it('describes what saving will do rather than claiming it already happened', () => {
+    const hint = saveRunHint('create', undefined);
+    expect(hint).toMatch(/won't start/i);
+    // Past tense ("Saved without starting") sits under the button asserting success even when the
+    // save has just failed, which is what it used to do.
+    expect(hint).not.toMatch(/^saved\b/i);
   });
 
   it('warns that saving a running pipeline restarts it', () => {
@@ -109,6 +120,34 @@ describe('saveRunHint', () => {
 
   it('stays quiet while the state is unknown', () => {
     expect(saveRunHint('edit', undefined)).toBeNull();
+  });
+});
+
+describe('isBlankConfig', () => {
+  it('treats an empty or whitespace-only config as blank', () => {
+    expect(isBlankConfig('')).toBe(true);
+    expect(isBlankConfig('  \n\t\n ')).toBe(true);
+  });
+
+  it('leaves a comments-only config to the server, which answers it with lint hints', () => {
+    expect(isBlankConfig('# nothing here yet\n')).toBe(false);
+    expect(isBlankConfig('input:\n  generate: {}\n')).toBe(false);
+  });
+});
+
+describe('draftEvictionMessage', () => {
+  it('names the single draft it dropped', () => {
+    expect(draftEvictionMessage(['orders to snowflake'], 25)).toBe(
+      'Removed your oldest draft ("orders to snowflake") — this browser keeps 25.'
+    );
+  });
+
+  it('falls back to a placeholder when the dropped draft was never named', () => {
+    expect(draftEvictionMessage(['   '], 25)).toMatch(/"Untitled pipeline"/);
+  });
+
+  it('counts them instead of listing when several go at once', () => {
+    expect(draftEvictionMessage(['a', 'b', 'c'], 25)).toBe('Removed your 3 oldest drafts — this browser keeps 25.');
   });
 });
 

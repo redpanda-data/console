@@ -120,7 +120,9 @@ export const CREATE_SAVE_LABEL = 'Save';
  */
 export function saveRunHint(mode: 'create' | 'edit', state: Pipeline_State | undefined): string | null {
   if (mode === 'create') {
-    return "Saved without starting — you'll start it when you're ready";
+    // Present tense: this describes what the button will do. Past tense ("Saved without starting")
+    // reads as a confirmation, and sits there claiming success even when the save has just failed.
+    return "Saving won't start the pipeline";
   }
   if (state === Pipeline_State.RUNNING || state === Pipeline_State.STARTING) {
     return 'Saving restarts the running pipeline';
@@ -129,6 +131,28 @@ export function saveRunHint(mode: 'create' | 'edit', state: Pipeline_State | und
     return "Pipeline is stopped — saving won't start it";
   }
   return null;
+}
+
+/**
+ * An empty config never reaches lint: buf validation rejects `config_yaml` as required first, and that
+ * surfaces as `request.pipeline.config_yaml: value is required` — a proto path the user can do nothing
+ * with. Catch it before the request and say what's actually missing. There is also nothing to keep as
+ * a draft in this case, so blocking loses no work: the settings stay in the editor either way.
+ */
+export const isBlankConfig = (configYaml: string): boolean => configYaml.trim().length === 0;
+
+export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before saving.';
+
+/**
+ * Announces the drafts the browser dropped to stay under its cap. Eviction is real data loss, so it
+ * can't be silent — the user is the only one who can tell whether that draft still mattered.
+ */
+export function draftEvictionMessage(evictedNames: string[], cap: number): string {
+  if (evictedNames.length === 1) {
+    const name = evictedNames[0]?.trim() || 'Untitled pipeline';
+    return `Removed your oldest draft ("${name}") — this browser keeps ${cap}.`;
+  }
+  return `Removed your ${evictedNames.length} oldest drafts — this browser keeps ${cap}.`;
 }
 
 /** Toast copy for a successful server save, given what it did with the run state. */

@@ -493,6 +493,23 @@ describe('PipelinePage', () => {
     expect(createPipelineMock).not.toHaveBeenCalled();
   });
 
+  it("doesn't send an empty config to the backend, which would answer with a raw proto field error", async () => {
+    const user = userEvent.setup();
+    const createPipelineMock = vi.fn();
+
+    render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+    await setPipelineNameViaDialog(user, 'my-pipeline');
+
+    // Name is valid, so nothing else blocks the save — only the empty config does.
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('save-pipeline')).toBeEnabled();
+    });
+    expect(createPipelineMock).not.toHaveBeenCalled();
+  });
+
   it('shows both save errors and real-time lint warnings when a save fails', async () => {
     const user = userEvent.setup();
 

@@ -114,7 +114,7 @@ type Pipeline = {
   outputs: string[];
   tags: TagPair[];
   /** Set on rows that are only a local draft — nothing exists server-side yet. */
-  draft?: { draftId: string; updatedAt: number };
+  draft?: { draftId: string; updatedAt: number; configYaml: string };
   /** Set on deployed pipelines that also have undeployed local edits. */
   hasDraftChanges?: boolean;
 };
@@ -148,9 +148,26 @@ const transformDraft = (draft: PipelineDraft): Pipeline => {
     inputs,
     outputs,
     tags: draft.tags.filter((t) => t.key),
-    draft: { draftId: draft.id, updatedAt: draft.updatedAt },
+    draft: { draftId: draft.id, updatedAt: draft.updatedAt, configYaml: draft.configYaml },
   };
 };
+
+/**
+ * A draft lives in one browser profile, so it needs a way out: cleared site data, another laptop or a
+ * teammate who has to finish the work are all cases the local store can't answer on its own.
+ */
+const downloadDraftYaml = (name: string, configYaml: string) => {
+  const url = URL.createObjectURL(new Blob([configYaml], { type: 'text/yaml' }));
+  const link = document.createElement('a');
+  link.href = url;
+  // Pipeline names allow spaces and slashes; neither belongs in a filename.
+  link.download = `${(name.trim() || 'pipeline').replace(/[^\w.-]+/g, '-')}.yaml`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+/** Why a draft row looks different from every other row in the table. */
+const DRAFT_LOCALITY_HINT = 'Kept in this browser only — not deployed, and not visible to your team';
 
 const EmptyCell = () => <span className="text-muted-foreground">—</span>;
 
@@ -425,6 +442,11 @@ const ActionsCell = memo(
             >
               {draft ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>
+            {draft ? (
+              <DropdownMenuItem onClick={() => downloadDraftYaml(pipeline.name, draft.configYaml)}>
+                Download YAML
+              </DropdownMenuItem>
+            ) : null}
             {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
             {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
             {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
@@ -521,7 +543,7 @@ const createColumns = ({
               {name}
             </Link>
             {row.original.hasDraftChanges ? (
-              <Badge title="Undeployed local changes" variant="simple-outline">
+              <Badge title={`Edits that were never deployed. ${DRAFT_LOCALITY_HINT}`} variant="simple-outline">
                 Draft changes
               </Badge>
             ) : null}
@@ -602,7 +624,7 @@ const createColumns = ({
     // copy is "Running".
     cell: ({ row }) =>
       row.original.draft ? (
-        <StatusBadge size="sm" variant="disabled">
+        <StatusBadge size="sm" title={DRAFT_LOCALITY_HINT} variant="disabled">
           Draft
         </StatusBadge>
       ) : (

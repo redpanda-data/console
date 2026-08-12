@@ -114,21 +114,37 @@ function writeAll(drafts: PipelineDraft[]): boolean {
   }
 }
 
-/** Newest first, capped per cluster — an over-quota cluster loses its stalest drafts. */
-function pruneForCluster(drafts: PipelineDraft[], clusterId: string): PipelineDraft[] {
+/**
+ * Newest first, capped per cluster — an over-quota cluster loses its stalest drafts. The evicted ones
+ * come back so the caller can say what was dropped: silent eviction is unannounced data loss.
+ */
+function pruneForCluster(
+  drafts: PipelineDraft[],
+  clusterId: string
+): { kept: PipelineDraft[]; evicted: PipelineDraft[] } {
   const mine = drafts.filter((d) => d.clusterId === clusterId).sort((a, b) => b.updatedAt - a.updatedAt);
   const others = drafts.filter((d) => d.clusterId !== clusterId);
-  return [...mine.slice(0, MAX_DRAFTS_PER_CLUSTER), ...others];
+  return {
+    kept: [...mine.slice(0, MAX_DRAFTS_PER_CLUSTER), ...others],
+    evicted: mine.slice(MAX_DRAFTS_PER_CLUSTER),
+  };
 }
+
+/** Why a draft couldn't be kept, so the caller can explain it rather than failing vaguely. */
+export type SaveDraftFailure = 'too-large' | 'storage-unavailable';
+
+export type SaveDraftResult =
+  | { ok: true; draft: PipelineDraft; evicted: PipelineDraft[] }
+  | { ok: false; reason: SaveDraftFailure };
 
 type PipelineDraftStore = {
   /** Every draft in storage, across clusters. Use the selectors below to scope to the current one. */
   drafts: PipelineDraft[];
   /**
-   * Insert or replace a draft (matched on `id`) and persist it.
-   * Returns the stored draft, or null when the YAML is too large or storage refused the write.
+   * Insert or replace a draft (matched on `id`) and persist it. The result carries any drafts evicted
+   * to stay under the per-cluster cap, so the caller can tell the user what it dropped.
    */
-  saveDraft: (input: PipelineDraftInput) => PipelineDraft | null;
+  saveDraft: (input: PipelineDraftInput) => SaveDraftResult;
   removeDraft: (id: string) => void;
   /** Drop the draft attached to a deployed pipeline (called once its edits land server-side). */
   removeDraftForPipeline: (pipelineId: string) => void;
@@ -141,7 +157,7 @@ export const useRpcnPipelineDraftStore = create<PipelineDraftStore>()((set) => (
 
   saveDraft: (input) => {
     if (isDraftYamlTooLarge(input.configYaml)) {
-      return null;
+      return { ok: false, reason: 'too-large' };
     }
     const draft: PipelineDraft = {
       ...input,
@@ -150,12 +166,12 @@ export const useRpcnPipelineDraftStore = create<PipelineDraftStore>()((set) => (
     };
     // Read through storage rather than trusting in-memory state, so a draft written by another
     // tab isn't clobbered by this one's stale snapshot.
-    const next = pruneForCluster([...readAll().filter((d) => d.id !== draft.id), draft], draft.clusterId);
-    if (!writeAll(next)) {
-      return null;
+    const { kept, evicted } = pruneForCluster([...readAll().filter((d) => d.id !== draft.id), draft], draft.clusterId);
+    if (!writeAll(kept)) {
+      return { ok: false, reason: 'storage-unavailable' };
     }
-    set({ drafts: next });
-    return draft;
+    set({ drafts: kept });
+    return { ok: true, draft, evicted };
   },
 
   removeDraft: (id) => {

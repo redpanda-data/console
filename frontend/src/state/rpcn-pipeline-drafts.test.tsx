@@ -47,10 +47,9 @@ describe('rpcn pipeline drafts', () => {
   });
 
   it('persists a draft so it survives a reload', () => {
-    const saved = rpcnPipelineDrafts.save(draftInput({ configYaml: 'input: {}' }));
+    const result = rpcnPipelineDrafts.save(draftInput({ configYaml: 'input: {}' }));
 
-    expect(saved?.id).toBe('draft-1');
-    expect(saved?.clusterId).toBe('cluster-a');
+    expect(result).toMatchObject({ ok: true, draft: { id: 'draft-1', clusterId: 'cluster-a' }, evicted: [] });
     expect(storedIds()).toEqual(['draft-1']);
 
     // A fresh read (as a reload would do) sees the same draft.
@@ -124,6 +123,22 @@ describe('rpcn pipeline drafts', () => {
     expect(ids).not.toContain('draft-0');
   });
 
+  it('reports which drafts it evicted, so eviction is never silent data loss', () => {
+    vi.useFakeTimers();
+    let last: ReturnType<typeof rpcnPipelineDrafts.save> | undefined;
+    try {
+      for (let i = 0; i <= MAX_DRAFTS_PER_CLUSTER; i++) {
+        vi.setSystemTime(new Date(Date.UTC(2026, 0, 1, 0, i)));
+        last = rpcnPipelineDrafts.save(draftInput({ id: `draft-${i}`, name: `pipeline ${i}` }));
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+
+    // The 26th save pushes out the stalest one, and names it.
+    expect(last).toMatchObject({ ok: true, evicted: [{ id: 'draft-0', name: 'pipeline 0' }] });
+  });
+
   it("doesn't evict another cluster's drafts to make room", () => {
     config.clusterId = 'cluster-b';
     rpcnPipelineDrafts.save(draftInput({ id: 'keep-me' }));
@@ -138,7 +153,7 @@ describe('rpcn pipeline drafts', () => {
   it('refuses a config too large to store, rather than blowing the storage quota', () => {
     const huge = 'x'.repeat(MAX_DRAFT_YAML_BYTES + 1);
     expect(isDraftYamlTooLarge(huge)).toBe(true);
-    expect(rpcnPipelineDrafts.save(draftInput({ configYaml: huge }))).toBeNull();
+    expect(rpcnPipelineDrafts.save(draftInput({ configYaml: huge }))).toEqual({ ok: false, reason: 'too-large' });
     expect(storedIds()).toEqual([]);
   });
 
@@ -147,7 +162,7 @@ describe('rpcn pipeline drafts', () => {
       throw new Error('QuotaExceededError');
     });
     try {
-      expect(rpcnPipelineDrafts.save(draftInput())).toBeNull();
+      expect(rpcnPipelineDrafts.save(draftInput())).toEqual({ ok: false, reason: 'storage-unavailable' });
     } finally {
       setItem.mockRestore();
     }

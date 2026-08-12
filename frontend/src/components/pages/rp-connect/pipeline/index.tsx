@@ -75,7 +75,7 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import {
-  isDraftYamlTooLarge,
+  MAX_DRAFTS_PER_CLUSTER,
   newDraftId,
   type PipelineDraft,
   rpcnPipelineDrafts,
@@ -96,7 +96,14 @@ import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
-import { isInvalidConfigError, type SaveIntent, saveSuccessMessage } from './save-actions';
+import {
+  BLANK_CONFIG_MESSAGE,
+  draftEvictionMessage,
+  isBlankConfig,
+  isInvalidConfigError,
+  type SaveIntent,
+  saveSuccessMessage,
+} from './save-actions';
 import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
@@ -296,12 +303,8 @@ function usePipelineSave({
    */
   const persistDraft = useCallback(
     (yamlContent: string): boolean => {
-      if (isDraftYamlTooLarge(yamlContent)) {
-        toast.error('This config is too large to keep as a draft. Fix the issues below and save the pipeline instead.');
-        return false;
-      }
       const values = form.getValues();
-      const saved = rpcnPipelineDrafts.save({
+      const result = rpcnPipelineDrafts.save({
         id: draftId ?? newDraftId(),
         pipelineId: mode === 'edit' ? pipelineId : undefined,
         name: values.name,
@@ -310,15 +313,27 @@ function usePipelineSave({
         tags: values.tags,
         configYaml: yamlContent,
       });
-      if (!saved) {
-        toast.error("Couldn't save a draft — browser storage is unavailable or full.");
+      if (!result.ok) {
+        toast.error(
+          result.reason === 'too-large'
+            ? 'This config is too large to keep as a draft. Fix the issues below and save the pipeline instead.'
+            : "Couldn't save a draft — browser storage is unavailable or full."
+        );
         return false;
+      }
+      if (result.evicted.length > 0) {
+        toast.warning(
+          draftEvictionMessage(
+            result.evicted.map((d) => d.name),
+            MAX_DRAFTS_PER_CLUSTER
+          )
+        );
       }
       // Clear both halves of "dirty" BEFORE announcing the draft: binding it rewrites the URL, and
       // the unsaved-changes blocker would otherwise interrupt that navigation with its own dialog.
       editorStore.getState().markSavedBaseline(yamlContent);
       form.reset(values);
-      onDraftIdChange(saved.id);
+      onDraftIdChange(result.draft.id);
       return true;
     },
     [form, draftId, mode, pipelineId, onDraftIdChange, editorStore]
@@ -357,6 +372,11 @@ function usePipelineSave({
       // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
       editorStore.getState().pendingEditCommit?.();
       const yamlContent = editorStore.getState().yamlContent;
+
+      if (isBlankConfig(yamlContent)) {
+        toast.error(BLANK_CONFIG_MESSAGE);
+        return;
+      }
 
       if (target === 'draft') {
         if (persistDraft(yamlContent)) {
