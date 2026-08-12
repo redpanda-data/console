@@ -151,7 +151,7 @@ describe('ConsoleApp', () => {
       },
     };
 
-    render(<ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enableRpcnTiles: true }} />);
+    render(<ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enablePipelineDiagrams: true }} />);
 
     await waitFor(() => {
       expect(setup).toHaveBeenCalledWith(
@@ -160,7 +160,7 @@ describe('ConsoleApp', () => {
           clusterId: 'test-cluster-id',
           setSidebarItems: mockOnSidebarItemsChange,
           setBreadcrumbs: mockOnBreadcrumbsChange,
-          featureFlags: { enableRpcnTiles: true },
+          featureFlags: { enablePipelineDiagrams: true },
           urlOverride: { grpc: 'http://custom-grpc:9090' },
         })
       );
@@ -241,7 +241,7 @@ describe('ConsoleApp', () => {
 
   describe('Feature Flags', () => {
     test('passes feature flags to setup()', async () => {
-      const flags = { enableNewSecurityPage: false, enableRpcnTiles: true };
+      const flags = { enableNewSecurityPage: false, enablePipelineDiagrams: true };
       render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
 
       await waitFor(() => {

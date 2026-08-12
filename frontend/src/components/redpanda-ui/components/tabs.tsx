@@ -205,7 +205,7 @@ type TabsContentProps = TabsPrimitive.Panel.Props & SharedProps;
 function TabsContent({ className, children, testId, ...props }: TabsContentProps) {
   return (
     <TabsPrimitive.Panel
-      className={cn('flex-1 space-y-6 outline-none', className)}
+      className={cn('flex-1 space-y-6 outline-none data-ending-style:hidden', className)}
       data-slot="tabs-content"
       data-testid={testId}
       {...props}

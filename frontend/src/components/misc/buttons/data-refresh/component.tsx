@@ -9,8 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Flex, IconButton, Popover, Spinner, Text } from '@redpanda-data/ui';
-import { PauseIcon, PlayIcon, RefreshIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Pause, Play, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { appGlobal } from '../../../../state/app-global';
@@ -43,19 +45,15 @@ export const DataRefreshButton = () => {
 
       let newRemainingSeconds = 0;
       if (stateRef.current.isActive && currentRequests === 0) {
-        if (currentRequests > 0) {
-          // Active requests — delay the next refresh
-          stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
+        const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
+        if (timeUntilRefresh > 0) {
+          newRemainingSeconds = Math.ceil(timeUntilRefresh / 1000);
         } else {
-          const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
-          if (timeUntilRefresh > 0) {
-            newRemainingSeconds = Math.ceil(timeUntilRefresh / 1000);
-          } else {
-            stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
-            appGlobal.onRefresh();
-          }
+          stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
+          appGlobal.onRefresh();
         }
       } else if (stateRef.current.isActive && currentRequests > 0) {
+        // Active requests — delay the next refresh
         stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
       }
 
@@ -83,62 +81,58 @@ export const DataRefreshButton = () => {
   const countStr = maxRequestCount > 1 ? `${maxRequestCount - activeRequests} / ${maxRequestCount}` : '';
 
   return (
-    <div className="flex items-center gap-1">
-      <Box>
-        <Popover
-          content={
-            <div>
-              Enable or disable automatic refresh every <span className="codeBox">{AUTO_REFRESH_INTERVAL_SECS}s</span>.
-            </div>
-          }
-          hideCloseButton={true}
-          isInPortal
-          placement="bottom"
-          title="Auto Refresh"
-        >
-          <IconButton
-            aria-label="Auth Refresh"
-            icon={isActive ? <PauseIcon size={18} /> : <PlayIcon size={18} />}
-            onClick={toggleAutorefresh}
-            p={0}
-            size="xs"
-            variant="ghost"
-          />
-        </Popover>
-      </Box>
-      <Flex alignItems="center" flexDirection="column">
-        {isActive || activeRequests > 0 ? (
-          <Spinner color="red.500" ml={2} size="sm" speed="0.3s" />
-        ) : (
-          <Popover
-            content={
-              <div>
-                Click to force a refresh of the data shown in the current page. When switching pages, any data older
-                than <span className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be
-                refreshed automatically.
-              </div>
+    <TooltipProvider>
+      <div className="flex items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              // Size variants also set `[&_svg]:size-*`, so a box size from className alone would
+              // leave the glyph oversized.
+              <Button
+                aria-label={isActive ? 'Pause auto refresh' : 'Start auto refresh'}
+                onClick={toggleAutorefresh}
+                size="icon-sm"
+                variant="ghost"
+              >
+                {isActive ? <Pause /> : <Play />}
+              </Button>
             }
-            hideCloseButton={true}
-            isInPortal
-            placement="bottom"
-            title="Force Refresh"
-          >
-            <IconButton
-              aria-label="Force Refresh"
-              icon={<RefreshIcon size={18} />}
-              onClick={() => appGlobal.onRefresh()}
-              p={0}
-              size="xs"
-              variant="ghost"
+          />
+          <TooltipContent className="max-w-56">
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">Auto refresh</span>
+              <span>Automatically refresh the data on this page every {AUTO_REFRESH_INTERVAL_SECS}s.</span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+        {isActive || activeRequests > 0 ? (
+          <Spinner className="ml-1" />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button aria-label="Force refresh" onClick={() => appGlobal.onRefresh()} size="icon-sm" variant="ghost">
+                  <RefreshCw />
+                </Button>
+              }
             />
-          </Popover>
+            <TooltipContent className="max-w-64">
+              <div className="flex flex-col gap-1">
+                <span className="font-medium">Force refresh</span>
+                <span>
+                  Refresh the data shown on this page. When switching pages, any data older than{' '}
+                  {prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)} is refreshed automatically.
+                </span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         )}
-      </Flex>
-      <Text fontSize="sm" ml={4} userSelect="none">
-        {isActive && activeRequests === 0 && <>Refreshing in {remainingSeconds} secs</>}
-        {activeRequests > 0 && <>Fetching data... {countStr}</>}
-      </Text>
-    </div>
+        <span className="ml-3 select-none text-muted-foreground text-sm">
+          {isActive && activeRequests === 0 ? <>Refreshing in {remainingSeconds} secs</> : null}
+          {activeRequests > 0 ? <>Fetching data... {countStr}</> : null}
+        </span>
+      </div>
+    </TooltipProvider>
   );
 };
 

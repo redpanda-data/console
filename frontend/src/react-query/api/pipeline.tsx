@@ -34,12 +34,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useMemo } from 'react';
-import {
-  MAX_PAGE_SIZE,
-  type MessageInit,
-  type QueryOptions,
-  SHORT_POLLING_INTERVAL,
-} from 'react-query/react-query.utils';
+import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -47,6 +42,10 @@ export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 const transitionalStates: Pipeline_State[] = [Pipeline_State.STARTING, Pipeline_State.STOPPING];
+
+// The server does the same work per call at any page size (it lists everything and slices), and the
+// list drains page-by-page — so ask for the legacy page's 500, under the proto max.
+const LIST_PIPELINES_PAGE_SIZE = 500;
 
 export const useGetPipelineQuery = (
   { id }: { id: Pipeline['id'] },
@@ -86,7 +85,7 @@ export const useListPipelinesQuery = (
   const listPipelinesRequestDataPlane = useMemo(
     () =>
       create(ListPipelinesRequestSchemaDataPlane, {
-        pageSize: MAX_PAGE_SIZE,
+        pageSize: LIST_PIPELINES_PAGE_SIZE,
         pageToken: '',
         ...input,
       }),
@@ -112,9 +111,12 @@ export const useListPipelinesQuery = (
           return hasTransitional ? SHORT_POLLING_INTERVAL : false;
         }
       : false,
-    getNextPageParam: (lastPage) => {
+    getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
-      if (!nextPageToken) {
+      // Any token already requested, not just the last one: keyset tokens only move forward, so a
+      // repeat means the server sent us backwards (A→A, or a longer A→B→A cycle) and the drain would
+      // never end.
+      if (!nextPageToken || allPageParams.some((param) => param?.pageToken === nextPageToken)) {
         return;
       }
       return create(ListPipelinesRequestSchemaDataPlane, {
@@ -125,9 +127,20 @@ export const useListPipelinesQuery = (
     pageParamKey: 'request',
   });
 
+  // Deduplicated by id: the token names the next page's first id, so a server resolving it by exact
+  // match replays page one when that pipeline is deleted mid-drain. Later pages win.
   const pipelines = useMemo(() => {
-    const allPipelines = listPipelinesResult?.data?.pages?.flatMap((page) => page?.response?.pipelines ?? []);
-    return allPipelines ?? [];
+    const pages = listPipelinesResult?.data?.pages;
+    if (!pages) {
+      return [];
+    }
+    const byId = new Map<string, Pipeline>();
+    for (const page of pages) {
+      for (const pipeline of page?.response?.pipelines ?? []) {
+        byId.set(pipeline.id, pipeline);
+      }
+    }
+    return [...byId.values()];
   }, [listPipelinesResult.data]);
 
   const data = useMemo(() => ({ pipelines }), [pipelines]);

@@ -34,7 +34,7 @@
 
 @layer utilities {
   /* A work surface filling the viewport below whatever chrome sits above it
-     (--console-page-top, measured by hooks/use-page-top-offset.ts). The 1rem keeps its
+     (--console-page-top, measured in components/layout/page-column.tsx). The 1rem keeps its
      bottom border off the viewport edge. Pair with a min-height for short viewports. */
   .page-fill-viewport {
     height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
@@ -56,7 +56,7 @@
   }
 
   /* Chrome that stays put while the page beneath it goes edge-to-edge, re-inset by the
-     same amount the expanded pages give their own headers. */
+     same amount expanded pages give their own headers. */
   html[data-page-expanded] .page-expanded-inset {
     padding-left: 1rem;
     padding-right: 1rem;

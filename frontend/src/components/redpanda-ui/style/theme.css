@@ -1,3 +1,30 @@
+/*
+ * Fonts ship with the theme so the font tokens below always resolve without
+ * any host-app configuration:
+ *   - Inter / Geist Mono: @fontsource packages (unicode-range subset files,
+ *     one @font-face per weight, served from node_modules at build time).
+ *   - Inter Display: inter-ui (rsms's official npm distribution — no
+ *     @fontsource equivalent exists). Family name is "InterDisplay" (no space).
+ */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/geist-mono/400.css';
+@import '@fontsource/geist-mono/500.css';
+@import '@fontsource/geist-mono/600.css';
+@import 'inter-ui/inter-display.css';
+
+/* =============================================================================
+   TAILWIND CSS V4 THEME CONFIGURATION
+
+   Structure:
+   1. @theme {} - All design tokens (colors with light mode defaults)
+   2. @custom-variant - Dark mode selector configuration
+   3. .dark {} - Dark mode overrides only
+   4. @layer base {} - Global styles and defaults
+   ============================================================================= */
+
 @theme {
   /* ===================================================================
      TYPOGRAPHY TOKENS
@@ -5,7 +32,7 @@
 
   /* Font Families */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Inter Display', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'InterDisplay', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, 'Menlo', monospace;
 
   /* Letter Spacing */
@@ -728,7 +755,7 @@
 /* =============================================================================
    TYPE SCALE — DISPLAY HEADINGS
    `text-heading-xl`…`text-heading-xs` — @utility (not --text-* tokens) so each can set the
-   Inter Display font-family. line-height and font-weight read `var(--tw-leading,
+   InterDisplay font-family. line-height and font-weight read `var(--tw-leading,
    …)` / `var(--tw-font-weight, …)` — the SAME channel Tailwind emits for
    `--text-*` tokens — so `text-heading-xl leading-9 font-bold` overrides compose
    order-independently (don't hardcode these; it reintroduces cascade-order

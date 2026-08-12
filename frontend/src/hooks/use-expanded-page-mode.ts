@@ -12,11 +12,10 @@
 import { useCallback, useLayoutEffect, useState } from 'react';
 
 /**
- * Set on `<html>` while an expanded page is on screen. Every shell releases its
- * horizontal constraints off this attribute in CSS, in lockstep: Console's gutter and
- * width cap (`page-expanded-*` in globals.css) and Cloud UI's embedded wrapper
- * (`expandableWidth` in cloud-ui layout.tsx). It must never outlive the page — a stale
- * attribute bleeds full width onto the next one.
+ * Set on `<html>` while an expanded page is on screen. Each shell releases its horizontal
+ * constraints off it in CSS: Console's gutter and width cap (`page-expanded-*` in
+ * globals.css), Cloud UI's embedded wrapper (`expandableWidth` in cloud-ui layout.tsx).
+ * Must not outlive the page — a stale attribute bleeds full width onto the next one.
  */
 const PAGE_EXPANDED_ATTR = 'data-page-expanded';
 
@@ -46,16 +45,14 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
   // State rather than a ref, so attaching the node re-runs the effect below.
   const [pageRoot, setPageRoot] = useState<HTMLElement | null>(null);
 
-  // Layout effect: the attribute lands in the same frame as the page's own geometry
-  // change, so the shells and the page animate together. Its cleanup is the only unset —
-  // it covers unmount (navigating away), `ref` detaching and `expanded` flipping off.
+  // Layout effect so the attribute lands in the same frame as the page's own geometry change,
+  // and its cleanup is the only unset: it covers unmount, `ref` detaching and `expanded` off.
   useLayoutEffect(() => {
     if (!pageRoot) {
       return clearPageExpanded;
     }
 
-    // display:none collapses the root to 0x0, which fires the observer — that is the
-    // on-screen signal.
+    // display:none collapses the root to 0x0, which fires the observer — the on-screen signal.
     const sync = () => {
       const onScreen = pageRoot.getClientRects().length > 0;
       document.documentElement.toggleAttribute(PAGE_EXPANDED_ATTR, expanded && onScreen);

@@ -11,12 +11,10 @@ import { z } from 'zod';
 
 import { CONNECT_COMPONENT_TYPE } from './schema';
 
-export const connectTilesListFormSchema = z.object({
+const connectTilesListFormSchema = z.object({
   connectionName: z.string().min(1, { message: 'Please select a connection method.' }),
   connectionType: z.enum(CONNECT_COMPONENT_TYPE),
 });
-
-export type ConnectTilesListFormData = z.infer<typeof connectTilesListFormSchema>;
 
 export type OperationResult = {
   operation: string; // e.g., "Create user", "Create ACL", "Create secret"
