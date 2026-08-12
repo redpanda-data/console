@@ -9,9 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { isEmbedded } from 'config';
+
 import { SchemaRegistryEditSection } from './schema-registry-edit-section';
 import { AclsStep } from '../create/configuration/acls-step';
 import { ConsumerOffsetStep } from '../create/configuration/consumer-offset-step';
+import { RolesStep } from '../create/configuration/roles-step';
 import { TopicsStep } from '../create/configuration/topics-step';
 import { SCHEMA_REGISTRY_MODE, type SchemaRegistryMode } from '../create/model';
 
@@ -23,6 +26,8 @@ export const ShadowingTab = ({
   <div className="space-y-4">
     <TopicsStep />
     <AclsStep />
+    {/* Hidden in embedded mode: the controlplane update cannot persist role changes yet */}
+    {!isEmbedded() && <RolesStep />}
     <ConsumerOffsetStep />
     <SchemaRegistryEditSection originalMode={schemaRegistryOriginalMode} />
   </div>

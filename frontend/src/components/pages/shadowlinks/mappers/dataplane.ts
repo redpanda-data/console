@@ -20,6 +20,7 @@ import type {
   AuthenticationConfiguration,
   ConsumerOffsetSyncOptions,
   NameFilter,
+  RoleSyncOptions,
   SecuritySettingsSyncOptions,
   ShadowLinkClientOptions,
   ShadowLinkConfigurations,
@@ -41,6 +42,7 @@ import {
   type UnifiedAuthenticationConfiguration,
   type UnifiedClientOptions,
   type UnifiedConsumerOffsetSyncOptions,
+  type UnifiedRoleSyncOptions,
   type UnifiedSecuritySyncOptions,
   type UnifiedShadowLink,
   type UnifiedShadowLinkConfigurations,
@@ -152,6 +154,23 @@ function mapDataplaneConsumerOffsetSyncOptions(
 }
 
 /**
+ * Map dataplane role sync options to unified type
+ */
+function mapDataplaneRoleSyncOptions(options: RoleSyncOptions | undefined): UnifiedRoleSyncOptions | undefined {
+  if (!options) {
+    return;
+  }
+
+  return {
+    roleNameFilters: (options.roleNameFilters ?? []).map((f: NameFilter) => ({
+      name: f.name,
+      patternType: f.patternType,
+      filterType: f.filterType,
+    })),
+  };
+}
+
+/**
  * Map dataplane security sync options to unified type
  */
 function mapDataplaneSecuritySyncOptions(
@@ -196,6 +215,7 @@ function mapDataplaneConfigurations(
     clientOptions: mapDataplaneClientOptions(config.clientOptions),
     topicMetadataSyncOptions: mapDataplaneTopicMetadataSyncOptions(config.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapDataplaneConsumerOffsetSyncOptions(config.consumerOffsetSyncOptions),
+    roleSyncOptions: mapDataplaneRoleSyncOptions(config.roleSyncOptions),
     securitySyncOptions: mapDataplaneSecuritySyncOptions(config.securitySyncOptions),
     schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
   };
@@ -444,6 +464,30 @@ export const buildDefaultConsumerGroupsValues = (
 };
 
 /**
+ * Build default form values for roles category from shadow link configurations.
+ * A link without role sync options hydrates to specify mode with no filters,
+ * so an untouched edit keeps role sync disabled.
+ */
+export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink): Pick<FormValues, 'rolesMode' | 'roles'> => {
+  const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
+  const roleNameFilters = roleSyncOptions?.roleNameFilters || [];
+
+  // Check if using "all roles" mode
+  const isAllMode = isAllNameFilter(roleNameFilters);
+
+  return {
+    rolesMode: isAllMode ? 'all' : 'specify',
+    roles: isAllMode
+      ? []
+      : roleNameFilters.map((filter) => ({
+          name: filter.name,
+          patternType: filter.patternType,
+          filterType: filter.filterType,
+        })),
+  };
+};
+
+/**
  * Build default form values for ACLs category from shadow link configurations
  */
 export const buildDefaultACLsValues = (
@@ -487,6 +531,7 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
   const connectionValues = buildDefaultConnectionValues(shadowLink);
   const topicsValues = buildDefaultTopicsValues(shadowLink);
   const consumerGroupsValues = buildDefaultConsumerGroupsValues(shadowLink);
+  const rolesValues = buildDefaultRolesValues(shadowLink);
   const aclsValues = buildDefaultACLsValues(shadowLink);
   const schemaRegistryValues = buildDefaultSchemaRegistryValues(shadowLink);
 
@@ -495,6 +540,7 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
     ...connectionValues,
     ...topicsValues,
     ...consumerGroupsValues,
+    ...rolesValues,
     ...aclsValues,
     ...schemaRegistryValues,
   };

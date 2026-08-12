@@ -162,6 +162,12 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			RedpandaFeature: redpandaFeatureShadowLinkSchemaRegistrySync,
 		},
 		{
+			URL:             "/api/shadow-links/role-sync",
+			Method:          "GET",
+			HasRedpandaAPI:  true,
+			RedpandaFeature: redpandaFeatureShadowLinkRoleSync,
+		},
+		{
 			URL:             "/api/schema-registry/contexts",
 			Method:          "GET",
 			RedpandaFeature: redpandaFeatureSchemaRegistryContexts,
