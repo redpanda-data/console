@@ -76,7 +76,7 @@ func (JSONSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, opts
 	}
 
 	if !startsWithJSON {
-		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+		return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 	}
 
 	return trimmed, nil
@@ -86,12 +86,12 @@ func jsonDeserializePayload(payload []byte) (any, error) {
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 
 	if len(trimmed) == 0 {
-		return nil, fmt.Errorf("after trimming whitespaces there were no characters left")
+		return nil, errors.New("after trimming whitespaces there were no characters left")
 	}
 
 	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 	if !startsWithJSON {
-		return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+		return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 	}
 
 	var obj any

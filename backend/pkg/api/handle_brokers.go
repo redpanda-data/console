@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -47,7 +48,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 		brokerIDStr := rest.GetURLParam(r, "brokerID")
 		if brokerIDStr == "" || len(brokerIDStr) > 10 {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("broker id in URL not set"),
+				Err:      errors.New("broker id in URL not set"),
 				Status:   http.StatusBadRequest,
 				Message:  "BrokerWithLogDirs ID must be set and no longer than 10 characters",
 				IsSilent: true,
@@ -58,7 +59,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 		brokerID, err := strconv.ParseInt(brokerIDStr, 10, 32)
 		if err != nil {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("broker id in URL not set"),
+				Err:      errors.New("broker id in URL not set"),
 				Status:   http.StatusBadRequest,
 				Message:  "BrokerWithLogDirs ID must be a valid int32",
 				IsSilent: true,

@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -75,7 +76,7 @@ func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 		}
 		if !canSee {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to view consumer group"),
+				Err:          errors.New("requester has no permissions to view consumer group"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to view this consumer group",
 				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
@@ -115,7 +116,7 @@ type patchConsumerGroupRequest struct {
 
 func (p *patchConsumerGroupRequest) OK() error {
 	if len(p.Topics) == 0 {
-		return fmt.Errorf("at least one topic and partition must be set")
+		return errors.New("at least one topic and partition must be set")
 	}
 	for _, topic := range p.Topics {
 		if len(topic.Partitions) == 0 {
@@ -154,7 +155,7 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
+				Err:          errors.New("requester has no permissions to edit consumer group"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to edit this consumer group",
 				InternalLogs: []zapcore.Field{zap.String("group_id", req.GroupID)},
@@ -205,7 +206,7 @@ type deleteConsumerGroupRequest struct {
 
 func (p *deleteConsumerGroupRequest) OK() error {
 	if len(p.Topics) == 0 {
-		return fmt.Errorf("at least one topic and partition must be set")
+		return errors.New("at least one topic and partition must be set")
 	}
 	for _, topic := range p.Topics {
 		if len(topic.Partitions) == 0 {
@@ -238,7 +239,7 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 		}
 		if !canDelete {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
+				Err:          errors.New("requester has no permissions to edit consumer group"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to edit this consumer group",
 				InternalLogs: []zapcore.Field{zap.String("group_id", req.GroupID)},
@@ -293,7 +294,7 @@ func (api *API) handleDeleteConsumerGroup() http.HandlerFunc {
 		}
 		if !canDelete {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to delete consumer group"),
+				Err:          errors.New("requester has no permissions to delete consumer group"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to delete this consumer group",
 				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},

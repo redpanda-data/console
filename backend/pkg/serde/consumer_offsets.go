@@ -11,6 +11,7 @@ package serde
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kbin"
@@ -21,7 +22,7 @@ import (
 // deserializeConsumerOffset deserializes the binary messages in the __consumer_offsets topic
 func (*Service) deserializeConsumerOffset(record *kgo.Record) (*Record, error) {
 	if len(record.Key) < 2 {
-		return nil, fmt.Errorf("offset commit key is supposed to be at least 2 bytes long")
+		return nil, errors.New("offset commit key is supposed to be at least 2 bytes long")
 	}
 
 	// 1. Figure out what kind of message we've got. On this topic we'll find OffsetCommits as well as GroupMetadata

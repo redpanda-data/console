@@ -9,9 +9,7 @@
 
 package config
 
-import (
-	"regexp"
-)
+import "regexp"
 
 // Regexp adds unmarshalling from json for regexp.Regexp
 type Regexp struct {
@@ -33,7 +31,7 @@ func (r *Regexp) UnmarshalText(b []byte) error {
 // MarshalText marshals regexp.Regexp as string
 func (r *Regexp) MarshalText() ([]byte, error) {
 	if r.Regexp != nil {
-		return []byte(r.Regexp.String()), nil
+		return []byte(r.String()), nil
 	}
 
 	return nil, nil

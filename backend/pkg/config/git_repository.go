@@ -9,7 +9,7 @@
 
 package config
 
-import "fmt"
+import "errors"
 
 // GitRepository is the configuration options that determine what Git repository, branch and
 // directory shall be used.
@@ -23,7 +23,7 @@ type GitRepository struct {
 // Validate given input for config properties
 func (c *GitRepository) Validate() error {
 	if c.URL == "" {
-		return fmt.Errorf("you must set a repository url")
+		return errors.New("you must set a repository url")
 	}
 
 	return nil

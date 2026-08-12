@@ -38,7 +38,7 @@ func (MsgPackSerde) Name() PayloadEncoding {
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d MsgPackSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.MsgPackService == nil {
-		return &RecordPayload{}, fmt.Errorf("no message pack service configured")
+		return &RecordPayload{}, errors.New("no message pack service configured")
 	}
 
 	if !d.MsgPackService.IsTopicAllowed(record.Topic) {
@@ -83,7 +83,7 @@ func (MsgPackSerde) SerializeObject(_ context.Context, obj any, _ PayloadType, o
 
 		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if !startsWithJSON {
-			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+			return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 		}
 
 		var nativeObj any

@@ -10,7 +10,7 @@
 package api
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
@@ -28,7 +28,7 @@ func (api *API) handleGetQuotas() http.HandlerFunc {
 		}
 		if !isAllowed {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to list Quotas"),
+				Err:      errors.New("requester is not allowed to list Quotas"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to list ACLs",
 				IsSilent: true,

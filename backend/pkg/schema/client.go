@@ -11,6 +11,7 @@ package schema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -109,7 +110,7 @@ func (c *Client) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse,
 
 	parsed, ok := res.Result().(*SchemaResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse schema response")
+		return nil, errors.New("failed to parse schema response")
 	}
 
 	return parsed, nil
@@ -161,7 +162,7 @@ func (c *Client) GetSchemaBySubject(ctx context.Context, subject, version string
 
 	parsed, ok := res.Result().(*SchemaVersionedResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse schema by subject response")
+		return nil, errors.New("failed to parse schema by subject response")
 	}
 
 	return parsed, nil
@@ -209,7 +210,7 @@ func (c *Client) GetSubjects(ctx context.Context, showSoftDeleted bool) (*Subjec
 	result := res.Result()
 	parsed, ok := result.(*[]string)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse subjects response")
+		return nil, errors.New("failed to parse subjects response")
 	}
 
 	return &SubjectsResponse{
@@ -249,7 +250,7 @@ func (c *Client) GetSubjectVersions(ctx context.Context, subject string, showSof
 
 	parsed, ok := res.Result().(*[]int)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse subject versions response")
+		return nil, errors.New("failed to parse subject versions response")
 	}
 
 	return &SubjectVersionsResponse{
@@ -283,7 +284,7 @@ func (c *Client) GetMode(ctx context.Context) (*ModeResponse, error) {
 
 	parsed, ok := res.Result().(*ModeResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse mode response")
+		return nil, errors.New("failed to parse mode response")
 	}
 
 	return parsed, nil
@@ -316,7 +317,7 @@ func (c *Client) GetConfig(ctx context.Context) (*ConfigResponse, error) {
 
 	parsed, ok := res.Result().(*ConfigResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse config response")
+		return nil, errors.New("failed to parse config response")
 	}
 
 	return parsed, nil
@@ -355,7 +356,7 @@ func (c *Client) PutConfig(ctx context.Context, compatLevel CompatibilityLevel) 
 
 	parsed, ok := res.Result().(*PutConfigResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse config for subject response")
+		return nil, errors.New("failed to parse config for subject response")
 	}
 
 	return parsed, nil
@@ -392,7 +393,7 @@ func (c *Client) GetSubjectConfig(ctx context.Context, subject string) (*ConfigR
 
 	parsed, ok := res.Result().(*ConfigResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse config for subject response")
+		return nil, errors.New("failed to parse config for subject response")
 	}
 
 	return parsed, nil
@@ -428,7 +429,7 @@ func (c *Client) PutSubjectConfig(ctx context.Context, subject string, compatLev
 
 	parsed, ok := res.Result().(*PutConfigResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse config for subject response")
+		return nil, errors.New("failed to parse config for subject response")
 	}
 
 	return parsed, nil
@@ -458,7 +459,7 @@ func (c *Client) DeleteSubjectConfig(ctx context.Context, subject string) (*Conf
 
 	parsed, ok := res.Result().(*ConfigResponse)
 	if !ok {
-		return nil, fmt.Errorf("failed to parse config for subject response")
+		return nil, errors.New("failed to parse config for subject response")
 	}
 
 	return parsed, nil

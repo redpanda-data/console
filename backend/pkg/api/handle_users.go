@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -37,7 +38,7 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 		}
 		if !canList {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to list Kafka users"),
+				Err:      errors.New("requester has no permissions to list Kafka users"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to list Kafka users.",
 				IsSilent: false,
@@ -85,16 +86,16 @@ type CreateUserRequest struct {
 // OK validates the create user request.
 func (c *CreateUserRequest) OK() error {
 	if c.Username == "" {
-		return fmt.Errorf("username must be set")
+		return errors.New("username must be set")
 	}
 	if c.Password == "" {
-		return fmt.Errorf("password must be set")
+		return errors.New("password must be set")
 	}
 
 	switch c.Mechanism {
 	case adminapi.ScramSha256, adminapi.ScramSha512:
 	default:
-		return fmt.Errorf("mechanism must be either SCRAM-SHA-256 or SCRAM-SHA-512")
+		return errors.New("mechanism must be either SCRAM-SHA-256 or SCRAM-SHA-512")
 	}
 
 	return nil
@@ -118,7 +119,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 		}
 		if !canCreate {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to create Kafka users"),
+				Err:      errors.New("requester has no permissions to create Kafka users"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to create Kafka users.",
 				IsSilent: false,
@@ -130,7 +131,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 		// 3. Check if targeted user is a protected user
 		if api.Hooks.Authorization.IsProtectedKafkaUser(req.Username) {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester tried to create a protected Kafka user"),
+				Err:      errors.New("requester tried to create a protected Kafka user"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to create a Kafka user with this name",
 				IsSilent: false,
@@ -156,7 +157,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 
 		// 5. Return an error if we can't create any users
 		rest.SendRESTError(w, r, api.Logger, &rest.Error{
-			Err:     fmt.Errorf("redpanda Admin API is not enabled"),
+			Err:     errors.New("redpanda Admin API is not enabled"),
 			Status:  http.StatusServiceUnavailable,
 			Message: "Redpanda Admin API is not enabled",
 		})
@@ -168,7 +169,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 		principalID := rest.GetURLParam(r, "principalID")
 		if principalID == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:     fmt.Errorf("user must be set"),
+				Err:     errors.New("user must be set"),
 				Status:  http.StatusBadRequest,
 				Message: "User must be set",
 			})
@@ -183,7 +184,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 		}
 		if !canDelete {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to delete Kafka users"),
+				Err:      errors.New("requester has no permissions to delete Kafka users"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to delete Kafka users.",
 				IsSilent: false,
@@ -195,7 +196,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 		// 3. Check if targeted user is a protected user
 		if api.Hooks.Authorization.IsProtectedKafkaUser(principalID) {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester tried to delete a protected Kafka user"),
+				Err:      errors.New("requester tried to delete a protected Kafka user"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to delete this protected Kafka user",
 				IsSilent: false,
@@ -221,7 +222,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 
 		// 5. Return an error if we can't delete any users
 		rest.SendRESTError(w, r, api.Logger, &rest.Error{
-			Err:     fmt.Errorf("redpanda Admin API is not enabled"),
+			Err:     errors.New("redpanda Admin API is not enabled"),
 			Status:  http.StatusServiceUnavailable,
 			Message: "Redpanda Admin API is not enabled",
 		})

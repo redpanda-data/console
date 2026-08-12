@@ -149,11 +149,11 @@ func (mapper) connectorErrorTypeToProto(errorType string) (dataplanev1alpha2.Con
 
 func (mapper) createConnectorProtoToClientRequest(createConnector *dataplanev1alpha2.CreateConnectorRequest) (*con.CreateConnectorRequest, error) {
 	if createConnector == nil || createConnector.Connector == nil {
-		return nil, fmt.Errorf("create connector request is nil")
+		return nil, errors.New("create connector request is nil")
 	}
 
 	if len(createConnector.Connector.Config) == 0 {
-		return nil, fmt.Errorf("create connector request config is empty")
+		return nil, errors.New("create connector request config is empty")
 	}
 
 	return &con.CreateConnectorRequest{

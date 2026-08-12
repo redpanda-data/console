@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -471,7 +471,7 @@ func updateUsers(doc3 *openapi3.T) {
 			connectErrorToErrorStatus(
 				apierrors.NewConnectError(
 					connect.CodeNotFound,
-					fmt.Errorf("user not found"),
+					errors.New("user not found"),
 					apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_RESOURCE_NOT_FOUND.String()),
 				),
 			),
@@ -660,7 +660,7 @@ func newBadRequestError(fieldValidations ...*errdetails.BadRequest_FieldViolatio
 	return connectErrorToErrorStatus(
 		apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("provided parameters are invalid"),
+			errors.New("provided parameters are invalid"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			apierrors.NewBadRequest(fieldValidations...),
 		),

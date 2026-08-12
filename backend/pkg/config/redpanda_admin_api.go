@@ -10,6 +10,7 @@
 package config
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -54,7 +55,7 @@ func (c *RedpandaAdminAPI) Validate() error {
 	}
 
 	if len(c.URLs) == 0 {
-		return fmt.Errorf("you must specify at least one URL")
+		return errors.New("you must specify at least one URL")
 	}
 
 	for _, u := range c.URLs {

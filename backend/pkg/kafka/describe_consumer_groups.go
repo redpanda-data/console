@@ -11,6 +11,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kerr"
@@ -91,7 +92,7 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 		res, ok := kresp.Resp.(*kmsg.DescribeGroupsResponse)
 		if !ok {
 			// This should never happen, but if it happens we would panic, hence handling here
-			return nil, fmt.Errorf("failed to type assert DescribeGroupsResponse")
+			return nil, errors.New("failed to type assert DescribeGroupsResponse")
 		}
 
 		result.Groups = append(result.Groups, DescribeConsumerGroupsResponse{
@@ -118,7 +119,7 @@ func (s *Service) DescribeConsumerGroup(ctx context.Context, groupID string) (km
 		return kmsg.DescribeGroupsResponseGroup{}, err
 	}
 	if len(res.Groups) == 0 {
-		return kmsg.DescribeGroupsResponseGroup{}, fmt.Errorf("describe group response is empty, expected one group")
+		return kmsg.DescribeGroupsResponseGroup{}, errors.New("describe group response is empty, expected one group")
 	}
 
 	describedGroup := res.Groups[0]

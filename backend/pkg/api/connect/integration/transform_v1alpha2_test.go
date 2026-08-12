@@ -16,6 +16,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -153,7 +154,7 @@ func (s *APISuite) TestDeployTransform_v1alpha2() {
 		kafkaConsumerCl, err := kgo.NewClient(consumerOpts...)
 		require.NoError(err)
 
-		consumeCtx, cancel := context.WithTimeoutCause(ctx, 6*time.Second, fmt.Errorf("consumer context deadline exceeded"))
+		consumeCtx, cancel := context.WithTimeoutCause(ctx, 6*time.Second, errors.New("consumer context deadline exceeded"))
 		defer cancel()
 		fetches := kafkaConsumerCl.PollRecords(consumeCtx, 1)
 		assert.Empty(fetches.Errors(), "unexpected errors when polling record in output topic")

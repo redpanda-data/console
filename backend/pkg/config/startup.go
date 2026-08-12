@@ -10,7 +10,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"time"
 )
@@ -42,14 +42,14 @@ func (k *ServiceStartupAttemptsOptions) SetDefaults() {
 // Validate startup config.
 func (k *ServiceStartupAttemptsOptions) Validate() error {
 	if k.MaxRetries < 0 {
-		return fmt.Errorf("max retries must be 0 for unlimited retries or a positive integer")
+		return errors.New("max retries must be 0 for unlimited retries or a positive integer")
 	}
 	if k.MaxRetries == 0 {
 		k.MaxRetries = math.MaxInt
 	}
 
 	if k.BackoffMultiplier <= 0 {
-		return fmt.Errorf("the backoff multiplier must be greater than 0")
+		return errors.New("the backoff multiplier must be greater than 0")
 	}
 
 	return nil

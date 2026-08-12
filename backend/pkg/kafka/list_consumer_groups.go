@@ -11,6 +11,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -69,7 +70,7 @@ func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsRe
 		res, ok := kresp.Resp.(*kmsg.ListGroupsResponse)
 		if !ok {
 			// This should never happen, but we want to catch it to avoid panics
-			return nil, fmt.Errorf("failed to assert ListGroupsResponse")
+			return nil, errors.New("failed to assert ListGroupsResponse")
 		}
 
 		result.Groups = append(result.Groups, ListConsumerGroupsResponse{

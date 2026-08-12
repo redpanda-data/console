@@ -37,7 +37,7 @@ func (UintSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 
 	payloadSize := len(payload)
 	if payloadSize != 1 && payloadSize != 2 && payloadSize != 4 && payloadSize != 8 {
-		return &RecordPayload{}, fmt.Errorf("payload is not of compatible size")
+		return &RecordPayload{}, errors.New("payload is not of compatible size")
 	}
 
 	var err error
