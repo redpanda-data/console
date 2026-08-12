@@ -10,14 +10,16 @@
  */
 
 import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { BookOpenIcon, Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
 import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { getNodeDocsUrl } from '../utils/connector-docs';
 import { buildChildrenMap, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
 const SECTION_TITLES: Record<string, string> = {
@@ -74,6 +76,43 @@ function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] 
   }
   return ids;
 }
+
+// The row handler preventDefaults Enter/Space to select the node, which would swallow the link's
+// navigation; arrow keys still bubble, so row navigation keeps working from a focused link.
+function stopRowSelectKeys(e: React.KeyboardEvent): void {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.stopPropagation();
+  }
+}
+
+/** Error takes precedence over the unsaved dot, so a row never shows both. */
+const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boolean }) => {
+  if (hasError) {
+    return <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" title="Has errors" />;
+  }
+  if (unsaved) {
+    return <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" title="Unsaved changes" />;
+  }
+  return null;
+};
+
+const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
+  <Button
+    aria-label={`${label} documentation`}
+    as="a"
+    className="shrink-0 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+    href={href}
+    // Clicking the row jumps the YAML cursor — opening docs must not also do that.
+    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+    onKeyDown={stopRowSelectKeys}
+    rel="noopener noreferrer"
+    size="icon-xs"
+    target="_blank"
+    variant="ghost"
+  >
+    <BookOpenIcon />
+  </Button>
+);
 
 type TreeKeyNav = { visibleIds: string[]; maps: NodeMaps; collapsedIds: Set<string> };
 
@@ -153,6 +192,7 @@ const NodeRow = ({
   const selected = selectedId === node.id;
   const hasError = errorNodeIds?.has(node.id);
   const unsaved = unsavedNodeIds?.has(node.id);
+  const docsUrl = getNodeDocsUrl(node);
 
   return (
     <>
@@ -211,13 +251,8 @@ const NodeRow = ({
               {node.labelText}
             </span>
           ) : null}
-          {/* Error takes precedence over the unsaved dot, so a node never shows both. */}
-          {hasError ? (
-            <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" title="Has errors" />
-          ) : null}
-          {unsaved && !hasError ? (
-            <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" title="Unsaved changes" />
-          ) : null}
+          <RowStatusDot hasError={hasError} unsaved={unsaved} />
+          {docsUrl ? <NodeDocsLink href={docsUrl} label={node.label} /> : null}
         </span>
       </div>
       {hasChildren && !collapsed
