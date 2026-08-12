@@ -77,8 +77,8 @@ function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] 
   return ids;
 }
 
-// Enter/Space must reach the docs link itself — the row handler would otherwise preventDefault
-// (to select the node) and swallow the navigation. Arrow keys still bubble, so row nav keeps working.
+// The row handler preventDefaults Enter/Space to select the node, which would swallow the link's
+// navigation; arrow keys still bubble, so row navigation keeps working from a focused link.
 function stopRowSelectKeys(e: React.KeyboardEvent): void {
   if (e.key === 'Enter' || e.key === ' ') {
     e.stopPropagation();
@@ -96,14 +96,13 @@ const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boo
   return null;
 };
 
-/** Hover/focus-revealed link to a component's reference docs, trailing its row. */
 const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
   <Button
     aria-label={`${label} documentation`}
     as="a"
     className="shrink-0 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
     href={href}
-    // The row is a click target that jumps the YAML cursor — opening docs shouldn't also do that.
+    // Clicking the row jumps the YAML cursor — opening docs must not also do that.
     onClick={(e: React.MouseEvent) => e.stopPropagation()}
     onKeyDown={stopRowSelectKeys}
     rel="noopener noreferrer"

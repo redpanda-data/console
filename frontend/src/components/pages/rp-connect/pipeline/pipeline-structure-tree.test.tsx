@@ -160,7 +160,6 @@ describe('PipelineStructureTree', () => {
     );
     expect(docsLink).toHaveAttribute('target', '_blank');
     expect(docsLink).toHaveAttribute('rel', 'noopener noreferrer');
-    // Nested components and container groups are components too, so they link as well.
     expect(screen.getByRole('button', { name: 'http documentation' })).toHaveAttribute(
       'href',
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/http/'
@@ -177,7 +176,12 @@ describe('PipelineStructureTree', () => {
   it('opens the docs link without also selecting the row', async () => {
     const onSelectNode = vi.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-    await userEvent.click(screen.getByRole('button', { name: 'kafka_franz documentation' }));
+    const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+    await userEvent.click(docsLink);
+    expect(onSelectNode).not.toHaveBeenCalled();
+    // Enter must reach the link, not the row's select handler (which would preventDefault it).
+    act(() => docsLink.focus());
+    await userEvent.keyboard('{Enter}');
     expect(onSelectNode).not.toHaveBeenCalled();
   });
 

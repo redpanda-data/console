@@ -65,7 +65,7 @@ describe('getNodeDocsUrl', () => {
     );
   });
 
-  it('links a container group (it is a component too)', () => {
+  it('links a container group, which is a component too', () => {
     expect(getNodeDocsUrl({ kind: 'group', label: 'switch', section: 'processor' })).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/switch/'
     );
@@ -86,8 +86,7 @@ describe('getNodeDocsUrl', () => {
     expect(getNodeDocsUrl({ kind: 'leaf', label: 'none', section: 'output' })).toBeUndefined();
   });
 
-  it('returns undefined for singleton resources, which are labelled by their YAML key', () => {
-    // `buffer:`/`metrics:` rows carry the key as their label, not an implementation name.
+  it('returns undefined for resource nodes labelled by their YAML key, not an implementation', () => {
     expect(getNodeDocsUrl({ kind: 'leaf', label: 'buffer', section: 'resource' })).toBeUndefined();
     expect(
       getNodeDocsUrl({ kind: 'leaf', label: 'cache_resources', section: 'resource', resourceKey: 'cache_resources' })
