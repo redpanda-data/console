@@ -12,7 +12,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
 import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react';
-import type React from 'react';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -42,9 +41,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../redpanda-ui/components/dialog';
-import { Field, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
+import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
-import { InputGroup, InputGroupButton, InputGroupInput } from '../../redpanda-ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 
@@ -80,6 +79,7 @@ type CreateTopicFormValues = z.infer<typeof createTopicFormSchema>;
 // ── NumInput ──────────────────────────────────────────────────────────────────
 
 function NumInput(p: {
+  id?: string;
   value: number | undefined;
   onChange: (n: number | undefined) => void;
   onBlur?: () => void;
@@ -87,7 +87,7 @@ function NumInput(p: {
   min?: number;
   max?: number;
   disabled?: boolean;
-  addonAfter?: React.ReactNode;
+  containerClassName?: string;
   'data-testid'?: string;
 }) {
   const [editValue, setEditValue] = useState(p.value === undefined ? undefined : String(p.value));
@@ -102,11 +102,14 @@ function NumInput(p: {
     p.onChange?.(v);
   };
 
-  const input = (
+  return (
     <Input
-      className={p.addonAfter ? 'flex-1 rounded-r-none border-r-0' : undefined}
+      autoComplete="off"
+      containerClassName={p.containerClassName}
       data-testid={p['data-testid']}
       disabled={p.disabled}
+      id={p.id}
+      inputMode="numeric"
       onBlur={() => {
         if (!editValue) {
           commit(undefined);
@@ -128,25 +131,17 @@ function NumInput(p: {
         if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
         else p.onChange?.(undefined);
       }}
-      onWheel={(e) => commit(Math.round((p.value ?? 0) - Math.sign(e.deltaY)))}
       placeholder={p.placeholder}
       spellCheck={false}
       value={p.disabled && p.placeholder && p.value === undefined ? '' : (editValue ?? '')}
     />
-  );
-
-  if (!p.addonAfter) return input;
-  return (
-    <div className="flex">
-      {input}
-      {p.addonAfter}
-    </div>
   );
 }
 
 // ── RetentionTimeSelect ───────────────────────────────────────────────────────
 
 function RetentionTimeSelect(p: {
+  id?: string;
   value: number;
   unit: RetentionTimeUnit;
   onChangeValue: (v: number) => void;
@@ -176,51 +171,58 @@ function RetentionTimeSelect(p: {
   }));
 
   return (
-    <NumInput
-      addonAfter={
-        <Select
-          items={options}
-          onValueChange={(u) => {
-            const newUnit = u as RetentionTimeUnit;
-            if (newUnit === 'default') {
-              p.onChangeValue(value * timeFactors[unit]);
-            } else {
-              const factor = unit === 'default' ? 1 : timeFactors[unit];
-              const ms = value * factor;
-              let newValue = ms / timeFactors[newUnit];
-              if (Number.isNaN(newValue)) newValue = 0;
-              if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
-              p.onChangeValue(newValue);
-            }
-            p.onChangeUnit(newUnit);
-          }}
-          value={unit}
+    <Group attached>
+      <NumInput
+        containerClassName="min-w-0 flex-1"
+        data-testid={p['data-testid']}
+        disabled={numDisabled}
+        id={p.id}
+        min={0}
+        onChange={(x) => p.onChangeValue(x ?? 0)}
+        placeholder={placeholder}
+        value={numDisabled ? undefined : value}
+      />
+      <Select
+        items={options}
+        onValueChange={(u) => {
+          const newUnit = u as RetentionTimeUnit;
+          if (newUnit === 'default') {
+            p.onChangeValue(value * timeFactors[unit]);
+          } else {
+            const factor = unit === 'default' ? 1 : timeFactors[unit];
+            const ms = value * factor;
+            let newValue = ms / timeFactors[newUnit];
+            if (Number.isNaN(newValue)) newValue = 0;
+            if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
+            p.onChangeValue(newValue);
+          }
+          p.onChangeUnit(newUnit);
+        }}
+        value={unit}
+      >
+        <SelectTrigger
+          aria-label="Retention time unit"
+          className="w-28 shrink-0 border-l"
+          data-testid="topic-retention-time-unit"
         >
-          <SelectTrigger className="w-[130px] rounded-l-none">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
-      data-testid={p['data-testid']}
-      disabled={numDisabled}
-      min={0}
-      onChange={(x) => p.onChangeValue(x ?? 0)}
-      placeholder={placeholder}
-      value={numDisabled ? undefined : value}
-    />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Group>
   );
 }
 
 // ── RetentionSizeSelect ───────────────────────────────────────────────────────
 
 function RetentionSizeSelect(p: {
+  id?: string;
   value: number;
   unit: RetentionSizeUnit;
   onChangeValue: (v: number) => void;
@@ -246,45 +248,51 @@ function RetentionSizeSelect(p: {
   }));
 
   return (
-    <NumInput
-      addonAfter={
-        <Select
-          items={options}
-          onValueChange={(u) => {
-            const newUnit = u as RetentionSizeUnit;
-            if (newUnit === 'default') {
-              p.onChangeValue(value * sizeFactors[unit]);
-            } else {
-              const factor = unit === 'default' ? 1 : sizeFactors[unit];
-              const bytes = value * factor;
-              let newValue = bytes / sizeFactors[newUnit];
-              if (Number.isNaN(newValue)) newValue = 0;
-              if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
-              p.onChangeValue(newValue);
-            }
-            p.onChangeUnit(newUnit);
-          }}
-          value={unit}
+    <Group attached>
+      <NumInput
+        containerClassName="min-w-0 flex-1"
+        data-testid={p['data-testid']}
+        disabled={numDisabled}
+        id={p.id}
+        min={0}
+        onChange={(x) => p.onChangeValue(x ?? -1)}
+        placeholder={placeholder}
+        value={numDisabled ? undefined : value}
+      />
+      <Select
+        items={options}
+        onValueChange={(u) => {
+          const newUnit = u as RetentionSizeUnit;
+          if (newUnit === 'default') {
+            p.onChangeValue(value * sizeFactors[unit]);
+          } else {
+            const factor = unit === 'default' ? 1 : sizeFactors[unit];
+            const bytes = value * factor;
+            let newValue = bytes / sizeFactors[newUnit];
+            if (Number.isNaN(newValue)) newValue = 0;
+            if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
+            p.onChangeValue(newValue);
+          }
+          p.onChangeUnit(newUnit);
+        }}
+        value={unit}
+      >
+        <SelectTrigger
+          aria-label="Retention size unit"
+          className="w-28 shrink-0 border-l"
+          data-testid="topic-retention-size-unit"
         >
-          <SelectTrigger className="w-[130px] rounded-l-none">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
-      data-testid={p['data-testid']}
-      disabled={numDisabled}
-      min={0}
-      onChange={(x) => p.onChangeValue(x ?? -1)}
-      placeholder={placeholder}
-      value={numDisabled ? undefined : value}
-    />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Group>
   );
 }
 
@@ -298,184 +306,211 @@ type FormContentProps = {
 function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps) {
   const { control, watch, setValue } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'additionalConfig' });
+  const serverless = isServerless();
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Topic Name */}
+    // Single two-column grid so every label and control shares the same column edges.
+    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
       <Controller
         control={control}
         name="topicName"
         render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel required>Topic Name</FieldLabel>
-            <Input data-testid="topic-name" {...field} />
+          <Field className="sm:col-span-2" data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="create-topic-name" required>
+              Topic name
+            </FieldLabel>
+            <Input
+              autoComplete="off"
+              data-testid="topic-name"
+              id="create-topic-name"
+              placeholder="e.g. orders"
+              spellCheck={false}
+              {...field}
+            />
+            <FieldDescription>Letters, numbers, dots, underscores, and hyphens.</FieldDescription>
             {fieldState.error && <FieldError errors={[fieldState.error]} />}
           </Field>
         )}
       />
 
-      {/* Partitions · Replication Factor · Min ISR */}
-      <div className="flex flex-wrap gap-6">
-        <div className="flex-1" style={{ minWidth: '140px', maxWidth: '180px' }}>
-          <Controller
-            control={control}
-            name="partitions"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Partitions</FieldLabel>
-                <NumInput
-                  data-testid="topic-partitions"
-                  min={1}
-                  onBlur={field.onBlur}
-                  onChange={field.onChange}
-                  placeholder={tryGetBrokerConfig('num.partitions')}
-                  value={field.value}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        </div>
-
-        <div className="flex-1" style={{ minWidth: '140px', maxWidth: '180px' }}>
-          <Controller
-            control={control}
-            name="replicationFactor"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Replication Factor</FieldLabel>
-                <NumInput
-                  data-testid="topic-replication-factor"
-                  disabled={isServerless()}
-                  min={1}
-                  onBlur={field.onBlur}
-                  onChange={field.onChange}
-                  placeholder={tryGetBrokerConfig('default.replication.factor')}
-                  value={field.value}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        </div>
-
-        {!api.isRedpanda && (
-          <div className="flex-1" style={{ minWidth: '140px', maxWidth: '180px' }}>
-            <Controller
-              control={control}
-              name="minInSyncReplicas"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Min In-Sync Replicas</FieldLabel>
-                  <NumInput
-                    data-testid="topic-min-insync-replicas"
-                    min={1}
-                    onBlur={field.onBlur}
-                    onChange={field.onChange}
-                    placeholder={tryGetBrokerConfig('min.insync.replicas') ?? '1'}
-                    value={field.value}
-                  />
-                  {fieldState.error && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
+      <Controller
+        control={control}
+        name="partitions"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="create-topic-partitions">Partitions</FieldLabel>
+            <NumInput
+              data-testid="topic-partitions"
+              id="create-topic-partitions"
+              min={1}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              placeholder={tryGetBrokerConfig('num.partitions')}
+              value={field.value}
             />
-          </div>
+            <FieldDescription>More partitions allow more consumers.</FieldDescription>
+            {fieldState.error && <FieldError errors={[fieldState.error]} />}
+          </Field>
         )}
-      </div>
+      />
 
-      {/* Cleanup Policy · Retention Time · Retention Size */}
-      <div className="flex flex-wrap gap-6">
-        {!isServerless() && (
-          <div style={{ flexBasis: '150px' }}>
-            <Controller
-              control={control}
-              name="cleanupPolicy"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Cleanup Policy</FieldLabel>
-                  <Select onValueChange={(v) => field.onChange(v as CleanupPolicyType)} value={field.value}>
-                    <SelectTrigger data-testid="cleanup-policy-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="delete">delete</SelectItem>
-                      <SelectItem value="compact">compact</SelectItem>
-                      <SelectItem value="compact,delete">compact,delete</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {fieldState.error && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
+      <Controller
+        control={control}
+        name="replicationFactor"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="create-topic-replication">Replication factor</FieldLabel>
+            <NumInput
+              data-testid="topic-replication-factor"
+              disabled={serverless}
+              id="create-topic-replication"
+              min={1}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              placeholder={tryGetBrokerConfig('default.replication.factor')}
+              value={field.value}
             />
-          </div>
+            <FieldDescription>
+              {serverless ? 'Managed automatically for Serverless.' : 'Copies of each partition across brokers.'}
+            </FieldDescription>
+            {fieldState.error && <FieldError errors={[fieldState.error]} />}
+          </Field>
         )}
+      />
 
-        <div className="flex flex-col gap-1.5" style={{ flexBasis: '220px', flexGrow: 1 }}>
-          <FieldLabel>Retention Time</FieldLabel>
-          <RetentionTimeSelect
-            data-testid="topic-retention-time"
-            defaultConfigValue={tryGetBrokerConfig('log.retention.ms')}
-            onChangeUnit={(u) => setValue('retentionTimeUnit', u)}
-            onChangeValue={(v) => setValue('retentionTimeMs', v)}
-            unit={watch('retentionTimeUnit') as RetentionTimeUnit}
-            value={watch('retentionTimeMs')}
-          />
-        </div>
+      {!api.isRedpanda && (
+        <Controller
+          control={control}
+          name="minInSyncReplicas"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="create-topic-min-isr">Min in-sync replicas</FieldLabel>
+              <NumInput
+                data-testid="topic-min-insync-replicas"
+                id="create-topic-min-isr"
+                min={1}
+                onBlur={field.onBlur}
+                onChange={field.onChange}
+                placeholder={tryGetBrokerConfig('min.insync.replicas') ?? '1'}
+                value={field.value}
+              />
+              <FieldDescription>Replicas that have to acknowledge a write.</FieldDescription>
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+      )}
 
-        <div className="flex flex-col gap-1.5" style={{ flexBasis: '220px', flexGrow: 1 }}>
-          <FieldLabel>Retention Size</FieldLabel>
-          <RetentionSizeSelect
-            data-testid="topic-retention-size"
-            defaultConfigValue={tryGetBrokerConfig('log.retention.bytes')}
-            onChangeUnit={(u) => setValue('retentionSizeUnit', u)}
-            onChangeValue={(v) => setValue('retentionSize', v)}
-            unit={watch('retentionSizeUnit') as RetentionSizeUnit}
-            value={watch('retentionSize')}
-          />
-        </div>
-      </div>
+      {!serverless && (
+        <Controller
+          control={control}
+          name="cleanupPolicy"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="create-topic-cleanup-policy">Cleanup policy</FieldLabel>
+              <Select onValueChange={(v) => field.onChange(v as CleanupPolicyType)} value={field.value}>
+                <SelectTrigger data-testid="cleanup-policy-select" id="create-topic-cleanup-policy">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="delete">delete</SelectItem>
+                  <SelectItem value="compact">compact</SelectItem>
+                  <SelectItem value="compact,delete">compact,delete</SelectItem>
+                </SelectContent>
+              </Select>
+              <FieldDescription>How old segments are removed.</FieldDescription>
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+      )}
 
-      {/* Additional Configuration */}
-      {!isServerless() && (
-        <div className="flex flex-col gap-2">
-          <FieldLabel>Additional Configuration</FieldLabel>
+      {/* col-start-1 keeps the retention pair on its own row when the fields above wrap unevenly. */}
+      <Field className="sm:col-start-1">
+        <FieldLabel htmlFor="create-topic-retention-time">Retention time</FieldLabel>
+        <RetentionTimeSelect
+          data-testid="topic-retention-time"
+          defaultConfigValue={tryGetBrokerConfig('log.retention.ms')}
+          id="create-topic-retention-time"
+          onChangeUnit={(u) => setValue('retentionTimeUnit', u)}
+          onChangeValue={(v) => setValue('retentionTimeMs', v)}
+          unit={watch('retentionTimeUnit') as RetentionTimeUnit}
+          value={watch('retentionTimeMs')}
+        />
+        <FieldDescription>How long records are kept.</FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="create-topic-retention-size">Retention size</FieldLabel>
+        <RetentionSizeSelect
+          data-testid="topic-retention-size"
+          defaultConfigValue={tryGetBrokerConfig('log.retention.bytes')}
+          id="create-topic-retention-size"
+          onChangeUnit={(u) => setValue('retentionSizeUnit', u)}
+          onChangeValue={(v) => setValue('retentionSize', v)}
+          unit={watch('retentionSizeUnit') as RetentionSizeUnit}
+          value={watch('retentionSize')}
+        />
+        <FieldDescription>Maximum size kept per partition.</FieldDescription>
+      </Field>
+
+      {!serverless && (
+        <Field className="sm:col-span-2 sm:col-start-1">
+          <FieldLabel>Additional configuration</FieldLabel>
+          <FieldDescription>Optional topic-level overrides, such as compression or segment size.</FieldDescription>
           <div className="flex flex-col gap-2">
             {fields.map((fieldItem, i) => (
-              <InputGroup key={fieldItem.id}>
+              <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-2" key={fieldItem.id}>
                 <Controller
                   control={control}
                   name={`additionalConfig.${i}.name`}
                   render={({ field }) => (
-                    <InputGroupInput {...field} className="w-[30%]" placeholder="Property Name..." spellCheck={false} />
+                    <Input
+                      {...field}
+                      aria-label="Property name"
+                      autoComplete="off"
+                      placeholder="Property Name..."
+                      spellCheck={false}
+                    />
                   )}
                 />
                 <Controller
                   control={control}
                   name={`additionalConfig.${i}.value`}
                   render={({ field }) => (
-                    <InputGroupInput {...field} className="flex-1" placeholder="Property Value..." spellCheck={false} />
+                    <Input
+                      {...field}
+                      aria-label="Property value"
+                      autoComplete="off"
+                      placeholder="Property Value..."
+                      spellCheck={false}
+                    />
                   )}
                 />
-                <InputGroupButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(i);
-                  }}
+                <Button
+                  aria-label="Remove entry"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => remove(i)}
+                  size="icon-sm"
                   type="button"
                   variant="ghost"
                 >
                   <XIcon />
-                </InputGroupButton>
-              </InputGroup>
+                </Button>
+              </div>
             ))}
-            <div>
-              <Button onClick={() => append({ name: '', value: '' })} size="sm" type="button" variant="outline">
-                <PlusIcon />
-                Add Entry
-              </Button>
-            </div>
+            <Button
+              className="w-fit"
+              onClick={() => append({ name: '', value: '' })}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <PlusIcon />
+              Add entry
+            </Button>
           </div>
-        </div>
+        </Field>
       )}
     </div>
   );
@@ -587,16 +622,14 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
       }}
       open={isOpen}
     >
-      <DialogContent
-        style={isSuccess ? { maxWidth: '440px' } : { minWidth: '600px', maxWidth: '1000px', width: '80%' }}
-      >
+      <DialogContent size={isSuccess ? 'md' : 'lg'}>
         <DialogHeader>
-          <DialogTitle>{isSuccess ? 'Topic created' : 'Create Topic'}</DialogTitle>
+          <DialogTitle>{isSuccess ? 'Topic created' : 'Create topic'}</DialogTitle>
         </DialogHeader>
 
         <DialogBody>
           {isError && result && (
-            <Alert className="mb-4" variant="destructive">
+            <Alert variant="destructive">
               <AlertTitle>{result.error instanceof Error ? result.error.name : 'Error'}</AlertTitle>
               <AlertDescription>
                 <code className="font-mono text-xs">
@@ -607,16 +640,13 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
           )}
 
           {isSuccess ? (
-            <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background-success-strong/10">
-                <CheckCircleIcon className="h-7 w-7 text-success" />
+            <div className="flex flex-col items-center gap-4 py-2 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-background-success-strong/10">
+                <CheckCircleIcon className="size-6 text-success" />
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="font-semibold text-base">Topic created</p>
-                <p className="text-muted-foreground text-sm">Your topic is ready to use.</p>
-              </div>
-              <div className="w-full rounded-lg border-t bg-white p-6 dark:bg-base-900">
-                <div className="mb-3 flex flex-col items-center gap-0.5">
+              <p className="text-muted-foreground text-sm">Your topic is ready to use.</p>
+              <div className="w-full rounded-lg border bg-muted/30 p-4">
+                <div className="flex flex-col items-center gap-0.5">
                   <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Topic name</p>
                   <TooltipProvider>
                     <Tooltip>
@@ -636,7 +666,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="flex justify-center gap-8 pt-3 text-sm">
+                <div className="mt-3 flex justify-center gap-10 border-t pt-3 text-sm">
                   <div className="flex flex-col items-center gap-0.5">
                     <span className="font-semibold">{String(result.partitionCount).replace('-1', '—')}</span>
                     <span className="text-muted-foreground text-xs">Partitions</span>
