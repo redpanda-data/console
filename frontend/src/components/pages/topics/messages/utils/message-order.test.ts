@@ -48,4 +48,27 @@ describe('visiblePageKeys', () => {
       '0-3',
     ]);
   });
+
+  test('ignores a persisted sort on a column the table never made sortable (e.g. key/value from the legacy page), keeping server order', () => {
+    expect(
+      visiblePageKeys(messages, {
+        sorting: [{ id: 'key', desc: false }],
+        sortingDisabled: false,
+        pageIndex: 0,
+        pageSize: 10,
+      })
+    ).toEqual(['0-1', '0-2', '0-3']);
+  });
+
+  test('rows with an equal timestamp keep their relative (server) order instead of an offset tiebreak the table never applies', () => {
+    const tied = [msg(0, 5, 100), msg(0, 1, 100), msg(0, 3, 100)];
+    expect(
+      visiblePageKeys(tied, {
+        sorting: [{ id: 'timestamp', desc: true }],
+        sortingDisabled: false,
+        pageIndex: 0,
+        pageSize: 10,
+      })
+    ).toEqual(['0-5', '0-1', '0-3']);
+  });
 });

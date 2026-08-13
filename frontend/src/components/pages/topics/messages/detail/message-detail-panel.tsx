@@ -46,8 +46,10 @@ export const downloadRecord = (msg: TopicMessage) => {
   const link = document.createElement('a');
   link.href = url;
   link.download = `record-p${msg.partitionID}-o${msg.offset}.json`;
+  document.body.appendChild(link); // required in firefox
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 };
 
 const DetailBody = ({

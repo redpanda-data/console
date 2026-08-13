@@ -8,7 +8,6 @@ public/static
 
 # misc
 .DS_Store
-.playwright-mcp/
 
 # IDEs
 .idea

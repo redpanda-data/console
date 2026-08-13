@@ -14,13 +14,31 @@ import type { SortingState } from '@tanstack/react-table';
 import { messageKey } from './message-key';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
-const compareBySorting = (a: TopicMessage, b: TopicMessage, sorting: SortingState): number => {
+/**
+ * True for the only column id the messages table actually sorts on. `messages-table.tsx`'s
+ * `buildColumn` derives every column's `enableSorting` from this same predicate, so a persisted
+ * sort id the table doesn't honor (`key`/`value` from the legacy page, or `offset`, which is
+ * fixed non-sortable) is ignored identically here and there — tanstack's own `getSortedRowModel`
+ * filters `state.sorting` by `column.getCanSort()` before applying it, so mirroring anything else
+ * (e.g. defaulting an unrecognized id to `offset`) would select rows in an order the table itself
+ * never rendered.
+ */
+export const isSortableColumnId = (id: string, sortingDisabled: boolean): boolean =>
+  id === 'timestamp' && !sortingDisabled;
+
+const compareBySorting = (
+  a: TopicMessage,
+  b: TopicMessage,
+  sorting: SortingState,
+  sortingDisabled: boolean
+): number => {
   for (const sort of sorting) {
-    const direction = sort.desc ? -1 : 1;
-    const left = sort.id === 'timestamp' ? a.timestamp : a.offset;
-    const right = sort.id === 'timestamp' ? b.timestamp : b.offset;
-    if (left !== right) {
-      return left < right ? -direction : direction;
+    if (!isSortableColumnId(sort.id, sortingDisabled)) {
+      continue;
+    }
+    if (a.timestamp !== b.timestamp) {
+      const direction = sort.desc ? -1 : 1;
+      return a.timestamp < b.timestamp ? -direction : direction;
     }
   }
   return 0;
@@ -42,7 +60,9 @@ export type VisiblePageKeysOptions = {
  */
 export function visiblePageKeys(messages: readonly TopicMessage[], options: VisiblePageKeysOptions): string[] {
   const { sorting, sortingDisabled, pageIndex, pageSize } = options;
-  const sorted = sortingDisabled ? [...messages] : [...messages].sort((a, b) => compareBySorting(a, b, sorting));
+  const sorted = sortingDisabled
+    ? [...messages]
+    : [...messages].sort((a, b) => compareBySorting(a, b, sorting, sortingDisabled));
   const start = pageIndex * pageSize;
   return sorted.slice(start, start + pageSize).map(messageKey);
 }

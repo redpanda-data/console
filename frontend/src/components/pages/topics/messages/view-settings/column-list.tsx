@@ -72,11 +72,14 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                         <GripVerticalIcon className="size-4" />
                       </span>
                       <Checkbox
+                        aria-labelledby={`column-label-${column.id}`}
                         checked={column.visible}
                         onCheckedChange={() => toggleVisible(column.id)}
                         testId={`column-toggle-${column.id}`}
                       />
-                      <span className="flex-1 text-[13.5px]">{COLUMN_LABELS[column.id]}</span>
+                      <span className="flex-1 text-[13.5px]" id={`column-label-${column.id}`}>
+                        {COLUMN_LABELS[column.id]}
+                      </span>
                       {CONFIGURABLE.has(column.id) && (
                         <button
                           className={cn(

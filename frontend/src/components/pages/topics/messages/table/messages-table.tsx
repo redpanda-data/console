@@ -41,6 +41,7 @@ import type { TimestampDisplayFormat } from '../../../../../state/ui';
 import { COLUMN_LABELS } from '../constants';
 import type { MessageColumnConfig, RowDensity } from '../types';
 import { messageKey } from '../utils/message-key';
+import { isSortableColumnId } from '../utils/message-order';
 
 export type MessagesTableProps = {
   messages: TopicMessage[];
@@ -79,10 +80,12 @@ const buildColumn = (
   sortingDisabled: boolean,
   valuePreview?: ValuePreviewConfig
 ): ColumnDef<TopicMessage> => {
+  // enableSorting mirrors isSortableColumnId exactly — message-order.ts's visiblePageKeys reads
+  // off the same predicate so keyboard nav walks the same order tanstack actually renders.
   const base: ColumnDef<TopicMessage> = {
     id: config.id,
     header: COLUMN_LABELS[config.id],
-    enableSorting: false,
+    enableSorting: isSortableColumnId(config.id, sortingDisabled),
   };
   switch (config.id) {
     case 'offset':
@@ -97,7 +100,6 @@ const buildColumn = (
       return {
         ...base,
         accessorKey: 'timestamp',
-        enableSorting: !sortingDisabled,
         cell: ({ row }) => <TimestampCell format={timestampFormat} timestamp={row.original.timestamp} />,
       };
     case 'key':

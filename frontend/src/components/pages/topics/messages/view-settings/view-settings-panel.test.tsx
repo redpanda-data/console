@@ -60,6 +60,13 @@ describe('ViewSettingsPanel', () => {
     expect(screen.getByText('3 of 7')).toBeInTheDocument();
   });
 
+  test('each column visibility checkbox has an accessible name from its label', () => {
+    renderPanel();
+    expect(screen.getByRole('checkbox', { name: /Timestamp/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Key$/i })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /^Value$/i })).toBeInTheDocument();
+  });
+
   test('preview field editor adds a pattern row', async () => {
     renderPanel();
     await userEvent.click(screen.getByTestId('column-config-value'));
