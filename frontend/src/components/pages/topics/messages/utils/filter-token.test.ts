@@ -63,6 +63,11 @@ describe('parseFilterInput', () => {
     expect(parseFilterInput('offset<100')).toEqual({ field: 'offset', op: 'lt', value: '100' });
   });
 
+  test('parses offset >= / <= before falling through to the bare >/< branches', () => {
+    expect(parseFilterInput('offset>=48210')).toEqual({ field: 'offset', op: 'gte', value: '48210' });
+    expect(parseFilterInput('offset<=100')).toEqual({ field: 'offset', op: 'lte', value: '100' });
+  });
+
   test('offset: means equality, not substring containment — offset:12 must not match offset 1123', () => {
     expect(parseFilterInput('offset:12')).toEqual({ field: 'offset', op: 'eq', value: '12' });
   });
@@ -128,6 +133,8 @@ describe('formatTokenText / tokenEditText', () => {
     expect(formatTokenText({ kind: 'field', field: 'partition', op: 'eq', value: '2' })).toBe('partition:2');
     expect(formatTokenText({ kind: 'field', field: 'offset', op: 'gt', value: '10' })).toBe('offset>10');
     expect(formatTokenText({ kind: 'field', field: 'offset', op: 'lt', value: '10' })).toBe('offset<10');
+    expect(formatTokenText({ kind: 'field', field: 'offset', op: 'gte', value: '10' })).toBe('offset>=10');
+    expect(formatTokenText({ kind: 'field', field: 'offset', op: 'lte', value: '10' })).toBe('offset<=10');
     expect(formatTokenText({ kind: 'field', field: 'key', op: 'neq', value: 'x' })).toBe('key!=x');
   });
 

@@ -43,13 +43,24 @@ export function resolveField(msg: TopicMessage, field: string): unknown {
   return current;
 }
 
-const compareNumeric = (resolved: unknown, value: string, op: 'gt' | 'lt'): boolean => {
+const compareNumeric = (resolved: unknown, value: string, op: 'gt' | 'lt' | 'gte' | 'lte'): boolean => {
   const left = Number(resolved);
   const right = Number(value);
   if (Number.isNaN(left) || Number.isNaN(right)) {
     return false;
   }
-  return op === 'gt' ? left > right : left < right;
+  switch (op) {
+    case 'gt':
+      return left > right;
+    case 'lt':
+      return left < right;
+    case 'gte':
+      return left >= right;
+    case 'lte':
+      return left <= right;
+    default:
+      return false;
+  }
 };
 
 const asComparableString = (resolved: unknown): string =>
@@ -72,6 +83,8 @@ export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterO
       return asComparableString(resolved).toLowerCase() !== value.toLowerCase();
     case 'gt':
     case 'lt':
+    case 'gte':
+    case 'lte':
       return compareNumeric(resolved, value, op);
     default:
       return false;

@@ -14,7 +14,7 @@ export type { MessageColumnConfig, RowDensity } from '../../../../stores/topic-s
 /** Where a message search starts reading. Live tail is orthogonal — see the `live` URL param. */
 export type ReadScopeMode = 'newest' | 'oldest' | 'offset' | 'timestamp';
 
-export type FilterOp = 'contains' | 'eq' | 'neq' | 'gt' | 'lt';
+export type FilterOp = 'contains' | 'eq' | 'neq' | 'gt' | 'lt' | 'lte' | 'gte';
 
 /**
  * A committed filter chip. Structured chips carry `field`/`op`/`value`

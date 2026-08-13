@@ -67,6 +67,13 @@ describe('matchesFieldFilter', () => {
     expect(matchesFieldFilter(msg, 'key', 'gt', '5')).toBe(false);
   });
 
+  test('gte/lte compare numerically and are inclusive at the boundary', () => {
+    expect(matchesFieldFilter(msg, 'offset', 'gte', '100')).toBe(true);
+    expect(matchesFieldFilter(msg, 'offset', 'lte', '100')).toBe(true);
+    expect(matchesFieldFilter(msg, 'offset', 'gte', '101')).toBe(false);
+    expect(matchesFieldFilter(msg, 'offset', 'lte', '99')).toBe(false);
+  });
+
   test('neq keeps a message whose field is absent — it genuinely does not equal the value', () => {
     expect(matchesFieldFilter(msg, 'value.missing', 'neq', 'X')).toBe(true);
     const nullKeyMsg = makeMsg({ key: null });

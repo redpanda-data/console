@@ -11,17 +11,6 @@
 
 import type { FieldFilterToken, FilterOp, FilterToken } from '../types';
 
-export const OP_LABELS: Record<FilterOp, string> = {
-  contains: 'contains',
-  eq: '=',
-  neq: '≠',
-  gt: '>',
-  lt: '<',
-};
-
-/** Fields that can appear in a typed `field:value` token. `value.<path>` accessors are also valid fields. */
-export const FILTER_FIELDS = ['key', 'value', 'partition', 'offset'] as const;
-
 const FIELD_PATTERN = /^(key|value(?:\.[\w.*-]+)?|partition|offset)/;
 const INTEGER_VALUE_PATTERN = /^\d+$/;
 const NEEDS_QUOTING_PATTERN = /["\s]/;
@@ -41,20 +30,52 @@ const escapeForQuoting = (value: string) => value.replace(/\\/g, '\\\\').replace
 const quoteIfNeeded = (value: string): string =>
   NEEDS_QUOTING_PATTERN.test(value) ? `"${escapeForQuoting(value)}"` : value;
 
+/**
+ * Fixed operator↔symbol pairs — the single source of truth `parseOperator` and
+ * `fieldTokenText` both read from, so adding an operator is a one-line change instead of
+ * needing a matching edit in two independently-hand-written places (how `<=`/`>=` first
+ * shipped able to *display* but not *parse*, and vice versa).
+ *
+ * Order matters for parsing: listed so a multi-character symbol is tried before any
+ * shorter symbol it starts with (`>=`/`<=` before `>`/`<`), otherwise the shorter symbol
+ * would match first and strand a `=` in the value. `eq`'s `=` is included for parsing,
+ * but deliberately left out of `DISPLAY_OP_SYMBOLS` below — see that comment.
+ */
+const OPERATOR_SYMBOLS: [symbol: string, op: FilterOp][] = [
+  ['!=', 'neq'],
+  ['>=', 'gte'],
+  ['<=', 'lte'],
+  ['>', 'gt'],
+  ['<', 'lt'],
+  ['=', 'eq'],
+];
+
+/**
+ * Reverse lookup for `fieldTokenText`, derived from `OPERATOR_SYMBOLS` minus `eq` — `eq`'s
+ * display form collapses to `:` (indistinguishable from `contains`); `tokenQueryText` is the
+ * one place that needs `eq` spelled out as `=`, and it does so itself after calling
+ * `fieldTokenText`, to keep it round-trippable in the URL.
+ */
+const DISPLAY_OP_SYMBOLS = new Map(
+  OPERATOR_SYMBOLS.filter(([, op]) => op !== 'eq').map(([symbol, op]): [FilterOp, string] => [op, symbol])
+);
+
+/**
+ * Renders `field op value` back to its typed-input spelling for a given operator, e.g.
+ * `offset>48210`, `key!=abc`; `eq` and `contains` both fall through to `field:value`.
+ * `formatTokenText`/`tokenEditText`/`tokenQueryText` each pass in an already
+ * appropriately-encoded `value` (raw, quote-wrapped, or as-is).
+ */
 const fieldTokenText = (token: FieldFilterToken, value: string): string => {
-  switch (token.op) {
-    case 'gt':
-      return `${token.field}>${value}`;
-    case 'lt':
-      return `${token.field}<${value}`;
-    case 'neq':
-      return `${token.field}!=${value}`;
-    default:
-      return `${token.field}:${value}`;
-  }
+  const symbol = DISPLAY_OP_SYMBOLS.get(token.op);
+  return symbol ? `${token.field}${symbol}${value}` : `${token.field}:${value}`;
 };
 
-/** Compact chip text, mirroring the design mock: `partition:2`, `offset>48210`, `key!=abc`, `ƒ name`. */
+/**
+ * Compact chip text, mirroring the design mock: `partition:2`, `offset>48210`, `key!=abc`, `ƒ name`.
+ * This is the read-only display form shown on a committed chip — unlike `tokenEditText`, the value
+ * is never quote-wrapped, so it's not meant to be parsed back with `parseFilterInput`.
+ */
 export function formatTokenText(token: FilterToken): string {
   if (token.kind === 'js') {
     return `ƒ ${token.name || token.code}`;
@@ -99,17 +120,10 @@ export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]): b
  * the matched field name. Null when `rest` doesn't start with a recognized operator.
  */
 function parseOperator(field: string, rest: string): { op: FilterOp; rawValue: string } | null {
-  if (rest.startsWith('!=')) {
-    return { op: 'neq', rawValue: rest.slice(2) };
-  }
-  if (rest.startsWith('>')) {
-    return { op: 'gt', rawValue: rest.slice(1) };
-  }
-  if (rest.startsWith('<')) {
-    return { op: 'lt', rawValue: rest.slice(1) };
-  }
-  if (rest.startsWith('=')) {
-    return { op: 'eq', rawValue: rest.slice(1) };
+  for (const [symbol, op] of OPERATOR_SYMBOLS) {
+    if (rest.startsWith(symbol)) {
+      return { op, rawValue: rest.slice(symbol.length) };
+    }
   }
   if (rest.startsWith(':')) {
     // `:` means equality for enumerable/numeric fields (partition, offset) and contains for
