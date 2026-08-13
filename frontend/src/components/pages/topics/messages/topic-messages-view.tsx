@@ -215,7 +215,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   }, [urlState.liveTail, search.start, search.stop]);
 
-  const filteredMessages = useClientFilters(search.messages, urlState.quickSearch, fieldTokens);
+  const filteredMessages = useClientFilters(search.messages, urlState.quickSearch, fieldTokens, topic.partitionCount);
 
   // In continuous or live mode only the newest DISPLAY_WINDOW_CAP rows stay rendered
   const { rows: windowedMessages, trimmed } = useMemo(

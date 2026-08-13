@@ -91,4 +91,26 @@ describe('MessagesFooter — scroll-triggered pagination', () => {
     render(<MessagesFooter {...baseProps} continuousMode={false} />);
     expect(MockIntersectionObserver.instances).toHaveLength(0);
   });
+
+  test('a parent passing a fresh onLoadMore closure every render does not rebuild the observer', () => {
+    const { rerender } = render(<MessagesFooter {...baseProps} onLoadMore={() => undefined} />);
+    expect(MockIntersectionObserver.instances).toHaveLength(1);
+    // Simulate the real call site: a new inline arrow (and a flipping isLoadingMore) on every render.
+    rerender(<MessagesFooter {...baseProps} isLoadingMore onLoadMore={() => undefined} />);
+    rerender(<MessagesFooter {...baseProps} onLoadMore={() => undefined} />);
+    rerender(<MessagesFooter {...baseProps} onLoadMore={() => undefined} />);
+    expect(MockIntersectionObserver.instances).toHaveLength(1);
+    expect(MockIntersectionObserver.instances[0].disconnect).not.toHaveBeenCalled();
+  });
+
+  test('the sentinel invokes whichever onLoadMore was passed most recently, even without an observer rebuild', () => {
+    const firstOnLoadMore = vi.fn();
+    const secondOnLoadMore = vi.fn();
+    const { rerender } = render(<MessagesFooter {...baseProps} onLoadMore={firstOnLoadMore} />);
+    rerender(<MessagesFooter {...baseProps} onLoadMore={secondOnLoadMore} />);
+    expect(MockIntersectionObserver.instances).toHaveLength(1);
+    MockIntersectionObserver.instances[0].trigger(true);
+    expect(firstOnLoadMore).not.toHaveBeenCalled();
+    expect(secondOnLoadMore).toHaveBeenCalledTimes(1);
+  });
 });

@@ -21,8 +21,8 @@ import { parseFilterInput } from '../utils/filter-token';
  * mirroring the legacy quick search. When the typed text parses as a
  * `field op value` token it is applied as a field filter instead.
  */
-export function matchesQuickSearch(msg: TopicMessage, query: string): boolean {
-  const parsed = parseFilterInput(query);
+export function matchesQuickSearch(msg: TopicMessage, query: string, partitionCount?: number): boolean {
+  const parsed = parseFilterInput(query, { partitionCount });
   if (parsed) {
     return matchesFieldFilter(msg, parsed.field, parsed.op, parsed.value);
   }
@@ -41,7 +41,8 @@ export function matchesQuickSearch(msg: TopicMessage, query: string): boolean {
 export function useClientFilters(
   messages: TopicMessage[],
   quickSearch: string,
-  fieldTokens: FilterToken[] = []
+  fieldTokens: FilterToken[] = [],
+  partitionCount?: number
 ): TopicMessage[] {
   return useMemo(() => {
     const query = quickSearch.trim();
@@ -52,7 +53,7 @@ export function useClientFilters(
     return messages.filter(
       (msg) =>
         tokens.every((t) => matchesFieldFilter(msg, t.field, t.op, t.value)) &&
-        (!query || matchesQuickSearch(msg, query))
+        (!query || matchesQuickSearch(msg, query, partitionCount))
     );
-  }, [messages, quickSearch, fieldTokens]);
+  }, [messages, quickSearch, fieldTokens, partitionCount]);
 }

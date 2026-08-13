@@ -95,6 +95,16 @@ export const MessagesFooter = ({
   // the next page automatically; the button below stays as an explicit, always-available
   // affordance rather than the only way to load more.
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // Read through refs rather than as effect deps: `onLoadMore` is a fresh closure from the
+  // parent every render, and `isLoadingMore` flips constantly while paging. Depending on either
+  // tore the observer down and rebuilt it on every render, and observe() reports the sentinel's
+  // *current* intersection state as soon as it's called — with the window height capped, the
+  // sentinel never leaves the viewport, so that per-render rebuild alone kept re-firing onLoadMore
+  // in an unbounded loop with no user scrolling.
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+  const isLoadingMoreRef = useRef(isLoadingMore);
+  isLoadingMoreRef.current = isLoadingMore;
   useEffect(() => {
     if (!(continuousMode && canLoadMore)) {
       return;
@@ -105,15 +115,15 @@ export const MessagesFooter = ({
     }
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && !isLoadingMore) {
-          onLoadMore();
+        if (entries[0]?.isIntersecting && !isLoadingMoreRef.current) {
+          onLoadMoreRef.current();
         }
       },
       { rootMargin: '200px' }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [continuousMode, canLoadMore, isLoadingMore, onLoadMore]);
+  }, [continuousMode, canLoadMore]);
 
   return (
     <div className="flex flex-col gap-2">
