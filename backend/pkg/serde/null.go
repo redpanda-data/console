@@ -11,7 +11,7 @@ package serde
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -31,7 +31,7 @@ func (NullSerde) DeserializePayload(_ context.Context, record *kgo.Record, paylo
 	payload := payloadFromRecord(record, payloadType)
 
 	if payload != nil {
-		return &RecordPayload{}, fmt.Errorf("payload is not null as expected for none encoding")
+		return &RecordPayload{}, errors.New("payload is not null as expected for none encoding")
 	}
 
 	return &RecordPayload{

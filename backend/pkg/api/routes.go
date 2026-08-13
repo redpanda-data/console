@@ -460,6 +460,8 @@ func (api *API) routes() *chi.Mux {
 		api.Cfg.REST.StripPrefix)
 
 	baseRouter.Use(recoverer.Wrap)
+	// Not fixing forward: 2.8 is a backport branch that is soon to be deprecated.
+	//nolint:staticcheck // SA1019: chimiddleware.RealIP is deprecated.
 	baseRouter.Use(chimiddleware.RealIP)
 	baseRouter.Use(basePath.Wrap)
 	baseRouter.Use(cors.Handler(cors.Options{

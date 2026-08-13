@@ -10,8 +10,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"fmt"
 	"time"
 )
 
@@ -59,7 +59,7 @@ func (c *Git) Validate() error {
 	// A refresh interval of 0 (or less) is allowed and disables periodic refresh; the repository
 	// is cloned once at startup. See SetDefaults for the default interval when none is configured.
 	if c.MaxFileSize <= 0 {
-		return fmt.Errorf("git config is enabled but file max size is <= 0")
+		return errors.New("git config is enabled but file max size is <= 0")
 	}
 
 	return c.Repository.Validate()

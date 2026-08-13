@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kerr"
@@ -35,7 +36,7 @@ type PartitionOffset struct {
 func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error) {
 	metadata, err := s.kafkaSvc.GetMetadataTopics(ctx, topicNames)
 	if err != nil {
-		return nil, fmt.Errorf("failed to request partition info for topics")
+		return nil, errors.New("failed to request partition info for topics")
 	}
 
 	topicPartitions := make(map[string][]int32, len(metadata.Topics))

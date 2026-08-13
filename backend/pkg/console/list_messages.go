@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -159,7 +160,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	isCancelled := ctx.Err() != nil
 	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled)
 	if isCancelled {
-		return fmt.Errorf("request was cancelled while waiting for messages")
+		return errors.New("request was cancelled while waiting for messages")
 	}
 
 	return nil

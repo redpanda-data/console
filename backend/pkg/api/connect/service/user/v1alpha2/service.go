@@ -159,7 +159,7 @@ func (s *Service) CreateUser(ctx context.Context, req *connect.Request[v1alpha2.
 	if s.isProtectedUserFn(req.Msg.User.Name) {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
+			errors.New("the requested username is a protected user, choose a different username"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
 				Field:       "user.name",
@@ -209,7 +209,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *connect.Request[v1alpha2.
 	if s.isProtectedUserFn(req.Msg.User.Name) {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
+			errors.New("the requested username is a protected user, choose a different username"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
 				Field:       "user.name",
@@ -258,7 +258,7 @@ func (s *Service) DeleteUser(ctx context.Context, req *connect.Request[v1alpha2.
 	if s.isProtectedUserFn(req.Msg.Name) {
 		return nil, apierrors.NewConnectError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("the requested username is a protected user, choose a different username"),
+			errors.New("the requested username is a protected user, choose a different username"),
 			apierrors.NewErrorInfo(commonv1alpha1.Reason_REASON_INVALID_INPUT.String()),
 			apierrors.NewBadRequest(&errdetails.BadRequest_FieldViolation{
 				Field:       "user.name",

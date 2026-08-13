@@ -10,7 +10,7 @@
 package connect
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
@@ -34,7 +34,7 @@ func (s *Service) getConnectClusterByName(clusterName string) (*ClientWithConfig
 	c, exists := s.ClientsByCluster[clusterName]
 	if !exists {
 		return nil, &rest.Error{
-			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
+			Err:          errors.New("a client for the given cluster name does not exist"),
 			Status:       http.StatusNotFound,
 			Message:      "There's no configured cluster with the given connect cluster name",
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},

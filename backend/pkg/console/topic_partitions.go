@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -119,11 +120,9 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 	// 2. Describe partition log dirs
 	var logDirsByTopicPartition map[string]map[int32][]TopicPartitionLogDirs
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		logDirsByTopicPartition = s.describePartitionLogDirs(ctx, topicMetadata)
-	}()
+	})
 
 	// 3. Get partition low & high watermarks
 	topicWatermarkReqs := make(map[string][]int32)
@@ -362,7 +361,7 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata ma
 					err, exists := errorByBrokerID[replicaID]
 					if !exists {
 						// This err should never happen. We should always have a proper err for missing responses!
-						err = fmt.Errorf("haven't got a log dir response for this replica even though it had been requested")
+						err = errors.New("haven't got a log dir response for this replica even though it had been requested")
 					}
 					topicLogDirsPatched[partitionID] = append(topicLogDirsPatched[partitionID], TopicPartitionLogDirs{
 						BrokerID:    replicaID,

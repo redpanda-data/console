@@ -42,21 +42,21 @@ func (ProtobufSchemaSerde) Name() PayloadEncoding {
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	if d.ProtoSvc == nil {
-		return &RecordPayload{}, fmt.Errorf("no protobuf file registry configured")
+		return &RecordPayload{}, errors.New("no protobuf file registry configured")
 	}
 
 	if !d.ProtoSvc.IsProtobufSchemaRegistryEnabled() {
-		return &RecordPayload{}, fmt.Errorf("protobuf schema registry disabled")
+		return &RecordPayload{}, errors.New("protobuf schema registry disabled")
 	}
 
 	payload := payloadFromRecord(record, payloadType)
 
 	if len(payload) <= 5 {
-		return &RecordPayload{}, fmt.Errorf("payload size is <= 5")
+		return &RecordPayload{}, errors.New("payload size is <= 5")
 	}
 
 	if payload[0] != byte(0) {
-		return &RecordPayload{}, fmt.Errorf("incorrect magic byte for protobuf schema")
+		return &RecordPayload{}, errors.New("incorrect magic byte for protobuf schema")
 	}
 
 	var srSerde sr.Serde
@@ -77,7 +77,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.R
 	}
 
 	if arrLength > 128 || arrLength < 0 {
-		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
+		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
 	index, remainingData, err := srSerde.DecodeIndex(remainingData, int(arrLength))
@@ -94,7 +94,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(_ context.Context, record *kgo.R
 	var messageDescriptor *desc.MessageDescriptor
 	for _, idx := range index {
 		if idx > len(messageTypes) {
-			return &RecordPayload{}, fmt.Errorf("failed to decode message type: message index is larger than the message types array length")
+			return &RecordPayload{}, errors.New("failed to decode message type: message index is larger than the message types array length")
 		}
 		messageDescriptor = messageTypes[idx]
 		messageTypes = messageDescriptor.GetNestedMessageTypes()
@@ -176,7 +176,7 @@ func (d ProtobufSchemaSerde) SerializeObject(_ context.Context, obj any, _ Paylo
 			return nil, err
 		}
 		if !startsWithJSON {
-			return nil, fmt.Errorf("first byte indicates this it not valid JSON, expected brackets")
+			return nil, errors.New("first byte indicates this it not valid JSON, expected brackets")
 		}
 
 		b, err := d.ProtoSvc.SerializeJSONToConfluentProtobufMessage([]byte(trimmed), int(so.schemaID), so.index)

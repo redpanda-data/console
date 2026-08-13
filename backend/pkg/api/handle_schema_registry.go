@@ -48,7 +48,7 @@ func (api *API) handleGetSchemaRegistryMode() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get schema registry mode"),
+				Err:      errors.New("requester has no permissions to get schema registry mode"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get the schema registry mode.",
 				IsSilent: false,
@@ -84,7 +84,7 @@ func (api *API) handleGetSchemaRegistrySchemaTypes() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get schema registry types"),
+				Err:      errors.New("requester has no permissions to get schema registry types"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get the schema registry types.",
 				IsSilent: false,
@@ -120,7 +120,7 @@ func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get schema usages by id"),
+				Err:      errors.New("requester has no permissions to get schema usages by id"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get the schema usages by id.",
 				IsSilent: false,
@@ -133,7 +133,7 @@ func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
 		schemaIDStr := rest.GetURLParam(r, "id")
 		schemaID, err := strconv.Atoi(schemaIDStr)
 		if err != nil {
-			descriptiveErr := fmt.Errorf("schema id %q is not valid. Must be a positive integer", schemaID)
+			descriptiveErr := fmt.Errorf("schema id %q is not valid. Must be a positive integer", schemaIDStr)
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      descriptiveErr,
 				Status:   http.StatusBadRequest,
@@ -170,7 +170,7 @@ func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get schema registry config"),
+				Err:      errors.New("requester has no permissions to get schema registry config"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get the schema registry config.",
 				IsSilent: false,
@@ -210,7 +210,7 @@ func (api *API) handlePutSchemaRegistryConfig() http.HandlerFunc {
 		}
 		if !canManage {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to change the schema registry config"),
+				Err:      errors.New("requester has no permissions to change the schema registry config"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to change the schema registry config.",
 				IsSilent: false,
@@ -257,7 +257,7 @@ func (api *API) handlePutSchemaRegistrySubjectConfig() http.HandlerFunc {
 		}
 		if !canManage {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to change the subject config"),
+				Err:      errors.New("requester has no permissions to change the subject config"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to change the subject config.",
 				IsSilent: false,
@@ -315,7 +315,7 @@ func (api *API) handleDeleteSchemaRegistrySubjectConfig() http.HandlerFunc {
 		}
 		if !canManage {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to change the subject config"),
+				Err:      errors.New("requester has no permissions to change the subject config"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to change the subject config.",
 				IsSilent: false,
@@ -366,7 +366,7 @@ func (api *API) handleGetSchemaSubjects() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get schema subjects"),
+				Err:      errors.New("requester has no permissions to get schema subjects"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get the schema subjects.",
 				IsSilent: false,
@@ -402,7 +402,7 @@ func (api *API) handleGetSchemaSubjectDetails() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get subject details"),
+				Err:      errors.New("requester has no permissions to get subject details"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get subject details.",
 				IsSilent: false,
@@ -472,7 +472,7 @@ func (api *API) handleGetSchemaReferencedBy() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to get schema references"),
+				Err:      errors.New("requester has no permissions to get schema references"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to get schema references.",
 				IsSilent: false,
@@ -542,7 +542,7 @@ func (api *API) handleDeleteSubject() http.HandlerFunc {
 		}
 		if !canDelete {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to delete a subject"),
+				Err:      errors.New("requester has no permissions to delete a subject"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to delete a subject.",
 				IsSilent: false,
@@ -610,7 +610,7 @@ func (api *API) handleDeleteSubjectVersion() http.HandlerFunc {
 		}
 		if !canDelete {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to delete a subject version"),
+				Err:      errors.New("requester has no permissions to delete a subject version"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to delete a subject version.",
 				IsSilent: false,
@@ -708,7 +708,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		}
 		if !canCreate {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to create a new schema"),
+				Err:      errors.New("requester has no permissions to create a new schema"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to create a new schema.",
 				IsSilent: false,
@@ -728,7 +728,7 @@ func (api *API) handleCreateSchema() http.HandlerFunc {
 		}
 		if payload.Schema == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("payload validation failed for creating schema"),
+				Err:          errors.New("payload validation failed for creating schema"),
 				Status:       http.StatusBadRequest,
 				Message:      "You must set the schema field when creating a new schema",
 				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},
@@ -767,7 +767,7 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		}
 		if !canView {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to validate schema"),
+				Err:      errors.New("requester has no permissions to validate schema"),
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to validate schema.",
 				IsSilent: false,
@@ -805,7 +805,7 @@ func (api *API) handleValidateSchema() http.HandlerFunc {
 		}
 		if payload.Schema == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("payload validation failed for validating schema"),
+				Err:          errors.New("payload validation failed for validating schema"),
 				Status:       http.StatusBadRequest,
 				Message:      "You must set the schema field when validating the schema",
 				InternalLogs: []zapcore.Field{zap.String("subject_name", subjectName)},

@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -93,7 +94,7 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 	if cfg.SchemaRegistry.Enabled {
 		// Check whether schema service is initialized (requires schema registry configuration)
 		if schemaSvc == nil {
-			return nil, fmt.Errorf("schema registry is enabled but schema service is nil. Make sure it is configured")
+			return nil, errors.New("schema registry is enabled but schema service is nil. Make sure it is configured")
 		}
 
 		// Ensure that Protobuf is supported
@@ -108,7 +109,7 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 			}
 		}
 		if !isProtobufSupported {
-			return nil, fmt.Errorf("protobuf is a not supported type in your schema registry")
+			return nil, errors.New("protobuf is a not supported type in your schema registry")
 		}
 	}
 
@@ -139,7 +140,7 @@ func (s *Service) getMatchingMapping(topicName string) (mapping config.ProtoTopi
 
 	var match bool
 	for _, rMapping := range s.mappingsByTopic {
-		if rMapping.TopicName.Regexp != nil && rMapping.TopicName.Regexp.MatchString(topicName) {
+		if rMapping.TopicName.Regexp != nil && rMapping.TopicName.MatchString(topicName) {
 			mapping = rMapping
 			s.mappingsByTopic[topicName] = mapping
 			match = true
@@ -254,7 +255,7 @@ func (s *Service) GetMessageDescriptorForSchema(schemaID int, index []int) (*des
 	var messageDescriptor *desc.MessageDescriptor
 	for _, idx := range index {
 		if idx > len(messageTypes) {
-			return nil, fmt.Errorf("message index is larger than the message types array length")
+			return nil, errors.New("message index is larger than the message types array length")
 		}
 		messageDescriptor = messageTypes[idx]
 		messageTypes = messageDescriptor.GetNestedMessageTypes()
@@ -395,7 +396,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 		return nil, fmt.Errorf("failed to read magic byte: %w", err)
 	}
 	if magicByte != byte(0) {
-		return nil, fmt.Errorf("magic byte is not 0")
+		return nil, errors.New("magic byte is not 0")
 	}
 
 	var schemaID uint32
@@ -415,7 +416,7 @@ func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope
 	// before allocating the slice. We assume to not have more than 128 types in
 	// a single message
 	if arrLength > 128 || arrLength < 0 {
-		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
+		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
 	msgTypeIDs := make([]int, arrLength)

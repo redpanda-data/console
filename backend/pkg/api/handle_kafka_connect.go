@@ -84,7 +84,7 @@ func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 		}
 		if !canSee {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to view this connect cluster"),
+				Err:          errors.New("requester has no permissions to view this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to view connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -114,7 +114,7 @@ func (api *API) handleGetClusterInfo() http.HandlerFunc {
 		}
 		if !canSee {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to view this connect cluster"),
+				Err:          errors.New("requester has no permissions to view this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to view connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -151,7 +151,7 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		}
 		if !canSee {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to view this connect cluster"),
+				Err:          errors.New("requester has no permissions to view this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to view connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -176,7 +176,7 @@ type putConnectorConfigRequest struct {
 
 func (c *putConnectorConfigRequest) OK() error {
 	if len(c.Config) == 0 {
-		return fmt.Errorf("you must at least put one config item into the config")
+		return errors.New("you must at least put one config item into the config")
 	}
 	return nil
 }
@@ -199,7 +199,7 @@ func (api *API) handlePutConnectorConfig() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to create connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -244,7 +244,7 @@ func (api *API) handlePutValidateConnectorConfig() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to create connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -297,7 +297,7 @@ func (api *API) handleCreateConnector() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to create connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -338,7 +338,7 @@ func (api *API) handleDeleteConnector() http.HandlerFunc {
 		}
 		if !canDelete {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to delete in this connect cluster"),
+				Err:          errors.New("requester has no permissions to delete in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to delete connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -372,7 +372,7 @@ func (api *API) handlePauseConnector() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -406,7 +406,7 @@ func (api *API) handleResumeConnector() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -440,7 +440,7 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
@@ -467,7 +467,7 @@ func (api *API) handleRestartConnectorTask() http.HandlerFunc {
 		taskID, err := strconv.Atoi(taskIDstr)
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("failed to parse task id as number"),
+				Err:      errors.New("failed to parse task id as number"),
 				Status:   http.StatusBadRequest,
 				Message:  "Invalid TaskID given. TaskID must be a number.",
 				IsSilent: false,
@@ -485,7 +485,7 @@ func (api *API) handleRestartConnectorTask() http.HandlerFunc {
 		}
 		if !canEdit {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Err:          errors.New("requester has no permissions to edit in this connect cluster"),
 				Status:       http.StatusForbidden,
 				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
 				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},

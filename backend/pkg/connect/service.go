@@ -116,9 +116,8 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 	var successfulChecks uint32
 	wg := sync.WaitGroup{}
 	for _, clientInfo := range s.ClientsByCluster {
-		wg.Add(1)
-		go func(cfg config.ConnectCluster, c *con.Client) {
-			defer wg.Done()
+		cfg, c := clientInfo.Cfg, clientInfo.Client
+		wg.Go(func() {
 			_, err := c.GetRoot(ctx)
 			if err != nil {
 				s.Logger.Warn("connect cluster is not reachable",
@@ -128,7 +127,7 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 				return
 			}
 			atomic.AddUint32(&successfulChecks, 1)
-		}(clientInfo.Cfg, clientInfo.Client)
+		})
 	}
 	wg.Wait()
 	s.Logger.Info("tested Kafka connect cluster connectivity",

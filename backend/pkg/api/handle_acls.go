@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -86,7 +87,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 		}
 		if !isAllowed {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to list ACLs"),
+				Err:      errors.New("requester is not allowed to list ACLs"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to list ACLs",
 				IsSilent: true,
@@ -184,7 +185,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		}
 		if !isAllowed {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to delete ACLs"),
+				Err:      errors.New("requester is not allowed to delete ACLs"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to delete ACLs",
 				IsSilent: true,
@@ -195,7 +196,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		// Check if targeted user is a protected Kafka user
 		if req.Principal != nil && api.Hooks.Authorization.IsProtectedKafkaUser(*req.Principal) {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester targets a protected Kafka principal to delete ACLs"),
+				Err:      errors.New("requester targets a protected Kafka principal to delete ACLs"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to delete ACLs for this protected principal",
 				IsSilent: false,
@@ -256,19 +257,19 @@ func (c *CreateACLRequest) OK() error {
 	switch c.ResourcePatternType {
 	case kmsg.ACLResourcePatternTypeLiteral, kmsg.ACLResourcePatternTypePrefixed:
 	default:
-		return fmt.Errorf("resourcePatternType is invalid, must be either LITERAL (3) or PREFIXED (4)")
+		return errors.New("resourcePatternType is invalid, must be either LITERAL (3) or PREFIXED (4)")
 	}
 
 	// Check Operation - must not be Any (1)
 	if c.Operation == kmsg.ACLOperationAny {
-		return fmt.Errorf("operation type any (1) is not allowed for creating a new ACL")
+		return errors.New("operation type any (1) is not allowed for creating a new ACL")
 	}
 
 	// Permission type must be either 'deny' (2) or 'any' (1)
 	switch c.PermissionType {
 	case kmsg.ACLPermissionTypeDeny, kmsg.ACLPermissionTypeAllow:
 	default:
-		return fmt.Errorf("given permission type is invalid, it must be either allow (3) or deny (2)")
+		return errors.New("given permission type is invalid, it must be either allow (3) or deny (2)")
 	}
 
 	return nil
@@ -306,7 +307,7 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		}
 		if !isAllowed {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is not allowed to create ACLs for the given principal"),
+				Err:      errors.New("requester is not allowed to create ACLs for the given principal"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to create ACLs for the given principal name",
 				IsSilent: true,
@@ -317,7 +318,7 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		// Check if targeted user is a protected Kafka user
 		if api.Hooks.Authorization.IsProtectedKafkaUser(req.Principal) {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester targets a protected Kafka principal to create ACLs"),
+				Err:      errors.New("requester targets a protected Kafka principal to create ACLs"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to create ACLs for this protected principal",
 				IsSilent: false,

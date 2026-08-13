@@ -11,6 +11,7 @@ package schema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"strconv"
@@ -400,7 +401,7 @@ func (s *Service) ValidateJSONSchema(ctx context.Context, name string, sch Schem
 
 	// Prevent a panic by the schema compiler by checking the name before AddResource
 	if strings.IndexByte(name, '#') != -1 {
-		return fmt.Errorf("hashtags are not allowed as part of the schema name")
+		return errors.New("hashtags are not allowed as part of the schema name")
 	}
 	err := schemaCompiler.AddResource(name, strings.NewReader(sch.Schema))
 	if err != nil {
