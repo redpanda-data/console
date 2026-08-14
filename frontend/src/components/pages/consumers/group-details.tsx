@@ -220,23 +220,23 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
       {/* Statistics Card */}
       <Card className="gap-0 px-6 py-4" size="full" variant="standard">
         <CardContent className="flex flex-wrap items-start justify-between gap-4">
-            <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
-            <Stat label="Assigned Partitions" mono value={totalPartitions} />
-            <Stat label="Protocol" value={group.protocol || '—'} />
-            <Stat label="Protocol Type" value={group.protocolType || '—'} />
-            <Stat
-              label="Coordinator ID"
+          <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
+          <Stat label="Assigned Partitions" mono value={totalPartitions} />
+          <Stat label="Protocol" value={group.protocol || '—'} />
+          <Stat label="Protocol Type" value={group.protocolType || '—'} />
+          <Stat
+            label="Coordinator ID"
             mono
-              value={
-                <span className="inline-flex items-center gap-1">
-                  {group.coordinatorId}
-                  <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
-                </span>
-              }
-            />
-            <Stat label="Total Lag" mono value={numberToThousandsString(group.lagSum)} />
-          </CardContent>
-        </Card>
+            value={
+              <span className="inline-flex items-center gap-1">
+                {group.coordinatorId}
+                <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
+              </span>
+            }
+          />
+          <Stat label="Total Lag" mono value={numberToThousandsString(group.lagSum)} />
+        </CardContent>
+      </Card>
 
       {/* Main Card */}
       <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
