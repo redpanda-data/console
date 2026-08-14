@@ -18,17 +18,17 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
+import { Link as UILink } from 'components/redpanda-ui/components/typography';
+import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
-import PipelinePage from './pipeline';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
@@ -61,9 +61,6 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelinePage />;
-    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
@@ -127,33 +124,21 @@ const RpConnectPipelinesCreateContent = () => {
   return (
     <PageContent>
       <div className="my-2">
-        <UIText>
+        <div className="text-body">
           For help creating your pipeline, see our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectQuickstart} rel="noopener noreferrer" target="_blank">
             quickstart
           </UILink>
           ,{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectCookbooks} rel="noopener noreferrer" target="_blank">
             library of examples
           </UILink>
           , and{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectComponentCatalog} rel="noopener noreferrer" target="_blank">
             connector catalog
           </UILink>
           .
-        </UIText>
+        </div>
       </div>
 
       <Flex flexDirection="column" gap={3}>
@@ -459,17 +444,13 @@ export const PipelineEditor = (p: {
                 <Alert variant="destructive">
                   <AlertCircle size={16} />
                   <AlertDescription>
-                    <UIText>
+                    <div className="text-body">
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
-                      <UILink
-                        href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <UILink href={docsLinks.cloud.connectQuickstart} rel="noopener noreferrer" target="_blank">
                         see our quickstart documentation
                       </UILink>
                       .
-                    </UIText>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}

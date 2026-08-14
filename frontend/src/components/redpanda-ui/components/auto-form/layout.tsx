@@ -3,11 +3,10 @@
 import React from 'react';
 
 import { formSpacing } from './form-spacing';
-import { FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
+import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
 import { cn } from '../../lib/utils';
 import { Button } from '../button';
 import { FieldLabel } from '../field';
-import { Heading, Text } from '../typography';
 
 export interface FormLayoutProps extends Omit<React.ComponentProps<'form'>, 'children'> {
   children?: React.ReactNode;
@@ -46,21 +45,13 @@ export function FormSection({ title, description, divider, required, testId, cla
         <div className={cn(formSpacing.sectionHeader, showDivider && formSpacing.sectionDivider)}>
           {title ? (
             <div className="flex items-center gap-2">
-              <Heading className="font-medium" level={level}>
+              <DepthHeading className="font-medium" level={level}>
                 {title}
-              </Heading>
-              {required ? (
-                <Text as="span" className="text-destructive" variant="small">
-                  *
-                </Text>
-              ) : null}
+              </DepthHeading>
+              {required ? <span className="text-body-sm text-destructive">*</span> : null}
             </div>
           ) : null}
-          {description ? (
-            <Text className="text-muted-foreground" variant="small">
-              {description}
-            </Text>
-          ) : null}
+          {description ? <div className="text-body-sm text-muted-foreground">{description}</div> : null}
         </div>
       ) : null}
       <FormDepthProvider depth={depth + 1}>
@@ -86,25 +77,15 @@ export function FormField({ label, helpText, error, required, htmlFor, testId, c
     <div className={cn(formSpacing.labelStack, className)} data-testid={testId}>
       {label ? (
         <FieldLabel className="flex items-center gap-2" htmlFor={htmlFor}>
-          <Text as="span" variant="labelStrongSmall">
-            {label}
-          </Text>
-          {required ? (
-            <Text as="span" className="text-destructive" variant="small">
-              *
-            </Text>
-          ) : null}
+          <span className="font-semibold text-label">{label}</span>
+          {required ? <span className="text-body-sm text-destructive">*</span> : null}
         </FieldLabel>
       ) : null}
       {children}
       {error ? (
-        <Text as="span" className="text-destructive" variant="small">
-          {error}
-        </Text>
+        <span className="text-body-sm text-destructive">{error}</span>
       ) : helpText ? (
-        <Text as="span" className="text-muted-foreground" variant="small">
-          {helpText}
-        </Text>
+        <span className="text-body-sm text-muted-foreground">{helpText}</span>
       ) : null}
     </div>
   );

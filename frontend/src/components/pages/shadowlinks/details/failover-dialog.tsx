@@ -19,7 +19,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { Text } from 'components/redpanda-ui/components/typography';
 
 type FailoverDialogProps = {
   open: boolean;
@@ -40,19 +39,21 @@ export const FailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoa
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Failover</AlertDialogTitle>
           <AlertDialogDescription className="space-y-4">
-            <Text>
+            <div className="text-body">
               {topicName
                 ? `This action will promote the shadow topic "${topicName}" to an active state, allowing writes to this cluster.`
                 : 'This action will promote all shadow topics to an active state, allowing writes to this cluster.'}
-            </Text>
+            </div>
             <div>
-              <Text className="font-semibold">Before proceeding, ensure:</Text>
+              <div className="font-semibold text-body">Before proceeding, ensure:</div>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 <li>
-                  <Text>All applications and clients have been updated to point to this cluster</Text>
+                  <div className="text-body">
+                    All applications and clients have been updated to point to this cluster
+                  </div>
                 </li>
                 <li>
-                  <Text>Any Redpanda Connect pipelines have been re-created on this cluster</Text>
+                  <div className="text-body">Any Redpanda Connect pipelines have been re-created on this cluster</div>
                 </li>
               </ul>
             </div>

@@ -14,7 +14,7 @@ import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForConnection } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';
-import { AUTH_METHOD, TLS_MODE } from '../create/model';
+import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
 // Base form values for testing
 const baseFormValues: FormValues = {
@@ -49,10 +49,13 @@ const baseFormValues: FormValues = {
   enableConsumerOffsetSync: false,
   consumersMode: 'all',
   consumers: [],
+  rolesMode: 'all',
+  roles: [],
   aclsMode: 'all',
   aclFilters: [],
   excludeDefault: false,
   enableSchemaRegistrySync: false,
+  schemaRegistry: initialValues.schemaRegistry,
 };
 
 describe('getUpdateValuesForConnection', () => {

@@ -10,22 +10,21 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { z } from 'zod';
 
 import KafkaConnectorDetails from '../../../components/pages/connect/connector-details';
 
 const searchSchema = z.object({
-  pageSize: fallback(z.number().int().positive().optional(), DEFAULT_TABLE_PAGE_SIZE),
-  page: fallback(z.number().int().nonnegative().optional(), 0),
+  pageSize: z.number().int().positive().optional().catch(DEFAULT_TABLE_PAGE_SIZE),
+  page: z.number().int().nonnegative().optional().catch(0),
 });
 
 export const Route = createFileRoute('/connect-clusters/$clusterName/$connector')({
   staticData: {
     title: 'Connector Details',
   },
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   component: ConnectorDetailsWrapper,
 });
 

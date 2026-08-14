@@ -10,6 +10,7 @@
  */
 
 import { Component, type JSX } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
@@ -161,7 +162,7 @@ function renderDocuError(title: string, body: JSX.Element) {
       <VStack gap={4}>
         <Empty description={title} />
         {body}
-        <a href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+        <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
           <Button variant="solid">Redpanda Console Documentation</Button>
         </a>
       </VStack>

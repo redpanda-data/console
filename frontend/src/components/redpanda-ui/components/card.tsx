@@ -1,8 +1,15 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
-import { Heading, Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
+
+// Maps a card title level (1–4) to its heading utility class (literals so Tailwind can scan them).
+const CARD_HEADING_CLASS = {
+  1: 'text-heading-xl',
+  2: 'text-heading-lg',
+  3: 'text-heading-md',
+  4: 'text-heading-sm',
+} as const;
 
 const cardVariants = cva('flex min-w-0 flex-col rounded-lg border border-border border-solid bg-card', {
   variants: {
@@ -94,7 +101,13 @@ const CardTitle = React.forwardRef<
 >(({ className, level = 4, testId, children, ...props }, ref) => {
   let content: React.ReactNode = null;
   if (children) {
-    content = typeof children === 'string' ? <Heading level={level}>{children}</Heading> : children;
+    const HeadingTag = `h${level}` as const;
+    content =
+      typeof children === 'string' ? (
+        <HeadingTag className={CARD_HEADING_CLASS[level]}>{children}</HeadingTag>
+      ) : (
+        children
+      );
   }
 
   return (
@@ -110,7 +123,7 @@ const CardDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'d
   ({ className, testId, children, ...props }, ref) => {
     let content: React.ReactNode = null;
     if (children) {
-      content = typeof children === 'string' ? <Text>{children}</Text> : children;
+      content = typeof children === 'string' ? <div className="text-body">{children}</div> : children;
     }
 
     return (

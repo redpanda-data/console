@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Code, ConnectError } from '@connectrpc/connect';
+import { ConnectError } from '@connectrpc/connect';
 import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ShieldIcon } from 'components/icons';
@@ -29,15 +29,9 @@ export const Route = createFileRoute('/shadowlinks/')({
         createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema, {}), { transport: dataplaneTransport })
       );
     } catch (error) {
-      if (
-        error instanceof ConnectError &&
-        (error.code === Code.FailedPrecondition ||
-          error.code === Code.Unavailable ||
-          error.code === Code.PermissionDenied)
-      ) {
-        // The component renders dedicated states for these (feature disabled,
-        // admin API unavailable, no permission). Rethrowing here would fail the
-        // route and surface a raw error boundary instead of letting the page load.
+      if (error instanceof ConnectError) {
+        // The page renders its own error states for API errors; rethrowing
+        // would fail the route into the raw error boundary.
         return;
       }
       throw error;

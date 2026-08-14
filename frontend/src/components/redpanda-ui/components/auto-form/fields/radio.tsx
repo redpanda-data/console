@@ -9,7 +9,6 @@ import {
   useFieldTestIds,
 } from './shared';
 import { RadioGroup, RadioGroupItem } from '../../radio-group';
-import { Text } from '../../typography';
 import type { AutoFormFieldProps } from '../core-types';
 import type { FieldTypeDefinition } from '../registry';
 
@@ -34,11 +33,7 @@ function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFi
           data-testid={testIds.group(String(group.label ?? groupIndex))}
           key={`${field.key}-group-${groupIndex}`}
         >
-          {group.label ? (
-            <Text as="div" className="text-muted-foreground" variant="small">
-              {group.label}
-            </Text>
-          ) : null}
+          {group.label ? <div className="text-body-sm text-muted-foreground">{group.label}</div> : null}
           <div className="grid gap-2">
             {group.options.map((option) => (
               <label

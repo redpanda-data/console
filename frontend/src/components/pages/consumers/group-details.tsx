@@ -41,7 +41,6 @@ import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { uiSettings } from '../../../state/ui';
 import { Button, DefaultSkeleton, IconButton, numberToThousandsString } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
@@ -209,27 +208,25 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
         </Button>
       </Flex>
       {/* Statistics Card */}
-      {Boolean(uiSettings.consumerGroupDetails.showStatisticsBar) && (
-        <Section py={4}>
-          <div className="statisticsBar">
-            <Flex gap="2rem" justifyContent="space-between">
-              <Statistic title="State" value={<GroupState group={group} />} />
-              <Statistic title="Assigned Partitions" value={totalPartitions} />
-              <ProtocolType group={group} />
-              <Statistic title="Protocol Type" value={group.protocolType} />
-              <Statistic
-                title={
-                  <Flex alignItems="center" gap={1}>
-                    Coordinator ID <CopyButton content={`${group.coordinatorId}`} variant="sm" />
-                  </Flex>
-                }
-                value={group.coordinatorId}
-              />
-              <Statistic title="Total Lag" value={numberToThousandsString(group.lagSum)} />
-            </Flex>
-          </div>
-        </Section>
-      )}
+      <Section py={4}>
+        <div className="statisticsBar">
+          <Flex gap="2rem" justifyContent="space-between">
+            <Statistic title="State" value={<GroupState group={group} />} />
+            <Statistic title="Assigned Partitions" value={totalPartitions} />
+            <ProtocolType group={group} />
+            <Statistic title="Protocol Type" value={group.protocolType} />
+            <Statistic
+              title={
+                <Flex alignItems="center" gap={1}>
+                  Coordinator ID <CopyButton content={`${group.coordinatorId}`} variant="sm" />
+                </Flex>
+              }
+              value={group.coordinatorId}
+            />
+            <Statistic title="Total Lag" value={numberToThousandsString(group.lagSum)} />
+          </Flex>
+        </div>
+      </Section>
 
       {/* Main Card */}
       <Section>

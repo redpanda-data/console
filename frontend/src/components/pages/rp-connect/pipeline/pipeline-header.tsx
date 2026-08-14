@@ -19,20 +19,21 @@ import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, List, ListItem } from 'components/redpanda-ui/components/typography';
+import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { docsLinks } from 'utils/docs-links';
 
 import { PipelineStatusToggle } from './pipeline-status-toggle';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
-const DOCS_URL = 'https://docs.redpanda.com/redpanda-connect/home/';
+const DOCS_URL = docsLinks.cloud.connectQuickstart;
 
 type TagEntry = { key: string; value: string };
 
@@ -63,6 +64,22 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   <div className="flex gap-2 text-sm">
     <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
     <div className="min-w-0 flex-1 text-foreground">{children}</div>
+  </div>
+);
+
+// Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
+const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
+  <div className="flex flex-col gap-0.5 text-sm">
+    <span className="text-muted-foreground">Description</span>
+    <p
+      className={cn(
+        'max-w-prose whitespace-pre-wrap break-words text-foreground leading-relaxed',
+        clamp && 'line-clamp-2'
+      )}
+      title={text}
+    >
+      {text}
+    </p>
   </div>
 );
 
@@ -154,6 +171,10 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
+// Expanded mode insets the header while the panel below it goes flush.
+const headerClassName = (expanded: boolean) =>
+  cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
+
 // Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
@@ -182,10 +203,12 @@ export function PipelineViewHeader({
   pipeline,
   onBack,
   onViewDetails,
+  expanded,
 }: {
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
+  expanded: boolean;
 }) {
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
@@ -211,13 +234,13 @@ export function PipelineViewHeader({
   ];
 
   return (
-    <header className="flex flex-col gap-3">
+    <header className={headerClassName(expanded)}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <BackButton onClick={onBack} />
-          <Heading className="min-w-0 truncate" level={1} title={name}>
+          <h1 className="min-w-0 truncate text-heading-xl" title={name}>
             {name}
-          </Heading>
+          </h1>
           <Button
             aria-label="View pipeline details"
             icon={<Info className="size-4!" />}
@@ -237,7 +260,8 @@ export function PipelineViewHeader({
           >
             Edit pipeline
           </Button>
-          <Separator className="mx-1 h-6" orientation="vertical" />
+          {/* self-center: the Separator's default self-stretch top-aligns a fixed h-6 in this row. */}
+          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
@@ -248,19 +272,12 @@ export function PipelineViewHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? (
-          <DetailLine label="Description">
-            <p className="line-clamp-2 max-w-[66%] whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </DetailLine>
-        ) : null}
+        {description ? <DescriptionBlock clamp text={description} /> : null}
       </div>
     </header>
   );
 }
 
-// "Edit settings" is anchored to the settings block below, away from Save.
 export function PipelineEditHeader({
   form,
   mode,
@@ -269,6 +286,8 @@ export function PipelineEditHeader({
   onSave,
   onEditSettings,
   isSaving,
+  hasUnsavedChanges,
+  expanded,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   mode: 'edit' | 'create';
@@ -277,6 +296,8 @@ export function PipelineEditHeader({
   onSave: () => void;
   onEditSettings: () => void;
   isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
+  expanded: boolean;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
@@ -288,15 +309,19 @@ export function PipelineEditHeader({
   ];
 
   return (
-    <header className="flex flex-col gap-3">
+    <header className={headerClassName(expanded)}>
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
             {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
+            <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
+              Edit settings
+            </Button>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
+          <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"
               href={DOCS_URL}
@@ -311,6 +336,15 @@ export function PipelineEditHeader({
               Save
               {isSaving ? <Spinner /> : null}
             </Button>
+            {hasUnsavedChanges ? (
+              <span
+                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
+                title="You have unsaved changes"
+              >
+                <span aria-hidden className="size-2 rounded-full bg-informative" />
+                Unsaved changes
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -321,16 +355,7 @@ export function PipelineEditHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? (
-          <DetailLine label="Description">
-            <p className="max-w-[66%] whitespace-pre-wrap break-words" title={description}>
-              {description}
-            </p>
-          </DetailLine>
-        ) : null}
-        <Button className="mt-1" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
-          Edit settings
-        </Button>
+        {description ? <DescriptionBlock text={description} /> : null}
       </div>
     </header>
   );

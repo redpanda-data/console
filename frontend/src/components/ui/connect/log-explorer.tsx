@@ -30,7 +30,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpand
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { createFilterFn } from 'components/redpanda-ui/lib/filter-utils';
 import { useDataTableFilter } from 'components/redpanda-ui/lib/use-data-table-filter';
@@ -138,26 +137,26 @@ function LogDetailSheet({
             </SheetHeader>
 
             <div className="grid grid-cols-[120px_1fr] gap-x-6 gap-y-4">
-              <Text as="span" variant="labelStrongSmall">Level</Text>
+              <span className="text-label">Level</span>
               <span><LogLevelBadge level={logPayload?.level} /></span>
 
               {logPayload?.path && (
                 <>
-                  <Text as="span" variant="labelStrongSmall">Component</Text>
-                  <Text as="span" variant="bodyMedium">{logPayload.path}</Text>
+                  <span className="text-label">Component</span>
+                  <span className="text-body">{logPayload.path}</span>
                 </>
               )}
 
-              <Text as="span" variant="labelStrongSmall">Partition</Text>
-              <Text as="span" variant="bodyMedium">{message.partitionID}</Text>
+              <span className="text-label">Partition</span>
+              <span className="text-body">{message.partitionID}</span>
 
-              <Text as="span" variant="labelStrongSmall">Offset</Text>
-              <Text as="span" variant="bodyMedium">{message.offset}</Text>
+              <span className="text-label">Offset</span>
+              <span className="text-body">{message.offset}</span>
 
               {logPayload?.instance_id && (
                 <>
-                  <Text as="span" variant="labelStrongSmall">Instance</Text>
-                  <Text as="span" variant="bodyMedium">{logPayload.instance_id}</Text>
+                  <span className="text-label">Instance</span>
+                  <span className="text-body">{logPayload.instance_id}</span>
                 </>
               )}
             </div>
@@ -181,12 +180,12 @@ function LogDetailSheet({
 
             {message.headers.length > 0 && (
               <div className="flex flex-col gap-2">
-                <Text as="span" variant="labelStrongSmall">Headers ({message.headers.length})</Text>
+                <span className="text-label">Headers ({message.headers.length})</span>
                 <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
                   {message.headers.map((h, i) => (
                     <div className="contents" key={`${h.key}-${i}`}>
-                      <Text as="span" className="text-muted-foreground" variant="bodySmall">{h.key}</Text>
-                      <Text as="span" variant="bodySmall">{String(h.value?.payload ?? '')}</Text>
+                      <span className="text-body-sm text-muted-foreground">{h.key}</span>
+                      <span className="text-body-sm">{String(h.value?.payload ?? '')}</span>
                     </div>
                   ))}
                 </div>
@@ -308,9 +307,9 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           return (
             <Tooltip>
               <TooltipTrigger
-                render={<Text as="span" className="block truncate text-muted-foreground" variant="bodySmall">
+                render={<span className="text-body-sm block truncate text-muted-foreground">
                   {abbreviateComponentPath(path)}
-                </Text>} />
+                </span>} />
               <TooltipContent>{path}</TooltipContent>
             </Tooltip>
           );
@@ -328,9 +327,9 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           const logPayload = getLogPayload(original);
           const text = logPayload?.message ?? original.valueJson ?? '';
           return (
-            <Text as="span" className="block truncate" variant="bodyMedium">
+            <span className="text-body block truncate">
               {cullText(text, 200)}
-            </Text>
+            </span>
           );
         },
       },
@@ -388,7 +387,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           {title ? (
-            <Heading level={4}>{title}</Heading>
+            <h4 className="text-heading-sm">{title}</h4>
           ) : null}
           {!liveViewEnabled && (
             <DataTableFilter actions={actions} columns={filterColumns} filters={filters} table={table} />
@@ -456,9 +455,9 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                     <TableCell className="py-10 text-center" colSpan={table.getVisibleFlatColumns().length}>
                       <div className="mx-auto flex max-w-xs flex-col items-center gap-3">
                         {hasProgress ? (
-                          <Text as="span" className="text-muted-foreground" data-testid="log-search-progress" variant="bodySmall">
+                          <span className="text-body-sm text-muted-foreground" data-testid="log-search-progress">
                             {prettyBytes(progress.bytesConsumed)} scanned, {progress.messagesConsumed.toLocaleString()} messages checked
-                          </Text>
+                          </span>
                         ) : (
                           <Spinner className="size-6" data-testid="log-loading-spinner" />
                         )}

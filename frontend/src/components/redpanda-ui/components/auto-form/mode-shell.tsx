@@ -12,24 +12,19 @@ import { Button } from '../button';
 import { CopyButton } from '../copy-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs';
 import { Textarea } from '../textarea';
-import { Heading, Text } from '../typography';
 
 function JsonBlock({ description, jsonText, title }: { title: string; description: string; jsonText: string }) {
   return (
     <div className="overflow-hidden rounded-2xl border bg-background shadow-xs">
       <div className="border-b px-5 py-4">
         <div className="space-y-1">
-          <Heading level={3}>{title}</Heading>
-          <Text className="text-muted-foreground" variant="small">
-            {description}
-          </Text>
+          <h3 className="text-heading-md">{title}</h3>
+          <div className="text-body-sm text-muted-foreground">{description}</div>
         </div>
       </div>
       <div className="space-y-3 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
-          <Text className="font-medium text-muted-foreground uppercase tracking-[0.12em]" variant="small">
-            Payload JSON
-          </Text>
+          <div className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Payload JSON</div>
           <CopyButton content={jsonText} size="sm" variant="outline">
             Copy JSON
           </CopyButton>
@@ -63,10 +58,10 @@ function JsonEditorPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
-          <Heading level={3}>Payload JSON</Heading>
-          <Text className="text-muted-foreground" variant="small">
+          <h3 className="text-heading-md">Payload JSON</h3>
+          <div className="text-body-sm text-muted-foreground">
             Edit the payload directly, then switch back to the form whenever you want.
-          </Text>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <CopyButton content={jsonText} size="sm" variant="outline">

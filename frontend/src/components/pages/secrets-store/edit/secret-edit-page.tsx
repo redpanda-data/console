@@ -27,7 +27,6 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -125,7 +124,7 @@ export const SecretEditPage = () => {
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <Text>Loading secret...</Text>
+          <div className="text-body">Loading secret...</div>
         </div>
       </div>
     );
@@ -136,7 +135,7 @@ export const SecretEditPage = () => {
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
           <AlertCircle className="h-12 w-12 text-error" />
-          <Text className="text-center">Secret not found or could not be loaded.</Text>
+          <div className="text-center text-body">Secret not found or could not be loaded.</div>
           <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
             Go Back to Secrets
           </Button>
@@ -149,10 +148,10 @@ export const SecretEditPage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Update Secret</Heading>
-        <Text variant="muted">
+        <h1 className="text-heading-xl">Update Secret</h1>
+        <div className="text-body text-muted-foreground">
           Update the secret value, scopes, or labels. Leave the value empty to keep the existing secret.
-        </Text>
+        </div>
       </header>
 
       <form className="max-w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>

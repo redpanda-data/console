@@ -30,7 +30,6 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, InfoIcon, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -316,9 +315,9 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
 
   return (
     <PageContent key="b">
-      <Heading level={1} testId="schema-add-version-heading">
+      <h1 className="text-heading-xl" data-testid="schema-add-version-heading">
         Add schema version
-      </Heading>
+      </h1>
 
       <SchemaEditor mode="ADD_VERSION" onStateChange={setNonNullStateData} state={state} />
 
@@ -534,6 +533,8 @@ const SchemaEditor = (p: {
   const [contextWarning, setContextWarning] = useState('');
   const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<string | null>(null);
+  // Only surface "required" errors after the user has interacted with a field, not on mount.
+  const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
 
   const availableContexts = useMemo(() => {
     if (!(srContextsEnabled && apiContexts && subjects)) return [];
@@ -564,7 +565,7 @@ const SchemaEditor = (p: {
 
   return (
     <>
-      <Heading level={2}>Subject Settings</Heading>
+      <h2 className="text-heading-lg">Subject Settings</h2>
       {Boolean(isAddVersion) && (
         <Alert variant="info">
           <InfoIcon />
@@ -576,7 +577,7 @@ const SchemaEditor = (p: {
       )}
       <div className="flex max-w-[650px] flex-col gap-8">
         {srContextsEnabled && !isAddVersion && (
-          <Field data-invalid={!state.context || undefined}>
+          <Field data-invalid={(touched.context && !state.context) || undefined}>
             <FieldLabel>Context</FieldLabel>
             <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
             <Combobox
@@ -586,6 +587,7 @@ const SchemaEditor = (p: {
               createLabel="context"
               onChange={(value) => {
                 const contextId = contextLabelToId(value);
+                setTouched((t) => ({ ...t, context: true }));
                 setContextWarning('');
                 p.onStateChange((prev) => ({
                   ...prev,
@@ -605,12 +607,8 @@ const SchemaEditor = (p: {
               testId="schema-create-context-select"
               value={contextIdToLabel(state.context)}
             />
-            {contextWarning && (
-              <Text className="mt-1 text-destructive" variant="bodyMedium">
-                {contextWarning}
-              </Text>
-            )}
-            {!state.context && <FieldError>Context is required</FieldError>}
+            {contextWarning && <div className="mt-1 text-body text-destructive">{contextWarning}</div>}
+            {touched.context && !state.context && <FieldError>Context is required</FieldError>}
           </Field>
         )}
 
@@ -632,6 +630,7 @@ const SchemaEditor = (p: {
               CUSTOM: 'Custom',
             }}
             onValueChange={(e) => {
+              setTouched((t) => ({ ...t, topic: false }));
               p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
             }}
             value={state.strategy}
@@ -649,11 +648,12 @@ const SchemaEditor = (p: {
         </Field>
 
         {showTopicNameInput && (
-          <Field data-invalid={!state.userInput || undefined}>
+          <Field data-invalid={(touched.topic && !state.userInput) || undefined}>
             <FieldLabel>Topic name</FieldLabel>
             <Select
               disabled={isAddVersion}
               onValueChange={(e) => {
+                setTouched((t) => ({ ...t, topic: true }));
                 p.onStateChange((prev) => ({ ...prev, userInput: e }));
               }}
               value={state.userInput}
@@ -669,7 +669,7 @@ const SchemaEditor = (p: {
                 ))}
               </SelectContent>
             </Select>
-            {!state.userInput && <FieldError>Topic name is required</FieldError>}
+            {touched.topic && !state.userInput && <FieldError>Topic name is required</FieldError>}
           </Field>
         )}
 
@@ -721,12 +721,8 @@ const SchemaEditor = (p: {
           <>
             <Separator />
             <div className="flex flex-col gap-0.5">
-              <Text className="uppercase" variant="labelStrongXSmall">
-                Subject name
-              </Text>
-              <Text className="font-mono" variant="bodyMedium">
-                {state.computedSubjectName}
-              </Text>
+              <div className="font-medium text-body-sm uppercase">Subject name</div>
+              <div className="font-mono text-body">{state.computedSubjectName}</div>
             </div>
           </>
         )}
@@ -735,29 +731,21 @@ const SchemaEditor = (p: {
           state.qualifiedSubjectName &&
           state.qualifiedSubjectName !== state.computedSubjectName && (
             <div className="flex flex-col gap-0.5">
-              <Text className="uppercase" variant="labelStrongXSmall">
-                Qualified subject name
-              </Text>
-              <Text className="font-mono" variant="bodyMedium">
+              <div className="font-medium text-body-sm uppercase">Qualified subject name</div>
+              <div className="font-mono text-body">
                 {isNamedContext(state.context) ? (
                   <>
-                    <Text as="span" className="font-mono text-gray-400" variant="bodyMedium">
-                      :{state.context}:
-                    </Text>
-                    <Text as="span" className="font-mono" variant="bodyMedium">
-                      {state.computedSubjectName}
-                    </Text>
+                    <span className="font-mono text-body text-gray-400">:{state.context}:</span>
+                    <span className="font-mono text-body">{state.computedSubjectName}</span>
                   </>
                 ) : (
                   state.qualifiedSubjectName
                 )}
-              </Text>
+              </div>
             </div>
           )}
       </div>
-      <Heading className="mt-8" level={2}>
-        Schema definition
-      </Heading>
+      <h2 className="mt-8 text-heading-lg">Schema definition</h2>
       <div className="flex max-w-[1000px] flex-col gap-4">
         <Field>
           <FieldLabel>Format</FieldLabel>
@@ -816,13 +804,11 @@ const SchemaEditor = (p: {
           />
         </div>
 
-        <Heading className="mt-8" level={2}>
-          Schema references
-        </Heading>
-        <Text>
+        <h2 className="mt-8 text-heading-lg">Schema references</h2>
+        <div className="text-body">
           Link other schemas that this schema depends on. References allow schemas to reuse types defined in other
           subjects.
-        </Text>
+        </div>
 
         <ReferencesEditor
           contextSelectOptions={contextSelectOptions}
@@ -832,13 +818,11 @@ const SchemaEditor = (p: {
           state={state}
         />
 
-        <Heading className="mt-8" level={2}>
-          Schema metadata
-        </Heading>
-        <Text className="w-1/2">
+        <h2 className="mt-8 text-heading-lg">Schema metadata</h2>
+        <div className="w-1/2 text-body">
           Optional key-value properties to associate with this schema. Metadata will be ignored if not supported by
           Schema Registry.
-        </Text>
+        </div>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </div>
       <SwitchSchemaFormatDialog
@@ -1029,9 +1013,7 @@ const ReferencesEditor = (p: {
           </Button>
         </div>
         {refQualified && (
-          <Text className="ml-1 font-mono text-muted-foreground" variant="bodySmall">
-            Reference subject: {refQualified}
-          </Text>
+          <div className="ml-1 font-mono text-body-sm text-muted-foreground">Reference subject: {refQualified}</div>
         )}
       </div>
     );

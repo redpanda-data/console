@@ -24,7 +24,6 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -95,8 +94,10 @@ export const SecretCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <Heading level={1}>Create Secret</Heading>
-        <Text variant="muted">Create a new secret that can be securely accessed by your services.</Text>
+        <h1 className="text-heading-xl">Create Secret</h1>
+        <div className="text-body text-muted-foreground">
+          Create a new secret that can be securely accessed by your services.
+        </div>
       </header>
 
       <form className="max-w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>

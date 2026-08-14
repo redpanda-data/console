@@ -32,13 +32,13 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
-import { ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Heading, Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { ArrowDown, ArrowUp, ChevronsUpDown, InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import {
   clampPageIndex,
@@ -249,7 +249,7 @@ const QuotasList = () => {
         <PageContent>
           <Empty>
             <EmptyHeader>
-              <Heading level={1}>403</Heading>
+              <h1 className="text-heading-xl">403</h1>
               <EmptyTitle>Forbidden</EmptyTitle>
               <EmptyDescription>
                 You are not allowed to view this page.
@@ -258,7 +258,7 @@ const QuotasList = () => {
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-              <Link href="https://docs.redpanda.com/docs/manage/console/" rel="noopener noreferrer" target="_blank">
+              <Link href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
                 <Button variant="primary">Redpanda Console documentation for roles and permissions</Button>
               </Link>
             </EmptyContent>
@@ -271,7 +271,7 @@ const QuotasList = () => {
       <PageContent>
         <Alert icon={<TriangleAlertIcon />} variant="destructive">
           <AlertDescription>
-            <Text>{error.message || 'Failed to load quotas'}</Text>
+            <div className="text-body">{error.message || 'Failed to load quotas'}</div>
           </AlertDescription>
         </Alert>
       </PageContent>
@@ -317,9 +317,7 @@ const QuotasList = () => {
           </TableBody>
         </Table>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </PageContent>
     </TooltipProvider>
   );

@@ -24,11 +24,18 @@ export type StitchTemplateArgs = {
 };
 
 const SLOT_TOKEN_PATTERN = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
+const EXACT_SLOT_TOKEN_PATTERN = /^\$\{slot\.([A-Za-z0-9_-]+)\}$/;
 
 // matchAll avoids the shared-lastIndex hazard of RegExp.test on a global pattern.
 const referencedSlotIdsIn = (text: string): string[] => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);
 
 const isBlank = (v: string | undefined): boolean => !v?.trim();
+
+const splitListValue = (value: string): string[] =>
+  value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
 
 const yamlStringifyConfig = { indent: 2, lineWidth: 120 };
 
@@ -81,6 +88,37 @@ export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTem
         substituteScalar(pair.value.value, slotMap, values, pipelineName) === null
       ) {
         return visit.REMOVE;
+      }
+    },
+    // Expand `- ${slot.X}` items of list slots into one item per comma-separated entry. Runs
+    // before the item scalars are visited, so the Scalar pass below sees no tokens for them; a
+    // blank optional list slot drops its item (and the emptied sequence's pair, below). Tokens
+    // embedded in longer text fall through to plain inline substitution.
+    Seq(_, seq) {
+      let changed = false;
+      const items: typeof seq.items = [];
+      for (const item of seq.items) {
+        const tokenId =
+          isScalar(item) && typeof item.value === 'string'
+            ? item.value.match(EXACT_SLOT_TOKEN_PATTERN)?.[1]
+            : undefined;
+        const slot = tokenId ? slotMap.get(tokenId) : undefined;
+        if (!(tokenId && slot?.kind === 'string' && slot.list)) {
+          items.push(item);
+          continue;
+        }
+        changed = true;
+        const resolved = resolveSlotToken(slot, values[tokenId] ?? '', pipelineName);
+        if (resolved === null) {
+          continue;
+        }
+        // No explicit style: the serializer quotes any entry that would parse as a non-string.
+        for (const entry of splitListValue(resolved)) {
+          items.push(new Scalar(entry));
+        }
+      }
+      if (changed) {
+        seq.items = items;
       }
     },
     Scalar(_, node) {

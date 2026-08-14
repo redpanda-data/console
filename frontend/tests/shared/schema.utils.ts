@@ -64,12 +64,12 @@ export const deleteSchema = async (
   return await test.step(`Delete schema: ${subjectName} (${permanent ? 'permanent' : 'soft'})`, async () => {
     await page.goto('/schema-registry');
 
-    // Find and click delete button for the schema
+    // Find the schema row, open its actions (kebab) menu, then click delete
     const row = page.getByTestId('schema-registry-table-name').filter({ hasText: subjectName });
     await expect(row).toBeVisible();
 
-    const deleteButton = row.locator('..').locator('button[aria-label*="delete"], button:has(svg)').last();
-    await deleteButton.click();
+    await page.getByTestId(`schema-list-actions-trigger-${subjectName}`).click();
+    await page.getByTestId(`schema-list-delete-btn-${subjectName}`).dispatchEvent('click');
 
     // Confirm deletion in modal
     const confirmButton = page.getByRole('button', { name: permanent ? 'Permanently Delete' : 'Delete' });

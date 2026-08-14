@@ -5,7 +5,6 @@
     "files": [
       "src/components/ui/**",
       "src/components/redpanda-ui/**",
-      "src/components/ai-elements/**",
       "src/hooks/use-mobile.ts",
       "src/globals.css",
       "src/components/pages/connect/dynamic-ui/components.tsx"

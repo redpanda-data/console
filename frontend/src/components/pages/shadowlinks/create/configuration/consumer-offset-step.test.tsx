@@ -69,7 +69,9 @@ describe('ConsumerOffsetStep', () => {
       expect(screen.getByTestId('consumer-filter-0-exclude-prefix')).toBeInTheDocument();
 
       // Verify the text content of the tabs
-      expect(screen.getByTestId('consumer-filter-0-include-specific')).toHaveTextContent('Include specific topics');
+      expect(screen.getByTestId('consumer-filter-0-include-specific')).toHaveTextContent(
+        'Include specific consumer groups'
+      );
       expect(screen.getByTestId('consumer-filter-0-include-prefix')).toHaveTextContent('Include starting with');
       expect(screen.getByTestId('consumer-filter-0-exclude-specific')).toHaveTextContent('Exclude specific');
       expect(screen.getByTestId('consumer-filter-0-exclude-prefix')).toHaveTextContent('Exclude starting with');

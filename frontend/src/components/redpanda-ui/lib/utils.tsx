@@ -1,15 +1,37 @@
 import { cva } from 'class-variance-authority';
-import { type ClassValue, cn as cnfast } from 'cnfast';
+import { type ClassValue, clsx, twMerge as twMergeFast } from 'cnfast';
 import React from 'react';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+// The custom text-* utilities defined in theme.css. Stock tailwind-merge (and
+// cnfast, which is byte-identical) doesn't know them, so it buckets them as
+// text-COLOR classes — `cn('text-body', 'text-muted-foreground')` would
+// silently drop `text-body`. Keep this list in sync with theme.css.
+const THEME_TEXT_UTILITY = /\btext-(?:body(?:-sm)?|label|caption|lead|heading-(?:xl|lg|md|sm|xs))\b/;
+
+// tailwind-merge configured to treat the theme's text-* utilities as
+// font-size classes: they conflict with each other and with Tailwind's
+// `text-sm`…`text-9xl`, while weight/leading/color still compose.
+const twMergeTheme = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [
+        { text: ['body', 'body-sm', 'label', 'caption', 'lead', { heading: ['xl', 'lg', 'md', 'sm', 'xs'] }] },
+      ],
+    },
+  },
+});
 
 /**
- * Merge class names via cnfast — an optimized adaptation of clsx +
- * tailwind-merge with byte-identical output. Keeps the original
+ * Merge class names. Class lists that reference one of the theme's custom
+ * text-* utilities go through a tailwind-merge configured to understand them;
+ * everything else keeps cnfast's fast path (see PR #220). Keeps the original
  * `(...inputs: ClassValue[])` signature, so every consumer call site is
  * unaffected.
  */
 export function cn(...inputs: ClassValue[]) {
-  return cnfast(...inputs);
+  const joined = clsx(...inputs);
+  return THEME_TEXT_UTILITY.test(joined) ? twMergeTheme(joined) : twMergeFast.mergeString(joined);
 }
 
 export function wrapStringChild(

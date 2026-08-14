@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, ColorModeSwitch, CopyButton } from '@redpanda-data/ui';
-import { Link, useLocation, useMatches, useMatchRoute } from '@tanstack/react-router';
-import { Heading } from 'components/redpanda-ui/components/typography';
+import { ColorModeSwitch } from '@redpanda-data/ui';
+import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
@@ -21,7 +20,6 @@ import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
 import { IsDev } from '../../utils/env';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
-import { UserPreferencesButton } from '../misc/user-preferences';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,8 +28,10 @@ import {
   BreadcrumbSeparator,
 } from '../redpanda-ui/components/breadcrumb';
 import { Button as RegistryButton } from '../redpanda-ui/components/button';
+import { CopyButton } from '../redpanda-ui/components/copy-button';
 import { Separator } from '../redpanda-ui/components/separator';
 import { SidebarTrigger } from '../redpanda-ui/components/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../redpanda-ui/components/tooltip';
 
 type BreadcrumbHeaderRowProps = {
   useNewSidebar: boolean;
@@ -45,7 +45,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
-            <Separator className="mr-2 h-4" orientation="vertical" />
+            <Separator className="mr-2 h-4 self-center" orientation="vertical" />
           </>
         ) : null}
         {isEmbedded() ? null : (
@@ -67,14 +67,9 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
   );
 }
 
-function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean }) {
+function AppPageHeader() {
   useApiStoreHook((s) => s.userData); // re-render when userData changes
-  // Fullscreen routes (e.g. the SQL studio) carry their own title bar/toolbar, so
-  // they never want the title+actions row — only the breadcrumb. Robust to which
-  // layout branch renders the header (standalone vs embedded misdetection).
-  const matches = useMatches();
-  const isFullscreenRoute = matches.some((m) => m.staticData.fullscreen);
-  const hideTitleRow = breadcrumbOnly || isFullscreenRoute;
+  const hideTitleRow = useRouteOwnsTitleRow();
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
   const useNewSidebar = !isEmbedded();
@@ -104,8 +99,15 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
     return null;
   }
 
+  // Embedded, the breadcrumb row holds nothing (the host draws the breadcrumb, and there is
+  // no sidebar trigger), so without the title row the header is a bare divider.
+  if (hideTitleRow && isEmbedded()) {
+    return null;
+  }
+
   return (
-    <div>
+    // Expanded pages release #mainLayout's gutter; keep the header off the viewport edge.
+    <div className="page-expanded-inset transition-[padding] duration-300 ease-in-out">
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
       {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
           studio, which carries its own title bar and toolbar). */}
@@ -126,12 +128,14 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
             )}
             <div className="flex items-center">
               {pageTitle ? (
-                <Heading
-                  className={cn('mr-2', lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap')}
-                  level={1}
+                <h1
+                  className={cn(
+                    'mr-2 text-heading-xl',
+                    lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap'
+                  )}
                 >
                   {pageTitle}
-                </Heading>
+                </h1>
               ) : null}
               {lastBreadcrumb?.options?.canBeCopied ? (
                 <CopyButton content={lastBreadcrumb.title} variant="ghost" />
@@ -140,22 +144,27 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isEmbedded() && api.isRedpanda && (
-              <Link to="/debug-bundle">
-                <Button
-                  isDisabled={!api.userData?.canViewDebugBundle}
-                  tooltip={
-                    api.userData?.canViewDebugBundle
-                      ? null
-                      : 'You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission'
-                  }
-                  variant="ghost"
-                >
-                  Debug bundle
-                </Button>
-              </Link>
-            )}
-            <UserPreferencesButton />
+            {!isEmbedded() &&
+              api.isRedpanda &&
+              (api.userData?.canViewDebugBundle ? (
+                <RegistryButton render={<Link to="/debug-bundle">Debug bundle</Link>} variant="ghost" />
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    {/* span wrapper: a disabled button swallows pointer events, so it can't anchor the tooltip itself */}
+                    <TooltipTrigger
+                      render={
+                        <span className="inline-flex">
+                          <RegistryButton disabled variant="ghost">
+                            Debug bundle
+                          </RegistryButton>
+                        </span>
+                      }
+                    />
+                    <TooltipContent>You need RedpandaCapability.MANAGE_DEBUG_BUNDLE permission</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
             {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
           </div>
         </div>
@@ -165,6 +174,21 @@ function AppPageHeader({ breadcrumbOnly = false }: { breadcrumbOnly?: boolean })
 }
 
 export default AppPageHeader;
+
+/**
+ * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`).
+ *
+ * Resolved from the pathname rather than `useMatches()`: committed matches lag the
+ * location by a render on soft navigation, flashing the title row on the way in.
+ */
+function useRouteOwnsTitleRow() {
+  const router = useRouter();
+  const { pathname } = useLocation();
+
+  return router
+    .getMatchedRoutes(pathname)
+    .matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
+}
 
 /**
  * Custom React Hook: Determines whether to show the refresh button based on route matches.
@@ -180,8 +204,6 @@ function useShouldShowRefresh() {
   const schemaCreateMatch = matchRoute({ to: '/schema-registry/create' });
   const topicProduceRecordMatch = matchRoute({ to: '/topics/$topicName/produce-record' });
   const secretsMatch = matchRoute({ to: '/secrets', fuzzy: false });
-  const connectWizardPagesMatch = matchRoute({ to: '/rp-connect/wizard' });
-  const getStartedApiMatch = matchRoute({ to: '/get-started/api' });
 
   // matches acls
   const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
@@ -217,13 +239,6 @@ function useShouldShowRefresh() {
   if (userDetailMatch) {
     return false;
   }
-  if (connectWizardPagesMatch) {
-    return false;
-  }
-  if (getStartedApiMatch) {
-    return false;
-  }
-
   return true;
 }
 function useShouldHideHeader() {
@@ -236,14 +251,11 @@ function useShouldHideHeader() {
     matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
     matchRoute({ to: '/rp-connect/create' });
 
-  // Both flags are cloud-only (schema requires embedded mode).
-  // enablePipelineDiagrams: full new pipeline layout with diagrams.
-  // enableRpcnTiles: new tiles-based create flow embedded in legacy layout.
-  if (
-    isPipelineRoute &&
-    isEmbedded() &&
-    (isFeatureFlagEnabled('enablePipelineDiagrams') || isFeatureFlagEnabled('enableRpcnTiles'))
-  ) {
+  /**
+   * Flag is cloud-only (schema requires embedded mode).
+   * enablePipelineDiagrams: full new pipeline layout with diagrams.
+   */
+  if (isPipelineRoute && isEmbedded() && isFeatureFlagEnabled('enablePipelineDiagrams')) {
     return true;
   }
 
@@ -253,7 +265,7 @@ function useShouldHideHeader() {
   }
 
   // Pages that have their own header components - hide AppPageHeader for these
-  const pagesWithOwnHeaders = ['/mcp-servers', '/agents', '/knowledgebases', '/secrets', '/transcripts'];
+  const pagesWithOwnHeaders = ['/secrets'];
 
   // Check if current path starts with any of the pages that have their own headers
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));

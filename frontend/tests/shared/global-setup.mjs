@@ -1,18 +1,28 @@
 import { GenericContainer, Network, Wait } from 'testcontainers';
 
+import {
+  cleanupSerializedResources,
+  cleanupStartedResources,
+  createEnvironmentState,
+  rememberContainer,
+  serializeEnvironmentState,
+} from './test-environment-state.mjs';
 import { KAFKA_CONNECT_IMAGE, KAFKA_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
-import { exec } from 'node:child_process';
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { exec, execFile } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Regex for extracting container ID from error messages
 const CONTAINER_ID_REGEX = /container ([a-f0-9]+)/;
+const MISSING_CONTAINER_PATTERN = /No such container/i;
+const MISSING_NETWORK_PATTERN = /No such network/i;
 
 const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
 
@@ -120,8 +130,7 @@ async function startRedpandaContainer(network, state, ports) {
     .withStartupTimeout(90_000)
     .start();
 
-  state.redpandaId = redpanda.getId();
-  state.redpandaContainer = redpanda;
+  rememberContainer(state, 'redpanda', redpanda);
   console.log(`✓ Redpanda container started: ${state.redpandaId}`);
 }
 
@@ -189,8 +198,7 @@ async function startKafkaContainer(network, state, ports, variantName) {
     .withStartupTimeout(120_000)
     .start();
 
-  state.kafkaId = kafka.getId();
-  state.kafkaContainer = kafka;
+  rememberContainer(state, 'kafka', kafka);
   console.log(`✓ Apache Kafka container started: ${state.kafkaId}`);
 }
 
@@ -226,8 +234,7 @@ schemaRegistry:
     .withStartupTimeout(120_000)
     .start();
 
-  state.owlshopId = owlshop.getId();
-  state.owlshopContainer = owlshop;
+  rememberContainer(state, 'owlshop', owlshop);
   console.log(`✓ OwlShop started: ${state.owlshopId}`);
 }
 
@@ -322,8 +329,7 @@ topic.creation.enable=false
       .withStartupTimeout(300_000)
       .start();
 
-    state.connectId = connect.getId();
-    state.connectContainer = connect;
+    rememberContainer(state, 'connect', connect);
     console.log(`✓ Kafka Connect container started: ${state.connectId}`);
 
     // Verify it's responding via docker exec (avoids macOS Docker Desktop port-forwarding latency)
@@ -353,8 +359,7 @@ topic.creation.enable=false
     if (connect) {
       try {
         const containerId = connect.getId();
-        state.connectId = containerId;
-        state.connectContainer = connect;
+        rememberContainer(state, 'connect', connect);
         console.log(`\n  Container ID: ${containerId}`);
         console.log('  Last 50 lines of Kafka Connect logs:');
         const { stdout } = await execAsync(`docker logs --tail 50 ${containerId}`);
@@ -366,13 +371,47 @@ topic.creation.enable=false
       console.log('  Container failed to start - no logs available');
     }
   } finally {
-    // Clean up temp password file
+    rmSync(passwordFile, { force: true });
+  }
+}
+
+function cleanupBackendBuild({ backendDir, embedDir, originalGoWork, tempDockerfile, workspaceDir }) {
+  const errors = [];
+  const attempt = (cleanup) => {
     try {
-      await execAsync(`rm -f "${passwordFile}"`);
-    } catch {
-      // ignore cleanup errors
+      cleanup();
+    } catch (error) {
+      errors.push(error);
+    }
+  };
+
+  if (tempDockerfile) {
+    attempt(() => rmSync(tempDockerfile, { force: true }));
+  }
+  if (workspaceDir) {
+    attempt(() => rmSync(workspaceDir, { force: true, recursive: true }));
+    if (originalGoWork !== null) {
+      attempt(() => {
+        writeFileSync(join(backendDir, 'go.work'), originalGoWork);
+        console.log('  ✓ Restored original go.work');
+      });
     }
   }
+  if (embedDir) {
+    console.log('Cleaning up copied frontend assets...');
+    attempt(() => {
+      // Keep .gitignore, remove everything else.
+      if (existsSync(embedDir)) {
+        for (const entry of readdirSync(embedDir)) {
+          if (entry !== '.gitignore') {
+            rmSync(join(embedDir, entry), { force: true, recursive: true });
+          }
+        }
+      }
+    });
+  }
+
+  return errors;
 }
 
 export async function buildBackendImage(isEnterprise) {
@@ -402,6 +441,10 @@ export async function buildBackendImage(isEnterprise) {
   console.log(`Building from: ${backendDir}`);
 
   let embedDir = null;
+  let tempDockerfile = null;
+  let workspaceDir = null;
+  let originalGoWork = null;
+  let buildError = null;
 
   try {
     // Copy frontend assets before build (required for both OSS and Enterprise)
@@ -435,15 +478,14 @@ export async function buildBackendImage(isEnterprise) {
     // Docker doesn't allow Dockerfiles to reference files outside build context,
     // so we temporarily copy the Dockerfile into the build context
     const dockerfilePath = resolve(__dirname, 'Dockerfile.backend');
-    const tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
+    tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
 
     // For enterprise workspace builds (go.work exists), the workspace references
     // modules outside the backend/ directory (e.g., ../console-oss/backend).
     // We copy those into the build context and rewrite go.work to use local paths.
     const isWorkspaceBuild = isEnterprise && existsSync(join(backendDir, 'go.work'));
-    const workspaceDir = join(backendDir, '.e2e-workspace');
+    workspaceDir = isWorkspaceBuild ? join(backendDir, '.e2e-workspace') : null;
 
-    let originalGoWork = null;
     if (isWorkspaceBuild) {
       console.log('Workspace build detected (go.work found)');
       originalGoWork = readFileSync(join(backendDir, 'go.work'), 'utf-8');
@@ -515,38 +557,36 @@ export async function buildBackendImage(isEnterprise) {
 
     console.log('Building Docker image with BuildKit...');
     await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
-
-    try {
-      // Use docker buildx with BuildKit cache mounts for Go module and build caches.
-      // This is significantly faster than testcontainers build on repeat runs.
-      await execAsync(`DOCKER_BUILDKIT=1 docker build -f .dockerfile.e2e.tmp -t ${imageTag} .`, {
-        cwd: backendDir,
-        maxBuffer: 50 * 1024 * 1024,
-      });
-      console.log('✓ Backend image built');
-    } finally {
-      // Clean up temporary Dockerfile and workspace directory
-      await execAsync(`rm -f "${tempDockerfile}"`).catch(() => {});
-      if (isWorkspaceBuild) {
-        await execAsync(`rm -rf "${workspaceDir}"`).catch(() => {});
-        // Restore original go.work so subsequent runs don't reference the deleted workspace dir
-        if (originalGoWork !== null) {
-          writeFileSync(join(backendDir, 'go.work'), originalGoWork);
-          console.log('  ✓ Restored original go.work');
-        }
-      }
-    }
-
-    return imageTag;
-  } finally {
-    // Cleanup: remove copied frontend assets (for both OSS and Enterprise)
-    if (embedDir) {
-      console.log('Cleaning up copied frontend assets...');
-      // Keep .gitignore, remove everything else
-      await execAsync(`find "${embedDir}" -mindepth 1 ! -name '.gitignore' -delete`).catch(() => {});
-      console.log('✓ Cleanup complete');
-    }
+    // Use docker buildx with BuildKit cache mounts for Go module and build caches.
+    // This is significantly faster than testcontainers build on repeat runs.
+    await execAsync(`DOCKER_BUILDKIT=1 docker build -f .dockerfile.e2e.tmp -t ${imageTag} .`, {
+      cwd: backendDir,
+      maxBuffer: 50 * 1024 * 1024,
+    });
+    console.log('✓ Backend image built');
+  } catch (error) {
+    buildError = error;
   }
+
+  const cleanupErrors = cleanupBackendBuild({
+    backendDir,
+    embedDir,
+    originalGoWork,
+    tempDockerfile,
+    workspaceDir,
+  });
+  if (buildError) {
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError([buildError, ...cleanupErrors], 'Backend build and cleanup both failed');
+    }
+    throw buildError;
+  }
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(cleanupErrors, 'Failed to clean up the Playwright backend build');
+  }
+
+  console.log('✓ Cleanup complete');
+  return imageTag;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: (21) nested test environment setup with multiple configuration checks
@@ -581,6 +621,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
       const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
       licensePath = `${tempDir}/redpanda.license`;
       writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
+      state.tempPaths.push(tempDir);
       console.log(`✓ License written to temporary file: ${licensePath}`);
     } else {
       // Default to relative path based on backend directory
@@ -627,15 +668,17 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
       .withNetworkMode(network.getName())
       .withExposedPorts({ container: 3000, host: ports.backend })
       .withBindMounts(bindMounts)
-      .withCommand(['--config.filepath=/etc/console/config.yaml']);
+      .withCommand(['--config.filepath=/etc/console/config.yaml'])
+      // Testcontainers 12 prefers an image healthcheck when present. Preserve
+      // the backend's established port-readiness contract across the upgrade.
+      .withWaitStrategy(Wait.forListeningPorts());
 
     console.log('Calling container.start()...');
 
     try {
       backend = await container.start();
       containerId = backend.getId();
-      state.backendId = containerId;
-      state.backendContainer = backend;
+      rememberContainer(state, 'backend', backend);
       console.log(`✓ Container.start() returned with ID: ${containerId}`);
     } catch (startError) {
       console.error('Error during container.start():', startError.message);
@@ -822,8 +865,7 @@ async function startDestinationRedpandaContainer(network, state, ports) {
     .withStartupTimeout(120_000)
     .start();
 
-  state.destRedpandaId = destRedpanda.getId();
-  state.destRedpandaContainer = destRedpanda;
+  rememberContainer(state, 'destRedpanda', destRedpanda);
   console.log(`✓ Destination Redpanda container started: ${state.destRedpandaId}`);
 
   // Debug: Check port mappings
@@ -861,15 +903,16 @@ async function verifyDestinationRedpandaServices(state, ports) {
   console.log('✓ Destination Schema Registry ready');
 }
 
-async function startBackendServerWithConfig(
-  network,
-  isEnterprise,
-  imageTag,
-  state,
+async function startBackendServerWithConfig({
   configPath,
   externalPort,
-  networkAlias
-) {
+  imageTag,
+  isEnterprise,
+  network,
+  networkAlias,
+  state,
+  stateSlot = 'backend',
+}) {
   console.log(`Starting backend server container on port ${externalPort} with alias ${networkAlias}...`);
 
   const bindMounts = [
@@ -890,6 +933,7 @@ async function startBackendServerWithConfig(
       const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
       licensePath = `${tempDir}/redpanda.license`;
       writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
+      state.tempPaths.push(tempDir);
     } else {
       const defaultLicensePath = resolve(
         __dirname,
@@ -917,11 +961,11 @@ async function startBackendServerWithConfig(
       .withExposedPorts({ container: 3000, host: externalPort })
       .withBindMounts(bindMounts)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
+      .withWaitStrategy(Wait.forListeningPorts())
       .start();
 
     containerId = backend.getId();
-    state.backendId = containerId;
-    state.backendContainer = backend;
+    rememberContainer(state, stateSlot, backend);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -957,56 +1001,55 @@ async function startBackendServerWithConfig(
 }
 
 async function cleanupOnFailure(state) {
-  if (state.sourceBackendContainer) {
-    console.log('Stopping source backend container using testcontainers API...');
-    await state.sourceBackendContainer.stop().catch((error) => {
-      console.log(`Failed to stop source backend container: ${error.message}`);
-    });
+  console.log('Stopping partially started test environment...');
+  let gracefulCleanupError = null;
+  try {
+    await cleanupStartedResources(state);
+  } catch (error) {
+    gracefulCleanupError = error;
+    console.warn('Graceful test environment cleanup failed; forcing serialized resources:', error);
   }
 
-  if (state.backendContainer) {
-    console.log('Stopping backend container using testcontainers API...');
-    await state.backendContainer.stop().catch((error) => {
-      console.log(`Failed to stop backend container: ${error.message}`);
+  try {
+    await cleanupSerializedResources(serializeEnvironmentState(state), {
+      removeContainer: async (id) => {
+        try {
+          await execFileAsync('docker', ['rm', '--force', '--volumes', id]);
+        } catch (error) {
+          if (!MISSING_CONTAINER_PATTERN.test(`${error?.message ?? ''}\n${error?.stderr ?? ''}`)) {
+            throw error;
+          }
+        }
+      },
+      removeNetwork: async (id) => {
+        try {
+          await execFileAsync('docker', ['network', 'rm', id]);
+        } catch (error) {
+          if (!MISSING_NETWORK_PATTERN.test(`${error?.message ?? ''}\n${error?.stderr ?? ''}`)) {
+            throw error;
+          }
+        }
+      },
     });
+  } catch (forcedCleanupError) {
+    throw new AggregateError(
+      gracefulCleanupError ? [gracefulCleanupError, forcedCleanupError] : [forcedCleanupError],
+      'Failed to clean up partially started Playwright resources'
+    );
   }
+}
 
-  if (state.connectContainer) {
-    console.log('Stopping Kafka Connect container using testcontainers API...');
-    await state.connectContainer.stop().catch((error) => {
-      console.log(`Failed to stop Connect container: ${error.message}`);
-    });
-  }
-  if (state.owlshopContainer) {
-    console.log('Stopping OwlShop container using testcontainers API...');
-    await state.owlshopContainer.stop().catch((error) => {
-      console.log(`Failed to stop OwlShop container: ${error.message}`);
-    });
-  }
-  if (state.destRedpandaContainer) {
-    console.log('Stopping destination Redpanda container using testcontainers API...');
-    await state.destRedpandaContainer.stop().catch((error) => {
-      console.log(`Failed to stop destination Redpanda container: ${error.message}`);
-    });
-  }
-  if (state.kafkaContainer) {
-    console.log('Stopping Kafka container using testcontainers API...');
-    await state.kafkaContainer.stop().catch((error) => {
-      console.log(`Failed to stop Kafka container: ${error.message}`);
-    });
-  }
-  if (state.redpandaContainer) {
-    console.log('Stopping Redpanda container using testcontainers API...');
-    await state.redpandaContainer.stop().catch((error) => {
-      console.log(`Failed to stop Redpanda container: ${error.message}`);
-    });
-  }
-  if (state.network) {
-    console.log('Stopping network using testcontainers API...');
-    await state.network.stop().catch((error) => {
-      console.log(`Failed to stop network: ${error.message}`);
-    });
-  }
+function writeEnvironmentState(variantName, state) {
+  writeFileSync(getStateFile(variantName), JSON.stringify(serializeEnvironmentState(state), null, 2));
+}
+
+function createTeardown(variantName, state) {
+  return async () => {
+    console.log(`\n🛑 TEARDOWN: ${variantName}...`);
+    await cleanupStartedResources(state);
+    rmSync(getStateFile(variantName), { force: true });
+    console.log('✅ Test environment stopped successfully\n');
+  };
 }
 
 export default async function globalSetup(config = {}) {
@@ -1024,8 +1067,8 @@ export default async function globalSetup(config = {}) {
   let portsOverride = {};
   try {
     portsOverride = JSON.parse(process.env.E2E_PORTS_OVERRIDE ?? '{}');
-  } catch {
-    portsOverride = {};
+  } catch (error) {
+    throw new Error('E2E_PORTS_OVERRIDE must be valid JSON', { cause: error });
   }
   const ports = { ...variantConfig.ports, ...portsOverride };
 
@@ -1041,17 +1084,10 @@ export default async function globalSetup(config = {}) {
   });
   console.log('Starting testcontainers environment...');
 
-  const state = {
-    networkId: '',
-    redpandaId: '',
-    owlshopId: '',
-    connectId: '',
-    backendId: '',
-    destRedpandaId: '',
-    sourceBackendId: '',
+  const state = createEnvironmentState({
     isEnterprise,
     needsShadowlink,
-  };
+  });
 
   try {
     // Use pre-built image tag if available (set by run-all-variants.mjs), otherwise build
@@ -1067,18 +1103,18 @@ export default async function globalSetup(config = {}) {
     if (variantConfig.isKafka) {
       await startKafkaContainer(network, state, ports, variantName);
       const backendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
-      await startBackendServerWithConfig(
-        network,
-        isEnterprise,
+      await startBackendServerWithConfig({
+        configPath: backendConfigPath,
+        externalPort: ports.backend,
         imageTag,
+        isEnterprise,
+        network,
+        networkAlias: 'console-backend',
         state,
-        backendConfigPath,
-        ports.backend,
-        'console-backend'
-      );
-      writeFileSync(getStateFile(variantName), JSON.stringify(state, null, 2));
+      });
+      writeEnvironmentState(variantName, state);
       console.log('\n✅ All services ready! Starting tests...\n');
-      return;
+      return createTeardown(variantName, state);
     }
 
     // --- Group 1: Start clusters in parallel ---
@@ -1123,24 +1159,25 @@ export default async function globalSetup(config = {}) {
         const sourceBackendConfigPath = resolve(__dirname, '..', `test-variant-${variantName}`, 'config', configFile);
         const destBackendConfigPath = resolve(__dirname, 'console.dest.config.yaml');
         servicePromises.push(
-          startBackendServerWithConfig(
-            network,
-            isEnterprise,
+          startBackendServerWithConfig({
+            configPath: sourceBackendConfigPath,
+            externalPort: ports.backend,
             imageTag,
-            state,
-            sourceBackendConfigPath,
-            ports.backend,
-            'console-backend'
-          ),
-          startBackendServerWithConfig(
-            network,
             isEnterprise,
-            imageTag,
+            network,
+            networkAlias: 'console-backend',
             state,
-            destBackendConfigPath,
-            ports.backendDest,
-            'console-backend-dest'
-          )
+            stateSlot: 'sourceBackend',
+          }),
+          startBackendServerWithConfig({
+            configPath: destBackendConfigPath,
+            externalPort: ports.backendDest,
+            imageTag,
+            isEnterprise,
+            network,
+            networkAlias: 'console-backend-dest',
+            state,
+          })
         );
       } else {
         servicePromises.push(
@@ -1165,12 +1202,17 @@ export default async function globalSetup(config = {}) {
       console.log('✓ Stabilization period complete');
     }
 
-    writeFileSync(getStateFile(variantName), JSON.stringify(state, null, 2));
+    writeEnvironmentState(variantName, state);
 
     console.log('\n✅ All services ready! Starting tests...\n');
+    return createTeardown(variantName, state);
   } catch (error) {
     console.error('Failed to start environment:', error);
-    await cleanupOnFailure(state);
+    try {
+      await cleanupOnFailure(state);
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], 'Test environment setup and cleanup both failed');
+    }
     throw error;
   }
 }

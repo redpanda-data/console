@@ -27,6 +27,7 @@ const config = defineConfig({
 
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
+  retryStrategy: process.env.CI ? 'isolated' : 'immediate',
 
   /* Number of parallel workers */
   workers: process.env.CI ? 4 : undefined,
@@ -34,9 +35,8 @@ const config = defineConfig({
   /* Reporter to use */
   reporter: reporters,
 
-  /* Global setup and teardown */
+  /* Global setup returns its teardown so live Testcontainers handles are reused. */
   globalSetup: '../shared/global-setup.mjs',
-  globalTeardown: '../shared/global-teardown.mjs',
 
   /* Custom metadata for setup/teardown */
   metadata: {
@@ -59,11 +59,11 @@ const config = defineConfig({
     baseURL: process.env.REACT_APP_ORIGIN ?? 'http://localhost:3200',
 
     /* Collect trace when retrying the failed test */
-    trace: 'retain-on-failure',
+    trace: 'on-first-retry',
     /* Capture screenshot on failure */
     screenshot: 'only-on-failure',
     /* Record video on failure */
-    video: 'retain-on-failure',
+    video: 'on-first-retry',
   },
 
   /* Configure projects */

@@ -106,7 +106,7 @@ type ProgressLabelProps = React.ComponentProps<typeof ProgressPrimitive.Label> &
 function ProgressLabel({ className, testId, ...props }: ProgressLabelProps) {
   return (
     <ProgressPrimitive.Label
-      className={cn('font-medium text-sm', className)}
+      className={cn('text-label', className)}
       data-slot="progress-label"
       data-testid={testId}
       {...props}

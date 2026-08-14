@@ -5,11 +5,11 @@ import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
 import { cn } from '../lib/utils';
 
 const headingClasses: Record<number, string> = {
-  1: 'font-display font-medium leading-none tracking-heading text-2xl',
-  2: 'font-display font-medium leading-none tracking-heading text-xl',
-  3: 'font-display font-medium leading-none tracking-heading text-lg',
-  4: 'font-display font-medium leading-none tracking-heading text-md',
-  5: 'font-display font-medium leading-none tracking-heading text-sm',
+  1: 'text-heading-xl',
+  2: 'text-heading-lg',
+  3: 'text-heading-md',
+  4: 'text-heading-sm',
+  5: 'text-heading-xs',
 };
 
 type EditableTextProps = {
@@ -59,8 +59,7 @@ function EditableText({
     node.select();
   }, []);
 
-  const typographyClasses =
-    as === 'heading' ? headingClasses[headingLevel] : 'font-sans font-normal text-sm leading-5 tracking-normal';
+  const typographyClasses = as === 'heading' ? headingClasses[headingLevel] : 'font-sans text-body';
 
   const handleClick = useCallback(() => {
     if (readOnly) {

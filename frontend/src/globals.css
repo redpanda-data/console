@@ -2,8 +2,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@source "../node_modules/streamdown/dist/index.js";
-
 /* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
    which collides with Monaco's internal .monaco-hover.fade-in class,
    forcing hover widgets to be invisible. Override to restore opacity. */
@@ -32,6 +30,71 @@
    than the registry-synced theme.css so it survives registry re-syncs. (UX-1259) */
 :root[data-theme].dark {
   --chakra-colors-chakra-border-color: var(--color-border);
+}
+
+@layer utilities {
+  /* A work surface filling the viewport below whatever chrome sits above it
+     (--console-page-top, measured in components/layout/page-column.tsx). The 1rem keeps its
+     bottom border off the viewport edge. Pair with a min-height for short viewports. */
+  .page-fill-viewport {
+    height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
+  }
+}
+
+/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width
+   cap. Not a Tailwind variant: the generated variant CSS went missing on some routes in
+   the federated build. Layered, so it beats those utilities on specificity alone. */
+@layer utilities {
+  /* 100%, not none — so the release animates. */
+  html[data-page-expanded] .page-expanded-uncap {
+    max-width: 100%;
+  }
+
+  html[data-page-expanded] .page-expanded-flush {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Chrome that stays put while the page beneath it goes edge-to-edge, re-inset by the
+     same amount expanded pages give their own headers. */
+  html[data-page-expanded] .page-expanded-inset {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Dev-only bottom-right cluster for floating debug triggers, raised clear of the
+   host's Feedback tab: router-devtools pill at the bottom, query-devtools circle
+   and the debug-helpers launcher (positioned via its own classes) in a row above.
+   These selectors only match dev builds — inert in production. */
+/* The container carries 4px padding around the button — offset by -4 so the
+   visible circle sits at right 12 / bottom 68, flush with the launcher's grid. */
+.tsqd-open-btn-container {
+  right: 8px !important;
+  bottom: 64px !important;
+  opacity: 0.7;
+  transition: opacity 150ms;
+}
+.tsqd-open-btn-container:hover {
+  opacity: 1;
+}
+/* Compact the trigger; the logo is a viewBox svg, so it scales with the button. */
+.tsqd-open-btn,
+.tsqd-open-btn svg {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+button[aria-label="Open TanStack Router Devtools"] {
+  right: 12px !important;
+  bottom: 36px !important;
+  transform: scale(0.85);
+  transform-origin: bottom right;
+  opacity: 0.7;
+  transition: opacity 150ms;
+}
+button[aria-label="Open TanStack Router Devtools"]:hover {
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

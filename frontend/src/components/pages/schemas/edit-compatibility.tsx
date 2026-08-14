@@ -22,7 +22,6 @@ import {
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -270,16 +269,16 @@ function EditSchemaCompatibility(p: {
         {!!contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-compatibility-context-name">
             <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            <Text className="font-bold text-lg">
+            <div className="font-bold text-lg">
               Editing compatibility for context: <span className="text-muted-foreground">{contextName}</span>
-            </Text>
+            </div>
           </div>
         )}
 
-        <Text data-testid="edit-compatibility-description">
+        <div className="text-body" data-testid="edit-compatibility-description">
           Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.
           {/* <Link>Learn more.</Link> */}
-        </Text>
+        </div>
 
         <div className="mt-6 max-w-[800px]">
           <Choicebox
@@ -329,13 +328,13 @@ function EditSchemaCompatibility(p: {
       </div>
       {!!subjectName && schema && (
         <div className="flex-1">
-          <Text
+          <div
             className="whitespace-pre-wrap break-words font-bold text-lg"
             data-testid="edit-compatibility-subject-name"
           >
             {subjectName}
-          </Text>
-          <Text className="mt-8 mb-4 font-bold text-lg">Schema</Text>
+          </div>
+          <div className="mt-8 mb-4 font-bold text-lg">Schema</div>
           <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
         </div>
       )}

@@ -19,13 +19,13 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
+import { mapSchemaRegistrySyncOptions, mapSchemaRegistrySyncOptionsToFormValues } from './schema-registry';
 import { AUTH_METHOD, type FormValues, TLS_MODE } from '../create/model';
 import {
   mapControlplaneStateToUnified,
   type UnifiedAuthenticationConfiguration,
   type UnifiedClientOptions,
   type UnifiedConsumerOffsetSyncOptions,
-  type UnifiedSchemaRegistrySyncOptions,
   type UnifiedSecuritySyncOptions,
   type UnifiedShadowLink,
   type UnifiedShadowLinkConfigurations,
@@ -174,24 +174,6 @@ function mapControlplaneSecuritySyncOptions(
 }
 
 /**
- * Map controlplane schema registry sync options to unified type
- */
-function mapControlplaneSchemaRegistrySyncOptions(
-  options: ControlplaneShadowLink['schemaRegistrySyncOptions']
-): UnifiedSchemaRegistrySyncOptions | undefined {
-  if (!options) {
-    return;
-  }
-
-  return {
-    schemaRegistryShadowingMode:
-      options.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic'
-        ? { case: 'shadowSchemaRegistryTopic', value: {} }
-        : { case: undefined },
-  };
-}
-
-/**
  * Map controlplane configurations to unified configurations
  */
 function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShadowLinkConfigurations | undefined {
@@ -203,8 +185,9 @@ function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShado
     clientOptions: mapControlplaneClientOptions(sl.clientOptions),
     topicMetadataSyncOptions: mapControlplaneTopicMetadataSyncOptions(sl.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapControlplaneConsumerOffsetSyncOptions(sl.consumerOffsetSyncOptions),
+    // roleSyncOptions stays undefined: the controlplane proto does not expose role sync yet
     securitySyncOptions: mapControlplaneSecuritySyncOptions(sl.securitySyncOptions),
-    schemaRegistrySyncOptions: mapControlplaneSchemaRegistrySyncOptions(sl.schemaRegistrySyncOptions),
+    schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(sl.schemaRegistrySyncOptions),
   };
 }
 
@@ -218,7 +201,6 @@ export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedS
     name: sl.name,
     id: sl.id,
     state: mapControlplaneStateToUnified(sl.state),
-    resourceGroupId: sl.resourceGroupId,
     shadowRedpandaId: sl.shadowRedpandaId,
     createdAt: sl.createdAt ? timestampDate(sl.createdAt) : undefined,
     updatedAt: sl.updatedAt ? timestampDate(sl.updatedAt) : undefined,
@@ -447,14 +429,8 @@ const buildControlplaneACLsValues = (
  */
 const buildControlplaneSchemaRegistryValues = (
   shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync'> => {
-  const schemaRegistrySyncOptions = shadowLink.schemaRegistrySyncOptions;
-  const isEnabled = schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
-
-  return {
-    enableSchemaRegistrySync: isEnabled,
-  };
-};
+): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> =>
+  mapSchemaRegistrySyncOptionsToFormValues(shadowLink.schemaRegistrySyncOptions);
 
 /**
  * Build form values from controlplane shadow link data
@@ -470,6 +446,11 @@ export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneS
 
   return {
     name: shadowLink.name ?? '',
+    // The controlplane proto does not ship role_sync_options yet, so hydrate
+    // like the dataplane absent case: specify mode with no filters keeps role
+    // sync disabled on untouched edits
+    rolesMode: 'specify',
+    roles: [],
     ...connectionValues,
     ...authSettings,
     ...topicsValues,

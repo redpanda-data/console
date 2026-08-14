@@ -15,7 +15,6 @@ import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { RefreshCw } from 'lucide-react';
 import type { ShadowLinkTaskStatus } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useMemo } from 'react';
@@ -37,7 +36,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
       columnHelper.accessor('name', {
         header: 'Task name',
         size: 250,
-        cell: (info) => <Text className="font-medium">{info.getValue()}</Text>,
+        cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
       }),
       columnHelper.accessor('state', {
         header: 'State',
@@ -47,17 +46,17 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
       columnHelper.accessor('brokerId', {
         header: 'Broker ID',
         size: 100,
-        cell: (info) => <Text>{info.getValue()}</Text>,
+        cell: (info) => <div className="text-body">{info.getValue()}</div>,
       }),
       columnHelper.accessor('shard', {
         header: 'Shard ID',
         size: 100,
-        cell: (info) => <Text>{info.getValue()}</Text>,
+        cell: (info) => <div className="text-body">{info.getValue()}</div>,
       }),
       columnHelper.accessor('reason', {
         header: 'Reason',
         size: 300,
-        cell: (info) => <Text className="text-muted-foreground">{info.getValue()}</Text>,
+        cell: (info) => <div className="text-body text-muted-foreground">{info.getValue()}</div>,
       }),
     ],
     [columnHelper]
@@ -91,9 +90,9 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
       <CardContent>
         {tasks?.length === 0 ? (
           <div className="flex items-center justify-center py-8" data-testid="tasks-empty-state">
-            <Text className="text-muted-foreground">
+            <div className="text-body text-muted-foreground">
               {dataUnavailable ? 'Task data unavailable' : 'No tasks found'}
-            </Text>
+            </div>
           </div>
         ) : (
           <Table testId="tasks-table">

@@ -1,49 +1,39 @@
 import { act, renderHook } from '@testing-library/react';
 import { createGroupedSidebarItems } from 'utils/route-utils';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import type { EndpointCompatibility } from '../../state/rest-interfaces';
 import { Feature, useSupportedFeaturesStore } from '../../state/supported-features';
-
-// Mock config to enable embedded + ADP mode (required for Transcripts route visibility)
-vi.mock('../../config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../config')>();
-  return {
-    ...actual,
-    isEmbedded: () => true,
-    isAdpEnabled: () => true,
-  };
-});
 
 describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)', () => {
   afterEach(() => {
     // Reset store to initial state between tests
     useSupportedFeaturesStore.setState({
       endpointCompatibility: null,
-      tracingService: false,
+      sqlApi: false,
     });
   });
 
-  it('TracingService defaults to unsupported when endpointCompatibility is null', () => {
+  it('SQLService defaults to unsupported when endpointCompatibility is null', () => {
     const state = useSupportedFeaturesStore.getState();
     expect(state.endpointCompatibility).toBeNull();
-    expect(state.tracingService).toBe(false);
+    expect(state.sqlApi).toBe(false);
   });
 
-  it('Transcripts item is hidden when TracingService is not supported', () => {
+  it('SQL item is hidden when SQLService is not supported', () => {
     const groups = createGroupedSidebarItems();
     const allItems = groups.flatMap((g) => g.items);
-    const transcripts = allItems.find((item) => item.to === '/transcripts');
-    expect(transcripts).toBeUndefined();
+    const sql = allItems.find((item) => item.to === '/sql');
+    expect(sql).toBeUndefined();
   });
 
-  it('Transcripts item appears after endpointCompatibility loads with TracingService supported', () => {
+  it('SQL item appears after endpointCompatibility loads with SQLService supported', () => {
     const compatibility: EndpointCompatibility = {
       kafkaVersion: '3.6.0',
       endpoints: [
         {
-          endpoint: Feature.TracingService.endpoint,
-          method: Feature.TracingService.method,
+          endpoint: Feature.SQLService.endpoint,
+          method: Feature.SQLService.method,
           isSupported: true,
         },
       ],
@@ -55,9 +45,9 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
 
     const groups = createGroupedSidebarItems();
     const allItems = groups.flatMap((g) => g.items);
-    const transcripts = allItems.find((item) => item.to === '/transcripts');
-    expect(transcripts).toBeDefined();
-    expect(transcripts?.title).toBe('Transcripts');
+    const sql = allItems.find((item) => item.to === '/sql');
+    expect(sql).toBeDefined();
+    expect(sql?.title).toBe('SQL');
   });
 
   it('store selector triggers re-render when endpointCompatibility changes', async () => {
@@ -70,8 +60,8 @@ describe('SidebarNavigation re-renders on endpointCompatibility change (UX-972)'
       kafkaVersion: '3.6.0',
       endpoints: [
         {
-          endpoint: Feature.TracingService.endpoint,
-          method: Feature.TracingService.method,
+          endpoint: Feature.SQLService.endpoint,
+          method: Feature.SQLService.method,
           isSupported: true,
         },
       ],

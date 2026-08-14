@@ -13,7 +13,6 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Box,
@@ -117,19 +116,13 @@ function LoadingRow({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-1.75 px-4 py-1.5">
       <Spinner className="size-3.5 shrink-0 text-muted-foreground" />
-      <Text as="span" className="text-muted-foreground" variant="bodySmall">
-        {label}
-      </Text>
+      <span className="text-body-sm text-muted-foreground">{label}</span>
     </div>
   );
 }
 
 function EmptyNote({ children }: { children: ReactNode }) {
-  return (
-    <Text className="px-4 py-1.5 text-disabled" variant="bodySmall">
-      {children}
-    </Text>
-  );
+  return <div className="px-4 py-1.5 text-body-sm text-disabled">{children}</div>;
 }
 
 // Merge tables seeded on the namespace with tables fetched from ListTables for
@@ -240,7 +233,7 @@ function FieldRows({
             <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono">
               {field.name}
             </span>
-            <span className="shrink-0 whitespace-nowrap font-mono text-caption-sm text-muted-foreground uppercase tracking-wide">
+            <span className="shrink-0 whitespace-nowrap font-mono text-2xs text-muted-foreground uppercase tracking-wide">
               {field.type}
             </span>
           </>
@@ -571,9 +564,7 @@ export function CatalogTree({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center px-3.5 pt-3.5 pb-2">
-        <Text as="span" className="text-muted-foreground uppercase tracking-wider" variant="labelStrongXSmall">
-          Catalogs
-        </Text>
+        <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wider">Catalogs</span>
       </div>
       <div className="px-3 pb-2.5">
         <Input onChange={(e) => setQuery(e.target.value)} placeholder="Search tables" size="sm" value={query}>

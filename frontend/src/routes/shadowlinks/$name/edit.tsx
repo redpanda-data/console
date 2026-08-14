@@ -46,6 +46,10 @@ export const Route = createFileRoute('/shadowlinks/$name/edit')({
       if (error instanceof ConnectError && error.code === Code.NotFound) {
         throw notFound();
       }
+      if (error instanceof ConnectError) {
+        // The edit page renders its own error state for API errors.
+        return;
+      }
       throw error;
     }
   },

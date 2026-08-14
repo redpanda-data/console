@@ -17,7 +17,6 @@ import {
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { ChevronDown, XIcon } from 'lucide-react';
 import { type MotionProps, motion } from 'motion/react';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
@@ -46,6 +45,13 @@ import {
   type StepSubmissionResult,
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
+
+// Only describe what the mode can actually do — "create a new topic" with no input reads as broken.
+const TOPIC_NAME_DESCRIPTIONS: Record<'new' | 'existing' | 'both', string> = {
+  new: 'Enter a name for the new topic.',
+  existing: 'Choose an existing topic to read or write data from.',
+  both: 'Choose an existing topic to read or write data from, or create a new topic.',
+};
 
 type AddTopicStepProps = {
   defaultTopicName?: string;
@@ -298,9 +304,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
         <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
           <div className="flex flex-col gap-2">
             <FormLabel>Topic name</FormLabel>
-            <FormDescription>
-              Choose an existing topic to read or write data from, or create a new topic.
-            </FormDescription>
+            <FormDescription>{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</FormDescription>
             <div className="flex flex-col items-start gap-2">
               {selectionMode === 'both' && (
                 <ToggleGroup
@@ -435,7 +439,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
         {!hideTitle && (
           <CardHeader className="max-w-2xl">
             <CardTitle>
-              <Heading level={2}>Read or write data from a topic</Heading>
+              <h2 className="text-heading-lg">Read or write data from a topic</h2>
             </CardTitle>
             <CardDescription className="mt-4">
               Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients

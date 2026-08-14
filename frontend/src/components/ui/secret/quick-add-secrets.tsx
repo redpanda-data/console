@@ -20,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Key, Plus, X } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
@@ -280,7 +279,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           {form.formState.isSubmitting ? (
             <div className="flex items-center gap-2">
               <Spinner />
-              <Text as="span">Creating...</Text>
+              <span className="text-body">Creating...</span>
             </div>
           ) : (
             <>
@@ -301,9 +300,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           <AlertTitle>Created secrets</AlertTitle>
           <AlertDescription>
             {newlyCreatedSecrets.map((secretName) => (
-              <Text className="font-mono" key={secretName} variant="bodyMedium">
+              <div className="text-body font-mono" key={secretName}>
                 {secretName}
-              </Text>
+              </div>
             ))}
           </AlertDescription>
         </Alert>
@@ -360,7 +359,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             {newSecretForm.formState.isSubmitting ? (
               <div className="flex items-center gap-2">
                 <Spinner />
-                <Text as="span">Creating...</Text>
+                <span className="text-body">Creating...</span>
               </div>
             ) : (
               <>
@@ -397,7 +396,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             <div className={hasRequiredSection ? 'space-y-3 border-t pt-4' : 'space-y-4'}>
               {hasRequiredSection && (
                 <div className="flex items-center justify-between gap-2">
-                  <Text variant="bodyStrongMedium">Add a custom secret</Text>
+                  <div className="text-body font-medium">Add a custom secret</div>
                   <Button
                     aria-label="Hide custom secret form"
                     icon={<X />}

@@ -10,13 +10,14 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
+import { Box, DataTable, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Link, Text } from 'components/redpanda-ui/components/typography';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
+import { docsLinks } from 'utils/docs-links';
 
 import {
   ConnectorClass,
@@ -28,7 +29,7 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isEmbedded, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -140,7 +141,8 @@ class KafkaConnectOverview extends PageComponent<{
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+    // Cloud gets the new list; self-hosted keeps the tabs below.
+    if (isEmbedded()) {
       return <PipelineListPage />;
     }
     if (this.props.isLoadingKafkaConnectors) {
@@ -159,14 +161,18 @@ class KafkaConnectOverview extends PageComponent<{
         ),
         content: (
           <div className="mb-4 flex flex-col gap-4">
-            <Text>
+            <div className="text-body">
               {this.props.isKafkaConnectEnabled
                 ? 'Redpanda Connect is an alternative to Kafka Connect. Choose from a growing ecosystem of readily available connectors.'
                 : 'Redpanda Connect is a data streaming service for building scalable, high-performance data pipelines that drive real-time analytics and actionable business insights. Integrate data across systems with hundreds of prebuilt connectors, change data capture (CDC) capabilities, and YAML-configurable pipelines.'}{' '}
-              <Link href="https://docs.redpanda.com/redpanda-connect/home/" rel="noopener noreferrer" target="_blank">
+              <Link
+                href={Features.pipelinesApi ? docsLinks.cloud.connectAbout : docsLinks.connect.home}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Learn more
               </Link>
-            </Text>
+            </div>
             <RpConnectTabContent />
           </div>
         ),
@@ -176,17 +182,13 @@ class KafkaConnectOverview extends PageComponent<{
         title: <Box minWidth="180px">Kafka Connect</Box>,
         content: (
           <div className="flex flex-col gap-4">
-            <Text>
+            <div className="text-body">
               Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
               different data systems.{' '}
-              <Link
-                href="https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
+              <Link href={docsLinks.cloud.managedConnectors} rel="noopener noreferrer" target="_blank">
                 Learn more.
               </Link>
-            </Text>
+            </div>
             <TabKafkaConnect />
           </div>
         ),
@@ -200,10 +202,10 @@ class KafkaConnectOverview extends PageComponent<{
     return (
       <PageContent>
         {Boolean(this.props.isKafkaConnectEnabled) && (
-          <Text>
+          <div className="text-body">
             There are two ways to integrate your Redpanda data with data from external systems: Redpanda Connect and
             Kafka Connect.
-          </Text>
+          </div>
         )}
         {(() => {
           if (tabs.length !== 1) {
@@ -427,8 +429,11 @@ class TabTasks extends Component {
             header: 'Connector',
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
-              <Text
-                className="hoverLink whitespace-break-spaces break-words"
+              // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+              // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+              <div
+                className="hoverLink whitespace-break-spaces break-words text-body"
                 onClick={() =>
                   appGlobal.historyPush(
                     `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
@@ -436,7 +441,7 @@ class TabTasks extends Component {
                 }
               >
                 {original.connectorName}
-              </Text>
+              </div>
             ),
             size: 300,
           },
@@ -482,13 +487,13 @@ export const TabKafkaConnect = (_p: {}) => {
   }
 
   return (
-    <Stack spacing={3}>
+    <div className="flex flex-col gap-3">
       <OverviewStatisticsCard />
 
       <Section>
         <Tabs onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} tabs={connectTabs} />
       </Section>
-    </Stack>
+    </div>
   );
 };
 

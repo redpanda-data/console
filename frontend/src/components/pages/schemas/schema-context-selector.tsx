@@ -19,9 +19,8 @@ import {
 } from 'components/redpanda-ui/components/command';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { CheckIcon, ChevronDownIcon, InfoIcon } from 'lucide-react';
+import { CheckIcon, ChevronsUpDownIcon, InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 
@@ -45,36 +44,13 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
   const selectedLabel = contexts.find((c) => c.id === selectedContext)?.label ?? 'All';
 
   return (
-    <div className="mt-2 flex flex-col gap-1.5">
-      <div className="flex items-center gap-1.5">
-        <Text as="span" variant="bodyStrongSmall">
-          Context
-        </Text>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span className="inline-flex cursor-help">
-                <InfoIcon className="size-4 text-muted-foreground" />
-              </span>
-            }
-          />
-          <TooltipContent side="top">
-            Schema Registry contexts allow grouping subjects into isolated namespaces
-          </TooltipContent>
-        </Tooltip>
-      </div>
+    <div className="flex items-center gap-1.5">
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={
-            <Button
-              className="w-44 justify-between truncate"
-              data-testid="schema-context-selector"
-              variant="secondary-outline"
-            >
-              <Text as="span" className="truncate">
-                {selectedLabel}
-              </Text>
-              <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+            <Button className="h-7 px-2 font-normal" data-testid="schema-context-selector" size="sm" variant="outline">
+              <span className="max-w-40 truncate">{selectedLabel}</span>
+              <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
             </Button>
           }
         />
@@ -97,12 +73,8 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
                     className={cn('mt-0.5 size-4 shrink-0', selectedContext === ctx.id ? 'opacity-100' : 'opacity-0')}
                   />
                   <div className="flex flex-col">
-                    <Text as="span" variant="body">
-                      {ctx.label}
-                    </Text>
-                    <Text as="span" className="text-muted-foreground" variant="captionMedium">
-                      {pluralize(ctx.subjectCount, 'subject')}
-                    </Text>
+                    <span className="text-body">{ctx.label}</span>
+                    <span className="text-body-sm text-muted-foreground">{pluralize(ctx.subjectCount, 'subject')}</span>
                   </div>
                 </CommandItem>
               ))}
@@ -110,6 +82,19 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="inline-flex cursor-help">
+              <InfoIcon className="size-4 text-muted-foreground" />
+            </span>
+          }
+        />
+        <TooltipContent className="max-w-64" side="top">
+          Schema Registry contexts group subjects into isolated namespaces. The selected context determines the mode and
+          compatibility shown here, which schemas are listed, and where new schemas are created.
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };

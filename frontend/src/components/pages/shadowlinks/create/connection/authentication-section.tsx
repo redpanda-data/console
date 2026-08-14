@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
 import { ExternalLink, InfoIcon } from 'lucide-react';
@@ -30,12 +29,12 @@ import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useMemo } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { docsLinks } from 'utils/docs-links';
 
 import { extractSecretId, toSecretReference } from './secret-reference';
 import { AUTH_METHOD, type AuthMethod, type FormValues } from '../model';
 
-const SHADOW_LINK_DOCS_URL =
-  'https://docs.redpanda.com/current/manage/disaster-recovery/shadowing/setup/#replication-service-permissions';
+const SHADOW_LINK_DOCS_URL = docsLinks.selfManaged.shadowingReplicationPermissions;
 
 // Base UI's <Select.Value> can't resolve an item's label until the popup
 // mounts, so an enum-backed controlled value renders as the raw string ("1")
@@ -116,7 +115,7 @@ export const AuthenticationSection = () => {
       </CardHeader>
 
       <div className="flex flex-col gap-2">
-        <Text variant="label">Authentication method</Text>
+        <div className="text-label">Authentication method</div>
         <Tabs onValueChange={handleAuthMethodChange} value={authMethod}>
           <TabsList>
             <TabsTrigger data-testid="auth-method-none" value={AUTH_METHOD.NONE}>
@@ -130,9 +129,7 @@ export const AuthenticationSection = () => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <Text className="text-muted-foreground" variant="small">
-          {AUTH_METHOD_DESCRIPTIONS[authMethod]}
-        </Text>
+        <div className="text-body-sm text-muted-foreground">{AUTH_METHOD_DESCRIPTIONS[authMethod]}</div>
       </div>
 
       {showCredentials ? (

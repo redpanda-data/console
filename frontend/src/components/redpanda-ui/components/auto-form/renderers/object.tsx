@@ -4,7 +4,6 @@ import { useFormContext } from 'react-hook-form';
 
 import { AutoFormFieldRenderer } from './index';
 import { getRenderedLabel, useFieldPresentation } from './shared';
-import { Text } from '../../typography';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
 import type { ParsedField } from '../core-types';
 import { getPathInObject } from '../field-utils';
@@ -56,13 +55,12 @@ export function ObjectFieldRenderer({
         ))}
       </ObjectWrapperComponent>
       {error ? (
-        <Text
-          className="whitespace-pre-wrap text-destructive"
+        <div
+          className="whitespace-pre-wrap text-body-sm text-destructive"
           data-testid={getAutoFormFieldTestId(testIdPrefix, fullPath, 'error')}
-          variant="small"
         >
           {error}
-        </Text>
+        </div>
       ) : null}
     </>
   );

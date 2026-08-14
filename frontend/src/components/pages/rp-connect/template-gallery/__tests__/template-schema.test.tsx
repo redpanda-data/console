@@ -9,41 +9,38 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, test } from 'vitest';
 
+import type { ConnectComponentSpec } from '../../types/schema';
 import type { PipelineTemplate, TemplateSlot } from '../pipeline-template-types';
 import { applySchemaToSlots } from '../template-schema';
 
-// Minimal stand-in for the live ComponentList. `applySchemaToSlots` only reads
-// `inputs`/`outputs` and each component's `config` field tree, so a plain object
-// cast to the proto type is enough — matching how template-schema-paths.test.tsx
-// treats the committed snapshot.
-const componentList = {
-  inputs: [
-    {
-      name: 'postgres_cdc',
-      config: {
-        children: [
-          // Has a default → not required by checkRequired.
-          { name: 'dsn', type: 'string', kind: 'scalar', description: 'Postgres DSN', defaultValue: 'pg-default' },
-          // No default → required by checkRequired.
-          { name: 'snapshot', type: 'string', kind: 'scalar', description: 'Snapshot mode' },
-        ],
-      },
+// Minimal stand-in for parsed (and optionally enriched) component specs.
+// `applySchemaToSlots` only reads `type`/`name` and each component's `config`
+// field tree, so plain objects cast to the spec type are enough.
+const components = [
+  {
+    name: 'postgres_cdc',
+    type: 'input',
+    config: {
+      children: [
+        // Has a default → not required by checkRequired.
+        { name: 'dsn', type: 'string', kind: 'scalar', description: 'Postgres DSN', defaultValue: 'pg-default' },
+        // No default → required by checkRequired.
+        { name: 'snapshot', type: 'string', kind: 'scalar', description: 'Snapshot mode' },
+      ],
     },
-  ],
-  outputs: [
-    {
-      name: 'redpanda',
-      config: {
-        children: [
-          { name: 'topic', type: 'string', kind: 'scalar', description: 'Target topic', defaultValue: 'orders' },
-        ],
-      },
+  },
+  {
+    name: 'redpanda',
+    type: 'output',
+    config: {
+      children: [
+        { name: 'topic', type: 'string', kind: 'scalar', description: 'Target topic', defaultValue: 'orders' },
+      ],
     },
-  ],
-} as unknown as ComponentList;
+  },
+] as unknown as ConnectComponentSpec[];
 
 const slot = (
   overrides: Partial<TemplateSlot> & Pick<TemplateSlot, 'id' | 'kind' | 'section' | 'label'>
@@ -72,7 +69,7 @@ describe('applySchemaToSlots', () => {
   test('passes through slots without a schemaField', () => {
     const template = buildTemplate([slot({ id: 'note', kind: 'string', section: 'options', label: 'Note' })]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result).toEqual(template.slots[0]);
     expect(result.description).toBeUndefined();
   });
@@ -82,7 +79,7 @@ describe('applySchemaToSlots', () => {
       slot({ id: 'snapshot', kind: 'string', section: 'source', label: 'Snapshot', schemaField: 'snapshot' }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result.description).toBe('Snapshot mode');
   });
 
@@ -98,7 +95,7 @@ describe('applySchemaToSlots', () => {
       }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result.description).toBe('Custom description');
   });
 
@@ -110,7 +107,7 @@ describe('applySchemaToSlots', () => {
       slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'dsn' }),
     ]);
 
-    const [snapshot, dsn] = applySchemaToSlots(template, componentList);
+    const [snapshot, dsn] = applySchemaToSlots(template, components);
     expect(snapshot.required).toBe(true);
     expect(dsn.required).toBe(false);
   });
@@ -128,7 +125,7 @@ describe('applySchemaToSlots', () => {
       }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result.required).toBe(false);
   });
 
@@ -137,7 +134,7 @@ describe('applySchemaToSlots', () => {
       slot({ id: 'topic', kind: 'string', section: 'sink', label: 'Topic', schemaField: 'topic' }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result).toMatchObject({ kind: 'string', default: 'orders' });
   });
 
@@ -146,7 +143,7 @@ describe('applySchemaToSlots', () => {
       slot({ id: 'dsn', kind: 'secret', section: 'source', label: 'DSN', schemaField: 'dsn' }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result).not.toHaveProperty('default');
     // Description and required still get enriched from the schema.
     expect(result.description).toBe('Postgres DSN');
@@ -157,7 +154,7 @@ describe('applySchemaToSlots', () => {
       slot({ id: 'ghost', kind: 'string', section: 'source', label: 'Ghost', schemaField: 'does.not.exist' }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result).toEqual(template.slots[0]);
     expect(result.description).toBeUndefined();
   });
@@ -167,7 +164,7 @@ describe('applySchemaToSlots', () => {
       slot({ id: 'topic', kind: 'string', section: 'options', label: 'Topic', schemaField: 'topic' }),
     ]);
 
-    const [result] = applySchemaToSlots(template, componentList);
+    const [result] = applySchemaToSlots(template, components);
     expect(result).toEqual(template.slots[0]);
   });
 });

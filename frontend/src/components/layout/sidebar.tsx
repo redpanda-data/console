@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import {
   Sidebar,
   SidebarContent,
@@ -33,20 +34,16 @@ import {
   SidebarProvider,
   useSidebar,
 } from 'components/redpanda-ui/components/sidebar';
-import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Settings } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
 
-import RedpandaIcon from '../../assets/redpanda/redpanda-icon-next.svg';
-import RedpandaLogoWhite from '../../assets/redpanda/redpanda-logo-next-white.svg';
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../state/supported-features';
 import { AppFeatures } from '../../utils/env';
 import { getUserInitials } from '../../utils/string';
-import { UserPreferencesDialog } from '../misc/user-preferences';
-import { Text } from '../redpanda-ui/components/typography';
 
 function SidebarLogo() {
   const { state, isMobile } = useSidebar();
@@ -55,7 +52,10 @@ function SidebarLogo() {
 
   return (
     <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
-      <img alt="" className={isExpanded ? 'h-6' : 'h-6 w-6'} src={isExpanded ? RedpandaLogoWhite : RedpandaIcon} />
+      <RedpandaLogo
+        className={isExpanded ? 'h-6 w-auto text-white' : 'h-6 w-6'}
+        variant={isExpanded ? 'horizontal' : 'mark'}
+      />
     </Link>
   );
 }
@@ -82,7 +82,6 @@ function SidebarCollapseToggle() {
 }
 
 const UserProfile = () => {
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const { state, isMobile, setOpenMobile } = useSidebar();
   useApiStoreHook((s) => s.userData); // re-render when userData changes
 
@@ -112,73 +111,53 @@ const UserProfile = () => {
   const isCollapsed = state === 'collapsed';
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <SidebarMenuButton
-              aria-label={`User menu for ${user.displayName}`}
-              className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
-              size={isCollapsed ? 'default' : 'lg'}
-              tooltip={isCollapsed ? user.displayName : undefined}
-            >
-              <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
-                <AvatarImage alt="" src={user.avatarUrl} />
-                <AvatarFallback aria-hidden="true" className="bg-primary font-medium text-primary-foreground text-xs">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              {!isCollapsed && (
-                <>
-                  <div className="grid flex-1 text-left leading-tight">
-                    <Text as="span" className="truncate" variant="label">
-                      {user.displayName}
-                    </Text>
-                    <Text as="span" className="truncate text-sidebar-foreground/60" variant="muted">
-                      Preferences
-                    </Text>
-                  </div>
-                  <ChevronUp aria-hidden="true" className="ml-auto size-4" />
-                </>
-              )}
-            </SidebarMenuButton>
-          }
-        />
-        <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
-          <DropdownMenuLabel>
-            <div className="flex flex-col">
-              <Text as="span" variant="small">
-                Signed in as
-              </Text>
-              <Text as="span" variant="muted">
-                {user.displayName}
-              </Text>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => {
-              handleMenuItemClick();
-              setPreferencesOpen(true);
-            }}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <SidebarMenuButton
+            aria-label={`User menu for ${user.displayName}`}
+            className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+            size={isCollapsed ? 'default' : 'lg'}
+            tooltip={isCollapsed ? user.displayName : undefined}
           >
-            <Settings aria-hidden="true" className="mr-2 h-4 w-4" />
-            Preferences
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={async () => {
-              handleMenuItemClick();
-              await api.logout();
-              window.location.reload();
-            }}
-          >
-            <LogOut aria-hidden="true" className="mr-2 h-4 w-4" />
-            Logout
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <UserPreferencesDialog isOpen={preferencesOpen} onClose={() => setPreferencesOpen(false)} />
-    </>
+            <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
+              <AvatarImage alt="" src={user.avatarUrl} />
+              <AvatarFallback aria-hidden="true" className="bg-primary font-medium text-primary-foreground text-xs">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {!isCollapsed && (
+              <>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate text-label">{user.displayName}</span>
+                  <span className="truncate text-body text-sidebar-foreground/60">Preferences</span>
+                </div>
+                <ChevronUp aria-hidden="true" className="ml-auto size-4" />
+              </>
+            )}
+          </SidebarMenuButton>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="text-body-sm">Signed in as</span>
+            <span className="text-body text-muted-foreground">{user.displayName}</span>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={async () => {
+            handleMenuItemClick();
+            await api.logout();
+            window.location.reload();
+          }}
+        >
+          <LogOut aria-hidden="true" className="mr-2 h-4 w-4" />
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

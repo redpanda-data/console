@@ -15,7 +15,7 @@
  *
  * Kept separate from `src/test-utils.tsx` on purpose: that file transitively
  * imports `routeTree.gen` (and from there, nearly the whole app, including
- * `config` / `isEmbedded` / `isAdpEnabled` live bindings). Importing
+ * `config` / `isEmbedded` live bindings). Importing
  * `cleanupTestHarness` from here in `vitest.setup.integration.ts` avoids
  * pinning those bindings before any test file's `vi.mock('config', ...)`
  * has a chance to take effect.
@@ -44,25 +44,52 @@ export function registerTestTeardown(teardown: () => void): void {
   trackedTeardowns.add(teardown);
 }
 
-export function cleanupTestHarness(): void {
-  for (const client of trackedQueryClients) {
-    client.cancelQueries();
-    client.clear();
-    client.unmount();
-  }
+export async function cleanupTestHarness(): Promise<void> {
+  const errors: unknown[] = [];
+  const clients = [...trackedQueryClients];
   trackedQueryClients.clear();
 
+  // Cancellation is asynchronous. Clearing a QueryClient before its active
+  // ConnectRPC requests settle leaves their AbortSignal races and retry
+  // promises alive after the test has finished.
+  await Promise.all(
+    clients.map(async (client) => {
+      try {
+        await client.cancelQueries();
+      } catch (error) {
+        errors.push(error);
+      }
+    })
+  );
+
+  for (const client of clients) {
+    try {
+      client.clear();
+      client.unmount();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+
   for (const router of trackedRouters) {
-    router.history.destroy?.();
+    try {
+      router.history.destroy?.();
+    } catch (error) {
+      errors.push(error);
+    }
   }
   trackedRouters.clear();
 
   for (const teardown of trackedTeardowns) {
     try {
       teardown();
-    } catch {
-      // best-effort — one failing teardown must not block the others
+    } catch (error) {
+      errors.push(error);
     }
   }
   trackedTeardowns.clear();
+
+  if (errors.length > 0) {
+    throw new AggregateError(errors, 'Failed to clean up test harness resources');
+  }
 }

@@ -25,7 +25,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { FileText, History, Play, Plus, Terminal, Wand2, X } from 'lucide-react';
 import {
   forwardRef,
@@ -514,11 +513,11 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                 }
               />
               <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto p-1">
-                <Text className="px-2 py-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
+                <div className="px-2 py-1.5 font-semibold text-body-sm text-muted-foreground uppercase tracking-wider">
                   Recent queries · this browser
-                </Text>
+                </div>
                 {history.length === 0 ? (
-                  <Text className="p-2 text-muted-foreground text-sm">No queries yet</Text>
+                  <div className="p-2 text-body text-muted-foreground">No queries yet</div>
                 ) : null}
                 {history.map((h, i) => (
                   <Button

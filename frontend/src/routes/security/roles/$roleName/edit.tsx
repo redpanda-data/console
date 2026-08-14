@@ -10,15 +10,14 @@
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { fallback, zodValidator } from '@tanstack/zod-adapter';
 import { z } from 'zod';
 
 const searchSchema = z.object({
-  host: fallback(z.string().optional(), undefined),
+  host: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/security/roles/$roleName/edit')({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   beforeLoad: ({ params, search }) => {
     // Backward-compatibility shim — navigate to /update directly in new code.
     throw redirect({

@@ -12,7 +12,6 @@
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Separator } from '../../../redpanda-ui/components/separator';
-import { Text } from '../../../redpanda-ui/components/typography';
 
 type UserInformationCardProps = {
   username: string;
@@ -28,16 +27,16 @@ export const UserInformationCard = ({ username, onEditPassword }: UserInformatio
       <CardContent className="space-y-4">
         {/* Username Row */}
         <div className="grid grid-cols-3 items-center gap-4 py-2">
-          <Text variant="label">Username</Text>
-          <Text>{username}</Text>
+          <div className="text-label">Username</div>
+          <div className="text-body">{username}</div>
         </div>
 
         <Separator />
 
         {/* Password Row */}
         <div className="grid grid-cols-3 items-center gap-4 py-2">
-          <Text variant="label">Password</Text>
-          <Text variant="muted">Passwords cannot be viewed</Text>
+          <div className="text-label">Password</div>
+          <div className="text-body text-muted-foreground">Passwords cannot be viewed</div>
           <div className="flex justify-end">
             {Boolean(onEditPassword) && (
               <Button onClick={onEditPassword} size="sm" variant="outline">

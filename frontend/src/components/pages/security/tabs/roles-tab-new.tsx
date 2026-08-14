@@ -46,16 +46,15 @@ import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 import { useStore } from 'zustand';
 
 import ErrorResult from '../../../../components/misc/error-result';
@@ -249,11 +248,7 @@ export const RolesTabNew: FC = () => {
                   </Button>
                   <Button
                     render={
-                      <a
-                        href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
                         Read the docs →
                       </a>
                     }
@@ -271,21 +266,21 @@ export const RolesTabNew: FC = () => {
   return (
     <>
       <SecurityTabsNav />
-      <ListLayout className="my-4">
-        <Text className="text-muted-foreground text-sm sm:text-base">
+      <ListLayout className="my-4 min-h-0">
+        <div className="text-muted-foreground text-sm sm:text-base">
           <NullFallbackBoundary>
             <div className="mb-4">
               <FeatureLicenseNotification featureName="rbac" />
             </div>
           </NullFallbackBoundary>
           <DescriptionWithHelp short="Groups of ACLs that can be assigned to principals." title="Roles">
-            <Text>
+            <div className="text-body">
               Roles are groups of access control lists (ACLs) that can be assigned to principals. A principal represents
               any entity that can be authenticated, such as a user, service, or system (for example, a SASL-SCRAM user,
               OIDC identity, or mTLS client).
-            </Text>
+            </div>
           </DescriptionWithHelp>{' '}
-        </Text>
+        </div>
 
         <ListLayoutFilters
           actions={
@@ -329,9 +324,7 @@ export const RolesTabNew: FC = () => {
           </Table>
         </ListLayoutContent>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
       <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
     </>

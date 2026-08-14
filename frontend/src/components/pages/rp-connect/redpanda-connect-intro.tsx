@@ -17,6 +17,7 @@ import {
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import RedpandaConnectLogo from '../../../assets/redpanda/rp-connect.svg';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
@@ -77,7 +78,7 @@ redpanda:
         <Text>
           Redpanda Connect is a declarative data streaming service with wide range of{' '}
           <ChakraLink
-            href="https://docs.redpanda.com/redpanda-connect/about#components"
+            href={docsLinks.connect.componentCatalog}
             isExternal
             style={{ textDecoration: 'underline solid 1px' }}
           >
@@ -111,7 +112,7 @@ redpanda:
               Build your first pipeline. Start from the Redpanda data generator example below. Explore the components
               using autocomplete (CTRL/CMD+Space). For other examples and use cases, see{' '}
               <ChakraLink
-                href="https://docs.redpanda.com/redpanda-connect/cookbooks/custom_metrics"
+                href={docsLinks.connect.cookbookCustomMetrics}
                 isExternal
                 style={{ textDecoration: 'underline solid 1px' }}
               >
@@ -138,7 +139,7 @@ redpanda:
             <Text mt={3}>
               Set up your connection to Redpanda for data in the{' '}
               <ChakraLink
-                href="https://docs.redpanda.com/redpanda-connect/components/outputs/kafka_franz"
+                href={docsLinks.connect.outputKafkaFranz}
                 isExternal
                 style={{ textDecoration: 'underline solid 1px' }}
               >
@@ -146,7 +147,7 @@ redpanda:
               </ChakraLink>{' '}
               component and{' '}
               <ChakraLink
-                href="https://docs.redpanda.com/redpanda-connect/components/redpanda/about"
+                href={docsLinks.connect.redpandaComponent}
                 isExternal
                 style={{ textDecoration: 'underline solid 1px' }}
               >

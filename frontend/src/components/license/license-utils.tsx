@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
+import { docsLinks } from 'utils/docs-links';
 import { prettyMilliseconds } from 'utils/utils';
 
 import {
@@ -381,10 +382,9 @@ export const resolveEnterpriseCTALink = (
 export const getEnterpriseCTALink = (type: EnterpriseLinkType): string =>
   resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
 
-export const DISABLE_SSO_DOCS_LINK = 'https://docs.redpanda.com/current/console/config/configure-console/';
+export const DISABLE_SSO_DOCS_LINK = docsLinks.selfManaged.consoleConfig;
 
-export const ENTERPRISE_FEATURES_DOCS_LINK =
-  'https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition';
+export const ENTERPRISE_FEATURES_DOCS_LINK = docsLinks.selfManaged.enterpriseEdition;
 
 export const SERVERLESS_LINK = 'https://www.redpanda.com/product/serverless';
 

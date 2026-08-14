@@ -2,19 +2,23 @@ input:
   postgres_cdc:
     # ── Connection (filled in from the form) ────────────────────────────────
     dsn: ${slot.dsn}
-    schema: public                         # change if your tables aren't in 'public'
+    schema: ${slot.schema}
     slot_name: ${slot.slotName}
-    tables:
+    tables:                                # bare table names — the schema comes from `schema` above
       - ${slot.includedTable}
+    # tls:
+    #   skip_cert_verify: true             # only for servers with self-signed certificates
 
     # ── Snapshot of existing rows before streaming changes ──────────────────
-    stream_snapshot: true                  # capture current rows on first run
-    # snapshot_batch_size: 0               # 0 = let the connector pick a safe size
-    # snapshot_memory_safety_factor: 0
-    # max_parallel_snapshot_tables: 0
+    # Enable to seed existing data; every snapshotted table must have a primary key.
+    stream_snapshot: false
 
-    # ── Replication tuning ──────────────────────────────────────────────────
-    checkpoint_limit: 1024                 # outstanding messages before backpressure
+    # ── Replication tuning (benchmark-tuned batch; other knobs at engine defaults) ──
+    batching:
+      count: 5000
+      period: 1s
+    # checkpoint_limit: 1024               # outstanding messages before backpressure
+    # snapshot_batch_size: 1000            # only relevant while snapshotting
     # temporary_slot: false                # set true if you don't need durable slots
     # pg_standby_timeout: 10s
     # pg_wal_monitor_interval: 3s
@@ -23,7 +27,7 @@ input:
     # include_transaction_markers: false
 
     # ── Error handling ──────────────────────────────────────────────────────
-    auto_replay_nacks: true                # re-deliver NACKed messages
+    # auto_replay_nacks: true              # default — re-deliver NACKed messages
 
 output:
   redpanda:
@@ -31,12 +35,6 @@ output:
       - ${REDPANDA_BROKERS}
     topic: ${slot.targetTopic}
 
-    # ── Throughput defaults — tune for your workload ────────────────────────
-    max_in_flight: 64
+    # Engine defaults (max_in_flight 256, idempotent writes) are already tuned; batching happens
+    # on the CDC input.
     compression: snappy
-    idempotent_write: true
-
-    # ── Optional knobs ──────────────────────────────────────────────────────
-    # key: ${! json("table") }            # partition by source table
-    # partitioner: murmur2_hash
-    # timeout: 10s

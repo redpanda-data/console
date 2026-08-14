@@ -2,6 +2,7 @@ import { ConnectError } from '@connectrpc/connect';
 import {
   useQueryClient,
   useMutation as useTanstackMutation,
+  useQueries as useTanstackQueries,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
 import { config } from 'config';
@@ -130,30 +131,57 @@ export const useSchemaCompatibilityQuery = () =>
     refetchOnMount: true,
   });
 
+const fetchSchemaDetails = async (subjectName: string): Promise<SchemaRegistrySubjectDetails> => {
+  const response = await fetch(
+    `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/all`,
+    {
+      method: 'GET',
+      headers: {
+        ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch schema details for ${subjectName}`);
+  }
+
+  return response.json();
+};
+
 export const useSchemaDetailsQuery = (subjectName?: string, options?: { enabled?: boolean }) =>
   useTanstackQuery<SchemaRegistrySubjectDetails>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
-    queryFn: async () => {
-      const response = await fetch(
-        `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName ?? '')}/versions/all`,
-        {
-          method: 'GET',
-          headers: {
-            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch schema details for ${subjectName}`);
-      }
-
-      return response.json();
-    },
+    queryFn: () => fetchSchemaDetails(subjectName ?? ''),
     staleTime: STALE_TIME_MEDIUM,
     refetchOnMount: true,
     enabled: options?.enabled !== false && subjectName !== '',
   });
+
+/**
+ * Fetches details (type, compatibility, mode, latest version) for many subjects at once.
+ * Shares the same query key/cache as {@link useSchemaDetailsQuery}, so row-level consumers
+ * reuse these entries instead of firing duplicate requests. Enables list-wide filtering by
+ * type/compatibility, which requires every subject's details to be available up front.
+ */
+export const useSchemaDetailsByNameQuery = (subjectNames: string[]) => {
+  const results = useTanstackQueries({
+    queries: subjectNames.map((name) => ({
+      queryKey: ['schemaRegistry', 'subjects', name, 'details'],
+      queryFn: () => fetchSchemaDetails(name),
+      staleTime: STALE_TIME_MEDIUM,
+      enabled: name !== '',
+    })),
+  });
+
+  const detailsByName: Record<string, { data?: SchemaRegistrySubjectDetails; isLoading: boolean }> = {};
+  for (const [index, name] of subjectNames.entries()) {
+    const result = results[index];
+    detailsByName[name] = { data: result?.data, isLoading: result?.isLoading ?? false };
+  }
+
+  return detailsByName;
+};
 
 export type { SchemaRegistryMode, SchemaRegistryModeWithDefault } from 'state/rest-interfaces';
 

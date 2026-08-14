@@ -18,7 +18,6 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Text } from '../../../redpanda-ui/components/typography';
 import type { AclDetail } from '../shared/acl-model';
 import { getRuleDataTestId } from '../shared/acl-model';
 import { OperationsBadge } from '../shared/operations-badge';
@@ -142,7 +141,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
           </CardAction>
         </CardHeader>
         <CardContent>
-          <Text>No permissions assigned to this user.</Text>
+          <div className="text-body">No permissions assigned to this user.</div>
         </CardContent>
       </Card>
     );

@@ -136,3 +136,25 @@ describe('SqlResults create-table hint', () => {
     expect(screen.queryByRole('button', { name: 'Add a topic to SQL' })).toBeNull();
   });
 });
+
+describe('SqlResults run cancellation', () => {
+  test('the running state shows a Cancel button that stops the run', async () => {
+    const onCancel = vi.fn();
+    render(<SqlResults onCancel={onCancel} run={{ state: 'running', token: 1 }} sqlRole={viewer} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  test('the running state hides Cancel when no handler is provided', () => {
+    render(<SqlResults run={{ state: 'running', token: 1 }} sqlRole={viewer} />);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+  });
+
+  test('the canceled state renders a neutral notice, not an error', () => {
+    render(<SqlResults run={{ state: 'canceled', token: 1 }} sqlRole={viewer} />);
+    expect(screen.getByText('Query canceled')).toBeInTheDocument();
+    expect(screen.queryByText('Query failed')).toBeNull();
+  });
+});

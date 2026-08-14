@@ -139,7 +139,7 @@ type PopoverTitleProps = PopoverPrimitive.Title.Props & SharedProps;
 function PopoverTitle({ className, testId, ...props }: PopoverTitleProps) {
   return (
     <PopoverPrimitive.Title
-      className={cn('font-medium text-sm leading-none', className)}
+      className={cn('text-heading-xs', className)}
       data-slot="popover-title"
       data-testid={testId}
       {...props}
@@ -152,7 +152,7 @@ type PopoverDescriptionProps = PopoverPrimitive.Description.Props & SharedProps;
 function PopoverDescription({ className, testId, ...props }: PopoverDescriptionProps) {
   return (
     <PopoverPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="popover-description"
       data-testid={testId}
       {...props}

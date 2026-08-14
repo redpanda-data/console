@@ -20,7 +20,7 @@ import type {
   AuthenticationConfiguration,
   ConsumerOffsetSyncOptions,
   NameFilter,
-  SchemaRegistrySyncOptions,
+  RoleSyncOptions,
   SecuritySettingsSyncOptions,
   ShadowLinkClientOptions,
   ShadowLinkConfigurations,
@@ -30,6 +30,11 @@ import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import type { TLSSettings } from 'protogen/redpanda/core/common/v1/tls_pb';
 
+import {
+  mapSchemaRegistrySyncOptions,
+  mapSchemaRegistrySyncOptionsToFormValues,
+  mapTLSSettings,
+} from './schema-registry';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, TLS_MODE } from '../create/model';
 import {
@@ -37,56 +42,16 @@ import {
   type UnifiedAuthenticationConfiguration,
   type UnifiedClientOptions,
   type UnifiedConsumerOffsetSyncOptions,
-  type UnifiedSchemaRegistrySyncOptions,
+  type UnifiedRoleSyncOptions,
   type UnifiedSecuritySyncOptions,
   type UnifiedShadowLink,
   type UnifiedShadowLinkConfigurations,
-  type UnifiedTLSSettings,
   type UnifiedTopicMetadataSyncOptions,
 } from '../model';
 
 // ============================================================================
 // Dataplane → UnifiedShadowLink Mappers
 // ============================================================================
-
-/**
- * Map dataplane TLS settings to unified type
- */
-function mapDataplaneTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLSSettings | undefined {
-  if (!tlsSettings) {
-    return;
-  }
-
-  let tlsSettingsValue: UnifiedTLSSettings['tlsSettings'];
-
-  if (tlsSettings.tlsSettings?.case === 'tlsFileSettings') {
-    const fileSettings = tlsSettings.tlsSettings.value;
-    tlsSettingsValue = {
-      case: 'tlsFileSettings',
-      value: {
-        caPath: fileSettings.caPath,
-        keyPath: fileSettings.keyPath,
-        certPath: fileSettings.certPath,
-      },
-    };
-  } else if (tlsSettings.tlsSettings?.case === 'tlsPemSettings') {
-    const pemSettings = tlsSettings.tlsSettings.value;
-    tlsSettingsValue = {
-      case: 'tlsPemSettings',
-      value: {
-        ca: pemSettings.ca,
-        key: pemSettings.key,
-        cert: pemSettings.cert,
-        keyFingerprint: pemSettings.keyFingerprint,
-      },
-    };
-  }
-
-  return {
-    enabled: tlsSettings.enabled,
-    tlsSettings: tlsSettingsValue,
-  };
-}
 
 /**
  * Map dataplane authentication configuration to unified type
@@ -129,7 +94,7 @@ function mapDataplaneClientOptions(
     bootstrapServers: clientOptions.bootstrapServers,
     clientId: clientOptions.clientId,
     sourceClusterId: clientOptions.sourceClusterId,
-    tlsSettings: mapDataplaneTLSSettings(clientOptions.tlsSettings),
+    tlsSettings: mapTLSSettings(clientOptions.tlsSettings),
     authenticationConfiguration: mapDataplaneAuthConfig(clientOptions.authenticationConfiguration),
     metadataMaxAgeMs: clientOptions.metadataMaxAgeMs,
     connectionTimeoutMs: clientOptions.connectionTimeoutMs,
@@ -189,6 +154,23 @@ function mapDataplaneConsumerOffsetSyncOptions(
 }
 
 /**
+ * Map dataplane role sync options to unified type
+ */
+function mapDataplaneRoleSyncOptions(options: RoleSyncOptions | undefined): UnifiedRoleSyncOptions | undefined {
+  if (!options) {
+    return;
+  }
+
+  return {
+    roleNameFilters: (options.roleNameFilters ?? []).map((f: NameFilter) => ({
+      name: f.name,
+      patternType: f.patternType,
+      filterType: f.filterType,
+    })),
+  };
+}
+
+/**
  * Map dataplane security sync options to unified type
  */
 function mapDataplaneSecuritySyncOptions(
@@ -220,24 +202,6 @@ function mapDataplaneSecuritySyncOptions(
 }
 
 /**
- * Map dataplane schema registry sync options to unified type
- */
-function mapDataplaneSchemaRegistrySyncOptions(
-  options: SchemaRegistrySyncOptions | undefined
-): UnifiedSchemaRegistrySyncOptions | undefined {
-  if (!options) {
-    return;
-  }
-
-  return {
-    schemaRegistryShadowingMode:
-      options.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic'
-        ? { case: 'shadowSchemaRegistryTopic', value: {} }
-        : { case: undefined },
-  };
-}
-
-/**
  * Map dataplane configurations to unified configurations
  */
 function mapDataplaneConfigurations(
@@ -251,8 +215,9 @@ function mapDataplaneConfigurations(
     clientOptions: mapDataplaneClientOptions(config.clientOptions),
     topicMetadataSyncOptions: mapDataplaneTopicMetadataSyncOptions(config.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapDataplaneConsumerOffsetSyncOptions(config.consumerOffsetSyncOptions),
+    roleSyncOptions: mapDataplaneRoleSyncOptions(config.roleSyncOptions),
     securitySyncOptions: mapDataplaneSecuritySyncOptions(config.securitySyncOptions),
-    schemaRegistrySyncOptions: mapDataplaneSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
+    schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
   };
 }
 
@@ -499,6 +464,30 @@ export const buildDefaultConsumerGroupsValues = (
 };
 
 /**
+ * Build default form values for roles category from shadow link configurations.
+ * A link without role sync options hydrates to specify mode with no filters,
+ * so an untouched edit keeps role sync disabled.
+ */
+export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink): Pick<FormValues, 'rolesMode' | 'roles'> => {
+  const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
+  const roleNameFilters = roleSyncOptions?.roleNameFilters || [];
+
+  // Check if using "all roles" mode
+  const isAllMode = isAllNameFilter(roleNameFilters);
+
+  return {
+    rolesMode: isAllMode ? 'all' : 'specify',
+    roles: isAllMode
+      ? []
+      : roleNameFilters.map((filter) => ({
+          name: filter.name,
+          patternType: filter.patternType,
+          filterType: filter.filterType,
+        })),
+  };
+};
+
+/**
  * Build default form values for ACLs category from shadow link configurations
  */
 export const buildDefaultACLsValues = (
@@ -531,14 +520,8 @@ export const buildDefaultACLsValues = (
  */
 export const buildDefaultSchemaRegistryValues = (
   shadowLink: DataplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync'> => {
-  const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
-  const isEnabled = schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
-
-  return {
-    enableSchemaRegistrySync: isEnabled,
-  };
-};
+): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> =>
+  mapSchemaRegistrySyncOptionsToFormValues(shadowLink.configurations?.schemaRegistrySyncOptions);
 
 /**
  * Build default form values from existing shadow link data (dataplane)
@@ -548,6 +531,7 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
   const connectionValues = buildDefaultConnectionValues(shadowLink);
   const topicsValues = buildDefaultTopicsValues(shadowLink);
   const consumerGroupsValues = buildDefaultConsumerGroupsValues(shadowLink);
+  const rolesValues = buildDefaultRolesValues(shadowLink);
   const aclsValues = buildDefaultACLsValues(shadowLink);
   const schemaRegistryValues = buildDefaultSchemaRegistryValues(shadowLink);
 
@@ -556,6 +540,7 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
     ...connectionValues,
     ...topicsValues,
     ...consumerGroupsValues,
+    ...rolesValues,
     ...aclsValues,
     ...schemaRegistryValues,
   };

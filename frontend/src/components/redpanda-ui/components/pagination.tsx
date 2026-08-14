@@ -2,7 +2,6 @@ import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-re
 import React from 'react';
 
 import { type Button, buttonVariants } from './button';
-import { Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
 function Pagination({ className, testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
@@ -70,9 +69,7 @@ function PaginationPrevious({
       {...props}
     >
       <ChevronLeftIcon />
-      <Text as="span" className="hidden sm:block">
-        {text}
-      </Text>
+      <span className="hidden text-body sm:block">{text}</span>
     </PaginationLink>
   );
 }
@@ -89,9 +86,7 @@ function PaginationNext({
       size="md"
       {...props}
     >
-      <Text as="span" className="hidden sm:block">
-        {text}
-      </Text>
+      <span className="hidden text-body sm:block">{text}</span>
       <ChevronRightIcon />
     </PaginationLink>
   );
@@ -107,9 +102,7 @@ function PaginationEllipsis({ className, testId, ...props }: React.ComponentProp
       {...props}
     >
       <MoreHorizontalIcon className="size-4" />
-      <Text as="span" className="sr-only">
-        More pages
-      </Text>
+      <span className="sr-only">More pages</span>
     </span>
   );
 }

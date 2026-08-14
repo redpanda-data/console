@@ -16,16 +16,12 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { Text } from 'components/redpanda-ui/components/typography';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
   CreateShadowLinkRequestSchema,
-  FilterType,
   NameFilterSchema,
-  PatternType,
-  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
-  SchemaRegistrySyncOptionsSchema,
+  RoleSyncOptionsSchema,
   SecuritySettingsSyncOptionsSchema,
   ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
@@ -36,11 +32,13 @@ import { TLSSettingsSchema } from 'protogen/redpanda/core/common/v1/tls_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
 import { FormSchema, type FormValues, initialValues } from './model';
+import { buildSchemaRegistrySyncOptions } from './schema-registry-request';
 import { isEmbedded } from '../../../../config';
 import {
   ACLOperation,
@@ -50,7 +48,7 @@ import {
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { getBasePath } from '../../../../utils/env';
-import { buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
+import { allNameFilter, buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -76,7 +74,7 @@ export const updatePageTitle = () => {
 /**
  * Transform form values to CreateShadowLinkRequest protobuf message
  */
-const buildCreateShadowLinkRequest = (values: FormValues) => {
+const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }: { roleSyncSupported: boolean }) => {
   // Build TLS settings from certificate configuration
   const tlsSettings = buildTLSSettings(values);
 
@@ -98,14 +96,6 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
     fetchMaxBytes: values.advanceClientOptions.fetchMaxBytes,
     fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
   });
-
-  const allNameFilter = [
-    create(NameFilterSchema, {
-      patternType: PatternType.LITERAL,
-      filterType: FilterType.INCLUDE,
-      name: '*',
-    }),
-  ];
 
   const allACLs = [
     create(ACLFilterSchema, {
@@ -152,42 +142,56 @@ const buildCreateShadowLinkRequest = (values: FormValues) => {
           ),
   });
 
-  // Build security sync options (ACL filters, ignore enabled field)
-  const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
-    aclFilters: values.aclsMode
-      ? allACLs
-      : values.aclFilters?.map((acl) =>
-          create(ACLFilterSchema, {
-            resourceFilter: {
-              resourceType: acl.resourceType,
-              patternType: acl.resourcePattern,
-              name: acl.resourceName || '',
-            },
-            accessFilter: {
-              principal: acl.principal || '',
-              operation: acl.operation,
-              permissionType: acl.permissionType,
-              host: acl.host || '',
-            },
-          })
-        ),
-  });
-
-  // Build schema registry sync options (only set if enabled)
-  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
-    ? create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: {
-          case: 'shadowSchemaRegistryTopic',
-          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
-        },
+  // Build role sync options (no interval/paused exposed). Left unset on
+  // clusters without role sync (Redpanda < 26.2.0). The default 'all' mode
+  // would otherwise send an include-all filter the cluster can't handle.
+  const roleSyncOptions = roleSyncSupported
+    ? create(RoleSyncOptionsSchema, {
+        roleNameFilters:
+          values.rolesMode === 'all'
+            ? allNameFilter
+            : values.roles.map((role) =>
+                create(NameFilterSchema, {
+                  patternType: role.patternType,
+                  filterType: role.filterType,
+                  name: role.name,
+                })
+              ),
       })
     : undefined;
+
+  // Build security sync options (ACL filters, ignore enabled field)
+  const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
+    aclFilters:
+      values.aclsMode === 'all'
+        ? allACLs
+        : values.aclFilters?.map((acl) =>
+            create(ACLFilterSchema, {
+              resourceFilter: {
+                resourceType: acl.resourceType,
+                patternType: acl.resourcePattern,
+                name: acl.resourceName || '',
+              },
+              accessFilter: {
+                principal: acl.principal || '',
+                operation: acl.operation,
+                permissionType: acl.permissionType,
+                host: acl.host || '',
+              },
+            })
+          ),
+  });
+
+  // Build schema registry sync options (api mode via the redesigned section,
+  // topic mode via the legacy switch, otherwise unset)
+  const schemaRegistrySyncOptions = buildSchemaRegistrySyncOptions(values);
 
   // Build configurations
   const configurations = create(ShadowLinkConfigurationsSchema, {
     clientOptions,
     topicMetadataSyncOptions,
     consumerOffsetSyncOptions,
+    roleSyncOptions,
     securitySyncOptions,
     schemaRegistrySyncOptions,
   });
@@ -214,6 +218,8 @@ export const ShadowLinkCreatePage = () => {
     }
   }, []);
 
+  const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
+
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created');
@@ -227,7 +233,7 @@ export const ShadowLinkCreatePage = () => {
   });
 
   const onSubmit = async (values: FormValues) => {
-    const request = buildCreateShadowLinkRequest(values);
+    const request = buildCreateShadowLinkRequest(values, { roleSyncSupported });
     await createShadowLink(request);
   };
 
@@ -252,10 +258,10 @@ export const ShadowLinkCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <Text data-testid="shadowLink-create-page-description" variant="muted">
+      <div className="text-body text-muted-foreground" data-testid="shadowLink-create-page-description">
         Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
         preserved offsets and timestamps. Select the replicated content for this shadow link.
-      </Text>
+      </div>
 
       <Stepper.Provider className="flex flex-col space-y-4" variant="horizontal">
         {({ methods }) => (

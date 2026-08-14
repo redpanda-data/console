@@ -16,7 +16,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -27,6 +26,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/license"
 	v1alpha1 "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Ensure that Service implements the LicenseServiceHandler interface.
@@ -149,7 +149,9 @@ func (s Service) ListEnterpriseFeatures(ctx context.Context, _ *connect.Request[
 	if err != nil {
 		s.logger.WarnContext(ctx, "failed to retrieve brokers for gbac feature check, defaulting to disabled", slog.Any("error", err))
 	} else if len(brokers) > 0 {
-		gbacEnabled = brokerAtLeastVersion(brokers[0].Version, 26, 1)
+		if version, verr := redpanda.VersionFromString(brokers[0].Version); verr == nil {
+			gbacEnabled = version.IsAtLeast(gbacMinVersion)
+		}
 	}
 	featuresProto.Features = append(featuresProto.Features, &v1alpha1.ListEnterpriseFeaturesResponse_Feature{
 		Name:    "gbac",
@@ -159,26 +161,5 @@ func (s Service) ListEnterpriseFeatures(ctx context.Context, _ *connect.Request[
 	return connect.NewResponse(featuresProto), nil
 }
 
-// brokerAtLeastVersion parses a broker version string of the form
-// "v26.1.4 - <commit>" and checks whether it is >= major.minor.
-func brokerAtLeastVersion(version string, major, minor int) bool {
-	// Version may look like: "v26.1.4 - 491e56900d2316fcbb22aa1d37e7195897878309"
-	v := strings.SplitN(version, " ", 2)[0]
-	v = strings.TrimPrefix(v, "v")
-	parts := strings.Split(v, ".")
-	if len(parts) < 2 {
-		return false
-	}
-	maj, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return false
-	}
-	mnr, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return false
-	}
-	if maj != major {
-		return maj > major
-	}
-	return mnr >= minor
-}
+// gbacMinVersion is the first Redpanda release with Group-Based Access Control.
+var gbacMinVersion = redpanda.MustParseVersion("26.1.0")

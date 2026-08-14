@@ -360,7 +360,7 @@ function DropdownMenuLabel({ className, inset, ...props }: DropdownMenuLabelProp
   const insideGroup = React.useContext(DropdownMenuGroupContext);
   const label = (
     <DropdownMenuPrimitive.GroupLabel
-      className={cn('px-2 py-1.5 font-semibold text-sm', inset && 'pl-8', className)}
+      className={cn('px-2 py-1.5 font-semibold text-label', inset && 'pl-8', className)}
       data-inset={inset}
       data-slot="dropdown-menu-label"
       {...props}

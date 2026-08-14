@@ -219,7 +219,7 @@ function DialogFooter({
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
-      className={cn('font-semibold text-lg leading-none tracking-tight', className)}
+      className={cn('text-heading-md leading-none', className)}
       data-slot="dialog-title"
       {...props}
     />
@@ -229,7 +229,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
 function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="dialog-description"
       // Render as <div> (not Base UI's default <p>) so block-level children don't trigger validateDOMNesting.
       render={<div />}

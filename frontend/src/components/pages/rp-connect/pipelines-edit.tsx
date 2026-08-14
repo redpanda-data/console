@@ -12,17 +12,16 @@
 import { create } from '@bufbuild/protobuf';
 import { Button, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { Link as UILink, Text as UIText } from 'components/redpanda-ui/components/typography';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
+import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import {
   type Pipeline,
   type Pipeline_ServiceAccount,
   PipelineUpdateSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
-import PipelinePage from './pipeline';
 import { PipelineEditor } from './pipelines-create';
 import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { appGlobal } from '../../../state/app-global';
@@ -50,9 +49,6 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
-      return <PipelinePage />;
-    }
     if (!pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
@@ -145,33 +141,21 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   return (
     <PageContent>
       <div className="my-2">
-        <UIText>
+        <div className="text-body">
           For help editing your pipeline, see our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectQuickstart} rel="noopener noreferrer" target="_blank">
             quickstart documentation
           </UILink>
           , our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/cookbooks/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectCookbooks} rel="noopener noreferrer" target="_blank">
             library of examples
           </UILink>
           , or our{' '}
-          <UILink
-            href="https://docs.redpanda.com/redpanda-cloud/develop/connect/components/catalog/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <UILink href={docsLinks.cloud.connectComponentCatalog} rel="noopener noreferrer" target="_blank">
             connector catalog
           </UILink>
           .
-        </UIText>
+        </div>
       </div>
 
       <FormField errorText="Name cannot be empty" isInvalid={isNameEmpty} label="Pipeline name">

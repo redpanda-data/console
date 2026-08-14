@@ -27,8 +27,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/sr"
 	"go.uber.org/mock/gomock"
@@ -413,7 +415,8 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
-		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0], "")
+		svc := createNewTestServiceWithKafkaFactory(t, log, t.Name(), fakeCluster.ListenAddrs()[0], "",
+			&freshClientFactory{t: t, brokers: fakeCluster.ListenAddrs()})
 
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 
@@ -774,6 +777,29 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 func createNewTestService(t *testing.T, log *slog.Logger,
 	testName string, seedBrokers string, registryAddr string,
 ) Servicer {
+	return createNewTestServiceWithKafkaFactory(t, log, testName, seedBrokers, registryAddr, nil)
+}
+
+// freshClientFactory returns a brand-new Kafka client on every call. kadm
+// v1.18+ serves metadata from a client-side cache that is refreshed only once
+// it is older than MetadataMinAge; tests that inject broker errors after the
+// service has already connected need a cold client so the injected responses
+// are actually fetched instead of served from the warm cache.
+type freshClientFactory struct {
+	t       *testing.T
+	brokers []string
+}
+
+func (f *freshClientFactory) GetKafkaClient(context.Context) (*kgo.Client, *kadm.Client, error) {
+	kafkaCl, adminCl := testutil.CreateClients(f.t, f.brokers)
+	f.t.Cleanup(kafkaCl.Close)
+	return kafkaCl, adminCl, nil
+}
+
+func createNewTestServiceWithKafkaFactory(t *testing.T, log *slog.Logger,
+	testName string, seedBrokers string, registryAddr string,
+	kafkaFactory kafkafactory.ClientFactory,
+) Servicer {
 	metricName := testutil.MetricNameForTest(strings.ReplaceAll(testName, " ", ""))
 
 	cfg := config.Config{}
@@ -787,7 +813,9 @@ func createNewTestService(t *testing.T, log *slog.Logger,
 		cfg.SchemaRegistry.URLs = []string{registryAddr}
 	}
 
-	kafkaFactory := kafkafactory.NewCachedClientProvider(&cfg, log, prometheus.NewRegistry())
+	if kafkaFactory == nil {
+		kafkaFactory = kafkafactory.NewCachedClientProvider(&cfg, log, prometheus.NewRegistry())
+	}
 	schemaFactory, _ := schema.NewSingleClientProvider(&cfg)
 	cacheFn := func(ctx context.Context) (string, error) { return "single/", nil }
 

@@ -378,7 +378,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
     <>
       <PageContent key={'b'}>
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
-          {Boolean(uiSettings.topicDetailsShowStatisticsBar) && <TopicQuickInfoStatistic topic={topic} />}
+          <TopicQuickInfoStatistic topic={topic} />
           <div className="flex shrink-0 items-center gap-2 md:ml-auto">
             <Button
               data-testid="produce-record-button"

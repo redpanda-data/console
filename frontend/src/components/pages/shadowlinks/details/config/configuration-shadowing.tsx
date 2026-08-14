@@ -14,8 +14,8 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Item, ItemGroup } from 'components/redpanda-ui/components/item';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 
+import { ConfigurationSchemaRegistry } from './configuration-schema-registry';
 import type { UnifiedACLFilter, UnifiedNameFilter, UnifiedShadowLink } from '../../model';
 import {
   getFilterTypeLabel,
@@ -29,16 +29,26 @@ export type ConfigurationShadowingProps = {
   shadowLink: UnifiedShadowLink;
 };
 
-// Component to display a single name filter (topic or consumer group)
-const NameFilterDisplay = ({ filter, index }: { filter: UnifiedNameFilter; index: number }) => {
-  const filterLabel = getFilterTypeLabel(filter.patternType, filter.filterType);
+// Component to display a single name filter (topic, consumer group, or role)
+const NameFilterDisplay = ({
+  filter,
+  index,
+  resourceType,
+  testId,
+}: {
+  filter: UnifiedNameFilter;
+  index: number;
+  resourceType: string;
+  testId: string;
+}) => {
+  const filterLabel = getFilterTypeLabel(filter.patternType, filter.filterType, resourceType);
 
   return (
     <Item>
       <div className="font-medium text-sm">{filterLabel}</div>
       <div className="flex flex-wrap gap-2">
         {filter.name ? (
-          <Badge size="sm" testId={`filter-${index}-name`} variant="info-inverted">
+          <Badge size="sm" testId={`${testId}-filter-${index}-name`} variant="info-inverted">
             {filter.name}
           </Badge>
         ) : (
@@ -57,15 +67,17 @@ const NameFilterSection = ({
   filters,
   testId,
   emptyMessage,
+  resourceType,
 }: {
   title: string;
   filters: UnifiedNameFilter[];
   testId: string;
   emptyMessage: string;
+  resourceType: string;
 }) => (
   <Card size="full" testId={`${testId}-card`}>
     <CardHeader>
-      <Heading level={3}>{title}</Heading>
+      <h3 className="text-heading-md">{title}</h3>
     </CardHeader>
     <CardContent>
       {filters.length > 0 ? (
@@ -74,14 +86,16 @@ const NameFilterSection = ({
             <NameFilterDisplay
               filter={filter}
               index={index}
-              key={`${testId}-${filter.name}-${filter.patternType}-${filter.filterType}`}
+              key={`${testId}-${index}-${filter.name}-${filter.patternType}-${filter.filterType}`}
+              resourceType={resourceType}
+              testId={testId}
             />
           ))}
         </ItemGroup>
       ) : (
-        <Text className="text-muted-foreground" testId={`no-${testId}`}>
+        <div className="text-body text-muted-foreground" data-testid={`no-${testId}`}>
           {emptyMessage}
-        </Text>
+        </div>
       )}
     </CardContent>
   </Card>
@@ -150,7 +164,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   return (
     <Card size="full" testId="acl-replication-card">
       <CardHeader>
-        <Heading level={3}>ACL replication</Heading>
+        <h3 className="text-heading-md">ACL replication</h3>
       </CardHeader>
       <CardContent>
         {hasAllACLs ? (
@@ -173,26 +187,10 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   );
 };
 
-// Component to display Schema Registry sync status
-const SchemaRegistrySection = ({ isEnabled }: { isEnabled: boolean }) => (
-  <Card size="full" testId="schema-registry-card">
-    <CardHeader>
-      <Heading level={3}>Schema Registry</Heading>
-    </CardHeader>
-    <CardContent className="flex flex-row justify-between">
-      <Text className="mt-2 text-muted-foreground text-sm">
-        Replicate the source cluster's _schema topic, which replaces the shadow cluster's Schema Registry.
-      </Text>
-      <Badge testId="schema-registry-status-badge" variant={isEnabled ? 'success-inverted' : 'neutral-inverted'}>
-        {isEnabled ? 'Enabled' : 'Disabled'}
-      </Badge>
-    </CardContent>
-  </Card>
-);
-
 export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const consumerSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
+  const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
   const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
@@ -201,20 +199,17 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];
 
-  // Check if schema registry sync is enabled
-  const isSchemaRegistrySyncEnabled =
-    schemaRegistrySyncOptions?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryTopic';
-
   return (
     <div className="flex flex-col gap-6">
-      <Heading level={2} testId="shadowing-title">
+      <h2 className="text-heading-lg" data-testid="shadowing-title">
         Shadowing
-      </Heading>
+      </h2>
 
       {/* Topic Replication Section */}
       <NameFilterSection
         emptyMessage="No topic filters configured"
         filters={topicFilters}
+        resourceType="topics"
         testId="topic-replication"
         title="Topic replication"
       />
@@ -222,16 +217,28 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
       {/* ACL Replication Section */}
       <ACLFilterSection filters={aclFilters} />
 
+      {/* Role Replication Section (hidden when the source API does not expose role sync) */}
+      {roleSyncOptions && (
+        <NameFilterSection
+          emptyMessage="No role filters configured"
+          filters={roleSyncOptions.roleNameFilters}
+          resourceType="roles"
+          testId="role-replication"
+          title="Role replication"
+        />
+      )}
+
       {/* Consumer Group Replication Section */}
       <NameFilterSection
         emptyMessage="No consumer group filters configured"
         filters={consumerFilters}
+        resourceType="consumer groups"
         testId="consumer-group-replication"
         title="Consumer group replication"
       />
 
       {/* Schema Registry Section */}
-      <SchemaRegistrySection isEnabled={isSchemaRegistrySyncEnabled} />
+      <ConfigurationSchemaRegistry syncOptions={schemaRegistrySyncOptions} />
     </div>
   );
 };

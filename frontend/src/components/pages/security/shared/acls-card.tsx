@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Heading } from 'components/redpanda-ui/components/typography';
 import { KeyRoundIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -22,6 +21,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 
 import {
   type AclDetail,
@@ -259,11 +259,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
               <EmptyContent>
                 <Button
                   render={
-                    <a
-                      href="https://docs.redpanda.com/current/manage/security/authorization/acl/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
+                    <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
                       Read the docs →
                     </a>
                   }
@@ -315,9 +311,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
             </div>
           }
         >
-          <Heading as="h2" level={4}>
-            ACLs
-          </Heading>
+          <h2 className="text-heading-sm">ACLs</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
           <Table>

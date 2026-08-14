@@ -26,10 +26,11 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
-import { InlineCode, Text } from 'components/redpanda-ui/components/typography';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   Braces,
+  CircleSlash,
   CircleX,
   Clock,
   Database,
@@ -60,12 +61,14 @@ import type {
 } from './sql-types';
 
 export type SqlResultsProps = {
-  /** Current run state: idle | running | error | success. */
+  /** Current run state: idle | running | canceled | error | success. */
   run: QueryRun;
   /** Effective role; gates the admin "Add a topic" CTA on CREATE errors. */
   sqlRole: SqlRole;
   /** Admin entry point for the add-topic wizard. */
   onAddTable?: () => void;
+  /** Stops the in-flight run; renders the Cancel button while running. */
+  onCancel?: () => void;
   /** Whether the Redpanda catalog has any tables; drives the idle empty state. */
   hasTables?: boolean;
 };
@@ -249,7 +252,7 @@ function CellContent({
         collisionAvoidance={TRACK_AND_CLIP}
         container={container ?? undefined}
       >
-        <Text className="whitespace-pre-wrap break-all font-mono text-xs">{s}</Text>
+        <div className="whitespace-pre-wrap break-all font-mono text-body-sm">{s}</div>
       </PopoverContent>
     </Popover>
   );
@@ -321,7 +324,7 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       renderHeaderCell: () => (
         <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
           <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
-          <span className="inline-flex items-center gap-1 font-normal text-caption-sm text-muted-foreground uppercase tracking-wide">
+          <span className="inline-flex items-center gap-1 font-normal text-2xs text-muted-foreground uppercase tracking-wide">
             {c.short}
           </span>
         </span>
@@ -416,7 +419,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   );
 }
 
-export function SqlResults({ run, sqlRole, onAddTable, hasTables = true }: SqlResultsProps) {
+export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = true }: SqlResultsProps) {
   if (run.state === 'idle') {
     // No tables in the catalog yet: nothing to query, so prompt the caller to
     // create one from a topic. Admins get the wizard CTA; viewers get told who can.
@@ -475,6 +478,27 @@ export function SqlResults({ run, sqlRole, onAddTable, hasTables = true }: SqlRe
             <Spinner className="size-6 text-action-primary" />
           </EmptyMedia>
           <EmptyTitle>Running query…</EmptyTitle>
+        </EmptyHeader>
+        {onCancel ? (
+          <EmptyContent>
+            <Button onClick={onCancel} size="sm" variant="secondary-outline">
+              <X /> Cancel
+            </Button>
+          </EmptyContent>
+        ) : null}
+      </Empty>
+    );
+  }
+
+  if (run.state === 'canceled') {
+    return (
+      <Empty className="h-full">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <CircleSlash />
+          </EmptyMedia>
+          <EmptyTitle>Query canceled</EmptyTitle>
+          <EmptyDescription>The query was stopped before it finished.</EmptyDescription>
         </EmptyHeader>
       </Empty>
     );

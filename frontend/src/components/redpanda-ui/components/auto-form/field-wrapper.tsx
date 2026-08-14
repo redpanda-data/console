@@ -7,7 +7,7 @@ import { useAutoFormRuntimeContext } from './context';
 import type { ArrayElementWrapperProps, ArrayWrapperProps, FieldWrapperProps, ObjectWrapperProps } from './core-types';
 import { formSpacing } from './form-spacing';
 import { getFieldDescriptionText, getFieldDocsUrl, getFieldHelpText, getFieldUiConfig } from './helpers';
-import { FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
+import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
 import { getAutoFormFieldTestId } from './test-ids';
 import type { SharedProps } from '../../lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
@@ -15,7 +15,6 @@ import { Button } from '../button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../field';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip';
-import { Heading, Text } from '../typography';
 
 const REGEX_ERROR_PATTERN = /regex pattern\s*`([^`]+)`/;
 
@@ -109,14 +108,8 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
       {isCompact ? null : (
         <div className="flex items-center gap-2">
           <FieldLabel className={hasVisibleLabel ? 'items-center gap-2' : 'sr-only'} htmlFor={id}>
-            <Text as="span" variant="labelStrongSmall">
-              {hasVisibleLabel ? label : fallbackLabel}
-            </Text>
-            {field.required ? (
-              <Text as="span" className="text-destructive" variant="small">
-                *
-              </Text>
-            ) : null}
+            <span className="font-semibold text-label">{hasVisibleLabel ? label : fallbackLabel}</span>
+            {field.required ? <span className="text-body-sm text-destructive">*</span> : null}
           </FieldLabel>
           {tooltipText ? (
             <Tooltip>
@@ -208,20 +201,12 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps & { testId?: string; has
               >
                 <div className={formSpacing.sectionHeader}>
                   <div className="flex items-center gap-2">
-                    <Heading className="font-medium" level={headingLevel}>
+                    <DepthHeading className="font-medium" level={headingLevel}>
                       {label}
-                    </Heading>
-                    {field.required ? (
-                      <Text as="span" className="text-destructive" variant="small">
-                        *
-                      </Text>
-                    ) : null}
+                    </DepthHeading>
+                    {field.required ? <span className="text-body-sm text-destructive">*</span> : null}
                   </div>
-                  {helpText ? (
-                    <Text className="text-muted-foreground" variant="small">
-                      {helpText}
-                    </Text>
-                  ) : null}
+                  {helpText ? <div className="text-body-sm text-muted-foreground">{helpText}</div> : null}
                 </div>
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none [[data-panel-open]_&]:rotate-180" />
               </button>
@@ -246,20 +231,12 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps & { testId?: string; has
           }
         >
           <div className="flex items-center gap-2">
-            <Heading className="font-medium" level={headingLevel}>
+            <DepthHeading className="font-medium" level={headingLevel}>
               {label}
-            </Heading>
-            {field.required ? (
-              <Text as="span" className="text-destructive" variant="small">
-                *
-              </Text>
-            ) : null}
+            </DepthHeading>
+            {field.required ? <span className="text-body-sm text-destructive">*</span> : null}
           </div>
-          {helpText ? (
-            <Text className="text-muted-foreground" variant="small">
-              {helpText}
-            </Text>
-          ) : null}
+          {helpText ? <div className="text-body-sm text-muted-foreground">{helpText}</div> : null}
         </div>
       ) : null}
       <FormDepthProvider depth={depth + 1}>

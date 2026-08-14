@@ -12,7 +12,6 @@ import { buildAutoFormTestId } from './test-ids';
 import type { AutoFormStepConfig } from './types';
 import { Button } from '../button';
 import { defineStepper } from '../stepper';
-import { Text } from '../typography';
 
 type ResolvedStep = AutoFormStepConfig & {
   fieldsForRender: ParsedField[];
@@ -187,11 +186,7 @@ export function AutoFormStepperShell({
                 )}
               </Stepper.Controls>
 
-              {blockingMessage ? (
-                <Text className="text-destructive" variant="small">
-                  {blockingMessage}
-                </Text>
-              ) : null}
+              {blockingMessage ? <div className="text-body-sm text-destructive">{blockingMessage}</div> : null}
             </div>
             {children}
           </>

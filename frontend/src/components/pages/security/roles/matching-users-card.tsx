@@ -14,7 +14,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Empty, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import {
   ListRoleMembersRequestSchema,
@@ -143,9 +142,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
             {principalType === 'RedpandaRole' && !isLoading && (
               <>
                 {/* Users section */}
-                <Text as="span" className="text-gray-700 uppercase tracking-wide" variant="labelStrongXSmall">
-                  Users
-                </Text>
+                <span className="font-medium text-body-sm text-gray-700 uppercase tracking-wide">Users</span>
                 {userMembers.length > 0 ? (
                   userMembers.map((member) => {
                     const name = parsePrincipal(member.principal).name || member.principal;
@@ -160,9 +157,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                 {/* Groups section — only when GBAC is enabled */}
                 {gbacEnabled && (
                   <>
-                    <Text as="span" className="mt-2 text-gray-700 uppercase tracking-wide" variant="labelStrongXSmall">
-                      Groups
-                    </Text>
+                    <span className="mt-2 font-medium text-body-sm text-gray-700 uppercase tracking-wide">Groups</span>
                     {groupMembers.length > 0 ? (
                       groupMembers.map((member) => {
                         const name = parsePrincipal(member.principal).name || member.principal;

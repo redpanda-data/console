@@ -33,12 +33,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
-import {
-  ListLayout,
-  ListLayoutFilters,
-  ListLayoutPagination,
-  ListLayoutSearchInput,
-} from 'components/redpanda-ui/components/list-layout';
+import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { ListTopicsResponse_Topic } from 'protogen/redpanda/api/console/v1alpha1/topic_pb';
@@ -68,7 +63,6 @@ import {
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-import { Text } from '../../redpanda-ui/components/typography';
 import { DeleteResourceAlertDialog } from '../../ui/delete-resource-alert-dialog';
 
 const nameFilterFn = (row: Row<ListTopicsResponse_Topic>, columnId: string, filterValue: string) => {
@@ -405,7 +399,7 @@ const TopicList: FC = () => {
         ) : null}
       </DeleteResourceAlertDialog>
 
-      <ListLayout className="my-4" data-testid="topics-table">
+      <ListLayout className="my-4 min-h-0" data-testid="topics-table">
         <div className="flex flex-wrap gap-8">
           {(
             [
@@ -415,8 +409,8 @@ const TopicList: FC = () => {
             ] as const
           ).map(({ label, value }) => (
             <div className="flex flex-col gap-0.5" key={label}>
-              <Text className="font-semibold text-2xl tabular-nums">{value}</Text>
-              <Text className="text-muted-foreground text-sm">{label}</Text>
+              <div className="font-semibold text-2xl tabular-nums">{value}</div>
+              <div className="text-body text-muted-foreground">{label}</div>
             </div>
           ))}
         </div>
@@ -487,9 +481,7 @@ const TopicList: FC = () => {
           <TableBody>{renderBody()}</TableBody>
         </Table>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
     </>
   );

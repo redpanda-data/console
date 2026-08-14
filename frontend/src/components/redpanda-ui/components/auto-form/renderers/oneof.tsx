@@ -132,7 +132,7 @@ export function OneofFieldRenderer({
         {selectedField ? (
           selectedField.type === 'object' && (!selectedField.schema || selectedField.schema.length === 0) ? (
             <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-3">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-body text-muted-foreground">
                 {getLabel(selectedField)} selected. No additional configuration needed.
               </p>
             </div>

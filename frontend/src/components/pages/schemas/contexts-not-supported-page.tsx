@@ -9,16 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { Text } from 'components/redpanda-ui/components/typography';
-
 import PageContent from '../../misc/page-content';
 
 export function ContextsNotSupportedPage() {
   return (
     <PageContent>
       <div className="flex flex-col items-center gap-4" data-testid="contexts-not-supported">
-        <Text className="font-bold text-lg">Not Supported</Text>
-        <Text className="text-center">Schema Registry contexts are not supported in this cluster.</Text>
+        <div className="font-bold text-lg">Not Supported</div>
+        <div className="text-center text-body">Schema Registry contexts are not supported in this cluster.</div>
       </div>
     </PageContent>
   );

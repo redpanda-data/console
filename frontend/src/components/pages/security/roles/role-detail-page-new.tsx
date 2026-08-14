@@ -19,6 +19,7 @@ import {
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useLayoutEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { docsLinks } from 'utils/docs-links';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
@@ -36,7 +37,6 @@ import {
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Heading } from '../../../redpanda-ui/components/typography';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -119,18 +119,18 @@ export const RoleDetailPageNew = () => {
             <Combobox
               className="w-56"
               clearable={false}
+              creatable
+              createLabel="principal"
               disabled={isSubmitting}
               onChange={addMember}
               options={availablePrincipalOptions}
-              placeholder="Add a principal..."
+              placeholder="Select or type a principal..."
               testId="add-principal-combobox"
               value=""
             />
           }
         >
-          <Heading as="h2" level={4}>
-            Principals
-          </Heading>
+          <h2 className="text-heading-sm">Principals</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
           <Table>
@@ -164,11 +164,7 @@ export const RoleDetailPageNew = () => {
                       <EmptyContent>
                         <Button
                           render={
-                            <a
-                              href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
+                            <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
                               Read the docs →
                             </a>
                           }

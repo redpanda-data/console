@@ -46,7 +46,26 @@ describe('shadowlinks route loader', () => {
     await expect(runLoader(Code.Unavailable, 'admin api unavailable')).resolves.toBeUndefined();
   });
 
-  test('still rethrows unexpected errors (so the router error boundary is shown)', async () => {
-    await expect(runLoader(Code.Internal, 'boom')).rejects.toThrow('boom');
+  // Bug UX-1392: on large clusters Redpanda aggregates shadow link status from
+  // every broker, so ListShadowLinks can time out (deadline_exceeded). The
+  // loader rethrew it, failing the whole route with a raw error boundary
+  // instead of letting the page render its error state.
+  test('swallows DeadlineExceeded (status aggregation timeout on large clusters)', async () => {
+    await expect(
+      runLoader(Code.DeadlineExceeded, 'context deadline exceeded while awaiting headers')
+    ).resolves.toBeUndefined();
+  });
+
+  test('swallows any other ConnectError so the page can render its error state with retry', async () => {
+    await expect(runLoader(Code.Internal, 'boom')).resolves.toBeUndefined();
+  });
+  test('still rethrows non-Connect errors (so the router error boundary is shown)', async () => {
+    const queryClient = { ensureQueryData: () => Promise.reject(new TypeError('unexpected programming error')) };
+    // biome-ignore lint/suspicious/noExplicitAny: the loader only reads queryClient + dataplaneTransport off context.
+    await expect(
+      (Route.options.loader as any)({
+        context: { queryClient, dataplaneTransport: failingTransport(Code.Internal, 'unused') },
+      })
+    ).rejects.toThrow('unexpected programming error');
   });
 });

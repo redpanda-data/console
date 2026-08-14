@@ -40,13 +40,13 @@ import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { KeyRoundIcon, ShieldIcon, Trash2Icon, UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 import { pluralize } from 'utils/string';
 
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
@@ -75,7 +75,6 @@ import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { TagsValue } from '../../../redpanda-ui/components/tags';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { Text } from '../../../redpanda-ui/components/typography';
 import { type FlatAclEntry, type RoleAclGroup, useUserPermissions } from '../hooks/use-principal-permissions';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
@@ -327,11 +326,7 @@ export const UsersTabNew: FC = () => {
                   </TooltipProvider>
                   <Button
                     render={
-                      <a
-                        href="https://docs.redpanda.com/current/manage/kubernetes/security/authentication/k-authentication/#scram"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
+                      <a href={docsLinks.selfManaged.scramAuthentication} rel="noopener noreferrer" target="_blank">
                         Read the docs →
                       </a>
                     }
@@ -350,13 +345,13 @@ export const UsersTabNew: FC = () => {
     <>
       <SecurityTabsNav />
       <CreateUserDialog key={createDialogKey} onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen} />
-      <ListLayout className="my-4">
-        <Text className="text-muted-foreground text-sm sm:text-base">
+      <ListLayout className="my-4 min-h-0">
+        <div className="text-muted-foreground text-sm sm:text-base">
           <DescriptionWithHelp short="SASL-SCRAM user accounts managed by your cluster." title="Users">
             These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication
             identities (for example, OIDC, mTLS) on the Permissions List page.
           </DescriptionWithHelp>
-        </Text>
+        </div>
 
         <ListLayoutFilters
           actions={
@@ -403,9 +398,7 @@ export const UsersTabNew: FC = () => {
           </Table>
         </ListLayoutContent>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
     </>
   );

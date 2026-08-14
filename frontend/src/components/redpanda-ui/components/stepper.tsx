@@ -14,7 +14,6 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
 import { Button, type ButtonVariants } from './button';
-import { Heading, Text } from './typography';
 import { cn, type SharedProps } from '../lib/utils';
 
 const StepperContext = React.createContext<Stepper.ConfigProps | null>(null);
@@ -197,6 +196,23 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
       Description,
       Panel: ({ children, render, ...props }) => {
         const { tracking } = useStepperProvider();
+        /**
+         * React invokes inline ref callbacks on every commit, so scrolling
+         * directly in the ref re-centered the panel on each re-render (e.g.
+         * typing in a field or switching an inner tab). Guard on node identity
+         * so the panel scrolls only when a new panel mounts — i.e. the active
+         * step actually changed.
+         */
+        const scrolledNodeRef = React.useRef<HTMLDivElement | null>(null);
+        const setPanelRef = React.useCallback(
+          (node: HTMLDivElement | null) => {
+            if (node && tracking && scrolledNodeRef.current !== node) {
+              scrolledNodeRef.current = node;
+              scrollIntoStepperPanel(node);
+            }
+          },
+          [tracking]
+        );
 
         return useRender({
           defaultTagName: 'div',
@@ -204,7 +220,7 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
           props: mergeProps<'div'>(
             {
               'data-component': 'stepper-step-panel',
-              ref: (node: HTMLDivElement | null) => scrollIntoStepperPanel(node, tracking),
+              ref: setPanelRef,
               children,
             } as useRender.ElementProps<'div'>,
             props
@@ -231,10 +247,10 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
 const Title = ({ children, className, render, ...props }: useRender.ComponentProps<'h4'>) =>
   useRender({
     defaultTagName: 'h4',
-    render: render ?? <Heading level={4}>{children}</Heading>,
+    render: render ?? <h4 className="text-heading-sm">{children}</h4>,
     props: mergeProps<'h4'>(
       {
-        className: cn('font-medium text-base selection:bg-selected selection:text-selected-foreground', className),
+        className: cn('selection:bg-selected selection:text-selected-foreground', className),
         'data-component': 'stepper-step-title',
         children,
       } as useRender.ElementProps<'h4'>,
@@ -245,7 +261,7 @@ const Title = ({ children, className, render, ...props }: useRender.ComponentPro
 const Description = ({ children, className, render, ...props }: useRender.ComponentProps<'p'>) =>
   useRender({
     defaultTagName: 'p',
-    render: render ?? <Text>{children}</Text>,
+    render: render ?? <div className="text-body">{children}</div>,
     props: mergeProps<'p'>(
       {
         className: cn(
@@ -330,10 +346,7 @@ const CircleStepIndicator = ({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span
-          aria-live="polite"
-          className="font-medium text-sm selection:bg-selected selection:text-selected-foreground"
-        >
+        <span aria-live="polite" className="text-label selection:bg-selected selection:text-selected-foreground">
           {currentStep} of {totalSteps}
         </span>
       </div>
@@ -370,10 +383,8 @@ const classForSeparator = cva(
   }
 );
 
-function scrollIntoStepperPanel(node: HTMLDivElement | null, tracking?: boolean) {
-  if (tracking) {
-    node?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+function scrollIntoStepperPanel(node: HTMLDivElement) {
+  node.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 const useStepChildren = (children: React.ReactNode) => React.useMemo(() => extractChildren(children), [children]);

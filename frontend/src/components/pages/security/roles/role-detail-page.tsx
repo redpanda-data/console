@@ -19,7 +19,6 @@ import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Heading, Text } from '../../../redpanda-ui/components/typography';
 import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { ACLDetails } from '../shared/acl-details';
 import type { AclDetail } from '../shared/acl-model';
@@ -35,9 +34,7 @@ const SecurityAclRulesTable = ({ data, roleName }: SecurityAclRulesTableProps) =
   return (
     <Card size="full">
       <CardHeader>
-        <Heading className="font-medium text-lg" level={2}>
-          Security ACL rules
-        </Heading>
+        <h2 className="font-medium text-heading-md">Security ACL rules</h2>
       </CardHeader>
       <CardContent>
         <Table>
@@ -140,11 +137,9 @@ const RoleDetailPage = () => {
 
   return (
     <div>
-      <Heading className="pt-4 pb-3 font-semibold text-xl" level={2}>
-        Role: {roleName}
-      </Heading>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Role: {roleName}</h2>
       <div className="flex items-center justify-between">
-        <Text>Configuration details</Text>
+        <div className="text-body">Configuration details</div>
         {(!!host || data?.length === 1) && (
           <div>
             <Button

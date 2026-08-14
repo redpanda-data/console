@@ -64,10 +64,6 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.SecretService',
     method: 'POST',
   };
-  static readonly RemoteMcpService: FeatureEntry = {
-    endpoint: 'redpanda.api.dataplane.v1alpha3.MCPServerService',
-    method: 'POST',
-  };
   static readonly SchemaRegistryACLApi: FeatureEntry = {
     endpoint: 'redpanda.api.dataplane.v1.ACLService',
     method: 'POST',
@@ -76,9 +72,13 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.ShadowLinkService',
     method: 'POST',
   };
-  static readonly TracingService: FeatureEntry = {
-    endpoint: 'redpanda.api.dataplane.v1alpha3.TracingService',
-    method: 'POST',
+  static readonly ShadowLinkSchemaRegistrySync: FeatureEntry = {
+    endpoint: '/api/shadow-links/schema-registry-sync',
+    method: 'GET',
+  };
+  static readonly ShadowLinkRoleSync: FeatureEntry = {
+    endpoint: '/api/shadow-links/role-sync',
+    method: 'GET',
   };
   static readonly SchemaRegistryContexts: FeatureEntry = {
     endpoint: '/api/schema-registry/contexts',
@@ -99,7 +99,8 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
-      case Feature.TracingService.endpoint:
+      case Feature.ShadowLinkSchemaRegistrySync.endpoint:
+      case Feature.ShadowLinkRoleSync.endpoint:
       case Feature.GetQuotas.endpoint:
       case Feature.SchemaRegistryContexts.endpoint:
       case Feature.SQLService.endpoint:
@@ -118,8 +119,9 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
   if (
     f.endpoint.includes('.SecurityService') ||
     f.endpoint.includes('.SecretService') ||
-    f.endpoint.includes('.MCPServerService') ||
-    f.endpoint.includes('.SQLService')
+    f.endpoint.includes('.SQLService') ||
+    f.endpoint === Feature.ShadowLinkSchemaRegistrySync.endpoint ||
+    f.endpoint === Feature.ShadowLinkRoleSync.endpoint
   ) {
     return { supported: false };
   }
@@ -147,7 +149,7 @@ export function isSupported(f: FeatureEntry): boolean {
 /**
  * A list of features we should hide instead of showing a disabled message.
  */
-const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.TracingService, Feature.SQLService];
+const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.SQLService];
 export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
@@ -179,10 +181,10 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
     pipelinesApi: compute(Feature.PipelineService),
     debugBundle: compute(Feature.DebugBundleService),
     rpcnSecretsApi: compute(Feature.SecretService),
-    remoteMcpApi: compute(Feature.RemoteMcpService),
     schemaRegistryACLApi: compute(Feature.SchemaRegistryACLApi),
     shadowLinkService: compute(Feature.ShadowLinkService),
-    tracingService: compute(Feature.TracingService),
+    shadowLinkSchemaRegistrySync: compute(Feature.ShadowLinkSchemaRegistrySync),
+    shadowLinkRoleSync: compute(Feature.ShadowLinkRoleSync),
     schemaRegistryContexts: compute(Feature.SchemaRegistryContexts),
     sqlApi: compute(Feature.SQLService),
     featureErrors: errors,
@@ -210,10 +212,10 @@ type SupportedFeaturesStore = {
   pipelinesApi: boolean;
   debugBundle: boolean;
   rpcnSecretsApi: boolean;
-  remoteMcpApi: boolean;
   schemaRegistryACLApi: boolean;
   shadowLinkService: boolean;
-  tracingService: boolean;
+  shadowLinkSchemaRegistrySync: boolean;
+  shadowLinkRoleSync: boolean;
   schemaRegistryContexts: boolean;
   sqlApi: boolean;
 
@@ -291,17 +293,17 @@ const Features = {
   get rpcnSecretsApi() {
     return useSupportedFeaturesStore.getState().rpcnSecretsApi;
   },
-  get remoteMcpApi() {
-    return useSupportedFeaturesStore.getState().remoteMcpApi;
-  },
   get schemaRegistryACLApi() {
     return useSupportedFeaturesStore.getState().schemaRegistryACLApi;
   },
   get shadowLinkService() {
     return useSupportedFeaturesStore.getState().shadowLinkService;
   },
-  get tracingService() {
-    return useSupportedFeaturesStore.getState().tracingService;
+  get shadowLinkSchemaRegistrySync() {
+    return useSupportedFeaturesStore.getState().shadowLinkSchemaRegistrySync;
+  },
+  get shadowLinkRoleSync() {
+    return useSupportedFeaturesStore.getState().shadowLinkRoleSync;
   },
   get schemaRegistryContexts() {
     return useSupportedFeaturesStore.getState().schemaRegistryContexts;

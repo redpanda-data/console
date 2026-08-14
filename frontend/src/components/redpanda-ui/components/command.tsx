@@ -7,7 +7,6 @@ import React from 'react';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './dialog';
 import { Popover, PopoverAnchor, PopoverContent } from './popover';
-import { Text } from './typography';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
 const commandVariants = cva(
@@ -186,14 +185,13 @@ function CommandItem({
 
 function CommandShortcut({ className, children, ...props }: React.ComponentProps<'span'>) {
   return (
-    <Text
-      as="span"
-      className={cn('ml-auto text-muted-foreground text-xs tracking-widest', className)}
+    <span
+      className={cn('ml-auto text-body-sm text-muted-foreground tracking-widest', className)}
       data-slot="command-shortcut"
       {...props}
     >
       {children}
-    </Text>
+    </span>
   );
 }
 
@@ -298,7 +296,7 @@ function SimpleCommand({
               {group.items.map((item) => (
                 <CommandItem disabled={item.disabled} key={item.label} onSelect={item.onSelect}>
                   {item.icon}
-                  <Text as="span">{item.label}</Text>
+                  <span className="text-body">{item.label}</span>
                   {item.shortcut ? <CommandShortcut>{item.shortcut}</CommandShortcut> : null}
                 </CommandItem>
               ))}

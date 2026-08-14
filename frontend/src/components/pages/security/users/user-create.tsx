@@ -38,7 +38,6 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { Text } from '../../../redpanda-ui/components/typography';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({
@@ -356,7 +355,7 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
       </div>
       {rolesApiEnabled && (
         <div className="mt-6">
-          <Text className="mb-2 font-medium text-sm">Assign roles</Text>
+          <div className="mb-2 font-medium text-label">Assign roles</div>
           <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
         </div>
       )}

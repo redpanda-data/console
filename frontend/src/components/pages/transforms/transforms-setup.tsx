@@ -13,6 +13,7 @@ import {
   Stack,
   Text,
 } from '@redpanda-data/ui';
+import { docsLinks } from 'utils/docs-links';
 
 import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -35,7 +36,7 @@ export class TransformsSetup extends PageComponent {
             Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
             Redpanda.{' '}
             <ChakraLink
-              href="https://docs.redpanda.com/current/develop/data-transforms/build"
+              href={docsLinks.selfManaged.dataTransformsBuild}
               isExternal
               style={{ textDecoration: 'underline solid 1px' }}
             >

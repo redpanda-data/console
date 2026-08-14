@@ -46,7 +46,7 @@ import {
 	CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
 	type Scope,
 } from "protogen/redpanda/api/dataplane/v1/secret_pb";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCreateSecretMutation } from "react-query/api/secret";
 import { toast } from "sonner";
@@ -54,13 +54,6 @@ import { formatToastErrorMessageGRPC } from "utils/toast.utils";
 import { base64ToUInt8Array, encodeBase64 } from "utils/utils";
 import { z } from "zod";
 import { extractSecretName } from "./secret-utils";
-
-// OpenAI API key validation pattern
-export const OPENAI_API_KEY_PATTERN = {
-	regex: /^sk-(proj-)?[A-Za-z0-9-_]{20,}$/,
-	message:
-		'Invalid OpenAI API key format. Must start with "sk-" or "sk-proj-" followed by at least 20 alphanumeric characters',
-};
 
 // Generic validation that accepts any non-empty string
 export const GENERIC_SECRET_VALUE_PATTERN = {
@@ -81,17 +74,6 @@ export type SecretSelectorCustomText = {
 	emptyStateDescription: string;
 };
 
-/** Default text for AI agent API key secrets */
-export const AI_AGENT_SECRET_TEXT: SecretSelectorCustomText = {
-	dialogDescription:
-		"Create a new secret for your OpenAI API key. The secret will be stored securely.",
-	secretNamePlaceholder: "e.g., OPENAI_API_KEY",
-	secretValuePlaceholder: "sk-...",
-	secretValueDescription: "Your OpenAI API key",
-	emptyStateDescription:
-		"Create a secret to securely store your OpenAI API key",
-};
-
 type SecretSelectorProps = {
 	value: string;
 	onChange: (value: string) => void;
@@ -101,24 +83,37 @@ type SecretSelectorProps = {
 	scopes: Scope[];
 	/** Custom text for dialog and form fields */
 	customText: SecretSelectorCustomText;
-};
+	/**
+	 * Minimum length for a newly created secret value. Defaults to 20 (API-key
+	 * style secrets); pass 1 for secrets with no inherent length, e.g. HTTP
+	 * Basic passwords.
+	 */
+	minValueLength?: number;
+} & Omit<
+	React.ComponentPropsWithoutRef<typeof SelectTrigger>,
+	"value" | "onChange" | "children" | "placeholder"
+>;
 
-const NewSecretFormSchema = z.object({
-	name: z
-		.string()
-		.min(1, "Secret name is required")
-		.max(255, "Secret name must be fewer than 255 characters")
-		.regex(
-			/^[A-Za-z][A-Za-z0-9_]*$/,
-			"Secret name must start with a letter and contain only letters, numbers, and underscores",
-		),
-	value: z
-		.string()
-		.min(1, "Secret value is required")
-		.min(20, "Secret value must be at least 20 characters"),
-});
+const buildNewSecretFormSchema = (minValueLength: number) =>
+	z.object({
+		name: z
+			.string()
+			.min(1, "Secret name is required")
+			.max(255, "Secret name must be fewer than 255 characters")
+			.regex(
+				/^[A-Za-z][A-Za-z0-9_]*$/,
+				"Secret name must start with a letter and contain only letters, numbers, and underscores",
+			),
+		value: z
+			.string()
+			.min(1, "Secret value is required")
+			.min(
+				minValueLength,
+				`Secret value must be at least ${minValueLength} characters`,
+			),
+	});
 
-type NewSecretFormData = z.infer<typeof NewSecretFormSchema>;
+type NewSecretFormData = z.infer<ReturnType<typeof buildNewSecretFormSchema>>;
 
 export const SecretSelector: React.FC<SecretSelectorProps> = ({
 	value,
@@ -128,13 +123,21 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 	onSecretCreated,
 	scopes,
 	customText,
+	minValueLength = 20,
+	// Anything else (id, aria-*) comes from form wiring such as FormControl and
+	// must reach the combobox trigger so labels announce it.
+	...triggerProps
 }) => {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const { mutateAsync: createSecret, isPending: isCreateSecretPending } =
 		useCreateSecretMutation();
 
+	const newSecretFormSchema = useMemo(
+		() => buildNewSecretFormSchema(minValueLength),
+		[minValueLength],
+	);
 	const form = useForm<NewSecretFormData>({
-		resolver: zodResolver(NewSecretFormSchema),
+		resolver: zodResolver(newSecretFormSchema),
 		defaultValues: {
 			name: "",
 			value: "",
@@ -211,7 +214,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 						onValueChange={onChange}
 						value={extractSecretName(value)}
 					>
-						<SelectTrigger className="flex-1">
+						<SelectTrigger className="flex-1" {...triggerProps}>
 							<SelectValue placeholder={placeholder} />
 						</SelectTrigger>
 						<SelectContent>

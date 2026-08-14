@@ -89,7 +89,7 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>)
 function AlertDialogTitle({ className, ...props }: AlertDialogPrimitive.Title.Props) {
   return (
     <AlertDialogPrimitive.Title
-      className={cn('font-semibold text-lg', className)}
+      className={cn('text-heading-md', className)}
       data-slot="alert-dialog-title"
       {...props}
     />
@@ -99,7 +99,7 @@ function AlertDialogTitle({ className, ...props }: AlertDialogPrimitive.Title.Pr
 function AlertDialogDescription({ className, ...props }: AlertDialogPrimitive.Description.Props) {
   return (
     <AlertDialogPrimitive.Description
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-body text-muted-foreground', className)}
       data-slot="alert-dialog-description"
       // Render as <div> (not the default <p>) so block-level children don't trigger validateDOMNesting.
       render={<div />}

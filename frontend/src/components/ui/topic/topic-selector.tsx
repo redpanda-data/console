@@ -21,7 +21,6 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useMemo, useState } from 'react';
 import { useListTopicsQuery } from 'react-query/api/topic';
 
@@ -83,7 +82,7 @@ export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = fal
             ))}
           {filteredTopics.length === 0 && searchTerm && (
             <div className="flex min-h-32 items-center justify-center px-2 py-6">
-              <Text className="text-muted-foreground text-sm">No topics found matching "{searchTerm}"</Text>
+              <div className="text-body text-muted-foreground">No topics found matching "{searchTerm}"</div>
             </div>
           )}
           <MultiSelectEmpty>No topics found</MultiSelectEmpty>

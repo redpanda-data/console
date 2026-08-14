@@ -111,7 +111,15 @@ export type TopicSettingsStore = {
   clearAllSettings: () => void;
 };
 
-const DEFAULT_SORTING: SortingState = [];
+// Default display order for the message list: newest-first by timestamp, with
+// offset descending as a cross-partition tiebreak (offset isn't global across
+// partitions, so timestamp is the primary key). The backend's listMessages
+// stream isn't globally timestamp-sorted across partitions, so this default
+// drives the table's client-side sort to give users a sensible newest-first view.
+export const DEFAULT_SORTING: SortingState = [
+  { id: 'timestamp', desc: true },
+  { id: 'offset', desc: true },
+];
 
 const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   offsetOrigin: -1,
@@ -214,7 +222,11 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 
         getSorting: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
-          return topic?.searchParams.sorting ?? DEFAULT_SORTING;
+          const sorting = topic?.searchParams.sorting;
+          // Treat an empty/unset sort as "use the newest-first default" so the
+          // default applies on every fresh load, including returning users whose
+          // persisted settings still hold the old empty sort.
+          return sorting && sorting.length > 0 ? sorting : DEFAULT_SORTING;
         },
 
         setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => {

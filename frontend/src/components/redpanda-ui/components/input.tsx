@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: this is a complex component */
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';

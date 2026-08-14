@@ -36,7 +36,7 @@ const ListLayoutHeader = React.forwardRef<HTMLDivElement, ListLayoutHeaderProps>
   ({ className, title, description, actions, ...props }, ref) => (
     <div className={cn('flex flex-col gap-2', className)} ref={ref} {...props}>
       <div className="flex items-center gap-2">
-        <h1 className="font-semibold text-foreground text-xl sm:text-2xl">{title}</h1>
+        <h1 className="text-foreground text-heading-lg sm:text-heading-xl">{title}</h1>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>
       {description ? <p className="text-muted-foreground text-sm sm:text-base">{description}</p> : null}

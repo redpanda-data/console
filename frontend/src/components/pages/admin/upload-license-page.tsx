@@ -14,6 +14,7 @@ import {
 } from '@redpanda-data/ui';
 import type { FC } from 'react';
 import { useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import type { SetLicenseRequest, SetLicenseResponse } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -167,11 +168,7 @@ const UploadLicensePageContent: FC = () => {
               our support team
             </Link>{' '}
             to request a license. To see a list of what is available with Redpanda Enterprise, check{' '}
-            <Link
-              href="https://docs.redpanda.com/current/get-started/licenses/#redpanda-enterprise-edition"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
+            <Link href={docsLinks.selfManaged.enterpriseEdition} rel="noopener noreferrer" target="_blank">
               our documentation
             </Link>
             .

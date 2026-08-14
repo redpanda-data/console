@@ -22,6 +22,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { ExternalLinkIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
+import { docsLinks } from 'utils/docs-links';
 
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
@@ -40,7 +41,6 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { Heading } from '../../../redpanda-ui/components/typography';
 
 type Role = {
   principalType: string;
@@ -107,11 +107,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
               <EmptyContent>
                 <Button
                   render={
-                    <a
-                      href="https://docs.redpanda.com/current/manage/security/authorization/rbac/"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
+                    <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
                       Read the docs →
                     </a>
                   }
@@ -176,9 +172,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
             ) : undefined
           }
         >
-          <Heading as="h2" level={4}>
-            Roles
-          </Heading>
+          <h2 className="text-heading-sm">Roles</h2>
         </ListLayoutFilters>
         <ListLayoutContent>
           <Table>

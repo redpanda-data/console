@@ -6,15 +6,15 @@ import React, { forwardRef } from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
-// Figma: Inter Display, font-medium (500), 100% line-height, -0.01em tracking.
-const headingVariants = cva('font-display font-medium leading-none tracking-heading', {
+// @deprecated internal to the deprecated `Heading` component; maps level → `text-heading-*`.
+const headingVariants = cva('', {
   variants: {
     level: {
-      1: 'text-2xl',
-      2: 'text-xl',
-      3: 'text-lg',
-      4: 'text-md',
-      5: 'text-sm',
+      1: 'text-heading-xl',
+      2: 'text-heading-lg',
+      3: 'text-heading-md',
+      4: 'text-heading-sm',
+      5: 'text-heading-xs',
     },
     align: {
       left: 'text-left',
@@ -28,6 +28,12 @@ const headingVariants = cva('font-display font-medium leading-none tracking-head
   },
 });
 
+/**
+ * @deprecated Prefer the `text-*` utilities (`text-body`, `text-label`, `text-body-sm`,
+ * `text-caption`) defined in theme.css. These carry the full type style
+ * in a single class and can be applied to any element without a wrapper. The variant set
+ * below is retained for backward compatibility.
+ */
 export const textVariants = cva('font-sans', {
   variants: {
     variant: {
@@ -91,11 +97,11 @@ export const textVariants = cva('font-sans', {
 
       // Captions - Inter, font-normal (400), positive tracking
       captionMedium: 'font-normal text-xs leading-4 tracking-caption', // 0.75rem, 0.01em
-      captionSmall: 'font-normal text-caption-sm leading-4 tracking-caption', // 0.625rem (10px), 0.01em
+      captionSmall: 'font-normal text-2xs leading-4 tracking-caption', // 0.625rem (10px), 0.01em
 
       // Caption Strong variants - Inter, font-medium (500)
       captionStrongMedium: 'font-medium text-xs leading-4 tracking-caption', // 0.75rem, 0.01em
-      captionStrongSmall: 'font-medium text-caption-sm leading-4 tracking-caption-wide', // 0.625rem, 0.05em
+      captionStrongSmall: 'font-medium text-2xs leading-4 tracking-caption-wide', // 0.625rem, 0.05em
     },
     align: {
       left: 'text-left',
@@ -117,6 +123,12 @@ interface HeadingProps
   as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
 }
 
+/**
+ * @deprecated Adds nothing over the `text-heading-*` utilities. Pick the heading element by
+ * document outline and the `text-heading-xl`…`text-heading-xs` class by desired size; for a
+ * runtime-variable level, map it to a class
+ * (e.g. `{ 1: 'text-heading-xl', 2: 'text-heading-lg', … }[level]`) on a dynamic `h{level}` tag.
+ */
 export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>((componentProps, ref) => {
   const { align, className, children, testId, as, level: levelProp, ...props } = componentProps;
   const headingLevel = levelProp ?? 1;
@@ -139,7 +151,13 @@ interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<type
   as?: 'p' | 'div' | 'span' | 'small';
 }
 
-// Defaults to <div> so block-level children don't trip `validateDOMNesting` (use `as="p"` for a paragraph). forwardRef enables render-prop use.
+/**
+ * @deprecated Prefer a `text-*` utility on the element you already have (e.g.
+ * `<p className="text-body">`). `<Text>` is kept for backward compatibility with the
+ * full variant set.
+ *
+ * Defaults to <div> so block-level children don't trip `validateDOMNesting` (use `as="p"` for a paragraph). forwardRef enables render-prop use.
+ */
 export const Text = forwardRef<HTMLElement, TextProps>((componentProps, ref) => {
   const { variant, align, as = 'div', className, children, testId, ...props } = componentProps;
 
@@ -218,7 +236,10 @@ interface InlineCodeProps extends React.HTMLAttributes<HTMLElement>, SharedProps
 
 export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className, children, testId, ...props }, ref) => (
   <code
-    className={cn('relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm', className)}
+    className={cn(
+      'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm leading-8',
+      className
+    )}
     data-testid={testId}
     ref={ref}
     {...props}
@@ -362,16 +383,6 @@ export const Mark = forwardRef<HTMLElement, MarkProps>(({ className, children, t
   </mark>
 ));
 
-interface SmallProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
-  children: React.ReactNode;
-}
-
-export const Small = forwardRef<HTMLElement, SmallProps>(({ className, children, testId, ...props }, ref) => (
-  <small className={cn('text-xs leading-none', className)} data-testid={testId} ref={ref} {...props}>
-    {children}
-  </small>
-));
-
 // displayName on each forwardRef so DevTools/stacks show the real name instead of "ForwardRef".
 Heading.displayName = 'Heading';
 Text.displayName = 'Text';
@@ -389,4 +400,3 @@ Dd.displayName = 'Dd';
 Details.displayName = 'Details';
 Summary.displayName = 'Summary';
 Mark.displayName = 'Mark';
-Small.displayName = 'Small';

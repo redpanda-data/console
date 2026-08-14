@@ -14,7 +14,6 @@ import { Fragment, useState } from 'react';
 
 import type { Payload } from '../../../../../state/rest-interfaces';
 import { Alert, AlertDescription, AlertTitle } from '../../../../redpanda-ui/components/alert';
-import { Heading } from '../../../../redpanda-ui/components/typography';
 
 export const TroubleshootReportViewer = (props: { payload: Payload }) => {
   const report = props.payload.troubleshootReport;
@@ -29,7 +28,7 @@ export const TroubleshootReportViewer = (props: { payload: Payload }) => {
 
   return (
     <div className="my-4">
-      <Heading as="h4">Deserialization Troubleshoot Report</Heading>
+      <h4 className="text-heading-xl">Deserialization Troubleshoot Report</h4>
       <Alert className="mt-4" icon={<AlertTriangle />} variant="destructive">
         <AlertTitle className="flex items-center font-normal [&]:line-clamp-none">
           Errors were encountered when deserializing this message

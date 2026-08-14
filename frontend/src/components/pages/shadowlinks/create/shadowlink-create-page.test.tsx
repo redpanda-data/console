@@ -63,6 +63,7 @@ vi.mock('sonner', () => ({
 }));
 
 import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
@@ -70,10 +71,18 @@ import {
   addACLFilterCreate,
   addBootstrapServer,
   addConsumerFilterCreate,
+  addRoleFilterCreate,
   addTopicFilterCreate,
   enableTLS,
   navigateToConfigurationStep,
+  setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
+  setShadowLinkGatesSupported,
 } from '../shadowlink-test-helpers';
+
+const pristineFeatureStoreState = useSupportedFeaturesStore.getState();
+const resetSchemaRegistrySyncGate = () => {
+  useSupportedFeaturesStore.setState(pristineFeatureStoreState, true);
+};
 
 /**
  * Render the create page with all necessary providers
@@ -98,6 +107,7 @@ type CreateAction =
   | { type: 'addTopicFilterCreate'; name: string; options?: { patternType?: PatternType; filterType?: FilterType } }
   | { type: 'addConsumerFilterCreate'; name: string }
   | { type: 'addACLFilterCreate'; principal: string }
+  | { type: 'addRoleFilterCreate'; name: string }
   | { type: 'enableSchemaRegistrySync' };
 
 /**
@@ -232,6 +242,9 @@ const performCreateAction = async (
     case 'addACLFilterCreate':
       await addACLFilterCreate(user, scr, action.principal);
       break;
+    case 'addRoleFilterCreate':
+      await addRoleFilterCreate(user, scr, action.name);
+      break;
     case 'enableSchemaRegistrySync': {
       const schemaRegistrySwitch = scr.getByTestId('sr-enable-switch');
       await user.click(schemaRegistrySwitch);
@@ -275,6 +288,10 @@ const testCases: CreateTestCase[] = [
       exp(scramConfig.username).toBe('admin');
       exp(scramConfig.password).toBe('admin-secret');
       exp(scramConfig.scramMechanism).toBeDefined();
+      // Untouched roles default to all: a single wildcard include filter
+      exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toEqual([
+        exp.objectContaining({ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }),
+      ]);
     },
   },
   {
@@ -317,6 +334,41 @@ const testCases: CreateTestCase[] = [
       exp(topicFilter.name).toBe('topic-exact');
       exp(topicFilter.patternType).toBe(PatternType.LITERAL);
       exp(topicFilter.filterType).toBe(FilterType.INCLUDE);
+    },
+  },
+  {
+    description: 'creates shadow link with role filters',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'addRoleFilterCreate', name: 'my-role' },
+    ],
+    verify: (createRequest, exp) => {
+      exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toHaveLength(1);
+      const roleFilter = createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters[0];
+      exp(roleFilter.name).toBe('my-role');
+      exp(roleFilter.patternType).toBe(PatternType.LITERAL);
+      exp(roleFilter.filterType).toBe(FilterType.INCLUDE);
+    },
+  },
+  {
+    description: 'creates shadow link with a specific ACL filter',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'addACLFilterCreate', principal: 'User:alice' },
+    ],
+    verify: (createRequest, exp) => {
+      // Specify mode must send the user's filter, not the match-all one
+      exp(createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters).toHaveLength(1);
+      const aclFilter = createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters[0];
+      exp(aclFilter.accessFilter?.principal).toBe('User:alice');
     },
   },
   {
@@ -416,6 +468,10 @@ describe('ShadowLinkCreatePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // SR gate closed: these cases exercise the legacy Schema Registry switch.
+    // Role gate open: the roles card and its default-all payload need >= 26.2.0.
+    setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: true });
+
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
 
     // Mock create mutation - must return the mutation hook properly
@@ -445,6 +501,10 @@ describe('ShadowLinkCreatePage', () => {
         submittedAt: 0,
       } as any;
     });
+  });
+
+  afterEach(() => {
+    resetSchemaRegistrySyncGate();
   });
 
   test.each(testCases)('$description', async ({ actions, verify }) => {
@@ -482,6 +542,194 @@ describe('ShadowLinkCreatePage', () => {
     // late RHF/router re-render of the still-mounted form fields. Await the
     // settled side effect so any final update is flushed inside act() before
     // the test ends.
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    });
+  });
+
+  test('hides the roles card and omits role sync options when the cluster does not support role sync', async () => {
+    setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: false });
+
+    const user = userEvent.setup();
+
+    renderCreatePage();
+
+    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
+
+    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
+    await performCreateAction(user, screen, {
+      type: 'fillBootstrapServer',
+      index: 0,
+      value: 'server1.example.com:9092',
+    });
+    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
+    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
+    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+
+    // The whole roles card is gated out
+    expect(screen.queryByTestId('roles-all-tab')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
+
+    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
+    await user.click(createButton);
+
+    await waitFor(
+      () => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 5000 }
+    );
+
+    // Not even the default include-all filter may be sent to a cluster
+    // that predates role sync
+    const createRequest = mockMutateAsync.mock.calls[0][0];
+    expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    });
+  });
+});
+
+describe('ShadowLinkCreatePage - Schema Registry sync over API', () => {
+  const mockMutateAsync = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Gate open: the redesigned Schema Registry section renders.
+    seedSchemaRegistrySyncGate(true);
+
+    mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
+
+    vi.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
+      const wrappedMutateAsync = async (request: any) => {
+        const result = await mockMutateAsync(request);
+        options?.onSuccess?.(result, request, undefined, {} as any);
+        return result;
+      };
+
+      return {
+        mutateAsync: wrappedMutateAsync,
+        isPending: false,
+        isError: false,
+        isSuccess: false,
+        error: null,
+        data: undefined,
+        mutate: vi.fn(),
+        reset: vi.fn(),
+        status: 'idle',
+        variables: undefined,
+        context: undefined,
+        failureCount: 0,
+        failureReason: null,
+        isPaused: false,
+        submittedAt: 0,
+      } as any;
+    });
+  });
+
+  afterEach(() => {
+    resetSchemaRegistrySyncGate();
+  });
+
+  test('submits api mode with raw basic auth password and TLS enabled', async () => {
+    const user = userEvent.setup();
+
+    renderCreatePage();
+
+    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
+
+    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
+    await performCreateAction(user, screen, {
+      type: 'fillBootstrapServer',
+      index: 0,
+      value: 'server1.example.com:9092',
+    });
+    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
+    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
+    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+
+    // The redesigned section replaces the legacy switch
+    expect(screen.queryByTestId('sr-enable-switch')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('sr-mode-api-tab'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sr-source-url-input')).toBeInTheDocument();
+    });
+
+    fireEvent.input(screen.getByTestId('sr-source-url-input'), {
+      target: { value: 'https://schema-registry.example.com:8081' },
+    });
+
+    await user.click(screen.getByTestId('sr-auth-basic-tab'));
+    await waitFor(() => {
+      expect(screen.getByTestId('sr-basic-username-input')).toBeInTheDocument();
+    });
+    fireEvent.input(screen.getByTestId('sr-basic-username-input'), { target: { value: 'sr-replicator' } });
+    fireEvent.input(screen.getByTestId('sr-basic-password-input'), { target: { value: 'p@ssw0rd!' } });
+
+    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
+    await user.click(createButton);
+
+    await waitFor(
+      () => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 5000 }
+    );
+
+    const createRequest = mockMutateAsync.mock.calls[0][0];
+    const syncOptions = createRequest.shadowLink.configurations.schemaRegistrySyncOptions;
+    expect(syncOptions.schemaRegistryShadowingMode.case).toBe('shadowSchemaRegistryApi');
+
+    const apiOptions = syncOptions.schemaRegistryShadowingMode.value;
+    expect(apiOptions.sourceUrl).toBe('https://schema-registry.example.com:8081');
+    expect(apiOptions.authOptions.authOptions.case).toBe('basic');
+    expect(apiOptions.authOptions.authOptions.value.username).toBe('sr-replicator');
+    // Raw password, never a secret reference
+    expect(apiOptions.authOptions.authOptions.value.password).toBe('p@ssw0rd!');
+    expect(apiOptions.tlsSettings.enabled).toBe(true);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    });
+  });
+
+  test('keeps the legacy topic payload when _schemas topic mode is selected', async () => {
+    const user = userEvent.setup();
+
+    renderCreatePage();
+
+    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
+
+    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
+    await performCreateAction(user, screen, {
+      type: 'fillBootstrapServer',
+      index: 0,
+      value: 'server1.example.com:9092',
+    });
+    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
+    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
+    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+
+    await user.click(screen.getByTestId('sr-mode-topic-tab'));
+
+    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
+    await user.click(createButton);
+
+    await waitFor(
+      () => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 5000 }
+    );
+
+    const createRequest = mockMutateAsync.mock.calls[0][0];
+    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
+      'shadowSchemaRegistryTopic'
+    );
+
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Shadow link created');
     });

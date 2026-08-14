@@ -136,7 +136,7 @@ export const DropzoneContent = ({ children, className }: DropzoneContentProps) =
       <div className="flex size-8 items-center justify-center rounded-md bg-accent text-accent-foreground">
         <UploadIcon size={16} />
       </div>
-      <p className="my-2 w-full truncate font-medium text-sm">
+      <p className="my-2 w-full truncate text-label">
         {src.length > maxLabelItems
           ? `${src
               .slice(0, maxLabelItems)
@@ -185,9 +185,9 @@ export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStatePr
       <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
         <UploadIcon size={16} />
       </div>
-      <p className="my-2 w-full truncate text-wrap font-medium text-sm">Upload {maxFiles === 1 ? 'a file' : 'files'}</p>
+      <p className="my-2 w-full truncate text-wrap text-label">Upload {maxFiles === 1 ? 'a file' : 'files'}</p>
       <p className="w-full truncate text-wrap text-muted-foreground text-xs">Drag and drop or click to upload</p>
-      {caption ? <p className="text-wrap text-muted-foreground text-xs">{caption}.</p> : null}
+      {caption ? <p className="text-wrap text-body-sm text-muted-foreground">{caption}.</p> : null}
     </div>
   );
 };

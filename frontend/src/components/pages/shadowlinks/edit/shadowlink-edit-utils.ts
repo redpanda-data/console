@@ -13,7 +13,7 @@ import {
   ShadowLinkUpdateSchema as CpShadowLinkUpdateSchema,
   UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
-import { create } from '@bufbuild/protobuf';
+import { create, equals } from '@bufbuild/protobuf';
 import { FieldMaskSchema } from '@bufbuild/protobuf/wkt';
 import type { ShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
@@ -24,7 +24,8 @@ import {
   NameFilterSchema,
   PatternType,
   PlainConfigSchema,
-  SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
+  RoleSyncOptionsSchema,
+  type SchemaRegistrySyncOptions,
   SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
   SecuritySettingsSyncOptionsSchema,
@@ -43,6 +44,7 @@ import {
 
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, TLS_MODE } from '../create/model';
+import { buildSchemaRegistrySyncOptions } from '../create/schema-registry-request';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
 /**
@@ -50,6 +52,19 @@ import { buildDefaultFormValues } from '../mappers/dataplane';
  * Used when converting dataplane field masks to controlplane format
  */
 const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./;
+
+/**
+ * Wildcard filter meaning "sync everything" for the 'all' mode of a category.
+ * Must stay in sync with isAllNameFilter in the mappers, which round-trips
+ * this exact shape back to 'all' mode when hydrating the edit form.
+ */
+export const allNameFilter = [
+  create(NameFilterSchema, {
+    patternType: PatternType.LITERAL,
+    filterType: FilterType.INCLUDE,
+    name: '*',
+  }),
+];
 
 /**
  * Type for category update functions
@@ -305,14 +320,6 @@ export const getUpdateValuesForTopics = (
   }
 
   // Build topic metadata sync options
-  const allNameFilter = [
-    create(NameFilterSchema, {
-      patternType: PatternType.LITERAL,
-      filterType: FilterType.INCLUDE,
-      name: '*',
-    }),
-  ];
-
   const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
     autoCreateShadowTopicFilters:
       values.topicsMode === 'all'
@@ -360,14 +367,6 @@ export const getUpdateValuesForConsumerGroups = (
   }
 
   // Build consumer offset sync options
-  const allNameFilter = [
-    create(NameFilterSchema, {
-      patternType: PatternType.LITERAL,
-      filterType: FilterType.INCLUDE,
-      name: '*',
-    }),
-  ];
-
   const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
     groupFilters:
       values.consumersMode === 'all'
@@ -383,6 +382,51 @@ export const getUpdateValuesForConsumerGroups = (
 
   return {
     value: consumerOffsetSyncOptions,
+    fieldMaskPaths,
+  };
+};
+
+/**
+ * Get update values for roles category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForRoles = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof RoleSyncOptionsSchema>>> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare roles mode and filters
+  const roleFiltersChanged =
+    values.rolesMode !== originalValues.rolesMode ||
+    values.roles.length !== originalValues.roles.length ||
+    values.roles.some(
+      (role, idx) =>
+        role.name !== originalValues.roles[idx]?.name ||
+        role.patternType !== originalValues.roles[idx]?.patternType ||
+        role.filterType !== originalValues.roles[idx]?.filterType
+    );
+
+  if (roleFiltersChanged) {
+    fieldMaskPaths.push('configurations.role_sync_options');
+  }
+
+  // Build role sync options
+  const roleSyncOptions = create(RoleSyncOptionsSchema, {
+    roleNameFilters:
+      values.rolesMode === 'all'
+        ? allNameFilter
+        : values.roles.map((role) =>
+            create(NameFilterSchema, {
+              patternType: role.patternType,
+              filterType: role.filterType,
+              name: role.name,
+            })
+          ),
+  });
+
+  return {
+    value: roleSyncOptions,
     fieldMaskPaths,
   };
 };
@@ -463,36 +507,33 @@ export const getUpdateValuesForACLs = (
   };
 };
 
+const srSyncOptionsChanged = (
+  next: SchemaRegistrySyncOptions | undefined,
+  previous: SchemaRegistrySyncOptions | undefined
+): boolean => {
+  if (next === undefined || previous === undefined) {
+    return next !== previous;
+  }
+  return !equals(SchemaRegistrySyncOptionsSchema, next, previous);
+};
+
 /**
- * Get update values for Schema Registry category
- * Compares form values with original values and returns schema + field mask paths
+ * Get update values for Schema Registry category.
+ * Both sides of the comparison are built from form values (current vs
+ * hydrated originals), so hydration normalizations cancel out and scratch
+ * values typed into a mode that isn't submitted never produce a mask. The
+ * mask replaces the whole message, hence the single parent path.
  */
 export const getUpdateValuesForSchemaRegistry = (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof SchemaRegistrySyncOptionsSchema>> | undefined> => {
-  const fieldMaskPaths: string[] = [];
-
-  // Compare schema registry sync enabled state
-  const schemaRegistryChanged = values.enableSchemaRegistrySync !== originalValues.enableSchemaRegistrySync;
-
-  if (schemaRegistryChanged) {
-    fieldMaskPaths.push('configurations.schema_registry_sync_options');
-  }
-
-  // Build schema registry sync options (only set if enabled)
-  const schemaRegistrySyncOptions = values.enableSchemaRegistrySync
-    ? create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: {
-          case: 'shadowSchemaRegistryTopic',
-          value: create(SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema, {}),
-        },
-      })
-    : undefined;
+): UpdateResult<SchemaRegistrySyncOptions | undefined> => {
+  const value = buildSchemaRegistrySyncOptions(values);
+  const original = buildSchemaRegistrySyncOptions(originalValues);
 
   return {
-    value: schemaRegistrySyncOptions,
-    fieldMaskPaths,
+    value,
+    fieldMaskPaths: srSyncOptionsChanged(value, original) ? ['configurations.schema_registry_sync_options'] : [],
   };
 };
 
@@ -509,6 +550,7 @@ export const buildControlplaneUpdateRequest = (
   originalValues: FormValues
 ) => {
   // Get update values from existing category functions (reuse the logic)
+  // Roles are skipped: the controlplane proto does not expose role sync yet
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
@@ -552,15 +594,31 @@ export const buildControlplaneUpdateRequest = (
  * Transform form values to UpdateShadowLinkRequest protobuf message (dataplane)
  * Only includes fields that have changed from the original shadow link
  */
-export const buildDataplaneUpdateRequest = (name: string, values: FormValues, originalShadowLink: ShadowLink) => {
+export const buildDataplaneUpdateRequest = (
+  name: string,
+  values: FormValues,
+  originalShadowLink: ShadowLink,
+  { roleSyncSupported }: { roleSyncSupported: boolean }
+) => {
   // Build original form values for comparison
   const originalValues = buildDefaultFormValues(originalShadowLink);
 
-  // Get update values for all categories
+  // Get update values for all categories. Roles are skipped entirely on
+  // clusters without role sync (Redpanda < 26.2.0): no value, no mask path.
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
+  const rolesUpdate = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
   const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
+
+  // No UI exposes interval/paused: round-trip them from the fetched link so
+  // the whole-message mask path doesn't unpause a paused role sync task or
+  // reset a custom interval
+  const originalRoleSyncOptions = originalShadowLink.configurations?.roleSyncOptions;
+  if (rolesUpdate && originalRoleSyncOptions) {
+    rolesUpdate.value.interval = originalRoleSyncOptions.interval;
+    rolesUpdate.value.paused = originalRoleSyncOptions.paused;
+  }
   const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
 
   // Build configurations with all category values
@@ -568,6 +626,7 @@ export const buildDataplaneUpdateRequest = (name: string, values: FormValues, or
     clientOptions: connectionUpdate.value,
     topicMetadataSyncOptions: topicsUpdate.value,
     consumerOffsetSyncOptions: consumerGroupsUpdate.value,
+    roleSyncOptions: rolesUpdate?.value,
     securitySyncOptions: aclsUpdate.value,
     schemaRegistrySyncOptions: schemaRegistryUpdate.value,
   });
@@ -584,6 +643,7 @@ export const buildDataplaneUpdateRequest = (name: string, values: FormValues, or
       ...connectionUpdate.fieldMaskPaths,
       ...topicsUpdate.fieldMaskPaths,
       ...consumerGroupsUpdate.fieldMaskPaths,
+      ...(rolesUpdate?.fieldMaskPaths ?? []),
       ...aclsUpdate.fieldMaskPaths,
       ...schemaRegistryUpdate.fieldMaskPaths,
     ],

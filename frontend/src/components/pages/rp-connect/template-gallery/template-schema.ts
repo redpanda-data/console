@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
-import type { RawFieldSpec } from '../types/schema';
-import { checkRequired, findComponentByName, resolveFieldByPath } from '../utils/schema';
+import type { ConnectComponentSpec } from '../types/schema';
+import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
 
 // Slot-level values win; schema only fills unset `description` / `required` /
 // `default`. Slots without `schemaField` (or with unresolvable paths) pass through.
-export function applySchemaToSlots(template: PipelineTemplate, componentList?: ComponentList): TemplateSlot[] {
-  if (!componentList) {
+// Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
+// backend-computed signal rather than the proto heuristic.
+export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]): TemplateSlot[] {
+  if (!components?.length) {
     return template.slots;
   }
 
-  const sourceComp = findComponentByName(componentList, template.source.component, template.source.type);
-  const sinkComp = findComponentByName(componentList, template.sink.component, template.sink.type);
+  const sourceComp = findConnectComponent(components, template.source.component, template.source.type);
+  const sinkComp = findConnectComponent(components, template.sink.component, template.sink.type);
 
   const componentForSection = (section: TemplateSlot['section']) => {
     if (section === 'source') {
@@ -48,7 +48,7 @@ export function applySchemaToSlots(template: PipelineTemplate, componentList?: C
     const merged: TemplateSlot = {
       ...slot,
       description: slot.description ?? (field.description || undefined),
-      required: slot.required ?? checkRequired(field as unknown as RawFieldSpec),
+      required: slot.required ?? checkRequired(field),
     };
 
     if (merged.kind !== 'secret' && !merged.default && field.defaultValue) {

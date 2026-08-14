@@ -20,7 +20,8 @@ import { type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yam
 type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | null;
 type AddConnectorType = ConnectComponentType | 'resource' | null;
 type ConnectorSection = 'input' | 'output';
-export type ViewLane = 'monitor' | 'configuration';
+export type ViewLane = 'monitor' | 'configuration' | 'visual';
+export type EditLane = 'yaml' | 'visual';
 
 // Canonical config YAML (plus baseline) that all views read/mutate through these actions.
 type DocumentSlice = {
@@ -43,18 +44,37 @@ type DocumentSlice = {
 type UiSlice = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   activeViewLane: ViewLane;
+  activeEditLane: EditLane;
+  // Node selected in the Visual lane, mirrored here so the YAML lane can reveal it on tab switch.
+  selectedNodeId: string | null;
+  // One-shot request to reveal + select a node's lines in Monaco; set on Visual→YAML, cleared by the editor.
+  revealNodeId: string | null;
   commandMenuFilter: CommandMenuFilter;
   addConnectorType: AddConnectorType;
-  slashTipVisible: boolean;
   isConfigDialogOpen: boolean;
   isViewConfigDialogOpen: boolean;
   isDeleteAlertOpen: boolean;
   isTemplateDialogOpen: boolean;
+  // Visual-edit undo/redo history (YAML snapshots). Lives in the store — not VisualEditorPanel —
+  // so it survives lane switches. `editBaseline` is the last document state the history has seen.
+  editUndoStack: string[];
+  editRedoStack: string[];
+  editBaseline: string | null;
+  // Record a (non-undo/redo) document change; no-ops when it matches the baseline.
+  recordEdit: (next: string) => void;
+  // Commit the stacks + baseline after an undo/redo step.
+  commitEditHistory: (next: { undo: string[]; redo: string[]; baseline: string }) => void;
+  // Flushes the selected node's pending edits to the YAML; registered by the Visual lane, called by
+  // Save so an in-progress node edit is included.
+  pendingEditCommit: (() => void) | null;
+  setPendingEditCommit: (fn: (() => void) | null) => void;
   setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
   setActiveViewLane: (activeViewLane: ViewLane) => void;
+  setActiveEditLane: (activeEditLane: EditLane) => void;
+  setSelectedNodeId: (selectedNodeId: string | null) => void;
+  requestRevealNode: (revealNodeId: string | null) => void;
   setCommandMenuFilter: (commandMenuFilter: CommandMenuFilter) => void;
   setAddConnectorType: (addConnectorType: AddConnectorType) => void;
-  setSlashTipVisible: (slashTipVisible: boolean) => void;
   setIsConfigDialogOpen: (open: boolean) => void;
   setIsViewConfigDialogOpen: (open: boolean) => void;
   setIsDeleteAlertOpen: (open: boolean) => void;
@@ -71,33 +91,70 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
   setYamlContent: (yamlContent) => set({ yamlContent }),
   patchComponent: (section, componentName, patch) => {
     const patched = tryPatchRedpandaYaml(get().yamlContent, section, componentName, patch);
-    if (patched === null) {
+    if (patched === undefined) {
       return false;
     }
     set({ yamlContent: patched });
     return true;
   },
   hydrateFromServer: (pipelineId, configYaml) =>
-    set({ hydratedPipelineId: pipelineId, yamlContent: configYaml, initialYaml: configYaml }),
-  resolveInitialYaml: (yaml) => set((state) => ({ yamlContent: yaml, initialYaml: state.initialYaml ?? yaml })),
+    // Reset the edit history so the server load isn't recorded as an undoable step.
+    set({
+      hydratedPipelineId: pipelineId,
+      yamlContent: configYaml,
+      initialYaml: configYaml,
+      editUndoStack: [],
+      editRedoStack: [],
+      editBaseline: null,
+    }),
+  resolveInitialYaml: (yaml) =>
+    set((state) =>
+      // First resolution sets the baseline; reset the edit history so the template load isn't an undoable step.
+      state.initialYaml === null
+        ? { yamlContent: yaml, initialYaml: yaml, editUndoStack: [], editRedoStack: [], editBaseline: null }
+        : { yamlContent: yaml }
+    ),
   setAllowNavigation: (allowNavigation) => set({ allowNavigation }),
 });
 
 const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) => ({
   editorInstance: null,
   activeViewLane: 'monitor',
+  activeEditLane: 'yaml',
+  selectedNodeId: null,
+  revealNodeId: null,
   commandMenuFilter: null,
   addConnectorType: null,
-  slashTipVisible: false,
   isConfigDialogOpen: false,
   isViewConfigDialogOpen: false,
   isDeleteAlertOpen: false,
   isTemplateDialogOpen: false,
+  editUndoStack: [],
+  editRedoStack: [],
+  editBaseline: null,
+  recordEdit: (next) =>
+    set((s) => {
+      if (s.editBaseline === null) {
+        // First document the history sees becomes the baseline (no undo step).
+        return { editBaseline: next };
+      }
+      if (next === s.editBaseline) {
+        return {};
+      }
+      // Real change (visual edit, or external YAML edit seen on lane return): push the old baseline, clear redo.
+      return { editUndoStack: [...s.editUndoStack, s.editBaseline], editRedoStack: [], editBaseline: next };
+    }),
+  commitEditHistory: ({ undo, redo, baseline }) =>
+    set({ editUndoStack: undo, editRedoStack: redo, editBaseline: baseline }),
+  pendingEditCommit: null,
+  setPendingEditCommit: (pendingEditCommit) => set({ pendingEditCommit }),
   setEditorInstance: (editorInstance) => set({ editorInstance }),
   setActiveViewLane: (activeViewLane) => set({ activeViewLane }),
+  setActiveEditLane: (activeEditLane) => set({ activeEditLane }),
+  setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId }),
+  requestRevealNode: (revealNodeId) => set({ revealNodeId }),
   setCommandMenuFilter: (commandMenuFilter) => set({ commandMenuFilter }),
   setAddConnectorType: (addConnectorType) => set({ addConnectorType }),
-  setSlashTipVisible: (slashTipVisible) => set({ slashTipVisible }),
   setIsConfigDialogOpen: (open) => set({ isConfigDialogOpen: open }),
   setIsViewConfigDialogOpen: (open) => set({ isViewConfigDialogOpen: open }),
   setIsDeleteAlertOpen: (open) => set({ isDeleteAlertOpen: open }),
@@ -117,14 +174,17 @@ const PipelineEditorContext = createContext<StoreApi<PipelineEditorStore> | null
 // Context-scoped: each mount gets its own store (key the provider by pipeline id for clean nav).
 export function PipelineEditorProvider({
   children,
-  initialSlashTipVisible,
+  initialEditLane = 'yaml',
 }: {
   children: ReactNode;
-  initialSlashTipVisible: boolean;
+  // Edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
+  initialEditLane?: EditLane;
 }) {
   const storeRef = useRef<StoreApi<PipelineEditorStore>>(undefined);
   if (!storeRef.current) {
-    storeRef.current = createPipelineEditorStore({ slashTipVisible: initialSlashTipVisible });
+    storeRef.current = createPipelineEditorStore({
+      activeEditLane: initialEditLane,
+    });
   }
   return createElement(PipelineEditorContext.Provider, { value: storeRef.current }, children);
 }
