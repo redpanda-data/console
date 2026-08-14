@@ -42,15 +42,22 @@ const (
 	// redpandaFeatureShadowLinkSchemaRegistrySync represents shadow link Schema Registry
 	// sync over the Schema Registry API feature.
 	redpandaFeatureShadowLinkSchemaRegistrySync redpandaFeature = "redpanda_feature_shadow_link_schema_registry_sync"
+
+	// redpandaFeatureShadowLinkRoleSync represents shadow link role sync feature.
+	redpandaFeatureShadowLinkRoleSync redpandaFeature = "redpanda_feature_shadow_link_role_sync"
 )
 
 // shadowLinkSchemaRegistrySyncMinVersion is the first Redpanda release whose shadow
 // links can sync schemas over the Schema Registry API.
 var shadowLinkSchemaRegistrySyncMinVersion = redpanda.MustParseVersion("26.2.0")
 
-// checkShadowLinkSchemaRegistrySyncSupport reports whether the cluster is new enough to
-// sync schemas over the Schema Registry API for shadow links.
-func checkShadowLinkSchemaRegistrySyncSupport(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient) bool {
+// shadowLinkRoleSyncMinVersion is the first Redpanda release whose shadow links
+// can sync roles.
+var shadowLinkRoleSyncMinVersion = redpanda.MustParseVersion("26.2.0")
+
+// checkClusterVersionAtLeast reports whether the cluster runs at least the given
+// Redpanda version, based on the first broker that reports one.
+func checkClusterVersionAtLeast(ctx context.Context, redpandaCl redpandafactory.AdminAPIClient, minVersion redpanda.Version) bool {
 	brokers, err := redpandaCl.Brokers(ctx)
 	if err != nil {
 		return false
@@ -61,7 +68,7 @@ func checkShadowLinkSchemaRegistrySyncSupport(ctx context.Context, redpandaCl re
 			continue
 		}
 		version, err := redpanda.VersionFromString(broker.Version)
-		return err == nil && version.IsAtLeast(shadowLinkSchemaRegistrySyncMinVersion)
+		return err == nil && version.IsAtLeast(minVersion)
 	}
 
 	return false
@@ -100,7 +107,9 @@ func (*Service) checkRedpandaFeature(ctx context.Context, redpandaCl redpandafac
 		}
 		return true
 	case redpandaFeatureShadowLinkSchemaRegistrySync:
-		return checkShadowLinkSchemaRegistrySyncSupport(ctx, redpandaCl)
+		return checkClusterVersionAtLeast(ctx, redpandaCl, shadowLinkSchemaRegistrySyncMinVersion)
+	case redpandaFeatureShadowLinkRoleSync:
+		return checkClusterVersionAtLeast(ctx, redpandaCl, shadowLinkRoleSyncMinVersion)
 	case redpandaFeatureSchemaRegistryContexts:
 		cfg, err := redpandaCl.SingleKeyConfig(ctx, clusterConfigSchemaRegistryQualifiedSubjects)
 		if err != nil {

@@ -49,6 +49,8 @@ const baseFormValues: FormValues = {
   enableConsumerOffsetSync: false,
   consumersMode: 'all',
   consumers: [],
+  rolesMode: 'all',
+  roles: [],
   aclsMode: 'all',
   aclFilters: [],
   excludeDefault: false,

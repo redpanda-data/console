@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1alpha3;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// IcebergService is the public, read-only surface over the Datalake subsystem.
+// Here, we allow for basic health reporting for monitoring of the datalake
+// system. e.g., Iceberg catalog connectivity, per-partition translation and
+// catalog commit lag, etc.
+service IcebergService {
+  // Reports Iceberg catalog reachability and, for every Iceberg topic, the
+  // per-partition translated/committed offsets and commit lag. Translation
+  // lag (live-log high watermark minus the translated offset) is a
+  // client-side join with the Kafka API and is not returned here.
+  rpc GetIcebergStatus(GetIcebergStatusRequest) returns (GetIcebergStatusResponse) {
+    option (google.api.http) = {get: "/v1alpha3/iceberg/status"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Iceberg Status"
+      description: "Get Iceberg Status. Optional: filter based on topic names."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1alpha3.GetIcebergStatusResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}
+
+message GetIcebergStatusRequest {
+  // Names of Iceberg topics to report on. If empty, returns all Iceberg
+  // topics known to the coordinator.
+  repeated string topics_filter = 1;
+}
+
+message GetIcebergStatusResponse {
+  CatalogHealth catalog = 1;
+  repeated TopicIcebergStatus topics = 2;
+}
+
+// CatalogHealth reports whether the Iceberg catalog is reachable. On failure,
+// error_code is the iceberg::catalog_errc enum name (e.g. "io_error",
+// "timedout") and error_message is a human-readable diagnostic.
+message CatalogHealth {
+  bool reachable = 1;
+  string error_code = 2;
+  string error_message = 3;
+}
+
+// IcebergLifecycleState mirrors the coordinator's per-topic lifecycle. Named
+// distinctly from the internal DatalakeService's LifecycleState because both
+// generate into the proto::admin C++ namespace.
+enum IcebergLifecycleState {
+  ICEBERG_LIFECYCLE_STATE_UNSPECIFIED = 0;
+  ICEBERG_LIFECYCLE_STATE_LIVE = 1;
+  ICEBERG_LIFECYCLE_STATE_CLOSED = 2;
+  ICEBERG_LIFECYCLE_STATE_PURGED = 3;
+}
+
+message TopicIcebergStatus {
+  string topic = 1;
+  IcebergLifecycleState lifecycle_state = 2;
+  repeated PartitionIcebergStatus partitions = 3;
+}
+
+message PartitionIcebergStatus {
+  int32 partition = 1;
+  // Highest Kafka offset written to Parquet (inclusive). Unset if nothing
+  // has been translated yet.
+  optional int64 last_translated_offset = 2;
+  // Last Kafka offset committed to the Iceberg catalog. Unset if nothing has
+  // been committed yet.
+  optional int64 last_committed_offset = 3;
+  // Number of records written to Parquet but not yet committed to the
+  // catalog.
+  int64 commit_lag = 4;
+}

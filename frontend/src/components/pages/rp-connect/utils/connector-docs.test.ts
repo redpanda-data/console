@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { getConnectorDocsUrl } from './connector-docs';
+import { getConnectorDocsUrl, getNodeDocsUrl } from './connector-docs';
 
 describe('getConnectorDocsUrl', () => {
   it('builds correct URL for input connectors', () => {
@@ -55,5 +55,41 @@ describe('getConnectorDocsUrl', () => {
 
   it('returns undefined for empty section', () => {
     expect(getConnectorDocsUrl('', 'kafka')).toBeUndefined();
+  });
+});
+
+describe('getNodeDocsUrl', () => {
+  it('links a component node through its section', () => {
+    expect(getNodeDocsUrl({ kind: 'leaf', label: 'kafka_franz', section: 'input' })).toBe(
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/kafka_franz/'
+    );
+  });
+
+  it('links a container group, which is a component too', () => {
+    expect(getNodeDocsUrl({ kind: 'group', label: 'switch', section: 'processor' })).toBe(
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/switch/'
+    );
+  });
+
+  it('links a resource node through the *_resources key it was defined under', () => {
+    expect(getNodeDocsUrl({ kind: 'leaf', label: 'memory', section: 'resource', resourceKey: 'cache_resources' })).toBe(
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/caches/memory/'
+    );
+    expect(
+      getNodeDocsUrl({ kind: 'leaf', label: 'local', section: 'resource', resourceKey: 'rate_limit_resources' })
+    ).toBe('https://docs.redpanda.com/cloud-data-platform/develop/connect/components/rate_limits/local/');
+  });
+
+  it('returns undefined for structural nodes that name no component', () => {
+    expect(getNodeDocsUrl({ kind: 'section', label: 'input', section: 'input' })).toBeUndefined();
+    expect(getNodeDocsUrl({ kind: 'group', label: 'case 1', section: 'processor', isCase: true })).toBeUndefined();
+    expect(getNodeDocsUrl({ kind: 'leaf', label: 'none', section: 'output' })).toBeUndefined();
+  });
+
+  it('returns undefined for resource nodes labelled by their YAML key, not an implementation', () => {
+    expect(getNodeDocsUrl({ kind: 'leaf', label: 'buffer', section: 'resource' })).toBeUndefined();
+    expect(
+      getNodeDocsUrl({ kind: 'leaf', label: 'cache_resources', section: 'resource', resourceKey: 'cache_resources' })
+    ).toBeUndefined();
   });
 });

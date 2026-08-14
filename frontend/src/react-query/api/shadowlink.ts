@@ -73,6 +73,7 @@ import type {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useCallback, useMemo } from 'react';
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
   useControlplaneDeleteShadowLinkMutation,
@@ -412,6 +413,10 @@ export const useEditShadowLink = (
   const dataplaneUpdate = useUpdateShadowLinkMutation();
   const controlplaneUpdate = useControlplaneUpdateShadowLinkMutation();
 
+  // Role sync needs Redpanda >= 26.2.0 (fails closed); on older clusters the
+  // update request must not carry role sync options at all.
+  const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
+
   // Build form values based on data source
   const formValues = useMemo((): FormValues | undefined => {
     if (embedded && controlplaneShadowLink) {
@@ -434,12 +439,21 @@ export const useEditShadowLink = (
       }
       if (shadowLink) {
         // Use dataplane API with name
-        const request = buildDataplaneUpdateRequest(name, values, shadowLink);
+        const request = buildDataplaneUpdateRequest(name, values, shadowLink, { roleSyncSupported });
         return dataplaneUpdate.mutateAsync(request);
       }
       return Promise.reject(new Error('No shadow link data available for update'));
     },
-    [embedded, shadowLinkId, controlplaneShadowLink, shadowLink, name, controlplaneUpdate, dataplaneUpdate]
+    [
+      embedded,
+      shadowLinkId,
+      controlplaneShadowLink,
+      shadowLink,
+      name,
+      controlplaneUpdate,
+      dataplaneUpdate,
+      roleSyncSupported,
+    ]
   );
 
   // Check if data is available based on mode

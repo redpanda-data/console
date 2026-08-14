@@ -36,6 +36,16 @@ function loginHandling(): JSX.Element | null {
     return null; // already in login process, don't interrupt!
   }
 
+  // These pages handle license state themselves and must render even if the
+  // triggering license-expired error left `userData` stuck at `undefined`
+  // (e.g. the very first request, such as getIdentity, fails with
+  // FailedPrecondition/REASON_ENTERPRISE_LICENSE_EXPIRED). Without this bypass
+  // the user gets redirected here but sees a blank preLogin screen forever,
+  // since userData never changes to trigger a re-render.
+  if (path.startsWith('/trial-expired') || path.startsWith('/upload-license')) {
+    return null;
+  }
+
   if (api.userData === null && !path.startsWith('/login')) {
     devPrint('known not logged in, hard redirect');
     window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
@@ -76,6 +86,10 @@ const RequireAuth = ({ children }: { children: ReactNode }) => {
   // Subscribe to the API store so this component re-renders when userData changes
   // (e.g. from undefined -> null when not authenticated, triggering the login redirect)
   useApiStoreHook((s) => s.userData); // re-render when userData changes
+  // userDataError can change while userData stays undefined (transient error branch
+  // in refreshUserData's catch); without this, loginHandling never re-runs and the
+  // preLogin placeholder is shown forever instead of ConnectionErrorUI.
+  useApiStoreHook((s) => s.userDataError);
 
   const r = loginHandling(); // Complete login, or fetch user if needed
   if (r) {
