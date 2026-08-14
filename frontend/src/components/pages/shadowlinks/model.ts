@@ -128,6 +128,13 @@ export type UnifiedConsumerOffsetSyncOptions = {
 };
 
 /**
+ * Plain TypeScript role sync options interface
+ */
+export type UnifiedRoleSyncOptions = {
+  roleNameFilters: UnifiedNameFilter[];
+};
+
+/**
  * Plain TypeScript security sync options interface
  */
 export type UnifiedSecuritySyncOptions = {
@@ -193,6 +200,8 @@ export type UnifiedShadowLinkConfigurations = {
   clientOptions?: UnifiedClientOptions;
   topicMetadataSyncOptions?: UnifiedTopicMetadataSyncOptions;
   consumerOffsetSyncOptions?: UnifiedConsumerOffsetSyncOptions;
+  /** undefined = not configured, or the source API does not expose role sync (controlplane) */
+  roleSyncOptions?: UnifiedRoleSyncOptions;
   securitySyncOptions?: UnifiedSecuritySyncOptions;
   schemaRegistrySyncOptions?: UnifiedSchemaRegistrySyncOptions;
 };

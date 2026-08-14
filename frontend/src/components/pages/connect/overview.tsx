@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Box, DataTable, Stack, Tooltip } from '@redpanda-data/ui';
+import { Box, DataTable, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link } from 'components/redpanda-ui/components/typography';
@@ -29,7 +29,7 @@ import {
   TaskState,
   TasksColumn,
 } from './helper';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../config';
+import { isEmbedded, isServerless } from '../../../config';
 import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
@@ -141,7 +141,8 @@ class KafkaConnectOverview extends PageComponent<{
   }
 
   render() {
-    if (isFeatureFlagEnabled('enableRpcnTiles') && isEmbedded()) {
+    // Cloud gets the new list; self-hosted keeps the tabs below.
+    if (isEmbedded()) {
       return <PipelineListPage />;
     }
     if (this.props.isLoadingKafkaConnectors) {
@@ -486,13 +487,13 @@ export const TabKafkaConnect = (_p: {}) => {
   }
 
   return (
-    <Stack spacing={3}>
+    <div className="flex flex-col gap-3">
       <OverviewStatisticsCard />
 
       <Section>
         <Tabs onChange={() => settings.selectedTab} selectedTabKey={settings.selectedTab} tabs={connectTabs} />
       </Section>
-    </Stack>
+    </div>
   );
 };
 

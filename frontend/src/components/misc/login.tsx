@@ -37,10 +37,10 @@ import {
   TextDivider,
 } from '@redpanda-data/ui';
 import { useLocation } from '@tanstack/react-router';
+import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { useEffect, useState } from 'react';
 
 import { SingleSelect } from './select';
-import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
 import { config as appConfig } from '../../config';
 import {
   AuthenticationMethod,
@@ -250,7 +250,7 @@ const LoginPage = () => {
       </Modal>
       <Box flex="8" minWidth="400px">
         <Container maxWidth="350px" mt={50}>
-          <img alt="Redpanda Console Logo" src={SvgLogo} style={{ height: '30px' }} />
+          <RedpandaLogo style={{ color: '#121827', height: '30px' }} />
           <Spacer height={10} />
           <Heading as="h1" size="lg">
             Log in

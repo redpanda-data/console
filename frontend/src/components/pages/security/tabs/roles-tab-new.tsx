@@ -46,7 +46,6 @@ import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
-  ListLayoutPagination,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -267,7 +266,7 @@ export const RolesTabNew: FC = () => {
   return (
     <>
       <SecurityTabsNav />
-      <ListLayout className="my-4">
+      <ListLayout className="my-4 min-h-0">
         <div className="text-muted-foreground text-sm sm:text-base">
           <NullFallbackBoundary>
             <div className="mb-4">
@@ -325,9 +324,7 @@ export const RolesTabNew: FC = () => {
           </Table>
         </ListLayoutContent>
 
-        <ListLayoutPagination>
-          <DataTablePagination table={table} />
-        </ListLayoutPagination>
+        <DataTablePagination table={table} />
       </ListLayout>
       <RoleCreateDialog onOpenChange={setCreateDialogOpen} open={createDialogOpen} />
     </>

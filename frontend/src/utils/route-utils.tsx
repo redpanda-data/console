@@ -23,7 +23,6 @@ import {
   ActivityIcon,
   AIIcon,
   BeakerIcon,
-  BookOpenIcon,
   CollectionIcon,
   CubeIcon,
   FilterIcon,
@@ -33,16 +32,13 @@ import {
   ScaleIcon,
   ShieldCheckIcon,
   ShieldIcon,
-  UserCircleIcon,
 } from '../components/icons';
-import { MCPIcon } from '../components/redpanda-ui/components/icons';
-import { isAdpEnabled, isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
 import { api } from '../state/backend-api';
 import { Feature, isSupported, shouldHideIfNotSupported } from '../state/supported-features';
 
 const SidebarSection = {
   STREAMING: 'Streaming',
-  AGENTIC: 'Agentic',
   PLATFORM: 'Platform',
 } as const;
 
@@ -307,38 +303,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       return true;
     }),
   },
-  // --- Agentic ---
-  {
-    path: '/mcp-servers',
-    title: 'Remote MCP',
-    icon: MCPIcon,
-    group: SidebarSection.AGENTIC,
-    visibilityCheck: routeVisibility(() => isEmbedded() && isFeatureFlagEnabled('enableRemoteMcpInConsole')),
-  },
-  {
-    path: '/agents',
-    title: 'AI Agents',
-    icon: UserCircleIcon,
-    group: SidebarSection.AGENTIC,
-    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled()),
-  },
-  {
-    path: '/knowledgebases',
-    title: 'Knowledge Bases',
-    icon: BookOpenIcon,
-    group: SidebarSection.AGENTIC,
-    visibilityCheck: routeVisibility(
-      () => isAdpEnabled() && isFeatureFlagEnabled('enableKnowledgeBaseInConsoleUi'),
-      [Feature.PipelineService]
-    ),
-  },
-  {
-    path: '/transcripts',
-    title: 'Transcripts',
-    icon: ActivityIcon,
-    group: SidebarSection.AGENTIC,
-    visibilityCheck: routeVisibility(() => isEmbedded() && isAdpEnabled(), [Feature.TracingService]),
-  },
   // --- Platform ---
   {
     path: '/secrets',
@@ -407,10 +371,10 @@ export function createVisibleSidebarItems(): NavLinkProps[] {
 
 export type SidebarGroupedItems = { group: string; items: NavLinkProps[] };
 
-const SECTION_ORDER = [SidebarSection.STREAMING, SidebarSection.AGENTIC, SidebarSection.PLATFORM];
+const SECTION_ORDER = [SidebarSection.STREAMING, SidebarSection.PLATFORM];
 
 /**
- * Creates sidebar items grouped by section (Streaming, Agentic, Platform).
+ * Creates sidebar items grouped by section.
  * Filters invisible items and omits empty groups.
  */
 export function createGroupedSidebarItems(): SidebarGroupedItems[] {

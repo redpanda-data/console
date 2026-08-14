@@ -13,9 +13,13 @@ import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
 // Helper function to get filter label from pattern and filter type
-export const getFilterTypeLabel = (patternType: PatternType, filterType: FilterType): string => {
+export const getFilterTypeLabel = (
+  patternType: PatternType,
+  filterType: FilterType,
+  resourceType = 'topics'
+): string => {
   if (patternType === PatternType.LITERAL && filterType === FilterType.INCLUDE) {
-    return 'Include specific topics';
+    return `Include specific ${resourceType}`;
   }
   if (patternType === PatternType.PREFIX && filterType === FilterType.INCLUDE) {
     return 'Include starting with';
@@ -26,7 +30,7 @@ export const getFilterTypeLabel = (patternType: PatternType, filterType: FilterT
   if (patternType === PatternType.PREFIX && filterType === FilterType.EXCLUDE) {
     return 'Exclude starting with';
   }
-  return 'Include specific topics';
+  return `Include specific ${resourceType}`;
 };
 
 // Helper functions to convert ACL enum values to readable labels

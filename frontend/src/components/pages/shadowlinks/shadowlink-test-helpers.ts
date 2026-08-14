@@ -16,21 +16,40 @@ import { Feature, useSupportedFeaturesStore } from 'state/supported-features';
 
 /**
  * Seed the real supported-features store the way the app does at boot, so the
- * Schema Registry sync gate exercises the actual endpoint-compatibility
- * fail-closed logic instead of a mock: a supported endpoint opens the gate,
+ * shadow link feature gates exercise the actual endpoint-compatibility
+ * fail-closed logic instead of a mock: a supported endpoint opens its gate,
  * anything else (unsupported, absent, or a never-loaded null store) closes it.
+ *
+ * setEndpointCompatibility replaces the whole endpoints array, so seed every
+ * gate a test needs in one call — sequential per-gate calls would clobber
+ * each other.
  */
-export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
+export const setShadowLinkGatesSupported = ({
+  schemaRegistrySync = false,
+  roleSync = false,
+}: {
+  schemaRegistrySync?: boolean;
+  roleSync?: boolean;
+}) => {
   useSupportedFeaturesStore.getState().setEndpointCompatibility({
     kafkaVersion: 'v26.2.0',
     endpoints: [
       {
         endpoint: Feature.ShadowLinkSchemaRegistrySync.endpoint,
         method: Feature.ShadowLinkSchemaRegistrySync.method,
-        isSupported,
+        isSupported: schemaRegistrySync,
+      },
+      {
+        endpoint: Feature.ShadowLinkRoleSync.endpoint,
+        method: Feature.ShadowLinkRoleSync.method,
+        isSupported: roleSync,
       },
     ],
   });
+};
+
+export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
+  setShadowLinkGatesSupported({ schemaRegistrySync: isSupported });
 };
 
 /**
@@ -536,7 +555,7 @@ export const addACLFilterCreate = async (
     expect(scr.getByTestId('acls-specify-tab')).toBeInTheDocument();
   });
 
-  // Switch to specify mode
+  // Switch to specify mode (auto-expands the card and seeds an empty filter)
   const aclsSpecifyTab = scr.getByTestId('acls-specify-tab');
   await user.click(aclsSpecifyTab);
 
@@ -544,9 +563,11 @@ export const addACLFilterCreate = async (
     expect(scr.getByTestId('add-acl-filter-button')).toBeInTheDocument();
   });
 
-  // Add an ACL filter
-  const addAclFilterButton = scr.getByTestId('add-acl-filter-button');
-  await user.click(addAclFilterButton);
+  // Only add a filter when the mode switch did not seed one already
+  if (!scr.queryByTestId('acl-filter-0-principal')) {
+    const addAclFilterButton = scr.getByTestId('add-acl-filter-button');
+    await user.click(addAclFilterButton);
+  }
 
   await waitFor(() => {
     expect(scr.getByTestId('acl-filter-0-principal')).toBeInTheDocument();
@@ -554,6 +575,30 @@ export const addACLFilterCreate = async (
 
   const aclPrincipalInput = scr.getByTestId('acl-filter-0-principal');
   await user.type(aclPrincipalInput, principal);
+};
+
+/**
+ * Add a role filter (create form - without tab navigation)
+ */
+export const addRoleFilterCreate = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  name: string
+) => {
+  await waitFor(() => {
+    expect(scr.getByTestId('roles-specify-tab')).toBeInTheDocument();
+  });
+
+  // Switch to specify mode (auto-expands the card and seeds an empty filter)
+  const rolesSpecifyTab = scr.getByTestId('roles-specify-tab');
+  await user.click(rolesSpecifyTab);
+
+  await waitFor(() => {
+    expect(scr.getByTestId('role-filter-0-name')).toBeInTheDocument();
+  });
+
+  const roleFilterInput = scr.getByTestId('role-filter-0-name');
+  await user.type(roleFilterInput, name);
 };
 
 /**

@@ -37,10 +37,6 @@ export const docsLinks = {
     outputKafkaFranz: `${DOCS_ROOT}/connect/components/outputs/kafka_franz/`,
     redpandaComponent: `${DOCS_ROOT}/connect/components/redpanda/about/`,
   },
-  /** Agentic Data Plane (`/agentic-data-plane`). */
-  agentic: {
-    monitor: `${DOCS_ROOT}/agentic-data-plane/monitor/`,
-  },
   /** Self-Managed Redpanda and Console (`/streaming/current`). */
   selfManaged: {
     home: `${DOCS_ROOT}/streaming/current/home/`,

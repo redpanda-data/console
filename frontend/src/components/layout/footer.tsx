@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useLocation, useMatchRoute } from '@tanstack/react-router';
 import { GitHubIcon, SlackIcon, TwitterIcon } from 'components/icons';
 
 import { isEmbedded } from '../../config';
@@ -54,19 +53,8 @@ export const VersionInfo = () => {
   );
 };
 
+// Bottom placement is CSS: `.footer` has `margin-top: auto` inside #mainLayout's flex column.
 export const AppFooter = () => {
-  const location = useLocation();
-  const matchRoute = useMatchRoute();
-  const isAgentPage = matchRoute({ to: '/agents/$id' });
-
-  // Hide footer on AI agent inspector tab
-  if (isAgentPage) {
-    const searchParams = new URLSearchParams(location.searchStr ?? '');
-    if (searchParams.get('tab') === 'inspector') {
-      return null;
-    }
-  }
-
   const gitHub = (link: string, title: string) => (
     <>
       <a href={link} rel="noopener noreferrer" target="_blank" title={title}>

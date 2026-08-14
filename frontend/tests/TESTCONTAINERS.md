@@ -83,7 +83,7 @@ All containers run on a shared Docker network created by testcontainers:
 - License file sourced from: `console-enterprise/frontend/tests/config/redpanda.license`
 
 ### Setup Script
-**`tests/global-setup.mjs`**:
+**`tests/shared/global-setup.mjs`**:
 1. **Build Phase**:
    - Detects OSS vs Enterprise mode from test config
    - **Copies frontend build assets** from `console/frontend/build/` to backend's `pkg/embed/frontend/`:
@@ -111,13 +111,15 @@ All containers run on a shared Docker network created by testcontainers:
 4. **State Management**:
    - Saves container IDs to `.testcontainers-state.json` (OSS) or `.testcontainers-state-enterprise.json` (Enterprise)
 
-### Teardown Script
-**`tests/global-teardown.mjs`**:
-- Reads container IDs from state file
-- Stops backend container
-- Stops Redpanda, OwlShop, Connect containers
-- Removes Docker network
-- Cleans up state file
+### Teardown
+**`tests/shared/global-setup.mjs`** returns the normal teardown:
+- Stops every tracked container in parallel through live Testcontainers handles
+- Removes the Docker network and temporary license directories
+- Cleans up the state file
+
+**`tests/shared/global-teardown.mjs`** is the manual crash-recovery fallback. It
+reads the serialized state left by an interrupted process and removes every
+recorded resource.
 
 ## Benefits
 

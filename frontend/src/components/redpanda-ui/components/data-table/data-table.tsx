@@ -25,12 +25,19 @@ import { Loader2 } from 'lucide-react';
 import React from 'react';
 
 import { Checkbox } from '../checkbox';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '../table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../table';
+import { useLayoutEffect } from '../../lib/use-layout-effect';
 import { cn } from '../../lib/utils';
 
+import { DataTablePagination } from './data-table-pagination';
 import { createInitialState, type DataTableInitialConfig, dataTableReducer } from './data-table-reducer';
-import { deriveDisplayState, resolvePaginationMode, resolveSortingMode } from './data-table-utils';
-import { DataTablePagination } from './index';
+import {
+  deriveDisplayState,
+  isRowActivationClick,
+  resolvePageDisplayState,
+  resolvePaginationMode,
+  resolveSortingMode,
+} from './data-table-utils';
 
 export type DataTableClassNames = {
   root?: string;
@@ -152,7 +159,7 @@ export function DataTable<TData>({
   tableOptions: tableOptionsProp,
   className,
   testId,
-  // Destructure discriminated-union props explicitly: TS can't narrow intersected unions in the body, so this keeps renames compile-checked.
+  // The union props are destructured explicitly — TS can't narrow intersected unions in the body.
   pagination: paginationProp,
   onPaginationChange: onPaginationChangeProp,
   defaultPageSize: defaultPageSizeProp,
@@ -171,7 +178,6 @@ export function DataTable<TData>({
 
   const [state, dispatch] = React.useReducer(dataTableReducer, initialConfig, createInitialState);
 
-  // Controlled state wins over internal reducer state when provided.
   const effectivePagination = paginationMode.controlledState ?? state.pagination;
   const effectiveSorting = sortingMode.controlledState ?? state.sorting;
   const effectiveRowSelection = rowSelectionProp ?? state.rowSelection;
@@ -293,14 +299,37 @@ export function DataTable<TData>({
 
   const table = useReactTable(options);
   const rows = table.getRowModel().rows;
-  const displayState = deriveDisplayState(rows.length, isLoading);
+  const filteredRowCount = table.getFilteredRowModel().rows.length;
   const totalColumns = table.getVisibleFlatColumns().length;
+
+  // autoResetPageIndex is off, so a shrinking filtered set can strand the user past the last page.
+  // Only clamp when getPageCount() is trustworthy: under manualPagination without pageCount/rowCount
+  // it is derived from the current page and would fight the consumer's controlled state.
+  const pageCount = table.getPageCount();
+  const pageIndex = effectivePagination.pageIndex;
+  const pageCountIsKnown =
+    !table.options.manualPagination || table.options.pageCount !== undefined || table.options.rowCount !== undefined;
+  const clampPending = paginationMode.enabled && pageCountIsKnown && pageCount > 0 && pageIndex >= pageCount;
+  // Layout, not passive: a post-paint clamp flashes a body holding neither rows nor a state.
+  useLayoutEffect(() => {
+    if (clampPending && !isLoading) {
+      table.setPageIndex(pageCount - 1);
+    }
+  }, [clampPending, isLoading, pageCount, table]);
+
+  // Layered on the clamp, not replaced by it: the clamp only beats paint when it applies
+  // synchronously, and it never runs while isLoading or when onPaginationChange is async.
+  const displayState = resolvePageDisplayState(
+    deriveDisplayState(filteredRowCount, isLoading),
+    rows.length,
+    clampPending
+  );
 
   const toolbarContent = typeof toolbar === 'function' ? toolbar(table) : toolbar;
 
   return (
     <div className={cn('flex flex-col gap-4', classNames?.root, className)} data-testid={testId}>
-      {toolbarContent && <div className={classNames?.toolbar}>{toolbarContent}</div>}
+      {toolbarContent ? <div className={classNames?.toolbar}>{toolbarContent}</div> : null}
 
       <Table className={classNames?.table} size={size} variant={variant}>
         <TableHeader className={classNames?.header}>
@@ -327,7 +356,7 @@ export function DataTable<TData>({
             </TableRow>
           )}
 
-          {displayState === 'empty' && (
+          {displayState === 'empty' ? (
             <TableRow>
               <TableCell className={cn('h-24', classNames?.empty)} colSpan={totalColumns}>
                 <div className="flex flex-col items-center justify-center gap-2">
@@ -336,50 +365,75 @@ export function DataTable<TData>({
                 </div>
               </TableCell>
             </TableRow>
-          )}
+          ) : null}
 
           {displayState === 'data' &&
-            rows.map((row) => (
-              <React.Fragment key={row.id}>
-                <TableRow
-                  className={cn(classNames?.row, rowClassName?.(row))}
-                  data-state={row.getIsSelected() && 'selected'}
-                  onClick={
-                    expandRowByClick
-                      ? () => row.getCanExpand() && row.toggleExpanded()
-                      : onRow
-                        ? () => onRow(row)
-                        : undefined
-                  }
-                  style={expandRowByClick || onRow ? { cursor: 'pointer' } : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell className={classNames?.cell} key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                {row.getIsExpanded() && subComponent && (
-                  <TableRow>
-                    <TableCell className="p-0" colSpan={row.getVisibleCells().length}>
-                      {subComponent({ row })}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </React.Fragment>
-            ))}
-        </TableBody>
+            rows.map((row) => {
+              const rowIsActivatable = expandRowByClick ? row.getCanExpand() : Boolean(onRow);
+              const activateRow = () => {
+                if (expandRowByClick) {
+                  row.toggleExpanded();
+                  return;
+                }
+                onRow?.(row);
+              };
 
-        {paginationMode.enabled && displayState === 'data' && (
-          <TableFooter className={classNames?.footer}>
-            <TableRow>
-              <TableCell className="p-0" colSpan={totalColumns}>
-                <DataTablePagination pageSizeOptions={pageSizeOptionsProp} table={table} />
-              </TableCell>
-            </TableRow>
-          </TableFooter>
-        )}
+              const handleClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
+                if (isRowActivationClick(event.target, event.currentTarget)) {
+                  activateRow();
+                }
+              };
+
+              const handleKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+                const isActivationKey = event.key === 'Enter' || event.key === ' ';
+                // `repeat` filters auto-repeat from a held key: one press is one activation.
+                if (!isActivationKey || event.repeat || event.target !== event.currentTarget) {
+                  return;
+                }
+                event.preventDefault();
+                activateRow();
+              };
+
+              return (
+                <React.Fragment key={row.id}>
+                  <TableRow
+                    aria-expanded={expandRowByClick && row.getCanExpand() ? row.getIsExpanded() : undefined}
+                    className={cn(
+                      // Outline, not ring: box-shadows don't paint on <tr> under border-collapse.
+                      rowIsActivatable &&
+                        'cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:-outline-offset-2',
+                      classNames?.row,
+                      rowClassName?.(row)
+                    )}
+                    data-state={row.getIsSelected() && 'selected'}
+                    onClick={rowIsActivatable ? handleClick : undefined}
+                    onKeyDown={rowIsActivatable ? handleKeyDown : undefined}
+                    tabIndex={rowIsActivatable ? 0 : undefined}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell className={classNames?.cell} key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {row.getIsExpanded() && subComponent && (
+                    <TableRow>
+                      <TableCell className="p-0" colSpan={row.getVisibleCells().length}>
+                        {subComponent({ row })}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
+              );
+            })}
+        </TableBody>
       </Table>
+
+      {paginationMode.enabled ? (
+        <div className={classNames?.footer}>
+          <DataTablePagination pageSizeOptions={pageSizeOptionsProp} table={table} />
+        </div>
+      ) : null}
     </div>
   );
 }

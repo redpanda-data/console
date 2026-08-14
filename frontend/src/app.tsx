@@ -93,23 +93,13 @@ declare module '@tanstack/react-router' {
   }
 
   // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
-  interface HistoryState {
-    // Knowledge base document details state
-    chunkId?: string;
-    topic?: string;
-    documentName?: string;
-    content?: string;
-    score?: number;
-  }
-
-  // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
   interface StaticDataRouteOption {
     /** Route title shown in the page header/breadcrumbs. */
     title?: string;
     /** Lucide icon for the route's sidebar entry. */
     icon?: LucideIcon;
-    /** Render the route with minimal chrome (no page header/footer/padding). */
-    fullscreen?: boolean;
+    /** Route has its own title bar: the app header shows only the breadcrumb row. */
+    breadcrumbOnlyHeader?: boolean;
   }
 }
 

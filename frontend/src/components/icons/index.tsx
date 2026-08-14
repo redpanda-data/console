@@ -46,7 +46,7 @@ export const LinkedInIcon = ({ size = 16, className }: { size?: number; classNam
 // Chevron/directional icons
 // Action/utility icons
 export {
-  Activity as ActivityIcon, // Activity (for Transcripts)
+  Activity as ActivityIcon,
   AlertCircle as AlertIcon, // MdOutlineError, MdOutlineErrorOutline, AiOutlineExclamationCircle, AlertIcon (Octicons)
   AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber, WarningIcon (Chakra)
   Archive as ArchiveIcon, // ArchiveIcon (Heroicons)

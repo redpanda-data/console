@@ -24,6 +24,7 @@ import {
   NameFilterSchema,
   PatternType,
   PlainConfigSchema,
+  RoleSyncOptionsSchema,
   type SchemaRegistrySyncOptions,
   SchemaRegistrySyncOptionsSchema,
   ScramConfigSchema,
@@ -51,6 +52,19 @@ import { buildDefaultFormValues } from '../mappers/dataplane';
  * Used when converting dataplane field masks to controlplane format
  */
 const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./;
+
+/**
+ * Wildcard filter meaning "sync everything" for the 'all' mode of a category.
+ * Must stay in sync with isAllNameFilter in the mappers, which round-trips
+ * this exact shape back to 'all' mode when hydrating the edit form.
+ */
+export const allNameFilter = [
+  create(NameFilterSchema, {
+    patternType: PatternType.LITERAL,
+    filterType: FilterType.INCLUDE,
+    name: '*',
+  }),
+];
 
 /**
  * Type for category update functions
@@ -306,14 +320,6 @@ export const getUpdateValuesForTopics = (
   }
 
   // Build topic metadata sync options
-  const allNameFilter = [
-    create(NameFilterSchema, {
-      patternType: PatternType.LITERAL,
-      filterType: FilterType.INCLUDE,
-      name: '*',
-    }),
-  ];
-
   const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
     autoCreateShadowTopicFilters:
       values.topicsMode === 'all'
@@ -361,14 +367,6 @@ export const getUpdateValuesForConsumerGroups = (
   }
 
   // Build consumer offset sync options
-  const allNameFilter = [
-    create(NameFilterSchema, {
-      patternType: PatternType.LITERAL,
-      filterType: FilterType.INCLUDE,
-      name: '*',
-    }),
-  ];
-
   const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
     groupFilters:
       values.consumersMode === 'all'
@@ -384,6 +382,51 @@ export const getUpdateValuesForConsumerGroups = (
 
   return {
     value: consumerOffsetSyncOptions,
+    fieldMaskPaths,
+  };
+};
+
+/**
+ * Get update values for roles category
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForRoles = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof RoleSyncOptionsSchema>>> => {
+  const fieldMaskPaths: string[] = [];
+
+  // Compare roles mode and filters
+  const roleFiltersChanged =
+    values.rolesMode !== originalValues.rolesMode ||
+    values.roles.length !== originalValues.roles.length ||
+    values.roles.some(
+      (role, idx) =>
+        role.name !== originalValues.roles[idx]?.name ||
+        role.patternType !== originalValues.roles[idx]?.patternType ||
+        role.filterType !== originalValues.roles[idx]?.filterType
+    );
+
+  if (roleFiltersChanged) {
+    fieldMaskPaths.push('configurations.role_sync_options');
+  }
+
+  // Build role sync options
+  const roleSyncOptions = create(RoleSyncOptionsSchema, {
+    roleNameFilters:
+      values.rolesMode === 'all'
+        ? allNameFilter
+        : values.roles.map((role) =>
+            create(NameFilterSchema, {
+              patternType: role.patternType,
+              filterType: role.filterType,
+              name: role.name,
+            })
+          ),
+  });
+
+  return {
+    value: roleSyncOptions,
     fieldMaskPaths,
   };
 };
@@ -507,6 +550,7 @@ export const buildControlplaneUpdateRequest = (
   originalValues: FormValues
 ) => {
   // Get update values from existing category functions (reuse the logic)
+  // Roles are skipped: the controlplane proto does not expose role sync yet
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
@@ -550,15 +594,31 @@ export const buildControlplaneUpdateRequest = (
  * Transform form values to UpdateShadowLinkRequest protobuf message (dataplane)
  * Only includes fields that have changed from the original shadow link
  */
-export const buildDataplaneUpdateRequest = (name: string, values: FormValues, originalShadowLink: ShadowLink) => {
+export const buildDataplaneUpdateRequest = (
+  name: string,
+  values: FormValues,
+  originalShadowLink: ShadowLink,
+  { roleSyncSupported }: { roleSyncSupported: boolean }
+) => {
   // Build original form values for comparison
   const originalValues = buildDefaultFormValues(originalShadowLink);
 
-  // Get update values for all categories
+  // Get update values for all categories. Roles are skipped entirely on
+  // clusters without role sync (Redpanda < 26.2.0): no value, no mask path.
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
+  const rolesUpdate = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
   const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
+
+  // No UI exposes interval/paused: round-trip them from the fetched link so
+  // the whole-message mask path doesn't unpause a paused role sync task or
+  // reset a custom interval
+  const originalRoleSyncOptions = originalShadowLink.configurations?.roleSyncOptions;
+  if (rolesUpdate && originalRoleSyncOptions) {
+    rolesUpdate.value.interval = originalRoleSyncOptions.interval;
+    rolesUpdate.value.paused = originalRoleSyncOptions.paused;
+  }
   const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
 
   // Build configurations with all category values
@@ -566,6 +626,7 @@ export const buildDataplaneUpdateRequest = (name: string, values: FormValues, or
     clientOptions: connectionUpdate.value,
     topicMetadataSyncOptions: topicsUpdate.value,
     consumerOffsetSyncOptions: consumerGroupsUpdate.value,
+    roleSyncOptions: rolesUpdate?.value,
     securitySyncOptions: aclsUpdate.value,
     schemaRegistrySyncOptions: schemaRegistryUpdate.value,
   });
@@ -582,6 +643,7 @@ export const buildDataplaneUpdateRequest = (name: string, values: FormValues, or
       ...connectionUpdate.fieldMaskPaths,
       ...topicsUpdate.fieldMaskPaths,
       ...consumerGroupsUpdate.fieldMaskPaths,
+      ...(rolesUpdate?.fieldMaskPaths ?? []),
       ...aclsUpdate.fieldMaskPaths,
       ...schemaRegistryUpdate.fieldMaskPaths,
     ],

@@ -71,10 +71,12 @@ import {
   addACLFilterCreate,
   addBootstrapServer,
   addConsumerFilterCreate,
+  addRoleFilterCreate,
   addTopicFilterCreate,
   enableTLS,
   navigateToConfigurationStep,
   setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
+  setShadowLinkGatesSupported,
 } from '../shadowlink-test-helpers';
 
 const pristineFeatureStoreState = useSupportedFeaturesStore.getState();
@@ -105,6 +107,7 @@ type CreateAction =
   | { type: 'addTopicFilterCreate'; name: string; options?: { patternType?: PatternType; filterType?: FilterType } }
   | { type: 'addConsumerFilterCreate'; name: string }
   | { type: 'addACLFilterCreate'; principal: string }
+  | { type: 'addRoleFilterCreate'; name: string }
   | { type: 'enableSchemaRegistrySync' };
 
 /**
@@ -239,6 +242,9 @@ const performCreateAction = async (
     case 'addACLFilterCreate':
       await addACLFilterCreate(user, scr, action.principal);
       break;
+    case 'addRoleFilterCreate':
+      await addRoleFilterCreate(user, scr, action.name);
+      break;
     case 'enableSchemaRegistrySync': {
       const schemaRegistrySwitch = scr.getByTestId('sr-enable-switch');
       await user.click(schemaRegistrySwitch);
@@ -282,6 +288,10 @@ const testCases: CreateTestCase[] = [
       exp(scramConfig.username).toBe('admin');
       exp(scramConfig.password).toBe('admin-secret');
       exp(scramConfig.scramMechanism).toBeDefined();
+      // Untouched roles default to all: a single wildcard include filter
+      exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toEqual([
+        exp.objectContaining({ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }),
+      ]);
     },
   },
   {
@@ -324,6 +334,41 @@ const testCases: CreateTestCase[] = [
       exp(topicFilter.name).toBe('topic-exact');
       exp(topicFilter.patternType).toBe(PatternType.LITERAL);
       exp(topicFilter.filterType).toBe(FilterType.INCLUDE);
+    },
+  },
+  {
+    description: 'creates shadow link with role filters',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'addRoleFilterCreate', name: 'my-role' },
+    ],
+    verify: (createRequest, exp) => {
+      exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toHaveLength(1);
+      const roleFilter = createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters[0];
+      exp(roleFilter.name).toBe('my-role');
+      exp(roleFilter.patternType).toBe(PatternType.LITERAL);
+      exp(roleFilter.filterType).toBe(FilterType.INCLUDE);
+    },
+  },
+  {
+    description: 'creates shadow link with a specific ACL filter',
+    actions: [
+      { type: 'fillName', value: 'test-shadow-link' },
+      { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+      { type: 'fillScramUsername', value: 'admin' },
+      { type: 'fillScramPassword', value: 'admin-secret' },
+      { type: 'navigateToConfiguration' },
+      { type: 'addACLFilterCreate', principal: 'User:alice' },
+    ],
+    verify: (createRequest, exp) => {
+      // Specify mode must send the user's filter, not the match-all one
+      exp(createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters).toHaveLength(1);
+      const aclFilter = createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters[0];
+      exp(aclFilter.accessFilter?.principal).toBe('User:alice');
     },
   },
   {
@@ -423,8 +468,9 @@ describe('ShadowLinkCreatePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Gate closed: these cases exercise the legacy Schema Registry switch.
-    seedSchemaRegistrySyncGate(false);
+    // SR gate closed: these cases exercise the legacy Schema Registry switch.
+    // Role gate open: the roles card and its default-all payload need >= 26.2.0.
+    setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: true });
 
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
 
@@ -496,6 +542,49 @@ describe('ShadowLinkCreatePage', () => {
     // late RHF/router re-render of the still-mounted form fields. Await the
     // settled side effect so any final update is flushed inside act() before
     // the test ends.
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    });
+  });
+
+  test('hides the roles card and omits role sync options when the cluster does not support role sync', async () => {
+    setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: false });
+
+    const user = userEvent.setup();
+
+    renderCreatePage();
+
+    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
+
+    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
+    await performCreateAction(user, screen, {
+      type: 'fillBootstrapServer',
+      index: 0,
+      value: 'server1.example.com:9092',
+    });
+    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
+    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
+    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+
+    // The whole roles card is gated out
+    expect(screen.queryByTestId('roles-all-tab')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
+
+    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
+    await user.click(createButton);
+
+    await waitFor(
+      () => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 5000 }
+    );
+
+    // Not even the default include-all filter may be sent to a cluster
+    // that predates role sync
+    const createRequest = mockMutateAsync.mock.calls[0][0];
+    expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
+
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith('Shadow link created');
     });

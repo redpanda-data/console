@@ -11,6 +11,7 @@
 
 import { AclsStep } from './acls-step';
 import { ConsumerOffsetStep } from './consumer-offset-step';
+import { RolesStep } from './roles-step';
 import { SchemaRegistryStep } from './schema-registry-step';
 import { TopicsStep } from './topics-step';
 
@@ -18,6 +19,7 @@ export const ConfigurationStep = () => (
   <div className="space-y-4">
     <TopicsStep />
     <AclsStep />
+    <RolesStep />
     <ConsumerOffsetStep />
     <SchemaRegistryStep />
   </div>
