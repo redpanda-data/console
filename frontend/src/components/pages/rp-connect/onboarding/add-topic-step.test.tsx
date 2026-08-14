@@ -19,28 +19,13 @@ import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicServi
 import type { ComponentProps } from 'react';
 import { useRef } from 'react';
 import { render, screen, waitFor } from 'test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
 
-// 1. Mock config module with a controllable fetch
-const mockFetch = vi.fn();
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
-  return {
-    ...actual,
-    config: {
-      ...actual.config,
-      jwt: 'test-jwt',
-      restBasePath: '/api',
-      fetch: (...args: unknown[]) => mockFetch(...args),
-    },
-  };
-});
-
-// 2. Mock backend-api (used by useCreateTopicMutation onSuccess + useTopicConfigQuery)
+// 1. Mock backend-api (used by useCreateTopicMutation onSuccess + useTopicConfigQuery)
 vi.mock('state/backend-api', () => ({
   api: {
     refreshTopics: vi.fn(() => Promise.resolve()),
@@ -49,12 +34,12 @@ vi.mock('state/backend-api', () => ({
   },
 }));
 
-// 3. Mock AdvancedTopicSettings sub-component (not under test)
+// 2. Mock AdvancedTopicSettings sub-component (not under test)
 vi.mock('./advanced-topic-settings', () => ({
   AdvancedTopicSettings: () => <div data-testid="advanced-topic-settings" />,
 }));
 
-// 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
+// 3. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
 Element.prototype.scrollIntoView = vi.fn();
 
 // Import component after mocks
@@ -111,10 +96,6 @@ function TestHarness({ onResult, ...props }: HarnessProps) {
 // ── Tests ──────────────────────────────────────────────────────────────
 
 describe('AddTopicStep', () => {
-  beforeEach(() => {
-    mockFetch.mockReset();
-  });
-
   it('existing topic returns name via triggerSubmit', async () => {
     const user = userEvent.setup();
 
