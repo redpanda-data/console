@@ -83,6 +83,8 @@ import { isModifiedClick } from 'utils/mouse-events';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { parseConfigComponentsCached } from './config-components-cache';
+import { DeleteDraftDialog } from './delete-draft-dialog';
+import { areDraftsEnabled, DRAFT_BADGE_TOOLTIP, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
 import {
   aggregateConnectors,
   countPipelinesPerTab,
@@ -90,7 +92,9 @@ import {
   PIPELINE_STATE_TABS,
   type PipelineStateTabId,
   pipelineListEmptyText,
+  stateFilterValues,
 } from './list-utils';
+import { useStartDraft } from './use-start-draft';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
@@ -104,6 +108,11 @@ type Pipeline = {
   inputs: string[];
   outputs: string[];
   tags: TagPair[];
+  /** Saved but never deployed. Its configuration may not even be valid yet. */
+  isDraft: boolean;
+  /** Epoch ms of the last edit, for the "edited 5m ago" line on a draft. */
+  editedAt: number | null;
+  createdBy: string;
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
@@ -117,6 +126,9 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     inputs,
     outputs,
     tags,
+    isDraft: isDraft(apiPipeline),
+    editedAt: timestampToMillis(apiPipeline.updateTime),
+    createdBy: apiPipeline.createdBy,
   };
 };
 
@@ -163,6 +175,7 @@ const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> =
   [Pipeline_State.ERROR]: 'error',
   [Pipeline_State.RUNNING]: 'success',
   [Pipeline_State.UNSPECIFIED]: 'disabled',
+  [Pipeline_State.DRAFT]: 'disabled',
 };
 
 // autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
@@ -170,18 +183,28 @@ const stateInFilterFn: FilterFn<Pipeline> = (row, columnId, filterValue: string[
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-// Problems and transitions first, idle last.
+// Problems and transitions first, idle last. Drafts lead — they're the rows with work still owed.
 const pipelineStateSortPriority: Record<Pipeline_State, number> = {
-  [Pipeline_State.ERROR]: 0,
-  [Pipeline_State.STARTING]: 1,
-  [Pipeline_State.STOPPING]: 2,
-  [Pipeline_State.RUNNING]: 3,
-  [Pipeline_State.COMPLETED]: 4,
-  [Pipeline_State.STOPPED]: 5,
-  [Pipeline_State.UNSPECIFIED]: 6,
+  [Pipeline_State.DRAFT]: 0,
+  [Pipeline_State.ERROR]: 1,
+  [Pipeline_State.STARTING]: 2,
+  [Pipeline_State.STOPPING]: 3,
+  [Pipeline_State.RUNNING]: 4,
+  [Pipeline_State.COMPLETED]: 5,
+  [Pipeline_State.STOPPED]: 6,
+  [Pipeline_State.UNSPECIFIED]: 7,
 };
 
+const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.state] ?? Number.MAX_SAFE_INTEGER;
+
+/** Every row opens its own page; a draft's page is the editor's view of unfinished work. */
+const editorLinkProps = (row: Pipeline) =>
+  ({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(row.id) } }) as const;
+
 const PAGE_SIZE = 20;
+
+// Module scope keeps the request object identity stable, which the query hook memoizes on.
+const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
 // One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
 // reader announces "tab, 1 of 4" with nowhere to move into.
@@ -289,11 +312,15 @@ type ActionsCellProps = {
 
 const ActionsCell = memo(
   ({ pipeline, navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline }: ActionsCellProps) => {
-    const canStart = (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
-    const canStop = (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+    const isDraftRow = pipeline.isDraft;
+    const canStart = !isDraftRow && (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+    const canStop = !isDraftRow && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
     const isStarting = pipeline.state === Pipeline_State.STARTING;
     const isStopping = pipeline.state === Pipeline_State.STOPPING;
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    // Starting a draft validates a config that has never been checked, so a refusal has to land in the
+    // editor rather than in a toast on this row.
+    const { startDraft, isStartingDraft } = useStartDraft();
 
     const handleStart = () => {
       const startRequest = create(StartPipelineRequestSchema, {
@@ -376,25 +403,45 @@ const ActionsCell = memo(
                 })
               }
             >
-              Edit
+              {isDraftRow ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>
+            {isDraftRow ? (
+              <DropdownMenuItem disabled={isStartingDraft} onClick={() => startDraft(pipeline.id)}>
+                Start
+              </DropdownMenuItem>
+            ) : null}
             {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
             {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
             {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
             {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
             <DropdownMenuSeparator />
-            <DeleteResourceMenuItem isDeleting={isDeletingPipeline} onSelect={() => setIsDeleteDialogOpen(true)} />
+            <DeleteResourceMenuItem
+              isDeleting={isDeletingPipeline}
+              onSelect={() => setIsDeleteDialogOpen(true)}
+              text={isDraftRow ? 'Delete draft' : undefined}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
-        <DeleteResourceAlertDialog
-          isDeleting={isDeletingPipeline}
-          onDelete={handleDelete}
-          onOpenChange={setIsDeleteDialogOpen}
-          open={isDeleteDialogOpen}
-          resourceId={pipeline.id}
-          resourceName={pipeline.name}
-          resourceType="Pipeline"
-        />
+        {/* A draft gets the lighter confirmation: nothing is deployed, so type-to-confirm is theatre. */}
+        {isDraftRow ? (
+          <DeleteDraftDialog
+            draftName={pipeline.name}
+            isDeleting={isDeletingPipeline}
+            onConfirm={() => handleDelete(pipeline.id)}
+            onOpenChange={setIsDeleteDialogOpen}
+            open={isDeleteDialogOpen}
+          />
+        ) : (
+          <DeleteResourceAlertDialog
+            isDeleting={isDeletingPipeline}
+            onDelete={handleDelete}
+            onOpenChange={setIsDeleteDialogOpen}
+            open={isDeleteDialogOpen}
+            resourceId={pipeline.id}
+            resourceName={pipeline.name}
+            resourceType="Pipeline"
+          />
+        )}
       </div>
     );
   }
@@ -444,21 +491,31 @@ const createColumns = ({
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
     cell: ({ row }) => {
-      const id = row.original.id;
+      const { id, isDraft: isDraftRow, editedAt, createdBy } = row.original;
       const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
-          {/* Rows navigate on click, so the link underlines on hover only. */}
-          <Link
-            as={TanStackRouterLink}
-            className="block truncate text-base text-primary no-underline hover:underline"
-            params={{ pipelineId: encodeURIComponent(id) }}
-            title={name}
-            to="/rp-connect/$pipelineId"
-          >
-            {name}
-          </Link>
-          {id !== name ? (
+          <span className="flex min-w-0 items-center gap-1.5">
+            {/* Rows navigate on click, so the link underlines on hover only. */}
+            <Link
+              as={TanStackRouterLink}
+              className="block truncate text-base text-primary no-underline hover:underline"
+              title={name}
+              {...editorLinkProps(row.original)}
+            >
+              {name}
+            </Link>
+          </span>
+          {isDraftRow ? (
+            // Age and author instead of the id: a draft is unfinished work, so whose it is and how long
+            // it has sat there is what decides whether to pick it up or delete it.
+            <span className="truncate text-muted-foreground text-xs">
+              {[editedAt ? `Edited ${relativeAgeLabel(editedAt)}` : null, createdBy ? `by ${createdBy}` : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+          ) : null}
+          {!isDraftRow && id !== name ? (
             // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
             <span className="cursor-text select-all truncate font-mono text-muted-foreground text-xs" title={id}>
               {id}
@@ -523,14 +580,23 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     filterFn: stateInFilterFn,
-    // Enum values the generated Pipeline_State doesn't know yet sort last, not NaN.
-    sortingFn: (rowA, rowB) =>
-      (pipelineStateSortPriority[rowA.original.state] ?? Number.MAX_SAFE_INTEGER) -
-      (pipelineStateSortPriority[rowB.original.state] ?? Number.MAX_SAFE_INTEGER),
+    // Enum values the generated Pipeline_State doesn't know yet sort last, not NaN. Ties among drafts
+    // break on recency: the one edited last is the one being worked on.
+    sortingFn: (rowA, rowB) => {
+      const byState = sortPriority(rowA.original) - sortPriority(rowB.original);
+      if (byState !== 0 || !(rowA.original.isDraft && rowB.original.isDraft)) {
+        return byState;
+      }
+      return (rowB.original.editedAt ?? 0) - (rowA.original.editedAt ?? 0);
+    },
     // Label from the state, not the variant: COMPLETED and RUNNING share `success`, whose default
     // copy is "Running".
     cell: ({ row }) => (
-      <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]}>
+      <StatusBadge
+        size="sm"
+        title={row.original.isDraft ? DRAFT_BADGE_TOOLTIP : undefined}
+        variant={pipelineStateToStatusVariant[row.original.state]}
+      >
         {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
       </StatusBadge>
     ),
@@ -557,12 +623,14 @@ const PipelineListPageContent = () => {
   // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
   const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
+  // Drafts are pipelines in STATE_DRAFT and are excluded from the list unless asked for, so that
+  // clients written before drafts existed never receive a state they can't render.
   const {
     data: pipelinesData,
     isLoading,
     error,
     hasNextPage,
-  } = useListPipelinesQuery(undefined, {
+  } = useListPipelinesQuery(areDraftsEnabled() ? LIST_WITH_DRAFTS : undefined, {
     enableSmartPolling: true,
   });
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
@@ -578,6 +646,7 @@ const PipelineListPageContent = () => {
         .map(transformAPIPipeline),
     [pipelinesData]
   );
+  const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   const columns = useMemo(
     () =>
@@ -666,11 +735,24 @@ const PipelineListPageContent = () => {
         return;
       }
       setActiveTab(tabId);
-      const states = PIPELINE_STATE_TABS.find((t) => t.id === tabId)?.states;
-      table.getColumn('state')?.setFilterValue(states ? states.map(String) : undefined);
+      const tab = PIPELINE_STATE_TABS.find((t) => t.id === tabId);
+      table.getColumn('state')?.setFilterValue(tab ? stateFilterValues(tab) : undefined);
     },
     [table, activeTab]
   );
+
+  // The Drafts tab is noise for the many users who have none, so it appears only when one exists.
+  const visibleTabs = useMemo(
+    () => PIPELINE_STATE_TABS.filter((tab) => tab.id !== 'draft' || draftCount > 0),
+    [draftCount]
+  );
+
+  // Deleting the last draft (or starting it) would otherwise leave the view stuck on a hidden tab.
+  useEffect(() => {
+    if (activeTab === 'draft' && draftCount === 0) {
+      handleTabChange('all');
+    }
+  }, [activeTab, draftCount, handleTabChange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -696,7 +778,7 @@ const PipelineListPageContent = () => {
   }, [table]);
 
   const handleRowClick = useCallback(
-    (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
+    (row: Pipeline, event: MouseEvent<HTMLTableRowElement>) => {
       // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
       if (isModifiedClick(event)) {
         return;
@@ -710,7 +792,7 @@ const PipelineListPageContent = () => {
       if (window.getSelection()?.toString()) {
         return;
       }
-      navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } });
+      navigate(editorLinkProps(row));
     },
     [navigate]
   );
@@ -753,7 +835,7 @@ const PipelineListPageContent = () => {
       <div className="flex items-center justify-between gap-4">
         <Tabs onValueChange={(value) => handleTabChange(value as PipelineStateTabId)} value={activeTab}>
           <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
-            {PIPELINE_STATE_TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <TabsTrigger
                 aria-controls={STATUS_PANEL_ID}
                 id={statusTabId(tab.id)}
@@ -825,7 +907,7 @@ const PipelineListPageContent = () => {
                 <TableRow
                   className="cursor-pointer"
                   key={row.id}
-                  onClick={(event) => handleRowClick(row.original.id, event)}
+                  onClick={(event) => handleRowClick(row.original, event)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell className="py-3" key={cell.id}>

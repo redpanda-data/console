@@ -7,6 +7,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "redpanda/api/auth/v1/authorization.proto";
 import "redpanda/api/common/v1/linthint.proto";
@@ -18,6 +19,15 @@ message Pipeline {
     type: "redpanda.api.dataplane.v1/Pipeline"
     singular: "pipeline"
     plural: "pipelines"
+  };
+  // A draft has never been deployed, so it is the one state in which the
+  // configuration is allowed to be empty. Every other state means the
+  // configuration was accepted by the service.
+  // 7 is STATE_DRAFT; protovalidate compares enums as their numeric value.
+  option (buf.validate.message).cel = {
+    id: "pipeline.config_yaml.required_unless_draft"
+    message: "config_yaml is required unless the pipeline is a draft"
+    expression: "this.state == 7 || this.config_yaml != ''"
   };
   reserved 5, 6;
   reserved "request", "limit";
@@ -43,9 +53,11 @@ message Pipeline {
 
   // The pipeline configuration in YAML.
   // See https://docs.redpanda.com/redpanda-connect/configuration/about/
+  //
+  // Always set, except on a pipeline in `STATE_DRAFT`: a draft is saved work in
+  // progress, so its configuration may be empty or fail validation.
   string config_yaml = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true,
     (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details."}
   ];
 
@@ -69,6 +81,24 @@ message Pipeline {
   }];
 
   ServiceAccount service_account = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // Identifier of the principal that created the pipeline — an email address
+  // for a user, or the service account's identifier. Empty for pipelines
+  // created before this field existed, and for pipelines created by internal
+  // callers that carry no identity.
+  //
+  // This attributes a pipeline, it does not restrict it: pipeline permissions
+  // are cluster-wide, so anyone with edit permission on this cluster can change
+  // or delete any pipeline regardless of who created it.
+  string created_by = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the pipeline was created.
+  google.protobuf.Timestamp create_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the pipeline's configuration, name, description, resources or tags
+  // were last changed. Starting and stopping a pipeline does not change it.
+  // Empty for pipelines that have not been written since this field existed.
+  google.protobuf.Timestamp update_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
@@ -114,6 +144,17 @@ message Pipeline {
     STATE_ERROR = 5;
     // The pipeline has completed the job successfully.
     STATE_COMPLETED = 6;
+    // The pipeline is saved but has never been deployed: it runs no pods, is not
+    // billed, and its configuration is allowed to be incomplete or invalid.
+    //
+    // Call StartPipeline to deploy a draft. That validates the configuration
+    // first and refuses to start an invalid one, so a draft can only leave this
+    // state by becoming a real, validated pipeline.
+    //
+    // Drafts are omitted from ListPipelines unless
+    // ListPipelinesRequest.Filter.include_drafts is set, so clients written
+    // before drafts existed never receive a state they cannot render.
+    STATE_DRAFT = 7;
   }
 
   // Pipeline status may contain an error message.
@@ -136,6 +177,8 @@ service PipelineService {
   };
 
   // CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
+  // The configuration is validated and the pipeline starts running, unless
+  // `PipelineCreate.draft` is set — a draft is stored unvalidated and does not run.
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {
     option (google.api.http) = {
       post: "/v1/redpanda-connect/pipelines"
@@ -195,7 +238,8 @@ service PipelineService {
   }
 
   // ListPipelines implements the list pipelines method which lists the pipelines
-  // in the Redpanda cluster.
+  // in the Redpanda cluster. Drafts are omitted unless
+  // `ListPipelinesRequest.Filter.include_drafts` is set.
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {
     option (google.api.http) = {get: "/v1/redpanda-connect/pipelines"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -284,6 +328,7 @@ service PipelineService {
   }
 
   // StopPipeline stops a specific Redpanda Connect pipeline.
+  // A draft is not running, so stopping one fails with FAILED_PRECONDITION.
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {
     option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -316,6 +361,11 @@ service PipelineService {
   }
 
   // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
+  //
+  // This is also how a draft is deployed for the first time. Because a draft's
+  // configuration was stored without validation, it is validated here: an
+  // invalid one fails with INVALID_ARGUMENT plus a LintHint per problem, and the
+  // pipeline stays a draft.
   rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {
     option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/start"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -481,7 +531,6 @@ message PipelineCreate {
     singular: "pipeline"
     plural: "pipelines"
   };
-
   reserved 4, 5;
   reserved "request", "limit";
 
@@ -498,10 +547,14 @@ message PipelineCreate {
   string description = 2 [(buf.validate.field).string.max_len = 256];
 
   // The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
-  string config_yaml = 3 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
+  //
+  // Required unless `draft` is set, in which case it may be empty or fail
+  // validation — that is the point of a draft. The service enforces this rather
+  // than a field rule, so that a missing configuration is reported the same way
+  // here, on UpdatePipeline and on StartPipeline: INVALID_ARGUMENT carrying
+  // `REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION`, which is how a client tells
+  // "not deployable yet" apart from a malformed request.
+  string config_yaml = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
@@ -513,6 +566,16 @@ message PipelineCreate {
   }];
 
   Pipeline.ServiceAccount service_account = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // Save the pipeline as a draft (`STATE_DRAFT`) instead of deploying it.
+  //
+  // The configuration is stored as given and is not validated, so partially
+  // written work can be saved and picked up later. A draft runs no pods and is
+  // not billed. Call StartPipeline to validate and deploy it.
+  //
+  // Drafts are ordinary pipeline resources, so each one counts against the
+  // cluster's pipeline limit.
+  bool draft = 9;
 }
 
 // CreatePipelineRequest is the request of CreatePipeline.
@@ -577,6 +640,22 @@ message ListPipelinesRequest {
     ];
 
     string secret_id = 3;
+
+    // Return only pipelines in one of these states. Empty means every state.
+    repeated Pipeline.State states = 4 [
+      (buf.validate.field).repeated = {
+        max_items: 8
+        items: {enum: {defined_only: true}}
+      },
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Only pipelines in one of these states will be returned. Drafts additionally require include_drafts."}
+    ];
+
+    // Include drafts (`STATE_DRAFT`) in the response.
+    //
+    // Drafts are excluded by default, including when `states` names
+    // `STATE_DRAFT`, so that clients written before drafts existed never
+    // receive a state they cannot render.
+    bool include_drafts = 5;
   }
 }
 
@@ -610,10 +689,13 @@ message PipelineUpdate {
   ];
 
   // The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
-  string config_yaml = 3 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
+  //
+  // May be empty only when the result of the update is a draft — either because
+  // `draft` is set, or because the pipeline is already one. Whether that holds
+  // depends on the stored pipeline, so unlike PipelineCreate this message cannot
+  // check it itself; the service rejects an empty configuration on anything that
+  // is not a draft.
+  string config_yaml = 3 [(google.api.field_behavior) = REQUIRED];
 
   // The number of resources that are guaranteed to be assigned to the pipeline.
   Pipeline.Resources resources = 6;
@@ -626,6 +708,19 @@ message PipelineUpdate {
   }];
 
   Pipeline.ServiceAccount service_account = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // Asserts that the pipeline being updated is a draft. An update never changes
+  // whether a pipeline is a draft: a draft stays a draft, and a deployed
+  // pipeline stays deployed.
+  //
+  // Leave unset to update whatever is stored. Set it to true to say "I am
+  // editing a draft" — the update then fails with FAILED_PRECONDITION if the
+  // pipeline has since been started, rather than silently deploying the new
+  // configuration to a running pipeline. Setting it to false is rejected; use
+  // StartPipeline to promote a draft, so its configuration is validated first.
+  //
+  // While a pipeline is a draft its configuration is stored without validation.
+  optional bool draft = 9;
 }
 
 message UpdatePipelineRequest {

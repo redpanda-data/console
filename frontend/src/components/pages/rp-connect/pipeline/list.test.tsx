@@ -10,10 +10,20 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
-import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import {
+  DeletePipelineResponseSchema,
+  type ListPipelinesRequest,
+  ListPipelinesResponseSchema,
+  StartPipelineResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import {
+  deletePipeline,
+  listPipelines,
+  startPipeline,
+} from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import {
   ListPipelinesResponseSchema as DataPlaneListPipelinesResponseSchema,
   Pipeline_State,
@@ -21,15 +31,18 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
+const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
 vi.mock('config', async (importOriginal) => {
   const actual = await importOriginal<typeof import('config')>();
   return {
     ...actual,
     config: { jwt: 'test-jwt-token' },
     isEmbedded: vi.fn(() => false),
-    isFeatureFlagEnabled: vi.fn(() => false),
+    isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
   };
 });
+
+type ListRequest = ListPipelinesRequest;
 
 import { PipelineListPage } from './list';
 
@@ -51,6 +64,8 @@ type Fixture = {
   inputs: string[];
   outputs: string[];
   tags?: Record<string, string>;
+  createdBy?: string;
+  updateTime?: ReturnType<typeof timestampFromDate>;
 };
 
 const FIXTURES: Fixture[] = [
@@ -87,12 +102,32 @@ const FIXTURES: Fixture[] = [
   },
 ];
 
+// A draft carries an author and an edit time; the id is not shown on its row.
+const DRAFT_FIXTURE: Fixture = {
+  id: 'draft777',
+  displayName: 'half-built-pipeline',
+  state: Pipeline_State.DRAFT,
+  inputs: ['generate'],
+  outputs: [],
+  createdBy: 'author@example.com',
+  updateTime: timestampFromDate(new Date(Date.now() - 5 * 60 * 1000)),
+};
+
 // Two pages, so the test exercises the drain the list renders behind.
-const buildTransport = () =>
+const buildTransport = (opts?: {
+  withDraft?: boolean;
+  extraDrafts?: Fixture[];
+  startPipelineMock?: ReturnType<typeof vi.fn>;
+  deletePipelineMock?: ReturnType<typeof vi.fn>;
+  onRequest?: (req: ListPipelinesRequest) => void;
+}) =>
   createRouterTransport(({ rpc }) => {
     rpc(listPipelines, (req) => {
+      opts?.onRequest?.(req);
       const pageToken = req.request?.pageToken ?? '';
-      const page = pageToken === '' ? FIXTURES.slice(0, 2) : FIXTURES.slice(2);
+      const drafts = opts?.withDraft ? [DRAFT_FIXTURE, ...(opts.extraDrafts ?? [])] : [];
+      const first = [...drafts, ...FIXTURES.slice(0, 2)];
+      const page = pageToken === '' ? first : FIXTURES.slice(2);
       return create(ListPipelinesResponseSchema, {
         response: create(DataPlaneListPipelinesResponseSchema, {
           pipelines: page.map((f) =>
@@ -102,15 +137,20 @@ const buildTransport = () =>
               state: f.state,
               tags: f.tags ?? {},
               configYaml: yamlFor(f),
+              createdBy: f.createdBy ?? '',
+              updateTime: f.updateTime,
             })
           ),
           nextPageToken: pageToken === '' ? 'page2' : '',
         }),
       });
     });
+    rpc(startPipeline, opts?.startPipelineMock ?? vi.fn().mockReturnValue(create(StartPipelineResponseSchema, {})));
+    rpc(deletePipeline, opts?.deletePipelineMock ?? vi.fn().mockReturnValue(create(DeletePipelineResponseSchema, {})));
   });
 
-const renderList = () => renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport() });
+const renderList = (opts?: { withDraft?: boolean }) =>
+  renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport(opts) });
 
 const tab = (name: string) => screen.getByRole('tab', { name: new RegExp(`^${name}`) });
 
@@ -286,5 +326,156 @@ describe('PipelineListPage', () => {
     // Two `redpanda` inputs render as one badge carrying ×2.
     expect(within(row).getByText('×2')).toBeInTheDocument();
     expect(within(row).getAllByText('redpanda')).toHaveLength(1);
+  });
+
+  describe('drafts', () => {
+    beforeEach(() => {
+      mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnPipelineDrafts');
+    });
+
+    it('hides the Drafts tab when there are none', async () => {
+      renderList();
+
+      await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
+      expect(screen.queryByRole('tab', { name: /^Drafts/ })).not.toBeInTheDocument();
+    });
+
+    // Drafts are excluded from ListPipelines unless asked for, so a client that doesn't understand
+    // them never receives a state it would render as a broken pipeline.
+    it('asks for drafts only when it can show them', async () => {
+      const requests: unknown[] = [];
+      renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ onRequest: (r) => requests.push(r) }) });
+
+      await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
+      expect(requests.every((r) => (r as ListRequest).request?.filter?.includeDrafts === true)).toBe(true);
+
+      requests.length = 0;
+      mockIsFeatureFlagEnabled.mockImplementation(() => false);
+      renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ onRequest: (r) => requests.push(r) }) });
+
+      await waitFor(() => expect(requests.length).toBeGreaterThan(0));
+      expect(requests.every((r) => !(r as ListRequest).request?.filter?.includeDrafts)).toBe(true);
+    });
+
+    it('lists a draft alongside deployed pipelines, marked as a draft', async () => {
+      renderList({ withDraft: true });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      const row = rowFor('half-built-pipeline');
+      expect(within(row).getByText('Draft')).toBeInTheDocument();
+      // Its connectors are parsed from its YAML like any other row.
+      expect(within(row).getByText('generate')).toBeInTheDocument();
+      // Drafts sort ahead of deployed pipelines — they're the rows with work still owed.
+      expect(visibleLinkNames()[0]).toBe('half-built-pipeline');
+    });
+
+    // Age and author rather than the id: what decides whether to pick a draft up or bin it.
+    it('says when a draft was last edited and who by', async () => {
+      renderList({ withDraft: true });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      const row = rowFor('half-built-pipeline');
+      expect(within(row).getByText(/Edited .* · by author@example\.com/)).toBeInTheDocument();
+      expect(within(row).queryByText('draft777')).not.toBeInTheDocument();
+    });
+
+    it('opens a draft on its own page, like any other pipeline', async () => {
+      renderList({ withDraft: true });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      const link = within(rowFor('half-built-pipeline')).getByRole('link', { name: 'half-built-pipeline' });
+      expect(link).toHaveAttribute('href', expect.stringContaining('/rp-connect/draft777'));
+    });
+
+    // The one edited last is the one being worked on.
+    it('puts the most recently edited draft first', async () => {
+      renderWithFileRoutes(<PipelineListPage />, {
+        transport: buildTransport({
+          withDraft: true,
+          extraDrafts: [
+            {
+              id: 'draft888',
+              displayName: 'older-draft',
+              state: Pipeline_State.DRAFT,
+              inputs: ['generate'],
+              outputs: [],
+              updateTime: timestampFromDate(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)),
+            },
+          ],
+        }),
+      });
+
+      await waitFor(() => expect(screen.getByText('older-draft')).toBeInTheDocument());
+
+      expect(visibleLinkNames().slice(0, 2)).toEqual(['half-built-pipeline', 'older-draft']);
+    });
+
+    it('counts drafts in their own tab and narrows to them', async () => {
+      const user = userEvent.setup();
+      renderList({ withDraft: true });
+
+      // Both pages drained (3 pipelines, the agent filtered out) plus the draft.
+      await waitFor(() => expect(tab('All')).toHaveTextContent('All4'));
+      expect(tab('Drafts')).toHaveTextContent('Drafts1');
+      // A draft is never counted as a run state.
+      expect(tab('Stopped')).toHaveTextContent('Stopped1');
+
+      await user.click(tab('Drafts'));
+      await waitFor(() => expect(visibleLinkNames()).toEqual(['half-built-pipeline']));
+    });
+
+    it('starts a draft from its row', async () => {
+      const user = userEvent.setup();
+      const startPipelineMock = vi.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
+      renderWithFileRoutes(<PipelineListPage />, {
+        transport: buildTransport({ withDraft: true, startPipelineMock }),
+      });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
+
+      await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
+      expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+    });
+
+    it('deletes a draft from its row, after a confirmation', async () => {
+      const user = userEvent.setup();
+      const deletePipelineMock = vi.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
+      renderWithFileRoutes(<PipelineListPage />, {
+        transport: buildTransport({ withDraft: true, deletePipelineMock }),
+      });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+      await user.click(await screen.findByRole('menuitem', { name: /delete draft/i }));
+
+      // Confirmed, but without the type-to-confirm the deployed-pipeline dialog demands.
+      expect(await screen.findByText(/delete draft\?/i)).toBeInTheDocument();
+      expect(deletePipelineMock).not.toHaveBeenCalled();
+
+      await user.click(screen.getByTestId('confirm-delete-draft'));
+
+      await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
+      expect(deletePipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+    });
+
+    // Nothing is running, so there is nothing to stop.
+    it('offers no Stop on a draft', async () => {
+      const user = userEvent.setup();
+      renderList({ withDraft: true });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+      await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+
+      expect(await screen.findByRole('menuitem', { name: 'Continue editing' })).toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();
+    });
   });
 });
