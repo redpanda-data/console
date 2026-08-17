@@ -13,7 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
-import { isFeatureFlagEnabled } from 'config';
 import { InfoIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -45,7 +44,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
-import { useSecurityBreadcrumbs } from '../hooks/use-security-breadcrumbs';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
@@ -275,16 +273,9 @@ const AclsTabContent: FC = () => {
   );
 };
 
-const AclsTabLegacy: FC = () => {
-  useSecurityBreadcrumbs([]);
-  return <AclsTabContent />;
-};
-
-const AclsTabNew: FC = () => (
+export const AclsTab: FC = () => (
   <>
     <SecurityTabsNav />
     <AclsTabContent />
   </>
 );
-
-export const AclsTab: FC = () => (isFeatureFlagEnabled('enableNewSecurityPage') ? <AclsTabNew /> : <AclsTabLegacy />);

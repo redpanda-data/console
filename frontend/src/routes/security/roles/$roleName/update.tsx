@@ -10,30 +10,18 @@
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { z } from 'zod';
 
-import RoleUpdatePage from '../../../../components/pages/security/roles/role-update-page';
-import { isFeatureFlagEnabled } from '../../../../config';
-
-const searchSchema = z.object({
-  host: z.string().optional().catch(undefined),
-});
-
-// allow: error-boundary [legacy route, component handles its own error states]
+// allow: error-boundary [pure redirect, no data fetching]
 export const Route = createFileRoute('/security/roles/$roleName/update')({
   staticData: {
     title: 'Update Role',
   },
-  validateSearch: searchSchema,
   beforeLoad: ({ params }) => {
-    if (isFeatureFlagEnabled('enableNewSecurityPage')) {
-      throw redirect({
-        to: '/security/roles/$roleName/details',
-        params,
-        search: { host: undefined },
-        replace: true,
-      });
-    }
+    throw redirect({
+      to: '/security/roles/$roleName/details',
+      params,
+      search: { host: undefined },
+      replace: true,
+    });
   },
-  component: RoleUpdatePage,
 });

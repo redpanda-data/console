@@ -11,13 +11,11 @@
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { isFeatureFlagEnabled } from '../../config';
-
 // allow: error-boundary [pure redirect, no data fetching]
 export const Route = createFileRoute('/security/')({
   beforeLoad: () => {
     throw redirect({
-      to: isFeatureFlagEnabled('enableNewSecurityPage') ? '/security/users' : '/security/acls',
+      to: '/security/users',
       replace: true,
     });
   },
