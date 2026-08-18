@@ -211,6 +211,16 @@ const formSchemaShape = z.object({
   topicProperties: z.array(z.string()).optional(),
   excludeDefault: z.boolean(),
 
+  // Role sync (mirrors consumer offset sync; no interval/paused exposed)
+  rolesMode: z.enum(['all', 'specify']),
+  roles: z.array(
+    z.object({
+      patternType: z.enum(PatternType),
+      filterType: z.enum(FilterType),
+      name: z.string().trim().min(1, 'name is required'),
+    })
+  ),
+
   // Consumer offset sync
   enableConsumerOffsetSync: z.boolean(),
   consumersMode: z.enum(['all', 'specify']),
@@ -684,6 +694,8 @@ export const initialValues: FormValues = {
   topics: [],
   topicProperties: [],
   excludeDefault: false,
+  rolesMode: 'all',
+  roles: [],
   enableConsumerOffsetSync: false,
   consumersMode: 'all',
   consumers: [],

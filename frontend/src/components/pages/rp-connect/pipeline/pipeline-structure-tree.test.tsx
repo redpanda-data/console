@@ -150,6 +150,41 @@ describe('PipelineStructureTree', () => {
     expect(highlightId).toBe(editableId);
   });
 
+  // The registry Button renders `as="a"` with role="button" (Base UI), so query by that role.
+  it('links each component row to its reference docs', () => {
+    render(<PipelineStructureTree configYaml={NESTED} />);
+    const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+    expect(docsLink).toHaveAttribute(
+      'href',
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/kafka_franz/'
+    );
+    expect(docsLink).toHaveAttribute('target', '_blank');
+    expect(docsLink).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByRole('button', { name: 'http documentation' })).toHaveAttribute(
+      'href',
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/http/'
+    );
+    expect(screen.getByRole('button', { name: 'switch documentation' })).toBeInTheDocument();
+  });
+
+  it('omits the docs link on structural rows that name no component', () => {
+    render(<PipelineStructureTree configYaml={NESTED} />);
+    const caseRow = screen.getByRole('treeitem', { name: 'case 1' });
+    expect(caseRow.querySelector('a')).toBeNull();
+  });
+
+  it('opens the docs link without also selecting the row', async () => {
+    const onSelectNode = vi.fn();
+    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+    const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+    await userEvent.click(docsLink);
+    expect(onSelectNode).not.toHaveBeenCalled();
+    // Enter must reach the link, not the row's select handler (which would preventDefault it).
+    act(() => docsLink.focus());
+    await userEvent.keyboard('{Enter}');
+    expect(onSelectNode).not.toHaveBeenCalled();
+  });
+
   it('keeps the last valid outline, flagged, when an edit makes the YAML invalid', () => {
     const { rerender } = render(<PipelineStructureTree configYaml={NESTED} />);
     expect(screen.getByText('switch')).toBeInTheDocument();

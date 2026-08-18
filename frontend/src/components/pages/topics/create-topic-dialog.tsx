@@ -12,7 +12,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
 import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react';
-import type React from 'react';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -42,16 +41,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../redpanda-ui/components/dialog';
-import { Field, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
+import { Field, FieldDescription, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
+import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
-import { InputGroup, InputGroupButton, InputGroupInput } from '../../redpanda-ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 
-// ── Regex ─────────────────────────────────────────────────────────────────────
 const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
-
-// ── Schema ────────────────────────────────────────────────────────────────────
 
 const createTopicFormSchema = z
   .object({
@@ -77,36 +73,37 @@ const createTopicFormSchema = z
 
 type CreateTopicFormValues = z.infer<typeof createTopicFormSchema>;
 
-// ── NumInput ──────────────────────────────────────────────────────────────────
-
 function NumInput(p: {
+  id?: string;
   value: number | undefined;
   onChange: (n: number | undefined) => void;
   onBlur?: () => void;
   placeholder?: string;
   min?: number;
-  max?: number;
   disabled?: boolean;
-  addonAfter?: React.ReactNode;
+  containerClassName?: string;
   'data-testid'?: string;
 }) {
   const [editValue, setEditValue] = useState(p.value === undefined ? undefined : String(p.value));
   useEffect(() => setEditValue(p.value === undefined ? undefined : String(p.value)), [p.value]);
 
   const commit = (x: number | undefined) => {
-    if (p.disabled) return;
-    let v = x;
-    if (v !== undefined && p.min !== undefined && v < p.min) v = p.min;
-    if (v !== undefined && p.max !== undefined && v > p.max) v = p.max;
+    if (p.disabled) {
+      return;
+    }
+    const v = x !== undefined && p.min !== undefined && x < p.min ? p.min : x;
     setEditValue(v === undefined ? undefined : String(v));
-    p.onChange?.(v);
+    p.onChange(v);
   };
 
-  const input = (
+  return (
     <Input
-      className={p.addonAfter ? 'flex-1 rounded-r-none border-r-0' : undefined}
+      autoComplete="off"
+      containerClassName={p.containerClassName}
       data-testid={p['data-testid']}
       disabled={p.disabled}
+      id={p.id}
+      inputMode="numeric"
       onBlur={() => {
         if (!editValue) {
           commit(undefined);
@@ -125,170 +122,105 @@ function NumInput(p: {
       onChange={(e) => {
         setEditValue(e.target.value);
         const n = Number(e.target.value);
-        if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
-        else p.onChange?.(undefined);
+        p.onChange(e.target.value !== '' && !Number.isNaN(n) ? n : undefined);
       }}
-      onWheel={(e) => commit(Math.round((p.value ?? 0) - Math.sign(e.deltaY)))}
       placeholder={p.placeholder}
       spellCheck={false}
       value={p.disabled && p.placeholder && p.value === undefined ? '' : (editValue ?? '')}
     />
   );
-
-  if (!p.addonAfter) return input;
-  return (
-    <div className="flex">
-      {input}
-      {p.addonAfter}
-    </div>
-  );
 }
 
-// ── RetentionTimeSelect ───────────────────────────────────────────────────────
-
-function RetentionTimeSelect(p: {
+/**
+ * Numeric retention value paired with its unit, e.g. `[ 7 ][ days ]`. Selecting `default` or
+ * `infinite` disables the number box, which then shows the effective value as a placeholder.
+ */
+function RetentionSelect<U extends string>(p: {
+  id?: string;
+  label: string;
   value: number;
-  unit: RetentionTimeUnit;
+  unit: U;
+  factors: Record<U, number>;
+  /** Pretty-prints the broker-level default for the placeholder. */
+  formatDefault: (rawConfigValue: string) => string;
+  /** Value to fall back to when the number box is cleared. */
+  clearedValue: number;
   onChangeValue: (v: number) => void;
-  onChangeUnit: (u: RetentionTimeUnit) => void;
+  onChangeUnit: (u: U) => void;
   defaultConfigValue?: string;
-  'data-testid'?: string;
+  /** The unit picker derives its own testid from this, so it is required. */
+  'data-testid': string;
 }) {
-  const { value, unit } = p;
-  const numDisabled = unit === 'default' || unit === 'infinite';
-
-  let placeholder: string | undefined;
-  if (unit === 'default' && p.defaultConfigValue != null) {
-    placeholder = Number.isFinite(Number(p.defaultConfigValue))
-      ? prettyMilliseconds(p.defaultConfigValue, {
-          showLargeAsInfinite: true,
-          showNullAs: 'default',
-          verbose: true,
-          unitCount: 2,
-        })
-      : 'default';
-  }
-  if (unit === 'infinite') placeholder = 'Infinite';
-
-  const options = Object.entries(timeFactors).map(([name]) => ({
-    value: name as RetentionTimeUnit,
-    label: name === 'default' || name === 'infinite' ? titleCase(name) : name,
-  }));
-
-  return (
-    <NumInput
-      addonAfter={
-        <Select
-          items={options}
-          onValueChange={(u) => {
-            const newUnit = u as RetentionTimeUnit;
-            if (newUnit === 'default') {
-              p.onChangeValue(value * timeFactors[unit]);
-            } else {
-              const factor = unit === 'default' ? 1 : timeFactors[unit];
-              const ms = value * factor;
-              let newValue = ms / timeFactors[newUnit];
-              if (Number.isNaN(newValue)) newValue = 0;
-              if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
-              p.onChangeValue(newValue);
-            }
-            p.onChangeUnit(newUnit);
-          }}
-          value={unit}
-        >
-          <SelectTrigger className="w-[130px] rounded-l-none">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
-      data-testid={p['data-testid']}
-      disabled={numDisabled}
-      min={0}
-      onChange={(x) => p.onChangeValue(x ?? 0)}
-      placeholder={placeholder}
-      value={numDisabled ? undefined : value}
-    />
-  );
-}
-
-// ── RetentionSizeSelect ───────────────────────────────────────────────────────
-
-function RetentionSizeSelect(p: {
-  value: number;
-  unit: RetentionSizeUnit;
-  onChangeValue: (v: number) => void;
-  onChangeUnit: (u: RetentionSizeUnit) => void;
-  defaultConfigValue?: string;
-  'data-testid'?: string;
-}) {
-  const { value, unit } = p;
+  const { value, unit, factors } = p;
   const numDisabled = unit === 'default' || unit === 'infinite';
 
   let placeholder: string | undefined;
   if (unit === 'default') {
     placeholder =
       p.defaultConfigValue && Number.isFinite(Number(p.defaultConfigValue))
-        ? prettyBytes(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default' })
+        ? p.formatDefault(p.defaultConfigValue)
         : 'default';
   }
-  if (unit === 'infinite') placeholder = 'Infinite';
+  if (unit === 'infinite') {
+    placeholder = 'Infinite';
+  }
 
-  const options = Object.entries(sizeFactors).map(([name]) => ({
-    value: name as RetentionSizeUnit,
+  const options = (Object.keys(factors) as U[]).map((name) => ({
+    value: name,
     label: name === 'default' || name === 'infinite' ? titleCase(name) : name,
   }));
 
   return (
-    <NumInput
-      addonAfter={
-        <Select
-          items={options}
-          onValueChange={(u) => {
-            const newUnit = u as RetentionSizeUnit;
-            if (newUnit === 'default') {
-              p.onChangeValue(value * sizeFactors[unit]);
-            } else {
-              const factor = unit === 'default' ? 1 : sizeFactors[unit];
-              const bytes = value * factor;
-              let newValue = bytes / sizeFactors[newUnit];
-              if (Number.isNaN(newValue)) newValue = 0;
-              if (DECIMAL_PLACES_REGEX.test(String(newValue))) newValue = Math.round(newValue);
-              p.onChangeValue(newValue);
+    <Group attached>
+      <NumInput
+        containerClassName="min-w-0 flex-1"
+        data-testid={p['data-testid']}
+        disabled={numDisabled}
+        id={p.id}
+        min={0}
+        onChange={(x) => p.onChangeValue(x ?? p.clearedValue)}
+        placeholder={placeholder}
+        value={numDisabled ? undefined : value}
+      />
+      <Select
+        items={options}
+        onValueChange={(u) => {
+          const newUnit = u as U;
+          if (newUnit === 'default') {
+            p.onChangeValue(value * factors[unit]);
+          } else {
+            const factor = unit === 'default' ? 1 : factors[unit];
+            let newValue = (value * factor) / factors[newUnit];
+            if (Number.isNaN(newValue)) {
+              newValue = 0;
             }
-            p.onChangeUnit(newUnit);
-          }}
-          value={unit}
+            if (DECIMAL_PLACES_REGEX.test(String(newValue))) {
+              newValue = Math.round(newValue);
+            }
+            p.onChangeValue(newValue);
+          }
+          p.onChangeUnit(newUnit);
+        }}
+        value={unit}
+      >
+        <SelectTrigger
+          aria-label={`${p.label} unit`}
+          className="w-28 shrink-0 border-l"
+          data-testid={`${p['data-testid']}-unit`}
         >
-          <SelectTrigger className="w-[130px] rounded-l-none">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
-      data-testid={p['data-testid']}
-      disabled={numDisabled}
-      min={0}
-      onChange={(x) => p.onChangeValue(x ?? -1)}
-      placeholder={placeholder}
-      value={numDisabled ? undefined : value}
-    />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Group>
   );
 }
-
-// ── Form content ──────────────────────────────────────────────────────────────
 
 type FormContentProps = {
   form: ReturnType<typeof useForm<CreateTopicFormValues>>;
@@ -298,190 +230,315 @@ type FormContentProps = {
 function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps) {
   const { control, watch, setValue } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'additionalConfig' });
+  const serverless = isServerless();
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Topic Name */}
+    <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
       <Controller
         control={control}
         name="topicName"
         render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel required>Topic Name</FieldLabel>
-            <Input data-testid="topic-name" {...field} />
-            {fieldState.error && <FieldError errors={[fieldState.error]} />}
+          <Field className="sm:col-span-2" data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="create-topic-name" required>
+              Topic name
+            </FieldLabel>
+            <Input
+              autoComplete="off"
+              data-testid="topic-name"
+              id="create-topic-name"
+              placeholder="e.g. orders"
+              spellCheck={false}
+              {...field}
+            />
+            <FieldDescription>Letters, numbers, dots, underscores, and hyphens.</FieldDescription>
+            <FieldError errors={[fieldState.error]} />
           </Field>
         )}
       />
 
-      {/* Partitions · Replication Factor · Min ISR */}
-      <div className="flex flex-wrap gap-6">
-        <div className="flex-1" style={{ minWidth: '140px', maxWidth: '180px' }}>
-          <Controller
-            control={control}
-            name="partitions"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Partitions</FieldLabel>
-                <NumInput
-                  data-testid="topic-partitions"
-                  min={1}
-                  onBlur={field.onBlur}
-                  onChange={field.onChange}
-                  placeholder={tryGetBrokerConfig('num.partitions')}
-                  value={field.value}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        </div>
-
-        <div className="flex-1" style={{ minWidth: '140px', maxWidth: '180px' }}>
-          <Controller
-            control={control}
-            name="replicationFactor"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Replication Factor</FieldLabel>
-                <NumInput
-                  data-testid="topic-replication-factor"
-                  disabled={isServerless()}
-                  min={1}
-                  onBlur={field.onBlur}
-                  onChange={field.onChange}
-                  placeholder={tryGetBrokerConfig('default.replication.factor')}
-                  value={field.value}
-                />
-                {fieldState.error && <FieldError errors={[fieldState.error]} />}
-              </Field>
-            )}
-          />
-        </div>
-
-        {!api.isRedpanda && (
-          <div className="flex-1" style={{ minWidth: '140px', maxWidth: '180px' }}>
-            <Controller
-              control={control}
-              name="minInSyncReplicas"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Min In-Sync Replicas</FieldLabel>
-                  <NumInput
-                    data-testid="topic-min-insync-replicas"
-                    min={1}
-                    onBlur={field.onBlur}
-                    onChange={field.onChange}
-                    placeholder={tryGetBrokerConfig('min.insync.replicas') ?? '1'}
-                    value={field.value}
-                  />
-                  {fieldState.error && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
+      <Controller
+        control={control}
+        name="partitions"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="create-topic-partitions">Partitions</FieldLabel>
+            <NumInput
+              data-testid="topic-partitions"
+              id="create-topic-partitions"
+              min={1}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              placeholder={tryGetBrokerConfig('num.partitions')}
+              value={field.value}
             />
-          </div>
+            <FieldDescription>More partitions allow more consumers.</FieldDescription>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
         )}
-      </div>
+      />
 
-      {/* Cleanup Policy · Retention Time · Retention Size */}
-      <div className="flex flex-wrap gap-6">
-        {!isServerless() && (
-          <div style={{ flexBasis: '150px' }}>
-            <Controller
-              control={control}
-              name="cleanupPolicy"
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Cleanup Policy</FieldLabel>
-                  <Select onValueChange={(v) => field.onChange(v as CleanupPolicyType)} value={field.value}>
-                    <SelectTrigger data-testid="cleanup-policy-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="delete">delete</SelectItem>
-                      <SelectItem value="compact">compact</SelectItem>
-                      <SelectItem value="compact,delete">compact,delete</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {fieldState.error && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
+      <Controller
+        control={control}
+        name="replicationFactor"
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor="create-topic-replication">Replication factor</FieldLabel>
+            <NumInput
+              data-testid="topic-replication-factor"
+              disabled={serverless}
+              id="create-topic-replication"
+              min={1}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              placeholder={tryGetBrokerConfig('default.replication.factor')}
+              value={field.value}
             />
-          </div>
+            <FieldDescription>
+              {serverless ? 'Managed automatically for Serverless.' : 'Copies of each partition across brokers.'}
+            </FieldDescription>
+            <FieldError errors={[fieldState.error]} />
+          </Field>
         )}
+      />
 
-        <div className="flex flex-col gap-1.5" style={{ flexBasis: '220px', flexGrow: 1 }}>
-          <FieldLabel>Retention Time</FieldLabel>
-          <RetentionTimeSelect
-            data-testid="topic-retention-time"
-            defaultConfigValue={tryGetBrokerConfig('log.retention.ms')}
-            onChangeUnit={(u) => setValue('retentionTimeUnit', u)}
-            onChangeValue={(v) => setValue('retentionTimeMs', v)}
-            unit={watch('retentionTimeUnit') as RetentionTimeUnit}
-            value={watch('retentionTimeMs')}
-          />
-        </div>
+      {!api.isRedpanda && (
+        <Controller
+          control={control}
+          name="minInSyncReplicas"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="create-topic-min-isr">Min in-sync replicas</FieldLabel>
+              <NumInput
+                data-testid="topic-min-insync-replicas"
+                id="create-topic-min-isr"
+                min={1}
+                onBlur={field.onBlur}
+                onChange={field.onChange}
+                placeholder={tryGetBrokerConfig('min.insync.replicas') ?? '1'}
+                value={field.value}
+              />
+              <FieldDescription>Replicas that have to acknowledge a write.</FieldDescription>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+      )}
 
-        <div className="flex flex-col gap-1.5" style={{ flexBasis: '220px', flexGrow: 1 }}>
-          <FieldLabel>Retention Size</FieldLabel>
-          <RetentionSizeSelect
-            data-testid="topic-retention-size"
-            defaultConfigValue={tryGetBrokerConfig('log.retention.bytes')}
-            onChangeUnit={(u) => setValue('retentionSizeUnit', u)}
-            onChangeValue={(v) => setValue('retentionSize', v)}
-            unit={watch('retentionSizeUnit') as RetentionSizeUnit}
-            value={watch('retentionSize')}
-          />
-        </div>
-      </div>
+      {!serverless && (
+        <Controller
+          control={control}
+          name="cleanupPolicy"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="create-topic-cleanup-policy">Cleanup policy</FieldLabel>
+              <Select onValueChange={(v) => field.onChange(v as CleanupPolicyType)} value={field.value}>
+                <SelectTrigger data-testid="cleanup-policy-select" id="create-topic-cleanup-policy">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="delete">delete</SelectItem>
+                  <SelectItem value="compact">compact</SelectItem>
+                  <SelectItem value="compact,delete">compact,delete</SelectItem>
+                </SelectContent>
+              </Select>
+              <FieldDescription>How old segments are removed.</FieldDescription>
+              <FieldError errors={[fieldState.error]} />
+            </Field>
+          )}
+        />
+      )}
 
-      {/* Additional Configuration */}
-      {!isServerless() && (
-        <div className="flex flex-col gap-2">
-          <FieldLabel>Additional Configuration</FieldLabel>
+      {/* col-start-1 keeps the retention pair together on its own row when the fields above wrap unevenly. */}
+      <Field className="sm:col-start-1">
+        <FieldLabel htmlFor="create-topic-retention-time">Retention time</FieldLabel>
+        <RetentionSelect
+          clearedValue={0}
+          data-testid="topic-retention-time"
+          defaultConfigValue={tryGetBrokerConfig('log.retention.ms')}
+          factors={timeFactors}
+          formatDefault={(raw) =>
+            prettyMilliseconds(raw, {
+              showLargeAsInfinite: true,
+              showNullAs: 'default',
+              verbose: true,
+              unitCount: 2,
+            })
+          }
+          id="create-topic-retention-time"
+          label="Retention time"
+          onChangeUnit={(u) => setValue('retentionTimeUnit', u)}
+          onChangeValue={(v) => setValue('retentionTimeMs', v)}
+          unit={watch('retentionTimeUnit') as RetentionTimeUnit}
+          value={watch('retentionTimeMs')}
+        />
+        <FieldDescription>How long records are kept.</FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="create-topic-retention-size">Retention size</FieldLabel>
+        <RetentionSelect
+          clearedValue={-1}
+          data-testid="topic-retention-size"
+          defaultConfigValue={tryGetBrokerConfig('log.retention.bytes')}
+          factors={sizeFactors}
+          formatDefault={(raw) => prettyBytes(raw, { showLargeAsInfinite: true, showNullAs: 'default' })}
+          id="create-topic-retention-size"
+          label="Retention size"
+          onChangeUnit={(u) => setValue('retentionSizeUnit', u)}
+          onChangeValue={(v) => setValue('retentionSize', v)}
+          unit={watch('retentionSizeUnit') as RetentionSizeUnit}
+          value={watch('retentionSize')}
+        />
+        <FieldDescription>Maximum size kept per partition.</FieldDescription>
+      </Field>
+
+      {!serverless && (
+        <Field className="sm:col-span-2 sm:col-start-1">
+          <FieldLabel>Additional configuration</FieldLabel>
+          <FieldDescription>Optional topic-level overrides, such as compression or segment size.</FieldDescription>
           <div className="flex flex-col gap-2">
             {fields.map((fieldItem, i) => (
-              <InputGroup key={fieldItem.id}>
+              <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-2" key={fieldItem.id}>
                 <Controller
                   control={control}
                   name={`additionalConfig.${i}.name`}
                   render={({ field }) => (
-                    <InputGroupInput {...field} className="w-[30%]" placeholder="Property Name..." spellCheck={false} />
+                    <Input
+                      {...field}
+                      aria-label="Property name"
+                      autoComplete="off"
+                      placeholder="Property Name..."
+                      spellCheck={false}
+                    />
                   )}
                 />
                 <Controller
                   control={control}
                   name={`additionalConfig.${i}.value`}
                   render={({ field }) => (
-                    <InputGroupInput {...field} className="flex-1" placeholder="Property Value..." spellCheck={false} />
+                    <Input
+                      {...field}
+                      aria-label="Property value"
+                      autoComplete="off"
+                      placeholder="Property Value..."
+                      spellCheck={false}
+                    />
                   )}
                 />
-                <InputGroupButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(i);
-                  }}
+                <Button
+                  aria-label="Remove entry"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => remove(i)}
+                  size="icon-sm"
                   type="button"
                   variant="ghost"
                 >
                   <XIcon />
-                </InputGroupButton>
-              </InputGroup>
+                </Button>
+              </div>
             ))}
-            <div>
-              <Button onClick={() => append({ name: '', value: '' })} size="sm" type="button" variant="outline">
-                <PlusIcon />
-                Add Entry
-              </Button>
-            </div>
+            <Button
+              className="w-fit"
+              onClick={() => append({ name: '', value: '' })}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <PlusIcon />
+              Add entry
+            </Button>
           </div>
-        </div>
+        </Field>
       )}
     </div>
   );
 }
 
-// ── CreateTopicDialog ─────────────────────────────────────────────────────────
+/** Long names get a tooltip because the copy button truncates them. */
+const TOOLTIP_NAME_LENGTH = 40;
+
+/** Server-reported `-1` means "cluster default", which has no meaningful number to show. */
+const formatCount = (count?: number) => (count === undefined || count === -1 ? '—' : String(count));
+
+function TopicCreatedPanel({
+  topicName,
+  partitionCount,
+  replicationFactor,
+}: {
+  topicName?: string;
+  partitionCount?: number;
+  replicationFactor?: number;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4 py-2 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full bg-background-success-strong/10">
+        <CheckCircleIcon className="size-6 text-success" />
+      </div>
+      <p className="text-muted-foreground text-sm">Your topic is ready to use.</p>
+      <div className="w-full rounded-lg border bg-muted/30 p-4">
+        <div className="flex flex-col items-center gap-0.5">
+          <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Topic name</p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <CopyButton className="max-w-[320px]" content={topicName ?? ''} size="sm" variant="ghost">
+                    <span className="truncate font-mono">{topicName}</span>
+                  </CopyButton>
+                }
+              />
+              {(topicName?.length ?? 0) > TOOLTIP_NAME_LENGTH ? <TooltipContent>{topicName}</TooltipContent> : null}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <div className="mt-3 flex justify-center gap-10 border-t pt-3 text-sm">
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="font-semibold">{formatCount(partitionCount)}</span>
+            <span className="text-muted-foreground text-xs">Partitions</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="font-semibold">{formatCount(replicationFactor)}</span>
+            <span className="text-muted-foreground text-xs">Replication factor</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Flattens the retention/policy fields and user-entered overrides into topic config entries. */
+function buildTopicConfigs(values: CreateTopicFormValues) {
+  const config: { name: string; value: string }[] = [];
+  const setVal = (name: string, value: string | number | undefined) => {
+    if (value === undefined) {
+      return;
+    }
+    config.removeAll((x) => x.name === name);
+    config.push({ name, value: String(value) });
+  };
+
+  for (const x of values.additionalConfig) {
+    setVal(x.name, x.value);
+  }
+  if (values.retentionTimeUnit !== 'default') {
+    setVal(
+      'retention.ms',
+      getRetentionTimeFinalValue(values.retentionTimeMs, values.retentionTimeUnit as RetentionTimeUnit)
+    );
+  }
+  if (values.retentionSizeUnit !== 'default') {
+    setVal(
+      'retention.bytes',
+      getRetentionSizeFinalValue(values.retentionSize, values.retentionSizeUnit as RetentionSizeUnit)
+    );
+  }
+  if (values.minInSyncReplicas !== undefined) {
+    setVal('min.insync.replicas', values.minInSyncReplicas);
+  }
+  setVal('cleanup.policy', values.cleanupPolicy);
+
+  return config.filter((x) => x.name.length > 0);
+}
 
 export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { mutateAsync: createTopic } = useCreateTopicMutation();
@@ -531,34 +588,13 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     setResult(null);
     setIsLoading(true);
     try {
-      const config: { name: string; value: string }[] = [];
-      const setVal = (name: string, value: string | number | undefined) => {
-        if (value === undefined) return;
-        config.removeAll((x) => x.name === name);
-        config.push({ name, value: String(value) });
-      };
-
-      for (const x of values.additionalConfig) setVal(x.name, x.value);
-      if (values.retentionTimeUnit !== 'default')
-        setVal(
-          'retention.ms',
-          getRetentionTimeFinalValue(values.retentionTimeMs, values.retentionTimeUnit as RetentionTimeUnit)
-        );
-      if (values.retentionSizeUnit !== 'default')
-        setVal(
-          'retention.bytes',
-          getRetentionSizeFinalValue(values.retentionSize, values.retentionSizeUnit as RetentionSizeUnit)
-        );
-      if (values.minInSyncReplicas !== undefined) setVal('min.insync.replicas', values.minInSyncReplicas);
-      setVal('cleanup.policy', values.cleanupPolicy);
-
       const apiResult = await createTopic({
         topic: {
           name: values.topicName,
           partitionCount: values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1'),
           replicationFactor:
             values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1'),
-          configs: config.filter((x) => x.name.length > 0).map((x) => ({ name: x.name, value: x.value })),
+          configs: buildTopicConfigs(values),
         },
         validateOnly: false,
       });
@@ -569,7 +605,9 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
         replicationFactor: apiResult.replicationFactor,
       });
       api.refreshClusterOverview();
-      api.refreshClusterHealth().catch(() => {});
+      api.refreshClusterHealth().catch(() => {
+        // Best-effort refresh; the topic was created either way.
+      });
     } catch (e) {
       setResult({ error: e });
     } finally {
@@ -577,26 +615,26 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     }
   };
 
+  // Not `Boolean(...)`: the truthiness check narrows `result` to non-null for the success branch below.
   const isSuccess = result && !result.error;
-  const isError = Boolean(result?.error);
 
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open) handleClose();
+        if (!open) {
+          handleClose();
+        }
       }}
       open={isOpen}
     >
-      <DialogContent
-        style={isSuccess ? { maxWidth: '440px' } : { minWidth: '600px', maxWidth: '1000px', width: '80%' }}
-      >
+      <DialogContent size={isSuccess ? 'md' : 'lg'}>
         <DialogHeader>
-          <DialogTitle>{isSuccess ? 'Topic created' : 'Create Topic'}</DialogTitle>
+          <DialogTitle>{isSuccess ? 'Topic created' : 'Create topic'}</DialogTitle>
         </DialogHeader>
 
         <DialogBody>
-          {isError && result && (
-            <Alert className="mb-4" variant="destructive">
+          {result?.error ? (
+            <Alert variant="destructive">
               <AlertTitle>{result.error instanceof Error ? result.error.name : 'Error'}</AlertTitle>
               <AlertDescription>
                 <code className="font-mono text-xs">
@@ -604,50 +642,14 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
                 </code>
               </AlertDescription>
             </Alert>
-          )}
+          ) : null}
 
           {isSuccess ? (
-            <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background-success-strong/10">
-                <CheckCircleIcon className="h-7 w-7 text-success" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <p className="font-semibold text-base">Topic created</p>
-                <p className="text-muted-foreground text-sm">Your topic is ready to use.</p>
-              </div>
-              <div className="w-full rounded-lg border-t bg-white p-6 dark:bg-base-900">
-                <div className="mb-3 flex flex-col items-center gap-0.5">
-                  <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Topic name</p>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <CopyButton
-                            className="max-w-[320px]"
-                            content={result.topicName ?? ''}
-                            size="sm"
-                            variant="ghost"
-                          >
-                            <span className="truncate font-mono">{result.topicName}</span>
-                          </CopyButton>
-                        }
-                      />
-                      {(result.topicName?.length ?? 0) > 40 && <TooltipContent>{result.topicName}</TooltipContent>}
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="flex justify-center gap-8 pt-3 text-sm">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="font-semibold">{String(result.partitionCount).replace('-1', '—')}</span>
-                    <span className="text-muted-foreground text-xs">Partitions</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="font-semibold">{String(result.replicationFactor).replace('-1', '—')}</span>
-                    <span className="text-muted-foreground text-xs">Replication factor</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TopicCreatedPanel
+              partitionCount={result.partitionCount}
+              replicationFactor={result.replicationFactor}
+              topicName={result.topicName}
+            />
           ) : (
             <form id="create-topic-form" onSubmit={form.handleSubmit(onSubmit)}>
               <CreateTopicDialogContent form={form} tryGetBrokerConfig={tryGetBrokerConfig} />

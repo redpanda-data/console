@@ -185,6 +185,7 @@ function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShado
     clientOptions: mapControlplaneClientOptions(sl.clientOptions),
     topicMetadataSyncOptions: mapControlplaneTopicMetadataSyncOptions(sl.topicMetadataSyncOptions),
     consumerOffsetSyncOptions: mapControlplaneConsumerOffsetSyncOptions(sl.consumerOffsetSyncOptions),
+    // roleSyncOptions stays undefined: the controlplane proto does not expose role sync yet
     securitySyncOptions: mapControlplaneSecuritySyncOptions(sl.securitySyncOptions),
     schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(sl.schemaRegistrySyncOptions),
   };
@@ -445,6 +446,11 @@ export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneS
 
   return {
     name: shadowLink.name ?? '',
+    // The controlplane proto does not ship role_sync_options yet, so hydrate
+    // like the dataplane absent case: specify mode with no filters keeps role
+    // sync disabled on untouched edits
+    rolesMode: 'specify',
+    roles: [],
     ...connectionValues,
     ...authSettings,
     ...topicsValues,
