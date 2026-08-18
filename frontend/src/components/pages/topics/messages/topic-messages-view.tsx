@@ -184,6 +184,13 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     if (urlState.liveTail) {
       return; // live tail owns the stream (P5)
     }
+    // Timestamp mode starts at -1 (unset) for one render until the date picker's
+    // own mount effect corrects it to "now" — searching on that sentinel would
+    // send an invalid startTimestamp to the backend instead of waiting the one
+    // tick for the real value.
+    if (searchParams.startOffset === PartitionOffsetOrigin.Timestamp && searchParams.startTimestamp < 0) {
+      return;
+    }
     const signature = `${JSON.stringify(searchParams)}|${refreshCounter}`;
     if (signature === lastSignatureRef.current) {
       return;
@@ -194,8 +201,15 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         // errors are surfaced through search.error
       });
     }, 100);
-    return () => clearTimeout(timer);
-  }, [searchParams, refreshCounter, urlState.liveTail, search.start]);
+    // Also stop() here (not just clear the timer): if the previous run's timer
+    // already fired and a stream is in flight, changing params again must abort
+    // it immediately rather than leaving it running until some later start()
+    // happens to supersede it.
+    return () => {
+      clearTimeout(timer);
+      search.stop();
+    };
+  }, [searchParams, refreshCounter, urlState.liveTail, search.start, search.stop]);
 
   // Live tail: stream from the log's end; stopping restores the paged backlog
   // (clearing the signature lets the paged auto-search above re-run).
