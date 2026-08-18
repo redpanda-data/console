@@ -307,16 +307,8 @@ export const ReadScopePopover = ({
 
               <div className="mt-2 flex items-center justify-between gap-3">
                 <div className="font-semibold text-sm">Partition</div>
-                <Select
-                  disabled={liveTail}
-                  onValueChange={(value) => onPartitionIdChange(Number(value))}
-                  value={String(partitionId)}
-                >
-                  <SelectTrigger
-                    className="w-40"
-                    testId="read-scope-partition-select"
-                    title={liveTail ? 'Stop live tail to change this' : undefined}
-                  >
+                <Select onValueChange={(value) => onPartitionIdChange(Number(value))} value={String(partitionId)}>
+                  <SelectTrigger className="w-40" testId="read-scope-partition-select">
                     <SelectValue>
                       {(value: unknown) => (Number(value) === -1 ? 'All partitions' : `Partition ${value}`)}
                     </SelectValue>

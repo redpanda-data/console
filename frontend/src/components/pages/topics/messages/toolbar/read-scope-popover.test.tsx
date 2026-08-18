@@ -99,10 +99,10 @@ describe('ReadScopePopover', () => {
     expect(props.onModeChange).toHaveBeenCalledWith('oldest');
   });
 
-  test('partition and max-results controls are disabled while live tail is active', async () => {
+  test('max-results control is disabled while live tail is active, but partition stays live-editable', async () => {
     renderPopover({ liveTail: true });
     await userEvent.click(screen.getByTestId('read-scope-button'));
-    expect(screen.getByTestId('read-scope-partition-select')).toBeDisabled();
+    expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
     expect(screen.getByTestId('read-scope-limit-100')).toBeDisabled();
   });
 
