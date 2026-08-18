@@ -427,12 +427,16 @@ func (s *Service) calculateConsumeRequests(
 					slog.String("topic", listReq.TopicName),
 					slog.Int("partition_id", int(startOffset.Partition)))
 			}
-			if offset < 0 {
+			if endOffset.Offset <= startOffset.Offset {
+				p.StartOffset = startOffset.Offset
+				break
+			}
+			if offset < 0 || offset >= endOffset.Offset {
 				// If there's no newer message than the given offset is -1 here, let's replace this with the newest
 				// consumable offset which equals to high water mark - 1.
 				offset = endOffset.Offset - 1
 			}
-			p.StartOffset = offset
+			p.StartOffset = max(offset, startOffset.Offset)
 		default:
 			// Either custom offset or resolved offset by timestamp is given
 			p.StartOffset = max(listReq.StartOffset,
