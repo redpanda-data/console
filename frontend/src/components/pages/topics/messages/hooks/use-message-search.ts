@@ -64,7 +64,7 @@ export type MessageSearchResult = {
   isLoadingMore: boolean;
   /** `partition-offset` ids of rows that arrived within the last few seconds (drives flash). */
   newKeys: ReadonlySet<string>;
-  start: (params: MessageSearchParams, options?: { live?: boolean }) => Promise<void>;
+  start: (params: MessageSearchParams, options?: { live?: boolean; append?: boolean }) => Promise<void>;
   stop: () => void;
   loadMore: (pageSize?: number) => Promise<void>;
   loadLargeMessage: (partitionId: number, offset: number) => Promise<void>;
@@ -271,7 +271,8 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
   );
 
   const start = useCallback(
-    (params: MessageSearchParams, options?: { live?: boolean }) => runStream(params, { live: options?.live }),
+    (params: MessageSearchParams, options?: { live?: boolean; append?: boolean }) =>
+      runStream(params, { live: options?.live, append: options?.append }),
     [runStream]
   );
 

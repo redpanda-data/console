@@ -126,6 +126,17 @@ describe('useMessageSearch', () => {
     expect(result.current.messages.map(messageKey)).toEqual(['2-9']);
   });
 
+  test('start with append:true keeps previous results (live tail restarting after hitting maxResults)', async () => {
+    scriptStream(dataFrame(0, 1), doneFrame());
+    const { result } = renderHook(() => useMessageSearch('test-topic'));
+    await act(() => result.current.start(baseParams, { live: true }));
+    expect(result.current.messages).toHaveLength(1);
+
+    scriptStream(dataFrame(0, 2), doneFrame());
+    await act(() => result.current.start(baseParams, { live: true, append: true }));
+    expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
+  });
+
   test('stream failure surfaces as error state', async () => {
     listMessagesMock.mockImplementation(() =>
       (async function* () {

@@ -44,6 +44,24 @@ const compareBySorting = (
   return 0;
 };
 
+/**
+ * Continuous mode disables the table's own sort entirely (see `isSortableColumnId`), so rows
+ * render in server order — which for the "Newest" origin is partition-grouped, not chronological
+ * (the backend collects and reverses per partition rather than interleaving across partitions by
+ * timestamp). Force newest-first here for that one scope, matching the legacy page's tiebreak
+ * (timestamp desc, then offset desc so ties within a partition stay stable).
+ */
+export function orderForContinuousNewest<T extends { timestamp: number; offset: number }>(
+  messages: readonly T[],
+  continuousActive: boolean,
+  readScopeMode: string
+): readonly T[] {
+  if (!(continuousActive && readScopeMode === 'newest')) {
+    return messages;
+  }
+  return [...messages].sort((a, b) => b.timestamp - a.timestamp || b.offset - a.offset);
+}
+
 export type VisiblePageKeysOptions = {
   sorting: SortingState;
   /** Must mirror the table's own `sortingDisabled` — continuous mode preserves server order. */

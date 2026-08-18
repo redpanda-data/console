@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { visiblePageKeys } from './message-order';
+import { orderForContinuousNewest, visiblePageKeys } from './message-order';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
 const msg = (partitionID: number, offset: number, timestamp: number): TopicMessage =>
@@ -70,5 +70,30 @@ describe('visiblePageKeys', () => {
         pageSize: 10,
       })
     ).toEqual(['0-5', '0-1', '0-3']);
+  });
+});
+
+describe('orderForContinuousNewest', () => {
+  // Partition-grouped, as the backend emits it for the "Newest" origin (per-partition batches,
+  // not globally interleaved by timestamp).
+  const partitionGrouped = [msg(0, 1, 100), msg(0, 2, 300), msg(1, 5, 200), msg(1, 6, 400)];
+
+  test('sorts newest-first (timestamp desc, offset desc tiebreak) for continuous + newest', () => {
+    expect(orderForContinuousNewest(partitionGrouped, true, 'newest')).toEqual([
+      msg(1, 6, 400),
+      msg(0, 2, 300),
+      msg(1, 5, 200),
+      msg(0, 1, 100),
+    ]);
+  });
+
+  test('leaves server order untouched outside continuous + newest', () => {
+    expect(orderForContinuousNewest(partitionGrouped, false, 'newest')).toBe(partitionGrouped);
+    expect(orderForContinuousNewest(partitionGrouped, true, 'oldest')).toBe(partitionGrouped);
+  });
+
+  test('breaks ties by offset descending', () => {
+    const tied = [msg(0, 1, 100), msg(1, 3, 100), msg(0, 2, 100)];
+    expect(orderForContinuousNewest(tied, true, 'newest')).toEqual([msg(1, 3, 100), msg(0, 2, 100), msg(0, 1, 100)]);
   });
 });
