@@ -26,6 +26,18 @@ export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boole
 
 export const DRAFT_BADGE_TOOLTIP = 'Saved but never deployed — it uses no compute and processes no data';
 
+/**
+ * Shown when a create asked for a draft and got a deployed pipeline back.
+ *
+ * `draft` is silently dropped by anything compiled against a pre-drafts proto — Connect's JSON codec
+ * discards unknown fields rather than passing them through, so a create that travelled via an older
+ * proxy is validated and started for real. The flag rollout order exists to prevent this, but a
+ * mis-ordered rollout must not be reported as a successful draft: the user parked work and would
+ * otherwise be told nothing is running while a pipeline moves their data.
+ */
+export const DRAFT_UNSUPPORTED_MESSAGE =
+  'Drafts are not available on this cluster yet, so the pipeline was created and is starting. Stop it from its page if you did not mean to deploy it.';
+
 /** Name used when a draft is saved with the name field left empty, so saving never stops to ask. */
 export const UNTITLED_PIPELINE_NAME = 'Untitled pipeline';
 

@@ -102,10 +102,14 @@ export function summarizeComponentChanges(
 /**
  * What applying the pending edits will do, said plainly. A running pipeline is the case worth warning
  * about: there is no apply-later, so saving restarts it and drops whatever is in flight.
+ *
+ * On the create page there is nothing to apply to and nothing saved anywhere — the comparison is
+ * against the document the editor opened with (blank, a template, or the serverless seed), so it says
+ * that rather than implying a save it hasn't had.
  */
 export function changesImpactMessage(state: Pipeline_State | undefined, mode: 'create' | 'edit'): string {
   if (mode === 'create') {
-    return 'Nothing is deployed yet, so this is what you have added since the last save.';
+    return 'Nothing is saved yet. This compares the editor with the configuration you started from.';
   }
   if (state === Pipeline_State.DRAFT) {
     return "These changes aren't saved to the draft yet.";
@@ -114,4 +118,18 @@ export function changesImpactMessage(state: Pipeline_State | undefined, mode: 'c
     return 'These changes are not live. Applying them restarts the pipeline, which drops in-flight messages.';
   }
   return 'These changes are not saved to the pipeline yet.';
+}
+
+/**
+ * The lane with nothing to show. "No unsaved changes" is only true once something has been saved, so
+ * the create page — where everything is unsaved by definition — gets its own wording.
+ */
+export function noChangesCopy(mode: 'create' | 'edit'): { title: string; body: string } {
+  if (mode === 'create') {
+    return {
+      title: 'Nothing changed yet',
+      body: 'The editor still matches the configuration you started from, and none of it is saved.',
+    };
+  }
+  return { title: 'No unsaved changes', body: 'The editor matches the saved configuration.' };
 }

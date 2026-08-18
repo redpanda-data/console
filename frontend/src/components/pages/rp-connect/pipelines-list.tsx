@@ -13,6 +13,7 @@ import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
+import { FileClock } from 'lucide-react';
 
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -56,6 +57,16 @@ export const PipelineStatus = (p: { status: Pipeline_State }) => {
       return (
         <Flex alignItems="center" gap="2">
           <CloseIcon color="orange" fontSize="17px" width="auto" /> Unspecified
+        </Flex>
+      );
+    // This list never asks for drafts (they are excluded from ListPipelines unless
+    // Filter.include_drafts is set), so this case should be unreachable here. It exists so that the
+    // rendering does not depend on that invariant holding — without it a draft reaching this table
+    // would render as a red "Unknown", which reads as a broken pipeline rather than a parked one.
+    case Pipeline_State.DRAFT:
+      return (
+        <Flex alignItems="center" gap="2">
+          <FileClock color="#444" size={24} /> Draft
         </Flex>
       );
     case Pipeline_State.STARTING:

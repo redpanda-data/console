@@ -95,6 +95,7 @@ import { DeleteDraftDialog } from './delete-draft-dialog';
 import { DetailsDialog } from './details-dialog';
 import {
   areDraftsEnabled,
+  DRAFT_UNSUPPORTED_MESSAGE,
   isDraft,
   startBlockedMessage,
   timestampToMillis,
@@ -350,8 +351,16 @@ function usePipelineSave({
     [editorStore, form, mode, pipelineId]
   );
 
+  /**
+   * Saves the pipeline. Resolves to whether the configuration was persisted — callers that continue a
+   * navigation on the user's behalf (the leave-without-saving dialog) must not proceed on a failure,
+   * or the toast explaining it goes with the route and the work looks saved when it isn't.
+   *
+   * A failed run transition still counts as persisted: the configuration landed, only the start or
+   * stop did not.
+   */
   const handleSave = useCallback(
-    async (intent?: SaveIntent) => {
+    async (intent?: SaveIntent): Promise<boolean> => {
       const run: SaveRunIntent = intent?.run ?? primaryRunIntent(saveContext);
       const isDraftSave = run === 'draft';
 
@@ -369,7 +378,7 @@ function usePipelineSave({
         toast.error(
           typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.'
         );
-        return;
+        return false;
       }
 
       // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
@@ -380,7 +389,7 @@ function usePipelineSave({
       // round-trip just to be told there is nothing to run.
       if (!isDraftSave && isBlankConfig(yamlContent)) {
         toast.error(BLANK_CONFIG_MESSAGE);
-        return;
+        return false;
       }
 
       const { name, description, computeUnits, tags: formTags } = form.getValues();
@@ -391,40 +400,57 @@ function usePipelineSave({
           const response = await createMutation(
             buildCreateRequest({ name, description, computeUnits, userTags, yamlContent, draft: isDraftSave })
           );
-          const newPipelineId = response.response?.pipeline?.id;
+          const createdPipeline = response.response?.pipeline;
+          const newPipelineId = createdPipeline?.id;
           setErrorLintHints({});
+
+          // The rollout guard of last resort. Anything on the path to the dataplane that predates
+          // drafts drops `draft` without complaint, and the pipeline is then created, validated and
+          // started for real — so trust what came back, not what was asked for.
+          const draftWasIgnored =
+            isDraftSave && createdPipeline !== undefined && createdPipeline.state !== Pipeline_State.DRAFT;
 
           // Without draft support, CreatePipeline always starts the pipeline, so "save without
           // starting" is a follow-up stop. It lands in well under a second, but the pipeline is
           // briefly STARTING first. A draft never runs, so it needs no such correction.
+          let stopFailed = false;
           if (run === 'stopped' && newPipelineId) {
             try {
               await stopMutation(create(StopPipelineRequestSchema, { request: { id: newPipelineId } }));
             } catch {
+              stopFailed = true;
               toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
             }
           }
 
           clearWizardStore();
           markSaved(yamlContent, newPipelineId);
-          toast.success(saveSuccessMessage(saveContext, run));
-          warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
+          if (draftWasIgnored) {
+            toast.error(DRAFT_UNSUPPORTED_MESSAGE);
+          } else if (!stopFailed) {
+            // The warning above already said what happened — a success toast would contradict it.
+            toast.success(saveSuccessMessage(saveContext, run));
+          }
+          warnIfResized(form, createdPipeline?.resources?.cpuShares);
           onBeforeSaveNavigate?.();
           if (intent?.skipNavigation) {
-            return;
+            return true;
           }
           if (!newPipelineId) {
             navigate({ to: '/connect-clusters' });
-            return;
+            return true;
           }
           // A parked draft stays in the editor, on its own route so the next save updates this draft
-          // instead of forking another one. Anything deployed goes to its pipeline page, as before.
-          navigate({ to: isDraftSave ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}` });
-          return;
+          // instead of forking another one. Anything deployed goes to its pipeline page — including a
+          // draft the server declined to keep as one, which is now a pipeline that needs stopping.
+          navigate({
+            to: isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
+          });
+          return true;
         }
 
         if (!pipelineId) {
-          return;
+          return false;
         }
 
         const response = await updateMutation(
@@ -483,24 +509,26 @@ function usePipelineSave({
         markSaved(yamlContent, pipelineId);
         warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
         if (runFailed) {
-          // Staying put: the reason it didn't start is only actionable here.
-          return;
+          // Staying put: the reason it didn't start is only actionable here. The configuration did
+          // land, though, so a caller waiting to navigate is free to.
+          return true;
         }
         toast.success(saveSuccessMessage(saveContext, run));
         // Parking a draft is a "keep working" action, so it doesn't leave the editor. It also must not
         // navigate on its own when it was triggered from the leave-without-saving dialog, whose own
         // `proceed()` is what resumes the navigation the user actually asked for.
         if (isDraftSave || intent?.skipNavigation) {
-          return;
+          return true;
         }
         onBeforeSaveNavigate?.();
         navigate({ to: `/rp-connect/${pipelineId}` });
+        return true;
       } catch (err) {
         const connectError = ConnectError.from(err);
         setErrorLintHints(extractLintHintsFromError(connectError));
         if (isNoLongerDraftError(connectError)) {
           toast.error(NO_LONGER_DRAFT_MESSAGE);
-          return;
+          return false;
         }
         toast.error(
           formatToastErrorMessageGRPC({
@@ -509,6 +537,7 @@ function usePipelineSave({
             entity: 'pipeline',
           })
         );
+        return false;
       }
     },
     [
@@ -1056,7 +1085,7 @@ function PipelinePageContent() {
   const { mode, pipelineId } = usePipelineMode();
   const navigate = useNavigate();
   const router = useRouter();
-  const search = useSearch({ strict: false }) as { serverless?: string; draft?: string };
+  const search = useSearch({ strict: false }) as { serverless?: string };
   const isSlashMenuEnabled = isFeatureFlagEnabled('enableConnectSlashMenu');
   const isServerlessMode = search.serverless === 'true';
   const isPipelineDiagramsEnabled = isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
@@ -1732,10 +1761,13 @@ function PipelinePageContent() {
             </Button>
             {unsavedChanges.canSaveDraft ? (
               <Button
-                // Draft first, then continue the navigation the guard interrupted.
+                // Draft first, then continue the navigation the guard interrupted — but only if the
+                // draft actually landed. Leaving on a failed save would take the toast explaining it
+                // with the route, and this button would have told the user their work was safe.
                 onClick={async () => {
-                  await handleSave({ run: 'draft', skipNavigation: true });
-                  blocker.proceed?.();
+                  if (await handleSave({ run: 'draft', skipNavigation: true })) {
+                    blocker.proceed?.();
+                  }
                 }}
                 testId="save-draft-and-leave"
                 variant="primary"

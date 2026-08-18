@@ -53,9 +53,11 @@ import {
   lintPipelineConfig,
   listComponents,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
+import { toast } from 'sonner';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
+import { DRAFT_UNSUPPORTED_MESSAGE } from './draft-copy';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 
 const mockUsePipelineMode = vi.fn(() => ({ mode: 'create' as const }));
@@ -234,6 +236,17 @@ vi.mock('state/rpcn-wizard-store', () => ({
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
 }));
 
+// Only the emitters are spied, so `Toaster` and the rest of sonner stay real. Toast copy itself is
+// covered in save-actions.test.ts and draft-copy.test.ts; what needs asserting here is which toasts a
+// save fires, because two contradicting each other is the bug.
+vi.mock('sonner', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('sonner')>();
+  return {
+    ...actual,
+    toast: { ...actual.toast, success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+  };
+});
+
 // Import after all mocks are set up.
 import PipelinePage from '.';
 
@@ -335,6 +348,9 @@ const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>
 
 describe('PipelinePage', () => {
   beforeEach(() => {
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+    vi.mocked(toast.warning).mockClear();
     mockNavigate.mockClear();
     mockBack.mockClear();
     mockSearch.mockReturnValue({});
@@ -943,9 +959,14 @@ describe('PipelinePage', () => {
   });
 
   describe('drafts and save semantics', () => {
-    const createdPipelineResponse = (id: string) =>
+    /**
+     * What CreatePipeline answers with. The state is not incidental: the editor believes the response
+     * rather than the flag it sent, so that a deployment which silently ignored `draft` is caught
+     * instead of being reported as a parked draft. Defaults to what a drafts-capable server returns.
+     */
+    const createdPipelineResponse = (id: string, state: Pipeline_State = Pipeline_State.DRAFT) =>
       create(ConsoleCreatePipelineResponseSchema, {
-        response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id }) }),
+        response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id, state }) }),
       });
 
     const pipelineResponse = (overrides: Partial<{ state: Pipeline_State; configYaml: string; updateTime: unknown }>) =>
@@ -1000,6 +1021,32 @@ describe('PipelinePage', () => {
       // Parking work keeps the editor open, now bound to the draft so the next save updates it rather
       // than forking a second one.
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
+    });
+
+    // The flag can be turned on before the API that understands it has rolled out. `draft` is then
+    // dropped in transit and the pipeline is created, validated and started for real — so the response
+    // decides, not the flag that was sent. Reporting "Draft saved. It isn't running yet." over a
+    // pipeline that is moving data is the one outcome this must never produce.
+    it('reports a create that came back deployed instead of drafted', async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = vi
+        .fn()
+        .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(true);
+      // The crux: never "Draft saved. It isn't running yet." over a pipeline that is starting.
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(DRAFT_UNSUPPORTED_MESSAGE));
+      expect(toast.success).not.toHaveBeenCalled();
+      // Sent to the pipeline's page, not the draft editor: there is a running pipeline to stop.
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
+      expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' });
     });
 
     it('stays in the editor when a draft is saved from its own page', async () => {
@@ -1098,7 +1145,9 @@ describe('PipelinePage', () => {
 
     it('"Save and start" on a new pipeline deploys it for real', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = vi
+        .fn()
+        .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
       const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
@@ -1138,7 +1187,9 @@ describe('PipelinePage', () => {
     it('falls back to deploy-then-stop when drafts are unavailable', async () => {
       const user = userEvent.setup();
       mockIsFeatureFlagEnabled.mockImplementation(() => false);
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = vi
+        .fn()
+        .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
       const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
@@ -1152,6 +1203,30 @@ describe('PipelinePage', () => {
 
       await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(false);
+    });
+
+    // That fallback creates first and stops second, so the stop can fail on its own. It used to warn
+    // that the pipeline may be running and then immediately claim success — "Pipeline created — it is
+    // not running yet" — which is the one thing the user needs not to believe.
+    it('does not claim success when the pipeline it created could not be stopped', async () => {
+      const user = userEvent.setup();
+      mockIsFeatureFlagEnabled.mockImplementation(() => false);
+      const createPipelineMock = vi
+        .fn()
+        .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
+      const stopPipelineMock = vi.fn().mockRejectedValue(new ConnectError('pipeline is not running', Code.Internal));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
+      await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringMatching(/may be running/i)));
+      expect(toast.success).not.toHaveBeenCalled();
+      // Still routed to the pipeline's page, which is where it can be stopped by hand.
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
     });
 
     it('editing a draft keeps it a draft, and says so', async () => {
@@ -1477,7 +1552,9 @@ describe('PipelinePage', () => {
       const { proceed } = blocked();
       const createPipelineMock = vi.fn().mockReturnValue(
         create(ConsoleCreatePipelineResponseSchema, {
-          response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id: 'new-pipeline' }) }),
+          response: create(CreatePipelineResponseSchema, {
+            pipeline: create(PipelineSchema, { id: 'new-pipeline', state: Pipeline_State.DRAFT }),
+          }),
         })
       );
 
@@ -1491,6 +1568,27 @@ describe('PipelinePage', () => {
       // The dialog's own proceed is what resumes the navigation, so the editor must not add one of
       // its own — two navigations would flash a route nobody chose.
       await waitFor(() => expect(proceed).toHaveBeenCalled());
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    // The failure that made this button dangerous: it used to resume the navigation regardless, so the
+    // toast explaining the failure went with the route and the user had been told their work was safe.
+    it('stays put when the draft it offered to save fails', async () => {
+      const user = userEvent.setup();
+      const { proceed } = blocked();
+      const createPipelineMock = vi
+        .fn()
+        .mockRejectedValue(new ConnectError('pipeline quota exceeded', Code.ResourceExhausted));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
+      await user.click(await screen.findByTestId('save-draft-and-leave'));
+
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      expect(proceed).not.toHaveBeenCalled();
+      // The dialog is still up, so the work is still on screen and can be retried or discarded.
+      expect(screen.getByTestId('save-draft-and-leave')).toBeInTheDocument();
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
@@ -1594,7 +1692,9 @@ describe('PipelinePage', () => {
       const user = userEvent.setup();
       const createPipelineMock = vi.fn().mockReturnValue(
         create(ConsoleCreatePipelineResponseSchema, {
-          response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id: 'new-pipeline' }) }),
+          response: create(CreatePipelineResponseSchema, {
+            pipeline: create(PipelineSchema, { id: 'new-pipeline', state: Pipeline_State.DRAFT }),
+          }),
         })
       );
       seedBuffer('create', 'input:\n  stale: {}', 'work in progress');

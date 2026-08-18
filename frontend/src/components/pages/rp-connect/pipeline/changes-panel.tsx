@@ -16,7 +16,7 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckCircle2 } from 'lucide-react';
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-import { type ChangeKind, type ComponentChange, changesImpactMessage } from './changes-summary';
+import { type ChangeKind, type ComponentChange, changesImpactMessage, noChangesCopy } from './changes-summary';
 
 /**
  * Read-only comparison of the saved configuration against the editor's buffer.
@@ -93,18 +93,15 @@ export function ChangesPanel({
   const hasChanges = editedYaml !== savedYaml;
 
   if (!hasChanges) {
+    const { title, body } = noChangesCopy(mode);
     return (
       <div
         className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center"
         data-testid="changes-panel-empty"
       >
         <CheckCircle2 className="size-5 text-success" />
-        <p className="text-body">No unsaved changes</p>
-        <p className="max-w-prose text-muted-foreground text-sm">
-          {mode === 'create'
-            ? 'Everything in the editor is saved to your draft.'
-            : 'The editor matches the saved configuration.'}
-        </p>
+        <p className="text-body">{title}</p>
+        <p className="max-w-prose text-muted-foreground text-sm">{body}</p>
       </div>
     );
   }

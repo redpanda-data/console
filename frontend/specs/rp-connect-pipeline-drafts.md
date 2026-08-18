@@ -318,8 +318,11 @@ explicit allow-list — a console flag missing from that list can never be turne
 ### Resume a draft
 
 1. Pipeline list → **Drafts** tab, or the row's Draft chip anywhere in the list.
-2. Row click or **Continue editing** → `/rp-connect/<id>/edit`, config exactly as saved.
-3. Header shows **Draft** and, if it does not lint, "N issues to fix before this can start".
+2. Row click → `/rp-connect/<id>`, the draft's own page: it says what a draft is, and offers **Continue
+   editing** and **Start pipeline** rather than dropping straight into the editor. A row click is a
+   "show me this" gesture, and a draft's page is also where Start and Delete live.
+3. **Continue editing** → `/rp-connect/<id>/edit`, config exactly as saved.
+4. Header shows **Draft** and, if it does not lint, "N issues to fix before this can start".
 
 ### Start a draft
 

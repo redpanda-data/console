@@ -197,8 +197,12 @@ const pipelineStateSortPriority: Record<Pipeline_State, number> = {
 
 const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.state] ?? Number.MAX_SAFE_INTEGER;
 
-/** Every row opens its own page; a draft's page is the editor's view of unfinished work. */
-const editorLinkProps = (row: Pipeline) =>
+/**
+ * Every row opens the pipeline's own page, drafts included — a draft's page explains what it is and
+ * offers Continue editing and Start, so the editor is one deliberate click away rather than where a
+ * row click lands you.
+ */
+const pipelinePageLinkProps = (row: Pipeline) =>
   ({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(row.id) } }) as const;
 
 const PAGE_SIZE = 20;
@@ -501,7 +505,7 @@ const createColumns = ({
               as={TanStackRouterLink}
               className="block truncate text-base text-primary no-underline hover:underline"
               title={name}
-              {...editorLinkProps(row.original)}
+              {...pipelinePageLinkProps(row.original)}
             >
               {name}
             </Link>
@@ -792,7 +796,7 @@ const PipelineListPageContent = () => {
       if (window.getSelection()?.toString()) {
         return;
       }
-      navigate(editorLinkProps(row));
+      navigate(pipelinePageLinkProps(row));
     },
     [navigate]
   );

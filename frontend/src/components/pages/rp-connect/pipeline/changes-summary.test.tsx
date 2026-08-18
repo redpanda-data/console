@@ -12,7 +12,7 @@
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, it } from 'vitest';
 
-import { changesImpactMessage, summarizeComponentChanges } from './changes-summary';
+import { changesImpactMessage, noChangesCopy, summarizeComponentChanges } from './changes-summary';
 import { changedNodeIds } from '../utils/pipeline-diff';
 
 const config = ({
@@ -102,7 +102,27 @@ describe('changesImpactMessage', () => {
     expect(message).not.toMatch(/restart/i);
   });
 
-  it('frames a new pipeline as changes since the last save', () => {
-    expect(changesImpactMessage(undefined, 'create')).toMatch(/nothing is deployed yet/i);
+  // The create page has no save to have happened yet, so it must not imply one.
+  it('does not claim a new pipeline has been saved', () => {
+    const message = changesImpactMessage(undefined, 'create');
+    expect(message).toMatch(/nothing is saved yet/i);
+    expect(message).not.toMatch(/last save|your draft/i);
+  });
+});
+
+describe('noChangesCopy', () => {
+  // "No unsaved changes" is only true once something has been saved. On the create page everything is
+  // unsaved, and the earlier copy claimed the editor was "saved to your draft" when no draft existed.
+  it('does not claim a new pipeline is saved anywhere', () => {
+    const { title, body } = noChangesCopy('create');
+    expect(title).not.toMatch(/unsaved/i);
+    expect(body).toMatch(/none of it is saved/i);
+    expect(body).not.toMatch(/saved to your draft/i);
+  });
+
+  it('reports an unchanged editor against the saved configuration when editing', () => {
+    const { title, body } = noChangesCopy('edit');
+    expect(title).toMatch(/no unsaved changes/i);
+    expect(body).toMatch(/matches the saved configuration/i);
   });
 });
