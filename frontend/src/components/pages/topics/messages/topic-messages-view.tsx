@@ -210,10 +210,13 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         // errors are surfaced through search.error
       });
     return () => search.stop();
-    // searchParams is intentionally not a dependency: scope edits are disabled while live,
-    // and deserializer changes take effect on the next (re)start.
+    // searchParams as a whole is intentionally not a dependency: scope edits (offset,
+    // timestamp, max results) are disabled in the UI while live, and deserializer changes
+    // take effect on the next (re)start. filterInterpreterCode is singled out below because
+    // JS filters stay editable while live — committing one should restart the tail with the
+    // new predicate applied, not leave the chip showing "applied" over an unfiltered stream.
     // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  }, [urlState.liveTail, search.start, search.stop]);
+  }, [urlState.liveTail, search.start, search.stop, filterInterpreterCode]);
 
   const filteredMessages = useClientFilters(search.messages, urlState.quickSearch, fieldTokens, topic.partitionCount);
 
