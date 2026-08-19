@@ -121,6 +121,21 @@ export function changesImpactMessage(state: Pipeline_State | undefined, mode: 'c
 }
 
 /**
+ * Severity of the impact message, so the notice is styled by what applying actually costs.
+ *
+ * Only a live pipeline earns a warning: applying restarts it and drops in-flight messages. Everything
+ * else is a statement of fact — nothing is running, so nothing is at risk — and colouring it the same
+ * orange as "N issues to fix before this can start" would flatten the two into one undifferentiated
+ * wall of alarm.
+ */
+export function changesImpactTone(state: Pipeline_State | undefined, mode: 'create' | 'edit'): 'info' | 'warning' {
+  if (mode === 'edit' && (state === Pipeline_State.RUNNING || state === Pipeline_State.STARTING)) {
+    return 'warning';
+  }
+  return 'info';
+}
+
+/**
  * The lane with nothing to show. "No unsaved changes" is only true once something has been saved, so
  * the create page — where everything is unsaved by definition — gets its own wording.
  */

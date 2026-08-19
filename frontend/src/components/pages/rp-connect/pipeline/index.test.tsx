@@ -1429,7 +1429,24 @@ describe('PipelinePage', () => {
       fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
       await openChanges(user);
 
-      expect(await screen.findByText(/applying them restarts the pipeline/i)).toBeInTheDocument();
+      expect(await screen.findByTestId('changes-impact')).toHaveTextContent(/applying them restarts the pipeline/i);
+    });
+
+    // Which side is the user's own edit is the question the lane exists to answer, and the diff drops
+    // to a single inline pane on a narrow lane — so the legend keys on the gutter markers, not on
+    // colour or on left/right.
+    it('says what the two sides of the diff are', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML));
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
+      await openChanges(user);
+
+      expect(await screen.findByText(/the saved configuration/i)).toBeInTheDocument();
+      expect(screen.getByText(/your unsaved edits/i)).toBeInTheDocument();
     });
 
     it('jumps from a changed component to its lines in the YAML lane', async () => {

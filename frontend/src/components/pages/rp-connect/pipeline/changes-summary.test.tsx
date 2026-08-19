@@ -12,7 +12,7 @@
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { describe, expect, it } from 'vitest';
 
-import { changesImpactMessage, noChangesCopy, summarizeComponentChanges } from './changes-summary';
+import { changesImpactMessage, changesImpactTone, noChangesCopy, summarizeComponentChanges } from './changes-summary';
 import { changedNodeIds } from '../utils/pipeline-diff';
 
 const config = ({
@@ -107,6 +107,23 @@ describe('changesImpactMessage', () => {
     const message = changesImpactMessage(undefined, 'create');
     expect(message).toMatch(/nothing is saved yet/i);
     expect(message).not.toMatch(/last save|your draft/i);
+  });
+});
+
+describe('changesImpactTone', () => {
+  // The editor header already shows "N issues to fix before this can start" in warning orange. A
+  // second orange line saying something far less urgent flattens both into undifferentiated alarm.
+  it('warns only where applying actually costs something', () => {
+    expect(changesImpactTone(Pipeline_State.RUNNING, 'edit')).toBe('warning');
+    expect(changesImpactTone(Pipeline_State.STARTING, 'edit')).toBe('warning');
+  });
+
+  it.each([
+    ['a new pipeline', undefined, 'create' as const],
+    ['a draft', Pipeline_State.DRAFT, 'edit' as const],
+    ['a stopped pipeline', Pipeline_State.STOPPED, 'edit' as const],
+  ])('states the facts without alarm for %s', (_name, state, mode) => {
+    expect(changesImpactTone(state, mode)).toBe('info');
   });
 });
 

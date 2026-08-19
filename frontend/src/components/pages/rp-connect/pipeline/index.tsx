@@ -1605,11 +1605,9 @@ function PipelinePageContent() {
                   {lanes.map((lane) => (
                     <TabsTrigger key={lane.value} onClick={lane.onSelect} value={lane.value} variant="underline">
                       {lane.label}
-                      {lane.count ? (
-                        <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums">
-                          {lane.count}
-                        </span>
-                      ) : null}
+                      {/* Same count treatment as the sidebar's "Lint issues", so two counts in one
+                          editor don't read as two different kinds of thing. */}
+                      {lane.count ? <CountDot count={lane.count} size="sm" variant="info" /> : null}
                     </TabsTrigger>
                   ))}
                 </TabsList>
