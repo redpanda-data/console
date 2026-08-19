@@ -228,13 +228,15 @@ describe('unsavedChangesCopy', () => {
     expect(copy.body).toMatch(/restart/i);
   });
 
-  // The editor autosaves a recovery buffer, so telling someone the work is gone would be false.
-  it('says the browser keeps the work wherever no draft can be offered', () => {
+  // It used to promise the browser kept the edits either way. Discarding now clears the recovery buffer
+  // on purpose, so that promise would be false for the one button it was written to soften.
+  it('does not claim the work survives being discarded', () => {
     for (const context of [running, stopped]) {
       const copy = unsavedChangesCopy(context);
       expect(copy.canSaveDraft).toBe(false);
-      expect(copy.body).toMatch(/this browser keeps them/i);
-      expect(copy.body).not.toMatch(/nothing is saved/i);
+      expect(copy.body).not.toMatch(/browser keeps|offers them back/i);
+      // Says what to do instead, rather than only what cannot be done.
+      expect(copy.body).toMatch(/keep editing/i);
     }
   });
 

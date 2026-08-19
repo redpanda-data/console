@@ -33,16 +33,18 @@ export function AutosaveRestoreNotice({
 }) {
   return (
     <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale ? 'warning' : 'info'}>
-      <AlertTitle>Unsaved changes from {relativeAgeLabel(updatedAt)}</AlertTitle>
+      {/* Not "unsaved changes": that names the edits in this editor right now, which the header pill and
+          the lane both track. This is work from an earlier visit that this browser kept. */}
+      <AlertTitle>Restore your edits from {relativeAgeLabel(updatedAt)}?</AlertTitle>
       <AlertDescription className="flex flex-wrap items-center gap-3">
         <span>
           {isStale
             ? 'This pipeline has been saved by someone since you were editing. Restoring replaces what is shown with your unsaved version.'
-            : 'These changes were never saved. The configuration shown is the saved one.'}
+            : 'You left the editor without saving these edits. The configuration shown is the saved one.'}
         </span>
         <span className="flex items-center gap-2">
           <Button onClick={onRestore} size="sm" testId="restore-autosave" variant="outline">
-            Restore my changes
+            Restore my edits
           </Button>
           <Button onClick={onDiscard} size="sm" testId="discard-autosave" variant="ghost">
             Discard

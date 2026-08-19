@@ -203,12 +203,34 @@ be saved at all without restarting, and its only protection is the browser-local
 
 Closing that gap is §9, and it is the next thing worth building.
 
-### 8c. The Changes lane
+### 8c. The Unsaved changes lane
 
-A third editor lane, `YAML | Visual | Changes N`, comparing the saved configuration with the editor
-buffer: a line diff (Monaco's diff editor, unchanged regions collapsed) beside a list of the components
-touched, each Added / Removed / Changed and clickable to jump to its lines in the YAML lane. The count
-on the tab is components touched, so a change is visible without opening the lane.
+A third editor lane, `YAML | Visual | Unsaved changes N`, comparing what is saved with what the editor
+holds: a line diff (Monaco's diff editor, unchanged regions collapsed) beside a list of what was
+touched, each row clickable to go where it is edited.
+
+Named for the state it shows, not for its contents. "Changes" read as a revision history — a log of
+what has happened to the pipeline — which is the opposite of what the lane is. It now uses the same
+three words as the header pill and the leave-without-saving dialog, so the three reinforce each other
+instead of sounding like three different features.
+
+**Both halves of a save.** A save writes the settings (name, description, compute units, tags) as well
+as the configuration, so the lane lists changed settings with their old and new values above the
+components, and the count covers both. Leaving the settings out made the lane state the opposite of the
+header: resize a pipeline and the header said "Unsaved changes" while the lane said "No unsaved
+changes". The tab count and the list are the same array, so they cannot disagree, and it is computed by
+comparing values against the form's default values — which every successful save re-baselines — rather
+than from react-hook-form's `dirtyFields`, a record of what has been *touched*: restoring a recovery
+buffer resets the form with `keepDirty`, leaving fields that differ from what is saved with no dirty
+flag to find them by.
+
+The count is what was itemised. An edit with nothing to itemise — a comment, whitespace — shows a plain
+marker instead of a number rather than showing `0` next to a lane that is about to say there are
+changes.
+
+**Edit only.** Nothing is saved on the create page, so every component would list as "Added" and the
+count would only restate how big the document is. The lane needs something to compare against to mean
+anything.
 
 The header line says what applying will cost, and it is the only place that difference is stated:
 "not live … applying restarts the pipeline, which drops in-flight messages" for a running pipeline,
@@ -218,6 +240,13 @@ This is deliberately console-only — it needs no proto, no service and no rollo
 existing `Apply and restart` inspectable rather than a leap of faith. It does **not** stage anything:
 the comparison is against what is saved, and the only saves available are still the ones in the table
 above.
+
+**Known limit.** The saved side is the configuration as it was when the editor hydrated. If someone
+else saves the pipeline while it is open, the lane compares against that older version and still calls
+it "the saved configuration". Detecting it is cheap — the polled `Pipeline` is already on screen, and
+either `update_time` or a straight `config_yaml` comparison would spot the drift — but the honest fix
+is a "this pipeline changed under you" notice for the whole editor, not a line in one lane, and it
+wants the `etag` from §8b to be safe about who wins.
 
 Editing a **running** pipeline still applies immediately and restarts it. What is not built:
 
@@ -347,10 +376,18 @@ how users conclude the feature is broken.
 
 Navigating away with unsaved edits opens the existing dialog, now offering **Save draft** on a draft
 or new pipeline (and **Discard** / **Keep editing** as before). On a running pipeline the primary
-becomes **Keep editing**, because the only "save" available there would restart it.
+becomes **Keep editing**, because the only "save" available there would restart it. In both variants
+the quiet **Discard changes** sits on the left and the primary at the right end, so the destructive
+option is never the one the eye lands on.
+
+**Discard means discard.** It clears the autosave buffer for that editor as it leaves. Otherwise the
+next visit offered back the very edits the user had just chosen to throw away — a crash net is not a
+second copy of a decision.
 
 Closing the tab is covered by autosave, not the dialog: the buffer is written on a debounce, and the
-next visit to that editor offers to restore it.
+next visit to that editor offers to restore it. That offer is worded as its own thing — "Restore your
+edits from 5m ago?" — and never as "unsaved changes", which names the live state of the editor the user
+is looking at.
 
 ## Pipeline list treatment
 

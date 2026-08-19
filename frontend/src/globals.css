@@ -39,6 +39,13 @@
   .page-fill-viewport {
     height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
   }
+
+  /* The same measure as a floor rather than a fixed height, for a surface that has to grow with its
+     content — a paginated table whose controls must not sit behind an inner fold — but should never
+     collapse to less than the space it was given. */
+  .page-min-fill-viewport {
+    min-height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
+  }
 }
 
 /* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width

@@ -1282,8 +1282,9 @@ describe('PipelinePage', () => {
 
       const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
       await waitFor(() => expect(yamlEditor.value).toBe(partialConfig));
-      // Nothing to save yet: reopening a draft is not an edit of it.
-      expect(screen.queryByText(/unsaved changes/i)).not.toBeInTheDocument();
+      // Nothing to save yet: reopening a draft is not an edit of it. By title, not by text — the lane
+      // tab is called "Unsaved changes" whether or not there are any.
+      expect(screen.queryByTitle('You have unsaved changes')).not.toBeInTheDocument();
 
       await user.click(await screen.findByTestId('save-pipeline'));
 
@@ -1368,11 +1369,11 @@ describe('PipelinePage', () => {
     });
   });
 
-  describe('the Changes lane', () => {
+  describe('the Unsaved changes lane', () => {
     const DEPLOYED_YAML = 'input:\n  stdin: {}\noutput:\n  stdout: {}';
 
     const openChanges = async (user: ReturnType<typeof userEvent.setup>) => {
-      await user.click(await screen.findByRole('tab', { name: /changes/i }));
+      await user.click(await screen.findByRole('tab', { name: /unsaved changes/i }));
     };
 
     it('is offered while editing, even without the visual editor', async () => {
@@ -1380,7 +1381,7 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      expect(await screen.findByRole('tab', { name: /changes/i })).toBeInTheDocument();
+      expect(await screen.findByRole('tab', { name: /unsaved changes/i })).toBeInTheDocument();
       expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
     });
 
@@ -1391,7 +1392,16 @@ describe('PipelinePage', () => {
       render(<PipelinePage />, { transport: createTransport() });
 
       await screen.findByRole('tab', { name: 'Monitor' });
-      expect(screen.queryByRole('tab', { name: /changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /unsaved changes/i })).not.toBeInTheDocument();
+    });
+
+    // Nothing is saved on the create page, so every component would be listed as "Added" and the count
+    // would only restate how big the document is.
+    it('is not offered while creating', async () => {
+      render(<PipelinePage />, { transport: createTransport() });
+
+      expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /unsaved changes/i })).not.toBeInTheDocument();
     });
 
     it('says there is nothing to apply when the editor matches what is saved', async () => {
@@ -1426,6 +1436,25 @@ describe('PipelinePage', () => {
       expect(diff).toHaveAttribute('data-original', DEPLOYED_YAML);
       expect(diff).toHaveAttribute('data-modified', edited);
       expect(screen.getByText('Changed')).toBeInTheDocument();
+    });
+
+    // The same save writes the settings and the configuration, so a settings-only edit is an unsaved
+    // change. The lane used to say "No unsaved changes" while the header's pill said the opposite.
+    it('counts and itemises a settings-only change', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML));
+      fireEvent.change(screen.getByLabelText('Pipeline name'), { target: { value: 'Renamed pipeline' } });
+
+      await waitFor(() => expect(screen.getByRole('tab', { name: /unsaved changes/i })).toHaveTextContent('1'));
+      await openChanges(user);
+
+      expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+      expect(screen.getByText('Test Pipeline → Renamed pipeline')).toBeInTheDocument();
+      expect(screen.queryByTestId('changes-panel-empty')).not.toBeInTheDocument();
     });
 
     // A running pipeline has no apply-later, so the lane has to say what applying costs.
@@ -1642,10 +1671,30 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      expect(await screen.findByText(/would restart it/i)).toBeInTheDocument();
+      expect(await screen.findByText(/restarts this pipeline/i)).toBeInTheDocument();
       expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /keep editing/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /discard changes/i })).toBeInTheDocument();
+    });
+
+    // Discard used to leave the recovery buffer behind, so the next visit offered back the very edits
+    // the user had just chosen to throw away.
+    it('drops the recovery buffer when the changes are discarded on purpose', async () => {
+      const user = userEvent.setup();
+      const { proceed } = blocked();
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
+      await waitFor(
+        () => expect(useRpcnEditorAutosaveStore.getState().entries.some((e) => e.targetKey === 'create')).toBe(true),
+        { timeout: 4000 }
+      );
+
+      await user.click(await screen.findByTestId('discard-and-leave'));
+
+      expect(useRpcnEditorAutosaveStore.getState().entries.some((e) => e.targetKey === 'create')).toBe(false);
+      expect(proceed).toHaveBeenCalled();
     });
   });
 

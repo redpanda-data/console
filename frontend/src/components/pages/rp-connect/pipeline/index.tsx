@@ -63,7 +63,7 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
+import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
@@ -89,7 +89,7 @@ import { z } from 'zod';
 
 import { AutosaveRestoreNotice } from './autosave-restore-notice';
 import { ChangesPanel } from './changes-panel';
-import { summarizeComponentChanges } from './changes-summary';
+import { summarizeComponentChanges, summarizeSettingsChanges, UNSAVED_CHANGES_LANE_LABEL } from './changes-summary';
 import { ConfigDialog } from './config-dialog';
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import { DetailsDialog } from './details-dialog';
@@ -167,10 +167,14 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return type ? `Search ${type}s...` : undefined;
 }
 
-// Tips to show beneath the editor for the active lane; read-only YAML and Monitor get none.
+// Tips to show beneath the editor for the active lane; read-only YAML, Monitor and the read-only
+// unsaved-changes diff get none — nothing there takes a keystroke.
 function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
   if (isView) {
     return viewLane === 'visual' ? 'visual' : null;
+  }
+  if (editLane === 'changes') {
+    return null;
   }
   return editLane === 'visual' ? 'visual' : 'yaml';
 }
@@ -1050,7 +1054,14 @@ function SidebarPanel({
 }
 
 /** One tab of the editor surface's lane strip. */
-type LaneTab = { value: string; label: string; onSelect: () => void; count?: number };
+type LaneTab = {
+  value: string;
+  label: string;
+  onSelect: () => void;
+  count?: number;
+  /** Shows a plain marker when the lane has something to say but nothing to count. */
+  showDot?: boolean;
+};
 
 // The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
 // embedded Cloud UI.
@@ -1250,6 +1261,14 @@ function PipelinePageContent() {
         : [],
     [mode, initialYaml, deferredYamlContent, changedIds]
   );
+  // Settings are the other half of what a save writes, so an edit to one is an unsaved change too — the
+  // tab count and the lane's list are the same array. Against the form's default values, which every
+  // successful save re-baselines.
+  const settingsValues = useWatch({ control: form.control });
+  const settingsChanges = useMemo(
+    () => (mode === 'edit' ? summarizeSettingsChanges(form.formState.defaultValues, settingsValues) : []),
+    [mode, form.formState.defaultValues, settingsValues]
+  );
   const blocker = useBlocker({
     shouldBlockFn: () => checkUnsavedChanges() && !editorStore.getState().allowNavigation,
     enableBeforeUnload: () => checkUnsavedChanges(),
@@ -1360,7 +1379,7 @@ function PipelinePageContent() {
     if (recoverableEntry) {
       applyAutosave(recoverableEntry);
       setIsAutosaveDismissed(true);
-      toast.success('Unsaved changes restored');
+      toast.success('Your edits were restored — they still need saving');
     }
   }, [recoverableEntry, applyAutosave]);
 
@@ -1368,6 +1387,15 @@ function PipelinePageContent() {
     rpcnEditorAutosave.clear(autosaveTarget);
     setIsAutosaveDismissed(true);
   }, [autosaveTarget]);
+
+  /**
+   * Leaving on purpose without saving. The recovery buffer has to go with the edits: it is a crash net,
+   * not a second copy of a decision — offering these edits back next visit would undo the discard.
+   */
+  const handleDiscardAndLeave = useCallback(() => {
+    rpcnEditorAutosave.clear(autosaveTarget);
+    blocker.proceed?.();
+  }, [autosaveTarget, blocker]);
 
   // Only once the document it would replace has loaded, or the notice appears over a skeleton. Creating
   // waits only on the serverless template, which resolves late enough to overwrite a restore.
@@ -1436,9 +1464,9 @@ function PipelinePageContent() {
   // Visual lanes take the full canvas, so the YAML/diagram sidebar is hidden.
   const isViewVisualLane = mode === 'view' && activeViewLane === 'visual';
   const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
-  // The Changes lane lists the components it touched itself, so the structure tree would be a second,
-  // less specific copy of the same information.
-  const isEditChangesLane = mode !== 'view' && activeEditLane === 'changes';
+  // The Unsaved changes lane lists the components it touched itself, so the structure tree would be a
+  // second, less specific copy of the same information.
+  const isEditChangesLane = mode === 'edit' && activeEditLane === 'changes';
   const showSidebar = !(isViewVisualLane || isEditVisualLane || isEditChangesLane);
 
   const {
@@ -1491,13 +1519,19 @@ function PipelinePageContent() {
     if (isVisualEditorEnabled) {
       editLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') });
     }
-    // Always offered, so "what am I about to apply" is answerable before it is a restart.
-    editLanes.push({
-      value: 'changes',
-      label: 'Changes',
-      count: componentChanges.length,
-      onSelect: () => setActiveEditLane('changes'),
-    });
+    // Only where something is saved to compare against. On the create page nothing is, so every
+    // component would be listed as "Added" and the count would just restate the document's size.
+    if (mode === 'edit') {
+      editLanes.push({
+        value: 'changes',
+        label: UNSAVED_CHANGES_LANE_LABEL,
+        count: componentChanges.length + settingsChanges.length,
+        // A comment or whitespace edit changes nothing itemisable, and a count of zero beside the label
+        // would read as "no unsaved changes" while the lane and the header both say there are.
+        showDot: hasUnsavedChanges,
+        onSelect: () => setActiveEditLane('changes'),
+      });
+    }
     return editLanes;
   }, [
     mode,
@@ -1508,6 +1542,8 @@ function PipelinePageContent() {
     setActiveViewLane,
     setActiveEditLane,
     componentChanges.length,
+    settingsChanges.length,
+    hasUnsavedChanges,
   ]);
 
   // A draft opens on its configuration, since Monitor isn't offered.
@@ -1519,13 +1555,15 @@ function PipelinePageContent() {
 
   return (
     // Editor lanes are viewport-bounded (page-fill-viewport, globals.css) because Monaco needs a
-    // bounded box. The Monitor lane instead flows with the document, keeping its logs pagination out
-    // from behind an inner fold.
+    // bounded box. The Monitor lane takes the same measure as a *minimum* instead, so it still grows
+    // with the document — keeping its logs pagination out from behind an inner fold — without
+    // collapsing to the height of a short metrics panel and leaving the structure tree in a crushed
+    // box above dead space.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
     <div
       className={cn(
         '-ml-3.5 flex min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
-        !isMonitorLane && 'page-fill-viewport'
+        isMonitorLane ? 'page-min-fill-viewport' : 'page-fill-viewport'
       )}
       ref={expandedModeRef}
     >
@@ -1610,6 +1648,9 @@ function PipelinePageContent() {
                       <span className="flex items-center gap-2">
                         {lane.label}
                         {lane.count ? <CountDot count={lane.count} size="sm" variant="info" /> : null}
+                        {!lane.count && lane.showDot ? (
+                          <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" />
+                        ) : null}
                       </span>
                     </TabsTrigger>
                   ))}
@@ -1679,10 +1720,11 @@ function PipelinePageContent() {
                 <ChangesPanel
                   changes={componentChanges}
                   editedYaml={yamlContent}
-                  mode={mode as 'create' | 'edit'}
+                  onEditSettings={() => setIsConfigDialogOpen(true)}
                   onSelectComponent={goToYamlNode}
                   pipelineState={pipeline?.state}
                   savedYaml={initialYaml ?? ''}
+                  settingsChanges={settingsChanges}
                 />
               ) : null}
               {mode === 'view' || activeEditLane === 'visual' || isEditChangesLane ? null : (
@@ -1750,15 +1792,22 @@ function PipelinePageContent() {
       <Dialog onOpenChange={(open) => (open ? undefined : blocker.reset?.())} open={blocker.status === 'blocked'}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Leave without saving?</DialogTitle>
+            {/* Names the thing the body then refers to, and the lane and the header pill call it the
+                same. */}
+            <DialogTitle>Leave without saving your changes?</DialogTitle>
           </DialogHeader>
           <DialogBody>{unsavedChanges.body}</DialogBody>
+          {/* Losing the work is the quiet option on the left; the safe one is the primary at the right
+              end, in both variants of this dialog. */}
           <DialogFooter>
-            <Button onClick={() => blocker.reset?.()} variant={unsavedChanges.canSaveDraft ? 'ghost' : 'primary'}>
-              Keep editing
-            </Button>
-            <Button onClick={() => blocker.proceed?.()} variant="secondary-outline">
+            <Button onClick={handleDiscardAndLeave} testId="discard-and-leave" variant="ghost">
               Discard changes
+            </Button>
+            <Button
+              onClick={() => blocker.reset?.()}
+              variant={unsavedChanges.canSaveDraft ? 'secondary-outline' : 'primary'}
+            >
+              Keep editing
             </Button>
             {unsavedChanges.canSaveDraft ? (
               <Button

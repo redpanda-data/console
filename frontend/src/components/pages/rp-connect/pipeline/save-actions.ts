@@ -200,24 +200,24 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): st
 }
 
 /**
- * Where no draft can be offered this says the edits are kept in this browser, because they are — the
- * recovery buffer has them, and claiming otherwise is the same lie as the reverse.
+ * Where no draft can be offered, the honest thing to say is that discarding is a real loss — the
+ * recovery buffer only survives a crash or a closed tab, and Discard clears it deliberately.
  */
 export function unsavedChangesCopy(context: SaveContext): { body: string; canSaveDraft: boolean } {
   if (isUndeployed(context) && context.draftsEnabled) {
     return {
-      body: 'You have unsaved changes. Save them as a draft to pick up later, or leave and lose them.',
+      body: 'Save them as a draft to pick up later, or leave and lose them.',
       canSaveDraft: true,
     };
   }
   if (isStoppableState(context.state)) {
     return {
-      body: 'You have unsaved changes to this pipeline. Saving them would restart it, so they stay unapplied — this browser keeps them, and offers them back next time you open the editor.',
+      body: 'The only way to save them is to apply them, which restarts this pipeline and drops in-flight messages. Keep editing to review them first, or discard them.',
       canSaveDraft: false,
     };
   }
   return {
-    body: 'You have unsaved changes to this pipeline. They stay unapplied — this browser keeps them, and offers them back next time you open the editor.',
+    body: 'They are not saved to the pipeline. Keep editing to save them, or discard them and leave.',
     canSaveDraft: false,
   };
 }

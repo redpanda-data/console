@@ -487,8 +487,10 @@ export function PipelineEditHeader({
             </Button>
             <SaveActions context={context} isSaving={isSaving} onSave={onSave} />
             <span className="absolute top-full right-0 mt-1.5 flex items-center gap-2 whitespace-nowrap text-muted-foreground text-xs">
+              {/* role=status: the pill appears without the user acting on this part of the page, and it
+                  is the answer to "do I still need to save". */}
               {hasUnsavedChanges ? (
-                <span className="flex items-center gap-1.5" title="You have unsaved changes">
+                <span className="flex items-center gap-1.5" role="status" title="You have unsaved changes">
                   <span aria-hidden className="size-2 rounded-full bg-informative" />
                   Unsaved changes
                 </span>
