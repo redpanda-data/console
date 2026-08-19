@@ -43,10 +43,8 @@ export const ISSUE_FILTER_OPTIONS = [
 /**
  * States where a pipeline can be started.
  *
- * A draft is startable too, but deliberately not listed here: starting one validates a configuration
- * that has never been checked, so it can fail with lint issues that are only actionable in the editor.
- * Callers handle `STATE_DRAFT` explicitly (see `use-start-draft`) rather than through the plain
- * start control, whose only recourse is an error toast.
+ * A draft is startable too, but not listed here: it can fail with lint issues that are only actionable
+ * in the editor, so callers handle `STATE_DRAFT` explicitly (see `use-start-draft`).
  */
 export const STARTABLE_STATES = [Pipeline_State.STOPPED, Pipeline_State.ERROR, Pipeline_State.COMPLETED, Pipeline_State.STOPPING] as const;
 

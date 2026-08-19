@@ -179,16 +179,10 @@ function tipsContextForLane(isView: boolean, viewLane: string, editLane: string)
 const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 
 /**
- * Names already taken by auto-named drafts, so a new one can be numbered past them.
- *
- * Narrowed to the untitled prefix on purpose. The unfiltered list drains every page — on a cluster
- * with a few thousand pipelines that is several seconds, and the save mutation *awaits* its own
- * invalidation of every active list query, so an unrelated 30ms write ended up taking 13 seconds.
- *
- * `name_contains` is a case-sensitive substring match server-side, so a differently-cased "untitled
- * pipeline" is not returned and could collide. That is fine: duplicate display names are allowed.
- *
- * Module scope keeps the request object identity stable, which the query hook memoizes on.
+ * Names already taken by auto-named drafts, so a new one can be numbered past them. Narrowed to the
+ * untitled prefix on purpose: the unfiltered list drains every page, and the save mutation awaits its
+ * own invalidation of it, which turned a 30ms write into 13 seconds. Module scope keeps the request
+ * identity stable for the query hook.
  */
 const DRAFT_NAME_LIST_INPUT = {
   pageSize: 100,
@@ -352,12 +346,9 @@ function usePipelineSave({
   );
 
   /**
-   * Saves the pipeline. Resolves to whether the configuration was persisted — callers that continue a
-   * navigation on the user's behalf (the leave-without-saving dialog) must not proceed on a failure,
-   * or the toast explaining it goes with the route and the work looks saved when it isn't.
-   *
-   * A failed run transition still counts as persisted: the configuration landed, only the start or
-   * stop did not.
+   * Resolves to whether the configuration was persisted, so a caller continuing a navigation on the
+   * user's behalf doesn't proceed on a failure and take the explaining toast with the route. A failed
+   * run transition still counts: the configuration landed, only the start or stop didn't.
    */
   const handleSave = useCallback(
     async (intent?: SaveIntent): Promise<boolean> => {
@@ -404,9 +395,8 @@ function usePipelineSave({
           const newPipelineId = createdPipeline?.id;
           setErrorLintHints({});
 
-          // The rollout guard of last resort. Anything on the path to the dataplane that predates
-          // drafts drops `draft` without complaint, and the pipeline is then created, validated and
-          // started for real — so trust what came back, not what was asked for.
+          // Rollout guard of last resort: anything predating drafts drops `draft` without complaint
+          // and deploys for real, so trust what came back rather than what was asked for.
           const draftWasIgnored =
             isDraftSave && createdPipeline !== undefined && createdPipeline.state !== Pipeline_State.DRAFT;
 
@@ -440,9 +430,8 @@ function usePipelineSave({
             navigate({ to: '/connect-clusters' });
             return true;
           }
-          // A parked draft stays in the editor, on its own route so the next save updates this draft
-          // instead of forking another one. Anything deployed goes to its pipeline page — including a
-          // draft the server declined to keep as one, which is now a pipeline that needs stopping.
+          // A parked draft stays in the editor on its own route, so the next save updates it rather
+          // than forking another. Anything deployed goes to its page — including a refused draft.
           navigate({
             to: isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
           });
@@ -509,8 +498,7 @@ function usePipelineSave({
         markSaved(yamlContent, pipelineId);
         warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
         if (runFailed) {
-          // Staying put: the reason it didn't start is only actionable here. The configuration did
-          // land, though, so a caller waiting to navigate is free to.
+          // Staying put: the reason it didn't start is only actionable here.
           return true;
         }
         toast.success(saveSuccessMessage(saveContext, run));
@@ -1167,13 +1155,8 @@ function PipelinePageContent() {
   );
   const editingDraft = isDraft(pipeline);
 
-  // Names in use, so an unnamed draft is saved as "Untitled pipeline 2" rather than colliding.
-  //
-  // Create only. A list call costs ~0.7s on a cluster with a few thousand pipelines (the service
-  // filters in memory after listing every pipeline), and the save mutation awaits its own invalidation
-  // of whatever list queries are active — so paying for this while editing an already-named draft
-  // would put that cost on every save for no benefit. Blanking an existing draft's name falls back to
-  // an unnumbered "Untitled pipeline", which is fine: duplicate names are allowed.
+  // Create only: an already-named draft would pay the list cost on every save for no benefit, and
+  // blanking its name just falls back to an unnumbered "Untitled pipeline".
   const { data: pipelineListData } = useListPipelinesQuery(DRAFT_NAME_LIST_INPUT, {
     enabled: draftsEnabled && mode === 'create',
   });
@@ -1183,11 +1166,20 @@ function PipelinePageContent() {
   );
 
   const autosaveTarget = autosaveTargetKey(mode === 'create' ? undefined : pipelineId);
-  const autosaveEntries = useRpcnEditorAutosaveStore((s) => s.entries);
-  const autosaveEntry = useMemo(
-    () => (mode === 'view' ? null : selectAutosaveEntry(autosaveEntries, autosaveTarget)),
-    [mode, autosaveEntries, autosaveTarget]
+  /**
+   * A boolean rather than the entry, so autosave rewriting its contents once a second isn't a re-render.
+   * It exists to hide the notice once a save clears the buffer it was protecting.
+   */
+  const hasStoredBuffer = useRpcnEditorAutosaveStore(
+    (s) => mode !== 'view' && selectAutosaveEntry(s.entries, autosaveTarget) !== null
   );
+  /**
+   * The buffer as it was when this editor opened, captured once. It has to be a snapshot: read live, a
+   * keystroke after each debounced write made this session's *own* buffer look recoverable, so the
+   * notice blinked once per second. Holding it also means Restore returns what the user was offered,
+   * even after autosave has overwritten the stored copy.
+   */
+  const [recoverableEntry, setRecoverableEntry] = useState<EditorAutosaveEntry | null>(null);
   // Recovery is offered once per visit: restoring rewrites the document, and re-offering it afterwards
   // (or after an explicit discard) would make the notice impossible to get rid of.
   const [isAutosaveDismissed, setIsAutosaveDismissed] = useState(false);
@@ -1365,34 +1357,45 @@ function PipelinePageContent() {
 
   /** Restore the autosaved buffer over the document the editor loaded. */
   const handleRestoreAutosave = useCallback(() => {
-    if (autosaveEntry) {
-      applyAutosave(autosaveEntry);
+    if (recoverableEntry) {
+      applyAutosave(recoverableEntry);
       setIsAutosaveDismissed(true);
       toast.success('Unsaved changes restored');
     }
-  }, [autosaveEntry, applyAutosave]);
+  }, [recoverableEntry, applyAutosave]);
 
   const handleDiscardAutosave = useCallback(() => {
     rpcnEditorAutosave.clear(autosaveTarget);
     setIsAutosaveDismissed(true);
   }, [autosaveTarget]);
 
-  // Offer recovery only once the document it would replace has actually loaded, and only while it
-  // really differs — otherwise the notice appears over a skeleton, or offers to restore what is
-  // already on screen. Editing waits on the server pipeline; creating has nothing to wait for except
-  // the serverless template, which resolves late enough to overwrite a restore.
+  // Only once the document it would replace has loaded, or the notice appears over a skeleton. Creating
+  // waits only on the serverless template, which resolves late enough to overwrite a restore.
   const isDocumentLoaded = mode === 'create' ? !isServerlessInitializing : initialYaml !== null;
+  // Keyed by target, so moving between editors looks again instead of holding the previous offer.
+  const capturedTargetRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (mode === 'view' || !isDocumentLoaded || capturedTargetRef.current === autosaveTarget) {
+      return;
+    }
+    capturedTargetRef.current = autosaveTarget;
+    setRecoverableEntry(rpcnEditorAutosave.get(autosaveTarget));
+    setIsAutosaveDismissed(false);
+  }, [mode, isDocumentLoaded, autosaveTarget]);
+
   const showAutosaveRestore =
     mode !== 'view' &&
     !isAutosaveDismissed &&
-    !!autosaveEntry &&
-    isDocumentLoaded &&
-    autosaveEntry.configYaml !== yamlContent;
+    !!recoverableEntry &&
+    // A save clears the buffer, and the offer to recover it has to go at the same time.
+    hasStoredBuffer &&
+    // Against the baseline, not the live editor — the live one changes on every keystroke.
+    recoverableEntry.configYaml !== (initialYaml ?? '');
   // The saved pipeline moved on since the buffer was captured: restoring is still the user's call, but
   // it is no longer just "put my typing back".
   const isAutosaveStale = (() => {
     const savedAt = timestampToMillis(pipeline?.updateTime);
-    return !!autosaveEntry && savedAt !== null && savedAt > autosaveEntry.updatedAt;
+    return !!recoverableEntry && savedAt !== null && savedAt > recoverableEntry.updatedAt;
   })();
 
   useEditorAutosave({
@@ -1488,8 +1491,7 @@ function PipelinePageContent() {
     if (isVisualEditorEnabled) {
       editLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') });
     }
-    // Always offered, so "what am I about to apply" is answerable before it is a restart. The count is
-    // components touched; a change with no component-level effect (a comment, say) still opens it.
+    // Always offered, so "what am I about to apply" is answerable before it is a restart.
     editLanes.push({
       value: 'changes',
       label: 'Changes',
@@ -1562,20 +1564,19 @@ function PipelinePageContent() {
           url={pipeline?.url}
         />
       ) : null}
-      {showAutosaveRestore && autosaveEntry ? (
+      {showAutosaveRestore && recoverableEntry ? (
         // Matches the header's fullscreen inset so it lines up with the title above it.
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <AutosaveRestoreNotice
             isStale={isAutosaveStale}
             onDiscard={handleDiscardAutosave}
             onRestore={handleRestoreAutosave}
-            updatedAt={autosaveEntry.updatedAt}
+            updatedAt={recoverableEntry.updatedAt}
           />
         </div>
       ) : null}
       {mode === 'view' && editingDraft ? (
-        // A draft's page has no metrics and no logs to show, so it says what it is instead of leaving
-        // the user to work out why the monitoring is missing.
+        // No metrics and no logs to show, so it says what it is rather than looking broken.
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <Alert icon={<FileClock />} testId="draft-view-notice" variant="info">
             <AlertTitle>This pipeline is a draft</AlertTitle>
@@ -1604,10 +1605,12 @@ function PipelinePageContent() {
                 <TabsList className="pr-12 [&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
                   {lanes.map((lane) => (
                     <TabsTrigger key={lane.value} onClick={lane.onSelect} value={lane.value} variant="underline">
-                      {lane.label}
-                      {/* Same count treatment as the sidebar's "Lint issues", so two counts in one
-                          editor don't read as two different kinds of thing. */}
-                      {lane.count ? <CountDot count={lane.count} size="sm" variant="info" /> : null}
+                      {/* TabsTrigger is a gapless inline-flex, so the pairing owns its spacing rather
+                          than a margin reaching into CountDot. Matches the sidebar's "Lint issues". */}
+                      <span className="flex items-center gap-2">
+                        {lane.label}
+                        {lane.count ? <CountDot count={lane.count} size="sm" variant="info" /> : null}
+                      </span>
                     </TabsTrigger>
                   ))}
                 </TabsList>

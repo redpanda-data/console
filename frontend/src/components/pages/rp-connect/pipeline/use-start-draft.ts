@@ -23,13 +23,9 @@ import { isInvalidConfigError } from './save-actions';
 import { extractLintHintsFromError } from '../errors';
 
 /**
- * Starting a draft is its first deployment, so it is the moment its configuration is validated. That
- * makes it the one start that can fail for a reason the user has to go and *edit* — which an error
- * toast on a list row cannot help with.
- *
- * So a rejected start opens the editor, where the lint panel and the structure tree already mark every
- * problem, and the toast says how many there are. Any other failure (permissions, quota, transport) is
- * reported where the user is: it isn't about the config, so the editor has nothing to add.
+ * Starting a draft is its first deployment, so it is the moment its configuration is validated — the one
+ * start that can fail for a reason the user has to go and *edit*. A rejected start therefore opens the
+ * editor, where the problems are already marked. Any other failure is reported where the user is.
  */
 export function useStartDraft() {
   const navigate = useNavigate();

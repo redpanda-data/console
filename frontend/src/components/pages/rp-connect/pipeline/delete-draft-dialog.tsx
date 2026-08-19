@@ -26,12 +26,8 @@ import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { UNTITLED_PIPELINE_NAME } from './draft-copy';
 
 /**
- * Confirmation for deleting a draft.
- *
- * Deliberately lighter than `DeleteResourceAlertDialog`, which makes you type "delete": that weight is
- * earned by a pipeline that is running and moving data, and a draft is neither. What it does still do
- * is confirm — a draft is unfinished work that only exists here, so losing it to a stray click would
- * be exactly the failure this whole feature was built to prevent.
+ * Lighter than `DeleteResourceAlertDialog`, which makes you type "delete" — weight earned by a pipeline
+ * that is running and moving data. It still confirms: a draft is unfinished work that only exists here.
  */
 export function DeleteDraftDialog({
   open,

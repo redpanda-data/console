@@ -199,9 +199,8 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 );
 
 /**
- * Delete, offered on a draft from wherever the draft is open. Abandoned drafts are the expected
- * outcome of parking work — they never expire, so the way to be rid of one has to be in reach rather
- * than buried in a details dialog.
+ * Offered wherever a draft is open. Abandoned drafts are the expected outcome of parking work and never
+ * expire, so the way to be rid of one has to be in reach.
  */
 const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
   <Button
@@ -246,11 +245,8 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
 );
 
 /**
- * Run control for a pipeline's own page.
- *
- * A draft gets a plain Start rather than the run toggle: starting one validates a configuration
- * nobody has checked, and a switch that flips back with an error toast is no help — the problems are
- * only actionable in the editor, which is where `useStartDraft` sends you.
+ * A draft gets a plain Start rather than the run toggle: a switch that flips back with an error toast is
+ * no help when the problems are only actionable in the editor.
  */
 const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
   const { startDraft, isStartingDraft } = useStartDraft();
@@ -370,9 +366,8 @@ export function PipelineViewHeader({
 }
 
 /**
- * Save control. The primary click never starts or stops anything the user didn't ask for: work that
- * has never been deployed is parked as a draft, a stopped pipeline stays stopped, and a running one
- * says out loud that applying a configuration restarts it. The menu holds the explicit run actions.
+ * The primary click never starts or stops anything the user didn't ask for; the menu holds the explicit
+ * run actions.
  */
 const SaveActions = ({
   context,
@@ -452,8 +447,7 @@ export function PipelineEditHeader({
   const context: SaveContext = { mode, state: pipelineState, draftsEnabled };
   const runHint = saveRunHint(context);
   const editingDraft = isDraft({ state: pipelineState });
-  // On a draft, lint results are warnings rather than a blocked save, so the count is stated here
-  // instead: the user needs to know what start will ask of them, not be stopped from saving.
+  // Lint is a warning on a draft, not a blocked save, so the count is stated rather than enforced.
   const issueSummary = editingDraft ? draftIssueSummary(draftIssueCount ?? 0) : null;
 
   const items: MetaEntry[] = [

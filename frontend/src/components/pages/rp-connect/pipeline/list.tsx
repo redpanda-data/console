@@ -197,11 +197,7 @@ const pipelineStateSortPriority: Record<Pipeline_State, number> = {
 
 const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.state] ?? Number.MAX_SAFE_INTEGER;
 
-/**
- * Every row opens the pipeline's own page, drafts included — a draft's page explains what it is and
- * offers Continue editing and Start, so the editor is one deliberate click away rather than where a
- * row click lands you.
- */
+/** Every row opens the pipeline's own page, drafts included — the editor is a deliberate click away. */
 const pipelinePageLinkProps = (row: Pipeline) =>
   ({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(row.id) } }) as const;
 
@@ -322,8 +318,7 @@ const ActionsCell = memo(
     const isStarting = pipeline.state === Pipeline_State.STARTING;
     const isStopping = pipeline.state === Pipeline_State.STOPPING;
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    // Starting a draft validates a config that has never been checked, so a refusal has to land in the
-    // editor rather than in a toast on this row.
+    // A refusal has to land in the editor, not a toast on this row.
     const { startDraft, isStartingDraft } = useStartDraft();
 
     const handleStart = () => {
@@ -511,8 +506,7 @@ const createColumns = ({
             </Link>
           </span>
           {isDraftRow ? (
-            // Age and author instead of the id: a draft is unfinished work, so whose it is and how long
-            // it has sat there is what decides whether to pick it up or delete it.
+            // Age and author instead of the id: that is what decides whether to pick it up or bin it.
             <span className="truncate text-muted-foreground text-xs">
               {[editedAt ? `Edited ${relativeAgeLabel(editedAt)}` : null, createdBy ? `by ${createdBy}` : null]
                 .filter(Boolean)
@@ -627,8 +621,7 @@ const PipelineListPageContent = () => {
   // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
   const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
-  // Drafts are pipelines in STATE_DRAFT and are excluded from the list unless asked for, so that
-  // clients written before drafts existed never receive a state they can't render.
+  // Excluded from the list unless asked for, so pre-drafts clients never get a state they can't render.
   const {
     data: pipelinesData,
     isLoading,

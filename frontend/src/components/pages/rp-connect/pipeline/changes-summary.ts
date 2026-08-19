@@ -14,10 +14,8 @@ import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type PipelineFlowNode, parsePipelineFlowTree, sectionLabel } from '../utils/pipeline-flow-parser';
 
 /**
- * What changed between the saved configuration and the editor, in the pipeline's own vocabulary.
- *
- * The line diff beside this says exactly *what* moved; this says *which components* moved, which is
- * what tells you whether a change is safe to apply to something that is running.
+ * What changed, in the pipeline's own vocabulary. The line diff beside this says what moved; this says
+ * which components moved, which is what decides whether a change is safe to apply to something running.
  */
 
 export type ChangeKind = 'added' | 'removed' | 'changed';
@@ -33,10 +31,8 @@ export type ComponentChange = {
 };
 
 /**
- * Component nodes of a document, keyed by id.
- *
- * Section containers (the `input:`/`output:` headings) are left out: they exist in the tree to hold
- * children, so counting them would report "Input changed" alongside the component that actually did.
+ * Section containers are left out: they only hold children, so counting them would report "Input
+ * changed" alongside the component that actually did.
  */
 function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
   const byId = new Map<string, PipelineFlowNode>();
@@ -63,11 +59,8 @@ const describe = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKi
 });
 
 /**
- * Component-level changes between two documents.
- *
- * Ids are positional, so this compares by id: an id only in the editor is added, only in the saved
- * config is removed. `changedNodeIds` already handles the subtle case (a moved-but-identical
- * component is not a change), so it decides "changed" — this only classifies what it reports.
+ * Ids are positional, so this compares by id. `changedNodeIds` already handles the subtle case (a
+ * moved-but-identical component is not a change), so it decides "changed"; this only classifies it.
  */
 export function summarizeComponentChanges(
   savedYaml: string,
@@ -100,12 +93,8 @@ export function summarizeComponentChanges(
 }
 
 /**
- * What applying the pending edits will do, said plainly. A running pipeline is the case worth warning
- * about: there is no apply-later, so saving restarts it and drops whatever is in flight.
- *
- * On the create page there is nothing to apply to and nothing saved anywhere — the comparison is
- * against the document the editor opened with (blank, a template, or the serverless seed), so it says
- * that rather than implying a save it hasn't had.
+ * What applying will do. A running pipeline has no apply-later, so saving restarts it; the create page
+ * has nothing saved anywhere, and compares against the document the editor opened with.
  */
 export function changesImpactMessage(state: Pipeline_State | undefined, mode: 'create' | 'edit'): string {
   if (mode === 'create') {
@@ -121,12 +110,8 @@ export function changesImpactMessage(state: Pipeline_State | undefined, mode: 'c
 }
 
 /**
- * Severity of the impact message, so the notice is styled by what applying actually costs.
- *
- * Only a live pipeline earns a warning: applying restarts it and drops in-flight messages. Everything
- * else is a statement of fact — nothing is running, so nothing is at risk — and colouring it the same
- * orange as "N issues to fix before this can start" would flatten the two into one undifferentiated
- * wall of alarm.
+ * Only a live pipeline earns a warning. The rest is a statement of fact, and colouring it the same
+ * orange as the header's "N issues to fix" would flatten both into one wall of alarm.
  */
 export function changesImpactTone(state: Pipeline_State | undefined, mode: 'create' | 'edit'): 'info' | 'warning' {
   if (mode === 'edit' && (state === Pipeline_State.RUNNING || state === Pipeline_State.STARTING)) {
@@ -135,10 +120,7 @@ export function changesImpactTone(state: Pipeline_State | undefined, mode: 'crea
   return 'info';
 }
 
-/**
- * The lane with nothing to show. "No unsaved changes" is only true once something has been saved, so
- * the create page — where everything is unsaved by definition — gets its own wording.
- */
+/** "No unsaved changes" is only true once something has been saved, so create gets its own wording. */
 export function noChangesCopy(mode: 'create' | 'edit'): { title: string; body: string } {
   if (mode === 'create') {
     return {

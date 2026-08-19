@@ -16,11 +16,8 @@ import { FileClock } from 'lucide-react';
 import { relativeAgeLabel } from './draft-copy';
 
 /**
- * Offered when the editor finds an autosaved buffer that doesn't match what was loaded — the tab was
- * closed, the browser crashed, or the session timed out mid-edit.
- *
- * The loaded configuration stays on screen until the user chooses, so recovered work can never
- * silently overwrite what is actually saved. Discarding is explicit for the same reason.
+ * Offered when an autosaved buffer doesn't match what loaded. The loaded configuration stays on screen
+ * until the user chooses, so recovered work can never silently overwrite what is saved.
  */
 export function AutosaveRestoreNotice({
   updatedAt,

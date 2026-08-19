@@ -13,35 +13,23 @@ import { config } from 'config';
 import { create } from 'zustand';
 
 /**
- * Crash recovery for the Redpanda Connect pipeline editor.
+ * Crash recovery for the pipeline editor — deliberately *not* the drafts feature. A draft is a decision
+ * the user made and lives server-side in `STATE_DRAFT`; this covers the gap a draft cannot, the seconds
+ * between typing something and saving it.
  *
- * This is deliberately *not* the drafts feature. A draft is a decision the user made — it lives
- * server-side as a pipeline in `STATE_DRAFT`, is visible to their team, and appears in the pipeline
- * list. This store covers the gap a draft cannot: the seconds between typing something and saving it,
- * which a refresh, a crashed tab or a closed laptop would otherwise take with them.
- *
- * So it holds exactly one buffer per editor target (the create page, or a given pipeline), it is
- * offered back as "restore what you were typing", and it is dropped the moment a real save succeeds.
- * It is never a row in any list: an unsaved buffer the user didn't ask to keep is not an object they
- * should have to manage.
+ * One buffer per editor target, offered back as "restore what you were typing", dropped the moment a
+ * real save succeeds. Never a row in any list.
  */
 
 export const EDITOR_AUTOSAVE_STORAGE_KEY = 'rpcn-editor-autosave';
 
-/**
- * Storage key used by the earlier browser-local drafts prototype, removed on first read. Those drafts
- * are superseded by server-side drafts, and left alone the data would sit in localStorage forever with
- * nothing able to read it.
- */
+/** The earlier browser-local drafts prototype, removed on first read — nothing can read it now. */
 const LEGACY_DRAFTS_STORAGE_KEY = 'rpcn-pipeline-drafts';
 
 /** Buffers beyond this are evicted oldest-first, so editing many pipelines can't grow without bound. */
 export const MAX_AUTOSAVE_BUFFERS = 10;
 
-/**
- * Refused above this size. localStorage gives ~5 MB per origin for the whole app, and a pipeline
- * config that large is pathological — 256 KB is far past the biggest real config.
- */
+/** localStorage is ~5 MB per origin for the whole app, and 256 KB is far past the biggest real config. */
 export const MAX_AUTOSAVE_YAML_BYTES = 256 * 1024;
 
 /** Editor target for a buffer: the create page, or one pipeline's editor. */
@@ -145,8 +133,7 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
       clusterId: currentClusterId(),
       updatedAt: Date.now(),
     };
-    // Read through storage rather than trusting in-memory state, so a buffer written by another tab
-    // isn't clobbered by this one's stale snapshot.
+    // Through storage, not in-memory state, so another tab's write isn't clobbered by a stale snapshot.
     const next = pruneForCluster(
       [...readAll().filter((e) => !(e.targetKey === entry.targetKey && e.clusterId === entry.clusterId)), entry],
       entry.clusterId

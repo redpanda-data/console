@@ -236,9 +236,8 @@ vi.mock('state/rpcn-wizard-store', () => ({
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
 }));
 
-// Only the emitters are spied, so `Toaster` and the rest of sonner stay real. Toast copy itself is
-// covered in save-actions.test.ts and draft-copy.test.ts; what needs asserting here is which toasts a
-// save fires, because two contradicting each other is the bug.
+// Only the emitters are spied, so the rest of sonner stays real. Copy is covered in save-actions.test.ts;
+// what matters here is which toasts a save fires, because two contradicting each other is the bug.
 vi.mock('sonner', async (importOriginal) => {
   const actual = await importOriginal<typeof import('sonner')>();
   return {
@@ -334,6 +333,20 @@ function createTransport(overrides?: {
     );
   });
 }
+
+/** A stored draft: unfinished, unlintable, and never deployed. */
+const draftPipeline = () =>
+  create(ConsoleGetPipelineResponseSchema, {
+    response: create(GetPipelineResponseSchema, {
+      pipeline: create(PipelineSchema, {
+        id: 'test-pipeline',
+        displayName: 'half-built',
+        configYaml: 'input:\n  kafka_',
+        state: Pipeline_State.DRAFT,
+        resources: { cpuShares: '100m', memoryShares: '0' },
+      }),
+    }),
+  });
 
 // The pipeline name lives in the settings dialog (opened via "Edit settings"), not an inline header field.
 const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
@@ -1023,10 +1036,8 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
     });
 
-    // The flag can be turned on before the API that understands it has rolled out. `draft` is then
-    // dropped in transit and the pipeline is created, validated and started for real — so the response
-    // decides, not the flag that was sent. Reporting "Draft saved. It isn't running yet." over a
-    // pipeline that is moving data is the one outcome this must never produce.
+    // The flag can be on before the API that understands it has rolled out, in which case `draft` is
+    // dropped in transit and the pipeline deploys for real. Never report that as a parked draft.
     it('reports a create that came back deployed instead of drafted', async () => {
       const user = userEvent.setup();
       const createPipelineMock = vi
@@ -1205,9 +1216,8 @@ describe('PipelinePage', () => {
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(false);
     });
 
-    // That fallback creates first and stops second, so the stop can fail on its own. It used to warn
-    // that the pipeline may be running and then immediately claim success — "Pipeline created — it is
-    // not running yet" — which is the one thing the user needs not to believe.
+    // Create first, stop second, so the stop can fail alone. It used to warn "may be running" and then
+    // immediately claim "it is not running yet".
     it('does not claim success when the pipeline it created could not be stopped', async () => {
       const user = userEvent.setup();
       mockIsFeatureFlagEnabled.mockImplementation(() => false);
@@ -1432,9 +1442,8 @@ describe('PipelinePage', () => {
       expect(await screen.findByTestId('changes-impact')).toHaveTextContent(/applying them restarts the pipeline/i);
     });
 
-    // Which side is the user's own edit is the question the lane exists to answer, and the diff drops
-    // to a single inline pane on a narrow lane — so the legend keys on the gutter markers, not on
-    // colour or on left/right.
+    // The diff drops to a single inline pane on a narrow lane, so the legend keys on the gutter markers
+    // rather than on colour or left/right.
     it('says what the two sides of the diff are', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -1473,19 +1482,6 @@ describe('PipelinePage', () => {
     beforeEach(() => {
       mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnPipelineDrafts');
     });
-
-    const draftPipeline = () =>
-      create(ConsoleGetPipelineResponseSchema, {
-        response: create(GetPipelineResponseSchema, {
-          pipeline: create(PipelineSchema, {
-            id: 'test-pipeline',
-            displayName: 'half-built',
-            configYaml: 'input:\n  kafka_',
-            state: Pipeline_State.DRAFT,
-            resources: { cpuShares: '100m', memoryShares: '0' },
-          }),
-        }),
-      });
 
     it.each([
       ['the detail view', 'view' as const],
@@ -1588,8 +1584,7 @@ describe('PipelinePage', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    // The failure that made this button dangerous: it used to resume the navigation regardless, so the
-    // toast explaining the failure went with the route and the user had been told their work was safe.
+    // It used to resume the navigation regardless, taking the explaining toast with the route.
     it('stays put when the draft it offered to save fails', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
@@ -1687,6 +1682,81 @@ describe('PipelinePage', () => {
 
       expect(useRpcnEditorAutosaveStore.getState().entries).toHaveLength(1);
       expect(screen.getByTestId('autosave-restore-notice')).toBeInTheDocument();
+    });
+
+    // The notice is for work left by an *earlier* session. Comparing live buffer against live editor
+    // made this session's own buffer look recoverable, so the banner blinked once per debounce.
+    it('never offers to recover the buffer this editor just wrote', async () => {
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
+      await waitFor(() => expect(yamlEditor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}'));
+
+      // Type, let autosave land, then type again — the buffer is now one keystroke behind the editor.
+      fireEvent.change(yamlEditor, { target: { value: 'input:\n  first' } });
+      await waitFor(
+        () =>
+          expect(
+            useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline')?.configYaml
+          ).toBe('input:\n  first'),
+        { timeout: 4000 }
+      );
+      fireEvent.change(yamlEditor, { target: { value: 'input:\n  second' } });
+
+      expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
+
+      // And it stays away across the next write, rather than blinking once per debounce.
+      await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 500));
+      expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
+    });
+
+    // A snapshot, so the version the user was shown survives autosave overwriting the stored copy.
+    it('restores the version it offered, even after autosave has moved on', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      seedBuffer('test-pipeline', 'input:\n  from_last_session: {}');
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
+      expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
+
+      // Typing here overwrites the stored buffer with something else entirely.
+      fireEvent.change(yamlEditor, { target: { value: 'input:\n  typed_instead' } });
+      await waitFor(
+        () =>
+          expect(
+            useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline')?.configYaml
+          ).toBe('input:\n  typed_instead'),
+        { timeout: 4000 }
+      );
+
+      await user.click(screen.getByTestId('restore-autosave'));
+
+      await waitFor(() => expect(yamlEditor.value).toBe('input:\n  from_last_session: {}'));
+    });
+
+    // Saving clears the buffer, or the snapshot outlives what it was protecting.
+    it('withdraws the offer once the work it was protecting is saved', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      seedBuffer('test-pipeline', 'input:\n  from_last_session: {}');
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: vi.fn().mockReturnValue(draftPipeline()),
+          updatePipelineMock: vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})),
+        }),
+      });
+
+      expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
+
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  finished' } });
+      await user.click(await screen.findByTestId('save-pipeline'));
+
+      await waitFor(() => expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument());
     });
 
     it('discarding a buffer drops it and leaves the loaded config alone', async () => {

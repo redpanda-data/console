@@ -16,19 +16,12 @@ import { autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosav
 import type { usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import type { PipelineFormValues } from '.';
 
-/**
- * How long the editor has to be idle before the buffer is written. Long enough that continuous typing
- * writes once rather than per keystroke, short enough that a crash costs a sentence, not a session.
- */
+/** Long enough that continuous typing writes once; short enough that a crash costs a sentence. */
 export const AUTOSAVE_DEBOUNCE_MS = 1000;
 
 /**
- * Mirrors the editor into localStorage so a refresh, a crashed tab or a closed laptop doesn't take the
- * work with it.
- *
- * Deliberately dumb: it writes whatever is in the editor, valid or not, and never navigates, toasts or
- * blocks. The buffer is offered back on the next visit to the same editor (see
- * `AutosaveRestoreNotice`) and dropped as soon as a real save succeeds.
+ * Mirrors the editor into localStorage so a refresh or a crashed tab doesn't take the work with it.
+ * Deliberately dumb: writes whatever is there, valid or not, and never navigates, toasts or blocks.
  */
 export function useEditorAutosave({
   enabled,
@@ -47,10 +40,9 @@ export function useEditorAutosave({
   // Latest form handle for the long-lived subscription, without re-subscribing per render.
   const formRef = useRef(form);
   formRef.current = form;
-  // Whether this editor has written the buffer. A buffer left by an earlier session is somebody's
-  // unsaved work, and must never be cleaned up as a side effect of merely opening the editor: loading
-  // a pipeline settles the document back to "nothing to recover", which would otherwise delete the
-  // recovery buffer about a second before the user could click Restore.
+  // A buffer left by an earlier session must never be cleaned up just because the editor opened:
+  // loading a pipeline settles the document back to "nothing to recover", which would delete it a
+  // second before the user could click Restore.
   const hasWrittenRef = useRef(false);
 
   useEffect(() => {
@@ -62,12 +54,9 @@ export function useEditorAutosave({
 
     const write = () => {
       const { yamlContent, initialYaml } = editorStore.getState();
-      // Only what is actually recoverable. Writing unconditionally would mean every visit to a
-      // pipeline left a buffer that the next visit offered to "restore".
-      //
-      // A null baseline means nothing has loaded yet — true on the create page, which never resolves
-      // one unless a template or the diagrams lane seeds it. There, anything non-empty in the document
-      // is by definition something the user typed.
+      // Only what is actually recoverable, or every visit would leave a buffer the next visit offered
+      // to restore. A null baseline means nothing loaded yet (the create page), where anything
+      // non-empty is by definition something the user typed.
       const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
       if (!(documentChanged || formRef.current.formState.isDirty)) {
         // Only tidying up after this editor — an undo back to the loaded state, say.
@@ -103,9 +92,8 @@ export function useEditorAutosave({
     const unsubscribeForm = formRef.current.subscribe({ formState: { values: true }, callback: schedule });
 
     return () => {
-      // A pending write is dropped rather than flushed on the way out, deliberately: leaving the
-      // editor goes through the unsaved-changes dialog, and "Discard changes" has to mean discard —
-      // flushing here would resurrect the discarded work as a recovery offer on the next visit.
+      // Dropped rather than flushed, deliberately: "Discard changes" has to mean discard, and a flush
+      // here would resurrect it as a recovery offer next visit.
       clearTimeout(timer);
       unsubscribeStore();
       unsubscribeForm();
