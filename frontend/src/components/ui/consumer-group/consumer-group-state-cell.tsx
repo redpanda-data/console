@@ -76,7 +76,7 @@ export const ConsumerGroupStateCell = ({ state }: { state: string }) => {
           render={
             <span className="inline-flex items-center gap-2">
               {stateIcons[key]}
-              <span>{state}</span>
+              <span>{consumerGroupStateNames[key]}</span>
             </span>
           }
         />

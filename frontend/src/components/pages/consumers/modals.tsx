@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnDef,
   flexRender,
@@ -872,6 +873,7 @@ export const DeleteOffsetsModal = (props: {
 }) => {
   const { group, mode, offsets, onClose } = props;
   const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
   // Keep the last non-null offsets so the dialog content doesn't flash empty during the close animation.
   const lastOffsetsRef = useRef<GroupOffset[]>([]);
   if (offsets) {
@@ -925,6 +927,7 @@ export const DeleteOffsetsModal = (props: {
     } finally {
       setIsDeleting(false);
       api.refreshConsumerGroups(true);
+      queryClient.invalidateQueries({ queryKey: ['consumer-groups'] });
     }
   };
 
