@@ -111,8 +111,8 @@ describe('changesImpactMessage', () => {
 });
 
 describe('changesImpactTone', () => {
-  // The editor header already shows "N issues to fix before this can start" in warning orange. A
-  // second orange line saying something far less urgent flattens both into undifferentiated alarm.
+  // The editor header already shows "N issues to fix" in warning orange; a second orange line saying
+  // something far less urgent flattens both into undifferentiated alarm.
   it('warns only where applying actually costs something', () => {
     expect(changesImpactTone(Pipeline_State.RUNNING, 'edit')).toBe('warning');
     expect(changesImpactTone(Pipeline_State.STARTING, 'edit')).toBe('warning');

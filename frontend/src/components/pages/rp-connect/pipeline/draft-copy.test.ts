@@ -105,7 +105,7 @@ describe('draftIssueSummary', () => {
   });
 
   it('says what start will ask for', () => {
-    expect(draftIssueSummary(1)).toBe('1 issue to fix before this can start');
-    expect(draftIssueSummary(4)).toBe('4 issues to fix before this can start');
+    expect(draftIssueSummary(1)).toBe('1 issue to fix');
+    expect(draftIssueSummary(4)).toBe('4 issues to fix');
   });
 });

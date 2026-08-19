@@ -1442,6 +1442,37 @@ describe('PipelinePage', () => {
       expect(await screen.findByTestId('changes-impact')).toHaveTextContent(/applying them restarts the pipeline/i);
     });
 
+    // A comment-only edit changes no component, and the diff should then take the full width rather
+    // than sit beside an empty column with a heading over it.
+    it('drops the component column when nothing component-level changed', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML));
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# just a note` } });
+      await openChanges(user);
+
+      expect(await screen.findByTestId('diff-editor')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Components' })).not.toBeInTheDocument();
+    });
+
+    it('heads the component column when something did change', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML));
+      fireEvent.change(screen.getByTestId('yaml-editor'), {
+        target: { value: 'input:\n  generate: {}\noutput:\n  stdout: {}' },
+      });
+      await openChanges(user);
+
+      expect(await screen.findByRole('heading', { name: 'Components' })).toBeInTheDocument();
+    });
+
     // The diff drops to a single inline pane on a narrow lane, so the legend keys on the gutter markers
     // rather than on colour or left/right.
     it('says what the two sides of the diff are', async () => {

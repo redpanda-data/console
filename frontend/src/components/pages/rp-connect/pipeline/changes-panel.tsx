@@ -141,10 +141,13 @@ export function ChangesPanel({
   }
 
   const tone = changesImpactTone(pipelineState, mode);
+  // A change with no component-level effect (a comment, whitespace) still opens the lane, and then the
+  // diff takes the full width rather than sitting beside an empty column.
+  const hasComponentList = changes.length > 0;
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="changes-panel">
-      <div className="flex shrink-0 flex-col gap-2 border-border! border-b p-3">
+      <div className="shrink-0 p-3">
         <Alert
           icon={tone === 'warning' ? <TriangleAlert /> : <Info />}
           testId="changes-impact"
@@ -152,20 +155,26 @@ export function ChangesPanel({
         >
           <AlertDescription>{changesImpactMessage(pipelineState, mode)}</AlertDescription>
         </Alert>
+      </div>
+      {/* Column headers on one row, each sitting over the pane it names and sharing its divider, so the
+          lane reads as a single table rather than three stacked regions. */}
+      <div className="flex shrink-0 items-center border-border! border-b">
+        {hasComponentList ? (
+          <div className="flex w-70 shrink-0 items-center gap-2 self-stretch border-border! border-r px-3 py-2">
+            <h5 className="text-heading-xs text-muted-foreground">Components</h5>
+            <CountDot count={changes.length} size="sm" variant="info" />
+          </div>
+        ) : null}
         {/* Keyed on the gutter markers, not on colour or on which side is which — the diff drops to a
             single inline pane on a narrow lane. */}
-        <p className="text-body-sm text-muted-foreground">
+        <p className="min-w-0 flex-1 truncate px-3 py-2 text-body-sm text-muted-foreground">
           <span className="font-mono">-</span> the saved configuration · <span className="font-mono">+</span> your
           unsaved edits
         </p>
       </div>
       <div className="flex min-h-0 flex-1">
-        {changes.length > 0 ? (
+        {hasComponentList ? (
           <div className="w-70 shrink-0 overflow-auto border-border! border-r p-2">
-            <div className="flex items-center gap-2 px-2 pb-1">
-              <h5 className="text-heading-xs text-muted-foreground">Components</h5>
-              <CountDot count={changes.length} size="sm" variant="info" />
-            </div>
             <ul className="flex flex-col">
               {changes.map((change) => (
                 <ComponentChangeRow change={change} key={`${change.kind}-${change.id}`} onSelect={onSelectComponent} />

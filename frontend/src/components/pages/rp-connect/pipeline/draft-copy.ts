@@ -85,7 +85,5 @@ export function draftIssueSummary(issueCount: number): string | null {
   if (issueCount <= 0) {
     return null;
   }
-  return issueCount === 1
-    ? '1 issue to fix before this can start'
-    : `${issueCount} issues to fix before this can start`;
+  return issueCount === 1 ? '1 issue to fix' : `${issueCount} issues to fix`;
 }
