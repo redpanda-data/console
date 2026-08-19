@@ -255,16 +255,27 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       } finally {
+        // An abort's rejection surfaces on a later microtask than the synchronous setup of
+        // whichever newer run replaced us (stop() + a fresh AbortController, both synchronous).
+        // If someone else now owns abortControllerRef, this run's completion is stale — finalizing
+        // here (flush()'s shared bufferRef, phase, backendPhase, isLoadingMore) would clobber the
+        // newer run's in-progress state with our own "done". Only finalize when no one else has
+        // taken over (ref is still us, or genuinely idle — e.g. an explicit stop with nothing
+        // queued to replace it).
+        const supersededByNewerRun =
+          abortControllerRef.current !== null && abortControllerRef.current !== abortController;
         if (abortControllerRef.current === abortController) {
           abortControllerRef.current = null;
         }
-        if (flushTimerRef.current) {
-          clearTimeout(flushTimerRef.current);
+        if (!supersededByNewerRun) {
+          if (flushTimerRef.current) {
+            clearTimeout(flushTimerRef.current);
+          }
+          flush();
+          setIsLoadingMore(false);
+          setPhase('done');
+          setBackendPhase(null);
         }
-        flush();
-        setIsLoadingMore(false);
-        setPhase('done');
-        setBackendPhase(null);
       }
     },
     [topicName, stop, flush, scheduleFlush]

@@ -64,6 +64,30 @@ function scriptStream(...frames: Frame[]) {
   );
 }
 
+/**
+ * One-shot listMessages implementation that yields the given frames, then hangs until the
+ * returned `release` is called — lets a test hold a stream open mid-flight (so it's still
+ * running, not yet at its `finally`) while a second, newer call supersedes it.
+ */
+function pausedStream(...framesBeforePause: Frame[]) {
+  let release = () => {
+    // replaced synchronously below
+  };
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  listMessagesMock.mockImplementationOnce(() =>
+    (async function* () {
+      for (const frame of framesBeforePause) {
+        await Promise.resolve();
+        yield { controlMessage: frame };
+      }
+      await gate;
+    })()
+  );
+  return () => release();
+}
+
 const baseParams: MessageSearchParams = {
   startOffset: -1,
   startTimestamp: -1,
@@ -135,6 +159,37 @@ describe('useMessageSearch', () => {
     scriptStream(dataFrame(0, 2), doneFrame());
     await act(() => result.current.start(baseParams, { live: true, append: true }));
     expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
+  });
+
+  test('a superseded run must not finalize state (phase/backendPhase/messages) after a newer run replaces it', async () => {
+    const releaseA = pausedStream(dataFrame(0, 1));
+    const { result } = renderHook(() => useMessageSearch('test-topic'));
+
+    let startA: Promise<void> = Promise.resolve();
+    act(() => {
+      startA = result.current.start(baseParams);
+    });
+    await waitFor(() => expect(result.current.phase).toBe('streaming'));
+
+    // B replaces A while A is still paused mid-stream (not yet at its `finally`).
+    const releaseB = pausedStream();
+    act(() => {
+      result.current.start(baseParams);
+    });
+    expect(result.current.phase).toBe('connecting');
+
+    // A's abort now resolves (on a later microtask, as it would for a real aborted fetch) —
+    // its `finally` runs after B has already taken over.
+    await act(async () => {
+      releaseA();
+      await startA;
+    });
+
+    // B's in-progress state must survive; A's stale completion must not have overwritten it.
+    expect(result.current.phase).toBe('connecting');
+
+    releaseB(); // let B settle so it doesn't dangle past the test
+    await waitFor(() => expect(result.current.phase).toBe('done'));
   });
 
   test('stream failure surfaces as error state', async () => {
