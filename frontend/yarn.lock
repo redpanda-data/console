@@ -594,86 +594,80 @@
   resolved "https://registry.npmjs.org/@biomejs/cli-win32-x64/-/cli-win32-x64-2.3.10.tgz"
   integrity sha512-pHEFgq7dUEsKnqG9mx9bXihxGI49X+ar+UBrEIj3Wqj3UCZp1rNgV+OoyjFgcXsjCWpuEAF4VJdkZr3TrWdCbQ==
 
-"@buf/bufbuild_protovalidate.bufbuild_es@2.7.0-20260709200747-435963d16310.1":
-  version "2.7.0-20260709200747-435963d16310.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.7.0-20260709200747-435963d16310.1.tgz"
+"@buf/bufbuild_protovalidate.bufbuild_es@2.13.0-20260709200747-435963d16310.1":
+  version "2.13.0-20260709200747-435963d16310.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.bufbuild_es/-/bufbuild_protovalidate.bufbuild_es-2.13.0-20260709200747-435963d16310.1.tgz"
 
-"@buf/bufbuild_protovalidate.connectrpc_query-es@2.2.0-20260709200747-435963d16310.1":
-  version "2.2.0-20260709200747-435963d16310.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.connectrpc_query-es/-/bufbuild_protovalidate.connectrpc_query-es-2.2.0-20260709200747-435963d16310.1.tgz"
+"@buf/bufbuild_protovalidate.connectrpc_query-es@2.3.1-20260709200747-435963d16310.1":
+  version "2.3.1-20260709200747-435963d16310.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/bufbuild_protovalidate.connectrpc_query-es/-/bufbuild_protovalidate.connectrpc_query-es-2.3.1-20260709200747-435963d16310.1.tgz"
   dependencies:
-    "@buf/bufbuild_protovalidate.bufbuild_es" "2.7.0-20260709200747-435963d16310.1"
-
-"@buf/googleapis_googleapis.bufbuild_es@2.7.0-20250411203938-61b203b9a916.1":
-  version "2.7.0-20250411203938-61b203b9a916.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20250411203938-61b203b9a916.1.tgz"
-
-"@buf/googleapis_googleapis.bufbuild_es@2.7.0-20251126203132-004180b77378.1":
-  version "2.7.0-20251126203132-004180b77378.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20251126203132-004180b77378.1.tgz"
-
-"@buf/googleapis_googleapis.bufbuild_es@2.7.0-20260414192239-c17df5b2beca.1":
-  version "2.7.0-20260414192239-c17df5b2beca.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.7.0-20260414192239-c17df5b2beca.1.tgz"
+    "@buf/bufbuild_protovalidate.bufbuild_es" "2.13.0-20260709200747-435963d16310.1"
 
 "@buf/googleapis_googleapis.bufbuild_es@2.11.0-20251126203132-004180b77378.1":
   version "2.11.0-20251126203132-004180b77378.1"
   resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.11.0-20251126203132-004180b77378.1.tgz"
 
-"@buf/googleapis_googleapis.connectrpc_query-es@2.2.0-20250411203938-61b203b9a916.1":
-  version "2.2.0-20250411203938-61b203b9a916.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.2.0-20250411203938-61b203b9a916.1.tgz"
-  dependencies:
-    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20250411203938-61b203b9a916.1"
+"@buf/googleapis_googleapis.bufbuild_es@2.13.0-20250411203938-61b203b9a916.1":
+  version "2.13.0-20250411203938-61b203b9a916.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.13.0-20250411203938-61b203b9a916.1.tgz"
 
-"@buf/googleapis_googleapis.connectrpc_query-es@2.2.0-20251126203132-004180b77378.1":
-  version "2.2.0-20251126203132-004180b77378.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.2.0-20251126203132-004180b77378.1.tgz"
-  dependencies:
-    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20251126203132-004180b77378.1"
+"@buf/googleapis_googleapis.bufbuild_es@2.13.0-20251126203132-004180b77378.1":
+  version "2.13.0-20251126203132-004180b77378.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.13.0-20251126203132-004180b77378.1.tgz"
 
-"@buf/googleapis_googleapis.connectrpc_query-es@2.2.0-20260414192239-c17df5b2beca.1":
-  version "2.2.0-20260414192239-c17df5b2beca.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.2.0-20260414192239-c17df5b2beca.1.tgz"
-  dependencies:
-    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20260414192239-c17df5b2beca.1"
+"@buf/googleapis_googleapis.bufbuild_es@2.13.0-20260414192239-c17df5b2beca.1":
+  version "2.13.0-20260414192239-c17df5b2beca.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.bufbuild_es/-/googleapis_googleapis.bufbuild_es-2.13.0-20260414192239-c17df5b2beca.1.tgz"
 
-"@buf/grpc-ecosystem_grpc-gateway.bufbuild_es@2.7.0-20221127060915-a1ecdc58eccd.1":
-  version "2.7.0-20221127060915-a1ecdc58eccd.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.bufbuild_es/-/grpc-ecosystem_grpc-gateway.bufbuild_es-2.7.0-20221127060915-a1ecdc58eccd.1.tgz"
-
-"@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es@2.2.0-20221127060915-a1ecdc58eccd.1":
-  version "2.2.0-20221127060915-a1ecdc58eccd.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es/-/grpc-ecosystem_grpc-gateway.connectrpc_query-es-2.2.0-20221127060915-a1ecdc58eccd.1.tgz"
+"@buf/googleapis_googleapis.connectrpc_query-es@2.3.1-20250411203938-61b203b9a916.1":
+  version "2.3.1-20250411203938-61b203b9a916.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.3.1-20250411203938-61b203b9a916.1.tgz"
   dependencies:
-    "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es" "2.7.0-20221127060915-a1ecdc58eccd.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.13.0-20250411203938-61b203b9a916.1"
 
-"@buf/redpandadata_cloud.bufbuild_es@2.7.0-20260720165603-f04f0be1cb95.1":
-  version "2.7.0-20260720165603-f04f0be1cb95.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.bufbuild_es/-/redpandadata_cloud.bufbuild_es-2.7.0-20260720165603-f04f0be1cb95.1.tgz"
+"@buf/googleapis_googleapis.connectrpc_query-es@2.3.1-20251126203132-004180b77378.1":
+  version "2.3.1-20251126203132-004180b77378.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.3.1-20251126203132-004180b77378.1.tgz"
   dependencies:
-    "@buf/bufbuild_protovalidate.bufbuild_es" "2.7.0-20260709200747-435963d16310.1"
-    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20260414192239-c17df5b2beca.1"
-    "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es" "2.7.0-20221127060915-a1ecdc58eccd.1"
-    "@buf/redpandadata_common.bufbuild_es" "2.7.0-20260323171043-6e06f84ad823.1"
-    "@buf/redpandadata_core.bufbuild_es" "2.7.0-20260714112317-973b760dcc8a.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.13.0-20251126203132-004180b77378.1"
 
-"@buf/redpandadata_cloud.connectrpc_query-es@^2.2.0-20260717191204-4c8ec47d3476.1":
-  version "2.2.0-20260720165603-f04f0be1cb95.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.connectrpc_query-es/-/redpandadata_cloud.connectrpc_query-es-2.2.0-20260720165603-f04f0be1cb95.1.tgz"
+"@buf/googleapis_googleapis.connectrpc_query-es@2.3.1-20260414192239-c17df5b2beca.1":
+  version "2.3.1-20260414192239-c17df5b2beca.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/googleapis_googleapis.connectrpc_query-es/-/googleapis_googleapis.connectrpc_query-es-2.3.1-20260414192239-c17df5b2beca.1.tgz"
   dependencies:
-    "@buf/bufbuild_protovalidate.connectrpc_query-es" "2.2.0-20260709200747-435963d16310.1"
-    "@buf/googleapis_googleapis.connectrpc_query-es" "2.2.0-20260414192239-c17df5b2beca.1"
-    "@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es" "2.2.0-20221127060915-a1ecdc58eccd.1"
-    "@buf/redpandadata_cloud.bufbuild_es" "2.7.0-20260720165603-f04f0be1cb95.1"
-    "@buf/redpandadata_common.connectrpc_query-es" "2.2.0-20260323171043-6e06f84ad823.1"
-    "@buf/redpandadata_core.connectrpc_query-es" "2.2.0-20260714112317-973b760dcc8a.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.13.0-20260414192239-c17df5b2beca.1"
 
-"@buf/redpandadata_common.bufbuild_es@2.7.0-20260323171043-6e06f84ad823.1":
-  version "2.7.0-20260323171043-6e06f84ad823.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.7.0-20260323171043-6e06f84ad823.1.tgz"
+"@buf/grpc-ecosystem_grpc-gateway.bufbuild_es@2.13.0-20221127060915-a1ecdc58eccd.1":
+  version "2.13.0-20221127060915-a1ecdc58eccd.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.bufbuild_es/-/grpc-ecosystem_grpc-gateway.bufbuild_es-2.13.0-20221127060915-a1ecdc58eccd.1.tgz"
+
+"@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es@2.3.1-20221127060915-a1ecdc58eccd.1":
+  version "2.3.1-20221127060915-a1ecdc58eccd.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es/-/grpc-ecosystem_grpc-gateway.connectrpc_query-es-2.3.1-20221127060915-a1ecdc58eccd.1.tgz"
   dependencies:
-    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20251126203132-004180b77378.1"
+    "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es" "2.13.0-20221127060915-a1ecdc58eccd.1"
+
+"@buf/redpandadata_cloud.bufbuild_es@2.13.0-20260817162420-6033b8c28212.1":
+  version "2.13.0-20260817162420-6033b8c28212.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.bufbuild_es/-/redpandadata_cloud.bufbuild_es-2.13.0-20260817162420-6033b8c28212.1.tgz"
+  dependencies:
+    "@buf/bufbuild_protovalidate.bufbuild_es" "2.13.0-20260709200747-435963d16310.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.13.0-20260414192239-c17df5b2beca.1"
+    "@buf/grpc-ecosystem_grpc-gateway.bufbuild_es" "2.13.0-20221127060915-a1ecdc58eccd.1"
+    "@buf/redpandadata_common.bufbuild_es" "2.13.0-20260323171043-6e06f84ad823.1"
+    "@buf/redpandadata_core.bufbuild_es" "2.13.0-20260714112317-973b760dcc8a.1"
+
+"@buf/redpandadata_cloud.connectrpc_query-es@^2.3.1-20260817162420-6033b8c28212.1":
+  version "2.3.1-20260817162420-6033b8c28212.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_cloud.connectrpc_query-es/-/redpandadata_cloud.connectrpc_query-es-2.3.1-20260817162420-6033b8c28212.1.tgz"
+  dependencies:
+    "@buf/bufbuild_protovalidate.connectrpc_query-es" "2.3.1-20260709200747-435963d16310.1"
+    "@buf/googleapis_googleapis.connectrpc_query-es" "2.3.1-20260414192239-c17df5b2beca.1"
+    "@buf/grpc-ecosystem_grpc-gateway.connectrpc_query-es" "2.3.1-20221127060915-a1ecdc58eccd.1"
+    "@buf/redpandadata_cloud.bufbuild_es" "2.13.0-20260817162420-6033b8c28212.1"
+    "@buf/redpandadata_common.connectrpc_query-es" "2.3.1-20260323171043-6e06f84ad823.1"
+    "@buf/redpandadata_core.connectrpc_query-es" "2.3.1-20260714112317-973b760dcc8a.1"
 
 "@buf/redpandadata_common.bufbuild_es@^2.11.0-20260323171043-6e06f84ad823.1":
   version "2.11.0-20260323171043-6e06f84ad823.1"
@@ -681,25 +675,31 @@
   dependencies:
     "@buf/googleapis_googleapis.bufbuild_es" "2.11.0-20251126203132-004180b77378.1"
 
-"@buf/redpandadata_common.connectrpc_query-es@2.2.0-20260323171043-6e06f84ad823.1":
-  version "2.2.0-20260323171043-6e06f84ad823.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_common.connectrpc_query-es/-/redpandadata_common.connectrpc_query-es-2.2.0-20260323171043-6e06f84ad823.1.tgz"
+"@buf/redpandadata_common.bufbuild_es@2.13.0-20260323171043-6e06f84ad823.1":
+  version "2.13.0-20260323171043-6e06f84ad823.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_common.bufbuild_es/-/redpandadata_common.bufbuild_es-2.13.0-20260323171043-6e06f84ad823.1.tgz"
   dependencies:
-    "@buf/googleapis_googleapis.connectrpc_query-es" "2.2.0-20251126203132-004180b77378.1"
-    "@buf/redpandadata_common.bufbuild_es" "2.7.0-20260323171043-6e06f84ad823.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.13.0-20251126203132-004180b77378.1"
 
-"@buf/redpandadata_core.bufbuild_es@2.7.0-20260714112317-973b760dcc8a.1":
-  version "2.7.0-20260714112317-973b760dcc8a.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_core.bufbuild_es/-/redpandadata_core.bufbuild_es-2.7.0-20260714112317-973b760dcc8a.1.tgz"
+"@buf/redpandadata_common.connectrpc_query-es@2.3.1-20260323171043-6e06f84ad823.1":
+  version "2.3.1-20260323171043-6e06f84ad823.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_common.connectrpc_query-es/-/redpandadata_common.connectrpc_query-es-2.3.1-20260323171043-6e06f84ad823.1.tgz"
   dependencies:
-    "@buf/googleapis_googleapis.bufbuild_es" "2.7.0-20250411203938-61b203b9a916.1"
+    "@buf/googleapis_googleapis.connectrpc_query-es" "2.3.1-20251126203132-004180b77378.1"
+    "@buf/redpandadata_common.bufbuild_es" "2.13.0-20260323171043-6e06f84ad823.1"
 
-"@buf/redpandadata_core.connectrpc_query-es@2.2.0-20260714112317-973b760dcc8a.1":
-  version "2.2.0-20260714112317-973b760dcc8a.1"
-  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_core.connectrpc_query-es/-/redpandadata_core.connectrpc_query-es-2.2.0-20260714112317-973b760dcc8a.1.tgz"
+"@buf/redpandadata_core.bufbuild_es@2.13.0-20260714112317-973b760dcc8a.1":
+  version "2.13.0-20260714112317-973b760dcc8a.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_core.bufbuild_es/-/redpandadata_core.bufbuild_es-2.13.0-20260714112317-973b760dcc8a.1.tgz"
   dependencies:
-    "@buf/googleapis_googleapis.connectrpc_query-es" "2.2.0-20250411203938-61b203b9a916.1"
-    "@buf/redpandadata_core.bufbuild_es" "2.7.0-20260714112317-973b760dcc8a.1"
+    "@buf/googleapis_googleapis.bufbuild_es" "2.13.0-20250411203938-61b203b9a916.1"
+
+"@buf/redpandadata_core.connectrpc_query-es@2.3.1-20260714112317-973b760dcc8a.1":
+  version "2.3.1-20260714112317-973b760dcc8a.1"
+  resolved "https://buf.build/gen/npm/v1/@buf/redpandadata_core.connectrpc_query-es/-/redpandadata_core.connectrpc_query-es-2.3.1-20260714112317-973b760dcc8a.1.tgz"
+  dependencies:
+    "@buf/googleapis_googleapis.connectrpc_query-es" "2.3.1-20250411203938-61b203b9a916.1"
+    "@buf/redpandadata_core.bufbuild_es" "2.13.0-20260714112317-973b760dcc8a.1"
 
 "@bufbuild/cel@^0.4.0":
   version "0.4.0"
@@ -718,10 +718,15 @@
   resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.10.1.tgz"
   integrity sha512-ckS3+vyJb5qGpEYv/s1OebUHDi/xSNtfgw1wqKZo7MR9F2z+qXr0q5XagafAG/9O0QPVIUfST0smluYSTpYFkg==
 
-"@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.11.0", "@bufbuild/protobuf@^2.12.0", "@bufbuild/protobuf@^2.5.0", "@bufbuild/protobuf@^2.6.2", "@bufbuild/protobuf@^2.7.0":
+"@bufbuild/protobuf@^2.5.0":
   version "2.12.0"
   resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.12.0.tgz"
   integrity sha512-B/XlCaFIP8LOwzo+bz5uFzATYokcwCKQcghqnlfwSmM5eX/qTkvDBnDPs+gXtX/RyjxJ4DRikECcPJbyALA8FA==
+
+"@bufbuild/protobuf@2.x", "@bufbuild/protobuf@^2.11.0", "@bufbuild/protobuf@^2.13.0", "@bufbuild/protobuf@^2.14.0", "@bufbuild/protobuf@^2.6.2", "@bufbuild/protobuf@^2.7.0":
+  version "2.14.0"
+  resolved "https://registry.npmjs.org/@bufbuild/protobuf/-/protobuf-2.14.0.tgz"
+  integrity sha512-C3UGsiCwSprE2NKIIFA3hCDlpXTMCAXRZuEVp88L1GY36Y41+rYL5fryE+nOFhp4p4JPQvdV8PQ4DWgHgeTE+w==
 
 "@bufbuild/protoc-gen-es@^2.10.0":
   version "2.10.1"
@@ -1094,7 +1099,7 @@
   resolved "https://registry.npmjs.org/@connectrpc/connect/-/connect-2.1.0.tgz"
   integrity sha512-xhiwnYlJNHzmFsRw+iSPIwXR/xweTvTw8x5HiwWp10sbVtd4OpOXbRgE7V58xs1EC17fzusF1f5uOAy24OkBuA==
 
-"@connectrpc/connect-query@^2.2.0":
+"@connectrpc/connect-query@^2.2.0", "@connectrpc/connect-query@^2.3.1":
   version "2.2.0"
   resolved "https://registry.npmjs.org/@connectrpc/connect-query/-/connect-query-2.2.0.tgz"
   integrity sha512-oQ+coXOwBmfl4/t6EOrTfzW0zdoGDe3kvUYqZHrbzORkRFd693Cz8PxuDBjRCjmBPhDRCQMxFhR1jn2+SbgEKQ==
