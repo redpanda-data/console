@@ -10,6 +10,7 @@
  */
 
 import {
+  type ShadowLink as ControlplaneShadowLink,
   ShadowLinkUpdateSchema as CpShadowLinkUpdateSchema,
   UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
@@ -45,6 +46,7 @@ import {
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, TLS_MODE } from '../create/model';
 import { buildSchemaRegistrySyncOptions } from '../create/schema-registry-request';
+import { buildDefaultFormValuesFromControlplane } from '../mappers/controlplane';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
 /**
@@ -547,15 +549,30 @@ export const getUpdateValuesForSchemaRegistry = (
 export const buildControlplaneUpdateRequest = (
   shadowLinkId: string,
   values: FormValues,
-  originalValues: FormValues
+  originalShadowLink: ControlplaneShadowLink,
+  { roleSyncSupported }: { roleSyncSupported: boolean }
 ) => {
-  // Get update values from existing category functions (reuse the logic)
-  // Roles are skipped: the controlplane proto does not expose role sync yet
+  // Build original form values for comparison
+  const originalValues = buildDefaultFormValuesFromControlplane(originalShadowLink);
+
+  // Get update values from existing category functions (reuse the logic).
+  // Roles are skipped entirely when the shadow cluster does not support role
+  // sync: the controlplane rejects role_sync_options at admission there.
   const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
   const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
   const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
+  const rolesUpdate = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
   const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
   const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
+
+  // No UI exposes interval/paused: round-trip them from the fetched link so
+  // the whole-message mask path doesn't unpause a paused role sync task or
+  // reset a custom interval
+  const originalRoleSyncOptions = originalShadowLink.roleSyncOptions;
+  if (rolesUpdate && originalRoleSyncOptions) {
+    rolesUpdate.value.interval = originalRoleSyncOptions.interval;
+    rolesUpdate.value.paused = originalRoleSyncOptions.paused;
+  }
 
   // Build flat shadow link update for controlplane (no nested configurations)
   // Use local proto schemas with type assertions to work around proto version
@@ -565,6 +582,7 @@ export const buildControlplaneUpdateRequest = (
     clientOptions: create(ShadowLinkClientOptionsSchema, connectionUpdate.value),
     topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, topicsUpdate.value),
     consumerOffsetSyncOptions: create(ConsumerOffsetSyncOptionsSchema, consumerGroupsUpdate.value),
+    roleSyncOptions: rolesUpdate ? create(RoleSyncOptionsSchema, rolesUpdate.value) : undefined,
     securitySyncOptions: create(SecuritySettingsSyncOptionsSchema, aclsUpdate.value),
     schemaRegistrySyncOptions: schemaRegistryUpdate.value
       ? create(SchemaRegistrySyncOptionsSchema, schemaRegistryUpdate.value)
@@ -578,6 +596,7 @@ export const buildControlplaneUpdateRequest = (
     ...connectionUpdate.fieldMaskPaths,
     ...topicsUpdate.fieldMaskPaths,
     ...consumerGroupsUpdate.fieldMaskPaths,
+    ...(rolesUpdate?.fieldMaskPaths ?? []),
     ...aclsUpdate.fieldMaskPaths,
     ...schemaRegistryUpdate.fieldMaskPaths,
   ].map((path) => path.replace(CONFIGURATIONS_PREFIX_REGEX, ''));

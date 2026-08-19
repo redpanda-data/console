@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ShadowLinkSchema as CpShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create } from '@bufbuild/protobuf';
 import { DurationSchema } from '@bufbuild/protobuf/wkt';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
@@ -150,6 +151,56 @@ const createBaseShadowLink = () =>
     syncedShadowTopicProperties: [],
   });
 
+// Helper to create a minimal controlplane ShadowLink for testing.
+// Hydrating it through buildDefaultFormValuesFromControlplane must equal
+// baseFormValues so unchanged categories never produce false-positive masks.
+const createBaseControlplaneShadowLink = () =>
+  create(CpShadowLinkSchema, {
+    id: 'cp-shadow-link-id',
+    name: 'test-shadow-link',
+    clientOptions: {
+      bootstrapServers: ['localhost:9092'],
+      metadataMaxAgeMs: 10_000,
+      connectionTimeoutMs: 1000,
+      retryBackoffMs: 100,
+      fetchWaitMaxMs: 500,
+      fetchMinBytes: 5_242_880,
+      fetchMaxBytes: 20_971_520,
+      fetchPartitionMaxBytes: 1_048_576,
+    },
+    topicMetadataSyncOptions: {
+      autoCreateShadowTopicFilters: [
+        { name: 'my-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+      ],
+      syncedShadowTopicProperties: [],
+      excludeDefault: false,
+    },
+    consumerOffsetSyncOptions: {
+      groupFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+    },
+    roleSyncOptions: {
+      roleNameFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+    },
+    securitySyncOptions: {
+      aclFilters: [
+        {
+          resourceFilter: {
+            resourceType: ACLResource.ACL_RESOURCE_TOPIC,
+            patternType: ACLPattern.ACL_PATTERN_LITERAL,
+            name: 'my-topic',
+          },
+          accessFilter: {
+            principal: 'User:admin',
+            operation: ACLOperation.ACL_OPERATION_READ,
+            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
+            host: '*',
+          },
+        },
+      ],
+    },
+    // Schema registry sync disabled (no schemaRegistryShadowingMode set)
+  });
+
 describe('buildControlplaneUpdateRequest', () => {
   describe('field mask path stripping', () => {
     test.each([
@@ -190,7 +241,14 @@ describe('buildControlplaneUpdateRequest', () => {
     }) => {
       const updatedValues = { ...baseFormValues, ...changes };
 
-      const result = buildControlplaneUpdateRequest('shadow-link-id-123', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest(
+        'shadow-link-id-123',
+        updatedValues,
+        createBaseControlplaneShadowLink(),
+        {
+          roleSyncSupported: true,
+        }
+      );
 
       const paths = result.updateMask?.paths ?? [];
       expect(paths.some((p) => p.includes(expectedPathContains))).toBe(true);
@@ -199,19 +257,71 @@ describe('buildControlplaneUpdateRequest', () => {
     });
   });
 
-  describe('role sync options are skipped', () => {
-    test('should not emit a role mask path or field even when roles change', () => {
+  describe('role sync', () => {
+    test('should emit the stripped role mask path and role filters when roles change', () => {
       const updatedValues = {
         ...baseFormValues,
         rolesMode: 'specify' as const,
         roles: [{ name: 'test-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
       };
 
-      const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
 
-      // The controlplane proto does not expose role sync yet, so the only
-      // changed category must produce no mask path at all
+      expect(result.updateMask?.paths).toEqual(['role_sync_options']);
+      expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toEqual([
+        expect.objectContaining({ name: 'test-role' }),
+      ]);
+    });
+
+    test('should carry no role sync value or mask path when the cluster does not support role sync', () => {
+      const updatedValues = {
+        ...baseFormValues,
+        rolesMode: 'specify' as const,
+        roles: [{ name: 'test-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+      };
+
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: false,
+      });
+
+      expect(result.shadowLink?.roleSyncOptions).toBeUndefined();
       expect(result.updateMask?.paths).toEqual([]);
+    });
+
+    test('should have empty updateMask paths when no changes from original', () => {
+      const result = buildControlplaneUpdateRequest('test-id', baseFormValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
+
+      expect(result.updateMask?.paths).toEqual([]);
+    });
+
+    test('should preserve original interval and paused when role filters change', () => {
+      const baseShadowLink = createBaseControlplaneShadowLink();
+      const roleSyncOptions = baseShadowLink.roleSyncOptions;
+      if (!roleSyncOptions) {
+        throw new Error('base shadow link must have role sync options');
+      }
+      roleSyncOptions.paused = true;
+      roleSyncOptions.interval = create(DurationSchema, { seconds: BigInt(300) });
+
+      const updatedValues = {
+        ...baseFormValues,
+        rolesMode: 'specify' as const,
+        roles: [{ name: 'test-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+      };
+
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseShadowLink, {
+        roleSyncSupported: true,
+      });
+
+      // The whole role_sync_options message is replaced by the mask path, so
+      // the fields the UI never exposes must carry over from the fetched link
+      expect(result.updateMask?.paths).toContain('role_sync_options');
+      expect(result.shadowLink?.roleSyncOptions?.paused).toBe(true);
+      expect(result.shadowLink?.roleSyncOptions?.interval?.seconds).toBe(BigInt(300));
     });
   });
 
@@ -220,7 +330,9 @@ describe('buildControlplaneUpdateRequest', () => {
       const shadowLinkId = 'unique-shadow-link-id';
       const updatedValues = { ...baseFormValues, bootstrapServers: [{ value: 'changed:9092' }] };
 
-      const result = buildControlplaneUpdateRequest(shadowLinkId, updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest(shadowLinkId, updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
 
       expect(result.shadowLink?.id).toBe(shadowLinkId);
     });
@@ -228,7 +340,9 @@ describe('buildControlplaneUpdateRequest', () => {
     test('should build flat structure without nested configurations', () => {
       const updatedValues = { ...baseFormValues, bootstrapServers: [{ value: 'changed:9092' }] };
 
-      const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
 
       // Controlplane uses flat structure - properties directly on shadowLink
       expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
@@ -269,7 +383,9 @@ describe('buildControlplaneUpdateRequest', () => {
         bootstrapServers: [{ value: 'kafka1:9092' }, { value: 'kafka2:9092' }],
       };
 
-      const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
 
       expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['kafka1:9092', 'kafka2:9092']);
     });
@@ -284,7 +400,9 @@ describe('buildControlplaneUpdateRequest', () => {
         topics: [{ name: 'topic1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
       };
 
-      const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
 
       expect(result.updateMask?.paths).toEqual(
         expect.arrayContaining(['client_options', 'topic_metadata_sync_options'])
@@ -304,6 +422,8 @@ describe('buildControlplaneUpdateRequest', () => {
         topics: [{ name: 'topic1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         consumersMode: 'specify' as const,
         consumers: [{ name: 'group1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+        rolesMode: 'specify' as const,
+        roles: [{ name: 'role1', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
         aclsMode: 'specify' as const,
         aclFilters: [
           {
@@ -319,18 +439,21 @@ describe('buildControlplaneUpdateRequest', () => {
         enableSchemaRegistrySync: true,
       };
 
-      const result = buildControlplaneUpdateRequest('test-id', updatedValues, baseFormValues);
+      const result = buildControlplaneUpdateRequest('test-id', updatedValues, createBaseControlplaneShadowLink(), {
+        roleSyncSupported: true,
+      });
 
       expect(result.updateMask?.paths).toEqual(
         expect.arrayContaining([
           'client_options',
           'topic_metadata_sync_options',
           'consumer_offset_sync_options',
+          'role_sync_options',
           'security_sync_options',
           'schema_registry_sync_options',
         ])
       );
-      expect(result.updateMask?.paths?.length).toBe(5);
+      expect(result.updateMask?.paths?.length).toBe(6);
       expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['new:9092']);
       expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
         expect.objectContaining({ name: 'topic1' }),
@@ -338,6 +461,7 @@ describe('buildControlplaneUpdateRequest', () => {
       expect(result.shadowLink?.consumerOffsetSyncOptions?.groupFilters).toEqual([
         expect.objectContaining({ name: 'group1' }),
       ]);
+      expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toEqual([expect.objectContaining({ name: 'role1' })]);
       expect(result.shadowLink?.securitySyncOptions?.aclFilters).toEqual([
         expect.objectContaining({
           resourceFilter: expect.objectContaining({ name: 'test-topic' }),
@@ -601,7 +725,9 @@ describe('schema registry api mode through both builders', () => {
   });
 
   test('controlplane request carries the api oneof with the stripped mask path', () => {
-    const request = buildControlplaneUpdateRequest('test-id-123', apiFormValues(), baseFormValues);
+    const request = buildControlplaneUpdateRequest('test-id-123', apiFormValues(), createBaseControlplaneShadowLink(), {
+      roleSyncSupported: true,
+    });
 
     expect(request.updateMask?.paths).toEqual(['schema_registry_sync_options']);
     const mode = request.shadowLink?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;

@@ -433,8 +433,9 @@ export const useEditShadowLink = (
     (values: FormValues) => {
       if (embedded && shadowLinkId && controlplaneShadowLink) {
         // Use controlplane API with ID
-        const originalValues = buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
-        const request = buildControlplaneUpdateRequest(shadowLinkId, values, originalValues);
+        const request = buildControlplaneUpdateRequest(shadowLinkId, values, controlplaneShadowLink, {
+          roleSyncSupported,
+        });
         return controlplaneUpdate.mutateAsync(request);
       }
       if (shadowLink) {
