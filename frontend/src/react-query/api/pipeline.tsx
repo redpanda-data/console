@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
+import { callUnaryMethod, createConnectQueryKey, useMutation, useQuery, useTransport } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   GetPipelineRequestSchema,
@@ -33,7 +33,7 @@ import {
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -74,6 +74,21 @@ export const useGetPipelineQuery = (
   });
 };
 
+/**
+ * DANGER, and the reason there is only one caller shape: **the input never reaches the query key**, so
+ * every mounted `useListPipelinesQuery` shares one cache entry regardless of what it asked for.
+ *
+ * connect-query omits the `pageParamKey` field from the key (it is the cursor, and keying on it would
+ * give every page its own entry). The console-layer `ListPipelinesRequest` has exactly one field —
+ * `request`, the dataplane request — and that is the page param, because the page token lives inside
+ * it. So the whole filter, page size and all, is omitted: `{}` for every input.
+ *
+ * A caller that narrows the input therefore does not get its own filtered view; it overwrites the one
+ * entry the pipeline list renders from. That is exactly what a name-filtered lookup on the editor page
+ * did — after saving a draft, the list showed only that draft. Anything needing a different filter must
+ * go around the cache (`callUnaryMethod`, as `useFetchPipelineNames` below does), or the whole list has
+ * to be fetched and filtered client-side. `useListPipelinesQuery.test` locks this behaviour down.
+ */
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
   options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
@@ -149,6 +164,40 @@ export const useListPipelinesQuery = (
     ...listPipelinesResult,
     data,
   };
+};
+
+/**
+ * One page is the whole answer here: the caller is numbering `Untitled pipeline 2`, `3`, … past the
+ * names already taken, and a hundredth untitled draft falls back to a timestamp rather than paging.
+ */
+const NAME_LOOKUP_PAGE_SIZE = 100;
+
+/**
+ * Display names already in use, matched by substring — fetched on demand rather than subscribed to.
+ *
+ * Two reasons it is not a query. It is needed once, at the moment a draft is saved with the name field
+ * left empty, so a standing query would drain the list on every editor mount for a value usually never
+ * read. And a filtered `useListPipelinesQuery` cannot exist: see the warning on that hook — it would
+ * land in the same cache entry as the pipeline list and replace it with the filtered result.
+ */
+export const useFetchPipelineNames = () => {
+  const transport = useTransport();
+  return useCallback(
+    async (nameContains: string): Promise<string[]> => {
+      const response = await callUnaryMethod(
+        transport,
+        listPipelines,
+        create(ListPipelinesRequestSchema, {
+          request: create(ListPipelinesRequestSchemaDataPlane, {
+            pageSize: NAME_LOOKUP_PAGE_SIZE,
+            filter: { includeDrafts: true, nameContains },
+          }),
+        })
+      );
+      return (response.response?.pipelines ?? []).map((pipeline) => pipeline.displayName);
+    },
+    [transport]
+  );
 };
 
 export const useCreatePipelineMutation = () => {

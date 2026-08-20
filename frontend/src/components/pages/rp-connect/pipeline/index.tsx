@@ -68,8 +68,8 @@ import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect'
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
+  useFetchPipelineNames,
   useGetPipelineQuery,
-  useListPipelinesQuery,
   useStartPipelineMutation,
   useStopPipelineMutation,
   useUpdatePipelineMutation,
@@ -182,17 +182,6 @@ function tipsContextForLane(isView: boolean, viewLane: string, editLane: string)
 // Stable empty set for the "nothing unsaved" / view-mode case so highlights don't churn renders.
 const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 
-/**
- * Names already taken by auto-named drafts, so a new one can be numbered past them. Narrowed to the
- * untitled prefix on purpose: the unfiltered list drains every page, and the save mutation awaits its
- * own invalidation of it, which turned a 30ms write into 13 seconds. Module scope keeps the request
- * identity stable for the query hook.
- */
-const DRAFT_NAME_LIST_INPUT = {
-  pageSize: 100,
-  filter: { includeDrafts: true, nameContains: UNTITLED_PIPELINE_NAME },
-} as const;
-
 // How many effect re-runs (editor mount, ranges catch-up) a reveal request survives unresolved.
 const MAX_REVEAL_ATTEMPTS = 5;
 
@@ -300,7 +289,6 @@ function usePipelineSave({
   isPipelineDiagramsEnabled,
   onBeforeSaveNavigate,
   saveContext,
-  existingPipelineNames,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   /** The editor store — read fresh at save time (after flushing pending visual edits). */
@@ -312,8 +300,6 @@ function usePipelineSave({
   /** Called right before a successful save navigates away, so the guard doesn't block it. */
   onBeforeSaveNavigate?: () => void;
   saveContext: SaveContext;
-  /** Names already in use, so an unnamed draft gets a distinguishable one. */
-  existingPipelineNames: string[];
 }) {
   const navigate = useNavigate();
   const { mutateAsync: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
@@ -321,7 +307,21 @@ function usePipelineSave({
   const { mutateAsync: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutateAsync: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
+  const fetchPipelineNames = useFetchPipelineNames();
   const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
+
+  /**
+   * Read at save time, not subscribed to: it is only wanted when a draft is saved with the name field
+   * empty. A failed lookup must not fail the save — a duplicate display name is legal, and an unnumbered
+   * `Untitled pipeline` is a better outcome than refusing to park the work.
+   */
+  const nextUntitledName = useCallback(async () => {
+    try {
+      return untitledPipelineName(await fetchPipelineNames(UNTITLED_PIPELINE_NAME));
+    } catch {
+      return UNTITLED_PIPELINE_NAME;
+    }
+  }, [fetchPipelineNames]);
 
   const clearErrorLintHints = useCallback(() => setErrorLintHints({}), []);
 
@@ -362,7 +362,7 @@ function usePipelineSave({
       // A draft is saved as typed, so the only settings that must hold are the ones the server will
       // reject outright. An unnamed draft gets a name rather than a scolding.
       if (isDraftSave && !form.getValues('name').trim()) {
-        form.setValue('name', untitledPipelineName(existingPipelineNames), { shouldValidate: true });
+        form.setValue('name', await nextUntitledName(), { shouldValidate: true });
       }
 
       const isValid = await form.trigger();
@@ -547,7 +547,7 @@ function usePipelineSave({
       onBeforeSaveNavigate,
       markSaved,
       saveContext,
-      existingPipelineNames,
+      nextUntitledName,
     ]
   );
 
@@ -1166,16 +1166,6 @@ function PipelinePageContent() {
   );
   const editingDraft = isDraft(pipeline);
 
-  // Create only: an already-named draft would pay the list cost on every save for no benefit, and
-  // blanking its name just falls back to an unnumbered "Untitled pipeline".
-  const { data: pipelineListData } = useListPipelinesQuery(DRAFT_NAME_LIST_INPUT, {
-    enabled: draftsEnabled && mode === 'create',
-  });
-  const existingPipelineNames = useMemo(
-    () => (pipelineListData?.pipelines ?? []).map((p) => p.displayName),
-    [pipelineListData]
-  );
-
   const autosaveTarget = autosaveTargetKey(mode === 'create' ? undefined : pipelineId);
   /**
    * A boolean rather than the entry, so autosave rewriting its contents once a second isn't a re-render.
@@ -1222,7 +1212,6 @@ function PipelinePageContent() {
       isPipelineDiagramsEnabled,
       onBeforeSaveNavigate: markNavigationAllowed,
       saveContext,
-      existingPipelineNames,
     });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 

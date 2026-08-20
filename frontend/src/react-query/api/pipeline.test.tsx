@@ -23,7 +23,48 @@ import { describe, expect, test } from 'vitest';
 
 import { useListPipelinesQuery } from './pipeline';
 
+// Module scope: the hook memoizes its request on the input's identity.
+const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
+
 describe('useListPipelinesQuery', () => {
+  /**
+   * The trap behind "after saving a draft the list showed only that draft": the input never reaches the
+   * query key, so two callers asking for different things are one cache entry, and the narrower one wins.
+   *
+   * connect-query omits the `pageParamKey` field from the key, and on the console-layer request that
+   * field — `request` — is the entire input. Asserted rather than commented, because the hook's
+   * signature promises a per-input view that TanStack cannot give it.
+   */
+  test('shares one cache entry across callers, whatever input each asks for', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listPipelines, (req) =>
+        create(ListPipelinesResponseSchema, {
+          response: create(DataPlaneListPipelinesResponseSchema, {
+            pipelines: req.request?.filter?.nameContains
+              ? [create(PipelineSchema, { id: 'draft-1', displayName: 'Untitled pipeline' })]
+              : [
+                  create(PipelineSchema, { id: 'pipeline-1', displayName: 'Pipeline 1' }),
+                  create(PipelineSchema, { id: 'draft-1', displayName: 'Untitled pipeline' }),
+                ],
+            nextPageToken: '',
+          }),
+        })
+      );
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(
+      () => ({ all: useListPipelinesQuery(), filtered: useListPipelinesQuery(NAME_FILTERED_INPUT) }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.all.data.pipelines.length).toBeGreaterThan(0));
+
+    // One entry, one result: the filtered caller never gets a view of its own, it replaces everyone's.
+    expect(result.current.filtered.data.pipelines).toEqual(result.current.all.data.pipelines);
+  });
+
   test('fetches all pages and flattens pipelines into a single array', async () => {
     let callCount = 0;
 

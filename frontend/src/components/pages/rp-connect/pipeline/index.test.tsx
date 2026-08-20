@@ -1114,11 +1114,17 @@ describe('PipelinePage', () => {
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('Untitled pipeline');
     });
 
-    // The name lookup used to be the unfiltered list, which drains every page. The save mutation then
-    // awaits its own invalidation of that query, so a 30ms write took 13 seconds on a cluster with a
-    // few thousand pipelines.
-    it('looks up untitled names with a narrow query, not a full list drain', async () => {
+    /**
+     * The lookup is narrow (the unfiltered list drains every page, and the save mutation awaits its own
+     * invalidation of it — a 30ms write took 13 seconds on a large cluster) and it happens at save time,
+     * not on mount. As a *query* it shared one cache entry with the pipeline list — the input never
+     * reaches the query key, see `useListPipelinesQuery` — so it replaced the list with its filtered
+     * result, and after saving a draft the list showed only that draft.
+     */
+    it('looks up untitled names only when saving, with a narrow request', async () => {
+      const user = userEvent.setup();
       const requests: unknown[] = [];
+      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
       const listPipelinesMock = vi.fn().mockImplementation((req: unknown) => {
         requests.push(req);
         return create(ConsoleListPipelinesResponseSchema, {
@@ -1126,11 +1132,18 @@ describe('PipelinePage', () => {
         });
       });
 
-      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
+
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
+      // Nothing listed just by opening the editor.
+      expect(requests).toHaveLength(0);
+
+      await user.click(screen.getByTestId('save-pipeline'));
 
       await waitFor(() => expect(requests.length).toBeGreaterThan(0));
-      const filter = (requests[0] as { request?: { filter?: { nameContains?: string } } }).request?.filter;
-      expect(filter?.nameContains).toBe('Untitled pipeline');
+      const dataplaneRequest = (requests[0] as { request?: { pageSize?: number; filter?: unknown } }).request;
+      expect(dataplaneRequest?.filter).toMatchObject({ nameContains: 'Untitled pipeline', includeDrafts: true });
+      expect(dataplaneRequest?.pageSize).toBe(100);
     });
 
     it('numbers an unnamed draft against the names already taken', async () => {
@@ -1146,12 +1159,28 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
 
-      await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
-      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
       await user.click(screen.getByTestId('save-pipeline'));
 
       await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('Untitled pipeline 2');
+    });
+
+    // Numbering is a nicety; duplicate display names are legal. Losing the work is not an option.
+    it('still saves the draft when the name lookup fails', async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const listPipelinesMock = vi.fn().mockImplementation(() => {
+        throw new ConnectError('list unavailable', Code.Unavailable);
+      });
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
+
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('Untitled pipeline');
     });
 
     it('"Save and start" on a new pipeline deploys it for real', async () => {
