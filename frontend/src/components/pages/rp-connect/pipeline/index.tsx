@@ -288,7 +288,7 @@ function usePipelineSave({
   pipelineId,
   pipeline,
   isPipelineDiagramsEnabled,
-  onBeforeSaveNavigate,
+  onBeforeGuardedNavigate,
   saveContext,
 }: {
   form: UseFormReturn<PipelineFormValues>;
@@ -298,8 +298,11 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  /** Called right before a successful save navigates away, so the guard doesn't block it. */
-  onBeforeSaveNavigate?: () => void;
+  /**
+   * Called right before this page navigates away on its own — after a save, or after a delete — so the
+   * unsaved-changes guard lets a departure the user already asked for through.
+   */
+  onBeforeGuardedNavigate?: () => void;
   saveContext: SaveContext;
 }) {
   const navigate = useNavigate();
@@ -435,7 +438,7 @@ function usePipelineSave({
             toast.success(saveSuccessMessage(saveContext, run));
           }
           warnIfResized(form, createdPipeline?.resources?.cpuShares);
-          onBeforeSaveNavigate?.();
+          onBeforeGuardedNavigate?.();
           if (intent?.skipNavigation) {
             return true;
           }
@@ -521,7 +524,7 @@ function usePipelineSave({
         if (isDraftSave || intent?.skipNavigation) {
           return true;
         }
-        onBeforeSaveNavigate?.();
+        onBeforeGuardedNavigate?.();
         navigate({ to: `/rp-connect/${pipelineId}` });
         return true;
       } catch (err) {
@@ -553,7 +556,7 @@ function usePipelineSave({
       navigate,
       clearWizardStore,
       pipeline,
-      onBeforeSaveNavigate,
+      onBeforeGuardedNavigate,
       markSaved,
       saveContext,
       nextUntitledName,
@@ -570,6 +573,10 @@ function usePipelineSave({
           // something that no longer exists.
           rpcnEditorAutosave.clear(autosaveTargetKey(id));
           toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
+          // Deleting from the editor with unsaved edits used to trip the leave-without-saving guard, so
+          // confirming a delete opened a second dialog asking whether to save the thing just deleted —
+          // and its Save draft button would have written to a pipeline that no longer exists.
+          onBeforeGuardedNavigate?.();
           navigateToConnectClusters(navigate);
         },
         onError: (err) => {
@@ -579,7 +586,7 @@ function usePipelineSave({
         },
       });
     },
-    [deleteMutation, navigate, pipeline]
+    [deleteMutation, navigate, pipeline, onBeforeGuardedNavigate]
   );
 
   return {
@@ -1219,7 +1226,7 @@ function PipelinePageContent() {
       pipelineId,
       pipeline,
       isPipelineDiagramsEnabled,
-      onBeforeSaveNavigate: markNavigationAllowed,
+      onBeforeGuardedNavigate: markNavigationAllowed,
       saveContext,
     });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
@@ -1803,6 +1810,7 @@ function PipelinePageContent() {
       {pipeline && editingDraft ? (
         <DeleteDraftDialog
           draftName={pipeline.displayName}
+          hasUnsavedChanges={hasUnsavedChanges}
           isDeleting={isDeleting}
           onConfirm={() => handleDelete(pipeline.id)}
           onOpenChange={setIsDeleteAlertOpen}

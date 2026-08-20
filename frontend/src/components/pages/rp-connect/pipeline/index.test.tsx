@@ -82,8 +82,19 @@ const mockNavigate = vi.fn();
 const mockBack = vi.fn();
 const mockSearch = vi.fn(() => ({}));
 // Overridable so the leave-without-saving dialog can be driven directly; the guard itself belongs to
-// the router, not to this page.
-const mockBlocker = vi.fn(() => ({ status: 'idle', proceed: undefined, reset: undefined }) as unknown);
+// the router, not to this page. The options are passed through so a test can ask the page's own
+// `shouldBlockFn` whether it would block, which is the only honest way to test the guard here.
+type BlockerOptions = { shouldBlockFn: () => boolean };
+const mockBlocker = vi.fn(
+  (_options?: BlockerOptions) =>
+    ({
+      status: 'idle',
+      proceed: undefined,
+      reset: undefined,
+    }) as unknown
+);
+const lastShouldBlockFn = () =>
+  (mockBlocker.mock.calls.at(-1)?.[0] as BlockerOptions | undefined)?.shouldBlockFn ?? (() => false);
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
@@ -91,7 +102,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
     useNavigate: () => mockNavigate,
     useRouter: () => ({ history: { back: mockBack, canGoBack: () => true } }),
     useSearch: () => mockSearch(),
-    useBlocker: () => mockBlocker(),
+    useBlocker: (options: BlockerOptions) => mockBlocker(options),
   };
 });
 
@@ -1667,6 +1678,36 @@ describe('PipelinePage', () => {
       await user.click(await screen.findByTestId('confirm-delete-draft'));
 
       await waitFor(() => expect(useRpcnEditorAutosaveStore.getState().entries).toHaveLength(0));
+    });
+
+    /**
+     * Deleting is a departure the user has already confirmed. Leaving the guard armed meant confirming a
+     * delete opened the leave-without-saving dialog next, asking whether to save the draft that had just
+     * been deleted — and its Save draft button would have written to a pipeline that no longer existed.
+     */
+    it('stands the unsaved-changes guard down after deleting, so no second dialog follows', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const deletePipelineMock = vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}));
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: vi.fn().mockReturnValue(draftPipeline()), deletePipelineMock }),
+      });
+
+      const editor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
+      await waitFor(() => expect(editor.value).toBe('input:\n  kafka_'));
+      fireEvent.change(editor, { target: { value: 'input:\n  half_typed' } });
+      // The guard is armed while the edits are unsaved — that part is meant to happen.
+      expect(lastShouldBlockFn()()).toBe(true);
+
+      await user.click(await screen.findByTestId('delete-draft'));
+      // The confirmation says the unsaved edits go too: a trash icon in an editor can read as
+      // "throw away my changes".
+      expect(await screen.findByText(/unsaved changes go with it/i)).toBeInTheDocument();
+      await user.click(screen.getByTestId('confirm-delete-draft'));
+
+      await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
+      await waitFor(() => expect(lastShouldBlockFn()()).toBe(false));
     });
   });
 

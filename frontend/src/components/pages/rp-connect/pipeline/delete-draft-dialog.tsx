@@ -33,12 +33,16 @@ export function DeleteDraftDialog({
   open,
   draftName,
   isDeleting,
+  hasUnsavedChanges,
   onOpenChange,
   onConfirm,
 }: {
   open: boolean;
   draftName: string;
   isDeleting?: boolean;
+  /** Editing this draft with unsaved edits: they go too, and a trash icon in an editor can read as
+   *  "throw away my changes". */
+  hasUnsavedChanges?: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }) {
@@ -52,6 +56,11 @@ export function DeleteDraftDialog({
             <span className="block text-body">
               <InlineCode>{name}</InlineCode> and its configuration are deleted for everyone.
             </span>
+            {hasUnsavedChanges ? (
+              <span className="block text-body">
+                Your unsaved changes go with it — this deletes the whole draft, not just your edits.
+              </span>
+            ) : null}
             <span className="block text-body">This can't be undone.</span>
           </AlertDialogDescription>
         </AlertDialogHeader>

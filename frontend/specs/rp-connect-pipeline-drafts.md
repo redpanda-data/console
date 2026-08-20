@@ -410,6 +410,13 @@ served from a snapshot taken when the editor opened).
 The buffer holds the settings as well as the configuration, since a save writes both — so an unsaved
 rename or resize is recoverable work, and the offer appears when either half differs from what is saved.
 
+**The guard stands down for departures the page itself performs** — after a save, and after a delete.
+Deleting a draft from the editor with unsaved edits used to trip it, so confirming the delete opened the
+leave-without-saving dialog next, asking whether to save the draft that had just been deleted; its **Save
+draft** button would have written to a pipeline that no longer existed. The delete confirmation now also
+says the unsaved edits go with it, because a trash icon inside an editor can read as "throw away my
+changes" rather than "throw away the draft".
+
 ### Nothing to save
 
 One case refuses to park: an untouched create page, with no configuration and no name. The primary
