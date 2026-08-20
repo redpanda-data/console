@@ -1101,6 +1101,41 @@ describe('PipelinePage', () => {
       expect(sent.configYaml).toBe(configYaml);
     });
 
+    /**
+     * The primary button on the create page is "Save draft", so it is what a curious click lands on.
+     * Parking an untouched page would put an empty row in everyone's pipeline list and spend one of the
+     * cluster's 100 pipeline slots on nothing — and there is no work to protect.
+     */
+    it('refuses to park a create page with nothing on it, and says what would make it savable', async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: '' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/nothing to save yet/i)));
+      // Names the way out, rather than only refusing.
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/or a name/i));
+      expect(createPipelineMock).not.toHaveBeenCalled();
+    });
+
+    // A name is enough to be worth keeping: it is somewhere to come back to.
+    it('parks a named draft with no configuration at all', async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: '' } });
+      fireEvent.change(screen.getByLabelText('Pipeline name'), { target: { value: 'orders v2 idea' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('orders v2 idea');
+    });
+
     it('names an unnamed draft rather than refusing to save it', async () => {
       const user = userEvent.setup();
       const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
@@ -1693,6 +1728,31 @@ describe('PipelinePage', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
+    // A quota-full cluster is the realistic version of this: the better exit is gone, and Discard must
+    // not become the only one.
+    it('falls back to keeping the edits in this browser when the draft cannot be saved', async () => {
+      const user = userEvent.setup();
+      const { proceed } = blocked();
+      const createPipelineMock = vi
+        .fn()
+        .mockRejectedValue(new ConnectError('pipeline quota exceeded', Code.ResourceExhausted));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
+      await user.click(await screen.findByTestId('save-draft-and-leave'));
+
+      // Offered beside the failed action, not instead of it: retrying is still reasonable.
+      const leaveForNow = await screen.findByTestId('leave-and-keep-edits');
+      expect(screen.getByTestId('save-draft-and-leave')).toBeInTheDocument();
+
+      await user.click(leaveForNow);
+
+      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'create');
+      expect(buffer?.configYaml).toBe('input:\n  half_typed');
+      expect(proceed).toHaveBeenCalled();
+    });
+
     // Saving would restart it, so offering "save and leave" here would be a trap.
     it('offers no draft on a running pipeline, and says why', async () => {
       blocked();
@@ -1704,6 +1764,31 @@ describe('PipelinePage', () => {
       expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /keep editing/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /discard changes/i })).toBeInTheDocument();
+    });
+
+    /**
+     * The dialog used to offer only Discard and Keep editing on a deployed pipeline, where no draft is
+     * possible — so someone with real work had to either sit on the page or close the tab, because
+     * closing the tab was the only exit that kept it. Leaving on purpose now keeps it too, and says so.
+     */
+    it('lets a deployed pipeline be left with the edits kept in this browser', async () => {
+      const user = userEvent.setup();
+      const { proceed } = blocked();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      const editor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
+      await waitFor(() => expect(editor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}'));
+      fireEvent.change(editor, { target: { value: 'input:\n  half_typed' } });
+
+      await user.click(await screen.findByTestId('leave-and-keep-edits'));
+
+      // Asserted without waiting out the debounce: the pending write dies with the page, so the button
+      // that promises the edits are kept has to flush them itself.
+      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
+      expect(buffer?.configYaml).toBe('input:\n  half_typed');
+      expect(proceed).toHaveBeenCalled();
     });
 
     // Discard used to leave the recovery buffer behind, so the next visit offered back the very edits
@@ -1775,6 +1860,25 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(yamlEditor.value).toBe('input:\n  recovered: {}'));
       // Nothing left to offer once it's loaded.
       expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
+    });
+
+    // A save writes the settings as well as the configuration, so an unsaved resize is recoverable work.
+    // Offering the buffer only when the YAML differed dropped it silently.
+    it('offers to restore a buffer whose settings differ, even with identical configuration', async () => {
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      useRpcnEditorAutosaveStore.getState().save({
+        targetKey: 'test-pipeline',
+        name: 'Test Pipeline',
+        description: '',
+        // The loaded pipeline is 1 compute unit; everything else matches what is saved.
+        computeUnits: 6,
+        tags: [],
+        configYaml: 'input:\n  stdin: {}\noutput:\n  stdout: {}',
+      });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
     });
 
     // Loading a pipeline settles the document back to "nothing to recover". Tidying up on that signal

@@ -99,6 +99,13 @@ export function summarizeComponentChanges(
 export const UNSAVED_CHANGES_LANE_LABEL = 'Unsaved changes';
 
 /**
+ * On the header pill. Says where the edits are while they are unsaved, because otherwise the recovery
+ * buffer is invisible until it surprises someone as an offer on a later visit — and something nobody
+ * knows about is something nobody can rely on.
+ */
+export const UNSAVED_CHANGES_PILL_TOOLTIP = 'Unsaved changes — kept in this browser until you save or discard them';
+
+/**
  * A save writes the settings as well as the configuration, so an edit to either is an unsaved change.
  * Leaving the settings out made the lane contradict the header, which counts both.
  */

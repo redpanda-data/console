@@ -45,6 +45,7 @@ import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 import { docsLinks } from 'utils/docs-links';
 
+import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
 import { PipelineStatusToggle } from './pipeline-status-toggle';
 import {
@@ -490,7 +491,7 @@ export function PipelineEditHeader({
               {/* role=status: the pill appears without the user acting on this part of the page, and it
                   is the answer to "do I still need to save". */}
               {hasUnsavedChanges ? (
-                <span className="flex items-center gap-1.5" role="status" title="You have unsaved changes">
+                <span className="flex items-center gap-1.5" role="status" title={UNSAVED_CHANGES_PILL_TOOLTIP}>
                   <span aria-hidden className="size-2 rounded-full bg-informative" />
                   Unsaved changes
                 </span>

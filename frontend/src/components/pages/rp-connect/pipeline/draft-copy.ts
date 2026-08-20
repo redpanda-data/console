@@ -21,7 +21,13 @@ export const areDraftsEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnP
 export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boolean =>
   pipeline?.state === Pipeline_State.DRAFT;
 
-export const DRAFT_BADGE_TOOLTIP = 'Saved but never deployed — it uses no compute and processes no data';
+/**
+ * The most-hovered explanation of the feature: this badge is on list rows, the editor and the detail
+ * header. It carries the surprising half too — a draft is a stage before first deployment, so starting
+ * one spends it. Without that, "draft" reads as a parking space a live pipeline could also use.
+ */
+export const DRAFT_BADGE_TOOLTIP =
+  'Saved but never deployed — it uses no compute and processes no data. Starting it makes it a regular pipeline.';
 
 /**
  * A create asked for a draft and got a deployed pipeline back. Anything compiled against a pre-drafts
@@ -33,6 +39,13 @@ export const DRAFT_UNSUPPORTED_MESSAGE =
 
 /** Name used when a draft is saved with the name field left empty, so saving never stops to ask. */
 export const UNTITLED_PIPELINE_NAME = 'Untitled pipeline';
+
+/**
+ * The one case where parking is refused: an untouched create page. A draft exists to protect work, and
+ * an empty configuration with no name is not work — it is a row in everyone's list and a quota slot.
+ */
+export const NOTHING_TO_SAVE_MESSAGE =
+  "There's nothing to save yet. Add some configuration, or a name if you want somewhere to come back to.";
 
 /**
  * `display_name` is required (min 3 chars), but making the user think of one before their work can be

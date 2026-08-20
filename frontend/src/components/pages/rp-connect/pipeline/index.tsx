@@ -97,6 +97,7 @@ import {
   areDraftsEnabled,
   DRAFT_UNSUPPORTED_MESSAGE,
   isDraft,
+  NOTHING_TO_SAVE_MESSAGE,
   startBlockedMessage,
   timestampToMillis,
   UNTITLED_PIPELINE_NAME,
@@ -359,6 +360,18 @@ function usePipelineSave({
       const run: SaveRunIntent = intent?.run ?? primaryRunIntent(saveContext);
       const isDraftSave = run === 'draft';
 
+      // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
+      editorStore.getState().pendingEditCommit?.();
+      const yamlContent = editorStore.getState().yamlContent;
+
+      // Nothing typed at all. A draft protects work, and there is none here — parking this would put an
+      // empty row in everyone's pipeline list and spend a quota slot on it. The message names the way
+      // out, since a name alone is enough to make it worth keeping.
+      if (isDraftSave && mode === 'create' && isBlankConfig(yamlContent) && !form.getValues('name').trim()) {
+        toast.error(NOTHING_TO_SAVE_MESSAGE);
+        return false;
+      }
+
       // A draft is saved as typed, so the only settings that must hold are the ones the server will
       // reject outright. An unnamed draft gets a name rather than a scolding.
       if (isDraftSave && !form.getValues('name').trim()) {
@@ -375,10 +388,6 @@ function usePipelineSave({
         );
         return false;
       }
-
-      // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
-      editorStore.getState().pendingEditCommit?.();
-      const yamlContent = editorStore.getState().yamlContent;
 
       // An empty document can be parked but not deployed. Caught here so `Save and start` doesn't
       // round-trip just to be told there is nothing to run.
@@ -1400,6 +1409,15 @@ function PipelinePageContent() {
     setIsAutosaveDismissed(false);
   }, [mode, isDocumentLoaded, autosaveTarget]);
 
+  /**
+   * The buffer keeps the settings as well as the configuration, because a save writes both — so an
+   * unsaved rename or resize is recoverable work, and offering it only when the YAML differed dropped
+   * it on the floor.
+   */
+  const recoveredSettingsChanges = useMemo(
+    () => (recoverableEntry ? summarizeSettingsChanges(form.formState.defaultValues, recoverableEntry) : []),
+    [recoverableEntry, form.formState.defaultValues]
+  );
   const showAutosaveRestore =
     mode !== 'view' &&
     !isAutosaveDismissed &&
@@ -1407,7 +1425,7 @@ function PipelinePageContent() {
     // A save clears the buffer, and the offer to recover it has to go at the same time.
     hasStoredBuffer &&
     // Against the baseline, not the live editor — the live one changes on every keystroke.
-    recoverableEntry.configYaml !== (initialYaml ?? '');
+    (recoverableEntry.configYaml !== (initialYaml ?? '') || recoveredSettingsChanges.length > 0);
   // The saved pipeline moved on since the buffer was captured: restoring is still the user's call, but
   // it is no longer just "put my typing back".
   const isAutosaveStale = (() => {
@@ -1415,12 +1433,34 @@ function PipelinePageContent() {
     return !!recoverableEntry && savedAt !== null && savedAt > recoverableEntry.updatedAt;
   })();
 
-  useEditorAutosave({
+  const { flush: flushAutosave } = useEditorAutosave({
     enabled: mode !== 'view',
     pipelineId: mode === 'create' ? undefined : pipelineId,
     form,
     editorStore,
   });
+
+  /**
+   * Leave, keeping the edits in this browser — the only "don't lose my work" action left once a pipeline
+   * is deployed. Flushed rather than left to the debounce, because this button says the edits are kept
+   * and the pending write dies with the page.
+   */
+  const handleLeaveAndKeepEdits = useCallback(() => {
+    flushAutosave();
+    blocker.proceed?.();
+  }, [flushAutosave, blocker]);
+
+  /**
+   * A draft is the better exit where one is possible, so it is the only one offered — until it fails,
+   * when the browser buffer is offered beside it rather than leaving Discard as the way out.
+   */
+  const [hasDraftEscapeFailed, setHasDraftEscapeFailed] = useState(false);
+  const canSaveDraftAndLeave = unsavedChanges.escape === 'save-draft';
+  useEffect(() => {
+    if (blocker.status !== 'blocked') {
+      setHasDraftEscapeFailed(false);
+    }
+  }, [blocker.status]);
 
   // Create + diagrams: useCreateModeInitialYaml bails, so seed the baseline here or the unsaved-changes
   // guard never arms. Serverless resolves its own baseline later; seeding '' first would read false-dirty.
@@ -1607,9 +1647,13 @@ function PipelinePageContent() {
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <Alert icon={<FileClock />} testId="draft-view-notice" variant="info">
             <AlertTitle>This pipeline is a draft</AlertTitle>
+            {/* The one place the whole model is stated, because this is the page someone lands on when
+                they ask what a draft is — including the part that surprises people: a draft is a stage
+                before a pipeline has ever run, not a parking space you can come back to afterwards. */}
             <AlertDescription>
               It has never run, so there is nothing to monitor yet and it costs nothing. Starting it checks the
-              configuration first — anything it finds is shown in the editor.
+              configuration first — anything it finds is shown in the editor. Once it starts it becomes a regular
+              pipeline, and drafts only exist for pipelines that have never been deployed.
             </AlertDescription>
           </Alert>
         </div>
@@ -1786,19 +1830,16 @@ function PipelinePageContent() {
             <DialogTitle>Leave without saving your changes?</DialogTitle>
           </DialogHeader>
           <DialogBody>{unsavedChanges.body}</DialogBody>
-          {/* Losing the work is the quiet option on the left; the safe one is the primary at the right
-              end, in both variants of this dialog. */}
+          {/* Three ways out, and exactly one of them loses the work: losing it is the quiet option on
+              the left, and there is always an exit on the right that keeps it. */}
           <DialogFooter>
             <Button onClick={handleDiscardAndLeave} testId="discard-and-leave" variant="ghost">
               Discard changes
             </Button>
-            <Button
-              onClick={() => blocker.reset?.()}
-              variant={unsavedChanges.canSaveDraft ? 'secondary-outline' : 'primary'}
-            >
+            <Button onClick={() => blocker.reset?.()} variant="secondary-outline">
               Keep editing
             </Button>
-            {unsavedChanges.canSaveDraft ? (
+            {canSaveDraftAndLeave ? (
               <Button
                 // Draft first, then continue the navigation the guard interrupted — but only if the
                 // draft actually landed. Leaving on a failed save would take the toast explaining it
@@ -1806,14 +1847,30 @@ function PipelinePageContent() {
                 onClick={async () => {
                   if (await handleSave({ run: 'draft', skipNavigation: true })) {
                     blocker.proceed?.();
+                    return;
                   }
+                  // A quota-full cluster or a dropped connection would otherwise leave Discard as the
+                  // only way out of the dialog, which is the dead end this footer exists to avoid.
+                  setHasDraftEscapeFailed(true);
                 }}
                 testId="save-draft-and-leave"
-                variant="primary"
+                variant={hasDraftEscapeFailed ? 'secondary-outline' : 'primary'}
               >
                 Save draft
               </Button>
             ) : null}
+            {canSaveDraftAndLeave && !hasDraftEscapeFailed ? null : (
+              <Button
+                onClick={handleLeaveAndKeepEdits}
+                testId="leave-and-keep-edits"
+                // Also on the button, so it stands on its own when it appears next to a failed draft
+                // save whose body copy is about drafts.
+                title="Your edits stay in this browser, and this editor offers them back next time"
+                variant="primary"
+              >
+                Leave for now
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

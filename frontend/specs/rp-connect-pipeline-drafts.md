@@ -374,24 +374,56 @@ how users conclude the feature is broken.
 
 ### Unsaved changes
 
-Navigating away with unsaved edits opens the existing dialog, now offering **Save draft** on a draft
-or new pipeline (and **Discard** / **Keep editing** as before). On a running pipeline the primary
-becomes **Keep editing**, because the only "save" available there would restart it. In both variants
-the quiet **Discard changes** sits on the left and the primary at the right end, so the destructive
-option is never the one the eye lands on.
+Navigating away with unsaved edits opens the existing dialog. It always offers three things, and exactly
+one of them loses the work: the quiet **Discard changes** on the left, **Keep editing**, and a primary at
+the right end that always keeps it.
+
+| Editing | Primary (keeps the work) |
+|---|---|
+| New pipeline or draft | **Save draft** — server-side, shareable, survives this browser |
+| Deployed pipeline, or drafts unavailable | **Leave for now** — kept in this browser's recovery buffer |
+
+**"Leave for now" exists because the dialog was otherwise a dead end.** On a deployed pipeline there is
+no draft to park in and saving means applying, so the only two exits were losing the work or never
+leaving the page — which made *closing the tab* the safest move available, since the autosave buffer
+survives that. A hidden mechanism that punishes people for using the app's own dialog is worse than no
+mechanism. It also flushes the buffer instead of waiting out the debounce: the pending write dies with
+the page, and a second of typing is exactly what someone leaving in a hurry has just done.
+
+Where a draft *is* possible it is the only exit offered, because it is strictly better — until it fails.
+A quota-full cluster (§5) or a dropped connection would put the dialog back in the dead end, so a failed
+**Save draft** brings **Leave for now** up beside it: retrying stays available, but the exit that cannot
+fail is the one that leads.
 
 **Discard means discard.** It clears the autosave buffer for that editor as it leaves. Otherwise the
 next visit offered back the very edits the user had just chosen to throw away — a crash net is not a
-second copy of a decision.
+second copy of a decision. This is also why the promise that the browser keeps the edits belongs to the
+`leave-for-now` copy alone, and not to the dialog as a whole.
 
 Closing the tab is covered by autosave, not the dialog: the buffer is written on a debounce, and the
 next visit to that editor offers to restore it. That offer is worded as its own thing — "Restore your
 edits from 5m ago?" — and never as "unsaved changes", which names the live state of the editor the user
-is looking at.
+is looking at. Both variants of it say restoring **replaces what is on screen**, because the offer stays
+up while the user carries on typing (it has to: their typing overwrites the stored copy, and the offer is
+served from a snapshot taken when the editor opened).
+
+The buffer holds the settings as well as the configuration, since a save writes both — so an unsaved
+rename or resize is recoverable work, and the offer appears when either half differs from what is saved.
+
+### Nothing to save
+
+One case refuses to park: an untouched create page, with no configuration and no name. The primary
+button there is **Save draft**, so it is what a curious first click lands on, and parking an empty page
+would put an empty row in everyone's pipeline list and spend one of the cluster's 100 pipeline slots on
+nothing. The message names the way out — a name alone is enough, because a name is somewhere to come
+back to. Everything else still saves, valid or not.
 
 ## Pipeline list treatment
 
-- **Chip**: `Draft` in the Status column, muted, tooltip "Saved but never deployed — uses no compute".
+- **Chip**: `Draft` in the Status column, muted, tooltip "Saved but never deployed — it uses no compute
+  and processes no data. Starting it makes it a regular pipeline." The second sentence is the one people
+  need and don't expect: it is the most-hovered surface in the feature, and without it "draft" reads as a
+  parking space a live pipeline could also use (see §8b — it cannot).
 - **Tabs**: a `Drafts` tab beside All / Running / Stopped / Error, with a count. Hidden at zero.
 - **Sort**: drafts sort first in the default status order — they are the rows with work still owed —
   and among themselves by last edited, so the one being worked on is at the top.

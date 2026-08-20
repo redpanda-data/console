@@ -38,9 +38,12 @@ export function AutosaveRestoreNotice({
       <AlertTitle>Restore your edits from {relativeAgeLabel(updatedAt)}?</AlertTitle>
       <AlertDescription className="flex flex-wrap items-center gap-3">
         <span>
+          {/* Both variants say restoring replaces what is on screen. The offer stays up while the user
+              carries on typing — it has to, since their typing overwrites the stored copy — so copy that
+              only described the moment they arrived would stop being true a keystroke later. */}
           {isStale
-            ? 'This pipeline has been saved by someone since you were editing. Restoring replaces what is shown with your unsaved version.'
-            : 'You left the editor without saving these edits. The configuration shown is the saved one.'}
+            ? 'This pipeline has been saved by someone since you were editing. Restoring replaces what is on screen with your unsaved version.'
+            : 'You left this editor without saving these edits. Restoring puts them back, replacing what is on screen.'}
         </span>
         <span className="flex items-center gap-2">
           <Button onClick={onRestore} size="sm" testId="restore-autosave" variant="outline">

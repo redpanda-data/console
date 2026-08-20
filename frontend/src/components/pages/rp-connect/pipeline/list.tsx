@@ -77,6 +77,7 @@ import {
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
+import { autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
@@ -368,7 +369,10 @@ const ActionsCell = memo(
 
       deleteMutation(deleteRequest, {
         onSuccess: () => {
-          toast.success('Pipeline deleted');
+          // The editor's recovery buffer outlives the pipeline otherwise, and would offer to restore
+          // edits to something that no longer exists — the detail page's delete already does this.
+          rpcnEditorAutosave.clear(autosaveTargetKey(id));
+          toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
         },
         onError: (err) => {
           toast.error(

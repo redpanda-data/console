@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 
@@ -45,38 +45,38 @@ export function useEditorAutosave({
   // second before the user could click Restore.
   const hasWrittenRef = useRef(false);
 
+  const write = useCallback(() => {
+    const { yamlContent, initialYaml } = editorStore.getState();
+    // Only what is actually recoverable, or every visit would leave a buffer the next visit offered
+    // to restore. A null baseline means nothing loaded yet (the create page), where anything
+    // non-empty is by definition something the user typed.
+    const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
+    if (!(documentChanged || formRef.current.formState.isDirty)) {
+      // Only tidying up after this editor — an undo back to the loaded state, say.
+      if (hasWrittenRef.current) {
+        rpcnEditorAutosave.clear(targetKey);
+        hasWrittenRef.current = false;
+      }
+      return;
+    }
+    const values = formRef.current.getValues();
+    hasWrittenRef.current = true;
+    rpcnEditorAutosave.save({
+      targetKey,
+      name: values.name,
+      description: values.description ?? '',
+      computeUnits: values.computeUnits,
+      tags: values.tags,
+      configYaml: yamlContent,
+    });
+  }, [targetKey, editorStore]);
+
   useEffect(() => {
     if (!enabled) {
       return;
     }
 
     let timer: ReturnType<typeof setTimeout> | undefined;
-
-    const write = () => {
-      const { yamlContent, initialYaml } = editorStore.getState();
-      // Only what is actually recoverable, or every visit would leave a buffer the next visit offered
-      // to restore. A null baseline means nothing loaded yet (the create page), where anything
-      // non-empty is by definition something the user typed.
-      const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
-      if (!(documentChanged || formRef.current.formState.isDirty)) {
-        // Only tidying up after this editor — an undo back to the loaded state, say.
-        if (hasWrittenRef.current) {
-          rpcnEditorAutosave.clear(targetKey);
-          hasWrittenRef.current = false;
-        }
-        return;
-      }
-      const values = formRef.current.getValues();
-      hasWrittenRef.current = true;
-      rpcnEditorAutosave.save({
-        targetKey,
-        name: values.name,
-        description: values.description ?? '',
-        computeUnits: values.computeUnits,
-        tags: values.tags,
-        configYaml: yamlContent,
-      });
-    };
 
     const schedule = () => {
       clearTimeout(timer);
@@ -98,5 +98,12 @@ export function useEditorAutosave({
       unsubscribeStore();
       unsubscribeForm();
     };
-  }, [enabled, targetKey, editorStore]);
+  }, [enabled, editorStore, write]);
+
+  /**
+   * Write now instead of on the debounce. For "Leave for now", which promises the edits are kept: the
+   * pending write is dropped on unmount, so without this the promise loses up to a second of typing —
+   * and a second of typing is exactly what someone leaving in a hurry has just done.
+   */
+  return { flush: write };
 }

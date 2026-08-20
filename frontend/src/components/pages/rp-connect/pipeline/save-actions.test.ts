@@ -216,31 +216,33 @@ describe('saveSuccessMessage', () => {
 });
 
 describe('unsavedChangesCopy', () => {
-  it('offers a draft as the way out of losing unfinished work', () => {
-    expect(unsavedChangesCopy(creating).canSaveDraft).toBe(true);
-    expect(unsavedChangesCopy(draft).canSaveDraft).toBe(true);
+  it('parks unfinished work as a draft where one is possible', () => {
+    expect(unsavedChangesCopy(creating).escape).toBe('save-draft');
+    expect(unsavedChangesCopy(draft).escape).toBe('save-draft');
   });
 
-  // Saving would restart it, so "save and leave" is not a kindness here.
-  it('offers no draft on a running pipeline, and says why', () => {
-    const copy = unsavedChangesCopy(running);
-    expect(copy.canSaveDraft).toBe(false);
-    expect(copy.body).toMatch(/restart/i);
-  });
-
-  // It used to promise the browser kept the edits either way. Discarding now clears the recovery buffer
-  // on purpose, so that promise would be false for the one button it was written to soften.
-  it('does not claim the work survives being discarded', () => {
-    for (const context of [running, stopped]) {
-      const copy = unsavedChangesCopy(context);
-      expect(copy.canSaveDraft).toBe(false);
-      expect(copy.body).not.toMatch(/browser keeps|offers them back/i);
-      // Says what to do instead, rather than only what cannot be done.
-      expect(copy.body).toMatch(/keep editing/i);
+  // Saving would restart it, so "save and leave" is not a kindness here — but neither is a dialog whose
+  // only ways out are losing the work or never leaving the page.
+  it('offers the browser instead of a draft once a pipeline is deployed', () => {
+    for (const context of [running, stopped, creatingWithoutDrafts]) {
+      expect(unsavedChangesCopy(context).escape).toBe('leave-for-now');
     }
   });
 
-  it('offers no draft when the deployment has none', () => {
-    expect(unsavedChangesCopy(creatingWithoutDrafts).canSaveDraft).toBe(false);
+  it('says why a running pipeline cannot simply be saved', () => {
+    expect(unsavedChangesCopy(running).body).toMatch(/restarts this pipeline/i);
+  });
+
+  // The promise belongs to the button that keeps them: Discard clears the buffer.
+  it('promises the browser keeps the edits only where leaving keeps them', () => {
+    for (const context of [running, stopped, creatingWithoutDrafts]) {
+      expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/i);
+    }
+    expect(unsavedChangesCopy(creating).body).not.toMatch(/this browser keeps/i);
+  });
+
+  // Saving a stopped pipeline is not destructive, so the copy must not borrow the running one's warning.
+  it('does not warn about restarts on a stopped pipeline', () => {
+    expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/i);
   });
 });

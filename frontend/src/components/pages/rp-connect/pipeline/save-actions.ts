@@ -200,24 +200,44 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): st
 }
 
 /**
- * Where no draft can be offered, the honest thing to say is that discarding is a real loss — the
- * recovery buffer only survives a crash or a closed tab, and Discard clears it deliberately.
+ * The way out of the leave-without-saving dialog that keeps the work.
+ *
+ * - `save-draft`  — park it server-side. Strictly better than the browser: a teammate can pick it up,
+ *                   and it survives this profile. Only possible before a pipeline has ever deployed.
+ * - `leave-for-now` — keep it in this browser's recovery buffer, which is all that is left once a
+ *                   pipeline is deployed. Named as a choice rather than left as a hidden mechanism:
+ *                   with only Discard and Keep editing on offer, someone with real work and no way to
+ *                   save it has to either sit on the page forever or close the tab to save their
+ *                   changes from the app's own dialog. Closing the tab should not be the safe move.
  */
-export function unsavedChangesCopy(context: SaveContext): { body: string; canSaveDraft: boolean } {
+export type UnsavedChangesEscape = 'save-draft' | 'leave-for-now';
+
+/**
+ * Says why the work cannot simply be saved here, and what the primary button will do instead. The
+ * promise that the browser keeps the edits belongs to `leave-for-now` alone — Discard clears the buffer,
+ * so a dialog-wide promise would be false for one of its own buttons.
+ */
+export function unsavedChangesCopy(context: SaveContext): { body: string; escape: UnsavedChangesEscape } {
   if (isUndeployed(context) && context.draftsEnabled) {
     return {
-      body: 'Save them as a draft to pick up later, or leave and lose them.',
-      canSaveDraft: true,
+      body: 'Save them as a draft to come back to. A draft does not run, uses no compute and can be started when it is ready.',
+      escape: 'save-draft',
+    };
+  }
+  if (context.mode === 'create') {
+    return {
+      body: 'Saving them creates the pipeline without starting it. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
+      escape: 'leave-for-now',
     };
   }
   if (isStoppableState(context.state)) {
     return {
-      body: 'The only way to save them is to apply them, which restarts this pipeline and drops in-flight messages. Keep editing to review them first, or discard them.',
-      canSaveDraft: false,
+      body: 'The only way to save them is to apply them, which restarts this pipeline and drops in-flight messages. Leave for now instead and this browser keeps your edits, ready when you come back to this editor.',
+      escape: 'leave-for-now',
     };
   }
   return {
-    body: 'They are not saved to the pipeline. Keep editing to save them, or discard them and leave.',
-    canSaveDraft: false,
+    body: 'This pipeline is stopped, so saving them is safe and leaves it stopped. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
+    escape: 'leave-for-now',
   };
 }
