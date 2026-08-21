@@ -33,7 +33,7 @@ const valueStyle: CSSProperties = {
   lineBreak: 'anywhere',
 
   fontSize: '12px',
-  background: 'rgba(20,20,20,0.05)',
+  background: 'var(--color-surface-recess)',
   borderRadius: '2px',
   padding: '1rem',
 };

@@ -15,7 +15,6 @@ import { EyeOffIcon, InfoIcon } from 'components/icons';
 import type { JSX } from 'react';
 
 import styles from './ConfigList.module.scss';
-import colors from '../../colors';
 import type { ConfigEntry } from '../../state/rest-interfaces';
 import type { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/config-value-formatter';
@@ -45,7 +44,7 @@ export function ConfigList({
         const sensitive = record.isSensitive && (
           <Tooltip hasArrow label="Value has been redacted because it's sensitive" placement="top">
             <Box>
-              <EyeOffIcon color={colors.brandOrange} />
+              <EyeOffIcon className="text-brand" />
             </Box>
           </Tooltip>
         );

@@ -41,7 +41,6 @@ import React, { type FC, type ReactNode } from 'react';
 
 import ClusterHealthOverview from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
-import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/nurture-panel';
 import {
@@ -183,12 +182,12 @@ class Overview extends PageComponent {
                         <Flex gap={2}>
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
-                              <ErrorIcon color={colors.brandError} size={18} />
+                              <ErrorIcon className="text-destructive" size={18} />
                               Down
                             </>
                           ) : (
                             <>
-                              <CheckIcon color={colors.green} size={18} />
+                              <CheckIcon className="text-success" size={18} />
                               Running
                             </>
                           )}
@@ -426,7 +425,7 @@ function ClusterDetails() {
             ? [
                 [
                   <Flex alignItems="center" gap={1} key="error">
-                    <AlertIcon color={colors.brandError} size={16} /> Failed to load license info
+                    <AlertIcon className="text-destructive" size={16} /> Failed to load license info
                   </Flex>,
                 ],
               ]

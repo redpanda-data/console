@@ -954,7 +954,7 @@ export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose
     const codeBoxStyle = {
       fontSize: '12px',
       fontFamily: 'monospace',
-      color: 'hsl(0deg 0% 25%)',
+      color: 'var(--color-foreground)',
       margin: '0em 1em',
     };
 

@@ -695,7 +695,7 @@ class ColAfter extends Component<{
               <span
                 style={{
                   fontSize: 'smaller',
-                  color: 'hsl(0deg 0% 67%)',
+                  color: 'var(--color-subtle)',
                   userSelect: 'none',
                   cursor: 'default',
                 }}
@@ -752,7 +752,7 @@ class ColAfter extends Component<{
           <span
             style={{
               fontSize: 'smaller',
-              color: 'hsl(0deg 0% 67%)',
+              color: 'var(--color-subtle)',
               userSelect: 'none',
               cursor: 'default',
             }}

@@ -125,7 +125,7 @@ export const PatternHelpDrawer = () => {
         onClick={onOpen}
         style={{
           margin: '0 2px',
-          color: 'hsl(205deg, 100%, 50%)',
+          color: 'var(--color-action-primary)',
           textDecoration: 'underline dotted',
         }}
         type="button"

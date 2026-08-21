@@ -23,7 +23,7 @@ function loginHandling(): JSX.Element | null {
     return null;
   }
 
-  const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
+  const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
   const path = window.location.pathname.removePrefix(getBasePath() ?? '');
   const devPrint = (str: string) => {
     if (IsDev) {

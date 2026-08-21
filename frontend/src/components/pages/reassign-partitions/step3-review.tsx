@@ -241,7 +241,7 @@ export class StepReview extends Component<{
             flexWrap: 'wrap',
             gap: '3em',
             marginTop: '1em',
-            color: 'hsl(0deg, 0%, 30%)',
+            color: 'var(--color-foreground)',
           }}
         >
           {data.map((item) => (

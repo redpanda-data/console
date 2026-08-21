@@ -54,7 +54,7 @@ const nodeTypes = {
 };
 
 const edgeStyle: CSSProperties = {
-  stroke: '#9ca3af',
+  stroke: 'var(--color-border-strong)',
   strokeWidth: 2,
   strokeDasharray: '5,5',
 };
