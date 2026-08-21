@@ -124,6 +124,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 	transformSvcV1 := transformsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "transform_service"), v, api.RedpandaClientProvider)
 	kafkaConnectSvcV1 := apikafkaconnectsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "kafka_connect_service"), api.ConnectSvc)
 	consoleTransformSvcV1 := &transformsvcv1.ConsoleService{Impl: transformSvcV1}
+	consoleTopicSvcV1 := topicsvcv1.NewConsoleService(loggerpkg.Named(api.Logger, "topic_service"), api.ConsoleSvc)
 	monitoringSvcV1 := monitoringsvcv1.NewService(api.Cfg, loggerpkg.Named(api.Logger, "monitoring_service"), api.RedpandaClientProvider)
 
 	// v1alpha2
@@ -170,6 +171,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			consolev1alpha1connect.SecurityServiceName:       consolev1alpha1connect.UnimplementedSecurityServiceHandler{},
 			consolev1alpha1connect.LicenseServiceName:        licenseSvc,
 			consolev1alpha1connect.TransformServiceName:      consoleTransformSvcV1,
+			consolev1alpha1connect.TopicServiceName:          consoleTopicSvcV1,
 			consolev1alpha1connect.AuthenticationServiceName: &AuthenticationDefaultHandler{},
 			consolev1alpha1connect.ClusterStatusServiceName:  clusterStatusSvc,
 			consolev1alpha1connect.SecretServiceName:         consolev1alpha1connect.UnimplementedSecretServiceHandler{},
@@ -246,6 +248,9 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	consoleTransformSvcPath, consoleTransformSvcHandler := consolev1alpha1connect.NewTransformServiceHandler(
 		hookOutput.Services[consolev1alpha1connect.TransformServiceName].(consolev1alpha1connect.TransformServiceHandler),
+		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
+	consoleTopicSvcPath, consoleTopicSvcHandler := consolev1alpha1connect.NewTopicServiceHandler(
+		hookOutput.Services[consolev1alpha1connect.TopicServiceName].(consolev1alpha1connect.TopicServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
 	licenseSvcPath, licenseSvcHandler := consolev1alpha1connect.NewLicenseServiceHandler(hookOutput.Services[consolev1alpha1connect.LicenseServiceName].(consolev1alpha1connect.LicenseServiceHandler),
 		connect.WithInterceptors(append(hookOutput.Interceptors, sunsetInterceptor)...))
@@ -354,6 +359,11 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			ServiceName: consolev1alpha1connect.TransformServiceName,
 			MountPath:   consoleTransformSvcPath,
 			Handler:     consoleTransformSvcHandler,
+		},
+		{
+			ServiceName: consolev1alpha1connect.TopicServiceName,
+			MountPath:   consoleTopicSvcPath,
+			Handler:     consoleTopicSvcHandler,
 		},
 		{
 			ServiceName: consolev1alpha1connect.LicenseServiceName,
