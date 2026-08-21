@@ -126,7 +126,7 @@ export function SecurityTabsNav() {
                   render={
                     <span>
                       <TabsTrigger
-                        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
+                        className="text-body-lg aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
                         disabled={tab.disabled}
                         onClick={() => handleTabClick(tab.key)}
                         value={tab.key}

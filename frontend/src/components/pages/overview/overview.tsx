@@ -242,9 +242,9 @@ class Overview extends PageComponent {
                 <Heading as="h3">Resources and updates</Heading>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr />
-                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-gray-600">
+                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
-                  <span className="mx-2 text-gray-300">|</span>
+                  <span className="mx-2 text-disabled">|</span>
                   <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
                 </div>
               </Section>

@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: part of multi select implementation */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: part of multi select implementation */
 'use client';
 
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
@@ -25,6 +27,9 @@ export type MultiSelectOptionItem = {
   selectedTestId?: string;
   testId?: string;
 };
+
+/** A node's own text, for search keywords. Anything richer than a string has none to offer. */
+const asText = (node: React.ReactNode): string | undefined => (typeof node === 'string' ? node : undefined);
 
 type MultiSelectContextValue = {
   value: string[];
@@ -199,8 +204,12 @@ const MultiSelectTrigger = React.forwardRef<React.ComponentRef<'button'>, MultiS
             data-testid={testId}
             {...props}
             className={cn(
-              "!border-input flex min-h-9 w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-1.5 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:hover:bg-input/50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
-              disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+              // The trigger is a `div`, so `disabled:` and `not-disabled:` never match it —
+              // the enabled branch below carries the reactive states instead.
+              "!border-input focus-visible:!border-ring aria-invalid:!border-destructive flex min-h-9 w-fit items-center justify-between gap-2 rounded-md border bg-input-fill px-3 py-1.5 text-body-lg shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:ring-invalid data-[placeholder]:text-placeholder *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 motion-reduce:transition-none md:text-body [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0",
+              disabled
+                ? 'cursor-not-allowed opacity-50'
+                : 'hover:!border-input-hover cursor-pointer hover:bg-input-fill-hover active:bg-input-fill-pressed',
               className
             )}
             onClick={disabled ? PreventClick : props.onClick}
@@ -243,7 +252,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
     const renderItems = renderRemain ? value.slice(0, maxDisplay) : value;
 
     if (!value.length) {
-      return <span className="pointer-events-none text-muted-foreground">{placeholder}</span>;
+      return <span className="pointer-events-none text-subtle">{placeholder}</span>;
     }
 
     return (
@@ -294,7 +303,7 @@ const MultiSelectValue = React.forwardRef<React.ComponentRef<'div'>, MultiSelect
 
             return el;
           })}
-          {renderRemain ? <span className="py-.5 text-body-sm text-muted-foreground">+{renderRemain}</span> : null}
+          {renderRemain ? <span className="py-.5 text-body-sm text-subtle">+{renderRemain}</span> : null}
         </div>
       </TooltipProvider>
     );
@@ -471,13 +480,13 @@ const MultiSelectItem = React.forwardRef<React.ComponentRef<typeof CommandItem>,
       }
     };
 
-    const labelText = typeof label === 'string' ? label : typeof children === 'string' ? children : undefined;
+    const labelText = asText(label) ?? asText(children);
     const keywords = labelText && labelText !== value ? [labelText] : undefined;
 
     return (
       <CommandItem
         {...props}
-        className={cn(disabled && 'cursor-not-allowed text-muted-foreground', className)}
+        className={cn(disabled && 'cursor-not-allowed text-subtle', className)}
         disabled={disabled}
         keywords={keywords}
         onSelect={!disabled && value ? handleClick : undefined}

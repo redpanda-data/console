@@ -622,7 +622,7 @@ function FlagToggle({
       className={cn(
         'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 font-medium text-body-sm transition-colors',
         checked
-          ? 'border-outline-success bg-background-success-subtle text-success'
+          ? 'border-success-line bg-success-wash text-success'
           : 'border-border bg-background text-muted-foreground'
       )}
     >
@@ -695,7 +695,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
               <Item
                 className={cn(
                   'flex-col items-stretch gap-2 transition-colors',
-                  effectiveValue ? 'border-outline-success bg-background-success-subtle/50' : 'bg-muted/40'
+                  effectiveValue ? 'border-success-line bg-success-wash/50' : 'bg-muted/40'
                 )}
                 key={key}
                 size="xs"

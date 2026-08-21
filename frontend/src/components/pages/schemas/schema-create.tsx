@@ -735,7 +735,7 @@ const SchemaEditor = (p: {
               <div className="font-mono text-body">
                 {isNamedContext(state.context) ? (
                   <>
-                    <span className="font-mono text-body text-gray-400">:{state.context}:</span>
+                    <span className="font-mono text-body text-disabled">:{state.context}:</span>
                     <span className="font-mono text-body">{state.computedSubjectName}</span>
                   </>
                 ) : (
@@ -788,7 +788,7 @@ const SchemaEditor = (p: {
             <span className="font-semibold">Normalize schema</span>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-gray-500" />} />
+                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-subtle" />} />
                 <TooltipContent side="right">
                   When enabled, the schema will be normalized to a canonical form before registration, reducing
                   duplicate schema versions

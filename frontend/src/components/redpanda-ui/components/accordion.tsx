@@ -123,12 +123,13 @@ function AccordionItem({ className, children, testId, ...props }: AccordionItemP
 }
 
 const accordionTriggerVariants = cva(
-  'group/accordion-trigger flex flex-1 cursor-pointer items-center gap-4 text-start font-medium outline-none transition-colors focus-visible:underline aria-disabled:pointer-events-none aria-disabled:opacity-50',
+  'group/accordion-trigger flex flex-1 cursor-pointer items-center gap-4 text-start font-medium outline-none transition-colors focus-visible:underline aria-disabled:pointer-events-none aria-disabled:opacity-50 motion-reduce:transition-none',
   {
     variants: {
       variant: {
-        simple: 'py-4 hover:underline',
-        contained: 'rounded-t-xl bg-muted/50 px-6 py-4 text-base tracking-tight hover:bg-muted/70 active:bg-muted',
+        simple: 'link-standalone py-4',
+        contained:
+          'rounded-t-xl bg-surface-subtle px-6 py-4 text-body-lg tracking-tight hover:bg-surface-subtle-hover active:bg-surface-subtle-pressed',
       },
     },
     defaultVariants: {
@@ -195,7 +196,7 @@ function AccordionTrigger({
 }
 
 const accordionContentVariants = cva(
-  'text-sm [&_a]:underline [&_a]:underline-offset-[3px] [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4',
+  '[&_a]:link-inline text-body [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4',
   {
     variants: {
       variant: {

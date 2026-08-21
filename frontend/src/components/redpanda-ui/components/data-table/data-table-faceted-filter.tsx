@@ -104,12 +104,12 @@ export function DataTableFacetedFilter<TData, TValue>({
                     >
                       <Check className="size-3.5 text-primary-foreground" />
                     </div>
-                    {option.icon ? <option.icon className="size-4 shrink-0 text-muted-foreground" /> : null}
+                    {option.icon ? <option.icon className="size-4 shrink-0 text-subtle" /> : null}
                     <span className={cn(labelClassName)}>{option.label}</span>
                     {/* cmdk reserves aria-selected for highlight, so this is the only SR signal. */}
                     {isSelected ? <span className="sr-only">, selected</span> : null}
                     {facets?.get(option.value) ? (
-                      <span className="ml-auto flex size-4 items-center justify-center font-mono text-muted-foreground text-xs">
+                      <span className="ml-auto flex size-4 items-center justify-center font-mono text-body-sm text-subtle">
                         {facets.get(option.value)}
                       </span>
                     ) : null}

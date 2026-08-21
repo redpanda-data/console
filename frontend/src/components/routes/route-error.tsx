@@ -28,8 +28,8 @@ export const RouteError = ({ error }: RouteErrorProps) => {
   return (
     <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
       <img alt="Error" className="h-[140px]" src={errorBananaSlip} />
-      <h2 className="font-semibold text-2xl">Something went wrong</h2>
-      <p className="max-w-md text-center text-muted-foreground text-sm">{error.message}</p>
+      <h2 className="font-semibold text-heading-xl">Something went wrong</h2>
+      <p className="max-w-md text-center text-body text-muted-foreground">{error.message}</p>
       <Button onClick={() => router.invalidate()} variant="outline">
         Try again
       </Button>

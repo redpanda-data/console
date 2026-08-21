@@ -123,7 +123,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
       <div className="space-y-2">
         <FormLabel>{label}</FormLabel>
         {Boolean(isExistingTopic) && (
-          <p className="mb-2 text-gray-500 text-xs">Existing topic values cannot be modified</p>
+          <p className="mb-2 text-body-sm text-subtle">Existing topic values cannot be modified</p>
         )}
         <Group attached>
           <FormField
@@ -152,7 +152,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
               <FormItem>
                 <FormControl>
                   <Select disabled={field.disabled} items={units} onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-32 bg-gray-200" disabled={field.disabled}>
+                    <SelectTrigger className="w-32 bg-surface-strong" disabled={field.disabled}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

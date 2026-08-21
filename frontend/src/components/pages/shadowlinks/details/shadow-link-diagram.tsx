@@ -24,7 +24,7 @@ const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
   <Item className="min-w-60 bg-background" size="sm" variant="outline">
     <ItemContent>
       <ItemTitle>Source cluster</ItemTitle>
-      <div className="flex flex-col gap-1 text-muted-foreground text-xs">
+      <div className="flex flex-col gap-1 text-body-sm text-muted-foreground">
         {data.brokers.map((broker) => (
           <div className="max-w-[240px] truncate text-body text-muted-foreground" key={broker}>
             {broker}
@@ -41,7 +41,7 @@ const ShadowClusterNode = () => (
     <Handle position={Position.Left} type="target" />
     <ItemContent>
       <ItemTitle>Shadow cluster</ItemTitle>
-      <div className="text-muted-foreground text-xs">
+      <div className="text-body-sm text-muted-foreground">
         <div className="text-body text-muted-foreground">This cluster </div>
       </div>
     </ItemContent>

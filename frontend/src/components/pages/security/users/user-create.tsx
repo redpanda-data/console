@@ -129,7 +129,7 @@ const UserCreatePage = () => {
 
   return (
     <div>
-      <h2 className="pt-4 pb-3 font-semibold text-xl">Create user</h2>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Create user</h2>
       <div>
         {step === 'CREATE_USER' ? (
           <>
@@ -322,7 +322,7 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
                 }}
                 testId="special-chars-checkbox"
               />
-              <label className="cursor-pointer text-sm" htmlFor="special-chars">
+              <label className="cursor-pointer text-body" htmlFor="special-chars">
                 Generate with special characters
               </label>
             </div>
@@ -379,7 +379,7 @@ export const CreateUserConfirmationModal = ({
   onGoToUserDetails,
 }: CreateUserConfirmationModalProps) => (
   <>
-    <h1 className="mt-4 mb-8 font-semibold text-2xl" data-testid="user-created-successfully">
+    <h1 className="mt-4 mb-8 font-semibold text-heading-xl" data-testid="user-created-successfully">
       User created
     </h1>
 
@@ -421,8 +421,8 @@ export const CreateUserConfirmationModal = ({
     </div>
 
     <div className="mt-3 border-t pt-6">
-      <h2 className="mb-2 font-semibold text-base">Assign new user permissions</h2>
-      <p className="my-3 text-muted-foreground text-sm">
+      <h2 className="mb-2 font-semibold text-body-lg">Assign new user permissions</h2>
+      <p className="my-3 text-body text-muted-foreground">
         To grant access to clusters, assign a role to the user or create ACLs.
       </p>
       <div className="mt-4 flex flex-wrap gap-3">

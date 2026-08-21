@@ -174,7 +174,7 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
       />
       <PopoverContent align="start" className="max-w-[500px]" side="right">
         <p className="mb-2 font-medium">Partition Error</p>
-        <div className="flex flex-col gap-2 whitespace-pre-wrap text-sm">
+        <div className="flex flex-col gap-2 whitespace-pre-wrap text-body">
           {Boolean(partition.partitionError) && <p>{partition.partitionError}</p>}
           {Boolean(partition.waterMarksError) && <p>{partition.waterMarksError}</p>}
         </div>

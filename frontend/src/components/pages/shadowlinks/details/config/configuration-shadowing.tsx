@@ -45,7 +45,7 @@ const NameFilterDisplay = ({
 
   return (
     <Item>
-      <div className="font-medium text-sm">{filterLabel}</div>
+      <div className="font-medium text-body">{filterLabel}</div>
       <div className="flex flex-wrap gap-2">
         {filter.name ? (
           <Badge size="sm" testId={`${testId}-filter-${index}-name`} variant="info-inverted">
@@ -108,8 +108,8 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
 
   return (
     <div className="space-y-3 rounded-lg border p-4" data-testid={`acl-filter-${index}`}>
-      <div className="font-medium text-sm">ACL Filter {index + 1}</div>
-      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
+      <div className="font-medium text-body">ACL Filter {index + 1}</div>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-body md:grid-cols-3">
         <div>
           <span className="text-muted-foreground">Resource type:</span>{' '}
           <Badge size="sm" variant="info-inverted">

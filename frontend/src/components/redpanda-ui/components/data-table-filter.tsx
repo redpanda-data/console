@@ -183,7 +183,7 @@ function MatchingOptionItem({
           className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
         />
       )}
-      <span className="inline-flex items-center gap-1 text-muted-foreground">
+      <span className="inline-flex items-center gap-1 text-subtle">
         {ColIcon ? <ColIcon className="size-3.5" /> : null}
         <span>{match.columnDisplayName}</span>
         <span>&gt;</span>
@@ -194,7 +194,7 @@ function MatchingOptionItem({
         {match.count !== undefined ? (
           <sup
             className={cn(
-              'ml-0.5 text-muted-foreground tabular-nums tracking-tight',
+              'ml-0.5 text-subtle tabular-nums tracking-tight',
               match.count === 0 ? 'slashed-zero' : undefined
             )}
           >
@@ -390,7 +390,7 @@ function ActiveFilter<TData>({
     <div
       className={cn(
         badgeVariants({ variant: variant ?? 'neutral-inverted' }),
-        'flex h-7 items-center rounded-2xl text-xs shadow-xs'
+        'flex h-7 items-center rounded-2xl text-body-sm shadow-xs'
       )}
     >
       <FilterSubject filterColumn={col} />
@@ -400,7 +400,7 @@ function ActiveFilter<TData>({
       <FilterValue actions={actions} filter={filter} filterColumn={col} table={table} />
       <Separator orientation="vertical" />
       <Button
-        className="h-full w-7 rounded-none rounded-r-2xl text-current hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+        className="h-full w-7 rounded-none rounded-r-2xl text-current"
         onClick={() => actions.removeFilter(filter.columnId)}
         variant="ghost"
       >
@@ -439,7 +439,7 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
       <PopoverTrigger
         render={
           <Button
-            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-body-sm text-current"
             variant="ghost"
           >
             <span className="opacity-80">{filter.operator}</span>
@@ -489,7 +489,7 @@ const FilterValue = memo(function FilterValueImpl<TData>({
       <PopoverTrigger
         render={
           <Button
-            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-current text-xs hover:bg-dark-alpha-subtle active:bg-dark-alpha-default"
+            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-body-sm text-current"
             variant="ghost"
           >
             <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
@@ -671,10 +671,7 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
         {label}
         {count !== undefined ? (
           <sup
-            className={cn(
-              'ml-0.5 text-muted-foreground tabular-nums tracking-tight',
-              count === 0 ? 'slashed-zero' : undefined
-            )}
+            className={cn('ml-0.5 text-subtle tabular-nums tracking-tight', count === 0 ? 'slashed-zero' : undefined)}
           >
             {count < 100 ? count : '100+'}
           </sup>

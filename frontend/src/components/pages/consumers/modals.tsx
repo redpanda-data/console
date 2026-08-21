@@ -349,13 +349,13 @@ export class EditOffsetsModal extends Component<{
               onValueChange={(v) => this.setState({ otherGroupCopyMode: v as 'all' | 'onlyExisting' })}
               value={this.state.otherGroupCopyMode}
             >
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <label className="flex cursor-pointer items-center gap-2 text-body">
                 <RadioGroupItem value="onlyExisting" />
                 <InfoTooltip text="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored.">
                   Copy matching offsets
                 </InfoTooltip>
               </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <label className="flex cursor-pointer items-center gap-2 text-body">
                 <RadioGroupItem value="all" />
                 <InfoTooltip text="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway.">
                   Full Copy
@@ -956,10 +956,10 @@ export const DeleteOffsetsModal = (props: {
         </AlertDialogHeader>
 
         <div className="flex gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-white">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-destructive text-destructive-foreground">
             <TrashIcon size={20} />
           </div>
-          <div className="flex flex-col gap-1 text-sm">
+          <div className="flex flex-col gap-1 text-body">
             {mode === 'group' && (
               <>
                 <p>

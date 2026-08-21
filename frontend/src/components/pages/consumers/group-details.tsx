@@ -595,8 +595,8 @@ const GroupByTopics = (groupProps: {
         <AccordionItem key={entry.topicName} value={entry.topicName}>
           <AccordionTrigger className="px-4 py-3">
             <div className="flex flex-col gap-1 text-start">
-              <span className="font-semibold text-lg">{entry.topicName}</span>
-              <div className="flex items-center gap-4 font-normal text-muted-foreground text-sm">
+              <span className="font-semibold text-heading-md">{entry.topicName}</span>
+              <div className="flex items-center gap-4 font-normal text-body text-muted-foreground">
                 <span>Lag: {numberToThousandsString(entry.totalLagAll)}</span>
                 <span>Assigned partitions: {entry.partitionsAssigned}</span>
               </div>

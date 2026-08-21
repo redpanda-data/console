@@ -77,7 +77,7 @@ const RoleCreatePage = () => {
 
   return (
     <div>
-      <h2 className="pt-4 pb-3 font-semibold text-xl">Create role</h2>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Create role</h2>
       <CreateACL
         edit={false}
         onCancel={() => navigate({ to: '/security/roles' })}

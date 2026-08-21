@@ -5,137 +5,144 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import type { ElementType } from 'react';
 
-import { useGroup } from './group';
+import { groupItemClasses, useGroup } from './group';
 import { Spinner } from './spinner';
 import { cn, type SharedProps } from '../lib/utils';
 
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center',
-    'whitespace-nowrap font-semibold transition-all',
+    'whitespace-nowrap font-semibold transition-all motion-reduce:transition-none',
     'cursor-pointer',
     'disabled:pointer-events-none disabled:cursor-not-allowed data-disabled:pointer-events-none data-disabled:cursor-not-allowed',
     'shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0',
-    'outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
-    'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
-    'selection:bg-selected selection:text-selected-foreground',
+    // `!` matches the outline variants' `!important` rest border: a state on the same property has
+    // to carry that weight or it never renders.
+    'focus-visible:!border-ring outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+    'aria-invalid:!border-destructive aria-invalid:ring-invalid',
+    'selection:bg-selection selection:text-selection-foreground',
     'active:scale-[0.98]',
   ],
   {
     variants: {
       variant: {
         primary: [
-          'bg-surface-secondary text-inverse shadow-xs',
-          'hover:bg-surface-secondary-hover',
-          'active:bg-surface-secondary-pressed',
-          'disabled:bg-background-disabled disabled:text-disabled',
-          undefined,
+          'bg-secondary text-secondary-foreground shadow-xs',
+          'hover:bg-secondary-hover',
+          'active:bg-secondary-pressed',
+          'disabled:bg-surface-disabled disabled:text-disabled',
         ],
         secondary: [
-          'bg-surface-primary text-inverse shadow-xs',
-          'hover:bg-surface-primary-hover',
-          'active:bg-surface-primary-pressed',
-          'disabled:bg-background-disabled disabled:text-disabled',
+          'bg-primary text-primary-foreground shadow-xs',
+          'hover:bg-primary-hover',
+          'active:bg-primary-pressed',
+          'disabled:bg-surface-disabled disabled:text-disabled',
         ],
         accent: [
-          'bg-brand text-inverse shadow-xs',
-          'hover:bg-surface-brand-hover',
-          'active:bg-surface-brand-pressed',
-          'disabled:bg-background-disabled disabled:text-disabled',
+          'bg-brand text-brand-foreground shadow-xs',
+          'hover:bg-brand-hover',
+          'active:bg-brand-pressed',
+          'disabled:bg-surface-disabled disabled:text-disabled',
         ],
         destructive: [
-          'bg-surface-error text-inverse shadow-xs',
-          'hover:bg-surface-error-hover',
-          'active:bg-surface-error-pressed',
-          'focus-visible:ring-destructive',
-          'disabled:bg-background-disabled disabled:text-disabled',
+          'bg-surface-destructive text-destructive-foreground shadow-xs',
+          'hover:bg-surface-destructive-hover',
+          'active:bg-surface-destructive-pressed',
+          'focus-visible:ring-destructive/50',
+          'disabled:bg-surface-disabled disabled:text-disabled',
         ],
+        // Both sides flip, so it stays light on a dark ground and dark on a light one.
         inverse: [
-          'bg-surface-inverse text-secondary shadow-xs',
-          'hover:bg-surface-inverse-hover',
-          'active:bg-surface-inverse-pressed',
-          'disabled:bg-surface-inverse-disabled disabled:text-disabled',
+          'bg-inverse text-strong shadow-xs',
+          'hover:bg-inverse-hover',
+          'active:bg-inverse-pressed',
+          'disabled:bg-surface-disabled disabled:text-disabled',
         ],
+        // Each steps the ramp its *own* rest border sits on, so the line moves one rung rather than
+        // jumping family and reversing direction in one theme.
         outline: [
-          '!border-outline-primary border text-primary-inverse shadow-xs',
-          'hover:border-outline-primary-hover hover:bg-primary-alpha-subtle',
-          'active:border-outline-primary-pressed active:bg-primary-alpha-subtle-default',
-          'disabled:border-outline-inverse-disabled disabled:text-disabled',
+          '!border-primary-line border text-primary shadow-xs',
+          'hover:!border-primary-line-hover hover:bg-primary-wash',
+          'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
         ],
         'secondary-outline': [
-          '!border-outline-inverse border text-secondary shadow-xs',
-          'hover:border-outline-hover hover:bg-secondary-alpha-subtle',
-          'active:border-outline-pressed active:bg-secondary-alpha-default',
-          'disabled:border-outline-inverse-disabled disabled:text-disabled',
+          '!border-secondary-line border text-secondary shadow-xs',
+          'hover:!border-secondary-line-hover hover:bg-secondary-wash',
+          'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
         ],
         'accent-outline': [
-          '!border-brand border bg-transparent text-brand shadow-xs',
-          'hover:border-outline-brand-hover hover:bg-brand-alpha-subtle',
-          'active:border-outline-brand-pressed active:bg-brand-alpha-default',
-          'disabled:border-border disabled:text-disabled',
+          '!border-brand-line border bg-transparent text-brand shadow-xs',
+          'hover:!border-brand-line-hover hover:bg-brand-wash',
+          'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
         ],
         'destructive-outline': [
-          '!border-destructive border bg-transparent text-destructive shadow-xs',
-          'hover:border-outline-error-hover hover:bg-destructive-alpha-subtle',
-          'active:border-outline-error-pressed active:bg-destructive-alpha-default',
-          'focus-visible:ring-destructive',
-          'disabled:border-border disabled:text-disabled',
+          '!border-destructive-line border bg-transparent text-destructive shadow-xs',
+          'hover:!border-destructive-line-hover hover:bg-destructive-wash',
+          'active:!border-destructive-line-pressed active:bg-destructive-wash-pressed',
+          'focus-visible:ring-destructive/50',
+          'disabled:!border-border disabled:text-disabled',
         ],
-        'inverse-outline': [
-          '!border-inverse-primary border bg-transparent text-inverse-primary shadow-xs',
-          'hover:border-transparent hover:bg-light-alpha-strong',
-          'active:border-transparent active:bg-light-alpha-stronger',
-          'disabled:border-inverse-disabled disabled:text-inverse-disabled',
+        // Takes the ground's own ink, for a fill this variant cannot know — a Banner, a coloured
+        // panel. Alpha rather than a `-subtle` token, because the wash steps off that inherited ink.
+        'current-outline': [
+          '!border-current border bg-transparent text-current shadow-xs',
+          'hover:bg-current/15',
+          'active:bg-current/25',
+          'disabled:!border-border disabled:text-disabled',
         ],
         ghost: [
           'bg-transparent text-action-primary',
-          'hover:bg-surface-primary-subtle',
-          'active:bg-surface-primary-subtle-hover',
+          'hover:bg-primary-wash',
+          'active:bg-primary-wash-pressed',
           'disabled:text-disabled',
         ],
         'secondary-ghost': [
           'bg-transparent text-secondary',
-          'hover:bg-surface-secondary-subtle',
-          'active:bg-surface-secondary-subtle-hover',
+          'hover:bg-secondary-wash',
+          'active:bg-secondary-wash-pressed',
           'disabled:text-disabled',
         ],
         'accent-ghost': [
           'bg-transparent text-brand',
-          'hover:bg-surface-brand-subtle hover:text-brand',
-          'active:bg-surface-brand-subtle-hover',
+          'hover:bg-brand-wash',
+          'active:bg-brand-wash-pressed',
           'disabled:text-disabled',
         ],
         'destructive-ghost': [
           'bg-transparent text-destructive',
-          'hover:bg-background-error-subtle hover:text-destructive',
-          'active:bg-destructive-subtle',
-          'focus-visible:ring-destructive',
+          'hover:bg-destructive-wash',
+          'active:bg-destructive-wash-pressed',
+          'focus-visible:ring-destructive/50',
           'disabled:text-disabled',
         ],
-        'inverse-ghost': [
-          'bg-transparent text-inverse-primary',
-          'hover:bg-light-alpha-strong',
-          'active:bg-light-alpha-stronger',
-          'disabled:text-inverse-disabled',
+        // Ghost half of `current-outline`.
+        'current-ghost': [
+          'bg-transparent text-current',
+          'hover:bg-current/15',
+          'active:bg-current/25',
+          'disabled:text-disabled',
         ],
         link: [
-          'text-primary underline-offset-4',
-          'hover:text-primary/80 hover:underline',
-          'active:text-primary/60',
+          'link-standalone text-action-primary',
+          'hover:text-action-primary-hover',
+          'active:text-action-primary-pressed',
           'disabled:text-disabled disabled:no-underline',
         ],
         dashed: [
-          '!border-primary border-2 border-dashed bg-transparent text-primary',
-          'hover:border-primary/80 hover:bg-primary/5',
-          'active:bg-primary/10',
-          'disabled:border-border disabled:text-disabled',
+          '!border-primary-line border-2 border-dashed bg-transparent text-primary',
+          'hover:!border-primary-line-hover hover:bg-primary-wash',
+          'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
         ],
       },
       size: {
-        xs: 'h-6 gap-1 px-2 py-0 text-xs has-[>svg]:px-1.5 [&_svg]:size-3',
-        sm: 'h-8 gap-2 px-3 py-0 text-xs has-[>svg]:px-2.5 [&_svg]:size-3.5',
-        md: 'h-9 gap-2 px-4 py-0 text-sm has-[>svg]:px-3 [&_svg]:size-4',
-        lg: 'h-10 gap-2 px-6 py-0 text-base has-[>svg]:px-4 [&_svg]:size-5',
+        xs: 'h-6 gap-1 px-2 py-0 text-body-sm has-[>svg]:px-1.5 [&_svg]:size-3',
+        sm: 'h-8 gap-2 px-3 py-0 text-body-sm has-[>svg]:px-2.5 [&_svg]:size-3.5',
+        md: 'h-9 gap-2 px-4 py-0 text-body has-[>svg]:px-3 [&_svg]:size-4',
+        lg: 'h-10 gap-2 px-6 py-0 text-body-lg has-[>svg]:px-4 [&_svg]:size-5',
         icon: 'size-9 [&_svg]:size-5',
         'icon-xs': 'size-6 [&_svg]:size-3.5',
         'icon-sm': 'size-8 [&_svg]:size-4',
@@ -176,24 +183,6 @@ function resolveNativeButton(
     return as === 'button' ? undefined : false;
   }
   return;
-}
-
-type GroupPosition = 'first' | 'middle' | 'last' | undefined;
-
-function getPositionClasses(attached: boolean, position: GroupPosition): string {
-  if (!attached) {
-    return 'rounded-md';
-  }
-  if (position === 'first') {
-    return 'rounded-r-none rounded-l-md border-r-0';
-  }
-  if (position === 'last') {
-    return 'rounded-r-md rounded-l-none border-l-0';
-  }
-  if (position === 'middle') {
-    return 'rounded-none border-r-0 border-l-0';
-  }
-  return 'rounded-md';
 }
 
 function renderButtonChildren(children: React.ReactNode, icon: React.ReactNode, isLoading: boolean): React.ReactNode {
@@ -251,7 +240,7 @@ function Button({
   ...props
 }: ButtonProps) {
   const { attached, position } = useGroup();
-  const positionClasses = getPositionClasses(attached, position);
+  const positionClasses = groupItemClasses(attached, position);
   const isDisabled = disabled || isLoading;
   const renderedChildren = renderButtonChildren(children, icon, isLoading);
 
@@ -266,8 +255,9 @@ function Button({
   return (
     <ButtonPrimitive
       aria-busy={isLoading || undefined}
+      // `className` last: `positionClasses` sets a radius a caller's own `rounded-*` has to win.
       className={cn(
-        buttonVariants({ variant, size, className }),
+        buttonVariants({ variant, size }),
         positionClasses,
         icon && 'gap-2',
         isLoading && 'relative',

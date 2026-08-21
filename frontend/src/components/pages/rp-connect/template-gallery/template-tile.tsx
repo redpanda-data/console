@@ -68,7 +68,7 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
             <ComponentIcon name={template.sink.component} override={template.sink.logoOverride} />
           </div>
           <span
-            className="flex shrink-0 items-center gap-0.5 text-muted-foreground text-xs leading-none"
+            className="flex shrink-0 items-center gap-0.5 text-body-sm text-muted-foreground leading-none"
             data-testid={`template-tile-tier-${template.id}`}
           >
             <TierIcon aria-hidden className="h-3.5 w-3.5" />
@@ -76,8 +76,8 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-foreground text-sm leading-tight">{template.name}</span>
-          <span className="line-clamp-2 text-muted-foreground text-xs leading-snug">{template.description}</span>
+          <span className="font-semibold text-body text-foreground leading-tight">{template.name}</span>
+          <span className="line-clamp-2 text-body-sm text-muted-foreground leading-snug">{template.description}</span>
         </div>
       </Card>
     </button>

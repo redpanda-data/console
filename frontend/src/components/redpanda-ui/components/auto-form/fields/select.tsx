@@ -246,7 +246,7 @@ function ProviderOptionLabel({ option }: { option: DataProviderOption }) {
   return (
     <span className="flex items-center justify-between gap-3">
       {labelWithIcon}
-      <span className="text-body-sm text-muted-foreground">{option.description}</span>
+      <span className="text-body-sm text-subtle">{option.description}</span>
     </span>
   );
 }

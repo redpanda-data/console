@@ -179,7 +179,7 @@ export const ShadowLinkEditPage = () => {
   if (!(isLoading || hasData)) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-8">
-        <div className="text-base">Shadow link not found</div>
+        <div className="text-body-lg">Shadow link not found</div>
         <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="outline">
           Back to Shadow Links
         </Button>

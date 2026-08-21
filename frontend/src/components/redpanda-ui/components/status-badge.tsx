@@ -39,7 +39,8 @@ const DEFAULT_LABEL: Record<StatusBadgeVariant, string> = {
 // StatusBadge keeps its historical faint secondary-tinted chrome. The `secondary`
 // color family is no longer a recommended Badge tone, so these styles are applied
 // directly here rather than via the deprecated `variant="secondary-inverted"`.
-const STATUS_BADGE_CHROME = 'border-transparent bg-secondary/10 text-secondary [a&]:hover:bg-secondary/20';
+const STATUS_BADGE_CHROME =
+  'border-transparent bg-secondary-wash text-secondary [&:is(a,button)]:hover:bg-secondary-wash-pressed';
 
 const badgeSizeStyles = cva('rounded-full', {
   variants: {

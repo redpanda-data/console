@@ -201,7 +201,7 @@ const RpConnectPipelinesCreateContent = () => {
             </div>
             <div className="flex flex-1 flex-col">
               <span className="font-semibold text-foreground">Start from a template</span>
-              <span className="text-muted-foreground text-sm">
+              <span className="text-body text-muted-foreground">
                 Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
                 directly.
               </span>

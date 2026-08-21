@@ -212,7 +212,7 @@ export const UsersTabNew: FC = () => {
         return label ? (
           <Badge variant="secondary">{label}</Badge>
         ) : (
-          <span className="text-muted-foreground text-sm">—</span>
+          <span className="text-body text-muted-foreground">—</span>
         );
       },
     },
@@ -346,7 +346,7 @@ export const UsersTabNew: FC = () => {
       <SecurityTabsNav />
       <CreateUserDialog key={createDialogKey} onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen} />
       <ListLayout className="my-4 min-h-0">
-        <div className="text-muted-foreground text-sm sm:text-base">
+        <div className="text-body text-muted-foreground sm:text-body-lg">
           <DescriptionWithHelp short="SASL-SCRAM user accounts managed by your cluster." title="Users">
             These users are SASL-SCRAM users managed by your cluster. View permissions for other authentication
             identities (for example, OIDC, mTLS) on the Permissions List page.
@@ -412,7 +412,7 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
   );
 
   if (!featureRolesApi) {
-    return <span className="text-muted-foreground text-sm">—</span>;
+    return <span className="text-body text-muted-foreground">—</span>;
   }
 
   if (isLoading) {
@@ -422,7 +422,7 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
   const roles = data?.roles ?? [];
 
   if (roles.length === 0) {
-    return <span className="text-muted-foreground text-sm">None</span>;
+    return <span className="text-body text-muted-foreground">None</span>;
   }
 
   return (
@@ -449,7 +449,7 @@ const AclPermissionRow = ({ acl }: { acl: FlatAclEntry }) => (
     </TableCell>
     <TableCell className="font-mono">{acl.resourceName}</TableCell>
     <TableCell>{acl.operation}</TableCell>
-    <TableCell className={acl.permissionType === 'Allow' ? 'text-success' : 'text-error'}>
+    <TableCell className={acl.permissionType === 'Allow' ? 'text-success' : 'text-destructive'}>
       {acl.permissionType}
     </TableCell>
     <TableCell className="text-muted-foreground">{acl.host}</TableCell>
@@ -462,13 +462,13 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
   const total = directAcls.length + roleAclGroups.reduce((s, g) => s + g.acls.length, 0);
 
   if (!isLoading && total === 0) {
-    return <span className="text-muted-foreground text-sm">None</span>;
+    return <span className="text-body text-muted-foreground">None</span>;
   }
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
-        className="m-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-sm text-strong transition-colors hover:bg-surface-strong"
+        className="m-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-body text-strong transition-colors hover:bg-surface-strong"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
@@ -494,7 +494,7 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
           {roleAclGroups.map((rg: RoleAclGroup) => (
             <TableBody key={rg.roleName}>
               <TableRow>
-                <TableCell className="bg-muted/40 py-1.5 text-muted-foreground text-xs" colSpan={5}>
+                <TableCell className="bg-muted/40 py-1.5 text-body-sm text-muted-foreground" colSpan={5}>
                   <div className="flex items-center gap-1.5">
                     <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
                     <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>

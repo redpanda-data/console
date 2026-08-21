@@ -102,7 +102,7 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
   if (mode === 'trigger') {
     return (
       <TabsTrigger
-        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
+        className="text-body-lg aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
         disabled={isDisabled}
         value={id}
         variant="underline"

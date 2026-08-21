@@ -141,13 +141,13 @@ class ConsoleErrorBoundary extends Component<
       return (
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
-            <h2 className="font-semibold text-error text-lg">Something went wrong</h2>
-            <p className="mt-2 text-gray-600 text-sm">Console encountered an error.</p>
+            <h2 className="font-semibold text-destructive text-heading-md">Something went wrong</h2>
+            <p className="mt-2 text-body text-subtle">Console encountered an error.</p>
             {this.state.error ? (
-              <p className="mt-1 font-mono text-gray-500 text-xs">{this.state.error.message}</p>
+              <p className="mt-1 font-mono text-body-sm text-subtle">{this.state.error.message}</p>
             ) : null}
             <button
-              className="mt-4 rounded-md bg-background-informative-strong px-4 py-2 font-medium text-sm text-white hover:bg-background-informative-strong"
+              className="mt-4 rounded-md bg-surface-informative px-4 py-2 font-medium text-body text-informative-foreground hover:bg-surface-informative-hover"
               onClick={this.handleRetry}
               type="button"
             >

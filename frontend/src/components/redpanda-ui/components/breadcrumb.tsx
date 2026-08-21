@@ -12,10 +12,7 @@ function Breadcrumb({ testId, ...props }: React.ComponentProps<'nav'> & SharedPr
 function BreadcrumbList({ className, testId, ...props }: React.ComponentProps<'ol'> & SharedProps) {
   return (
     <ol
-      className={cn(
-        'wrap-break-word flex flex-wrap items-center gap-1.5 text-muted-foreground text-sm sm:gap-2.5',
-        className
-      )}
+      className={cn('wrap-break-word flex flex-wrap items-center gap-1.5 text-body text-subtle sm:gap-2.5', className)}
       data-slot="breadcrumb-list"
       data-testid={testId}
       {...props}
@@ -39,7 +36,10 @@ function BreadcrumbLink({ className, render, testId, ...props }: useRender.Compo
     defaultTagName: 'a',
     props: mergeProps<'a'>(
       {
-        className: cn('cursor-pointer transition-colors hover:text-foreground', className),
+        className: cn(
+          'link-standalone cursor-pointer transition-colors hover:text-foreground motion-reduce:transition-none',
+          className
+        ),
         'data-testid': testId,
       } as React.ComponentProps<'a'>,
       props
@@ -100,7 +100,7 @@ function BreadcrumbHeader({ className, testId, ...props }: React.ComponentProps<
   return (
     <header
       className={cn(
-        'flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12',
+        'flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 motion-reduce:transition-none',
         className
       )}
       data-slot="breadcrumb-header"

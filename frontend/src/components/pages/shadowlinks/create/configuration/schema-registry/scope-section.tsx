@@ -192,7 +192,7 @@ export const ScopeSection = () => {
                   </FormItem>
                 )}
               />
-              <span className="mt-2 text-muted-foreground text-sm">→</span>
+              <span className="mt-2 text-body text-muted-foreground">→</span>
               <FormField
                 control={control}
                 name={`schemaRegistry.contextMappings.${index}.destination`}

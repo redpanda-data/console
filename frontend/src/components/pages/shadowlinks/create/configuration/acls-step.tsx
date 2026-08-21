@@ -193,7 +193,7 @@ export const AclsStep = () => {
                   {fields.map((field, index) => (
                     <Card data-testid={`acl-filter-${index}`} key={field.id} size="full" variant="elevated">
                       <CardHeader>
-                        <CardTitle className="text-base">ACL filter {index + 1}</CardTitle>
+                        <CardTitle className="text-body-lg">ACL filter {index + 1}</CardTitle>
                         <CardAction>
                           <Button
                             data-testid={`delete-acl-filter-${index}`}

@@ -96,15 +96,17 @@ type Tab = { id: number; name: string; sql: string };
 const DEFAULT_QUERY =
   'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
 
-// Re-render the editor when the registry `.dark` class toggles.
+// Re-render the editor when the theme toggles. Both signals: registry theme.css
+// keys on `[data-theme='dark'], .dark` and treats the class as compatibility-only.
 function subscribeToColorMode(onStoreChange: () => void): () => void {
   const observer = new MutationObserver(onStoreChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
   return () => observer.disconnect();
 }
 
 function getIsDarkSnapshot(): boolean {
-  return document.documentElement.classList.contains('dark');
+  const root = document.documentElement;
+  return root.dataset.theme === 'dark' || root.classList.contains('dark');
 }
 
 function useIsDarkMode(): boolean {
@@ -131,7 +133,7 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
       '.cm-content ::selection': { color: 'var(--color-selection-foreground)' },
       '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
       '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
-      '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
+      '.cm-activeLine': { backgroundColor: 'var(--color-surface-subtle)' },
     },
     { dark: mode === 'dark' }
   );
@@ -474,7 +476,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             <TabsList className="overflow-x-auto" variant="underline">
               {tabs.map((t) => (
                 <TabsTrigger
-                  className="w-auto shrink-0 gap-1.5 px-3 text-xs"
+                  className="w-auto shrink-0 gap-1.5 px-3 text-body-sm"
                   key={t.id}
                   render={<div />}
                   value={String(t.id)}

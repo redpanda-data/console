@@ -39,14 +39,14 @@ export const textVariants = cva('font-sans', {
     variant: {
       // Legacy variant names (mapped to Figma equivalents - NOT backward compatible for styles)
       body: 'font-normal text-sm leading-6 tracking-heading', // → bodyMedium
-      lead: 'font-normal text-lg text-muted-foreground leading-7 tracking-heading', // → bodyLarge + muted
+      lead: 'font-normal text-lg text-subtle leading-7 tracking-heading', // → bodyLarge + muted
       large: 'font-normal text-base leading-7 tracking-heading', // → bodyXLarge
       small: 'font-normal text-xs leading-5 tracking-normal', // → bodyMedium
-      muted: 'font-normal text-muted-foreground text-sm leading-5 tracking-normal', // → bodyMedium + muted
+      muted: 'font-normal text-sm text-subtle leading-5 tracking-normal', // → bodyMedium + muted
       label: 'font-semibold text-sm leading-5 tracking-normal', // → labelStrongSmall
       xLarge: 'font-display font-medium text-lg leading-6 tracking-heading', // → titleXSmall
 
-      // Titles - Inter Display, font-medium (500)
+      // Titles - InterDisplay, font-medium (500)
       titleLarge: 'font-display font-medium text-4xl leading-10 tracking-heading', // 2rem, line-height 2.5rem
       titleMedium: 'font-display font-medium text-2xl leading-8 tracking-heading', // 1.5rem, line-height 2rem
       titleMediumSemibold: 'font-display font-semibold text-2xl leading-8 tracking-heading', // 1.5rem, 600, line-height 2rem
@@ -237,7 +237,7 @@ interface InlineCodeProps extends React.HTMLAttributes<HTMLElement>, SharedProps
 export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className, children, testId, ...props }, ref) => (
   <code
     className={cn(
-      'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm leading-8',
+      'relative rounded bg-surface-subtle px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm leading-8',
       className
     )}
     data-testid={testId}
@@ -251,6 +251,8 @@ export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className,
 type BaseLinkProps = SharedProps & {
   children: React.ReactNode;
   className?: string;
+  /** `current` inherits the surrounding ink — use it for a link on a filled or inverse ground. */
+  tone?: 'action' | 'current';
 };
 
 // TanStack Router variant uses explicit props because ComponentProps<typeof TanStackLink> ties params to a route literal, which breaks when `to` is a plain string.
@@ -272,24 +274,38 @@ type LinkProps =
     });
 
 // Figma link style: primary color, dotted underline with offset.
-const linkStyles =
-  'font-medium text-primary decoration-dotted underline underline-offset-[3px] hover:text-primary/80 transition-colors';
+const linkVariants = cva(
+  'font-medium underline decoration-dotted underline-offset-[3px] transition-colors hover:decoration-solid focus-visible:decoration-solid motion-reduce:transition-none',
+  {
+    variants: {
+      tone: {
+        action: 'text-action-primary hover:text-action-primary-hover',
+        // For a link on a filled ground. Both states pinned, so no `hover:text-*` outranks a
+        // caller's colour; the dotted -> solid underline carries the affordance.
+        current: 'text-current hover:text-current',
+      },
+    },
+    defaultVariants: {
+      tone: 'action',
+    },
+  }
+);
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, ref) => {
   // Re-assert the union: forwardRef's PropsWithoutRef collapses the index-signature branch, widening className/children to `unknown`.
-  const { className, children, testId, ...props } = componentProps as LinkProps;
+  const { className, children, testId, tone, ...props } = componentProps as LinkProps;
 
   if ('as' in props && props.as === TanStackLink) {
     const { as: _, ...routerProps } = props;
     return (
-      <TanStackLink className={cn(linkStyles, className)} data-testid={testId} ref={ref} {...routerProps}>
+      <TanStackLink className={cn(linkVariants({ tone }), className)} data-testid={testId} ref={ref} {...routerProps}>
         {children}
       </TanStackLink>
     );
   }
 
   return (
-    <a className={cn(linkStyles, className)} data-testid={testId} ref={ref} {...props}>
+    <a className={cn(linkVariants({ tone }), className)} data-testid={testId} ref={ref} {...props}>
       {children}
     </a>
   );
@@ -301,7 +317,7 @@ interface PreProps extends React.HTMLAttributes<HTMLPreElement>, SharedProps {
 
 export const Pre = forwardRef<HTMLPreElement, PreProps>(({ className, children, testId, ...props }, ref) => (
   <pre
-    className={cn('my-6 overflow-y-auto rounded-md bg-muted p-4 text-sm', className)}
+    className={cn('my-6 overflow-y-auto rounded-md bg-surface-subtle p-4 text-sm', className)}
     data-testid={testId}
     ref={ref}
     {...props}
@@ -364,7 +380,12 @@ interface SummaryProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
 
 export const Summary = forwardRef<HTMLElement, SummaryProps>(({ className, children, testId, ...props }, ref) => (
   <summary
-    className={cn('cursor-pointer font-semibold tracking-tight', className)}
+    // Prose disclosure, so the ink steps rather than a fill appearing (Accordion's trigger has
+    // a fill and steps that instead). Opening the panel is the pressed feedback.
+    className={cn(
+      'cursor-pointer font-semibold tracking-tight transition-colors hover:text-strong motion-reduce:transition-none',
+      className
+    )}
     data-testid={testId}
     ref={ref}
     {...props}
@@ -378,7 +399,7 @@ interface MarkProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
 }
 
 export const Mark = forwardRef<HTMLElement, MarkProps>(({ className, children, testId, ...props }, ref) => (
-  <mark className={cn('bg-yellow-200', className)} data-testid={testId} ref={ref} {...props}>
+  <mark className={cn('bg-mark text-mark-foreground', className)} data-testid={testId} ref={ref} {...props}>
     {children}
   </mark>
 ));

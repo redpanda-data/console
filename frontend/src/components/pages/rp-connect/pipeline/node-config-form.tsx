@@ -531,20 +531,20 @@ function buildComponentEntry({
 
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
-    <Label className="shrink-0 font-medium text-sm" htmlFor={htmlFor}>
+    <Label className="shrink-0 font-medium text-body" htmlFor={htmlFor}>
       {spec.name}
     </Label>
     {checkRequired(spec) ? (
-      <span aria-hidden className="shrink-0 text-destructive text-xs" title="Required">
+      <span aria-hidden className="shrink-0 text-body-sm text-destructive" title="Required">
         *
       </span>
     ) : null}
     {spec.type && spec.type !== 'string' ? (
-      <span className="shrink-0 text-muted-foreground text-xs">{spec.type}</span>
+      <span className="shrink-0 text-body-sm text-muted-foreground">{spec.type}</span>
     ) : null}
     {spec.defaultValue ? (
       // Defaults can be long templates — keep the label on one line and ellipsize, full value on hover.
-      <span className="min-w-0 truncate text-muted-foreground text-xs" title={`default: ${spec.defaultValue}`}>
+      <span className="min-w-0 truncate text-body-sm text-muted-foreground" title={`default: ${spec.defaultValue}`}>
         default: <span className="font-mono">{spec.defaultValue}</span>
       </span>
     ) : null}
@@ -845,7 +845,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
             <Textarea
               aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
               aria-required={checkRequired(leaf.spec) || undefined}
-              className="font-mono text-sm"
+              className="font-mono text-body"
               id={inputId}
               onChange={field.onChange}
               placeholder="One value per line"
@@ -1173,7 +1173,7 @@ export function NodeConfigForm({
             {/* Full-bleed to the scroll edges; padded fields follow. */}
             {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
             <div className="flex flex-col gap-1.5">
-              <Label className="font-medium text-sm" htmlFor={labelId}>
+              <Label className="font-medium text-body" htmlFor={labelId}>
                 label
               </Label>
               <Controller

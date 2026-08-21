@@ -59,7 +59,7 @@ function AvatarFallback({
   return (
     <AvatarPrimitive.Fallback
       className={cn(
-        'flex size-full items-center justify-center rounded-full bg-muted text-sm group-data-[size=sm]/avatar:text-xs',
+        'flex size-full items-center justify-center rounded-full bg-surface-subtle text-body group-data-[size=sm]/avatar:text-body-sm',
         className
       )}
       data-slot="avatar-fallback"
@@ -104,7 +104,7 @@ function AvatarGroupCount({ className, testId, ...props }: React.ComponentProps<
   return (
     <div
       className={cn(
-        'relative flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-muted text-sm ring-2 ring-background',
+        'relative flex size-8 shrink-0 select-none items-center justify-center rounded-full bg-surface-subtle text-body ring-2 ring-background',
         className
       )}
       data-slot="avatar-group-count"

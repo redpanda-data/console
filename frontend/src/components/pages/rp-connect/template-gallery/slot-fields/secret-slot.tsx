@@ -88,7 +88,7 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
                   </SelectTrigger>
                   <SelectContent>
                     {options.length === 0 ? (
-                      <div className="px-3 py-2 text-muted-foreground text-sm">No secrets yet</div>
+                      <div className="px-3 py-2 text-body text-muted-foreground">No secrets yet</div>
                     ) : (
                       options.map((secretId) => (
                         <SelectItem key={secretId} value={secretId}>

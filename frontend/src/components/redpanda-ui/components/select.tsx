@@ -4,7 +4,7 @@ import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import type React from 'react';
 
-import { useGroup } from './group';
+import { groupItemClasses, useGroup } from './group';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
@@ -71,19 +71,17 @@ type SelectTriggerProps = SelectPrimitive.Trigger.Props &
 function SelectTrigger({ className, size = 'default', children, testId, ...props }: SelectTriggerProps) {
   const { position: groupPosition, attached } = useGroup();
 
-  let positionClasses = 'rounded-md';
-  if (attached && groupPosition === 'first') {
-    positionClasses = 'rounded-r-none rounded-l-md border-r-0';
-  } else if (attached && groupPosition === 'last') {
-    positionClasses = 'rounded-r-md rounded-l-none border-l-0';
-  } else if (attached && groupPosition === 'middle') {
-    positionClasses = 'rounded-none border-r-0 border-l-0';
-  }
+  const positionClasses = groupItemClasses(attached, groupPosition);
 
   return (
     <SelectPrimitive.Trigger
+      // No pressed step: Base UI opens the listbox on mousedown and the portal takes the
+      // pointer, so the trigger stops matching `:active` at the moment it would paint — and
+      // `data-popup-open` cannot carry it either, since `hover:not-disabled:` is one selector
+      // heavier and outranks it while the pointer is still on the trigger. The listbox
+      // appearing is the feedback, as it is for Navigation Menu and Menubar.
       className={cn(
-        "!border-input flex w-full cursor-pointer items-center justify-between gap-2 whitespace-nowrap border bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[size=default]:h-9 data-[size=lg]:h-10 data-[size=sm]:h-8 data-[placeholder]:text-muted-foreground *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:hover:bg-input/50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "!border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full cursor-pointer items-center justify-between gap-2 whitespace-nowrap border bg-input-fill px-3 py-2 text-body shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid data-[size=default]:h-9 data-[size=lg]:h-10 data-[size=sm]:h-8 data-[placeholder]:text-placeholder *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 motion-reduce:transition-none [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0",
         positionClasses,
         className
       )}
@@ -163,7 +161,7 @@ function SelectContent({
 function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) {
   return (
     <SelectPrimitive.GroupLabel
-      className={cn('px-2 py-1.5 text-muted-foreground text-xs', className)}
+      className={cn('px-2 py-1.5 text-body-sm text-subtle', className)}
       data-slot="select-label"
       {...props}
     />
@@ -174,7 +172,7 @@ function SelectItem({ className, children, testId, ...props }: SelectPrimitive.I
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden *:last:flex *:last:items-center *:last:gap-2 data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-body outline-hidden *:last:flex *:last:items-center *:last:gap-2 data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       data-slot="select-item"
@@ -204,7 +202,10 @@ function SelectSeparator({ className, ...props }: SelectPrimitive.Separator.Prop
 function SelectScrollUpButton({ className, ...props }: SelectPrimitive.ScrollUpArrow.Props) {
   return (
     <SelectPrimitive.ScrollUpArrow
-      className={cn('flex cursor-pointer items-center justify-center py-1', className)}
+      className={cn(
+        'flex cursor-pointer items-center justify-center py-1 transition-colors hover:bg-accent motion-reduce:transition-none',
+        className
+      )}
       data-slot="select-scroll-up-button"
       {...props}
     >
@@ -216,7 +217,10 @@ function SelectScrollUpButton({ className, ...props }: SelectPrimitive.ScrollUpA
 function SelectScrollDownButton({ className, ...props }: SelectPrimitive.ScrollDownArrow.Props) {
   return (
     <SelectPrimitive.ScrollDownArrow
-      className={cn('flex cursor-pointer items-center justify-center py-1', className)}
+      className={cn(
+        'flex cursor-pointer items-center justify-center py-1 transition-colors hover:bg-accent motion-reduce:transition-none',
+        className
+      )}
       data-slot="select-scroll-down-button"
       {...props}
     >

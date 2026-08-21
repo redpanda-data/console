@@ -310,7 +310,7 @@ const AddFilterMenuItem: FC<{
           render={
             <span
               aria-disabled
-              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
+              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
               data-testid={testId}
               role="menuitem"
               tabIndex={-1}
@@ -1669,7 +1669,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             placeholder="Filter table content ..."
             value={quickSearch}
           />
-          <div className="flex items-end gap-2 whitespace-nowrap text-sm">
+          <div className="flex items-end gap-2 whitespace-nowrap text-body">
             {searchPhase === null || searchPhase === 'Done' ? (
               <>
                 <div className="flex items-center gap-2">
@@ -1810,14 +1810,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             <div className="flex items-center justify-end px-2 py-2">
               <div className="flex items-center space-x-6 lg:space-x-8">
                 {/* Page counter */}
-                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+                <div className="flex w-[100px] items-center justify-center font-medium text-body">
                   Page {pageIndex + 1}
                   {hasMoreData ? '' : ` of ${windowStartPage + loadedPages}`}
                 </div>
 
                 {/* Rows per page selector */}
                 <div className="flex items-center space-x-2">
-                  <p className="font-medium text-sm">Rows per page</p>
+                  <p className="font-medium text-body">Rows per page</p>
                   <Select
                     onValueChange={(value) => {
                       const newSize = Number(value);
@@ -1885,7 +1885,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           {/* Virtual page indicator for continuous pagination mode */}
           {continuousPaginationEnabled && messages.length > 0 && (
-            <div className="mt-2 flex items-center justify-center gap-2 text-muted-foreground text-sm">
+            <div className="mt-2 flex items-center justify-center gap-2 text-body text-muted-foreground">
               <span>
                 Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
                 {` (pages ${windowStartPage + 1}–${windowStartPage + loadedPages} in memory)`}

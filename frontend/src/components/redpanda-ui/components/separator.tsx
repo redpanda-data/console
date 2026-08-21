@@ -7,9 +7,9 @@ import { cn, type SharedProps } from '../lib/utils';
 const separatorVariants = cva('shrink-0', {
   variants: {
     variant: {
-      default: 'bg-divider-default',
-      subtle: 'bg-divider-subtle',
-      strong: 'bg-divider-strong',
+      default: 'bg-border',
+      subtle: 'bg-border-subtle',
+      strong: 'bg-border-strong',
     },
   },
   defaultVariants: {
