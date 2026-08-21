@@ -142,7 +142,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       )}
     >
       {connectors.map((c) => (
-        <Badge key={c.name} variant="neutral-inverted">
+        <Badge key={c.name} tone="neutral" variant="subtle">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
           {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
@@ -507,10 +507,11 @@ const createColumns = ({
               ))}
             </List>
           )}
-          variant="simple-outline"
+          tone="neutral"
+          variant="outline"
         >
           {tags.map((t) => (
-            <Badge key={t.key} variant="simple-outline">
+            <Badge key={t.key} tone="neutral" variant="outline">
               {t.key}: {t.value}
             </Badge>
           ))}

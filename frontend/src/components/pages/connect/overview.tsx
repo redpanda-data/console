@@ -147,7 +147,7 @@ class KafkaConnectOverview extends PageComponent<{
         title: (
           <Box minWidth="180px">
             Redpanda Connect{' '}
-            <Badge className="ml-2" variant="neutral-inverted">
+            <Badge className="ml-2" tone="neutral" variant="subtle">
               Recommended
             </Badge>
           </Box>

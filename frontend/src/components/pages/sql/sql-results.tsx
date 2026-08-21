@@ -88,7 +88,7 @@ const RES_STAT =
 // Bridge-query indicator shown in the summary bar.
 function BridgeBar() {
   return (
-    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" variant="neutral">
+    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" tone="neutral">
       <GitMerge /> Bridge query
     </Badge>
   );
@@ -379,7 +379,8 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                 className="rounded-full uppercase tracking-wide"
                 size="sm"
                 title="The server row cap fired; not all rows were returned."
-                variant="warning-inverted"
+                tone="warning"
+                variant="subtle"
               >
                 truncated
               </Badge>

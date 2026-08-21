@@ -169,7 +169,9 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
                 <TooltipTrigger
                   render={
                     <span className="cursor-help">
-                      <Badge variant="primary-inverted">+{scopes.length - 2} more</Badge>
+                      <Badge tone="primary" variant="subtle">
+                        +{scopes.length - 2} more
+                      </Badge>
                     </span>
                   }
                 />

@@ -328,7 +328,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
           <span className="inline-flex items-center gap-2">
             Configuration
             {modifiedConfigCount > 0 ? (
-              <Badge aria-label={`${modifiedConfigCount} modified`} size="sm" variant="info-inverted">
+              <Badge aria-label={`${modifiedConfigCount} modified`} size="sm" tone="info" variant="subtle">
                 {modifiedConfigCount}
               </Badge>
             ) : null}

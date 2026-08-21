@@ -72,9 +72,15 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
         <div className="flex items-center gap-2">
           <span>{partition.id}</span>
           {partition.hasErrors && <PartitionError partition={partition} />}
-          {leaderlessPartitions?.includes(partition.id) && <Badge variant="destructive-inverted">Leaderless</Badge>}
+          {leaderlessPartitions?.includes(partition.id) && (
+            <Badge tone="destructive" variant="subtle">
+              Leaderless
+            </Badge>
+          )}
           {underReplicatedPartitions?.includes(partition.id) && (
-            <Badge variant="warning-inverted">Under-replicated</Badge>
+            <Badge tone="warning" variant="subtle">
+              Under-replicated
+            </Badge>
           )}
         </div>
       ),

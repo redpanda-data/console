@@ -161,7 +161,7 @@ const AclsTabContent: FC = () => {
                       >
                         {record.principalName}
                       </span>
-                      {record.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
+                      {record.principalType === 'Group' && <Badge tone="neutral">Group</Badge>}
                     </span>
                   </Link>
                 ),
@@ -173,7 +173,7 @@ const AclsTabContent: FC = () => {
                   row: {
                     original: { host },
                   },
-                }) => (!host || host === '*' ? <Badge variant="neutral">Any</Badge> : host),
+                }) => (!host || host === '*' ? <Badge tone="neutral">Any</Badge> : host),
               },
               {
                 size: 60,

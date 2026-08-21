@@ -364,7 +364,7 @@ const SchemaList: FC = () => {
               cell: ({ row }: { row: { original: EnrichedSubject } }) => {
                 const { context } = parseSubjectContext(row.original.name);
                 return (
-                  <Badge size="sm" variant="neutral-inverted">
+                  <Badge size="sm" tone="neutral" variant="subtle">
                     {context === 'default' ? 'Default' : `.${context}`}
                   </Badge>
                 );

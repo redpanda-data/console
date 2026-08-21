@@ -70,10 +70,11 @@ function TagsField({ readonly }: { readonly?: boolean }) {
                       ))}
                     </List>
                   )}
-                  variant="simple-outline"
+                  tone="neutral"
+                  variant="outline"
                 >
                   {filtered.map((t) => (
-                    <Badge key={t.key} variant="simple-outline">
+                    <Badge key={t.key} tone="neutral" variant="outline">
                       {t.key}: {t.value}
                     </Badge>
                   ))}

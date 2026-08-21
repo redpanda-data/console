@@ -192,7 +192,7 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
 }
 
 const ConfiguredBadge = () => (
-  <Badge size="sm" variant="success-inverted">
+  <Badge size="sm" tone="success" variant="subtle">
     Configured
   </Badge>
 );

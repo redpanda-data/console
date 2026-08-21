@@ -128,10 +128,11 @@ const ReferenceList = ({ items }: { items: string[] }) => {
           ))}
         </List>
       )}
-      variant="simple-outline"
+      tone="neutral"
+      variant="outline"
     >
       {items.map((item) => (
-        <Badge key={item} variant="simple-outline">
+        <Badge key={item} tone="neutral" variant="outline">
           {item}
         </Badge>
       ))}

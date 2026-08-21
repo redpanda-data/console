@@ -183,7 +183,7 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
                 {tag}
               </Badge>
             ))}
-            <Badge size="sm" variant="simple-outline">
+            <Badge size="sm" tone="neutral" variant="outline">
               {lineCount} lines
             </Badge>
           </ItemTitle>
@@ -424,7 +424,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             <code className="min-w-0 flex-1 truncate font-medium font-mono text-body-sm" title={storageKey}>
               {storageKey}
             </code>
-            <Badge className="shrink-0" size="sm" variant="simple-outline">
+            <Badge className="shrink-0" size="sm" tone="neutral" variant="outline">
               {formatBytes(sizeBytes)}
             </Badge>
           </div>
@@ -490,7 +490,7 @@ function StorageSection({
       <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <div className="truncate font-medium text-body-sm">{title}</div>
-          <Badge className="shrink-0" size="sm" variant="simple-outline">
+          <Badge className="shrink-0" size="sm" tone="neutral" variant="outline">
             {storage.length} keys
           </Badge>
         </div>
@@ -715,7 +715,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                   <AnimatePresence initial={false}>
                     {isOverridden ? (
                       <PopIn className="shrink-0" key="overridden">
-                        <Badge size="sm" variant="warning-inverted">
+                        <Badge size="sm" tone="warning" variant="subtle">
                           overridden
                         </Badge>
                       </PopIn>
@@ -879,7 +879,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
             <AnimatePresence initial={false}>
               {active ? (
                 <PopIn key="active">
-                  <Badge size="sm" variant="warning-inverted">
+                  <Badge size="sm" tone="warning" variant="subtle">
                     active
                   </Badge>
                 </PopIn>
@@ -934,7 +934,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <DialogTitle className="flex items-center gap-2">
             <DebugPanda className="h-5 w-5" />
             Debug helpers
-            <Badge size="sm" variant="simple-outline">
+            <Badge size="sm" tone="neutral" variant="outline">
               dev only
             </Badge>
           </DialogTitle>

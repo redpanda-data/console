@@ -272,7 +272,7 @@ function DisclosureRow({
               <div className="flex items-center gap-2">
                 <span className="font-medium text-body">{label}</span>
                 {configured && !open && (
-                  <Badge size="sm" variant="success-inverted">
+                  <Badge size="sm" tone="success" variant="subtle">
                     Configured
                   </Badge>
                 )}
