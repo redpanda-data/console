@@ -239,6 +239,52 @@ describe('CreateTopicDialog', () => {
     expect(screen.getByTestId('onOk-button')).toBeInTheDocument();
   });
 
+  test('Shows "Min in-sync replicas" field for Kafka clusters (UX-1460)', async () => {
+    renderDialog();
+
+    expect(screen.getByTestId('topic-min-insync-replicas')).toBeInTheDocument();
+  });
+
+  test('Hides "Min in-sync replicas" field for Redpanda clusters (UX-1460)', async () => {
+    const { api } = await import('../../../state/backend-api');
+    // biome-ignore lint/suspicious/noExplicitAny: test override
+    (api as any).isRedpanda = true;
+    // biome-ignore lint/suspicious/noExplicitAny: test override
+    (api as any).clusterOverview = { kafka: { distribution: 'REDPANDA' } };
+
+    renderDialog();
+
+    expect(screen.queryByTestId('topic-min-insync-replicas')).not.toBeInTheDocument();
+
+    // Restore api defaults so other tests are not affected
+    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
+    (api as any).isRedpanda = false;
+    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
+    (api as any).clusterOverview = null;
+  });
+
+  test('Refreshes cluster overview whenever the dialog opens, so isRedpanda is never stale (UX-1460)', async () => {
+    const { api } = await import('../../../state/backend-api');
+    const onClose = vi.fn();
+
+    // Dialog mounts closed: the unconditional mount effect still fires once.
+    const { rerender } = renderDialog(false, onClose);
+
+    await waitFor(() => {
+      expect(api.refreshClusterOverview).toHaveBeenCalled();
+    });
+
+    (api.refreshClusterOverview as ReturnType<typeof vi.fn>).mockClear();
+
+    // Reopening the dialog (e.g. after closing it without a page refresh) must
+    // re-fetch the cluster overview rather than relying on a stale cached value.
+    rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
+
+    await waitFor(() => {
+      expect(api.refreshClusterOverview).toHaveBeenCalled();
+    });
+  });
+
   test('Additional config rows can be added and removed', async () => {
     const user = userEvent.setup();
     renderDialog();
