@@ -95,7 +95,9 @@ const AclTableRow: FC<{
 }> = ({ resourceType, resourceName, operation, permissionType, host, editHref }) => (
   <TableRow>
     <TableCell>
-      <Badge variant="simple">{resourceType}</Badge>
+      <Badge tone="neutral" variant="outline">
+        {resourceType}
+      </Badge>
     </TableCell>
     <TableCell className="font-mono">{resourceName}</TableCell>
     <TableCell>{operation}</TableCell>

@@ -210,7 +210,7 @@ export const UsersTabNew: FC = () => {
       cell: ({ row: { original: entry } }) => {
         const label = mechanismLabel(entry.mechanism);
         return label ? (
-          <Badge variant="secondary">{label}</Badge>
+          <Badge tone="neutral">{label}</Badge>
         ) : (
           <span className="text-body text-muted-foreground">—</span>
         );
@@ -445,7 +445,9 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
 const AclPermissionRow = ({ acl }: { acl: FlatAclEntry }) => (
   <TableRow>
     <TableCell>
-      <Badge variant="simple">{acl.resourceType}</Badge>
+      <Badge tone="neutral" variant="outline">
+        {acl.resourceType}
+      </Badge>
     </TableCell>
     <TableCell className="font-mono">{acl.resourceName}</TableCell>
     <TableCell>{acl.operation}</TableCell>
