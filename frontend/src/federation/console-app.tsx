@@ -49,21 +49,10 @@ import { installUISettingsSideEffects } from '../state/ui';
 /**
  * Re-root the generated route tree onto Console's federated root.
  *
- * In the federated dev build, the generated tree's root route (from
- * `src/routes/__root.tsx`) can be substituted by Cloud UI's own `__root` route
- * — both apps compile a module with the identical id `./src/routes/__root.tsx`,
- * and in the shared rsbuild/MF dev runtime the host's wins. The result is that
- * the embedded Console renders Cloud UI's root chrome (its react NuqsAdapter,
- * Builder.io `<Content>`, and `<CommandPalette>`/KBar) instead of Console's own
- * federated layout — which breaks nuqs (NUQS-404), crashes on KBar
- * (`getState is not a function`, no `KBarProvider` in this subtree), and leaves
- * the embedded sidebar empty.
- *
- * `federatedRootRoute` lives at a Console-unique module path
- * (`src/federation/federated-routes.tsx`) that cannot collide with Cloud UI, so
- * reattaching the generated child routes to it guarantees the embedded app
- * renders Console's own root. Standalone (`app.tsx`) and the legacy embedded
- * entry keep using the generated `routeTree` unchanged.
+ * Both apps compile a module with the id `./src/routes/__root.tsx`, and in the shared MF dev
+ * runtime the host's wins — so the embedded Console would render Cloud UI's root chrome instead of
+ * its own (breaking nuqs, crashing KBar, emptying the sidebar). `federatedRootRoute` sits at a
+ * Console-unique path that cannot collide. Standalone and legacy-embedded entries keep `routeTree`.
  */
 function createFederatedRouteTree() {
   const childRoutes = routeTree.children ? Object.values(routeTree.children) : [];

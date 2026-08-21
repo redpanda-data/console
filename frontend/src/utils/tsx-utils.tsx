@@ -586,16 +586,7 @@ export const InlineSkeleton = (p: { width: string | number }) => (
   <Skeleton alignItems="center" display="flex" height={2} noOfLines={1} width={p.width} />
 );
 
-// Single line string, no wrapping, will not overflow and display ellipsis instead
-// const ellipsisDivStyle: CSSProperties = {
-//     display: 'inline-block',
-//     width: 0,
-//     minWidth: '100%',
-//     overflow: 'hidden',
-//     textOverflow: 'ellipsis',
-//     whiteSpace: 'nowrap',
-//     verticalAlign: 'text-bottom',
-// };
+// Single line, no wrapping; overflow shows an ellipsis.
 const ellipsisSpanStyle: CSSProperties = {
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',

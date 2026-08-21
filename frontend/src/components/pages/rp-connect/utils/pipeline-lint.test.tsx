@@ -16,18 +16,7 @@ import { localYamlLintHints, mapLintHintsToNodes, mergeLintHints, nodeLineRanges
 
 const hint = (line: number, msg: string): LintHint => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
 
-// Lines (1-based):
-// 1 pipeline:
-// 2   processors:
-// 3     - mapping: 'root = this'
-// 4     - branch:
-// 5         request_map: 'root = this'
-// 6         processors:
-// 7           - http:
-// 8               url: not-a-url
-// 9         result_map: 'root = this'
-// 10 output:
-// 11   drop: {}
+// Line numbers below are 1-based against this document; `url: not-a-url` is line 8.
 const yaml = `pipeline:
   processors:
     - mapping: 'root = this'

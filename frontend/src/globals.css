@@ -2,25 +2,19 @@
 @import "./components/redpanda-ui/style/theme.css";
 @import "tw-animate-css";
 
-/* Tailwind's automatic source detection walks the whole project, markdown included, so class names
-   inside the agent skill docs were generating real CSS — including the deliberately-wrong ones in
-   their "Incorrect" examples. That shipped dead rules and, worse, kept retired palette classes
-   (`bg-blue-500`) alive in the bundle. Exclude the docs so an anti-example can stay honest. */
+/* Tailwind's source detection walks markdown too, so class names in the agent skill docs — including
+   the deliberately-wrong ones in "Incorrect" examples — would ship as real CSS. */
 @source not "../.claude";
 
-/* tw-animate-css defines .fade-in { opacity: 0; animation: .3s forwards fadeIn; }
-   which collides with Monaco's internal .monaco-hover.fade-in class,
-   forcing hover widgets to be invisible. Override to restore opacity. */
+/* tw-animate-css's .fade-in sets opacity: 0, colliding with Monaco's own .monaco-hover.fade-in and
+   leaving hover widgets invisible. */
 .monaco-hover.fade-in {
   opacity: 1;
 }
 
-/* Tailwind v4's Preflight sets `border: 0 solid` on every element, which
-   leaves border-color defaulting to currentColor. Legacy Chakra components
-   were authored against v3's transparent default, so any Chakra node that
-   sets a border width without an explicit color now paints visibly.
-   Scope the reset to Chakra's own `chakra-*` class prefix so Registry
-   components rendered alongside (or inside) Chakra are unaffected. */
+/* Tailwind v4 Preflight sets `border: 0 solid`, so border-color defaults to currentColor. Legacy
+   Chakra components were authored against v3's transparent default and would otherwise paint any
+   border they set a width for. Scoped to Chakra's own prefix so Registry components are unaffected. */
 @layer base {
   [class*="chakra-"],
   [class*="chakra-"]::before,
@@ -29,76 +23,38 @@
   }
 }
 
-/* Chakra (@redpanda-data/ui) resets border-color on everything with an UNLAYERED rule:
-
-     *, ::before, ::after { border-color: var(--chakra-colors-chakra-border-color); }
-
-   Unlayered beats every `@layer` rule regardless of specificity, so it outranks BOTH
-   Tailwind's `@layer utilities` colour utilities and theme.css's `@layer base`
-   `* { border-color: var(--color-border) }`. The consequence is invisible rather than
-   loud: `border-destructive-line`, `border-success-line` and friends compile to real
-   CSS, resolve to a live token, and still never paint — every border in the app came
-   out as Chakra's `#E2E8F0`.
-
-   We can't edit emotion's output, but we can change what its declaration *computes to*.
-   `revert-layer` substituted into that `var()` makes the unlayered declaration roll back
-   to the cascade layers, so the winner is again `@layer utilities` (an explicit
-   `border-*` utility) and then `@layer base` (the `--color-border` default).
-
-   Chakra nodes keep a real colour instead, because Chakra's own components author
-   borders against this token — reverting them would drop those borders to the
-   `border-color: transparent` rule above. Pointing them at `--color-border` also
-   retires the dark-only patch this replaces: light and dark now take the same token
-   rather than dark alone being corrected. (UX-1259)
-
-   What we CAN'T do is scope a fix by element: `ChakraProvider` puts `chakra-ui-light` on
-   `<body>`, so `[class*="chakra-"]` matches an ancestor of the entire app, and this token
-   is a custom property — it inherits from there to every node. Any per-subtree override
-   (including making the var `revert-layer` off-Chakra) is therefore dead on arrival.
-   Neutralising the reset itself needs an unlayered `border-color: revert-layer` at
-   specificity (0,1,0), which ties with emotion's own `.css-<hash>` component rules and is
-   decided by injection order — too fragile to rely on. The real fix belongs upstream in
-   @redpanda-data/ui: wrap that reset in `@layer base` so utilities outrank it.
-
-   So this repoints the token, which is safe and theme-correct, and covers BOTH themes —
-   retiring the dark-only patch it replaces, where light was left on Chakra's `#E2E8F0`
-   while v3 firmed its light borders to `--color-border`. Explicit `border-<tone>-line`
-   utilities stay inert until the upstream fix lands; convey tone with fill + ink instead.
-
-   Doubled attribute for specificity (0,3,0), to beat Chakra's own `:root[data-theme="light"]`
-   (0,2,0) deterministically rather than on source order. Lives here (app entry CSS) rather
-   than the registry-synced theme.css so it survives a registry re-sync. (UX-1259) */
+/* Chakra injects an UNLAYERED `*, ::before, ::after { border-color:
+   var(--chakra-colors-chakra-border-color) }`, which outranks every `@layer` rule regardless of
+   specificity — so every border in the app silently came out Chakra's #E2E8F0. We can't edit
+   emotion's output, so we repoint what its var computes to. Scoping by element is impossible:
+   ChakraProvider classes <body> and this is a custom property, so it inherits from there down; the
+   real fix is upstream, wrapping that reset in @layer base. Doubled attribute (0,3,0) beats Chakra's
+   own `:root[data-theme="light"]` without relying on source order. Lives here, not in
+   registry-synced theme.css, so it survives a re-sync. (UX-1259) */
 :root[data-theme][data-theme] {
   --chakra-colors-chakra-border-color: var(--color-border);
 }
 
-/* …and this is what makes `border-<tone>-line` paint again. Unlayered, so it can outrank
-   Chakra's unlayered reset (this is (0,1,0) against its `*` at (0,0,0)), and `revert-layer`
-   hands the property back to the cascade layers: `@layer utilities` when the element carries
-   a colour utility, otherwise `@layer base`'s `--color-border` default. Same value either
-   way for width-only utilities like `border-b`.
-
-   Keyed on the class *substring* every Tailwind border utility shares, which is also the
-   reason this doesn't disturb Chakra: emotion emits `chakra-*` and `css-<hash>` class names,
-   never one containing `border-`, so Chakra nodes keep taking the repointed token above and
-   their own component border rules are never reverted. Pseudo-elements aren't matched here
-   either — Preflight leaves them at width 0, so the reset colouring them is harmless. */
+/* …and this is what makes `border-<tone>-line` paint again: `revert-layer` hands the property back to
+   the cascade layers — `@layer utilities` when the element carries a colour utility, else
+   `@layer base`'s --color-border. Keyed on the substring every Tailwind border utility shares, which
+   is also why it leaves Chakra alone: emotion only emits `chakra-*` and `css-<hash>` class names,
+   never one containing `border-`. Until the upstream fix lands, explicit `border-<tone>-line`
+   utilities stay inert on Chakra nodes — convey tone with fill + ink instead. */
 [class*="border-"] {
   border-color: revert-layer;
 }
 
 @layer utilities {
-  /* A work surface filling the viewport below whatever chrome sits above it
-     (--console-page-top, measured in components/layout/page-column.tsx). The 1rem keeps its
-     bottom border off the viewport edge. Pair with a min-height for short viewports. */
+  /* Work surface filling the viewport below whatever chrome sits above it (--console-page-top, measured
+     in components/layout/page-column.tsx). The 1rem keeps its bottom border off the viewport edge. */
   .page-fill-viewport {
     height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
   }
 }
 
-/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width
-   cap. Not a Tailwind variant: the generated variant CSS went missing on some routes in
-   the federated build. Layered, so it beats those utilities on specificity alone. */
+/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width cap. Not a
+   Tailwind variant: the generated variant CSS went missing on some routes in the federated build. */
 @layer utilities {
   /* 100%, not none — so the release animates. */
   html[data-page-expanded] .page-expanded-uncap {
@@ -110,20 +66,16 @@
     padding-right: 0;
   }
 
-  /* Chrome that stays put while the page beneath it goes edge-to-edge, re-inset by the
-     same amount expanded pages give their own headers. */
+  /* Chrome that stays put while the page beneath it goes edge-to-edge. */
   html[data-page-expanded] .page-expanded-inset {
     padding-left: 1rem;
     padding-right: 1rem;
   }
 }
 
-/* Dev-only bottom-right cluster for floating debug triggers, raised clear of the
-   host's Feedback tab: router-devtools pill at the bottom, query-devtools circle
-   and the debug-helpers launcher (positioned via its own classes) in a row above.
-   These selectors only match dev builds — inert in production. */
-/* The container carries 4px padding around the button — offset by -4 so the
-   visible circle sits at right 12 / bottom 68, flush with the launcher's grid. */
+/* Dev-only bottom-right cluster for floating debug triggers, raised clear of the host's Feedback tab.
+   These selectors only match dev builds. The container carries 4px padding around the button, so the
+   offsets are -4 from where the visible circle should sit. */
 .tsqd-open-btn-container {
   right: 8px !important;
   bottom: 64px !important;
@@ -133,7 +85,6 @@
 .tsqd-open-btn-container:hover {
   opacity: 1;
 }
-/* Compact the trigger; the logo is a viewBox svg, so it scales with the button. */
 .tsqd-open-btn,
 .tsqd-open-btn svg {
   width: 32px !important;

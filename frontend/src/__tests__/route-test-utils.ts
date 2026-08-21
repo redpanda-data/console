@@ -1,14 +1,7 @@
 /**
- * Shared mock factories for TanStack Router + ConnectRPC route tests.
- *
- * Gives Console tests one place to stub
- * `createFileRoute`, `Link`, and common connect-query helpers without
- * repeating the same boilerplate across every route integration spec.
- *
- * Usage — pass the return value of a factory straight into `vi.mock`:
- *
- *   vi.mock('@tanstack/react-router', () => mockRouterForListRoute());
- *   vi.mock('@connectrpc/connect-query', () => mockConnectQuery());
+ * Shared mock factories for TanStack Router + ConnectRPC route tests — one place to stub
+ * `createFileRoute`, `Link` and the connect-query helpers. Pass a factory straight into `vi.mock`:
+ * `vi.mock('@tanstack/react-router', () => mockRouterForListRoute())`.
  */
 import React from 'react';
 import { vi } from 'vitest';

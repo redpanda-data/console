@@ -71,13 +71,6 @@ class LoginCompletePage extends Component<{ provider: string }> {
 
     // console.log('login complete, user: ' + JSON.stringify(api.userData));
 
-    // const targetUrl = store.urlBeforeLogin;
-    // store.urlBeforeLogin = null;
-    // if(targetUrl){
-    //     navigate(targetUrl);
-    // } else{
-    //     navigate({ to: '/' });
-    // }
     window.location.assign(getBasePath() || '/');
   }
 

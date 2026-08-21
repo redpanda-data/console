@@ -17,22 +17,8 @@ import { ALPHANUMERIC_WITH_HYPHENS } from './regex';
 const TRAILING_UNDERSCORES_REGEX = /_+$/;
 
 /**
- * Sanitizes a string to match the secret ID regex pattern: ^[A-Z][A-Z0-9_]*$
- *
- * This function:
- * - Converts the input to uppercase
- * - Replaces all non-alphanumeric characters (except underscores) with underscores
- * - Collapses consecutive underscores into a single underscore
- * - Removes trailing underscores
- *
- * @param value - The string to sanitize
- * @returns The sanitized string that matches the pattern ^[A-Z][A-Z0-9_]*$
- *
- * @example
- * sanitizeSecretId("my-agent") // Returns "MY_AGENT"
- * sanitizeSecretId("abc-123-def") // Returns "ABC_123_DEF"
- * sanitizeSecretId("test__") // Returns "TEST"
- * sanitizeSecretId("test@#$agent") // Returns "TEST_AGENT"
+ * Coerces a string to the secret-ID pattern `^[A-Z][A-Z0-9_]*$`: upper-cased, non-alphanumerics
+ * collapsed to single underscores, trailing underscores dropped. `test@#$agent` -> `TEST_AGENT`.
  */
 export function sanitizeSecretId(value: string): string {
   // Convert to uppercase and replace non-alphanumeric chars with underscores
@@ -47,18 +33,7 @@ export function sanitizeSecretId(value: string): string {
   return sanitized;
 }
 
-/**
- * Generates a service account secret ID with the format: SERVICE_ACCOUNT_{service_account_xid}
- *
- * The service account ID is sanitized to match the pattern ^[A-Z][A-Z0-9_]*$
- *
- * @param serviceAccountId - The service account ID (may contain hyphens, lowercase, etc.)
- * @returns The formatted secret ID
- *
- * @example
- * generateServiceAccountSecretId("abc-123-def")
- * // Returns "SERVICE_ACCOUNT_ABC_123_DEF"
- */
+/** `abc-123-def` -> `SERVICE_ACCOUNT_ABC_123_DEF`, via {@link sanitizeSecretId}. */
 export function generateServiceAccountSecretId(serviceAccountId: string): string {
   const sanitizedServiceAccountId = sanitizeSecretId(serviceAccountId);
 

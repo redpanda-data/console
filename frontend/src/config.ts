@@ -82,18 +82,12 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
 };
 
 /**
- * Wraps a base `fetch` so REST requests carry the same Bearer token as gRPC
- * (see {@link addBearerTokenInterceptor}).
- *
- * Under Module Federation v2 the Cloud UI host supplies the access token via
- * `getAccessToken`/`config.jwt` rather than a pre-authenticated `fetch`, so
- * Console must attach the header itself on every `config.fetch` call. Centralizing
- * it here covers the REST helpers that call `config.fetch` directly instead of the
- * `rest<T>()` wrapper, which already injects the token.
- *
- * The token is read lazily at call time because the host may refresh `config.jwt`
- * in place. We never overwrite an `Authorization` header that a legacy
- * host-provided (V1) authenticatedFetch may already have set.
+ * Wraps a base `fetch` so REST carries the same Bearer token as gRPC (see
+ * {@link addBearerTokenInterceptor}). Under MF v2 the host supplies the token via
+ * `getAccessToken`/`config.jwt` rather than a pre-authenticated `fetch`, so Console attaches the
+ * header itself — here, to also cover helpers calling `config.fetch` directly instead of `rest<T>()`.
+ * Read lazily, since the host may refresh `config.jwt` in place; an existing `Authorization` header
+ * from a legacy V1 authenticatedFetch is never overwritten.
  */
 export const createAuthInjectingFetch =
   (baseFetch: WindowOrWorkerGlobalScope['fetch']): WindowOrWorkerGlobalScope['fetch'] =>
