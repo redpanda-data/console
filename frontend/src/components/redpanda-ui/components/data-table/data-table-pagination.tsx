@@ -23,7 +23,7 @@ export function DataTablePagination<TData>({
   return (
     <div className="flex items-center justify-between px-2" data-testid={testId}>
       {table.options.enableRowSelection !== false && (
-        <div className="flex-1 text-body text-muted-foreground">
+        <div className="flex-1 text-body text-subtle">
           {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
           selected.
         </div>

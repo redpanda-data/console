@@ -52,7 +52,7 @@ const AclCreatePage = () => {
 
   return (
     <div>
-      <h2 className="pt-4 pb-3 font-semibold text-xl">Create ACL</h2>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Create ACL</h2>
       <CreateACL
         edit={false}
         onCancel={() => navigate({ to: '/security/acls' })}

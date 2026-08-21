@@ -112,7 +112,7 @@ export class AclPage {
     const ruleContextCard = this.page.locator(`.card-content-rule-${ruleIndex}`);
     const resourceButton = ruleContextCard.getByTestId(new RegExp(`rt-${rule.resourceType}-button-${ruleIndex}`));
     await resourceButton.click();
-    await expect(resourceButton).toHaveClass(/bg-gray-900 text-white/);
+    await expect(resourceButton).toHaveClass(/bg-selected text-selected-foreground/);
   }
 
   async selectOperationPermission(ruleIndex: number, rule: Rule, operationName: string, permission: OperationType) {
@@ -138,7 +138,7 @@ export class AclPage {
     if (permission === OperationTypeAllow) {
       await expect(operationSelector.locator('svg.text-success')).toBeVisible();
     } else if (permission === OperationTypeDeny) {
-      await expect(operationSelector.locator('svg.text-error')).toBeVisible();
+      await expect(operationSelector.locator('svg.text-destructive')).toBeVisible();
     }
   }
 
@@ -146,7 +146,7 @@ export class AclPage {
     const modeButton = this.page.getByTestId(`mode-${mode}-button-${ruleIndex}`);
     await modeButton.click();
     // Wait for the button to be selected (has the active class)
-    await expect(modeButton).toHaveClass(/bg-white text-gray-900 shadow-sm/);
+    await expect(modeButton).toHaveClass(/bg-background text-strong shadow-sm/);
   }
 
   async setSelectorType(ruleIndex: number, selectorType: string) {
@@ -383,9 +383,9 @@ export class AclPage {
 
     // Verify the correct color class based on permission
     if (permission === OperationTypeAllow) {
-      await expect(summaryItem).toHaveClass(/bg-background-success-subtle text-success/);
+      await expect(summaryItem).toHaveClass(/bg-success-wash text-success/);
     } else if (permission === OperationTypeDeny) {
-      await expect(summaryItem).toHaveClass(/bg-background-error-subtle text-error/);
+      await expect(summaryItem).toHaveClass(/bg-destructive-wash text-destructive/);
     }
   }
 
@@ -440,9 +440,9 @@ export class AclPage {
 
     // Verify correct styling
     if (permission === OperationTypeAllow) {
-      await expect(detailOperationItem).toHaveClass(/bg-background-success-subtle text-success/);
+      await expect(detailOperationItem).toHaveClass(/bg-success-wash text-success/);
     } else if (permission === OperationTypeDeny) {
-      await expect(detailOperationItem).toHaveClass(/bg-background-error-subtle text-error/);
+      await expect(detailOperationItem).toHaveClass(/bg-destructive-wash text-destructive/);
     }
   }
 

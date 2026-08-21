@@ -127,7 +127,7 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
           <div className="flex flex-wrap gap-1">
             {filteredLabels.map(([key, value]) => (
               <span
-                className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700 text-xs"
+                className="inline-flex items-center rounded-md bg-surface-subtle px-2 py-1 font-medium text-body-sm text-foreground"
                 key={`${key}-${value}`}
               >
                 {key}: {value}
@@ -169,7 +169,9 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
                 <TooltipTrigger
                   render={
                     <span className="cursor-help">
-                      <Badge variant="primary-inverted">+{scopes.length - 2} more</Badge>
+                      <Badge tone="primary" variant="subtle">
+                        +{scopes.length - 2} more
+                      </Badge>
                     </span>
                   }
                 />
@@ -337,7 +339,6 @@ export const SecretsStoreListPage = () => {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <h1 className="text-heading-xl">Secrets Store</h1>
           <div className="text-body text-muted-foreground">
             This page lets you list, edit, and delete the secrets used in your dataplane. You can create secrets on this
             page and reference them when creating a new resource such as Redpanda Connect pipelines.
@@ -382,7 +383,7 @@ export const SecretsStoreListPage = () => {
                 return (
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
-                      <div className="flex items-center justify-center gap-2 text-error">
+                      <div className="flex items-center justify-center gap-2 text-destructive">
                         <AlertCircle className="h-4 w-4" />
                         Error loading secrets: {String(error)}
                       </div>

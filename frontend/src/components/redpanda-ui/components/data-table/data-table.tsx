@@ -349,8 +349,8 @@ export function DataTable<TData>({
             <TableRow>
               <TableCell className={cn('h-24', classNames?.loading)} colSpan={totalColumns}>
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                  <div className="text-body text-muted-foreground">{loadingText}</div>
+                  <Loader2 className="size-5 animate-spin text-subtle" />
+                  <div className="text-body text-subtle">{loadingText}</div>
                 </div>
               </TableCell>
             </TableRow>
@@ -360,7 +360,7 @@ export function DataTable<TData>({
             <TableRow>
               <TableCell className={cn('h-24', classNames?.empty)} colSpan={totalColumns}>
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <div className="text-body text-muted-foreground">{emptyText}</div>
+                  <div className="text-body text-subtle">{emptyText}</div>
                   {emptyAction}
                 </div>
               </TableCell>

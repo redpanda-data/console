@@ -364,7 +364,7 @@ const SchemaList: FC = () => {
               cell: ({ row }: { row: { original: EnrichedSubject } }) => {
                 const { context } = parseSubjectContext(row.original.name);
                 return (
-                  <Badge size="sm" variant="neutral-inverted">
+                  <Badge size="sm" tone="neutral" variant="subtle">
                     {context === 'default' ? 'Default' : `.${context}`}
                   </Badge>
                 );
@@ -642,7 +642,7 @@ const SchemaList: FC = () => {
         </Alert>
       ) : (
         <ListLayout className="my-4" data-testid="schema-list-table">
-          <div className="text-muted-foreground text-sm sm:text-base">
+          <div className="text-body text-muted-foreground sm:text-body-lg">
             <DescriptionWithHelp
               short="Subjects and versions for the schemas that validate your topic records."
               testId="schema-search-help"
@@ -739,7 +739,7 @@ const SchemaList: FC = () => {
               testId="schema-list-compatibility-filter"
               title="Compatibility"
             />
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-body">
               <Checkbox
                 checked={showSoftDeleted}
                 onCheckedChange={(checked) => {

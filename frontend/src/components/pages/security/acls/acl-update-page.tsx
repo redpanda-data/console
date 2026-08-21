@@ -80,7 +80,7 @@ const AclUpdatePage = () => {
     return (
       <div>
         <div className="flex h-96 items-center justify-center">
-          <div className="text-gray-500">Loading ACL configuration...</div>
+          <div className="text-subtle">Loading ACL configuration...</div>
         </div>
       </div>
     );
@@ -123,7 +123,7 @@ const AclUpdatePage = () => {
   return (
     <div>
       {/* allow: react-rules [restoring master component, heading upgrade deferred] */}
-      <h2 className="pt-4 pb-3 font-semibold text-xl">Update ACL: {principalName}</h2>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Update ACL: {principalName}</h2>
       <CreateACL
         edit
         onCancel={() =>

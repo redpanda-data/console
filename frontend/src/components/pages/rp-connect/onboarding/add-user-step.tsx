@@ -670,11 +670,11 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                              <FormLabel className="font-medium text-sm">
+                              <FormLabel className="font-medium text-body">
                                 Enable topic-specific permissions for this user for "{topicName}"
                               </FormLabel>
                             </div>
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-body text-muted-foreground">
                               {field.value && topicName ? (
                                 <span>
                                   This user will have full permissions (read, write, create, delete, describe, alter) on

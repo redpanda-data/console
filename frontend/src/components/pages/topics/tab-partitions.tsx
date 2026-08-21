@@ -72,9 +72,15 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
         <div className="flex items-center gap-2">
           <span>{partition.id}</span>
           {partition.hasErrors && <PartitionError partition={partition} />}
-          {leaderlessPartitions?.includes(partition.id) && <Badge variant="destructive-inverted">Leaderless</Badge>}
+          {leaderlessPartitions?.includes(partition.id) && (
+            <Badge tone="destructive" variant="subtle">
+              Leaderless
+            </Badge>
+          )}
           {underReplicatedPartitions?.includes(partition.id) && (
-            <Badge variant="warning-inverted">Under-replicated</Badge>
+            <Badge tone="warning" variant="subtle">
+              Under-replicated
+            </Badge>
           )}
         </div>
       ),
@@ -174,7 +180,7 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
       />
       <PopoverContent align="start" className="max-w-[500px]" side="right">
         <p className="mb-2 font-medium">Partition Error</p>
-        <div className="flex flex-col gap-2 whitespace-pre-wrap text-sm">
+        <div className="flex flex-col gap-2 whitespace-pre-wrap text-body">
           {Boolean(partition.partitionError) && <p>{partition.partitionError}</p>}
           {Boolean(partition.waterMarksError) && <p>{partition.waterMarksError}</p>}
         </div>

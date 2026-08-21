@@ -275,8 +275,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           const d = new Date(timestamp);
           return (
             <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
-              <span className="text-xs text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
-              <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
+              <span className="text-body-sm text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
+              <span className="font-medium text-body tabular-nums">{d.toLocaleTimeString()}</span>
             </div>
           );
         },
@@ -541,8 +541,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                           {/* Mirror the Time cell's two-line height. */}
                           {columnIndex === 0 ? (
                             <div className="flex flex-col leading-tight">
-                              <span className="text-xs">&nbsp;</span>
-                              <span className="text-sm">&nbsp;</span>
+                              <span className="text-body-sm">&nbsp;</span>
+                              <span className="text-body">&nbsp;</span>
                             </div>
                           ) : null}
                         </TableCell>

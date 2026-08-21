@@ -248,7 +248,7 @@ const PermissionsListTabOriginal: FC = () => {
                       >
                         <span className="flex items-center gap-1">
                           {entry.name}
-                          <Badge variant="neutral">Group</Badge>
+                          <Badge tone="neutral">Group</Badge>
                         </span>
                       </Link>
                     );

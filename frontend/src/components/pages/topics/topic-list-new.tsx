@@ -448,7 +448,7 @@ const TopicList: FC = () => {
               </button>
             )}
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <label className="flex cursor-pointer items-center gap-2 text-body">
             <Checkbox
               checked={showInternalTopics}
               onCheckedChange={(checked) => {
@@ -533,7 +533,7 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
 };
 
 const iconAllowed = <span className="text-success">✓</span>;
-const iconForbidden = <span className="text-error">✗</span>;
+const iconForbidden = <span className="text-destructive">✗</span>;
 const iconClosedEye = (
   <span className="ml-1 inline-block opacity-50">
     <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />
@@ -559,14 +559,14 @@ const TopicName = ({ topic }: { topic: Topic }) => {
   }
 
   const popoverContent = (
-    <div className="text-sm">
+    <div className="text-body">
       <p className="mb-2 text-muted-foreground">
         You&apos;re missing permissions to view one or more aspects of this topic.
       </p>
       <div className="flex flex-col gap-0.5">
         {TopicActions.map((a) => (
           <div className="flex items-center justify-between gap-4" key={a}>
-            <span className="font-semibold text-xs capitalize">{a}</span>
+            <span className="font-semibold text-body-sm capitalize">{a}</span>
             {actions.includes(a) ? iconAllowed : iconForbidden}
           </div>
         ))}

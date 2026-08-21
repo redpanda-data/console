@@ -15,12 +15,12 @@ Registry components expose variant props for customization. Use these instead of
 
 ```tsx
 // Overriding colors with className
-<Button className="bg-blue-500 hover:bg-blue-600 text-white">
+<Button className="bg-surface-informative hover:bg-surface-informative-hover text-informative-foreground">
   Click
 </Button>
 
 // Overriding size with className
-<Button className="px-8 py-4 text-lg">
+<Button className="px-8 py-4 text-heading-md">
   Click
 </Button>
 
@@ -51,11 +51,16 @@ Registry components expose variant props for customization. Use these instead of
 
 ## Common Variant Props
 
+Read the `cva` block in the component rather than trusting a list — these move. As of registry v3:
+
 | Component | Variants | Sizes |
 |-----------|----------|-------|
-| Button | `default`, `destructive`, `outline`, `secondary`, `ghost`, `link` | `default`, `sm`, `lg`, `icon` |
-| Badge | `default`, `secondary`, `destructive`, `outline` | - |
-| Alert | `default`, `destructive` | - |
+| Button | `primary`, `secondary`, `accent`, `destructive`, `inverse`, `link`, `dashed`, plus `-outline` and `-ghost` forms of `secondary`/`accent`/`destructive`/`current`, and bare `outline`/`ghost` | `xs`, `sm`, `md`, `lg`, `icon-xs`, `icon-sm`, `icon`, `icon-lg` |
+| Badge | `neutral`, `simple`, `primary`, `secondary`, `accent`, `destructive`, `success`, `warning`, `info`, `disabled`, `ghost`, `link`, `outline`, each tone also as `-inverted` / `-outline` | `sm`, `md`, `lg` |
+| Alert | `info`, `success`, `warning`, `destructive` | - |
+
+`inverse-outline` and `inverse-ghost` were removed in v3 — use `current-outline` / `current-ghost`,
+which take their colour from the surrounding text.
 
 ## When className is Acceptable
 

@@ -543,40 +543,6 @@ const _apiCreator = (set: any, get: any) => ({
           trackHubspotUser(userData);
           trackHeapUser(userData);
         }
-
-        // if (r.status === 401) {
-        //   // unauthorized / not logged in
-        //   api.userData = null;
-        // } else if (r.status === 404) {
-        //   // not found: frontend is configured as business-version, but backend is non-business-version
-        //   // -> create a local fake user for debugging
-        //   uiState.isUsingDebugUserLogin = true;
-        //   api.userData = {
-        //     canViewConsoleUsers: false,
-        //     canListAcls: true,
-        //     canListQuotas: true,
-        //     canPatchConfigs: true,
-        //     canReassignPartitions: true,
-        //     canCreateSchemas: true,
-        //     canDeleteSchemas: true,
-        //     canManageSchemaRegistry: true,
-        //     canViewSchemas: true,
-        //     canListTransforms: true,
-        //     canCreateTransforms: true,
-        //     canDeleteTransforms: true,
-        //     canViewDebugBundle: true,
-        //     seat: null as any,
-        //     user: {
-        //       providerID: -1,
-        //       providerName: 'debug provider',
-        //       id: 'debug',
-        //       internalIdentifier: 'debug',
-        //       meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
-        //     },
-        //   };
-        // } else if (r.status === 403) {
-        //   void handleExpiredLicenseError(r);
-        // }
       })
       .catch((err) => {
         // Clear previous error

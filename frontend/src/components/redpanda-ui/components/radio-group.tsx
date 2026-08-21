@@ -33,7 +33,7 @@ function RadioGroupIndicator({ className, ...props }: RadioGroupIndicatorProps) 
   return (
     <RadioPrimitive.Indicator
       className={cn(
-        'flex items-center justify-center transition-[opacity,transform] duration-150 ease-out data-[ending-style]:scale-50 data-[starting-style]:scale-50 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+        'flex items-center justify-center transition-[opacity,transform] ease-out data-[ending-style]:scale-50 data-[starting-style]:scale-50 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
         className
       )}
       data-slot="radio-group-indicator"
@@ -50,7 +50,7 @@ function RadioGroupItem({ className, testId, ...props }: RadioGroupItemProps) {
   return (
     <RadioPrimitive.Root
       className={cn(
-        '!border-input group/radio-group-item peer relative flex aspect-square size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border text-selected ring-offset-background after:absolute after:-inset-x-3 after:-inset-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        '!border-input hover:not-disabled:!border-input-hover group/radio-group-item peer focus-visible:!border-ring aria-invalid:!border-destructive relative flex aspect-square size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border text-selected outline-none transition-colors after:absolute after:-inset-x-3 after:-inset-y-2 hover:not-disabled:bg-input-fill-hover focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none',
         className
       )}
       data-slot="radio-group-item"

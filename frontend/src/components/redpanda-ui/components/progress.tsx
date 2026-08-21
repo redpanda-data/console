@@ -34,7 +34,7 @@ function Progress({ className, children, value, testId, ...props }: ProgressProp
         className={cn(
           hasChildren
             ? 'flex flex-wrap items-center gap-3'
-            : 'relative h-2 w-full overflow-hidden rounded-full bg-secondary',
+            : 'relative h-2 w-full overflow-hidden rounded-full bg-surface-subtle',
           className
         )}
         data-slot="progress"
@@ -62,7 +62,7 @@ type ProgressTrackProps = React.ComponentProps<typeof ProgressPrimitive.Track> &
 function ProgressTrack({ className, testId, ...props }: ProgressTrackProps) {
   return (
     <ProgressPrimitive.Track
-      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-secondary', className)}
+      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-surface-subtle', className)}
       data-slot="progress-track"
       data-testid={testId}
       {...props}
@@ -92,7 +92,10 @@ function ProgressIndicator({ className, style, testId, ...props }: ProgressIndic
   // Determinate progress matches shadcn/ui: a CSS transition driving translateX.
   return (
     <ProgressPrimitive.Indicator
-      className={cn('h-full w-full flex-1 rounded-full bg-primary transition-transform', className)}
+      className={cn(
+        'h-full w-full flex-1 rounded-full bg-primary transition-transform motion-reduce:transition-none',
+        className
+      )}
       data-slot="progress-indicator"
       data-testid={testId}
       style={{ transform: `translateX(-${100 - value}%)`, ...style }}
@@ -119,7 +122,7 @@ type ProgressValueProps = React.ComponentProps<typeof ProgressPrimitive.Value> &
 function ProgressValue({ className, testId, ...props }: ProgressValueProps) {
   return (
     <ProgressPrimitive.Value
-      className={cn('ml-auto text-muted-foreground text-sm tabular-nums', className)}
+      className={cn('ml-auto text-body text-subtle tabular-nums', className)}
       data-slot="progress-value"
       data-testid={testId}
       {...props}

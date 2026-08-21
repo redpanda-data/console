@@ -3,7 +3,6 @@ import { Box, Flex, List, ListItem, Spinner, Stack, Text } from '@redpanda-data/
 import { CheckCircleIcon, ErrorIcon } from 'components/icons';
 import React, { type FC, useEffect } from 'react';
 
-import colors from '../../../colors';
 import {
   DebugBundleStatus_Status,
   type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
@@ -11,11 +10,11 @@ import {
 import { api } from '../../../state/backend-api';
 
 const StatusIcons: Record<DebugBundleStatus_Status, React.ReactElement> = {
-  [DebugBundleStatus_Status.UNSPECIFIED]: <ErrorIcon color={colors.green} size={16} />,
-  [DebugBundleStatus_Status.SUCCESS]: <CheckCircleIcon color={colors.green} size={16} />,
+  [DebugBundleStatus_Status.UNSPECIFIED]: <ErrorIcon className="text-success" size={16} />,
+  [DebugBundleStatus_Status.SUCCESS]: <CheckCircleIcon className="text-success" size={16} />,
   [DebugBundleStatus_Status.RUNNING]: <Spinner size="sm" />,
-  [DebugBundleStatus_Status.ERROR]: <ErrorIcon color={colors.debugRed} size={16} />,
-  [DebugBundleStatus_Status.EXPIRED]: <ErrorIcon color={colors.debugRed} size={16} />,
+  [DebugBundleStatus_Status.ERROR]: <ErrorIcon className="text-destructive" size={16} />,
+  [DebugBundleStatus_Status.EXPIRED]: <ErrorIcon className="text-destructive" size={16} />,
 };
 
 const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] }> = ({

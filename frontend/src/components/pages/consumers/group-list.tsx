@@ -168,7 +168,7 @@ const GroupList: FC = () => {
           search={{} as never}
           to="/groups/$groupId"
         >
-          {group.protocolType !== 'consumer' && <Badge variant="secondary">Protocol: {group.protocolType}</Badge>}
+          {group.protocolType !== 'consumer' && <Badge tone="neutral">Protocol: {group.protocolType}</Badge>}
           <span className="whitespace-break-spaces break-words">{group.groupId}</span>
         </Link>
       ),

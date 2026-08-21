@@ -844,16 +844,6 @@ export const ConfigResourceType = {
 
 export type ConfigResourceTypeType = (typeof ConfigResourceType)[keyof typeof ConfigResourceType];
 
-// export enum ConfigSource {
-//     Unknown = 0,
-//     DynamicTopicConfig = 1,
-//     DynamicBrokerConfig = 2,
-//     DynamicDefaultBrokerConfig = 3,
-//     StaticBrokerConfig = 4,
-//     DefaultConfig = 5,
-//     DynamicBrokerLoggerConfig = 6,
-// }
-
 export const AlterConfigOperation = {
   Set: 0, // set a config key
   Delete: 1, // remove/unset a config key
@@ -877,34 +867,17 @@ export type IncrementalAlterConfigsRequestResourceConfig = {
   value?: string;
 };
 
-// Example
-// To throttle replication rate for reassignments (bytes per second):
-// - On the leader
-//      --add-config 'leader.replication.throttled.rate=10000'
-//      --entity-type broker
-//      --entity-name brokerId
-//
-// - On the follower
-//      --add-config 'follower.replication.throttled.rate=10000'
-//      --entity-type broker
-//      --entity-name brokerId
+// e.g. to throttle reassignment replication (bytes/sec), set
+// `leader.replication.throttled.rate` / `follower.replication.throttled.rate` per broker.
 
 export type ResourceConfig = {
   // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
   resourceType: ConfigResourceTypeType;
 
-  // ResourceName is the name of config to alter.
-  //
-  // If the requested type is a topic, this corresponds to a topic name.
-  //
-  // If the requested type if a broker, this should either be empty or be
-  // the ID of the broker this request is issued to. If it is empty, this
-  // updates all broker configs. If a specific ID, this updates just the
-  // broker. Using a specific ID also ensures that brokers reload config
-  // or secret files even if the file path has not changed. Lastly, password
-  // config options can only be defined on a per broker basis.
-  //
-  // If the type is broker logger, this must be a broker ID.
+  // Name of the config to alter: a topic name for topics; for brokers, empty to update all broker
+  // configs or a broker ID to update just that one (an ID also forces a reload of config/secret files
+  // even when the path is unchanged, and password options are per-broker only); a broker ID is
+  // required for broker logger.
   resourceName: string;
 
   // key/value config pairs to set on the resource.
@@ -1052,64 +1025,6 @@ export type ClusterAdditionalInfo = {
   }[];
   enabledFeatures?: string[];
 };
-
-/*
-// GET "/kafka-connect/clusters/{clusterName}/connectors"
-export interface GetConnectorsShard { // GetConnectorsShard
-    clusterName: string;
-    clusterAddress: string; // useless?
-    connectors: {
-        [connectorName: string]: ListConnectorsExpanded;
-    };
-    error?: string;
-}
-export interface ListConnectorsExpanded { // ListConnectorsResponseExpanded
-    info: null | {
-        name: string;
-        config: { [key: string]: string };
-        tasks: {
-            connector: string;
-            task: number;
-        }[];
-        type: string;
-    };
-    status: null | {
-        name: string;
-        Connector: {
-            state: string;
-            worker_id: string;
-        };
-        tasks: {
-            id: number;
-            state: string;
-            worker_id: string;
-        }[];
-        type: string;
-    };
-}
-
-
-// GET "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
-    // embedded ConnectorStateInfo
-    name: string;
-    connector: { // ConnectorState
-        state: string;
-        worker_id: string;
-    };
-    tasks: { // TaskState
-        id: number;
-        state: string;
-        worker_id: string;
-    }[];
-    type: string;
-
-    // Additional Props
-    config: {
-        [key: string]: string;
-    };
-}
-*/
 
 // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
 // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)

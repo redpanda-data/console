@@ -142,7 +142,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       )}
     >
       {connectors.map((c) => (
-        <Badge key={c.name} variant="neutral-inverted">
+        <Badge key={c.name} tone="neutral" variant="subtle">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
           {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
@@ -451,7 +451,7 @@ const createColumns = ({
           {/* Rows navigate on click, so the link underlines on hover only. */}
           <Link
             as={TanStackRouterLink}
-            className="block truncate text-base text-primary no-underline hover:underline"
+            className="block truncate text-body-lg text-primary no-underline hover:underline"
             params={{ pipelineId: encodeURIComponent(id) }}
             title={name}
             to="/rp-connect/$pipelineId"
@@ -460,7 +460,7 @@ const createColumns = ({
           </Link>
           {id !== name ? (
             // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
-            <span className="cursor-text select-all truncate font-mono text-muted-foreground text-xs" title={id}>
+            <span className="cursor-text select-all truncate font-mono text-body-sm text-muted-foreground" title={id}>
               {id}
             </span>
           ) : null}
@@ -507,10 +507,11 @@ const createColumns = ({
               ))}
             </List>
           )}
-          variant="simple-outline"
+          tone="neutral"
+          variant="outline"
         >
           {tags.map((t) => (
-            <Badge key={t.key} variant="simple-outline">
+            <Badge key={t.key} tone="neutral" variant="outline">
               {t.key}: {t.value}
             </Badge>
           ))}
@@ -731,7 +732,7 @@ const PipelineListPageContent = () => {
 
   if (error && pipelines.length === 0) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-error">
+      <div className="flex items-center justify-center gap-2 py-8 text-destructive">
         <AlertCircle className="h-4 w-4" />
         Error loading pipelines: {error.message}
       </div>
@@ -762,7 +763,7 @@ const PipelineListPageContent = () => {
                 variant="underline"
               >
                 {tab.label}
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums">
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-body-sm text-muted-foreground tabular-nums">
                   {tabCounts[tab.id]}
                 </span>
               </TabsTrigger>
@@ -839,13 +840,13 @@ const PipelineListPageContent = () => {
         </Table>
       </div>
       <FadePresence
-        className="flex items-center gap-2 text-muted-foreground text-sm"
+        className="flex items-center gap-2 text-body text-muted-foreground"
         show={isLoadingMorePages && rows.length > 0}
       >
         <Spinner /> Loading more pipelines...
       </FadePresence>
       <FadePresence
-        className="flex items-center gap-2 text-error text-sm"
+        className="flex items-center gap-2 text-body text-destructive"
         show={Boolean(listErrorMessage) && pipelines.length > 0}
       >
         <AlertCircle className="h-4 w-4" />
@@ -881,7 +882,7 @@ export const PipelineListPage = () => {
     return (
       <div className="flex flex-col gap-4">
         {showKafkaConnectLoadingHint ? (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2 text-body text-muted-foreground">
             <Spinner />
             <div className="text-body text-muted-foreground">Checking for Kafka Connect availability...</div>
           </div>

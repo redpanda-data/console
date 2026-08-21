@@ -41,7 +41,6 @@ import React, { type FC, type ReactNode } from 'react';
 
 import ClusterHealthOverview from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
-import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/nurture-panel';
 import {
@@ -183,12 +182,12 @@ class Overview extends PageComponent {
                         <Flex gap={2}>
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
-                              <ErrorIcon color={colors.brandError} size={18} />
+                              <ErrorIcon className="text-destructive" size={18} />
                               Down
                             </>
                           ) : (
                             <>
-                              <CheckIcon color={colors.green} size={18} />
+                              <CheckIcon className="text-success" size={18} />
                               Running
                             </>
                           )}
@@ -242,9 +241,9 @@ class Overview extends PageComponent {
                 <Heading as="h3">Resources and updates</Heading>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr />
-                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-gray-600">
+                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
-                  <span className="mx-2 text-gray-300">|</span>
+                  <span className="mx-2 text-disabled">|</span>
                   <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
                 </div>
               </Section>
@@ -426,7 +425,7 @@ function ClusterDetails() {
             ? [
                 [
                   <Flex alignItems="center" gap={1} key="error">
-                    <AlertIcon color={colors.brandError} size={16} /> Failed to load license info
+                    <AlertIcon className="text-destructive" size={16} /> Failed to load license info
                   </Flex>,
                 ],
               ]

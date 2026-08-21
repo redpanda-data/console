@@ -77,8 +77,8 @@ function ErrorRow({ keyError, valueError }: { keyError?: string; valueError?: st
   }
   return (
     <>
-      {keyError ? <p className="-mt-1 text-destructive text-sm">{keyError}</p> : <span />}
-      {valueError ? <p className="-mt-1 text-destructive text-sm">{valueError}</p> : <span />}
+      {keyError ? <p className="-mt-1 text-body text-destructive">{keyError}</p> : <span />}
+      {valueError ? <p className="-mt-1 text-body text-destructive">{valueError}</p> : <span />}
       <span />
     </>
   );
@@ -215,7 +215,7 @@ export function KeyValueField({
       {label || description ? (
         <div className="flex flex-col gap-0.5">
           {label ? <Label>{label}</Label> : null}
-          {description ? <p className="text-body text-muted-foreground">{description}</p> : null}
+          {description ? <p className="text-body text-subtle">{description}</p> : null}
         </div>
       ) : null}
       {value.map((pair, index) => (

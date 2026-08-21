@@ -19,18 +19,20 @@ function JsonBlock({ description, jsonText, title }: { title: string; descriptio
       <div className="border-b px-5 py-4">
         <div className="space-y-1">
           <h3 className="text-heading-md">{title}</h3>
-          <div className="text-body-sm text-muted-foreground">{description}</div>
+          <div className="text-body-sm text-subtle">{description}</div>
         </div>
       </div>
       <div className="space-y-3 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Payload JSON</div>
+          <div className="font-medium text-body-sm text-subtle uppercase tracking-wide">Payload JSON</div>
           <CopyButton content={jsonText} size="sm" variant="outline">
             Copy JSON
           </CopyButton>
         </div>
-        <div className="max-h-[min(60vh,38rem)] overflow-auto rounded-xl bg-muted/35 p-4">
-          <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-5">{jsonText}</pre>
+        <div className="max-h-[min(60vh,38rem)] overflow-auto rounded-xl bg-surface-recess p-4">
+          <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-body-sm leading-5">
+            {jsonText}
+          </pre>
         </div>
       </div>
     </div>
@@ -59,7 +61,7 @@ function JsonEditorPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <h3 className="text-heading-md">Payload JSON</h3>
-          <div className="text-body-sm text-muted-foreground">
+          <div className="text-body-sm text-subtle">
             Edit the payload directly, then switch back to the form whenever you want.
           </div>
         </div>
@@ -90,7 +92,7 @@ function JsonEditorPanel({
         </Alert>
       ) : null}
       <Textarea
-        className="min-h-[420px] font-mono text-xs leading-5"
+        className="min-h-[420px] font-mono text-body-sm leading-5"
         onChange={(event) => onJsonTextChange(event.target.value)}
         resize="vertical"
         testId={buildAutoFormTestId(testIdPrefix, 'json-editor')}

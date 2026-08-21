@@ -49,7 +49,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
   const rowKey = role.principalName;
 
   return [
-    <TableRow className="hover:bg-gray-50" key={`role-${rowKey}`}>
+    <TableRow className="hover:bg-surface-subtle" key={`role-${rowKey}`}>
       <TableCell testId={`role-name-${rowKey}`}>{role.principalName}</TableCell>
       <TableCell align="right">
         <div className="flex items-center justify-end gap-2">
@@ -86,17 +86,17 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
     ),
     !isLoading && isExpanded && acls && acls.length > 0 && (
       <TableRow key={`role-${rowKey}-expanded`}>
-        <TableCell className="bg-gray-50 p-6" colSpan={2}>
+        <TableCell className="bg-surface-subtle p-6" colSpan={2}>
           <div className="space-y-4">
-            <div className="font-semibold text-gray-700 text-sm">
+            <div className="font-semibold text-body text-foreground">
               ACL Rules ({acls.reduce((sum: number, acl: AclDetail) => sum + acl.rules.length, 0)})
             </div>
             {acls.map((acl: AclDetail) => (
               <div key={`${acl.sharedConfig.principal}-${acl.sharedConfig.host}`}>
-                <div className="mb-2 text-gray-600 text-xs">Host: {acl.sharedConfig.host}</div>
+                <div className="mb-2 text-body-sm text-subtle">Host: {acl.sharedConfig.host}</div>
                 {acl.rules.map((rule) => (
                   <div
-                    className="rounded-lg border border-gray-200 bg-white p-4"
+                    className="rounded-lg border border-border bg-card p-4"
                     data-testid={`rule-${getRuleDataTestId(rule)}`}
                     key={rule.id}
                   >

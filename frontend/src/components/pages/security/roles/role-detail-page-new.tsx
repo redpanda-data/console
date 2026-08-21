@@ -143,7 +143,7 @@ export const RoleDetailPageNew = () => {
             <TableBody>
               {membersLoading ? (
                 <TableRow>
-                  <TableCell className="py-4 text-center text-muted-foreground text-sm" colSpan={2}>
+                  <TableCell className="py-4 text-center text-body text-muted-foreground" colSpan={2}>
                     Loading members...
                   </TableCell>
                 </TableRow>

@@ -2,7 +2,6 @@ import { Box, Button, Flex, Grid, List, ListItem, Text } from '@redpanda-data/ui
 import { Link } from '@tanstack/react-router';
 import { ErrorIcon, WarningIcon } from 'components/icons';
 
-import colors from '../../../colors';
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { api } from '../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
@@ -43,7 +42,7 @@ const ClusterHealthOverview = () => {
             <Box fontWeight="bold">Unreachable brokers</Box>
             <Flex gap={1}>
               {api.clusterHealth?.offlineBrokerIds && api.clusterHealth?.offlineBrokerIds.length > 0 && (
-                <ErrorIcon color={colors.brandError} size={18} />
+                <ErrorIcon className="text-destructive" size={18} />
               )}
               <Text>{api.clusterHealth?.offlineBrokerIds.length}</Text>
             </Flex>
@@ -55,7 +54,7 @@ const ClusterHealthOverview = () => {
               <Box fontWeight="bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.LEADERLESS_PARTITIONS]}</Box>
               <Flex gap={2}>
                 <Flex gap={1}>
-                  <ErrorIcon color={colors.brandError} size={18} />{' '}
+                  <ErrorIcon className="text-destructive" size={18} />{' '}
                   <Text>{api.clusterHealth?.leaderlessPartitionsCount}</Text>
                 </Flex>{' '}
                 <Link search={{} as never} to="/topics">
@@ -73,7 +72,7 @@ const ClusterHealthOverview = () => {
               </Box>
               <Flex gap={2}>
                 <Flex gap={1}>
-                  <WarningIcon color={colors.brandWarning} size={18} />{' '}
+                  <WarningIcon className="text-warning" size={18} />{' '}
                   <Text>{api.clusterHealth?.underReplicatedPartitionsCount}</Text>
                 </Flex>{' '}
                 <Link search={{} as never} to="/topics">

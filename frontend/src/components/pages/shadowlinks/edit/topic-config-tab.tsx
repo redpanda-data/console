@@ -306,7 +306,7 @@ export const TopicConfigTab = () => {
 
                 return (
                   <AccordionItem data-testid={`category-${category}`} key={category} value={category}>
-                    <AccordionTrigger className="font-medium text-base">{category}</AccordionTrigger>
+                    <AccordionTrigger className="font-medium text-body-lg">{category}</AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-3">
                         {properties.map((property) => {

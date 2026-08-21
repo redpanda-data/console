@@ -51,7 +51,7 @@ export function FormSection({ title, description, divider, required, testId, cla
               {required ? <span className="text-body-sm text-destructive">*</span> : null}
             </div>
           ) : null}
-          {description ? <div className="text-body-sm text-muted-foreground">{description}</div> : null}
+          {description ? <div className="text-body-sm text-subtle">{description}</div> : null}
         </div>
       ) : null}
       <FormDepthProvider depth={depth + 1}>
@@ -85,7 +85,7 @@ export function FormField({ label, helpText, error, required, htmlFor, testId, c
       {error ? (
         <span className="text-body-sm text-destructive">{error}</span>
       ) : helpText ? (
-        <span className="text-body-sm text-muted-foreground">{helpText}</span>
+        <span className="text-body-sm text-subtle">{helpText}</span>
       ) : null}
     </div>
   );

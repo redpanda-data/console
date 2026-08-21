@@ -283,7 +283,7 @@ function focusDimNodes(
 const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
 
 const CANVAS_NOTICE_CLASS =
-  'absolute top-3 left-1/2 z-20 -translate-x-1/2 px-3 py-1.5 text-sm shadow-sm backdrop-blur-sm';
+  'absolute top-3 left-1/2 z-20 -translate-x-1/2 px-3 py-1.5 text-body shadow-sm backdrop-blur-sm';
 
 // Banner shown while rendering the last-good graph for invalid YAML (see useResilientParse).
 function StaleParseBanner({ show }: { show: boolean }) {
@@ -999,7 +999,7 @@ function FlowLegend({ flags }: { flags: LegendFlags }) {
     return null;
   }
   return (
-    <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-border bg-background/90 px-3 py-2 text-muted-foreground text-xs shadow-sm backdrop-blur-sm">
+    <div className="pointer-events-none absolute bottom-3 left-3 z-10 flex flex-col gap-1.5 rounded-md border border-border bg-background/90 px-3 py-2 text-body-sm text-muted-foreground shadow-sm backdrop-blur-sm">
       <div className="font-semibold text-2xs text-muted-foreground/70 uppercase tracking-wide">Legend</div>
       <div className="flex items-center gap-2">
         <LegendSwatch color="var(--color-primary)" />

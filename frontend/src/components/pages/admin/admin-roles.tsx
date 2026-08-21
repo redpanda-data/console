@@ -66,7 +66,7 @@ export class RoleComponent extends Component<{ role: Role; grantedBy?: RoleBindi
 
         {Boolean(grantedBy) && (
           <>
-            <div style={{ background: '#dcdcdc' }} /> {/* seperator */}
+            <div style={{ background: 'var(--color-border)' }} /> {/* seperator */}
             <div style={{ paddingLeft: '1em' }}>
               <div className="roleTitle">Granted By</div>
               <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>

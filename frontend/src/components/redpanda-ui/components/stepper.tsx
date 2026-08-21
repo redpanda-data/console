@@ -107,7 +107,10 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
         if (variant === 'circle') {
           return (
             <li
-              className={cn('flex shrink-0 items-center gap-4 rounded-md transition-colors', className)}
+              className={cn(
+                'flex shrink-0 items-center gap-4 rounded-md transition-colors motion-reduce:transition-none',
+                className
+              )}
               data-component="stepper-step"
             >
               <CircleStepIndicator currentStep={stepIndex + 1} totalSteps={steps.length} />
@@ -250,7 +253,7 @@ const Title = ({ children, className, render, ...props }: useRender.ComponentPro
     render: render ?? <h4 className="text-heading-sm">{children}</h4>,
     props: mergeProps<'h4'>(
       {
-        className: cn('selection:bg-selected selection:text-selected-foreground', className),
+        className: cn('selection:bg-selection selection:text-selection-foreground', className),
         'data-component': 'stepper-step-title',
         children,
       } as useRender.ElementProps<'h4'>,
@@ -264,10 +267,7 @@ const Description = ({ children, className, render, ...props }: useRender.Compon
     render: render ?? <div className="text-body">{children}</div>,
     props: mergeProps<'p'>(
       {
-        className: cn(
-          'text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
-          className
-        ),
+        className: cn('text-body text-subtle selection:bg-selection selection:text-selection-foreground', className),
         'data-component': 'stepper-step-description',
         children,
       } as useRender.ElementProps<'p'>,
@@ -324,7 +324,7 @@ const CircleStepIndicator = ({
       <svg height={size} width={size}>
         <title>Step Indicator</title>
         <circle
-          className="text-muted-foreground"
+          className="text-subtle"
           cx={size / 2}
           cy={size / 2}
           fill="none"
@@ -333,7 +333,7 @@ const CircleStepIndicator = ({
           strokeWidth={strokeWidth}
         />
         <circle
-          className="text-primary transition-all duration-300 ease-in-out"
+          className="text-primary transition-all duration-300 ease-in-out motion-reduce:transition-none"
           cx={size / 2}
           cy={size / 2}
           fill="none"
@@ -346,7 +346,7 @@ const CircleStepIndicator = ({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span aria-live="polite" className="text-label selection:bg-selected selection:text-selected-foreground">
+        <span aria-live="polite" className="text-label selection:bg-selection selection:text-selection-foreground">
           {currentStep} of {totalSteps}
         </span>
       </div>
@@ -366,9 +366,9 @@ const classForNavigationList = cva('flex gap-2', {
 
 const classForSeparator = cva(
   [
-    'bg-muted',
+    'bg-surface-subtle',
     'data-[state=completed]:bg-primary data-[disabled]:opacity-50',
-    'transition-all duration-300 ease-in-out',
+    'transition-all duration-300 ease-in-out motion-reduce:transition-none',
   ],
   {
     variants: {

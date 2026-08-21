@@ -40,7 +40,7 @@ export const NotFoundContent = ({ resourceType, resourceId, backLink, backLinkTe
           {message}
         </Heading>
         {backLink ? (
-          <Link className="text-base underline" data-testid="back-link" to={backLink}>
+          <Link className="text-body-lg underline" data-testid="back-link" to={backLink}>
             {backLinkText ?? 'Go back'}
           </Link>
         ) : null}

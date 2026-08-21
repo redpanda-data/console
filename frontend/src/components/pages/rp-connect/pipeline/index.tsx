@@ -510,7 +510,7 @@ function YamlViewPanel({
   );
 
   const edge =
-    'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
+    'pointer-events-none absolute inset-x-0 h-4 from-static-dark/10 to-transparent transition-opacity duration-150 dark:from-static-dark/40';
   return (
     <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
       {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
@@ -542,7 +542,9 @@ function YamlViewPanel({
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
-      <div className="flex min-h-96 items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
+      <div className="flex min-h-96 items-center justify-center text-body text-muted-foreground">
+        Loading pipeline...
+      </div>
     );
   }
   const showThroughput =
