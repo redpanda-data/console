@@ -10,25 +10,13 @@
  */
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { z } from 'zod';
 
-import AclUpdatePage from '../../../../components/pages/security/acls/acl-update-page';
-import { isFeatureFlagEnabled } from '../../../../config';
-
-const searchSchema = z.object({
-  host: z.string().optional().catch(undefined),
-});
-
-// allow: error-boundary [legacy route, component handles its own error states]
+// allow: error-boundary [pure redirect, no data fetching]
 export const Route = createFileRoute('/security/acls/$aclName/update')({
   staticData: {
     title: 'Update ACL',
   },
-  validateSearch: searchSchema,
   beforeLoad: ({ params }) => {
-    if (isFeatureFlagEnabled('enableNewSecurityPage')) {
-      throw redirect({ to: '/security/acls/$aclName/details', params, search: { host: undefined }, replace: true });
-    }
+    throw redirect({ to: '/security/acls/$aclName/details', params, search: { host: undefined }, replace: true });
   },
-  component: AclUpdatePage,
 });
