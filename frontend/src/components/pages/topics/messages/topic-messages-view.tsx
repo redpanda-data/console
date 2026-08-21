@@ -22,6 +22,7 @@ import { MessageDetailPanel } from './detail/message-detail-panel';
 import { JsFilterDialog } from './dialogs/js-filter-dialog';
 import { useClientFilters } from './hooks/use-client-filters';
 import { useKeyboardNav } from './hooks/use-keyboard-nav';
+import { useLiveTailLoop } from './hooks/use-live-tail-loop';
 import { type MessageSearchParams, useMessageSearch } from './hooks/use-message-search';
 import { useMessagesUrlState } from './hooks/use-messages-url-state';
 import type { ValuePreviewConfig } from './table/message-cells';
@@ -211,35 +212,20 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     };
   }, [searchParams, refreshCounter, urlState.liveTail, search.start, search.stop]);
 
-  // Live tail: stream from the log's end; stopping restores the paged backlog
-  // (clearing the signature lets the paged auto-search above re-run).
+  // Live tail owns the stream; clearing the signature when it activates lets the paged
+  // auto-search above re-run once live tail is turned back off.
   useEffect(() => {
-    if (!urlState.liveTail) {
-      return;
+    if (urlState.liveTail) {
+      lastSignatureRef.current = null;
     }
-    lastSignatureRef.current = null;
-    let cancelled = false;
-    // The backend bounds a "from newest" consume to maxResults per partition and then
-    // completes (list_messages.go) — it isn't an actually-endless stream. Restart
-    // transparently on every natural completion (append, so the table doesn't reset)
-    // so "Live tail" keeps tailing for as long as the toggle is on, instead of quietly
-    // going stale after ~maxResults records while the toolbar still claims it's streaming.
-    const startLive = (options: { live: true; append?: boolean }) =>
-      search
-        .start({ ...searchParams, startOffset: PartitionOffsetOrigin.End, pageSize: undefined }, options)
-        .then(() => {
-          if (!cancelled) {
-            startLive({ live: true, append: true });
-          }
-        })
-        .catch(() => {
-          // errors are surfaced through search.error; don't loop on a hard failure
-        });
-    startLive({ live: true });
-    return () => {
-      cancelled = true;
-      search.stop();
-    };
+  }, [urlState.liveTail]);
+
+  const startLiveTail = useCallback(
+    (append: boolean) =>
+      search.start(
+        { ...searchParams, startOffset: PartitionOffsetOrigin.End, pageSize: undefined },
+        { live: true, append }
+      ),
     // searchParams as a whole is intentionally not a dependency: scope edits (offset,
     // timestamp, max results) are disabled in the UI while live, and deserializer changes
     // take effect on the next (re)start. filterInterpreterCode and partitionId are singled
@@ -247,7 +233,14 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     // live — committing either should restart the tail with the new predicate/partition
     // applied, not leave the UI showing a change that the running stream never picks up.
     // biome-ignore lint/correctness/useExhaustiveDependencies: see above
-  }, [urlState.liveTail, search.start, search.stop, filterInterpreterCode, urlState.partitionId]);
+    [search.start, filterInterpreterCode, urlState.partitionId]
+  );
+
+  // Stream from the log's end for as long as live tail is on; restarts on every clean
+  // completion (the backend bounds a "from newest" consume to maxResults per partition and
+  // then completes — list_messages.go — it isn't an actually-endless stream), and backs off
+  // instead of hammering the backend when the stream keeps failing.
+  useLiveTailLoop({ active: urlState.liveTail, start: startLiveTail, stop: search.stop });
 
   const filteredMessages = useClientFilters(search.messages, urlState.quickSearch, fieldTokens, topic.partitionCount);
 
@@ -273,26 +266,32 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     urlState.setPageIndex,
   ]);
 
-  // In continuous or live mode only the newest DISPLAY_WINDOW_CAP rows stay rendered
+  // Continuous mode disables the table's own sort to preserve server order for paging, but for
+  // "Newest" that server order is partition-grouped, not chronological — force it back to
+  // newest-first here, same as the legacy page did. This must run *before* windowing below:
+  // the display window trims by arrival position, and continuous+"Newest" arrives
+  // newest→oldest per partition batch, not oldest→newest like every other scope.
+  const orderedMessages = useMemo(
+    () => orderForContinuousNewest(filteredMessages, continuousActive, urlState.readScopeMode),
+    [filteredMessages, continuousActive, urlState.readScopeMode]
+  );
+
+  const continuousNewest = continuousActive && urlState.readScopeMode === 'newest';
+
+  // In continuous or live mode only the newest DISPLAY_WINDOW_CAP rows stay rendered. Once
+  // ordered above, continuous+"Newest" holds its newest row first, so its window trims the
+  // tail instead of the front that every other (oldest→newest) scope trims.
   const { rows: windowedMessages, trimmed } = useMemo(
     () =>
       continuousActive || urlState.liveTail
-        ? applyDisplayWindow(filteredMessages, DISPLAY_WINDOW_CAP)
-        : { rows: filteredMessages, trimmed: 0 },
-    [filteredMessages, continuousActive, urlState.liveTail]
-  );
-
-  // Continuous mode disables the table's own sort to preserve server order for paging, but for
-  // "Newest" that server order is partition-grouped, not chronological — force it back to
-  // newest-first here, same as the legacy page did.
-  const orderedMessages = useMemo(
-    () => orderForContinuousNewest(windowedMessages, continuousActive, urlState.readScopeMode),
-    [windowedMessages, continuousActive, urlState.readScopeMode]
+        ? applyDisplayWindow(orderedMessages, DISPLAY_WINDOW_CAP, { newestFirst: continuousNewest })
+        : { rows: orderedMessages, trimmed: 0 },
+    [orderedMessages, continuousActive, urlState.liveTail, continuousNewest]
   );
 
   // Stable mutable copy for consumers typed as TopicMessage[] — a fresh array on
   // every render would defeat react-table's data memoization.
-  const tableData = useMemo(() => [...orderedMessages], [orderedMessages]);
+  const tableData = useMemo(() => [...windowedMessages], [windowedMessages]);
 
   const isSearching = search.phase === 'connecting' || search.phase === 'searching';
 
@@ -362,17 +361,17 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
   }, []);
 
   // Keyboard nav follows the on-screen order: current sort, then current page.
-  // orderedMessages (not windowedMessages) so this matches the forced newest-first
-  // order the table actually renders for continuous + Newest.
+  // windowedMessages (not orderedMessages) so this matches what the table actually
+  // renders — ordered for continuous + Newest, and trimmed to the display window.
   const visibleKeys = useMemo(
     () =>
-      visiblePageKeys(orderedMessages, {
+      visiblePageKeys(windowedMessages, {
         sorting: urlState.sorting,
         sortingDisabled: continuousActive,
         pageIndex: pagination.pageIndex,
         pageSize: pagination.pageSize,
       }),
-    [orderedMessages, urlState.sorting, continuousActive, pagination]
+    [windowedMessages, urlState.sorting, continuousActive, pagination]
   );
 
   const getCopyText = useCallback(
@@ -559,7 +558,11 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         elapsedMs={search.elapsedMs}
         isLoadingMore={search.isLoadingMore}
         loadMoreCount={urlState.maxResults}
-        onLoadMore={() => search.loadMore(urlState.maxResults)}
+        onLoadMore={() =>
+          search.loadMore(urlState.maxResults).catch(() => {
+            // errors are surfaced through search.error
+          })
+        }
         onPageChange={urlState.setPageIndex}
         pageIndex={urlState.pageIndex}
         pageSize={urlState.pageSize}

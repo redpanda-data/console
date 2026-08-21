@@ -246,25 +246,37 @@ export const MessagesTable = ({
               {headerGroup.headers.map((header) => {
                 const canSort = header.column.getCanSort();
                 const sortDir = header.column.getIsSorted();
+                const label = (
+                  <>
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {sortDir === 'asc' && <ArrowUpIcon className="size-3.5" />}
+                    {sortDir === 'desc' && <ArrowDownIcon className="size-3.5" />}
+                  </>
+                );
                 return (
                   <TableHead
                     aria-sort={sortDir ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
                     // The table-corner action buttons (save / view settings) float over the
                     // header's top-right — keep the last column's title clear of them.
-                    className={cn(canSort && 'cursor-pointer select-none', 'last:pr-20')}
+                    className="last:pr-20"
                     key={header.id}
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                     title={
                       sortingDisabled && header.column.id === 'timestamp'
                         ? 'Turn off Load continuously to sort'
                         : undefined
                     }
                   >
-                    <span className="inline-flex items-center gap-1.5">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {sortDir === 'asc' && <ArrowUpIcon className="size-3.5" />}
-                      {sortDir === 'desc' && <ArrowDownIcon className="size-3.5" />}
-                    </span>
+                    {canSort ? (
+                      <button
+                        className="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        onClick={header.column.getToggleSortingHandler()}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5">{label}</span>
+                    )}
                   </TableHead>
                 );
               })}

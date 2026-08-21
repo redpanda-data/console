@@ -11,14 +11,22 @@
 
 /**
  * Bound the rows shown during live tail / continuous mode to the newest `cap`
- * entries (rows arrive oldest→newest, so the front is trimmed). Returns the
+ * entries. Callers must order `rows` (oldest→newest, or newest→oldest) *before*
+ * windowing and say which end holds the newest row via `newestFirst` — trimming
+ * on raw arrival order is only valid for the oldest→newest case; continuous
+ * "Newest" arrives newest→oldest per partition batch, so trimming the front
+ * there would drop the newest rows instead of the oldest ones. Returns the
  * input array unchanged when it already fits, so referential equality holds
  * for memoized consumers.
  */
-export function applyDisplayWindow<T>(rows: readonly T[], cap: number): { rows: readonly T[]; trimmed: number } {
+export function applyDisplayWindow<T>(
+  rows: readonly T[],
+  cap: number,
+  options?: { newestFirst?: boolean }
+): { rows: readonly T[]; trimmed: number } {
   if (rows.length <= cap) {
     return { rows, trimmed: 0 };
   }
   const trimmed = rows.length - cap;
-  return { rows: rows.slice(trimmed), trimmed };
+  return { rows: options?.newestFirst ? rows.slice(0, cap) : rows.slice(trimmed), trimmed };
 }

@@ -61,3 +61,25 @@ describe('MessagesTable — error state', () => {
     expect(screen.getByTestId('messages-empty')).toBeInTheDocument();
   });
 });
+
+describe('MessagesTable — column sorting is keyboard-accessible', () => {
+  test('a sortable header renders as a focusable button', () => {
+    render(<MessagesTable {...baseProps} />);
+    expect(screen.getByRole('button', { name: 'Timestamp' })).toBeInTheDocument();
+  });
+
+  test('tabbing to the Timestamp header and pressing Enter toggles sorting', async () => {
+    const onSortingChange = vi.fn();
+    render(<MessagesTable {...baseProps} onSortingChange={onSortingChange} />);
+    const header = screen.getByRole('button', { name: 'Timestamp' });
+    header.focus();
+    expect(header).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(onSortingChange).toHaveBeenCalledTimes(1);
+  });
+
+  test('a non-sortable column has no button, so it is skipped by tab order', () => {
+    render(<MessagesTable {...baseProps} />);
+    expect(screen.queryByRole('button', { name: 'Key' })).not.toBeInTheDocument();
+  });
+});

@@ -32,4 +32,19 @@ describe('applyDisplayWindow', () => {
     const rows = [1, 2];
     expect(applyDisplayWindow(rows, 2)).toEqual({ rows, trimmed: 0 });
   });
+
+  test('newestFirst trims the tail instead of the front, keeping the newest rows at the front', () => {
+    // Sorted newest-first, as continuous + "Newest" ordering produces before windowing.
+    const rows = Array.from({ length: 10 }, (_, i) => 9 - i);
+    const result = applyDisplayWindow(rows, 4, { newestFirst: true });
+    expect(result.rows).toEqual([9, 8, 7, 6]);
+    expect(result.trimmed).toBe(6);
+  });
+
+  test('regression: trimming the front of a newest-first array (the pre-fix behavior) would keep the oldest rows instead', () => {
+    const rows = Array.from({ length: 10 }, (_, i) => 9 - i);
+    const wrongWay = applyDisplayWindow(rows, 4);
+    expect(wrongWay.rows).not.toEqual([9, 8, 7, 6]);
+    expect(wrongWay.rows).toEqual([3, 2, 1, 0]);
+  });
 });

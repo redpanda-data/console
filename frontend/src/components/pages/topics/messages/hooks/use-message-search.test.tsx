@@ -202,11 +202,61 @@ describe('useMessageSearch', () => {
     );
 
     const { result } = renderHook(() => useMessageSearch('test-topic'));
-    await act(() => result.current.start(baseParams));
+    await act(async () => {
+      await expect(result.current.start(baseParams)).rejects.toThrow('connection lost');
+    });
 
-    await waitFor(() => expect(result.current.error?.message).toBe('connection lost'));
+    expect(result.current.error?.message).toBe('connection lost');
     // Data received before the failure is kept
     expect(result.current.messages).toHaveLength(1);
+  });
+
+  // Regression: `start()` used to resolve identically whether the stream completed cleanly
+  // or failed outright, so a caller that restarts on completion (live tail) couldn't tell a
+  // hard failure apart from a normal finish and looped on it at RTT speed. `start()` must now
+  // reject when the stream actually failed.
+  test('start() rejects on a real stream failure, not just resolve-and-setError', async () => {
+    listMessagesMock.mockImplementation(() =>
+      (async function* () {
+        await Promise.resolve();
+        throw new Error('connection lost');
+      })()
+    );
+
+    const { result } = renderHook(() => useMessageSearch('test-topic'));
+    await act(async () => {
+      await expect(result.current.start(baseParams)).rejects.toThrow('connection lost');
+    });
+    expect(result.current.phase).toBe('done');
+  });
+
+  test('start() rejects on a backend `error` control frame too, and surfaces it as the error state', async () => {
+    scriptStream({ case: 'error', value: { message: 'permission denied' } }, doneFrame());
+
+    const { result } = renderHook(() => useMessageSearch('test-topic'));
+    await act(async () => {
+      await expect(result.current.start(baseParams)).rejects.toThrow('permission denied');
+    });
+    expect(result.current.error?.message).toBe('permission denied');
+  });
+
+  test('start() does not reject when stopped deliberately (abort is not a failure)', async () => {
+    const releaseA = pausedStream(dataFrame(0, 1));
+    const { result } = renderHook(() => useMessageSearch('test-topic'));
+
+    let startPromise: Promise<void> = Promise.resolve();
+    act(() => {
+      startPromise = result.current.start(baseParams);
+    });
+    await waitFor(() => expect(result.current.phase).toBe('streaming'));
+
+    act(() => {
+      result.current.stop();
+    });
+    await act(async () => {
+      releaseA();
+      await expect(startPromise).resolves.toBeUndefined();
+    });
   });
 
   test('live mode marks arriving rows as new', async () => {

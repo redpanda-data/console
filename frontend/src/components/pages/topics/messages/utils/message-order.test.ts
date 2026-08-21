@@ -11,6 +11,7 @@
 
 import { describe, expect, test } from 'vitest';
 
+import { applyDisplayWindow } from './live-window';
 import { orderForContinuousNewest, visiblePageKeys } from './message-order';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
@@ -95,5 +96,35 @@ describe('orderForContinuousNewest', () => {
   test('breaks ties by offset descending', () => {
     const tied = [msg(0, 1, 100), msg(1, 3, 100), msg(0, 2, 100)];
     expect(orderForContinuousNewest(tied, true, 'newest')).toEqual([msg(1, 3, 100), msg(0, 2, 100), msg(0, 1, 100)]);
+  });
+});
+
+describe('orderForContinuousNewest composed with applyDisplayWindow (topic-messages-view order of operations)', () => {
+  // Regression for: continuous + "Newest" trimmed the newest rows instead of the oldest.
+  // For this scope each successive "Load more" page is *older* than the last (the backend
+  // resolves a descending page direction — list_messages.go — for every start offset except
+  // StartOffsetOldest), so the buffer's front holds the newest page and its back holds the
+  // oldest, the opposite of every other (oldest→newest) scope.
+  const newestPageFirst = [
+    // Page 1 (arrives first): the newest page.
+    ...Array.from({ length: 5 }, (_, i) => msg(0, i, 100 + i * 10)),
+    // Page 2 (arrives via "Load more"): an older page.
+    ...Array.from({ length: 5 }, (_, i) => msg(1, i, i * 10)),
+  ];
+
+  test('windowing after ordering keeps the newest page even once an older page pushes the buffer over cap', () => {
+    const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
+    const { rows } = applyDisplayWindow(ordered, 4, { newestFirst: true });
+
+    expect(rows.map((m) => m.timestamp)).toEqual([140, 130, 120, 110]);
+  });
+
+  test('windowing before ordering (the pre-fix composition) drops the newest page instead', () => {
+    const { rows: windowedFirst } = applyDisplayWindow(newestPageFirst, 4);
+    const wrongResult = orderForContinuousNewest(windowedFirst, true, 'newest');
+
+    // The bug: the front-trim (correct only for oldest→newest arrival) removes page 1 — the
+    // newest page — and keeps the older page 2 instead.
+    expect(wrongResult.map((m) => m.timestamp)).toEqual([40, 30, 20, 10]);
   });
 });

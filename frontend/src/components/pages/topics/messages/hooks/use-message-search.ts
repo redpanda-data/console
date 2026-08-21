@@ -195,6 +195,12 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
         req.pageToken = options.pageToken;
       }
 
+      // Tracks whether this run actually failed, as opposed to completing (or being
+      // aborted) cleanly — callers that auto-restart (live tail) must only do so on a
+      // clean completion, never in response to a real failure. A backend `error` control
+      // frame is as much a failure as a thrown/rejected stream: both make `start()` reject.
+      let streamError: Error | null = null;
+
       // Live tail and push-down filters keep the stream open (backend semantics),
       // so those runs get the long timeout — same rule as the legacy engine.
       const isLongLived =
@@ -231,6 +237,8 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
             }
             case 'error':
               toast.error('Backend error', { description: controlMessage.value.message });
+              streamError = new Error(controlMessage.value.message);
+              setError(streamError);
               break;
             case 'data': {
               const message = convertListMessageData(controlMessage.value);
@@ -252,7 +260,8 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
         }
       } catch (err) {
         if (!signal.aborted) {
-          setError(err instanceof Error ? err : new Error(String(err)));
+          streamError = err instanceof Error ? err : new Error(String(err));
+          setError(streamError);
         }
       } finally {
         // An abort's rejection surfaces on a later microtask than the synchronous setup of
@@ -276,6 +285,11 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
           setPhase('done');
           setBackendPhase(null);
         }
+      }
+      // Surfaced via `error` above; reject so a caller that auto-restarts on completion
+      // (live tail) can tell a real failure apart from a clean finish and stop looping.
+      if (streamError && !signal.aborted) {
+        throw streamError;
       }
     },
     [topicName, stop, flush, scheduleFlush]
