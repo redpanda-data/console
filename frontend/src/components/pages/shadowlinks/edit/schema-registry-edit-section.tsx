@@ -38,8 +38,7 @@ const ModeTransitionAlert = ({ originalMode }: { originalMode: SchemaRegistryMod
 
   if (originalMode === SCHEMA_REGISTRY_MODE.TOPIC && mode !== SCHEMA_REGISTRY_MODE.TOPIC) {
     return (
-      <Alert testId="sr-mode-transition-topic-alert" variant="warning">
-        <TriangleAlert />
+      <Alert icon={<TriangleAlert />} testId="sr-mode-transition-topic-alert" variant="warning">
         <AlertDescription>
           Turning off Redpanda schema shadowing does not remove the _schemas shadow topic if it was already added. To
           stop shadowing it, fail over or delete the shadow topic after saving.
@@ -49,8 +48,7 @@ const ModeTransitionAlert = ({ originalMode }: { originalMode: SchemaRegistryMod
   }
   if (originalMode === SCHEMA_REGISTRY_MODE.API && mode !== SCHEMA_REGISTRY_MODE.API) {
     return (
-      <Alert testId="sr-mode-transition-api-alert" variant="warning">
-        <TriangleAlert />
+      <Alert icon={<TriangleAlert />} testId="sr-mode-transition-api-alert" variant="warning">
         <AlertDescription>
           Saving will discard the stored Schema Registry connection settings, including credentials, scope, and sync
           behavior.

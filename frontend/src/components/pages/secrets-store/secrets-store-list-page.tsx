@@ -337,7 +337,6 @@ export const SecretsStoreListPage = () => {
     <TooltipProvider>
       <div className="flex flex-col gap-4">
         <header className="flex flex-col gap-2">
-          <h1 className="text-heading-xl">Secrets Store</h1>
           <div className="text-body text-muted-foreground">
             This page lets you list, edit, and delete the secrets used in your dataplane. You can create secrets on this
             page and reference them when creating a new resource such as Redpanda Connect pipelines.

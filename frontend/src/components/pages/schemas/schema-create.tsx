@@ -315,10 +315,6 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
 
   return (
     <PageContent key="b">
-      <h1 className="text-heading-xl" data-testid="schema-add-version-heading">
-        Add schema version
-      </h1>
-
       <SchemaEditor mode="ADD_VERSION" onStateChange={setNonNullStateData} state={state} />
 
       <SchemaPageButtons editorState={state} parentSubjectName={subjectName} />
@@ -352,8 +348,12 @@ const SchemaPageButtons = (p: {
   return (
     <>
       {persistentValidationError ? (
-        <Alert className="my-4" testId="schema-create-validation-error-alert" variant="destructive">
-          <AlertCircle />
+        <Alert
+          className="my-4"
+          icon={<AlertCircle />}
+          testId="schema-create-validation-error-alert"
+          variant="destructive"
+        >
           <AlertTitle>
             {persistentValidationError.compatibilityError?.errorType
               ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
@@ -568,7 +568,6 @@ const SchemaEditor = (p: {
       <h2 className="text-heading-lg">Subject Settings</h2>
       {Boolean(isAddVersion) && (
         <Alert variant="info">
-          <InfoIcon />
           <AlertDescription>
             When adding a new schema version, the only thing that can be changed is the schema definition and its
             references. The rest of the fields have been disabled.
