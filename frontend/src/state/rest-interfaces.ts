@@ -1161,17 +1161,29 @@ export type ConnectorProperty = {
     // added by backend
     custom_default_value?: string;
   };
+  // Kafka Connect may return null for deprecated/inapplicable properties (e.g.
+  // database.out.server.name in Debezium Oracle 3.5.x when using LogMiner).
   value: {
     name: string;
     value: null | string;
-    recommended_values: string[];
-    errors: string[];
+    // Kafka Connect may return null for these fields under some conditions
+    recommended_values: string[] | null;
+    errors: string[] | null;
     visible: boolean;
-  };
+  } | null;
   metadata: {
     component_type?: 'RADIO_GROUP';
     recommended_values?: ConnectorRecommendedValueEntry[];
   };
+};
+
+/**
+ * A ConnectorProperty whose value section is guaranteed non-null.
+ * All Property objects produced by createCustomProperties() satisfy this
+ * because null-value entries are filtered out before the map.
+ */
+export type ConnectorPropertyWithValue = ConnectorProperty & {
+  value: NonNullable<ConnectorProperty['value']>;
 };
 
 export const PropertyImportance = {
