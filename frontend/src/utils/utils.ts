@@ -159,7 +159,12 @@ export function assignDeep(target: Record<string, unknown>, source: Record<strin
     }
 
     if (typeof value === 'object') {
-      if (!existing || typeof existing !== 'object') {
+      // Arrays are replaced wholesale, never merged index-by-index: an
+      // index-wise merge mutates the existing (possibly shared) elements in
+      // place, which corrupts reordered arrays — moving an element then reads
+      // an already-overwritten object and duplicates it (observed with
+      // message-column drag reordering synced through updateSettings).
+      if (Array.isArray(value) || !existing || typeof existing !== 'object') {
         target[key] = value;
       } else {
         assignDeep(target[key] as Record<string, unknown>, value as Record<string, unknown>);
