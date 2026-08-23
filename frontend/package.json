@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "version": "0.1.0",
+  "packageManager": "bun@1.4.0",
   "private": true,
   "type": "module",
   "proxy": "http://localhost:9090",
