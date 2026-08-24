@@ -11,6 +11,8 @@
 
 // Array prototype extensions (must be imported early)
 import './utils/array-extensions';
+// Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
+import 'clipboard-polyfill/overwrite-globals';
 
 import { useEffect, useMemo } from 'react';
 

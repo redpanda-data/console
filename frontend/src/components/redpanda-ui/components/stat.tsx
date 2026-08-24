@@ -152,9 +152,6 @@ export const statGroupVariants = cva(
         2: 'grid-cols-2',
         3: 'grid-cols-1 sm:grid-cols-3',
         4: 'grid-cols-2 md:grid-cols-4',
-        /* Wraps onto several rows before it reaches six across — six stats in one row only fits on a
-           wide viewport, and a 6-up that stays 6-up would crush each figure on the way down. */
-        6: 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6',
       },
       gap: {
         sm: 'gap-3',

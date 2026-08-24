@@ -35,6 +35,8 @@ const buttonVariants = cva(
   }
 );
 
+const ICONS = { copied: CheckIcon, error: XIcon, idle: CopyIcon } as const;
+
 type CopyButtonProps = Omit<HTMLMotionProps<'button'>, 'onCopy' | 'children'> &
   VariantProps<typeof buttonVariants> & {
     content?: string;
@@ -61,19 +63,24 @@ function CopyButton({
   ...props
 }: CopyButtonProps) {
   const [localIsCopied, setLocalIsCopied] = React.useState(isCopied ?? false);
-  /**
-   * A clipboard write can be refused — no permission, no secure context, a headless environment —
-   * and reporting only to the console leaves the button sitting on its rest icon, which reads as
-   * "nothing happened" and is indistinguishable from a click that missed. So failure mirrors success:
-   * an icon swap and a destructive tone for `delay`, plus a live region because the icon alone is not
-   * announced. `onCopy` stays a success-only callback.
-   */
   const [isErrored, setIsErrored] = React.useState(false);
-  const Icon = localIsCopied ? CheckIcon : isErrored ? XIcon : CopyIcon;
+  const state = (localIsCopied && 'copied') || (isErrored && 'error') || 'idle';
+  const Icon = ICONS[state];
+  const resetTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   React.useEffect(() => {
     setLocalIsCopied(isCopied ?? false);
   }, [isCopied]);
+
+  React.useEffect(() => () => clearTimeout(resetTimeout.current), []);
+
+  const scheduleReset = React.useCallback(
+    (reset: () => void) => {
+      clearTimeout(resetTimeout.current);
+      resetTimeout.current = setTimeout(reset, delay);
+    },
+    [delay]
+  );
 
   const handleIsCopied = React.useCallback(
     (isCopiedState: boolean) => {
@@ -84,59 +91,63 @@ function CopyButton({
   );
 
   const handleCopy = React.useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
       if (isCopied) {
         return;
       }
-      if (content) {
-        navigator.clipboard
-          .writeText(content)
-          .then(() => {
-            setIsErrored(false);
-            handleIsCopied(true);
-            setTimeout(() => handleIsCopied(false), delay);
-            onCopy?.(content);
-          })
-          .catch((error) => {
-            // biome-ignore lint/suspicious/noConsole: needed for copy button implementation
-            console.error('Error copying command', error);
-            setIsErrored(true);
-            setTimeout(() => setIsErrored(false), delay);
-          });
-      }
       onClick?.(e);
+      if (!content) {
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(content);
+        setIsErrored(false);
+        handleIsCopied(true);
+        scheduleReset(() => handleIsCopied(false));
+        onCopy?.(content);
+      } catch (error) {
+        // biome-ignore lint/suspicious/noConsole: needed for copy button implementation
+        console.error('Error copying command', error);
+        handleIsCopied(false);
+        setIsErrored(true);
+        scheduleReset(() => setIsErrored(false));
+      }
     },
-    [isCopied, content, delay, onClick, onCopy, handleIsCopied]
+    [isCopied, content, onClick, onCopy, handleIsCopied, scheduleReset]
   );
 
   return (
-    <motion.button
-      className={cn(buttonVariants({ variant, size }), isErrored && 'text-destructive', className)}
-      data-slot="copy-button"
-      data-testid={testId}
-      onClick={handleCopy}
-      type="button"
-      {...props}
-    >
-      <AnimatePresence mode="wait">
-        <motion.span
-          animate={{ scale: 1 }}
-          data-slot="copy-button-icon"
-          exit={{ scale: 0 }}
-          initial={{ scale: 0 }}
-          key={localIsCopied ? 'check' : isErrored ? 'error' : 'copy'}
-          transition={{ duration: 0.15 }}
-        >
-          <Icon />
-        </motion.span>
-      </AnimatePresence>
-      {isErrored && (
+    <>
+      <motion.button
+        aria-label={children ? undefined : 'Copy'}
+        className={cn(buttonVariants({ variant, size }), className)}
+        data-slot="copy-button"
+        data-testid={testId}
+        onClick={handleCopy}
+        type="button"
+        {...props}
+      >
+        <AnimatePresence mode="wait">
+          <motion.span
+            animate={{ scale: 1 }}
+            data-slot="copy-button-icon"
+            data-state={state}
+            exit={{ scale: 0 }}
+            initial={{ scale: 0 }}
+            key={state}
+            transition={{ duration: 0.15 }}
+          >
+            <Icon />
+          </motion.span>
+        </AnimatePresence>
+        {children}
+      </motion.button>
+      {isErrored ? (
         <span className="sr-only" role="alert">
           Copy failed
         </span>
-      )}
-      {children}
-    </motion.button>
+      ) : null}
+    </>
   );
 }
 
