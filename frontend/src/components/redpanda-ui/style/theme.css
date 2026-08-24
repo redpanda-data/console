@@ -441,8 +441,7 @@
   font-weight: var(--tw-font-weight, var(--font-weight-medium));
 }
 
-/* The eyebrow above a title, value or section. A utility rather than a `--text-*` role because
-   `text-transform` is not one of the channels a role can carry. */
+/* Eyebrow above a title or value. A utility, not a `--text-*` role: `text-transform` is not a channel. */
 @utility text-overline {
   font-size: var(--text-sm);
   line-height: var(--tw-leading, var(--leading-snug));
@@ -718,10 +717,10 @@
     color: var(--color-selection-foreground);
   }
 
-  /* The sidebar is dark in both themes, so it cannot take `selection`, which flips: its own
-     family's indigo reads 4.82–7.19:1 where white read 2.70:1. */
+  /* The sidebar is dark in both themes, so it cannot take `selection`. Exact slot match, never
+     `*='sidebar'`: that also matched `sidebar-wrapper`, which wraps the whole app. */
   [data-sidebar] *::selection,
-  [data-slot*='sidebar'] *::selection {
+  [data-slot='sidebar'] *::selection {
     background-color: var(--color-sidebar-primary);
     color: var(--color-sidebar-primary-foreground);
   }
