@@ -449,7 +449,7 @@ function ClusterDetails() {
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
             <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
-              <Badge variant="info">
+              <Badge tone="info" variant="solid">
                 <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
               </Badge>
             </a>
