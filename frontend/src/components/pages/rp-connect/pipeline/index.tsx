@@ -1172,13 +1172,15 @@ function PipelinePageContent() {
 
   return (
     // Editor lanes are viewport-bounded (page-fill-viewport, globals.css) because Monaco needs a
-    // bounded box. The Monitor lane instead flows with the document, keeping its logs pagination out
-    // from behind an inner fold.
+    // bounded box. The Monitor lane flows with the document, keeping its logs pagination out from
+    // behind an inner fold; it mirrors that measure as a floor so short content still fills the screen.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
     <div
       className={cn(
-        '-ml-3.5 flex min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
-        !isMonitorLane && 'page-fill-viewport'
+        '-ml-3.5 flex min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
+        isMonitorLane
+          ? 'min-h-[calc(100dvh_-_var(--console-page-top,7rem)_-_1rem)]'
+          : 'page-fill-viewport min-h-[500px]'
       )}
       ref={expandedModeRef}
     >
