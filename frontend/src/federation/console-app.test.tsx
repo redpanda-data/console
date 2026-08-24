@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { createRouter as createTanstackRouter } from '@tanstack/react-router';
 import { act, render, waitFor } from '@testing-library/react';
 
 // Mock TanStack Router before any imports
@@ -77,6 +78,7 @@ vi.mock('./token-manager', () => ({
 import { ConsoleApp } from './console-app';
 import type { ConsoleAppProps } from './types';
 import { config, setup } from '../config';
+import { routerDefaults } from '../router-defaults';
 
 describe('ConsoleApp', () => {
   const mockGetAccessToken = vi.fn();
@@ -169,7 +171,9 @@ describe('ConsoleApp', () => {
 
   test('stays in loading state while token refresh is pending', async () => {
     // Create a deferred promise that never resolves during this test
-    const tokenPromise = new Promise<string>(() => {});
+    const tokenPromise = new Promise<string>(() => {
+      // Intentionally unresolved to keep the component in its loading state.
+    });
     mockGetAccessToken.mockReturnValueOnce(tokenPromise);
 
     const { container } = render(<ConsoleApp {...defaultProps} />);
@@ -278,6 +282,14 @@ describe('ConsoleApp', () => {
   });
 
   describe('Router Stability', () => {
+    test('applies shared intent-preload defaults to the memory router', async () => {
+      render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(createTanstackRouter).toHaveBeenCalledWith(expect.objectContaining(routerDefaults));
+      });
+    });
+
     test('does not recreate router when initialPath prop changes', async () => {
       const { createRouter, createMemoryHistory } = await import('@tanstack/react-router');
 
@@ -327,8 +339,8 @@ describe('ConsoleApp', () => {
       let subscribedCallback: ((event: unknown) => void) | undefined;
 
       vi.mocked(createRouter).mockReturnValueOnce({
-        subscribe: vi.fn((event: string, cb: (event: unknown) => void) => {
-          subscribedCallback = cb;
+        subscribe: vi.fn((_event: string, callback: (routeEvent: unknown) => void) => {
+          subscribedCallback = callback;
           return vi.fn(); // unsubscribe
         }),
         load: vi.fn().mockResolvedValue(undefined),
@@ -343,8 +355,10 @@ describe('ConsoleApp', () => {
       });
 
       // Simulate a route resolution with search params (e.g., ?tab=messages)
-      expect(subscribedCallback).toBeDefined();
-      subscribedCallback!({
+      if (!subscribedCallback) {
+        throw new Error('Expected router subscription callback');
+      }
+      subscribedCallback({
         toLocation: { pathname: '/topics/my-topic', searchStr: '?tab=messages' },
       });
 

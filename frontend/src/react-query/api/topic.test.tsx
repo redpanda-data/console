@@ -15,6 +15,7 @@ import { connectQueryWrapper } from 'test-utils';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { useLegacyListTopicsQuery } from './topic';
+import { QUERY_STALE_TIME } from '../../query-policy';
 
 // Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
@@ -55,5 +56,17 @@ describe('useLegacyListTopicsQuery', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
+  });
+
+  test('inherits QueryClient freshness when the caller does not override it', async () => {
+    vi.spyOn(config, 'fetch').mockResolvedValue(jsonResponse({ topics: [] }, { status: 200 }));
+
+    const { queryClient, queryClientWrapper } = connectQueryWrapper({
+      defaultOptions: { queries: { retry: false, staleTime: QUERY_STALE_TIME.resource } },
+    });
+    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(queryClient.getQueryCache().getAll()[0]?.options.staleTime).toBe(QUERY_STALE_TIME.resource);
   });
 });

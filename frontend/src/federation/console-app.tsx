@@ -35,7 +35,6 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { protobufRegistry } from 'protobuf-registry';
-import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 
 import { FederatedProviders } from './federated-providers';
 import { federatedRootRoute } from './federated-routes';
@@ -43,6 +42,8 @@ import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
+import { QUERY_DEFAULTS } from '../query-policy';
+import { routerDefaults } from '../router-defaults';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
 
@@ -75,6 +76,10 @@ function createFederatedRouteTree() {
 
 const federatedRouteTree = createFederatedRouteTree();
 
+function isUnauthenticatedError(error: unknown): error is ConnectError {
+  return error instanceof ConnectError && error.code === Code.Unauthenticated;
+}
+
 /**
  * Creates an interceptor that refreshes the token on 401 and retries the request.
  * Uses TokenManager for deduplication and abort support.
@@ -85,7 +90,7 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
       return await next(request);
     } catch (error) {
       // Only handle Unauthenticated errors
-      if (!(error instanceof ConnectError && error.code === Code.Unauthenticated)) {
+      if (!isUnauthenticatedError(error)) {
         throw error;
       }
 
@@ -170,8 +175,7 @@ function createFederatedQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: LONG_LIVED_CACHE_STALE_TIME,
-        retry: 1,
+        ...QUERY_DEFAULTS,
       },
     },
   });
@@ -286,6 +290,7 @@ function ConsoleAppInner({
 
     const r = createRouter({
       routeTree: federatedRouteTree,
+      ...routerDefaults,
       history: memoryHistory,
       context: {
         basePath: '',

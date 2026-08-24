@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
+import { ConnectError } from '@connectrpc/connect';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -35,18 +36,19 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
-import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
+import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { useShallow } from 'zustand/react/shallow';
 
 import { CreateTopicDialog } from './create-topic-dialog';
-import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
+import { isTopicsSortId, type TopicsSearch, type TopicsSortId } from '../../../routes/topics/-search';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { type Topic, TopicActions } from '../../../state/rest-interfaces';
-import { uiSettings } from '../../../state/ui';
+import { useUISettingsStore } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { renderLogDirSummary } from '../../misc/common';
@@ -76,22 +78,79 @@ const nameFilterFn = (row: Row<Topic>, columnId: string, filterValue: string) =>
   }
 };
 
+const SKELETON_ROWS = ['row-a', 'row-b', 'row-c', 'row-d', 'row-e'] as const;
+const SKELETON_COLUMNS = [
+  'topicName',
+  'partitionCount',
+  'replicationFactor',
+  'cleanupPolicy',
+  'size',
+  'actions',
+] as const;
+
+function useTopicsUrlState() {
+  const search = useSearch({ from: '/topics/' });
+  const navigate = useNavigate({ from: '/topics/' });
+  const { storedPageSize, storedShowInternalTopics, storedSortDesc, storedSortId, updateSettings } = useUISettingsStore(
+    useShallow((state) => ({
+      storedPageSize: state.topicList.pageSize,
+      storedShowInternalTopics: state.topicList.hideInternalTopics,
+      storedSortDesc: state.topicList.sortDesc,
+      storedSortId: state.topicList.sortId,
+      updateSettings: state.updateSettings,
+    }))
+  );
+  const update = (next: Partial<TopicsSearch>) => navigate({ replace: true, search: (prev) => ({ ...prev, ...next }) });
+
+  const setPageSize = (pageSize: number) => {
+    updateSettings({
+      topicList: {
+        ...useUISettingsStore.getState().topicList,
+        pageSize,
+      },
+    });
+  };
+  const setSorting = (sortId: TopicsSortId | undefined, sortDesc = false) => {
+    update({
+      page: undefined,
+      sortDesc: sortId ? sortDesc : undefined,
+      sortId,
+    });
+  };
+
+  return {
+    pageIndex: search.page ?? 0,
+    pageSize: storedPageSize ?? DEFAULT_TABLE_PAGE_SIZE,
+    searchValue: search.q ?? '',
+    showInternalTopics: search.showInternal ?? storedShowInternalTopics,
+    sortDesc: search.sortDesc ?? storedSortDesc,
+    sortId: search.sortId ?? (isTopicsSortId(storedSortId) ? storedSortId : undefined),
+    setPageIndex: (page: number) => update({ page: page || undefined }),
+    setPageSize,
+    setSearchValue: (q: string | null) => update({ q: q || undefined }),
+    setShowInternalTopics: (showInternal: boolean) => update({ page: undefined, showInternal }),
+    setSorting,
+  };
+}
+
 const TopicList: FC = () => {
   useLayoutEffect(() => {
     setPageHeader('Topics', [{ title: 'Topics', linkTo: '/topics' }]);
   }, []);
 
-  const [searchValue, setSearchValue] = useQueryState('q', parseAsString.withDefault(''));
-  const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicList.hideInternalTopics = val;
-      },
-      getDefaultValue: () => uiSettings.topicList.hideInternalTopics,
-    },
-    'showInternal',
-    parseAsBoolean
-  );
+  const {
+    pageIndex,
+    pageSize,
+    searchValue,
+    showInternalTopics,
+    sortDesc,
+    sortId,
+    setPageIndex,
+    setPageSize,
+    setSearchValue,
+    setShowInternalTopics,
+    setSorting,
+  } = useTopicsUrlState();
 
   const { data, isLoading, isError, error, refetch: refetchTopics } = useLegacyListTopicsQuery();
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
@@ -100,7 +159,15 @@ const TopicList: FC = () => {
 
   const refreshData = useCallback(() => {
     api.refreshClusterOverview();
-    api.refreshClusterHealth().catch(() => {});
+    api.refreshClusterHealth().catch((clusterHealthError: unknown) => {
+      toast.error(
+        formatToastErrorMessageGRPC({
+          action: 'refresh',
+          entity: 'cluster health',
+          error: ConnectError.from(clusterHealthError),
+        })
+      );
+    });
     refetchTopics();
   }, [refetchTopics]);
 
@@ -142,72 +209,43 @@ const TopicList: FC = () => {
     [allTopics]
   );
 
-  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
-
-  const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicList.pageSize = val;
-      },
-      getDefaultValue: () => uiSettings.topicList.pageSize,
-    },
-    'pageSize',
-    parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE)
-  );
-
-  const [sortId, setSortId] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicList.sortId = val;
-      },
-      getDefaultValue: () => uiSettings.topicList.sortId,
-    },
-    'sortId',
-    parseAsString.withDefault('')
-  );
-
-  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicList.sortDesc = val;
-      },
-      getDefaultValue: () => uiSettings.topicList.sortDesc,
-    },
-    'sortDesc',
-    parseAsBoolean.withDefault(false)
-  );
-
   const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
 
   const handleSortingChange = (updater: Updater<SortingState>) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
-    if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
+    const nextSort = next[0];
+    if (nextSort && isTopicsSortId(nextSort.id)) {
+      setSorting(nextSort.id, nextSort.desc);
     } else {
-      setSortId('');
-      setSortDesc(false);
+      setSorting(undefined);
     }
-    void setPageIndex(0);
   };
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    searchValue ? [{ id: 'topicName', value: searchValue }] : []
-  );
+  const columnFilters: ColumnFiltersState = searchValue ? [{ id: 'topicName', value: searchValue }] : [];
 
-  const pagination: PaginationState = { pageIndex, pageSize };
+  const lastPageIndex = Math.max(0, Math.ceil(allTopics.length / pageSize) - 1);
+  const clampedPageIndex = Math.min(pageIndex, lastPageIndex);
+  const pagination: PaginationState = { pageIndex: clampedPageIndex, pageSize };
+
+  useEffect(
+    function clampStaleTopicPage() {
+      if (!isLoading && pageIndex !== clampedPageIndex) {
+        setPageIndex(clampedPageIndex);
+      }
+    },
+    [clampedPageIndex, isLoading, pageIndex, setPageIndex]
+  );
 
   const handlePaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
+    setPageIndex(next.pageIndex);
     setPageSize(next.pageSize);
   };
 
   const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
-    setColumnFilters(next);
-    void setPageIndex(0);
     const nameFilter = next.find((f) => f.id === 'topicName');
-    setSearchValue((nameFilter?.value as string) || null);
+    setPageIndex(0);
+    setSearchValue(typeof nameFilter?.value === 'string' ? nameFilter.value : null);
   };
 
   const columns: ColumnDef<Topic>[] = [
@@ -222,7 +260,7 @@ const TopicList: FC = () => {
             className="text-inherit no-underline hover:no-underline"
             data-testid={`topic-link-${topic.topicName}`}
             params={{ topicName: encodeURIComponent(topic.topicName) }}
-            search={{} as never}
+            search={{}}
             to="/topics/$topicName"
           >
             <TopicName topic={topic} />
@@ -318,10 +356,10 @@ const TopicList: FC = () => {
 
   const renderBody = () => {
     if (isLoading) {
-      return [0, 1, 2, 3, 4].map((i) => (
-        <TableRow key={i}>
-          {columns.map((_col, colIdx) => (
-            <TableCell key={colIdx}>
+      return SKELETON_ROWS.map((rowKey) => (
+        <TableRow key={rowKey}>
+          {SKELETON_COLUMNS.map((columnKey) => (
+            <TableCell key={columnKey}>
               <Skeleton variant="text" width="md" />
             </TableCell>
           ))}
@@ -437,7 +475,7 @@ const TopicList: FC = () => {
               placeholder="Filter by name (regexp)..."
               value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
             />
-            {(table.getColumn('topicName')?.getFilterValue() as string) && (
+            {Boolean(table.getColumn('topicName')?.getFilterValue()) && (
               <button
                 className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 data-testid="search-field-reset-icon"
@@ -448,11 +486,11 @@ const TopicList: FC = () => {
               </button>
             )}
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <label className="flex cursor-pointer items-center gap-2 text-sm" htmlFor="show-internal-topics">
             <Checkbox
               checked={showInternalTopics}
+              id="show-internal-topics"
               onCheckedChange={(checked) => {
-                void setPageIndex(0);
                 setShowInternalTopics(checked === true);
               }}
               testId="show-internal-topics-checkbox"
@@ -534,6 +572,13 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
 
 const iconAllowed = <span className="text-success">✓</span>;
 const iconForbidden = <span className="text-error">✗</span>;
+
+function PermissionIcon({ allowed }: { allowed: boolean }) {
+  if (allowed) {
+    return iconAllowed;
+  }
+  return iconForbidden;
+}
 const iconClosedEye = (
   <span className="ml-1 inline-block opacity-50">
     <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />
@@ -567,7 +612,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
         {TopicActions.map((a) => (
           <div className="flex items-center justify-between gap-4" key={a}>
             <span className="font-semibold text-xs capitalize">{a}</span>
-            {actions.includes(a) ? iconAllowed : iconForbidden}
+            <PermissionIcon allowed={actions.includes(a)} />
           </div>
         ))}
       </div>

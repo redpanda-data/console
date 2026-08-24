@@ -185,9 +185,9 @@ function useRouteOwnsTitleRow() {
   const router = useRouter();
   const { pathname } = useLocation();
 
-  return router
-    .getMatchedRoutes(pathname)
-    .matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
+  const [matchedRoutes] = router.getMatchedRoutes(pathname);
+
+  return matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
 }
 
 /**

@@ -1,6 +1,18 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
 import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient } from '@tanstack/react-query';
-import { DEFAULT_CACHE_STALE_TIME } from 'react-query/react-query.utils';
+
+import { QUERY_DEFAULTS } from './query-policy';
 
 function isConnectError(error: Error | ConnectError): error is ConnectError {
   return error instanceof ConnectError;
@@ -9,19 +21,7 @@ function isConnectError(error: Error | ConnectError): error is ConnectError {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: DEFAULT_CACHE_STALE_TIME,
-      retry: (failureCount, error) => {
-        if (failureCount > 3) {
-          return false;
-        }
-
-        if (isConnectError(error)) {
-          // Retry only gRPC errors that map to 5xx HTTP error codes
-          return error.code === Code.Internal || error.code === Code.Unknown;
-        }
-
-        return false;
-      },
+      ...QUERY_DEFAULTS,
     },
     mutations: {
       retry: (failureCount, error) => {

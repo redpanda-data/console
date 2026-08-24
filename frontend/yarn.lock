@@ -3400,12 +3400,7 @@
     "@tanstack/devtools-event-client" "^0.3.2"
     "@tanstack/store" "^0.7.5"
 
-"@tanstack/query-core@>=5.62.0":
-  version "5.99.2"
-  resolved "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.99.2.tgz"
-  integrity sha512-1HunU0bXVsR1ZJMZbcOPE6VtaBJxsW809RE9xPe4Gz7MlB0GWwQvuTPhMoEmQ/hIzFKJ/DWAuttIe7BOaWx0tA==
-
-"@tanstack/query-core@5.101.4":
+"@tanstack/query-core@5.101.4", "@tanstack/query-core@>=5.62.0":
   version "5.101.4"
   resolved "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.101.4.tgz"
   integrity sha512-gNwcvOJcRbLWPOLG/2OBm+zM+Yv+MKsXKEOWC57USuZDEsI71hEErQsiEGx5wX9rzWWkfwM0fVSPoiIFSsxfiw==
@@ -3442,10 +3437,10 @@
   resolved "https://registry.npmjs.org/@tanstack/react-router/-/react-router-1.170.31.tgz"
   integrity sha512-jqITLcf9Y+es9Wm7fD7XfXFGKk1Fujm+okGqHtr+UhISnQuyLQ8d3frsJlIN0Np1doYoeb5weozSkv72+EZ5bw==
   dependencies:
-    isbot "^5.1.22"
     "@tanstack/history" "1.162.1"
     "@tanstack/react-store" "^0.9.3"
     "@tanstack/router-core" "1.171.26"
+    isbot "^5.1.22"
 
 "@tanstack/react-router-devtools@^1.167.1":
   version "1.167.1"
@@ -3489,10 +3484,10 @@
   resolved "https://registry.npmjs.org/@tanstack/router-core/-/router-core-1.171.26.tgz"
   integrity sha512-VymmPSs/93szHur/7PBygT6tRbmfcNO1xR46Wn/JVHeBqVduLPCuxBeJEgfVmVq8E4hSklPEh8i6qGXQd6WRqA==
   dependencies:
-    seroval "^1.6.2"
-    cookie-es "^3.0.0"
-    seroval-plugins "^1.6.2"
     "@tanstack/history" "1.162.1"
+    cookie-es "^3.0.0"
+    seroval "^1.6.2"
+    seroval-plugins "^1.6.2"
 
 "@tanstack/router-devtools-core@1.168.1":
   version "1.168.1"
@@ -3507,29 +3502,29 @@
   resolved "https://registry.npmjs.org/@tanstack/router-generator/-/router-generator-1.167.32.tgz"
   integrity sha512-KKPWUMUda7JYil+uDQPrX4ecyoXP9J3DesdpavOWpGCavsiAd6cxH6yq18krLGa1j20qmPJc10LJSLOOFia5tQ==
   dependencies:
-    zod "^4.4.3"
-    jiti "^2.7.0"
-    prettier "^3.5.0"
     "@babel/types" "^7.28.5"
-    magic-string "^0.30.21"
     "@tanstack/router-core" "1.171.26"
     "@tanstack/router-utils" "1.162.2"
     "@tanstack/virtual-file-routes" "1.162.0"
+    jiti "^2.7.0"
+    magic-string "^0.30.21"
+    prettier "^3.5.0"
+    zod "^4.4.3"
 
 "@tanstack/router-plugin@^1.168.34":
   version "1.168.34"
   resolved "https://registry.npmjs.org/@tanstack/router-plugin/-/router-plugin-1.168.34.tgz"
   integrity sha512-WsXLQU8tQmoTyoQRB1JI3lGg5wnwo6VB2R8D2RQbtCVlUi3bjreSNgZSJ7Ghw06ZoUyNMO+Csiqf679nNnzN+w==
   dependencies:
-    zod "^4.4.3"
+    "@babel/core" "^7.28.5"
+    "@babel/template" "^7.27.2"
+    "@babel/types" "^7.28.5"
+    "@tanstack/router-core" "1.171.26"
+    "@tanstack/router-generator" "1.167.32"
+    "@tanstack/router-utils" "1.162.2"
     chokidar "^5.0.0"
     unplugin "^3.0.0"
-    "@babel/core" "^7.28.5"
-    "@babel/types" "^7.28.5"
-    "@babel/template" "^7.27.2"
-    "@tanstack/router-core" "1.171.26"
-    "@tanstack/router-utils" "1.162.2"
-    "@tanstack/router-generator" "1.167.32"
+    zod "^4.4.3"
 
 "@tanstack/router-utils@1.162.2":
   version "1.162.2"

@@ -1,7 +1,19 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import {
+  queryOptions,
   useQueryClient,
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
@@ -30,6 +42,42 @@ type ListTopicsExtraOptions = {
   hideInternalTopics?: boolean;
 };
 
+export function legacyListTopicsQueryOptions(input?: MessageInit<ListTopicsRequest>) {
+  const listTopicsRequest = create(ListTopicsRequestSchema, {
+    pageSize: MAX_PAGE_SIZE,
+    pageToken: '',
+    ...input,
+  });
+
+  return queryOptions<GetTopicsResponse>({
+    queryKey: createConnectQueryKey({
+      schema: listTopics,
+      input: listTopicsRequest,
+      cardinality: 'infinite',
+    }),
+    queryFn: async ({ signal }) => {
+      const headers: HeadersInit = {};
+      if (config.jwt) {
+        headers.Authorization = `Bearer ${config.jwt}`;
+      }
+
+      // allow: direct-query [legacy Console v2 authorization still requires this REST endpoint]
+      const response = await config.fetch(`${config.restBasePath}/topics`, {
+        method: 'GET',
+        headers,
+        signal,
+      });
+
+      if (!response.ok) {
+        // allow: connect-error [legacy REST response has no gRPC status to preserve]
+        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+  });
+}
+
 /**
  * We need to use legacy API to list topics for now
  * because of authorization that is only possible with Console v3 and above.
@@ -43,42 +91,11 @@ export const useLegacyListTopicsQuery = (
     refetchOnWindowFocus,
   }: ListTopicsExtraOptions & { staleTime?: number; refetchOnWindowFocus?: boolean } = {}
 ) => {
-  const listTopicsRequest = create(ListTopicsRequestSchema, {
-    pageSize: MAX_PAGE_SIZE,
-    pageToken: '',
-    ...input,
-  });
-
-  const infiniteQueryKey = createConnectQueryKey({
-    schema: listTopics,
-    input: listTopicsRequest,
-    cardinality: 'infinite',
-  });
-
+  // allow: query-states [page callers render loading, error, and empty states]
   const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
-    queryKey: infiniteQueryKey,
-    queryFn: async () => {
-      // Add JWT Bearer token if available (same as REST and gRPC calls)
-      const headers: HeadersInit = {};
-      if (config.jwt) {
-        headers.Authorization = `Bearer ${config.jwt}`;
-      }
-
-      const response = await config.fetch(`${config.restBasePath}/topics`, {
-        method: 'GET',
-        headers,
-      });
-
-      // config.fetch wraps window.fetch, which does not reject on 4xx/5xx — guard explicitly, or an
-      // error body parses as a "successful" empty result and the topics page silently shows 0 topics.
-      if (!response.ok) {
-        throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    staleTime,
-    refetchOnWindowFocus,
+    ...legacyListTopicsQueryOptions(input),
+    ...(staleTime === undefined ? {} : { staleTime }),
+    ...(refetchOnWindowFocus === undefined ? {} : { refetchOnWindowFocus }),
   });
 
   const allRetrievedTopics = legacyListTopicsResult?.data?.topics;
