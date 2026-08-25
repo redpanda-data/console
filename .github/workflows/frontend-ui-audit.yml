@@ -68,6 +68,8 @@ jobs:
           token: ${{ env.ACTIONS_BOT_TOKEN }}
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
       - name: Build registry manifest
         # audit-changes reads packages/registry/registry.json, a gitignored
         # build artifact — generate it before running the audit.
