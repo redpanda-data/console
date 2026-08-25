@@ -47,7 +47,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
-import { PipelineStatusToggle } from './pipeline-status-toggle';
+import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
 import {
   alternateRunIntents,
   primaryRunIntent,
@@ -246,13 +246,14 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
 );
 
 /**
- * A draft gets a plain Start rather than the run toggle: a switch that flips back with an error toast is
- * no help when the problems are only actionable in the editor.
+ * A draft starts through its own mutation — a rejected start has to open the editor, since that is the
+ * only place its lint problems are actionable — but it wears the same button as every other pipeline, so
+ * "start" looks like one thing across the feature.
  */
 const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
   const { startDraft, isStartingDraft } = useStartDraft();
   if (!isDraft(pipeline)) {
-    return <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />;
+    return <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />;
   }
   return (
     <Button
@@ -323,11 +324,9 @@ export function PipelineViewHeader({
           <h1 className="min-w-0 truncate text-heading-xl" title={name}>
             {name}
           </h1>
-          {viewingDraft ? (
-            <Badge title={DRAFT_BADGE_TOOLTIP} variant="simple-outline">
-              Draft
-            </Badge>
-          ) : null}
+          {/* State sits with the name, not on the run button: Draft is one of these states, so this is the
+              one place to read what a pipeline is doing, whatever it is doing. */}
+          <PipelineStateBadge state={pipeline.state} tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : undefined} />
           <Button
             aria-label="View pipeline details"
             icon={<Info className="size-4!" />}
@@ -463,11 +462,8 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
-            {editingDraft ? (
-              <Badge title={DRAFT_BADGE_TOOLTIP} variant="simple-outline">
-                Draft
-              </Badge>
-            ) : null}
+            {/* Same badge as the view header, so Draft doesn't change appearance on the way into the editor. */}
+            {editingDraft ? <PipelineStateBadge state={pipelineState} tooltip={DRAFT_BADGE_TOOLTIP} /> : null}
             {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
             <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
               Edit settings

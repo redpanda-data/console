@@ -44,14 +44,19 @@ import {
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
+import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { FadePresence } from 'components/ui/fade-presence';
-import { PIPELINE_STATE_LABELS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
+import {
+  PIPELINE_STATE_LABELS,
+  PIPELINE_STATE_STATUS_VARIANT,
+  STARTABLE_STATES,
+  STOPPABLE_STATES,
+} from 'components/ui/pipeline/constants';
 import { AlertCircle, Box, MoreHorizontal, Search, X } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -166,17 +171,6 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       ))}
     </BadgeGroup>
   );
-};
-
-const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> = {
-  [Pipeline_State.COMPLETED]: 'success',
-  [Pipeline_State.STARTING]: 'starting',
-  [Pipeline_State.STOPPING]: 'stopping',
-  [Pipeline_State.STOPPED]: 'disabled',
-  [Pipeline_State.ERROR]: 'error',
-  [Pipeline_State.RUNNING]: 'success',
-  [Pipeline_State.UNSPECIFIED]: 'disabled',
-  [Pipeline_State.DRAFT]: 'disabled',
 };
 
 // autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
@@ -328,7 +322,7 @@ const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
-          toast.success('Pipeline started');
+          toast.success('Pipeline starting');
         },
         onError: (err) => {
           toast.error(
@@ -348,7 +342,7 @@ const ActionsCell = memo(
       });
       stopMutation(stopRequest, {
         onSuccess: () => {
-          toast.success('Pipeline stopped');
+          toast.success('Pipeline stopping');
         },
         onError: (err) => {
           toast.error(
@@ -597,7 +591,7 @@ const createColumns = ({
       <StatusBadge
         size="sm"
         title={row.original.isDraft ? DRAFT_BADGE_TOOLTIP : undefined}
-        variant={pipelineStateToStatusVariant[row.original.state]}
+        variant={PIPELINE_STATE_STATUS_VARIANT[row.original.state]}
       >
         {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
       </StatusBadge>
