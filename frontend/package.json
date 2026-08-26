@@ -47,7 +47,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@base-ui/react": "^1.5.0",
+    "@base-ui/react": "^1.7.0",
     "@buf/redpandadata_cloud.connectrpc_query-es": "^2.3.1-20260817162420-6033b8c28212.1",
     "@buf/redpandadata_common.bufbuild_es": "^2.11.0-20260323171043-6e06f84ad823.1",
     "@bufbuild/cel": "^0.4.0",

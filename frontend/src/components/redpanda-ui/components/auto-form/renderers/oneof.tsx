@@ -109,7 +109,7 @@ export function OneofFieldRenderer({
               {(value) => renderOneofSelectedValue(value, availableFields, field.required)}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent alignItemWithTrigger={false}>
             {field.required ? null : (
               <SelectItem
                 testId={getAutoFormFieldTestId(testIdPrefix, fullPath, 'option-not-set')}

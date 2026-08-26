@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 'use client';
 
 import { Toggle as TogglePrimitive } from '@base-ui/react/toggle';
@@ -73,6 +75,7 @@ function getRadiusClasses(
 
 type ToggleGroupContextProps = VariantProps<typeof toggleVariants> &
   GroupContextValue & {
+    disabled?: boolean;
     orientation: Orientation;
     variant?: Variant;
   };
@@ -103,6 +106,7 @@ function ToggleGroup({
   children,
   testId,
   attached = true,
+  disabled,
   orientation = 'horizontal',
   ...props
 }: ToggleGroupProps) {
@@ -133,13 +137,14 @@ function ToggleGroup({
       data-slot="toggle-group"
       data-testid={testId}
       data-variant={variant}
+      disabled={disabled}
       orientation={orientation}
       {...props}
     >
       {segments.map((segment, index) => (
         <ToggleGroupContext.Provider
           key={segment.key}
-          value={{ variant, size, attached, position: positionOf(index), orientation }}
+          value={{ variant, size, attached, disabled, position: positionOf(index), orientation }}
         >
           {segment}
         </ToggleGroupContext.Provider>
@@ -155,8 +160,9 @@ type ToggleGroupItemProps = Omit<React.ComponentProps<typeof TogglePrimitive>, '
     value: string;
   };
 
-function ToggleGroupItem({ className, variant, size, testId, value, ...props }: ToggleGroupItemProps) {
+function ToggleGroupItem({ className, disabled, variant, size, testId, value, ...props }: ToggleGroupItemProps) {
   const group = useToggleGroup();
+  const resolvedDisabled = disabled ?? group.disabled;
   const resolvedVariant = variant ?? group.variant;
 
   return (
@@ -169,6 +175,7 @@ function ToggleGroupItem({ className, variant, size, testId, value, ...props }: 
       )}
       data-slot="toggle-group-item"
       data-testid={testId}
+      disabled={resolvedDisabled}
       value={value}
       {...props}
     />

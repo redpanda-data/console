@@ -101,7 +101,7 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
           {(value) => renderStaticSelectedValue(value, flatOptions, field.required)}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent alignItemWithTrigger={false}>
         {field.required ? null : (
           <SelectItem testId={testIds.option('not-set')} value={UNSET_SELECT_VALUE}>
             Not set
@@ -196,7 +196,7 @@ function SelectFieldFromProvider({
           {(value) => renderProviderSelectedValue(value, options, field.required)}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent alignItemWithTrigger={false}>
         {field.required ? null : (
           <SelectItem testId={testIds.option('not-set')} value={UNSET_SELECT_VALUE}>
             Not set

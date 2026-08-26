@@ -108,6 +108,7 @@ function TabsList({
   layout,
   gap,
   columns,
+  activateOnFocus,
   testId,
   style,
   ...props
@@ -116,6 +117,7 @@ function TabsList({
   // `w-max min-w-full` to size the list to its content. See the scrollable tabs demos.
   return (
     <TabsPrimitive.List
+      activateOnFocus={activateOnFocus}
       className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
       data-slot="tabs-list"
       data-testid={testId}

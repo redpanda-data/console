@@ -72,7 +72,7 @@ function ProgressTrack({ className, testId, ...props }: ProgressTrackProps) {
 
 type ProgressIndicatorProps = React.ComponentProps<typeof ProgressPrimitive.Indicator> & SharedProps;
 
-function ProgressIndicator({ className, style, testId, ...props }: ProgressIndicatorProps) {
+function ProgressIndicator({ className, testId, ...props }: ProgressIndicatorProps) {
   const { value } = React.useContext(ProgressContext);
 
   // Base UI has no built-in indeterminate animation, so keep motion sliding here.
@@ -89,16 +89,12 @@ function ProgressIndicator({ className, style, testId, ...props }: ProgressIndic
     );
   }
 
-  // Determinate progress matches shadcn/ui: a CSS transition driving translateX.
+  // Base UI sizes the fill with an inline `width`; adding shadcn/ui's translateX would apply the percentage twice.
   return (
     <ProgressPrimitive.Indicator
-      className={cn(
-        'h-full w-full flex-1 rounded-full bg-primary transition-transform motion-reduce:transition-none',
-        className
-      )}
+      className={cn('h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none', className)}
       data-slot="progress-indicator"
       data-testid={testId}
-      style={{ transform: `translateX(-${100 - value}%)`, ...style }}
       {...props}
     />
   );

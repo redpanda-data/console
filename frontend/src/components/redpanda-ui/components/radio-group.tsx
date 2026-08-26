@@ -14,7 +14,13 @@ type RadioGroupProps = RadioGroupPrimitive.Props &
     orientation?: RadioGroupOrientation;
   };
 
-function RadioGroup({ className, orientation = 'vertical', testId, ...props }: RadioGroupProps) {
+function RadioGroup(allProps: RadioGroupProps) {
+  const { className, orientation = 'vertical', testId, value, ...props } = allProps;
+
+  // Keep an explicitly provided `value` controlled while form state initializes.
+  const hasValueProp = 'value' in allProps;
+  const valueOverride = hasValueProp && value === undefined ? '' : value;
+
   return (
     <RadioGroupPrimitive
       aria-orientation={orientation}
@@ -22,6 +28,7 @@ function RadioGroup({ className, orientation = 'vertical', testId, ...props }: R
       data-orientation={orientation}
       data-slot="radio-group"
       data-testid={testId}
+      value={valueOverride}
       {...props}
     />
   );
