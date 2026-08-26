@@ -56,8 +56,8 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default: 'w-fit gap-1 rounded-lg bg-surface-subtle p-1',
-        // No fill: this variant's chrome is the baseline, so a ground of its own only slabs over
-        // whatever the strip sits on.
+        // No fill: this variant's chrome is the baseline, so its own ground only slabs over the
+        // surface the strip sits on.
         underline: '!border-border relative w-full justify-start rounded-t-xl border-b py-0 text-current',
       },
       layout: {

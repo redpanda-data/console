@@ -367,8 +367,8 @@
 
   /* Charts */
   /* One family stepped from indigo to blue-grey, so a chart reads as part of the UI. Five distinct
-     hues is a brand decision, so identity is carried by lightness instead and the rungs are spread
-     evenly across it. The closest pair is still near enough that five series wants direct labels. */
+     hues is a brand decision, so identity rides on lightness instead, spread evenly. The closest
+     pair is still near enough that five series wants direct labels. */
   --color-chart-1: #6172f3;
   --color-chart-2: #3c5686;
   --color-chart-3: #8ea8ee;
@@ -511,17 +511,15 @@
      COLOUR — dark overrides only, in @theme's group order. Group notes live there; only what is
      specific to dark is repeated here.
 
-     Every neutral is TRUE GREY — chroma exactly 0 — separated by lightness alone. They used to drift
-     across four hues at near-zero chroma, which read as neither grey nor tinted. Keep new rungs
+     Every neutral is true grey — chroma exactly 0, separated by lightness alone. Keep new rungs
      achromatic; `theme-neutral-ramp.test.ts` fails any that is not.
 
-     The accent is OKLCH hue 285, not the light theme's indigo at 273 — dark carries its own accent
-     family, clear of every status hue and of the brand red. `brand` stays the logo red.
+     The accent is OKLCH hue 285, not the light theme's indigo — dark carries its own accent family,
+     clear of every status hue and the brand red.
      =================================================================== */
 
   /* Core roles */
-  /* Not pure black: one 8-bit step off #000 is a 1.006 ratio, leaving no room for a state. The panel
-     steps above `page`, but at these lightnesses a ratio compresses — its border still does work. */
+  /* Not pure black: one 8-bit step off #000 is a 1.006 ratio, leaving no room for a state. */
   --color-background: #161616;
   --color-foreground: #c9c9c9;
 
@@ -627,9 +625,8 @@
      2.87:1, under the boundary floor. On the page it always cleared it. */
   --color-input: #6f6f6f;
   --color-input-hover: #898989;
-  /* A white wash, Void-style, rather than an opaque grey. At these lightnesses a ratio compresses, so
-     the steps clear the visibility floor on the card but the `input` border carries most of the
-     reaction — it steps 1.44:1, where the fill steps 1.19:1. */
+  /* A white wash rather than an opaque grey. At these lightnesses a ratio compresses, so the
+     `input` border carries most of the reaction: it steps 1.44:1, the fill 1.19:1. */
   --color-input-fill: rgba(255, 255, 255, 0.03);
   --color-input-fill-hover: rgba(255, 255, 255, 0.09);
   --color-input-fill-pressed: rgba(255, 255, 255, 0.15);
@@ -668,7 +665,7 @@
   --color-accent-pressed: rgba(255, 255, 255, 0.105);
   --color-sidebar-accent: rgba(255, 255, 255, 0.078);
   --color-sidebar-accent-pressed: rgba(255, 255, 255, 0.12);
-  /* Declared here too, so every ink the dark shell paints is on the achromatic ramp. */
+  /* Declared here too, so every ink the dark shell paints is achromatic. */
   --color-sidebar-accent-foreground: #e8e8e8;
 
   /* Sidebar */
@@ -688,7 +685,7 @@
   --color-selected-foreground: #3b0c8e;
 
   /* Charts */
-  /* Same lightness order as the light block, so a series keeps its weight when the theme flips. */
+  /* Same lightness order as light, so a series keeps its weight when the theme flips. */
   --color-chart-1: #7860f8;
   --color-chart-2: #0c54dc;
   --color-chart-3: #c5a8e9;

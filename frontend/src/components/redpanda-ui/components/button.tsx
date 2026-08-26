@@ -60,10 +60,8 @@ const buttonVariants = cva(
         ],
         // Each steps the ramp its *own* rest border sits on, so the line moves one rung rather than
         // jumping family and reversing direction in one theme.
-        //
-        // Unprefixed is the NEUTRAL tone and `secondary-` the accent, matching the fills above. They
-        // used to be reversed, so a filled `primary` and an `outline` beside it read as opposites.
-        // `ghost`, `link` and `dashed` stay accent: link-like affordances and an add-new affordance.
+        // Unprefixed is the neutral tone and `secondary-` the accent, matching the fills above.
+        // `ghost`, `link` and `dashed` stay accent.
         outline: [
           '!border-secondary-line border text-secondary shadow-xs',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',

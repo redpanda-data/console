@@ -30,8 +30,8 @@ const VARIANT_PREFIX = /^.*:/;
 
 /**
  * `align-self: stretch` only stretches an *auto* height — given an explicit one it behaves like
- * `flex-start`, so a caller-sized vertical rule sat flush to the top of its row and is centred
- * instead. Base UI also allows a `className` function of state, which cannot be read statically.
+ * `flex-start`, so a caller-sized vertical rule is centred instead. Base UI also allows a
+ * `className` function of state, which cannot be read statically.
  */
 const setsOwnHeight = (className: SeparatorProps['className']) =>
   typeof className === 'string' &&
