@@ -139,11 +139,14 @@ export default defineConfig({
     },
   },
   tools: {
-    rspack: (config, { appendPlugins }) => {
+    rspack: (config, { appendPlugins, isProd }) => {
       config.lazyCompilation = false;
       config.experiments = {
         ...config.experiments,
+        asyncWebAssembly: true,
+        futureDefaults: true,
         nativeWatcher: true,
+        pureFunctions: isProd,
       };
       config.resolve ||= {};
       config.resolve.alias ||= {};

@@ -25,7 +25,11 @@ describe('Rsbuild production config', () => {
     const serializedConfig = JSON.stringify(rspackConfig);
 
     expect(rspackConfig?.experiments).toMatchObject({
+      asyncWebAssembly: true,
+      futureDefaults: true,
       nativeWatcher: true,
+      pureFunctions: true,
+      sourceImport: true,
     });
     expect(rspackConfig?.experiments).not.toHaveProperty('fasterModuleConcatenation');
     expect(rspackConfig?.experiments).not.toHaveProperty('lazyBarrel');
