@@ -530,7 +530,9 @@ function usePipelineSave({
       } catch (err) {
         const connectError = ConnectError.from(err);
         setErrorLintHints(extractLintHintsFromError(connectError));
-        if (isNoLongerDraftError(connectError)) {
+        // Only a draft save asserts `draft`, so only a draft save can be refused for that reason. Any
+        // other FAILED_PRECONDITION is a different problem and must report itself, not this.
+        if (isDraftSave && isNoLongerDraftError(connectError)) {
           toast.error(NO_LONGER_DRAFT_MESSAGE);
           return false;
         }

@@ -58,6 +58,7 @@ import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
 import { DRAFT_UNSUPPORTED_MESSAGE } from './draft-copy';
+import { NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 
 const mockUsePipelineMode = vi.fn(() => ({ mode: 'create' as const }));
@@ -1385,7 +1386,32 @@ describe('PipelinePage', () => {
 
       // The rejection lands in the issues panel, and nothing was deployed.
       expect(await screen.findByText(/not a draft/i)).toBeInTheDocument();
+      expect(toast.error).toHaveBeenCalledWith(NO_LONGER_DRAFT_MESSAGE);
       expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
+    });
+
+    it('does not blame drafts for a failed precondition on a pipeline that is not one', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = vi.fn().mockImplementation(() => {
+        throw new ConnectError('pipeline is suspended', Code.FailedPrecondition);
+      });
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.STOPPED })),
+          updatePipelineMock,
+        }),
+      });
+
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  edited: {}' } });
+      await user.click(await screen.findByTestId('save-pipeline'));
+
+      // Only a draft save asserts `draft`, so only a draft save can be refused for that reason. Saying
+      // otherwise would send the user looking for a teammate who started something.
+      await waitFor(() => expect(toast.error).toHaveBeenCalled());
+      expect(toast.error).not.toHaveBeenCalledWith(NO_LONGER_DRAFT_MESSAGE);
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/suspended/i));
     });
 
     it('a refused start keeps the saved draft and shows the issues on their lines', async () => {
