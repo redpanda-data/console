@@ -280,7 +280,7 @@ const GroupList: FC = () => {
   };
 
   return (
-    <ListLayout className="my-4" data-testid="consumer-groups-table">
+    <ListLayout className="my-4 min-h-0" data-testid="consumer-groups-table">
       <div className="flex flex-wrap gap-8">
         <Stat label="Total groups" mono size="lg" value={statistics.total} />
         {statistics.byState.map(({ state, count }) => (

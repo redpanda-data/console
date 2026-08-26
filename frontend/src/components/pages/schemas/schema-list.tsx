@@ -641,7 +641,7 @@ const SchemaList: FC = () => {
           <AlertTitle>Error loading schemas</AlertTitle>
         </Alert>
       ) : (
-        <ListLayout className="my-4" data-testid="schema-list-table">
+        <ListLayout className="my-4 min-h-0" data-testid="schema-list-table">
           <div className="text-body text-muted-foreground sm:text-body-lg">
             <DescriptionWithHelp
               short="Subjects and versions for the schemas that validate your topic records."
