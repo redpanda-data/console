@@ -486,7 +486,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                         <AlertTitle>Pipeline is not running</AlertTitle>
                         <AlertDescription className="flex flex-col items-start gap-2">
                           Live logs require a running pipeline. Switch to recent logs to view historical logs.
-                          <Button onClick={() => setLiveView(false)} size="sm" variant="secondary-outline">
+                          <Button onClick={() => setLiveView(false)} size="sm" variant="outline">
                             Switch to Recent Logs
                           </Button>
                         </AlertDescription>

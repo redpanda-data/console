@@ -599,7 +599,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               onClick={generateNewPassword}
                               size="icon-sm"
                               type="button"
-                              variant="secondary-outline"
+                              variant="outline"
                             >
                               <RefreshCcw size={15} />
                             </Button>

@@ -142,7 +142,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
           </Button>
           <div className="flex gap-2">
             {step > 0 && (
-              <Button disabled={isCreating} onClick={() => setStep(0)} size="md" variant="secondary-outline">
+              <Button disabled={isCreating} onClick={() => setStep(0)} size="md" variant="outline">
                 Back
               </Button>
             )}

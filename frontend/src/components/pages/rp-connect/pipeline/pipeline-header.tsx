@@ -257,12 +257,11 @@ export function PipelineViewHeader({
           <Button
             icon={<EditIcon />}
             onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
-            variant="secondary-outline"
+            variant="outline"
           >
             Edit pipeline
           </Button>
-          {/* self-center: the Separator's default self-stretch top-aligns a fixed h-6 in this row. */}
-          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
+          <Separator className="mx-1 h-6" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>

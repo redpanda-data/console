@@ -551,7 +551,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             >
               <Wand2 /> Format
             </Button>
-            <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="secondary-outline">
+            <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="outline">
               Run selection
             </Button>
             <Button onClick={doRun} size="sm" variant="secondary">

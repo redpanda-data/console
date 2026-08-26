@@ -147,7 +147,7 @@
 
   /* Ink */
   /* Content hierarchy, quietest last. `foreground` and `muted-foreground` sit above. */
-  --color-strong: #181818;
+  --color-strong: #16181d;
   --color-subtle: #606164;
   /* A hint, not content: pitched at WCAG 1.4.3's 4.5:1 floor rather than above it, so it reads as a
      prompt beside the value the field will hold. `subtle` had it at 6.19:1 — legible, and close enough
@@ -277,8 +277,8 @@
      defined by nothing else. It carries `-line`'s 3:1 boundary floor, not `border`'s hairline pitch. */
   --color-input: #8e8f92;
   --color-input-hover: #737477;
-  /* A form control's fill: transparent on a light page, a wash of its own border colour in dark.
-     Light rests on the page, so its steps *are* the `accent` ramp. */
+  /* A form control's fill: transparent on a light page, a white wash in dark. Light rests on the
+     page, so its steps *are* the `accent` ramp. */
   --color-input-fill: transparent;
   --color-input-fill-hover: var(--color-accent);
   --color-input-fill-pressed: var(--color-accent-pressed);
@@ -293,7 +293,6 @@
   --color-primary-line: #768ded;
   --color-primary-line-hover: #5d71cf;
   --color-primary-line-pressed: #4c5fbb;
-  /* `secondary-line` sits mid-ramp, so `[data-theme=dark]` keeps this value and lifts off it instead. */
   --color-secondary-line: #5972a6;
   --color-secondary-line-hover: #40588a;
   --color-secondary-line-pressed: #314778;
@@ -351,7 +350,7 @@
   --color-sidebar-ring: #6172f3;
   --color-sidebar-border: #606164;
   --color-sidebar-primary: #6172f3;
-  --color-sidebar-primary-foreground: #0d0d0e;
+  --color-sidebar-primary-foreground: #080808;
 
   /* Selection */
   /* `selection` is the text highlight; `selected` is a chosen row or chip. */
@@ -367,16 +366,14 @@
   --color-selected-foreground: #ffffff;
 
   /* Charts */
-  /* One family stepped from indigo to blue-grey, so a chart reads as part of the UI. The weakness is
-     categorical identity: the three lightest sit at 1.21–2.13:1 on a white page and `chart-3` against
-     `chart-4` is 1.14:1, so five series resolve into fewer than five. Holding the look is deliberate
-     — five distinct hues is a brand decision — so until then, more than about three series wants
-     direct labels rather than colour alone. */
+  /* One family stepped from indigo to blue-grey, so a chart reads as part of the UI. Five distinct
+     hues is a brand decision, so identity is carried by lightness instead and the rungs are spread
+     evenly across it. The closest pair is still near enough that five series wants direct labels. */
   --color-chart-1: #6172f3;
-  --color-chart-2: #475b85;
-  --color-chart-3: #a4bcfd;
-  --color-chart-4: #a8b2c7;
-  --color-chart-5: #e0eaff;
+  --color-chart-2: #3c5686;
+  --color-chart-3: #8ea8ee;
+  --color-chart-4: #c5d0e4;
+  --color-chart-5: #dee8ff;
 
   /* Overlays */
   --color-modal-overlay: rgba(0, 0, 0, 0.48);
@@ -513,175 +510,190 @@
   /* ===================================================================
      COLOUR — dark overrides only, in @theme's group order. Group notes live there; only what is
      specific to dark is repeated here.
+
+     Every neutral is TRUE GREY — chroma exactly 0 — separated by lightness alone. They used to drift
+     across four hues at near-zero chroma, which read as neither grey nor tinted. Keep new rungs
+     achromatic; `theme-neutral-ramp.test.ts` fails any that is not.
+
+     The accent is OKLCH hue 285, not the light theme's indigo at 273 — dark carries its own accent
+     family, clear of every status hue and of the brand red. `brand` stays the logo red.
      =================================================================== */
 
   /* Core roles */
-  /* Not pure black: one 8-bit step off #000 is a 1.006 ratio, leaving no room for a state. */
-  --color-background: #181818;
-  --color-foreground: #c3c4c6;
+  /* Not pure black: one 8-bit step off #000 is a 1.006 ratio, leaving no room for a state. The panel
+     steps above `page`, but at these lightnesses a ratio compresses — its border still does work. */
+  --color-background: #161616;
+  --color-foreground: #c9c9c9;
 
   /* Ink */
-  --color-strong: #dcdcde;
-  --color-subtle: #919295;
+  --color-strong: #e8e8e8;
+  --color-subtle: #9c9c9c;
   /* Lighter than `subtle` here, where light mode puts it darker: `input-fill` lifts a field's ground to
      rgb(46,46,47), so ink inside one needs more lightness than the same ink on a card to hold 4.5:1.
      `subtle` itself measures 4.37:1 in a field — under the floor, which is why this is its own token. */
-  --color-placeholder: #959699;
-  --color-disabled: #606164;
+  --color-placeholder: #a0a0a0;
+  --color-disabled: #616161;
 
   /* Ink — interactive */
-  --color-action-primary: #8098f9;
-  --color-action-primary-hover: #b1c2ff;
-  --color-action-primary-pressed: #d4deff;
-  --color-inverse: #181818;
-  --color-inverse-hover: #262626;
-  --color-inverse-pressed: #323232;
+  --color-action-primary: #7860f8;
+  --color-action-primary-hover: #9b93ff;
+  --color-action-primary-pressed: #b5b3ff;
+  --color-inverse: #161616;
+  --color-inverse-hover: #242424;
+  --color-inverse-pressed: #303030;
 
   /* Ink — content */
-  --color-mark: #713b12;
-  --color-mark-foreground: #dcdcde;
-  --color-syntax-literal: #84c9f0;
-  --color-syntax-keyword: #b692f6;
-  --color-syntax-string: #68d391;
-  --color-syntax-operator: #fea19a;
+  --color-mark: #6a430b;
+  --color-mark-foreground: #e8e8e8;
+  --color-syntax-literal: #6bc8fb;
+  --color-syntax-keyword: #d6a4fb;
+  --color-syntax-string: #2fe572;
+  --color-syntax-operator: #fb9a93;
 
   /* Roles */
-  --color-primary: #8098f9;
-  --color-primary-hover: #97adff;
-  --color-primary-pressed: #acbfff;
-  --color-primary-foreground: #0d0d0e;
-  --color-secondary: #a8b2c7;
-  --color-secondary-hover: #bbc5da;
-  --color-secondary-pressed: #cbd5eb;
-  --color-secondary-foreground: #0d0d0e;
-  --color-brand: #e86b54;
-  --color-brand-hover: #fd7e66;
-  --color-brand-pressed: #ff9984;
-  --color-brand-foreground: #0d0d0e;
-  --color-destructive: #fed0cd;
-  --color-destructive-foreground: #0d0d0e;
-  --color-success: #68d391;
-  --color-success-foreground: #0d0d0e;
-  --color-warning: #fbbc91;
-  --color-warning-foreground: #181818;
-  --color-informative: #6ebfed;
-  --color-informative-foreground: #0b3e5b;
+  --color-primary: #7860f8;
+  --color-primary-hover: #8979ff;
+  --color-primary-pressed: #988fff;
+  --color-primary-foreground: #080808;
+  --color-secondary: #e8e8e8;
+  --color-secondary-hover: #d4d4d4;
+  --color-secondary-pressed: #c4c4c4;
+  --color-secondary-foreground: #080808;
+  --color-brand: #fa4e27;
+  --color-brand-hover: #ff7556;
+  --color-brand-pressed: #ff9279;
+  --color-brand-foreground: #080808;
+  --color-destructive: #fa7477;
+  --color-destructive-foreground: #080808;
+  --color-success: #2edf86;
+  --color-success-foreground: #080808;
+  --color-warning: #fb8e24;
+  --color-warning-foreground: #080808;
+  --color-informative: #27b8fa;
+  --color-informative-foreground: #080808;
 
   /* Surfaces */
-  --color-page: #0d0d0e;
+  --color-page: #060606;
   /* One rung up from `background`, so a quiet raised ground is visible and can still step. */
-  --color-surface-subtle: #242426;
-  --color-surface-subtle-hover: #333335;
-  --color-surface-subtle-pressed: #404042;
-  --color-surface-recess: rgba(36, 36, 38, 0.5);
-  --color-surface-strong: #303032;
-  --color-surface-strong-hover: #3f3f41;
-  --color-primary-wash: rgba(164, 188, 253, 0.088);
-  --color-primary-wash-pressed: rgba(164, 188, 253, 0.144);
-  --color-secondary-wash: rgba(168, 178, 199, 0.094);
-  --color-secondary-wash-pressed: rgba(168, 178, 199, 0.155);
-  --color-brand-wash: rgba(244, 185, 174, 0.083);
-  --color-brand-wash-pressed: rgba(244, 185, 174, 0.137);
-  --color-surface-destructive: #ea4a3e;
-  --color-surface-destructive-hover: #ff5f51;
-  --color-surface-destructive-pressed: #ff8172;
-  --color-destructive-wash: rgba(254, 161, 154, 0.091);
-  --color-destructive-wash-pressed: rgba(254, 161, 154, 0.149);
-  --color-surface-warning: #f9a165;
-  --color-surface-warning-hover: #ffbb8e;
-  --color-surface-warning-pressed: #ffd2b5;
-  --color-warning-wash: rgba(250, 175, 123, 0.088);
-  --color-warning-wash-pressed: rgba(250, 175, 123, 0.144);
-  --color-surface-success: #38a169;
-  --color-surface-success-hover: #4eb47b;
-  --color-surface-success-pressed: #5fc48a;
-  --color-success-wash: rgba(104, 211, 145, 0.089);
-  --color-success-wash-pressed: rgba(104, 211, 145, 0.146);
-  --color-surface-informative: #84c9f0;
-  --color-surface-informative-hover: #9edcff;
-  --color-surface-informative-pressed: #c3e9ff;
-  --color-informative-wash: rgba(164, 215, 244, 0.079);
-  --color-informative-wash-pressed: rgba(164, 215, 244, 0.13);
+  --color-surface-subtle: #232323;
+  --color-surface-subtle-hover: #323232;
+  --color-surface-subtle-pressed: #3f3f3f;
+  --color-surface-recess: rgba(35, 35, 35, 0.5);
+  --color-surface-strong: #333333;
+  --color-surface-strong-hover: #434343;
+  --color-primary-wash: rgba(183, 181, 251, 0.091);
+  --color-primary-wash-pressed: rgba(183, 181, 251, 0.148);
+  --color-secondary-wash: rgba(233, 233, 233, 0.071);
+  --color-secondary-wash-pressed: rgba(233, 233, 233, 0.116);
+  --color-brand-wash: rgba(252, 161, 142, 0.094);
+  --color-brand-wash-pressed: rgba(252, 161, 142, 0.153);
+  --color-surface-destructive: #f92445;
+  --color-surface-destructive-hover: #ff5b64;
+  --color-surface-destructive-pressed: #ff7e7f;
+  --color-destructive-wash: rgba(250, 116, 119, 0.117);
+  --color-destructive-wash-pressed: rgba(250, 116, 119, 0.188);
+  --color-surface-warning: #fa8923;
+  --color-surface-warning-hover: #ffa563;
+  --color-surface-warning-pressed: #ffbd90;
+  --color-warning-wash: rgba(251, 142, 36, 0.107);
+  --color-warning-wash-pressed: rgba(251, 142, 36, 0.172);
+  --color-surface-success: #2acf80;
+  --color-surface-success-hover: #48e393;
+  --color-surface-success-pressed: #5df4a2;
+  --color-success-wash: rgba(46, 223, 134, 0.092);
+  --color-success-wash-pressed: rgba(46, 223, 134, 0.147);
+  --color-surface-informative: #27bafa;
+  --color-surface-informative-hover: #69ccff;
+  --color-surface-informative-pressed: #96d9ff;
+  --color-informative-wash: rgba(39, 184, 250, 0.106);
+  --color-informative-wash-pressed: rgba(39, 184, 250, 0.17);
 
   /* Backgrounds */
-  --color-surface-disabled: #303032;
-  --color-neutral: #919295;
-  --color-neutral-hover: #a3a4a7;
-  /* `success-strong` keeps its light value — already 5.99:1 on `page`. */
-  --color-warning-strong: #f9944f;
-  --color-destructive-strong: #ea4a3e;
-  --color-informative-strong: #6ebfed;
+  --color-surface-disabled: #303030;
+  --color-neutral: #9c9c9c;
+  --color-neutral-hover: #afafaf;
+  --color-success-strong: #24ba72;
+  --color-warning-strong: #e48120;
+  --color-destructive-strong: #f92445;
+  --color-informative-strong: #23aae7;
 
   /* Borders, inputs, ring */
-  --color-border: #48484a;
-  --color-border-hover: #616163;
-  --color-border-pressed: #727274;
-  --color-border-subtle: #303032;
-  --color-border-strong: #606164;
+  --color-border: #4a4a4a;
+  --color-border-hover: #636363;
+  --color-border-pressed: #747474;
+  --color-border-subtle: #272727;
+  --color-border-strong: #656565;
   /* Lifted off `border-strong`: on a card — the ground a form is usually on — the shared value read
      2.87:1, under the boundary floor. On the page it always cleared it. */
-  --color-input: #66676a;
-  --color-input-hover: #808184;
-  /* Dark rests on a wash of its own, so the steps deepen it rather than switching to `accent`,
-     which composites *below* the hover here. Alphas hit the tint targets off the rest wash. */
-  --color-input-fill: rgba(96, 97, 100, 0.3);
-  --color-input-fill-hover: rgba(96, 97, 100, 0.45);
-  --color-input-fill-pressed: rgba(96, 97, 100, 0.567);
-  --color-invalid: rgba(254, 208, 205, 0.4);
-  --color-ring: #ffffff;
+  --color-input: #6f6f6f;
+  --color-input-hover: #898989;
+  /* A white wash, Void-style, rather than an opaque grey. At these lightnesses a ratio compresses, so
+     the steps clear the visibility floor on the card but the `input` border carries most of the
+     reaction — it steps 1.44:1, where the fill steps 1.19:1. */
+  --color-input-fill: rgba(255, 255, 255, 0.03);
+  --color-input-fill-hover: rgba(255, 255, 255, 0.09);
+  --color-input-fill-pressed: rgba(255, 255, 255, 0.15);
+  --color-invalid: rgba(250, 116, 119, 0.4);
+  --color-ring: #b6b4ff;
 
   /* Outlines */
-  --color-primary-line: #6172f3;
-  --color-primary-line-hover: #7f93ff;
-  --color-primary-line-pressed: #97aaff;
-  --color-secondary-line-hover: #738dc3;
-  --color-secondary-line-pressed: #859fd7;
-  --color-brand-line: #ee9281;
-  --color-brand-line-hover: #ffb6a8;
-  --color-brand-line-pressed: #ffd2c9;
-  --color-inverse-line: #48484a;
-  --color-inverse-line-hover: #616163;
-  --color-inverse-line-pressed: #727274;
-  --color-destructive-line: #ea4a3e;
-  --color-destructive-line-hover: #ff7465;
-  --color-destructive-line-pressed: #ff988a;
-  --color-warning-line: #f9944f;
-  --color-warning-line-hover: #ffbd94;
-  --color-warning-line-pressed: #ffd8c1;
-  --color-informative-line: #6ebfed;
-  --color-informative-line-hover: #9cdaff;
-  --color-informative-line-pressed: #c8eaff;
-  /* `success-line` keeps its light rest, but its steps have to lift rather than deepen. */
-  --color-success-line-hover: #58be84;
-  --color-success-line-pressed: #6cd196;
+  --color-primary-line: #6f4cf7;
+  --color-primary-line-hover: #8776ff;
+  --color-primary-line-pressed: #9890ff;
+  --color-secondary-line: #6f6f6f;
+  --color-secondary-line-hover: #898989;
+  --color-secondary-line-pressed: #9c9c9c;
+  --color-brand-line: #fa471c;
+  --color-brand-line-hover: #ff8367;
+  --color-brand-line-pressed: #ffa48e;
+  --color-inverse-line: #4a4a4a;
+  --color-inverse-line-hover: #636363;
+  --color-inverse-line-pressed: #747474;
+  --color-destructive-line: #f92445;
+  --color-destructive-line-hover: #ff7174;
+  --color-destructive-line-pressed: #ff9594;
+  --color-warning-line: #e48120;
+  --color-warning-line-hover: #ffa04f;
+  --color-warning-line-pressed: #ffbd8a;
+  --color-informative-line: #23aae7;
+  --color-informative-line-hover: #5ac6ff;
+  --color-informative-line-pressed: #91d7ff;
+  /* Its steps have to lift rather than deepen. */
+  --color-success-line: #24ba72;
+  --color-success-line-hover: #4ed78d;
+  --color-success-line-pressed: #65eba0;
 
   /* Interaction tints */
-  --color-accent: rgba(199, 210, 254, 0.077);
-  --color-accent-pressed: rgba(199, 210, 254, 0.127);
-  --color-sidebar-accent: rgba(255, 255, 255, 0.055);
-  --color-sidebar-accent-pressed: rgba(255, 255, 255, 0.094);
+  --color-accent: rgba(255, 255, 255, 0.064);
+  --color-accent-pressed: rgba(255, 255, 255, 0.105);
+  --color-sidebar-accent: rgba(255, 255, 255, 0.078);
+  --color-sidebar-accent-pressed: rgba(255, 255, 255, 0.12);
+  /* Declared here too, so every ink the dark shell paints is on the achromatic ramp. */
+  --color-sidebar-accent-foreground: #e8e8e8;
 
   /* Sidebar */
-  --color-sidebar: #20293c;
-  --color-sidebar-foreground: #dcdcde;
-  --color-sidebar-ring: #8098f9;
-  --color-sidebar-border: #79797d;
-  --color-sidebar-primary: #8098f9;
+  --color-sidebar: #0b0b0b;
+  --color-sidebar-foreground: #c9c9c9;
+  --color-sidebar-ring: #b6b4ff;
+  --color-sidebar-border: #404040;
+  --color-sidebar-primary: #7860f8;
 
   /* Selection */
-  --color-selection: #a4bcfd;
-  --color-selection-foreground: #2d3282;
-  --color-selected-wash: rgba(164, 188, 253, 0.144);
-  --color-selected: #ffffff;
-  --color-selected-hover: #ebebeb;
-  --color-selected-pressed: #dbdbdb;
-  --color-selected-foreground: #2c30a0;
+  --color-selection: #a9a6fa;
+  --color-selection-foreground: #2c076d;
+  --color-selected-wash: rgba(183, 181, 251, 0.144);
+  --color-selected: #e8e8e8;
+  --color-selected-hover: #d4d4d4;
+  --color-selected-pressed: #c4c4c4;
+  --color-selected-foreground: #3b0c8e;
 
   /* Charts */
-  /* `chart-3` and `chart-4` keep their light values — both already read on a dark page. */
-  --color-chart-1: #8098f9;
-  --color-chart-2: #5972a6;
-  --color-chart-5: #c7d2fe;
+  /* Same lightness order as the light block, so a series keeps its weight when the theme flips. */
+  --color-chart-1: #7860f8;
+  --color-chart-2: #0c54dc;
+  --color-chart-3: #c5a8e9;
+  --color-chart-4: #cfcfec;
+  --color-chart-5: #ebecff;
 
   /* Overlays */
   --color-modal-overlay: rgba(0, 0, 0, 0.64);

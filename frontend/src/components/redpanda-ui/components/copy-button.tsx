@@ -16,8 +16,9 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary-hover active:bg-secondary-pressed',
         destructive:
           'bg-surface-destructive text-destructive-foreground shadow-xs hover:bg-surface-destructive-hover focus-visible:ring-destructive/50 active:bg-surface-destructive-pressed',
+        // Tones mirror Button's, so the same variant name means the same colour in both.
         outline:
-          '!border-primary-line hover:!border-primary-line-hover active:!border-primary-line-pressed disabled:!border-border border text-primary shadow-xs hover:bg-primary-wash active:bg-primary-wash-pressed disabled:text-disabled',
+          '!border-secondary-line hover:!border-secondary-line-hover active:!border-secondary-line-pressed disabled:!border-border border text-secondary shadow-xs hover:bg-secondary-wash active:bg-secondary-wash-pressed disabled:text-disabled',
         secondary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover active:bg-primary-pressed',
         ghost: 'hover:bg-accent hover:text-accent-foreground active:bg-accent-pressed',
       },

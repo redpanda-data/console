@@ -1238,7 +1238,7 @@ function PipelinePageContent() {
                 </TabsList>
               </Tabs>
             ) : (
-              <div className="h-9 border-border! border-b bg-background" />
+              <div className="h-9 border-border! border-b" />
             )}
             <div className="absolute inset-y-0 right-1.5 flex items-center">
               <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />

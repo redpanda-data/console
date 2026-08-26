@@ -484,7 +484,7 @@ export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = tru
         </EmptyHeader>
         {onCancel ? (
           <EmptyContent>
-            <Button onClick={onCancel} size="sm" variant="secondary-outline">
+            <Button onClick={onCancel} size="sm" variant="outline">
               <X /> Cancel
             </Button>
           </EmptyContent>
