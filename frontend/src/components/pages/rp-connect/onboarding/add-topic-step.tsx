@@ -373,7 +373,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
               </div>
 
               {showExistingTopicAlert ? (
-                <Alert variant="info">
+                <Alert variant="informative">
                   <AlertDescription>
                     A topic named <b>{watchedTopicName}</b> already exists. A reference to the existing topic will be
                     used.

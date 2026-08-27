@@ -538,14 +538,14 @@ const sidebarMenuButtonVariants = cva(
         outline: 'bg-background shadow-[0_0_0_1px_var(--color-sidebar-border)]',
       },
       size: {
-        default: 'h-8 text-body',
         sm: 'h-7 text-body-sm',
+        md: 'h-8 text-body',
         lg: 'h-12 text-body group-data-[collapsible=icon]:p-0!',
       },
     },
     defaultVariants: {
       variant: 'default',
-      size: 'default',
+      size: 'md',
     },
   }
 );
@@ -575,7 +575,7 @@ function SidebarMenuButton({
   render,
   isActive = false,
   variant = 'default',
-  size = 'default',
+  size = 'md',
   tooltip,
   className,
   ...props

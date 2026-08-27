@@ -10,22 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type Row,
-  type SortingState,
-  type Updater,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutFilters, ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
 import { Search, UsersIcon, X } from 'lucide-react';
@@ -33,6 +18,7 @@ import { parseAsArrayOf, parseAsInteger, parseAsString, useQueryState } from 'nu
 import type { FC } from 'react';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useLegacyListConsumerGroupsFullQuery } from 'react-query/api/consumer-group';
+import { columnMeta } from 'utils/data-table-column-meta';
 
 import type { ColumnMeta } from './column-meta';
 import { appGlobal } from '../../../state/app-global';
@@ -45,9 +31,12 @@ import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/component
 import { Badge } from '../../redpanda-ui/components/badge';
 import { Button } from '../../redpanda-ui/components/button';
 import {
+  type DataTableColumnDef,
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTablePagination,
+  type DataTableRow,
+  useDataTable,
 } from '../../redpanda-ui/components/data-table';
 import { Input, InputEnd, InputStart } from '../../redpanda-ui/components/input';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
@@ -58,7 +47,7 @@ import {
   consumerGroupStateFilterOptions,
 } from '../../ui/consumer-group/consumer-group-state-cell';
 
-const groupIdFilterFn = (row: Row<GroupDescription>, _columnId: string, filterValue: string) => {
+const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string, filterValue: string) => {
   if (!filterValue) {
     return true;
   }
@@ -72,7 +61,7 @@ const groupIdFilterFn = (row: Row<GroupDescription>, _columnId: string, filterVa
   }
 };
 
-const stateFilterFn = (row: Row<GroupDescription>, columnId: string, filterValues: string[]) => {
+const stateFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValues: string[]) => {
   if (!filterValues?.length) {
     return true;
   }
@@ -147,19 +136,19 @@ const GroupList: FC = () => {
     };
   }, [consumerGroups]);
 
-  const columns: ColumnDef<GroupDescription>[] = [
+  const columns: DataTableColumnDef<GroupDescription>[] = [
     {
       accessorKey: 'state',
       header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
       filterFn: stateFilterFn,
-      meta: { headWidth: 'md' as const },
+      meta: columnMeta({ headWidth: 'md' as const }),
       cell: ({ row: { original: group } }) => <ConsumerGroupStateCell state={group.state} />,
     },
     {
       accessorKey: 'groupId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
       filterFn: groupIdFilterFn,
-      meta: { headWidth: 'full' as const },
+      meta: columnMeta({ headWidth: 'full' as const }),
       cell: ({ row: { original: group } }) => (
         <Link
           className="flex items-center gap-2 text-inherit no-underline hover:no-underline"
@@ -168,7 +157,11 @@ const GroupList: FC = () => {
           search={{} as never}
           to="/groups/$groupId"
         >
-          {group.protocolType !== 'consumer' && <Badge tone="neutral">Protocol: {group.protocolType}</Badge>}
+          {group.protocolType !== 'consumer' && (
+            <Badge tone="default" variant="subtle">
+              Protocol: {group.protocolType}
+            </Badge>
+          )}
           <span className="whitespace-break-spaces break-words">{group.groupId}</span>
         </Link>
       ),
@@ -177,32 +170,32 @@ const GroupList: FC = () => {
       accessorKey: 'coordinatorId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Coordinator" />,
       enableColumnFilter: false,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original: group } }) => <BrokerList brokerIds={[group.coordinatorId]} />,
     },
     {
       accessorKey: 'protocol',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Protocol" />,
       enableColumnFilter: false,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
     },
     {
       id: 'members',
       accessorFn: (group) => group.members.length,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Members" />,
       enableColumnFilter: false,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
     },
     {
       accessorKey: 'lagSum',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Offset Lag (Sum)" />,
       enableColumnFilter: false,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original: group } }) => <ShortNum value={group.lagSum} />,
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: consumerGroups,
     columns,
     state: { sorting, pagination, columnFilters },
@@ -210,12 +203,6 @@ const GroupList: FC = () => {
     onPaginationChange: handlePaginationChange,
     onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const groupIdFilter = (table.getColumn('groupId')?.getFilterValue() as string) ?? '';
@@ -249,7 +236,7 @@ const GroupList: FC = () => {
             const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
             return (
               <TableCell align={meta?.align} key={cell.id} testId="data-table-cell">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                {<table.FlexRender cell={cell} />}
               </TableCell>
             );
           })}
@@ -329,7 +316,7 @@ const GroupList: FC = () => {
                 const meta = header.column.columnDef.meta as ColumnMeta | undefined;
                 return (
                   <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 );
               })}

@@ -23,7 +23,7 @@ import {
   ViewportPortal,
 } from '@xyflow/react';
 import { useDebouncedValue } from 'hooks/use-debounced-value';
-import { useIsDarkMode } from 'hooks/use-is-dark-mode';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import {
   memo,
   type PointerEvent as ReactPointerEvent,
@@ -1157,10 +1157,9 @@ export function PipelineFlowCanvas({
   // Interactive zoom-out floor — lowered for graphs too big to fit at MIN_ZOOM (MinZoomController).
   const [minZoom, setMinZoom] = useState(MIN_ZOOM);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  // react-flow stamps its colour mode as a bare `light`/`dark` class on the container. Left at its
-  // `light` default, that class re-declares the light palette over the whole canvas subtree, so
-  // every `bg-card` node came out white on the dark theme.
-  const isDarkMode = useIsDarkMode();
+  // Must be told: react-flow stamps a bare `light`/`dark` class, and its `light` default re-declares
+  // the light palette over the whole subtree.
+  const appearance = useThemeAppearance();
   useZoomCursor(zoomMode, wrapperRef);
   // Node ids committed last render — anything new this render "appears" in place (see injectNodeData).
   const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
@@ -1325,7 +1324,7 @@ export function PipelineFlowCanvas({
       <ReactFlowProvider>
         <ReactFlow
           className={staleFlowClass(showingStale)}
-          colorMode={isDarkMode ? 'dark' : 'light'}
+          colorMode={appearance}
           edges={rfEdges}
           edgeTypes={flowEdgeTypes}
           elementsSelectable={false}

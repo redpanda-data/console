@@ -27,7 +27,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
-import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -157,7 +157,7 @@ const useHostShellFit = () => {
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
-  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const toasterTheme = useThemeAppearance();
   const layoutRef = useHostShellFit();
 
   return (

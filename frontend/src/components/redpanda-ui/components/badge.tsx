@@ -14,89 +14,66 @@ const badgeVariants = cva(
       variant: {
         // `:is(a, button)` rather than shadcn's `[a&]`, so a Badge rendered as a button reacts too.
         // No `active:`: the click navigates or removes, which is the feedback.
-        neutral: 'border-transparent bg-neutral text-neutral-foreground [&:is(a,button)]:hover:bg-neutral-hover',
-        /** @deprecated Prefer `tone` + `variant="subtle"`. */
-        'neutral-inverted': 'border-transparent bg-surface-subtle [&:is(a,button)]:hover:bg-surface-subtle-hover',
-        /** @deprecated Prefer `tone` + `variant="outline"`. */
-        'neutral-outline': 'border-border [&:is(a,button)]:hover:bg-accent',
+        //
+        // `<tone>` / `<tone>-inverted` / `<tone>-outline` are what `tone` × `variant` resolves to —
+        // targets, not API; `BadgeVariant` lists the few names worth passing directly. `default` is
+        // the neutral member, named after its slot like Button's and on the same `secondary-*` palette.
+        default: 'border-transparent bg-secondary text-secondary-foreground [&:is(a,button)]:hover:bg-secondary-hover',
+        'default-inverted':
+          'border-transparent bg-secondary-wash text-secondary [&:is(a,button)]:hover:bg-secondary-wash-pressed',
+        'default-outline':
+          'border-secondary-line text-secondary [&:is(a,button)]:hover:border-secondary-line-hover [&:is(a,button)]:hover:bg-secondary-wash',
 
         // Transparent at rest, so hover tints in rather than jumping to an opaque ground.
         simple: 'text-secondary [&:is(a,button)]:hover:bg-accent',
-        /** @deprecated Prefer `tone` + `variant="subtle"`. */
-        'simple-inverted': 'text-secondary [&:is(a,button)]:hover:bg-accent',
-        /** @deprecated Prefer `tone` + `variant="outline"`. */
-        'simple-outline': 'border-border text-secondary [&:is(a,button)]:hover:bg-accent',
 
-        info: 'border-transparent bg-surface-informative text-informative-foreground [&:is(a,button)]:hover:bg-surface-informative-hover',
-        /** @deprecated Prefer `tone="info"` + `variant="subtle"`. */
-        'info-inverted':
+        informative:
+          'border-transparent bg-surface-informative text-informative-foreground [&:is(a,button)]:hover:bg-surface-informative-hover',
+        'informative-inverted':
           'border-transparent bg-informative-wash text-informative [&:is(a,button)]:hover:bg-informative-wash-pressed',
-        /** @deprecated Prefer `tone="info"` + `variant="outline"`. */
-        'info-outline':
+        'informative-outline':
           'border-informative-line bg-transparent text-informative [&:is(a,button)]:hover:border-informative-line-hover [&:is(a,button)]:hover:bg-informative-wash',
 
-        accent: 'border-transparent bg-brand text-brand-foreground [&:is(a,button)]:hover:bg-brand-hover',
-        /** @deprecated Prefer `tone="accent"` + `variant="subtle"`. */
-        'accent-inverted': 'border-transparent bg-brand-wash text-brand [&:is(a,button)]:hover:bg-brand-wash-pressed',
-        /** @deprecated Prefer `tone="accent"` + `variant="outline"`. */
-        'accent-outline':
+        brand: 'border-transparent bg-brand text-brand-foreground [&:is(a,button)]:hover:bg-brand-hover',
+        'brand-inverted': 'border-transparent bg-brand-wash text-brand [&:is(a,button)]:hover:bg-brand-wash-pressed',
+        'brand-outline':
           'border-brand-line bg-transparent text-brand [&:is(a,button)]:hover:border-brand-line-hover [&:is(a,button)]:hover:bg-brand-wash',
 
         success:
           'border-transparent bg-surface-success text-success-foreground [&:is(a,button)]:hover:bg-surface-success-hover',
-        /** @deprecated Prefer `tone="success"` + `variant="subtle"`. */
         'success-inverted':
           'border-transparent bg-success-wash text-success [&:is(a,button)]:hover:bg-success-wash-pressed',
-        /** @deprecated Prefer `tone="success"` + `variant="outline"`. */
         'success-outline':
           'border-success-line bg-transparent text-success [&:is(a,button)]:hover:border-success-line-hover [&:is(a,button)]:hover:bg-success-wash',
 
         warning:
           'border-transparent bg-surface-warning text-warning-foreground [&:is(a,button)]:hover:bg-surface-warning-hover',
-        /** @deprecated Prefer `tone="warning"` + `variant="subtle"`. */
         'warning-inverted':
           'border-transparent bg-warning-wash text-warning [&:is(a,button)]:hover:bg-warning-wash-pressed',
-        /** @deprecated Prefer `tone="warning"` + `variant="outline"`. */
         'warning-outline':
           'border-warning-line bg-transparent text-warning [&:is(a,button)]:hover:border-warning-line-hover [&:is(a,button)]:hover:bg-warning-wash',
 
         disabled: 'cursor-not-allowed border-transparent bg-surface-disabled text-disabled',
-        /** @deprecated Prefer the `disabled` prop. */
         'disabled-inverted': 'cursor-not-allowed border-transparent bg-surface-subtle text-disabled',
-        /** @deprecated Prefer the `disabled` prop. */
         'disabled-outline': 'cursor-not-allowed border-border bg-transparent text-disabled',
 
         destructive:
           'border-transparent bg-surface-destructive text-destructive-foreground focus-visible:ring-destructive/50 [&:is(a,button)]:hover:bg-surface-destructive-hover',
-        /** @deprecated Prefer `tone="destructive"` + `variant="subtle"`. */
         'destructive-inverted':
           'border-transparent bg-destructive-wash text-destructive [&:is(a,button)]:hover:bg-destructive-wash-pressed',
-        /** @deprecated Prefer `tone="destructive"` + `variant="outline"`. */
         'destructive-outline':
           'border-destructive-line bg-transparent text-destructive [&:is(a,button)]:hover:border-destructive-line-hover [&:is(a,button)]:hover:bg-destructive-wash',
 
-        secondary:
-          'border-transparent bg-secondary text-secondary-foreground [&:is(a,button)]:hover:bg-secondary-hover',
-        /** @deprecated Prefer `tone` + `variant="subtle"`. */
-        'secondary-inverted':
-          'border-transparent bg-secondary-wash text-secondary [&:is(a,button)]:hover:bg-secondary-wash-pressed',
-        /** @deprecated Prefer `tone` + `variant="outline"`. */
-        'secondary-outline':
-          'border-secondary-line text-secondary [&:is(a,button)]:hover:border-secondary-line-hover [&:is(a,button)]:hover:bg-secondary-wash',
-
         primary: 'border-transparent bg-primary text-primary-foreground [&:is(a,button)]:hover:bg-primary-hover',
-        /** @deprecated Prefer `tone="primary"` + `variant="subtle"`. */
         'primary-inverted':
           'border-transparent bg-primary-wash text-primary [&:is(a,button)]:hover:bg-primary-wash-pressed',
-        /** @deprecated Prefer `tone="primary"` + `variant="outline"`. */
         'primary-outline':
           'border-primary-line text-primary [&:is(a,button)]:hover:border-primary-line-hover [&:is(a,button)]:hover:bg-primary-wash',
 
         outline:
           'border-border text-foreground [&:is(a,button)]:hover:bg-accent [&:is(a,button)]:hover:text-accent-foreground',
 
-        // shadcn aliases: `default` maps to our `neutral`; `ghost`/`link` mirror the button variants.
-        default: 'border-transparent bg-neutral text-neutral-foreground [&:is(a,button)]:hover:bg-neutral-hover',
+        // `ghost`/`link` mirror the button variants.
         ghost: 'border-transparent bg-transparent text-secondary [&:is(a,button)]:hover:bg-secondary-wash',
         link: 'link-standalone border-transparent bg-transparent text-action-primary',
       },
@@ -107,24 +84,29 @@ const badgeVariants = cva(
       },
     },
     defaultVariants: {
-      variant: 'neutral',
+      variant: 'default',
       size: 'md',
     },
   }
 );
 
 /** Recommended colour axis. Pair with {@link BadgeEmphasis}: `<Badge tone="success" variant="subtle" />`. */
-export type BadgeTone = 'neutral' | 'primary' | 'accent' | 'info' | 'success' | 'warning' | 'destructive';
+export type BadgeTone = 'default' | 'primary' | 'brand' | 'informative' | 'success' | 'warning' | 'destructive';
 
 /** Recommended emphasis axis. `subtle` is the soft-fill style (formerly `*-inverted`). */
 export type BadgeEmphasis = 'solid' | 'subtle' | 'outline';
 
 /**
- * @deprecated Use the two-axis `tone` + `variant` (solid|subtle|outline) API. The flat strings render
- * identically and stay for back-compat, but go in a future major: `variant="success-inverted"` →
- * `tone="success" variant="subtle"`.
+ * The flat strings still worth naming directly. The `<tone>-inverted` / `<tone>-outline` keys the
+ * two-axis API resolves to are deliberately absent: they are the implementation, not the API.
  */
-export type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
+export type BadgeVariant = 'simple' | 'outline' | 'ghost' | 'link' | 'disabled';
+
+/**
+ * Every key `badgeVariants` declares, including the ones only the resolver names. Exported for
+ * callers of `badgeVariants` itself — it is not the Badge `variant` prop surface, which is narrower.
+ */
+export type BadgeVariantKey = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
 export type BadgeSize = VariantProps<typeof badgeVariants>['size'];
 
 const EMPHASIS_VALUES = new Set<BadgeEmphasis>(['solid', 'subtle', 'outline']);
@@ -132,11 +114,11 @@ const EMPHASIS_VALUES = new Set<BadgeEmphasis>(['solid', 'subtle', 'outline']);
 const isEmphasis = (value: unknown): value is BadgeEmphasis => EMPHASIS_VALUES.has(value as BadgeEmphasis);
 
 /** Map a (tone, emphasis) pair to the underlying flat `badgeVariants` key. */
-function toneToVariant(tone: BadgeTone, emphasis: BadgeEmphasis): BadgeVariant {
+function toneToVariant(tone: BadgeTone, emphasis: BadgeEmphasis): BadgeVariantKey {
   if (emphasis === 'solid') {
     return tone;
   }
-  return `${tone}-${emphasis === 'subtle' ? 'inverted' : 'outline'}` as BadgeVariant;
+  return `${tone}-${emphasis === 'subtle' ? 'inverted' : 'outline'}` as BadgeVariantKey;
 }
 
 /** The two-axis API and disabled state, down to one flat `badgeVariants` key. */
@@ -156,13 +138,13 @@ function resolveBadgeVariant(tone: BadgeTone | undefined, variant: BadgeEmphasis
   }
   // Emphasis shorthand without a tone falls back to the neutral tone.
   if (variant === 'solid') {
-    return 'neutral';
+    return 'default';
   }
   if (variant === 'subtle') {
-    return 'neutral-inverted';
+    return 'default-inverted';
   }
-  // Anything else is a (deprecated) flat variant string — including the generic `outline`.
-  return variant as BadgeVariant;
+  // Anything else is one of the public flat strings — including the generic `outline`.
+  return variant as BadgeVariantKey;
 }
 
 export type BadgeProps = useRender.ComponentProps<'span'> &

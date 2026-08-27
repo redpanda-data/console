@@ -23,15 +23,7 @@ import {
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import '../../../../utils/array-extensions';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import {
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import {
   CalendarIcon,
   CodeIcon,
@@ -51,7 +43,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTablePagination,
+  useDataTable,
+} from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1038,7 +1034,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const isKeyDeserializerActive =
     keyDeserializer !== null && keyDeserializer !== undefined && keyDeserializer !== PayloadEncoding.UNSPECIFIED;
 
-  const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
+  const dataTableColumns: Record<DataColumnKey, DataTableColumnDef<TopicMessage>> = {
     offset: {
       header: 'Offset',
       accessorKey: 'offset',
@@ -1146,7 +1142,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const columnsVisibleByDefault: DataColumnKey[] = ['timestamp', 'key', 'value'];
 
-  const newColumns: ColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
+  const newColumns: DataTableColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
 
   const previewColumnFields = topicSettings?.previewColumnFields ?? [];
   if (previewColumnFields.length > 0) {
@@ -1169,7 +1165,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     }
   }
 
-  const columns: ColumnDef<TopicMessage>[] = [
+  const columns: DataTableColumnDef<TopicMessage>[] = [
     ...newColumns,
     {
       id: 'action',
@@ -1227,7 +1223,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     },
   ];
 
-  const expanderColumn: ColumnDef<TopicMessage> = {
+  const expanderColumn: DataTableColumnDef<TopicMessage> = {
     id: 'expander',
     size: 40,
     enableSorting: false,
@@ -1244,7 +1240,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       ) : null,
   };
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: filteredMessages,
     columns: [expanderColumn, ...columns],
     state: {
@@ -1268,10 +1264,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
       setSortingState(newSorting);
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
   });
@@ -1734,7 +1726,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         onClick={header.column.getToggleSortingHandler()}
                         style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
                       >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                         {header.column.getIsSorted() === 'asc' && ' ↑'}
                         {header.column.getIsSorted() === 'desc' && ' ↓'}
                       </TableHead>
@@ -1773,7 +1765,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                             key={cell.id}
                             style={{ width: cell.column.getSize() !== 150 ? cell.column.getSize() : undefined }}
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {<table.FlexRender cell={cell} />}
                           </TableCell>
                         ))}
                       </TableRow>

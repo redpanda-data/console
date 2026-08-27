@@ -113,7 +113,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
                     Enabled
                   </Badge>
                 ) : (
-                  <Badge testId="tls-status-badge" tone="neutral" variant="subtle">
+                  <Badge testId="tls-status-badge" tone="default" variant="subtle">
                     Disabled
                   </Badge>
                 )
@@ -141,7 +141,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
                     Enabled
                   </Badge>
                 ) : (
-                  <Badge testId="auth-status-badge" tone="neutral" variant="subtle">
+                  <Badge testId="auth-status-badge" tone="default" variant="subtle">
                     Disabled
                   </Badge>
                 )

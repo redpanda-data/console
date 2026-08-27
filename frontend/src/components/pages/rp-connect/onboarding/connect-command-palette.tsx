@@ -88,7 +88,7 @@ function statusBadge(status: ComponentStatus, name: string) {
       status === ComponentStatus.DEPRECATED)
   ) {
     return (
-      <Badge size="sm" tone="neutral" variant="subtle">
+      <Badge size="sm" tone="default" variant="subtle">
         {componentStatusToString(status)}
       </Badge>
     );
@@ -139,7 +139,7 @@ function Row({
         {statusBadge(component.status, component.name)}
       </span>
       {badgeLabel ? (
-        <Badge className="ml-auto shrink-0 capitalize" size="sm" tone="neutral" variant="outline">
+        <Badge className="ml-auto shrink-0 capitalize" size="sm" tone="default" variant="outline">
           {badgeLabel}
         </Badge>
       ) : null}
@@ -196,12 +196,12 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
             gap="md"
             maxVisible={6}
             renderOverflowContent={(overflow) => <div className="flex flex-col gap-1">{overflow}</div>}
-            tone="neutral"
+            tone="default"
             variant="subtle"
             wrap
           >
             {categories.map((category) => (
-              <Badge key={category} size="sm" tone="neutral" variant="subtle">
+              <Badge key={category} size="sm" tone="default" variant="subtle">
                 {category}
               </Badge>
             ))}

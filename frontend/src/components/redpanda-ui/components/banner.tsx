@@ -13,9 +13,7 @@ const bannerVariants = cva(
     variants: {
       variant: {
         secondary: 'bg-secondary text-secondary-foreground',
-        // `brand`, as `accent` means on Button and Badge — not the `accent` token, which is the
-        // row-hover tint and too faint to be a band's ground.
-        accent: 'bg-brand text-brand-foreground',
+        brand: 'bg-brand text-brand-foreground',
         muted: 'bg-surface-subtle text-subtle',
         primary: 'bg-primary text-primary-foreground',
       },

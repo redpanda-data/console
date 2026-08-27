@@ -10,22 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type Row,
-  type SortingState,
-  type Updater,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import {
@@ -46,6 +31,7 @@ import { KeyRoundIcon, ShieldIcon, Trash2Icon, UsersIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import type { FC } from 'react';
 import { useLayoutEffect, useState } from 'react';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
 import { pluralize } from 'utils/string';
 
@@ -60,9 +46,12 @@ import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/compon
 import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
+  type DataTableColumnDef,
   DataTableColumnHeader,
   DataTableFacetedFilter,
   DataTablePagination,
+  type DataTableRow,
+  useDataTable,
 } from '../../../redpanda-ui/components/data-table';
 import {
   DropdownMenu,
@@ -94,7 +83,7 @@ const mechanismLabel = (mechanism?: SASLMechanism) => {
   return null;
 };
 
-const nameFilterFn = (row: Row<PrincipalEntry>, columnId: string, filterValue: string) => {
+const nameFilterFn = (row: DataTableRow<PrincipalEntry>, columnId: string, filterValue: string) => {
   if (!filterValue) return true;
   try {
     return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
@@ -103,7 +92,7 @@ const nameFilterFn = (row: Row<PrincipalEntry>, columnId: string, filterValue: s
   }
 };
 
-const mechanismFilterFn = (row: Row<PrincipalEntry>, columnId: string, filterValues: string[]) => {
+const mechanismFilterFn = (row: DataTableRow<PrincipalEntry>, columnId: string, filterValues: string[]) => {
   if (!filterValues?.length) return true;
   return filterValues.includes(String(row.getValue(columnId)));
 };
@@ -186,7 +175,7 @@ export const UsersTabNew: FC = () => {
     setPageSize(next.pageSize);
   };
 
-  const columns: ColumnDef<PrincipalEntry>[] = [
+  const columns: DataTableColumnDef<PrincipalEntry>[] = [
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
@@ -210,7 +199,9 @@ export const UsersTabNew: FC = () => {
       cell: ({ row: { original: entry } }) => {
         const label = mechanismLabel(entry.mechanism);
         return label ? (
-          <Badge tone="neutral">{label}</Badge>
+          <Badge tone="default" variant="subtle">
+            {label}
+          </Badge>
         ) : (
           <span className="text-body text-muted-foreground">—</span>
         );
@@ -232,12 +223,12 @@ export const UsersTabNew: FC = () => {
       id: 'menu',
       header: '',
       enableSorting: false,
-      meta: { align: 'right' as const },
+      meta: columnMeta({ align: 'right' as const }),
       cell: ({ row: { original: entry } }) => <UserActions user={entry} />,
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: users,
     columns,
     state: { sorting, pagination, columnFilters },
@@ -245,12 +236,6 @@ export const UsersTabNew: FC = () => {
     onPaginationChange: handlePaginationChange,
     onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (isError && error) {
@@ -286,8 +271,8 @@ export const UsersTabNew: FC = () => {
       return table.getRowModel().rows.map((row) => (
         <TableRow key={row.id}>
           {row.getVisibleCells().map((cell) => (
-            <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <TableCell align={readColumnMeta(cell.column.columnDef.meta).align} key={cell.id}>
+              {<table.FlexRender cell={cell} />}
             </TableCell>
           ))}
         </TableRow>
@@ -387,8 +372,8 @@ export const UsersTabNew: FC = () => {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead align={(header.column.columnDef.meta as { align?: 'right' })?.align} key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    <TableHead align={readColumnMeta(header.column.columnDef.meta).align} key={header.id}>
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -445,7 +430,7 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
 const AclPermissionRow = ({ acl }: { acl: FlatAclEntry }) => (
   <TableRow>
     <TableCell>
-      <Badge tone="neutral" variant="outline">
+      <Badge tone="default" variant="outline">
         {acl.resourceType}
       </Badge>
     </TableCell>

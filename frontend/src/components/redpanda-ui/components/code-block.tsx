@@ -125,7 +125,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
             <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
             {allowCopy ? (
               <CopyButton
-                className="-me-2 bg-transparent selection:bg-selection selection:text-selection-foreground hover:bg-secondary-wash active:bg-secondary-wash-pressed"
+                className="-me-2 bg-transparent selection:bg-selection selection:text-selection-foreground"
                 isCopied={isCopied}
                 onClick={onCopy}
                 size="sm"
@@ -136,7 +136,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         ) : (
           allowCopy && (
             <CopyButton
-              className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selection selection:text-selection-foreground hover:bg-secondary-wash active:bg-secondary-wash-pressed"
+              className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selection selection:text-selection-foreground"
               isCopied={isCopied}
               onClick={onCopy}
               size="sm"

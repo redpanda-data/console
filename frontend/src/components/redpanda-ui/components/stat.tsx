@@ -14,6 +14,7 @@ export const statValueVariants = cva('leading-none', {
     tone: {
       default: 'text-foreground',
       muted: 'text-subtle',
+      informative: 'text-informative',
       success: 'text-success',
       warning: 'text-warning',
       destructive: 'text-destructive',

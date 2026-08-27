@@ -76,12 +76,14 @@ import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
 
-const TAG_VARIANT: Record<ConnectConfigFixture['tags'][number], React.ComponentProps<typeof Badge>['variant']> = {
-  simple: 'success-inverted',
-  medium: 'info-inverted',
-  complex: 'warning-inverted',
-  'edge-case': 'accent-inverted',
-  invalid: 'destructive-inverted',
+type BadgeProps = React.ComponentProps<typeof Badge>;
+
+const TAG_TONE: Record<ConnectConfigFixture['tags'][number], BadgeProps['tone']> = {
+  simple: 'success',
+  medium: 'informative',
+  complex: 'warning',
+  'edge-case': 'brand',
+  invalid: 'destructive',
 };
 
 type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
@@ -179,11 +181,11 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
           <ItemTitle className="flex-wrap">
             {fixture.name}
             {fixture.tags.map((tag) => (
-              <Badge key={tag} size="sm" variant={TAG_VARIANT[tag]}>
+              <Badge key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
                 {tag}
               </Badge>
             ))}
-            <Badge size="sm" tone="neutral" variant="outline">
+            <Badge size="sm" tone="default" variant="outline">
               {lineCount} lines
             </Badge>
           </ItemTitle>
@@ -424,7 +426,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             <code className="min-w-0 flex-1 truncate font-medium font-mono text-body-sm" title={storageKey}>
               {storageKey}
             </code>
-            <Badge className="shrink-0" size="sm" tone="neutral" variant="outline">
+            <Badge className="shrink-0" size="sm" tone="default" variant="outline">
               {formatBytes(sizeBytes)}
             </Badge>
           </div>
@@ -490,7 +492,7 @@ function StorageSection({
       <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <div className="truncate font-medium text-body-sm">{title}</div>
-          <Badge className="shrink-0" size="sm" tone="neutral" variant="outline">
+          <Badge className="shrink-0" size="sm" tone="default" variant="outline">
             {storage.length} keys
           </Badge>
         </div>
@@ -599,7 +601,7 @@ function EnvironmentPanel() {
         icon={<Clipboard />}
         onClick={() => copyToClipboard(JSON.stringify(info, null, 2), 'Copied environment snapshot')}
         size="xs"
-        variant="secondary"
+        variant="primary"
       >
         Copy environment snapshot
       </Button>
@@ -934,7 +936,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <DialogTitle className="flex items-center gap-2">
             <DebugPanda className="h-5 w-5" />
             Debug helpers
-            <Badge size="sm" tone="neutral" variant="outline">
+            <Badge size="sm" tone="default" variant="outline">
               dev only
             </Badge>
           </DialogTitle>

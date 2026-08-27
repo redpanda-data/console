@@ -38,10 +38,10 @@
 
 /* Add `.dark` beside this selector if something in your app sets the class instead. */
 [data-theme='dark'] {
-  --color-primary: #7860f8;
-  --color-primary-hover: #8979ff;
-  --color-primary-pressed: #988fff;
+  --color-primary: #26b5ac;
+  --color-primary-hover: #43c8bf;
+  --color-primary-pressed: #57d9cf;
   --color-primary-foreground: #080808;
-  --color-primary-wash: rgba(183, 181, 251, 0.091);
-  --color-primary-wash-pressed: rgba(183, 181, 251, 0.148);
+  --color-primary-wash: rgba(92, 212, 203, 0.09);
+  --color-primary-wash-pressed: rgba(92, 212, 203, 0.145);
 }

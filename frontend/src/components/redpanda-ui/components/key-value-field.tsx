@@ -43,14 +43,14 @@ function FieldRenderer({
   value,
   onChange,
   disabled,
-  isInvalid,
+  invalid,
   testId,
 }: {
   config: KeyValueFieldConfig;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  isInvalid: boolean;
+  invalid: boolean;
   testId?: string;
 }) {
   if (config.mode === 'combobox') {
@@ -62,7 +62,7 @@ function FieldRenderer({
   return (
     <Input
       {...inputProps}
-      aria-invalid={isInvalid}
+      aria-invalid={invalid}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
       testId={testId}
@@ -123,7 +123,7 @@ function KeyValueRow({
       <FieldRenderer
         config={keyFieldProps}
         disabled={disabled}
-        isInvalid={isKeyInvalid}
+        invalid={isKeyInvalid}
         onChange={(val) => onKeyChange(index, val)}
         testId={testId ? `${testId}-key-${index}` : undefined}
         value={pair.key}
@@ -131,7 +131,7 @@ function KeyValueRow({
       <FieldRenderer
         config={valueFieldProps}
         disabled={disabled}
-        isInvalid={isValueInvalid}
+        invalid={isValueInvalid}
         onChange={(val) => onValueChange(index, val)}
         testId={testId ? `${testId}-value-${index}` : undefined}
         value={pair.value}

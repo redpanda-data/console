@@ -73,11 +73,11 @@ export const FilterItem = <TFieldValues extends FieldValues>({
           <div className="font-medium text-body">{filterLabel}</div>
           <div className="flex flex-wrap gap-2">
             {nameValue ? (
-              <Badge size="sm" tone="info" variant="subtle">
+              <Badge size="sm" tone="informative" variant="subtle">
                 {nameValue}
               </Badge>
             ) : (
-              <Badge size="sm" tone="neutral" variant="subtle">
+              <Badge size="sm" tone="default" variant="subtle">
                 (empty)
               </Badge>
             )}

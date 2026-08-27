@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 /**
  * `theme:check` — hold a palette override sheet to the registry's token surface. Wire it into the build,
  * so an override that has stopped applying fails there rather than in a hover state nobody screenshots.

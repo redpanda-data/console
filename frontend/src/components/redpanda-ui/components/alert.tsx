@@ -12,14 +12,14 @@ const alertVariants = cva(
     // `!border-*` overrides the global `*` border-color set in the base layer.
     variants: {
       variant: {
-        info: '!border-informative-line bg-informative-wash [&>svg]:text-informative',
+        informative: '!border-informative-line bg-informative-wash [&>svg]:text-informative',
         success: '!border-success-line bg-success-wash [&>svg]:text-success',
         warning: '!border-warning-line bg-warning-wash [&>svg]:text-warning',
         destructive: '!border-destructive-line bg-destructive-wash [&>svg]:text-destructive',
       },
     },
     defaultVariants: {
-      variant: 'info',
+      variant: 'informative',
     },
   }
 );

@@ -256,7 +256,7 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
       <span className="shrink-0 text-muted-foreground">{pluralize(topics.length, 'topic')}</span>
       <span className="flex min-w-0 flex-wrap gap-1">
         {shown.map((topic) => (
-          <Badge className="max-w-full" key={topic} size="sm" title={topic} tone="neutral" variant="subtle">
+          <Badge className="max-w-full" key={topic} size="sm" title={topic} tone="default" variant="subtle">
             <span className="truncate font-mono">{topic}</span>
           </Badge>
         ))}
@@ -326,12 +326,12 @@ const MissingChip = ({
         onAdd();
       }}
       size="xs"
-      variant="secondary"
+      variant="primary"
     >
       {addLabel}
     </Button>
   ) : (
-    <Badge size="sm" tone="neutral" variant="subtle">
+    <Badge size="sm" tone="default" variant="subtle">
       {missingLabel}
     </Badge>
   );
@@ -410,7 +410,7 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
       className={cn('min-w-0 max-w-full shrink-0', className)}
       size="sm"
       title={label}
-      tone="info"
+      tone="informative"
       variant="subtle"
     >
       <span className="truncate">{label}</span>

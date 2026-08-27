@@ -12,7 +12,7 @@
 import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
-import { useIsDarkMode } from 'hooks/use-is-dark-mode';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import type { CSSProperties } from 'react';
 
 import type { UnifiedShadowLink } from '../model';
@@ -62,9 +62,8 @@ const edgeStyle: CSSProperties = {
 
 export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
   const brokers = shadowLink.configurations?.clientOptions?.bootstrapServers ?? [];
-  // Without this react-flow stamps a bare `light` class, which re-themes the subtree (see the
-  // pipeline canvas).
-  const isDarkMode = useIsDarkMode();
+  // Must be told, or react-flow's `light` default re-themes the subtree (see the pipeline canvas).
+  const appearance = useThemeAppearance();
 
   const nodes: Node[] = [
     {
@@ -100,7 +99,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
         <div className="relative h-[200px] w-full">
           <ReactFlowProvider>
             <ReactFlow
-              colorMode={isDarkMode ? 'dark' : 'light'}
+              colorMode={appearance}
               edges={edges}
               elementsSelectable={false}
               fitView={true}

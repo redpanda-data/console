@@ -94,7 +94,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
     return (
       <div className="rounded-md border border-border p-4">
         {data.metadata?.description ? <h4 className="mb-4 text-heading-sm">{data.metadata.description}</h4> : null}
-        <Alert className="mt-2" variant="info">
+        <Alert className="mt-2" variant="informative">
           <AlertDescription>No data available for this time range</AlertDescription>
         </Alert>
       </div>

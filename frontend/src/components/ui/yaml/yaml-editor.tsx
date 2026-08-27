@@ -17,7 +17,7 @@ import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'mo
 import { useEffect, useMemo, useRef } from 'react';
 
 import { editorTheme } from 'components/redpanda-ui/lib/editor-theme';
-import { useIsDarkMode } from 'hooks/use-is-dark-mode';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 
 import { normalizePastedWhitespace } from './whitespace';
 
@@ -147,14 +147,14 @@ export const YamlEditor = (props: YamlEditorProps) => {
   const yamlRef = useRef<MonacoYaml | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const hasInitializedRef = useRef(false);
-  const isDarkMode = useIsDarkMode();
+  const appearance = useThemeAppearance();
 
   // `defineTheme` is global, so re-resolving on a flip re-themes every mounted editor at once.
   useEffect(() => {
     if (monacoRef.current) {
       applyTheme(monacoRef.current, transparentBackground ?? false);
     }
-  }, [isDarkMode, transparentBackground]);
+  }, [appearance, transparentBackground]);
 
   const monacoYamlOptions = useMemo<MonacoYamlOptions>(
     () => buildMonacoYamlOptions(schema),

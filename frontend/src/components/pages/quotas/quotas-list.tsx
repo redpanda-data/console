@@ -10,21 +10,15 @@
  */
 
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import {
-  type Column,
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type OnChangeFn,
-  type PaginationState,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  type DataTableColumn,
+  type DataTableColumnDef,
+  DataTablePagination,
+  useDataTable,
+} from 'components/redpanda-ui/components/data-table';
 import {
   Empty,
   EmptyContent,
@@ -94,7 +88,7 @@ function SortableHeader({
   title,
   tooltip,
 }: {
-  column: Column<QuotaRow, unknown>;
+  column: DataTableColumn<QuotaRow>;
   title: string;
   tooltip?: React.ReactNode;
 }) {
@@ -130,7 +124,7 @@ const NotConfigured = () => (
 const formatBytes = (value?: number) => (isQuotaConfigured(value) ? prettyBytes(value) : <NotConfigured />);
 const formatRate = (value?: number) => (isQuotaConfigured(value) ? prettyNumber(value) : <NotConfigured />);
 
-const columns: ColumnDef<QuotaRow>[] = [
+const columns: DataTableColumnDef<QuotaRow>[] = [
   {
     accessorKey: 'entityType',
     size: 100,
@@ -221,15 +215,12 @@ const QuotasList = () => {
     });
   };
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: quotasData,
     columns,
     state: { pagination, sorting },
     onPaginationChange: handlePaginationChange,
     onSortingChange: handleSortingChange,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     autoResetPageIndex: false,
   });
 
@@ -292,7 +283,7 @@ const QuotasList = () => {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 ))}
               </TableRow>
@@ -303,7 +294,7 @@ const QuotasList = () => {
               rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
                   ))}
                 </TableRow>
               ))

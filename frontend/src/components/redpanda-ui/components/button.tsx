@@ -25,22 +25,31 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: [
+        // The neutral member of the filled family, and the variant a bare <Button> gets. Named after
+        // its family like `outline`/`ghost`/`dashed`, not after `--color-secondary` which it paints:
+        // an unstyled control should not have to name a tone.
+        default: [
           'bg-secondary text-secondary-foreground shadow-xs',
           'hover:bg-secondary-hover',
           'active:bg-secondary-pressed',
           'disabled:bg-surface-disabled disabled:text-disabled',
         ],
-        secondary: [
+        primary: [
           'bg-primary text-primary-foreground shadow-xs',
           'hover:bg-primary-hover',
           'active:bg-primary-pressed',
           'disabled:bg-surface-disabled disabled:text-disabled',
         ],
-        accent: [
+        brand: [
           'bg-brand text-brand-foreground shadow-xs',
           'hover:bg-brand-hover',
           'active:bg-brand-pressed',
+          'disabled:bg-surface-disabled disabled:text-disabled',
+        ],
+        warning: [
+          'bg-surface-warning text-warning-foreground shadow-xs',
+          'hover:bg-surface-warning-hover',
+          'active:bg-surface-warning-pressed',
           'disabled:bg-surface-disabled disabled:text-disabled',
         ],
         destructive: [
@@ -57,25 +66,31 @@ const buttonVariants = cva(
           'active:bg-inverse-pressed',
           'disabled:bg-surface-disabled disabled:text-disabled',
         ],
-        // Outline, ghost and dashed repeat these five tones with a border, no border, and a 2px
+        // Outline, ghost and dashed repeat the filled tones with a border, no border, and a 2px
         // dashed one. Each state steps the ramp its own rest token sits on, so a line moves one rung
-        // rather than jumping family.
+        // rather than jumping family. Every variant is named after the token it paints.
         outline: [
-          '!border-secondary-line border text-secondary shadow-xs',
+          '!border-secondary-line border bg-transparent text-secondary shadow-xs',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',
           'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
-        'secondary-outline': [
-          '!border-primary-line border text-primary shadow-xs',
+        'primary-outline': [
+          '!border-primary-line border bg-transparent text-primary shadow-xs',
           'hover:!border-primary-line-hover hover:bg-primary-wash',
           'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
-        'accent-outline': [
+        'brand-outline': [
           '!border-brand-line border bg-transparent text-brand shadow-xs',
           'hover:!border-brand-line-hover hover:bg-brand-wash',
           'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
+        ],
+        'warning-outline': [
+          '!border-warning-line border bg-transparent text-warning shadow-xs',
+          'hover:!border-warning-line-hover hover:bg-warning-wash',
+          'active:!border-warning-line-pressed active:bg-warning-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
         'destructive-outline': [
@@ -99,16 +114,22 @@ const buttonVariants = cva(
           'active:bg-secondary-wash-pressed',
           'disabled:text-disabled',
         ],
-        'secondary-ghost': [
+        'primary-ghost': [
           'bg-transparent text-primary',
           'hover:bg-primary-wash',
           'active:bg-primary-wash-pressed',
           'disabled:text-disabled',
         ],
-        'accent-ghost': [
+        'brand-ghost': [
           'bg-transparent text-brand',
           'hover:bg-brand-wash',
           'active:bg-brand-wash-pressed',
+          'disabled:text-disabled',
+        ],
+        'warning-ghost': [
+          'bg-transparent text-warning',
+          'hover:bg-warning-wash',
+          'active:bg-warning-wash-pressed',
           'disabled:text-disabled',
         ],
         'destructive-ghost': [
@@ -124,12 +145,6 @@ const buttonVariants = cva(
           'active:bg-current/25',
           'disabled:text-disabled',
         ],
-        link: [
-          'link-standalone text-action-primary',
-          'hover:text-action-primary-hover',
-          'active:text-action-primary-pressed',
-          'disabled:text-disabled disabled:no-underline',
-        ],
         // 2px and unshadowed: a 1px dashed line reads as an artefact, and a placeholder should not
         // sit proud of its ground.
         dashed: [
@@ -138,16 +153,22 @@ const buttonVariants = cva(
           'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
-        'secondary-dashed': [
+        'primary-dashed': [
           '!border-primary-line border-2 border-dashed bg-transparent text-primary',
           'hover:!border-primary-line-hover hover:bg-primary-wash',
           'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
-        'accent-dashed': [
+        'brand-dashed': [
           '!border-brand-line border-2 border-dashed bg-transparent text-brand',
           'hover:!border-brand-line-hover hover:bg-brand-wash',
           'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
+        ],
+        'warning-dashed': [
+          '!border-warning-line border-2 border-dashed bg-transparent text-warning',
+          'hover:!border-warning-line-hover hover:bg-warning-wash',
+          'active:!border-warning-line-pressed active:bg-warning-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
         'destructive-dashed': [
@@ -163,6 +184,12 @@ const buttonVariants = cva(
           'active:bg-current/25',
           'disabled:!border-border disabled:text-disabled',
         ],
+        link: [
+          'link-standalone text-action-primary',
+          'hover:text-action-primary-hover',
+          'active:text-action-primary-pressed',
+          'disabled:text-disabled disabled:no-underline',
+        ],
       },
       size: {
         xs: 'h-6 gap-1 px-2 py-0 text-body-sm has-[>svg]:px-1.5 [&_svg]:size-3',
@@ -176,7 +203,9 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: 'primary',
+      // Neutral, not the action colour: an unstyled <Button> should not claim the page's one loud
+      // slot. `primary` is opt-in. This is also why the swap left plain <Button> looking unchanged.
+      variant: 'default',
       size: 'md',
     },
   }

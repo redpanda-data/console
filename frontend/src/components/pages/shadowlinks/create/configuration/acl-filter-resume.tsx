@@ -37,43 +37,43 @@ export const ACLFilterResume = ({ index }: { index: number }) => {
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-body md:grid-cols-3">
         <div>
           <span className="text-muted-foreground">Resource type:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getResourceTypeLabel(resourceType)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Pattern:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getPatternTypeLabel(resourcePattern)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Resource name:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {resourceName || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Principal:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {principal || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Operation:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getOperationLabel(operation)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Permission:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getPermissionTypeLabel(permissionType)}
           </Badge>
         </div>
         <div className="md:col-span-3">
           <span className="text-muted-foreground">Host:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {host || 'All'}
           </Badge>
         </div>

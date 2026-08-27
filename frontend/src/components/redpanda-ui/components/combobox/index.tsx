@@ -73,8 +73,8 @@ export interface ComboboxProps
   /** Fires per keystroke with the input text; drive async/remote search from here. */
   onInputValueChange?: (value: string) => void;
   /** Shows an inline spinner and suppresses the empty state while async options load. */
-  loading?: boolean;
-  /** Override the "No options found." empty state. Ignored when `loading`. */
+  isLoading?: boolean;
+  /** Override the "No options found." empty state. Ignored when `isLoading`. */
   emptyState?: React.ReactNode;
   /** Override each option row's render. The active check icon is still rendered by the component. */
   renderOption?: (option: ComboboxOption) => React.ReactNode;
@@ -103,7 +103,7 @@ export const Combobox = memo(
     preventAutoFocusOnOpen = false,
     inputTestId,
     onInputValueChange,
-    loading = false,
+    isLoading = false,
     emptyState,
     renderOption,
   }: ComboboxProps) => {
@@ -411,7 +411,7 @@ export const Combobox = memo(
           >
             <ActiveDescendantBridge onIdChange={handleActiveDescendantChange} />
             <CommandList id={listId}>
-              {loading ? (
+              {isLoading ? (
                 <div aria-busy="true" className="flex items-center gap-2 px-3 py-4 text-body text-subtle" role="status">
                   <Spinner className="size-4" />
                   <span>Loading…</span>

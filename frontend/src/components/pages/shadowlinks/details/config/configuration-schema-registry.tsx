@@ -116,7 +116,7 @@ const PillRow = ({ label, testId, values }: { label: string; testId: string; val
     </div>
     <div className="flex flex-wrap gap-1.5" data-testid={`${testId}-value`}>
       {values.map((value) => (
-        <Badge className="font-mono" key={value} size="sm" tone="neutral" variant="subtle">
+        <Badge className="font-mono" key={value} size="sm" tone="default" variant="subtle">
           {value}
         </Badge>
       ))}
@@ -325,7 +325,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
     );
     badges = (
       <>
-        <Badge testId="schema-registry-mode-badge" tone="info" variant="subtle">
+        <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
           Other
         </Badge>
         {statusBadge}
@@ -335,7 +335,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
   } else if (mode?.case === 'shadowSchemaRegistryTopic') {
     badges = (
       <>
-        <Badge testId="schema-registry-mode-badge" tone="info" variant="subtle">
+        <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
           Redpanda
         </Badge>
         <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
@@ -350,7 +350,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
     );
   } else {
     badges = (
-      <Badge testId="schema-registry-status-badge" tone="neutral" variant="subtle">
+      <Badge testId="schema-registry-status-badge" tone="default" variant="subtle">
         Disabled
       </Badge>
     );

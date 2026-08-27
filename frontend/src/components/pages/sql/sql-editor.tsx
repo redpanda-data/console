@@ -25,17 +25,9 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import { FileText, History, Play, Plus, Terminal, Wand2, X } from 'lucide-react';
-import {
-  forwardRef,
-  type MouseEvent,
-  useCallback,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { forwardRef, type MouseEvent, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { isMacOS } from 'utils/platform';
 import { z } from 'zod';
 
@@ -95,23 +87,6 @@ type Tab = { id: number; name: string; sql: string };
 
 const DEFAULT_QUERY =
   'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
-
-// Re-render the editor when the theme toggles. Both signals: registry theme.css
-// keys on `[data-theme='dark'], .dark` and treats the class as compatibility-only.
-function subscribeToColorMode(onStoreChange: () => void): () => void {
-  const observer = new MutationObserver(onStoreChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-  return () => observer.disconnect();
-}
-
-function getIsDarkSnapshot(): boolean {
-  const root = document.documentElement;
-  return root.dataset.theme === 'dark' || root.classList.contains('dark');
-}
-
-function useIsDarkMode(): boolean {
-  return useSyncExternalStore(subscribeToColorMode, getIsDarkSnapshot, () => false);
-}
 
 // Transparent editor/gutter so the `bg-background` surface shows through.
 function editorChrome(mode: 'light' | 'dark'): Extension {
@@ -337,7 +312,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
     const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
     const [histOpen, setHistOpen] = useState(false);
     const [hasSel, setHasSel] = useState(false);
-    const isDark = useIsDarkMode();
+    const appearance = useThemeAppearance();
 
     const editorRef = useRef<ReactCodeMirrorRef | null>(null);
     // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
@@ -426,7 +401,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         sqlSupport,
         sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
         sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
-        isDark ? DARK_THEME : LIGHT_THEME,
+        appearance === 'dark' ? DARK_THEME : LIGHT_THEME,
         EditorView.updateListener.of((update) => {
           if (update.selectionSet) {
             setHasSel(!update.state.selection.main.empty);
@@ -444,7 +419,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         indentUnit.of('  '),
         EditorState.tabSize.of(2),
       ];
-    }, [catalogs, isDark]);
+    }, [catalogs, appearance]);
 
     const addTab = () => {
       const id = nextTabId();
@@ -494,13 +469,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                   </Button>
                 </TabsTrigger>
               ))}
-              <Button
-                aria-label="New query"
-                onClick={addTab}
-                size="icon-sm"
-                title="New query"
-                variant="ghost"
-              >
+              <Button aria-label="New query" onClick={addTab} size="icon-sm" title="New query" variant="ghost">
                 <Plus />
               </Button>
             </TabsList>
@@ -554,7 +523,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="outline">
               Run selection
             </Button>
-            <Button onClick={doRun} size="sm" variant="secondary">
+            <Button onClick={doRun} size="sm" variant="primary">
               <Play /> Run
               <KbdGroup>
                 <Kbd size="xs">{isMacOS() ? '⌘' : 'Ctrl'}</Kbd>

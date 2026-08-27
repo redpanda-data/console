@@ -423,7 +423,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" tone="neutral" variant="outline">
+          <Badge size="sm" tone="default" variant="outline">
             {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
           <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />

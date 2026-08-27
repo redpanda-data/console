@@ -48,11 +48,11 @@ const NameFilterDisplay = ({
       <div className="font-medium text-body">{filterLabel}</div>
       <div className="flex flex-wrap gap-2">
         {filter.name ? (
-          <Badge size="sm" testId={`${testId}-filter-${index}-name`} tone="info" variant="subtle">
+          <Badge size="sm" testId={`${testId}-filter-${index}-name`} tone="informative" variant="subtle">
             {filter.name}
           </Badge>
         ) : (
-          <Badge size="sm" tone="neutral" variant="subtle">
+          <Badge size="sm" tone="default" variant="subtle">
             (empty)
           </Badge>
         )}
@@ -112,43 +112,43 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-body md:grid-cols-3">
         <div>
           <span className="text-muted-foreground">Resource type:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getResourceTypeLabel(resourceFilter?.resourceType)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Pattern:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getPatternTypeLabel(resourceFilter?.patternType)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Resource name:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {resourceFilter?.name || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Principal:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {accessFilter?.principal || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Operation:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getOperationLabel(accessFilter?.operation)}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Permission:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {getPermissionTypeLabel(accessFilter?.permissionType)}
           </Badge>
         </div>
         <div className="md:col-span-3">
           <span className="text-muted-foreground">Host:</span>{' '}
-          <Badge size="sm" tone="info" variant="subtle">
+          <Badge size="sm" tone="informative" variant="subtle">
             {accessFilter?.host || 'All'}
           </Badge>
         </div>
@@ -168,7 +168,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
       </CardHeader>
       <CardContent>
         {hasAllACLs ? (
-          <Badge testId="all-acls-badge" tone="info" variant="subtle">
+          <Badge testId="all-acls-badge" tone="informative" variant="subtle">
             All ACLs
           </Badge>
         ) : (

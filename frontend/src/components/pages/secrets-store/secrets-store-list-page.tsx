@@ -11,29 +11,17 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  type Table as TanstackTable,
-  useReactTable,
-  type VisibilityState,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, ColumnVisibilityState, PaginationState, SortingState } from '@tanstack/react-table';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
+  type DataTableColumnDef,
   DataTableColumnHeader,
   DataTableFacetedFilter,
+  type DataTableInstance,
   DataTablePagination,
   DataTableViewOptions,
+  useDataTable,
 } from 'components/redpanda-ui/components/data-table';
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -102,7 +90,7 @@ type CreateColumnsOptions = {
   isDeletingSecret: boolean;
 };
 
-export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTableRow>[] => {
+export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef<SecretTableRow>[] => {
   const { handleEdit, handleDelete, isDeletingSecret } = options;
   return [
     {
@@ -218,8 +206,8 @@ export const createColumns = (options: CreateColumnsOptions): ColumnDef<SecretTa
   ];
 };
 
-function SecretsStoreDataTableToolbar({ table }: { table: TanstackTable<SecretTableRow> }) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+function SecretsStoreDataTableToolbar({ table }: { table: DataTableInstance<SecretTableRow> }) {
+  const isFiltered = table.state.columnFilters.length > 0;
 
   return (
     <div className="flex items-center justify-between">
@@ -251,7 +239,7 @@ export const SecretsStoreListPage = () => {
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -308,17 +296,11 @@ export const SecretsStoreListPage = () => {
     [handleEdit, handleDelete, isDeletingSecret]
   );
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: secrets,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
     onPaginationChange: setPagination,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
@@ -359,7 +341,7 @@ export const SecretsStoreListPage = () => {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 ))}
               </TableRow>
@@ -395,7 +377,7 @@ export const SecretsStoreListPage = () => {
                 return table.getRowModel().rows.map((row) => (
                   <TableRow data-state={row.getIsSelected() && 'selected'} key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
                     ))}
                   </TableRow>
                 ));

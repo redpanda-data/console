@@ -288,7 +288,7 @@ function SummaryRow({ label, children }: { label: string; children: ReactNode })
 
 function IcebergBadge() {
   return (
-    <Badge size="sm" title="Iceberg tiering enabled" tone="info" variant="subtle">
+    <Badge size="sm" title="Iceberg tiering enabled" tone="informative" variant="subtle">
       <GitMerge size={11} />
       Iceberg
     </Badge>

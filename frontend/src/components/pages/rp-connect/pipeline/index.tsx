@@ -625,7 +625,7 @@ function EditorPanel({
           <div className="mb-3 flex items-center gap-2">
             <h5 className="text-heading-xs text-muted-foreground">Lint issues</h5>
             {Object.keys(lintHints).length > 0 ? (
-              <CountDot count={Object.keys(lintHints).length} variant="error" />
+              <CountDot count={Object.keys(lintHints).length} variant="destructive" />
             ) : null}
           </div>
           <LintHintList isPending={isLintPending} lintHints={lintHints} />

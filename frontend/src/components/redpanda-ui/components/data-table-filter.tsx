@@ -1,8 +1,8 @@
-import type { Table } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 import { Ellipsis, FilterIcon, X } from 'lucide-react';
 import React, { isValidElement, memo, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { badgeVariants } from './badge';
+import { type BadgeVariantKey, badgeVariants } from './badge';
 import { Button } from './button';
 import { Checkbox } from './checkbox';
 import {
@@ -17,6 +17,7 @@ import {
   CommandSubContent,
   CommandSubTrigger,
 } from './command';
+import type { DataTableInstance as Table } from './data-table';
 import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Separator } from './separator';
@@ -25,21 +26,8 @@ import type { FilterModel, FilterOperatorMap, FiltersState, FilterType } from '.
 import { getOperatorsForType } from '../lib/filter-utils';
 import { cn } from '../lib/utils';
 
-export type DataTableFilterVariant =
-  | 'neutral'
-  | 'neutral-inverted'
-  | 'neutral-outline'
-  | 'simple'
-  | 'simple-inverted'
-  | 'simple-outline'
-  | 'disabled'
-  | 'disabled-outline'
-  | 'outline'
-  | 'primary-inverted'
-  | 'primary-outline'
-  | 'secondary'
-  | 'secondary-inverted'
-  | 'secondary-outline';
+/** A `badgeVariants` key, used to style the filter chip. */
+export type DataTableFilterVariant = BadgeVariantKey;
 
 export type FilterOption = {
   value: string;
@@ -66,7 +54,7 @@ type MatchingOption = {
   count?: number;
 };
 
-function collectMatchingOptions<TData>(
+function collectMatchingOptions<TData extends RowData>(
   columns: FilterColumnConfig[],
   term: string,
   table?: Table<TData>
@@ -108,12 +96,12 @@ function RadioIndicator({ checked }: { checked: boolean }) {
         checked ? 'opacity-100' : 'opacity-0 group-data-[selected=true]:opacity-100'
       )}
     >
-      {checked && <span className="size-2 rounded-full bg-primary" />}
+      {checked ? <span className="size-2 rounded-full bg-primary" /> : null}
     </span>
   );
 }
 
-type DataTableFilterProps<TData> = {
+type DataTableFilterProps<TData extends RowData> = {
   columns: FilterColumnConfig[];
   filters: FiltersState;
   actions: DataTableFilterActions;
@@ -122,7 +110,7 @@ type DataTableFilterProps<TData> = {
   variant?: DataTableFilterVariant;
 };
 
-export function DataTableFilter<TData>({
+export function DataTableFilter<TData extends RowData>({
   columns,
   filters,
   actions,
@@ -206,7 +194,7 @@ function MatchingOptionItem({
   );
 }
 
-type FilterSelectorProps<TData> = {
+type FilterSelectorProps<TData extends RowData> = {
   columns: FilterColumnConfig[];
   filters: FiltersState;
   actions: DataTableFilterActions;
@@ -214,7 +202,7 @@ type FilterSelectorProps<TData> = {
   variant?: DataTableFilterVariant;
 };
 
-const FilterSelector = memo(function FilterSelectorImpl<TData>({
+const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
   columns,
   filters,
   actions,
@@ -331,10 +319,10 @@ const FilterSelector = memo(function FilterSelectorImpl<TData>({
       </PopoverContent>
     </Popover>
   );
-}) as <TData>(props: FilterSelectorProps<TData>) => React.ReactElement;
+}) as <TData extends RowData>(props: FilterSelectorProps<TData>) => React.ReactElement;
 (FilterSelector as { displayName?: string }).displayName = 'FilterSelector';
 
-function FilterKeySubmenu<TData>({
+function FilterKeySubmenu<TData extends RowData>({
   filterColumn,
   selectedValues,
   actions,
@@ -371,7 +359,7 @@ function FilterKeySubmenu<TData>({
   }
 }
 
-type ActiveFilterProps<TData> = {
+type ActiveFilterProps<TData extends RowData> = {
   filter: FilterModel;
   column: FilterColumnConfig;
   actions: DataTableFilterActions;
@@ -379,7 +367,7 @@ type ActiveFilterProps<TData> = {
   variant?: DataTableFilterVariant;
 };
 
-function ActiveFilter<TData>({
+function ActiveFilter<TData extends RowData>({
   filter,
   column: col,
   actions,
@@ -471,14 +459,14 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
 }
 FilterOperator.displayName = 'FilterOperator';
 
-type FilterValueProps<TData> = {
+type FilterValueProps<TData extends RowData> = {
   filter: FilterModel;
   filterColumn: FilterColumnConfig;
   actions: DataTableFilterActions;
   table?: Table<TData>;
 };
 
-const FilterValue = memo(function FilterValueImpl<TData>({
+const FilterValue = memo(function FilterValueImpl<TData extends RowData>({
   filter,
   filterColumn,
   actions,
@@ -501,7 +489,7 @@ const FilterValue = memo(function FilterValueImpl<TData>({
       </PopoverContent>
     </Popover>
   );
-}) as <TData>(props: FilterValueProps<TData>) => React.ReactElement;
+}) as <TData extends RowData>(props: FilterValueProps<TData>) => React.ReactElement;
 (FilterValue as { displayName?: string }).displayName = 'FilterValue';
 
 function FilterValueDisplay({ filter, filterColumn }: { filter: FilterModel; filterColumn: FilterColumnConfig }) {
@@ -565,7 +553,7 @@ function OptionValueDisplay({
   );
 }
 
-function FilterValueController<TData>({
+function FilterValueController<TData extends RowData>({
   filter,
   filterColumn,
   actions,
@@ -682,7 +670,7 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
 });
 OptionItem.displayName = 'OptionItem';
 
-function OptionValueController<TData>({
+function OptionValueController<TData extends RowData>({
   columnId,
   selectedValues,
   filterColumn,

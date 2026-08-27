@@ -344,7 +344,7 @@ function TableRow({ catalog, table }: TableRowProps) {
             <Badge
               size="sm"
               title={tiered ? 'Iceberg-tiered · bridge queried' : undefined}
-              tone="info"
+              tone="informative"
               variant="subtle"
             >
               Iceberg

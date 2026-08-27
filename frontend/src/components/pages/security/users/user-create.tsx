@@ -383,7 +383,7 @@ export const CreateUserConfirmationModal = ({
       User created
     </h1>
 
-    <Alert className="my-2" icon={<InfoIcon />} variant="info">
+    <Alert className="my-2" icon={<InfoIcon />} variant="informative">
       <AlertDescription>
         You will not be able to view this password again. Make sure that it is copied and saved.
       </AlertDescription>

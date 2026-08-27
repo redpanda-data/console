@@ -107,7 +107,7 @@ export type FixedPositionContentProps = PortalContentProps & {
 
 /* Shared by StatusDot, CountDot and StatusBadge. */
 
-export type SemanticVariant = 'success' | 'info' | 'warning' | 'error' | 'disabled';
+export type SemanticVariant = 'success' | 'informative' | 'warning' | 'destructive' | 'disabled';
 export type DotSize = 'xxs' | 'xs' | 'sm' | 'md' | 'lg';
 export type StackableProps = { stacked?: boolean };
 
@@ -115,16 +115,16 @@ export const dotColorVariants = cva('', {
   variants: {
     variant: {
       success: 'bg-success-strong',
-      info: 'bg-informative-strong',
+      informative: 'bg-informative-strong',
       warning: 'bg-warning-strong',
-      error: 'bg-destructive-strong',
+      destructive: 'bg-destructive-strong',
       // The `disabled` ink token, not a neutral fill: a hover token as a rest
       // value reads as a state nothing is in.
       disabled: 'bg-disabled',
     },
   },
   defaultVariants: {
-    variant: 'info',
+    variant: 'informative',
   },
 });
 

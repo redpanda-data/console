@@ -15,14 +15,14 @@ const countDotColorVariants = cva('', {
   variants: {
     variant: {
       success: 'bg-surface-success text-success-foreground',
-      info: 'bg-surface-informative text-informative-foreground',
+      informative: 'bg-surface-informative text-informative-foreground',
       warning: 'bg-surface-warning text-warning-foreground',
-      error: 'bg-surface-destructive text-destructive-foreground',
+      destructive: 'bg-surface-destructive text-destructive-foreground',
       disabled: 'bg-surface-disabled text-disabled',
     },
   },
   defaultVariants: {
-    variant: 'info',
+    variant: 'informative',
   },
 });
 

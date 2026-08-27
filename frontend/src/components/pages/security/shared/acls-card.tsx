@@ -277,7 +277,7 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
         </TableCell>
         <TableCell>
-          <Badge tone="neutral" variant="outline">
+          <Badge tone="default" variant="outline">
             {row.resourceType}
           </Badge>
         </TableCell>

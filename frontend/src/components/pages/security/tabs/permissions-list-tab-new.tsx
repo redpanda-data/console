@@ -95,7 +95,7 @@ const AclTableRow: FC<{
 }> = ({ resourceType, resourceName, operation, permissionType, host, editHref }) => (
   <TableRow>
     <TableCell>
-      <Badge tone="neutral" variant="outline">
+      <Badge tone="default" variant="outline">
         {resourceType}
       </Badge>
     </TableCell>
@@ -205,7 +205,11 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-mono font-semibold text-body">{group.principalName}</span>
-                    {group.principalType === 'Group' && <Badge tone="neutral">Group</Badge>}
+                    {group.principalType === 'Group' && (
+                      <Badge tone="default" variant="subtle">
+                        Group
+                      </Badge>
+                    )}
                     {group.denyCount > 0 && <Badge tone="destructive">{group.denyCount} deny</Badge>}
                   </div>
                   <span className="text-body-sm text-muted-foreground">{summaryText}</span>

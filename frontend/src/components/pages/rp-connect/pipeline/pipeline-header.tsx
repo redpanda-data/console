@@ -155,11 +155,11 @@ const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
         ))}
       </List>
     )}
-    tone="neutral"
+    tone="default"
     variant="outline"
   >
     {tags.map((t) => (
-      <Badge key={t.key} tone="neutral" variant="outline">
+      <Badge key={t.key} tone="default" variant="outline">
         {tagLabel(t)}
       </Badge>
     ))}
@@ -316,7 +316,7 @@ export function PipelineEditHeader({
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
             {mode === 'create' ? (
-              <Badge tone="neutral" variant="outline">
+              <Badge tone="default" variant="outline">
                 New
               </Badge>
             ) : null}

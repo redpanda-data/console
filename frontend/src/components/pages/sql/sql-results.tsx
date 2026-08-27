@@ -88,7 +88,7 @@ const RES_STAT =
 // Bridge-query indicator shown in the summary bar.
 function BridgeBar() {
   return (
-    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" tone="neutral">
+    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" tone="default">
       <GitMerge /> Bridge query
     </Badge>
   );
@@ -515,7 +515,7 @@ export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = tru
           <AlertDescription>{run.message}</AlertDescription>
         </Alert>
         {run.hint ? (
-          <Alert icon={<Lightbulb />} variant="info">
+          <Alert icon={<Lightbulb />} variant="informative">
             <AlertTitle>Hint</AlertTitle>
             <AlertDescription>
               {run.hint}

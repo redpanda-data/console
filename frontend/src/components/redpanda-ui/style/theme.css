@@ -200,7 +200,7 @@
   --color-destructive-foreground: #fff6f5;
   --color-success: #276749;
   --color-success-foreground: #ffffff;
-  --color-warning: #b44a00;
+  --color-warning: #985d00;
   /* Light, like the other status tones; `surface-warning` is pitched to clear AA against it. */
   --color-warning-foreground: #ffffff;
   --color-informative: #115d88;
@@ -235,11 +235,11 @@
   --color-surface-destructive-pressed: #a50003;
   --color-destructive-wash: rgba(190, 27, 14, 0.098);
   --color-destructive-wash-pressed: rgba(190, 27, 14, 0.17);
-  --color-surface-warning: #c35307;
-  --color-surface-warning-hover: #a94600;
-  --color-surface-warning-pressed: #933c00;
-  --color-warning-wash: rgba(218, 93, 8, 0.135);
-  --color-warning-wash-pressed: rgba(218, 93, 8, 0.234);
+  --color-surface-warning: #a66707;
+  --color-surface-warning-hover: #8f5700;
+  --color-surface-warning-pressed: #7c4b00;
+  --color-warning-wash: rgba(189, 118, 8, 0.146);
+  --color-warning-wash-pressed: rgba(189, 118, 8, 0.254);
   --color-surface-success: #25855a;
   --color-surface-success-hover: #037349;
   --color-surface-success-pressed: #00633e;
@@ -263,7 +263,7 @@
   --color-neutral-foreground: var(--color-inverse);
   --color-neutral-hover: #4f5053;
   --color-success-strong: #38a169;
-  --color-warning-strong: #eb6e0d;
+  --color-warning-strong: #ce810d;
   --color-destructive-strong: #cd372c;
   --color-informative-strong: #2e9ad4;
 
@@ -305,9 +305,9 @@
   --color-destructive-line: #e47248;
   --color-destructive-line-hover: #c5562b;
   --color-destructive-line-pressed: #b04314;
-  --color-warning-line: #d27e41;
-  --color-warning-line-hover: #b46322;
-  --color-warning-line-pressed: #a05103;
+  --color-warning-line: #c28641;
+  --color-warning-line-hover: #a56b22;
+  --color-warning-line-pressed: #925904;
   --color-informative-line: #569ac0;
   --color-informative-line-hover: #3a7fa3;
   --color-informative-line-pressed: #266d91;
@@ -514,8 +514,10 @@
      Every neutral is true grey — chroma exactly 0, separated by lightness alone. Keep new rungs
      achromatic; `theme-neutral-ramp.test.ts` fails any that is not.
 
-     The accent is OKLCH hue 285, not the light theme's indigo — dark carries its own accent family,
-     clear of every status hue and the brand red.
+     The accent is OKLCH hue 188 — a teal, not the light theme's indigo — near-complementary to the
+     brand vermilion. It clears every status hue by 33 degrees but not by the ΔE 15 a categorical
+     palette wants (`primary` is 8.8 from `success-strong`), and nothing in the cool half does
+     better. Why, and what it costs a chart, is in `chart.mdx`.
      =================================================================== */
 
   /* Core roles */
@@ -533,9 +535,9 @@
   --color-disabled: #616161;
 
   /* Ink — interactive */
-  --color-action-primary: #7860f8;
-  --color-action-primary-hover: #9b93ff;
-  --color-action-primary-pressed: #b5b3ff;
+  --color-action-primary: #26b5ac;
+  --color-action-primary-hover: #5bdcd2;
+  --color-action-primary-pressed: #78f7ec;
   --color-inverse: #161616;
   --color-inverse-hover: #242424;
   --color-inverse-pressed: #303030;
@@ -544,14 +546,14 @@
   --color-mark: #6a430b;
   --color-mark-foreground: #e8e8e8;
   --color-syntax-literal: #6bc8fb;
-  --color-syntax-keyword: #d6a4fb;
+  --color-syntax-keyword: #f5c42c;
   --color-syntax-string: #2fe572;
   --color-syntax-operator: #fb9a93;
 
   /* Roles */
-  --color-primary: #7860f8;
-  --color-primary-hover: #8979ff;
-  --color-primary-pressed: #988fff;
+  --color-primary: #26b5ac;
+  --color-primary-hover: #43c8bf;
+  --color-primary-pressed: #57d9cf;
   --color-primary-foreground: #080808;
   --color-secondary: #e8e8e8;
   --color-secondary-hover: #d4d4d4;
@@ -579,8 +581,8 @@
   --color-surface-recess: rgba(35, 35, 35, 0.5);
   --color-surface-strong: #333333;
   --color-surface-strong-hover: #434343;
-  --color-primary-wash: rgba(183, 181, 251, 0.091);
-  --color-primary-wash-pressed: rgba(183, 181, 251, 0.148);
+  --color-primary-wash: rgba(92, 212, 203, 0.09);
+  --color-primary-wash-pressed: rgba(92, 212, 203, 0.145);
   --color-secondary-wash: rgba(233, 233, 233, 0.071);
   --color-secondary-wash-pressed: rgba(233, 233, 233, 0.116);
   --color-brand-wash: rgba(252, 161, 142, 0.094);
@@ -631,12 +633,12 @@
   --color-input-fill-hover: rgba(255, 255, 255, 0.09);
   --color-input-fill-pressed: rgba(255, 255, 255, 0.15);
   --color-invalid: rgba(250, 116, 119, 0.4);
-  --color-ring: #b6b4ff;
+  --color-ring: #5cd4cb;
 
   /* Outlines */
-  --color-primary-line: #6f4cf7;
-  --color-primary-line-hover: #8776ff;
-  --color-primary-line-pressed: #9890ff;
+  --color-primary-line: #22a79e;
+  --color-primary-line-hover: #4ac4ba;
+  --color-primary-line-pressed: #60d7cd;
   --color-secondary-line: #6f6f6f;
   --color-secondary-line-hover: #898989;
   --color-secondary-line-pressed: #9c9c9c;
@@ -671,26 +673,28 @@
   /* Sidebar */
   --color-sidebar: #0b0b0b;
   --color-sidebar-foreground: #c9c9c9;
-  --color-sidebar-ring: #b6b4ff;
+  --color-sidebar-ring: #5cd4cb;
   --color-sidebar-border: #404040;
-  --color-sidebar-primary: #7860f8;
+  --color-sidebar-primary: #26b5ac;
 
   /* Selection */
-  --color-selection: #a9a6fa;
-  --color-selection-foreground: #2c076d;
-  --color-selected-wash: rgba(183, 181, 251, 0.144);
+  --color-selection: #55c6bd;
+  --color-selection-foreground: #04302d;
+  --color-selected-wash: rgba(92, 212, 203, 0.144);
   --color-selected: #e8e8e8;
   --color-selected-hover: #d4d4d4;
   --color-selected-pressed: #c4c4c4;
-  --color-selected-foreground: #3b0c8e;
+  --color-selected-foreground: #07413d;
 
   /* Charts */
-  /* Same lightness order as light, so a series keeps its weight when the theme flips. */
-  --color-chart-1: #7860f8;
-  --color-chart-2: #0c54dc;
-  --color-chart-3: #c5a8e9;
-  --color-chart-4: #cfcfec;
-  --color-chart-5: #ebecff;
+  /* One hue, stepped by lightness, in light's order so a series keeps its weight across themes.
+     Walking toward mint bought 0.1 ΔE between the pale rungs and put two of them in the success
+     green's neighbourhood, so it holds 188. */
+  --color-chart-1: #26b5ac;
+  --color-chart-2: #18817a;
+  --color-chart-3: #2ed5ca;
+  --color-chart-4: #64f0e5;
+  --color-chart-5: #ddfbf7;
 
   /* Overlays */
   --color-modal-overlay: rgba(0, 0, 0, 0.64);
@@ -786,7 +790,7 @@
   --color-destructive-foreground: #fff6f5;
   --color-success: #276749;
   --color-success-foreground: #ffffff;
-  --color-warning: #b44a00;
+  --color-warning: #985d00;
   --color-warning-foreground: #ffffff;
   --color-informative: #115d88;
   --color-informative-foreground: #e8f5fc;
@@ -811,11 +815,11 @@
   --color-surface-destructive-pressed: #a50003;
   --color-destructive-wash: rgba(190, 27, 14, 0.098);
   --color-destructive-wash-pressed: rgba(190, 27, 14, 0.17);
-  --color-surface-warning: #c35307;
-  --color-surface-warning-hover: #a94600;
-  --color-surface-warning-pressed: #933c00;
-  --color-warning-wash: rgba(218, 93, 8, 0.135);
-  --color-warning-wash-pressed: rgba(218, 93, 8, 0.234);
+  --color-surface-warning: #a66707;
+  --color-surface-warning-hover: #8f5700;
+  --color-surface-warning-pressed: #7c4b00;
+  --color-warning-wash: rgba(189, 118, 8, 0.146);
+  --color-warning-wash-pressed: rgba(189, 118, 8, 0.254);
   --color-surface-success: #25855a;
   --color-surface-success-hover: #037349;
   --color-surface-success-pressed: #00633e;
@@ -832,7 +836,7 @@
   --color-neutral-foreground: var(--color-inverse);
   --color-neutral-hover: #4f5053;
   --color-success-strong: #38a169;
-  --color-warning-strong: #eb6e0d;
+  --color-warning-strong: #ce810d;
   --color-destructive-strong: #cd372c;
   --color-informative-strong: #2e9ad4;
   --color-border: #c3c4c6;
@@ -862,9 +866,9 @@
   --color-destructive-line: #e47248;
   --color-destructive-line-hover: #c5562b;
   --color-destructive-line-pressed: #b04314;
-  --color-warning-line: #d27e41;
-  --color-warning-line-hover: #b46322;
-  --color-warning-line-pressed: #a05103;
+  --color-warning-line: #c28641;
+  --color-warning-line-hover: #a56b22;
+  --color-warning-line-pressed: #925904;
   --color-informative-line: #569ac0;
   --color-informative-line-hover: #3a7fa3;
   --color-informative-line-pressed: #266d91;

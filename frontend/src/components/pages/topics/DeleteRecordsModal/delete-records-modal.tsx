@@ -628,7 +628,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                 </DialogBody>
                 <DialogFooter>
                   {hasErrors || methods.isFirst ? null : (
-                    <Button disabled={okButtonLoading} onClick={() => methods.prev()} variant="secondary">
+                    <Button disabled={okButtonLoading} onClick={() => methods.prev()} variant="primary">
                       Back
                     </Button>
                   )}
@@ -646,7 +646,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                       }
                       methods.next();
                     }}
-                    variant={hasErrors ? 'secondary' : 'destructive'}
+                    variant={hasErrors ? 'primary' : 'destructive'}
                   >
                     {getPrimaryLabel(methods.isLast)}
                   </Button>

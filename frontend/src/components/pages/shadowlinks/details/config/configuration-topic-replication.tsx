@@ -131,7 +131,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
                             </div>
                             <Badge
                               data-testid={`property-${categoryKey}-${index}-badge`}
-                              tone="neutral"
+                              tone="default"
                               variant="subtle"
                             >
                               Shadowed

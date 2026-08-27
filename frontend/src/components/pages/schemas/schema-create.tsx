@@ -567,7 +567,7 @@ const SchemaEditor = (p: {
     <>
       <h2 className="text-heading-lg">Subject Settings</h2>
       {Boolean(isAddVersion) && (
-        <Alert variant="info">
+        <Alert variant="informative">
           <AlertDescription>
             When adding a new schema version, the only thing that can be changed is the schema definition and its
             references. The rest of the fields have been disabled.

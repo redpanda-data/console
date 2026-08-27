@@ -28,9 +28,9 @@ const SPINNER_COLOR: Record<'starting' | 'stopping', string> = {
 
 const DEFAULT_LABEL: Record<StatusBadgeVariant, string> = {
   success: 'Running',
-  info: 'Pending',
+  informative: 'Pending',
   warning: 'Warning',
-  error: 'Error',
+  destructive: 'Error',
   disabled: 'Stopped',
   starting: 'Starting',
   stopping: 'Stopping',
@@ -56,7 +56,7 @@ const badgeSizeStyles = cva('rounded-full', {
 });
 
 function StatusBadge({
-  variant = 'info',
+  variant = 'informative',
   pulsing = false,
   size,
   className,
@@ -88,7 +88,7 @@ function StatusBadge({
       data-testid={testId}
       icon={icon}
       size={size}
-      tone="neutral"
+      tone="default"
       variant="subtle"
       {...props}
     >

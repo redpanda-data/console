@@ -115,7 +115,7 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
           {mechanismLabel !== null && (
             <div className="flex items-center gap-1.5">
               <span className="text-body text-secondary">Mechanism:</span>
-              <Badge size="sm" tone="neutral" variant="outline">
+              <Badge size="sm" tone="default" variant="outline">
                 {mechanismLabel}
               </Badge>
             </div>

@@ -10,12 +10,12 @@ const switchVariants = cva(
   {
     variants: {
       size: {
-        default: 'h-[1.15rem] w-8',
         sm: 'h-3.5 w-6',
+        md: 'h-[1.15rem] w-8',
       },
     },
     defaultVariants: {
-      size: 'default',
+      size: 'md',
     },
   }
 );
@@ -33,7 +33,7 @@ function Switch(allProps: SwitchProps) {
     <SwitchPrimitive.Root
       checked={checkedOverride}
       className={cn(switchVariants({ size }), className)}
-      data-size={size ?? 'default'}
+      data-size={size ?? 'md'}
       data-slot="switch"
       data-testid={testId}
       {...props}

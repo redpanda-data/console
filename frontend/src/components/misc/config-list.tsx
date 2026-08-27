@@ -10,9 +10,9 @@
  */
 
 import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
-import type { ColumnDef } from '@tanstack/react-table';
 import { EyeOffIcon, InfoIcon } from 'components/icons';
 import type { JSX } from 'react';
+import type { LegacyColumnDef } from 'utils/legacy-data-table';
 
 import styles from './ConfigList.module.scss';
 import type { ConfigEntry } from '../../state/rest-interfaces';
@@ -31,7 +31,7 @@ export function ConfigList({
 }) {
   const allTypesUnknown = configEntries.all((x) => equalsIgnoreCase(x.type, 'unknown'));
 
-  const tableColumns: ColumnDef<ConfigEntry>[] = [
+  const tableColumns: LegacyColumnDef<ConfigEntry>[] = [
     {
       header: 'Configuration',
       accessorKey: 'name',

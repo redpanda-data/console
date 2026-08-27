@@ -9,26 +9,26 @@ import { cn, type SharedProps } from '../lib/utils';
 const avatarVariants = cva('group/avatar relative flex shrink-0 select-none rounded-full', {
   variants: {
     size: {
-      default: 'size-8',
       sm: 'size-6',
+      md: 'size-8',
       lg: 'size-10',
     },
   },
   defaultVariants: {
-    size: 'default',
+    size: 'md',
   },
 });
 
 function Avatar({
   className,
-  size = 'default',
+  size = 'md',
   testId,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root> & SharedProps & VariantProps<typeof avatarVariants>) {
   return (
     <AvatarPrimitive.Root
       className={cn(avatarVariants({ size }), className)}
-      data-size={size ?? 'default'}
+      data-size={size ?? 'md'}
       data-slot="avatar"
       data-testid={testId}
       {...props}

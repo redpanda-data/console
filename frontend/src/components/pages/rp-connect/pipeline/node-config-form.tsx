@@ -111,7 +111,7 @@ const ChildItemRow = ({
           {item.name}
         </span>
       </div>
-      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="error" /> : null}
+      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="destructive" /> : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </button>
   );
@@ -616,7 +616,7 @@ const TopicScalarControl = ({
         className={invalid ? 'ring-1 ring-destructive' : undefined}
         creatable
         createLabel="value"
-        loading={isLoading}
+        isLoading={isLoading}
         onChange={onChange}
         onInputValueChange={onChange}
         options={options}
@@ -640,8 +640,8 @@ const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (top
     <div className="flex flex-col gap-2">
       <Combobox
         clearable={false}
+        isLoading={isLoading}
         key={pickCount}
-        loading={isLoading}
         onChange={(topic) => {
           if (topic) {
             onAppend(topic);
@@ -1284,7 +1284,7 @@ export function NodeConfigForm({
                 size="sm"
                 title="Apply now (⌘⏎) — edits also apply when you leave a field"
                 type="button"
-                variant="secondary"
+                variant="primary"
               >
                 Apply
               </Button>

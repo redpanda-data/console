@@ -51,13 +51,12 @@ const drawerContentVariants = cva(
   {
     variants: {
       size: {
-        default:
-          'data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm',
+        md: 'data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm',
         half: 'data-[vaul-drawer-direction=left]:max-sm:w-full data-[vaul-drawer-direction=right]:max-sm:w-full data-[vaul-drawer-direction=left]:sm:w-1/2 data-[vaul-drawer-direction=right]:sm:w-1/2',
       },
     },
     defaultVariants: {
-      size: 'default',
+      size: 'md',
     },
   }
 );

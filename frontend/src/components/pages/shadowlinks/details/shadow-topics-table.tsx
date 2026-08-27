@@ -10,10 +10,14 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import {
+  createDataTableColumnHelper,
+  type DataTableInstance,
+  useDataTable,
+} from 'components/redpanda-ui/components/data-table';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
@@ -38,7 +42,6 @@ type ShadowTopicsTableProps = {
 };
 
 const emptyTopics: ShadowTopic[] = [];
-const coreRowModel = getCoreRowModel<ShadowTopic>();
 
 // Reusable loading row component
 const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength: number }) => (
@@ -54,14 +57,16 @@ const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength
 
 // Extracted component for table body rows
 const VirtualizedRows = ({
+  table,
   virtualRows,
   rows,
   isFetchingNextPage,
   isFetching,
   columnsLength,
 }: {
+  table: DataTableInstance<ShadowTopic>;
   virtualRows: ReturnType<ReturnType<typeof useVirtualizer>['getVirtualItems']>;
-  rows: ReturnType<ReturnType<typeof useReactTable<ShadowTopic>>['getRowModel']>['rows'];
+  rows: ReturnType<ReturnType<typeof useDataTable<ShadowTopic>>['getRowModel']>['rows'];
   isFetchingNextPage?: boolean;
   isFetching?: boolean;
   columnsLength: number;
@@ -74,7 +79,7 @@ const VirtualizedRows = ({
           return (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
               ))}
             </TableRow>
           );
@@ -108,73 +113,73 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   topicNameFilter,
   onTopicNameFilterChange,
 }) => {
-  const columnHelper = createColumnHelper<ShadowTopic>();
+  const columnHelper = createDataTableColumnHelper<ShadowTopic>();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const columns = useMemo(
-    () => [
-      columnHelper.accessor('topicName', {
-        header: 'Name',
-        size: 300,
-        cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
-      }),
-      columnHelper.accessor('totalLag', {
-        header: () => (
-          <div className="flex items-center gap-2">
-            Max offset lag
-            <Tooltip>
-              <TooltipTrigger
-                data-testid="max-offset-lag-info-icon"
-                render={<Info className="h-4 w-4 text-muted-foreground" />}
-              />
-              <TooltipContent>
-                <p>Maximum offset difference between source and replica topic partitions</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        ),
-        size: 150,
-        cell: (info) => <div className="text-body text-muted-foreground">{info.getValue().toString()}</div>,
-      }),
-      columnHelper.accessor('state', {
-        header: 'Replication state',
-        size: 200,
-        cell: (info) => <ShadowTopicStatusBadge state={info.getValue()} />,
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: '',
-        size: 250,
-        cell: ({ row }) => {
-          const topic = row.original;
-          return (
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                onClick={() => navigate({ to: `/topics/${topic.topicName}?pageSize=10` })}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                View topic
-              </Button>
-              {topic.state === ShadowTopicState.ACTIVE && (
-                <Button onClick={() => onFailoverTopic(topic.topicName)} size="sm" type="button" variant="outline">
-                  Failover
-                </Button>
-              )}
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor('topicName', {
+          header: 'Name',
+          size: 300,
+          cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('totalLag', {
+          header: () => (
+            <div className="flex items-center gap-2">
+              Max offset lag
+              <Tooltip>
+                <TooltipTrigger
+                  data-testid="max-offset-lag-info-icon"
+                  render={<Info className="h-4 w-4 text-muted-foreground" />}
+                />
+                <TooltipContent>
+                  <p>Maximum offset difference between source and replica topic partitions</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-          );
-        },
-      }),
-    ],
+          ),
+          size: 150,
+          cell: (info) => <div className="text-body text-muted-foreground">{info.getValue().toString()}</div>,
+        }),
+        columnHelper.accessor('state', {
+          header: 'Replication state',
+          size: 200,
+          cell: (info) => <ShadowTopicStatusBadge state={info.getValue()} />,
+        }),
+        columnHelper.display({
+          id: 'actions',
+          header: '',
+          size: 250,
+          cell: ({ row }) => {
+            const topic = row.original;
+            return (
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  onClick={() => navigate({ to: `/topics/${topic.topicName}?pageSize=10` })}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  View topic
+                </Button>
+                {topic.state === ShadowTopicState.ACTIVE && (
+                  <Button onClick={() => onFailoverTopic(topic.topicName)} size="sm" type="button" variant="outline">
+                    Failover
+                  </Button>
+                )}
+              </div>
+            );
+          },
+        }),
+      ]),
     [columnHelper, navigate, onFailoverTopic]
   );
 
-  const table = useReactTable<ShadowTopic>({
+  const table = useDataTable<ShadowTopic>({
     data: topics ?? emptyTopics,
     columns,
-    getCoreRowModel: coreRowModel,
   });
 
   const { rows } = table.getRowModel();
@@ -279,7 +284,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                   <TableRow key={headerGroup.id} style={{ borderBottom: 'none', borderRadius: 0 }}>
                     {headerGroup.headers.map((header) => (
                       <TableHead key={header.id}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -304,6 +309,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                     isFetching={isFetching}
                     isFetchingNextPage={isFetchingNextPage}
                     rows={rows}
+                    table={table}
                     virtualRows={virtualRows}
                   />
                   {paddingBottom > 0 && (

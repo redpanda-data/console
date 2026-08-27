@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 /**
  * Assert a palette override sheet against the registry's token surface. An override fails silently by
  * construction — a name theme.css does not declare compiles to nothing, leaving our value where the

@@ -11,6 +11,7 @@
 
 import { isFeatureFlagEnabled } from 'config';
 import { docsLinks } from 'utils/docs-links';
+import type { LegacyRow } from 'utils/legacy-data-table';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -35,7 +36,6 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import type { Row } from '@tanstack/react-table';
 import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
 import React, { type FC, type ReactNode } from 'react';
 
@@ -224,7 +224,7 @@ class Overview extends PageComponent {
                           {
                             size: 100,
                             header: 'Rack',
-                            cell: ({ row: { original: broker } }: { row: Row<BrokerWithConfigAndStorage> }) =>
+                            cell: ({ row: { original: broker } }: { row: LegacyRow<BrokerWithConfigAndStorage> }) =>
                               broker.rack,
                           },
                         ]
@@ -449,7 +449,7 @@ function ClusterDetails() {
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
             <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
-              <Badge tone="info" variant="solid">
+              <Badge tone="informative" variant="solid">
                 <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
               </Badge>
             </a>

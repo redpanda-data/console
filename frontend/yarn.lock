@@ -2039,11 +2039,6 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@opentelemetry/api@^1.9.0":
-  version "1.9.0"
-  resolved "https://registry.npmjs.org/@opentelemetry/api/-/api-1.9.0.tgz"
-  integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
-
 "@oxc-resolver/binding-android-arm-eabi@11.19.1":
   version "11.19.1"
   resolved "https://registry.npmjs.org/@oxc-resolver/binding-android-arm-eabi/-/binding-android-arm-eabi-11.19.1.tgz"
@@ -2583,11 +2578,6 @@
     redux "^5.0.1"
     redux-thunk "^3.1.0"
     reselect "^5.1.0"
-
-"@remix-run/router@1.23.1":
-  version "1.23.1"
-  resolved "https://registry.npmjs.org/@remix-run/router/-/router-1.23.1.tgz"
-  integrity sha512-vDbaOzF7yT2Qs4vO6XV1MHcJv+3dgR1sT+l3B8xxOVhUC336prMvqrvsLL/9Dnw2xr6Qhz4J0dmS0llNAbnUmQ==
 
 "@rolldown/pluginutils@1.0.0-beta.53":
   version "1.0.0-beta.53"
@@ -3475,12 +3465,28 @@
     "@tanstack/store" "0.9.3"
     use-sync-external-store "^1.6.0"
 
-"@tanstack/react-table@^8.17.3", "@tanstack/react-table@^8.21.3":
+"@tanstack/react-store@^0.11.0":
+  version "0.11.1"
+  resolved "https://registry.npmjs.org/@tanstack/react-store/-/react-store-0.11.1.tgz"
+  integrity sha512-HaIGKI3YLmjBYIvy5DFDY23oNaYZIsTZfngey07Uh5iLVJgM3bIGCnZeOFOqzjFld9JHWcaHJnasD/bKoGKwJQ==
+  dependencies:
+    "@tanstack/store" "0.11.1"
+    use-sync-external-store "^1.6.0"
+
+"@tanstack/react-table@^8.17.3":
   version "8.21.3"
   resolved "https://registry.npmjs.org/@tanstack/react-table/-/react-table-8.21.3.tgz"
   integrity sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==
   dependencies:
     "@tanstack/table-core" "8.21.3"
+
+"@tanstack/react-table@^9.1.2":
+  version "9.1.2"
+  resolved "https://registry.npmjs.org/@tanstack/react-table/-/react-table-9.1.2.tgz"
+  integrity sha512-YQPZFJ1nIi/bjjwsPZVouABgahDcl7Gdm33CdTStUJBn0DjEVJ2uhSTVmIoWt9MVKdQziXGAsXipSzy949Hygg==
+  dependencies:
+    "@tanstack/react-store" "^0.11.0"
+    "@tanstack/table-core" "9.1.2"
 
 "@tanstack/react-virtual@^3.13.12":
   version "3.13.12"
@@ -3488,16 +3494,6 @@
   integrity sha512-Gd13QdxPSukP8ZrkbgS2RwoZseTTbQPLnQEn7HY/rqtM+8Zt95f7xKC7N0EsKs7aoz0WzZ+fditZux+F8EzYxA==
   dependencies:
     "@tanstack/virtual-core" "3.13.12"
-
-"@tanstack/router-core@^1.170.0":
-  version "1.171.13"
-  resolved "https://registry.npmjs.org/@tanstack/router-core/-/router-core-1.171.13.tgz"
-  integrity sha512-+NOwEj1kO/6IGmpHRIZHasYxYWpyBQGNIZAST9aNrk9Q3YlU9SgqVnl1pbLa9qAKfeNdXQIRve0RQb/0kyDeDA==
-  dependencies:
-    "@tanstack/history" "1.162.0"
-    cookie-es "^3.0.0"
-    seroval "^1.5.4"
-    seroval-plugins "^1.5.4"
 
 "@tanstack/router-core@1.171.14", "@tanstack/router-core@^1.170.0":
   version "1.171.14"
@@ -3570,10 +3566,22 @@
   resolved "https://registry.npmjs.org/@tanstack/store/-/store-0.9.3.tgz"
   integrity sha512-8reSzl/qGWGGVKhBoxXPMWzATSbZLZFWhwBAFO9NAyp0TxzfBP0mIrGb8CP8KrQTmvzXlR/vFPPUrHTLBGyFyw==
 
+"@tanstack/store@0.11.1", "@tanstack/store@^0.11.0":
+  version "0.11.1"
+  resolved "https://registry.npmjs.org/@tanstack/store/-/store-0.11.1.tgz"
+  integrity sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==
+
 "@tanstack/table-core@8.21.3":
   version "8.21.3"
   resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-8.21.3.tgz"
   integrity sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==
+
+"@tanstack/table-core@9.1.2":
+  version "9.1.2"
+  resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-9.1.2.tgz"
+  integrity sha512-ONpWQeass1sfg80CWF1NSwQ8r3GiqxA2lT/EdqIcrDEPZ0Z+0mM94eQoFYLPN0Kztzj8TQVb2+PrSZSItqA61g==
+  dependencies:
+    "@tanstack/store" "^0.11.0"
 
 "@tanstack/virtual-core@3.13.12":
   version "3.13.12"
@@ -9861,14 +9869,7 @@ react-resizable-panels@^4.11.2:
   resolved "https://registry.npmjs.org/react-resizable-panels/-/react-resizable-panels-4.11.2.tgz"
   integrity sha512-+kfFbDZ8mygc7g0vxOcDzCVGuwiIUOnILqPoUHo6/uP+Mmyx6HzZU+kj1aOPDlktXuobYbr6BtQekvJwHRX4Eg==
 
-"react-router@^6 || ^7":
-  version "6.30.2"
-  resolved "https://registry.npmjs.org/react-router/-/react-router-6.30.2.tgz"
-  integrity sha512-H2Bm38Zu1bm8KUE5NVWRMzuIyAV8p/JrOaBJAwVmp37AXG72+CZJlEBw6pdn9i5TBgLMhNDgijS4ZlblpHyWTA==
-  dependencies:
-    "@remix-run/router" "1.23.1"
-
-react-router@7.12.0:
+react-router@7.12.0, "react-router@^6 || ^7":
   version "7.12.0"
   resolved "https://registry.npmjs.org/react-router/-/react-router-7.12.0.tgz"
   integrity sha512-kTPDYPFzDVGIIGNLS5VJykK0HfHLY5MF3b+xj0/tTyNYL1gF1qs7u67Z9jEhQk2sQ98SUaHxlG31g1JtF7IfVw==

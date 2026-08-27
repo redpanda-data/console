@@ -424,11 +424,11 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
               >
                 <span className="min-w-0 truncate">{c.name}</span>
                 {c.modifiedCount > 0 ? (
-                  <Badge aria-label={`${c.modifiedCount} modified`} size="sm" tone="info" variant="subtle">
+                  <Badge aria-label={`${c.modifiedCount} modified`} size="sm" tone="informative" variant="subtle">
                     {c.modifiedCount}
                   </Badge>
                 ) : (
-                  <Badge size="sm" tone="neutral" variant="outline">
+                  <Badge size="sm" tone="default" variant="outline">
                     {c.count}
                   </Badge>
                 )}
@@ -472,7 +472,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
             <ToggleGroupItem value="modified">
               Modified
               {totalModifiedCount > 0 && (
-                <Badge className="ml-2" size="sm" tone="info" variant="subtle">
+                <Badge className="ml-2" size="sm" tone="informative" variant="subtle">
                   {totalModifiedCount}
                 </Badge>
               )}
@@ -578,7 +578,7 @@ const ConfigRow: FC<{
             <span className="font-mono text-body">{entry.name}</span>
           )}
           {modified ? (
-            <Badge size="sm" tone="info" variant="subtle">
+            <Badge size="sm" tone="informative" variant="subtle">
               Modified
             </Badge>
           ) : null}
