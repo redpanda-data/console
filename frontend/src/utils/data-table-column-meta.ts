@@ -9,19 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
+import type { VariantProps } from 'class-variance-authority';
 import type { DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
+import type { tableHeadVariants } from 'components/redpanda-ui/components/table';
+
+type TableHeadVariants = VariantProps<typeof tableHeadVariants>;
 
 /**
- * Layout hints our hand-rolled tables read off a column. The registry closes its own column meta at
- * `{ label?: string }` — TanStack v9 fixes the meta type per feature bundle, and our tables have to
- * stay assignable to the registry's `DataTableColumnHeader`/`DataTablePagination`, so we cannot
- * declare a bundle of our own. These two helpers keep the resulting cast in one place instead of
- * spread across every column definition.
+ * Layout hints our hand-rolled tables read off a column, derived from TableHead's own variants so
+ * the two cannot drift.
+ *
+ * The registry closes its column meta at `{ label?: string }` — TanStack v9 fixes the meta type per
+ * feature bundle, and our tables have to stay assignable to the registry's `DataTableColumnHeader`
+ * and `DataTablePagination`, so we cannot declare a bundle of our own. These two helpers keep the
+ * resulting cast in one place instead of spread across every column definition.
  */
 export type ConsoleColumnMeta = {
   label?: string;
-  headWidth?: 'sm' | 'md' | 'full' | 'fit';
-  align?: 'left' | 'center' | 'right';
+  align?: TableHeadVariants['align'];
+  headWidth?: TableHeadVariants['width'];
 };
 
 type RegistryColumnMeta = NonNullable<Extract<DataTableColumnDef<Record<string, unknown>>, { meta?: unknown }>['meta']>;

@@ -13,9 +13,8 @@ import type { PaginationState, SortingState } from '@tanstack/react-table';
 import { EditIcon, SkipIcon, TrashIcon } from 'components/icons';
 import { Search, X } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
-import { columnMeta } from 'utils/data-table-column-meta';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
-import type { ColumnMeta } from './column-meta';
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -468,7 +467,7 @@ const PartitionTable = ({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+                const meta = readColumnMeta(header.column.columnDef.meta);
                 return (
                   <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
                     {header.isPlaceholder ? null : <table.FlexRender header={header} />}
@@ -482,7 +481,7 @@ const PartitionTable = ({
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => {
-                const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
+                const meta = readColumnMeta(cell.column.columnDef.meta);
                 return (
                   <TableCell align={meta?.align} key={cell.id}>
                     {<table.FlexRender cell={cell} />}

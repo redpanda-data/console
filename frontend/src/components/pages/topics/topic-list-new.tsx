@@ -456,8 +456,7 @@ const TopicList: FC = () => {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
-                  const meta = header.column.columnDef.meta as Meta | undefined;
+                  const meta = readColumnMeta(header.column.columnDef.meta);
                   return (
                     <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
                       {header.isPlaceholder ? null : <table.FlexRender header={header} />}
