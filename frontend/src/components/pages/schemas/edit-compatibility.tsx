@@ -320,7 +320,7 @@ function EditSchemaCompatibility(p: {
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
             </Tooltip>
-            <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="secondary-ghost">
+            <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="ghost">
               Cancel
             </Button>
           </div>

@@ -16,8 +16,7 @@ const buttonVariants = cva(
     'cursor-pointer',
     'disabled:pointer-events-none disabled:cursor-not-allowed data-disabled:pointer-events-none data-disabled:cursor-not-allowed',
     'shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0',
-    // `!` matches the outline variants' `!important` rest border: a state on the same property has
-    // to carry that weight or it never renders.
+    // `!` to outrank the outline variants' `!important` rest border.
     'focus-visible:!border-ring outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
     'aria-invalid:!border-destructive aria-invalid:ring-invalid',
     'selection:bg-selection selection:text-selection-foreground',
@@ -58,10 +57,9 @@ const buttonVariants = cva(
           'active:bg-inverse-pressed',
           'disabled:bg-surface-disabled disabled:text-disabled',
         ],
-        // Each steps the ramp its *own* rest border sits on, so the line moves one rung rather than
-        // jumping family and reversing direction in one theme.
-        // Unprefixed is the neutral tone and `secondary-` the accent, matching the fills above.
-        // `ghost`, `link` and `dashed` stay accent.
+        // Outline, ghost and dashed repeat these five tones with a border, no border, and a 2px
+        // dashed one. Each state steps the ramp its own rest token sits on, so a line moves one rung
+        // rather than jumping family.
         outline: [
           '!border-secondary-line border text-secondary shadow-xs',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',
@@ -87,8 +85,8 @@ const buttonVariants = cva(
           'focus-visible:ring-destructive/50',
           'disabled:!border-border disabled:text-disabled',
         ],
-        // Takes the ground's own ink, for a fill this variant cannot know — a Banner, a coloured
-        // panel. Alpha rather than a `-subtle` token, because the wash steps off that inherited ink.
+        // Takes the ground's own ink, for a fill this variant cannot know. Alpha, not a `-subtle`
+        // token, so the wash steps off that inherited ink.
         'current-outline': [
           '!border-current border bg-transparent text-current shadow-xs',
           'hover:bg-current/15',
@@ -96,15 +94,15 @@ const buttonVariants = cva(
           'disabled:!border-border disabled:text-disabled',
         ],
         ghost: [
-          'bg-transparent text-action-primary',
-          'hover:bg-primary-wash',
-          'active:bg-primary-wash-pressed',
-          'disabled:text-disabled',
-        ],
-        'secondary-ghost': [
           'bg-transparent text-secondary',
           'hover:bg-secondary-wash',
           'active:bg-secondary-wash-pressed',
+          'disabled:text-disabled',
+        ],
+        'secondary-ghost': [
+          'bg-transparent text-primary',
+          'hover:bg-primary-wash',
+          'active:bg-primary-wash-pressed',
           'disabled:text-disabled',
         ],
         'accent-ghost': [
@@ -120,7 +118,6 @@ const buttonVariants = cva(
           'focus-visible:ring-destructive/50',
           'disabled:text-disabled',
         ],
-        // Ghost half of `current-outline`.
         'current-ghost': [
           'bg-transparent text-current',
           'hover:bg-current/15',
@@ -133,10 +130,37 @@ const buttonVariants = cva(
           'active:text-action-primary-pressed',
           'disabled:text-disabled disabled:no-underline',
         ],
+        // 2px and unshadowed: a 1px dashed line reads as an artefact, and a placeholder should not
+        // sit proud of its ground.
         dashed: [
+          '!border-secondary-line border-2 border-dashed bg-transparent text-secondary',
+          'hover:!border-secondary-line-hover hover:bg-secondary-wash',
+          'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
+        ],
+        'secondary-dashed': [
           '!border-primary-line border-2 border-dashed bg-transparent text-primary',
           'hover:!border-primary-line-hover hover:bg-primary-wash',
           'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
+        ],
+        'accent-dashed': [
+          '!border-brand-line border-2 border-dashed bg-transparent text-brand',
+          'hover:!border-brand-line-hover hover:bg-brand-wash',
+          'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
+          'disabled:!border-border disabled:text-disabled',
+        ],
+        'destructive-dashed': [
+          '!border-destructive-line border-2 border-dashed bg-transparent text-destructive',
+          'hover:!border-destructive-line-hover hover:bg-destructive-wash',
+          'active:!border-destructive-line-pressed active:bg-destructive-wash-pressed',
+          'focus-visible:ring-destructive/50',
+          'disabled:!border-border disabled:text-disabled',
+        ],
+        'current-dashed': [
+          '!border-current border-2 border-dashed bg-transparent text-current',
+          'hover:bg-current/15',
+          'active:bg-current/25',
           'disabled:!border-border disabled:text-disabled',
         ],
       },
@@ -160,10 +184,8 @@ const buttonVariants = cva(
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
-/**
- * Resolve Base UI's `nativeButton` flag. Base UI can't introspect a component render,
- * so force `false` only for a known non-button intrinsic `render`/`as`; else defer to it.
- */
+/** Base UI can't introspect a component `render`, so force `false` only for a known non-button
+ * intrinsic and otherwise defer to it. */
 function resolveNativeButton(
   explicit: boolean | undefined,
   render: ButtonPrimitive.Props['render'],
@@ -246,8 +268,7 @@ function Button({
   const isDisabled = disabled || isLoading;
   const renderedChildren = renderButtonChildren(children, icon, isLoading);
 
-  // `as`/`to`/`href` are router value-adds mapped onto Base UI's native `render` prop.
-  // Anchors (`as="a"`) take `href`; router links (`as={Link}`) take `to`.
+  // `as`/`to`/`href` map onto Base UI's `render`: anchors take `href`, router links take `to`.
   const AsElement = as;
   const asElementProps = AsElement === 'a' ? { href: href ?? to } : { to };
   const resolvedRender = render ?? (AsElement ? <AsElement {...asElementProps} /> : undefined);

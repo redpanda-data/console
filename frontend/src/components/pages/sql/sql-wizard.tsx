@@ -137,7 +137,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
         </div>
 
         <footer className="mx-auto flex w-full max-w-[720px] shrink-0 items-center justify-between border-t px-6 py-3.5">
-          <Button onClick={onClose} size="md" variant="secondary-ghost">
+          <Button onClick={onClose} size="md" variant="ghost">
             Cancel
           </Button>
           <div className="flex gap-2">

@@ -583,7 +583,7 @@ const SchemaList: FC = () => {
                           : appGlobal.historyPush('/schema-registry/edit-mode')
                       }
                       size="icon-xs"
-                      variant="secondary-ghost"
+                      variant="ghost"
                     >
                       <EditIcon />
                     </Button>
@@ -621,7 +621,7 @@ const SchemaList: FC = () => {
                           : appGlobal.historyPush('/schema-registry/edit-compatibility')
                       }
                       size="icon-xs"
-                      variant="secondary-ghost"
+                      variant="ghost"
                     >
                       <EditIcon />
                     </Button>

@@ -296,7 +296,7 @@ function SidebarTrigger({ className, onClick, ...props }: SidebarTriggerProps) {
         toggleSidebar();
       }}
       size="icon"
-      variant="secondary-ghost"
+      variant="ghost"
       {...props}
     >
       <PanelLeftIcon className="rtl:rotate-180" />

@@ -10,7 +10,7 @@
      "theme:check": "bun components/redpanda-ui/style/theme-check/cli.mts --overrides src/theme-overrides.css",
      "build": "npm run theme:check && …"
 
-   Four rules, each of which fails silently — a name the theme does not declare compiles to nothing and
+   Five rules, each of which fails silently — a name the theme does not declare compiles to nothing and
    paints our value. Full guide: https://redpanda-ui-registry.netlify.app/docs/theming
 
      1. Name only tokens theme.css declares. There is no palette ramp behind them.
@@ -18,6 +18,9 @@
         `surface-recess`, which is `surface-subtle` at half alpha.
      3. Override both themes, or neither: our dark block still applies to every rung you leave alone.
      4. `static-*` has no dark value by definition. Light block only, and always with its `-foreground`.
+     5. Only if you pin a subtree with `data-theme` — repeat your light overrides on the light scope
+        below. `@theme` reaches the root; a pinned island re-declares from theme.css and would
+        otherwise fall back to our light defaults.
    ============================================================================= */
 
 @theme {

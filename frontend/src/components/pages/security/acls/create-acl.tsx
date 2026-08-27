@@ -1151,7 +1151,7 @@ export default function CreateACL({
                   >
                     {edit ? 'Save' : 'Create'}
                   </Button>
-                  <Button onClick={onCancel} variant="secondary-ghost">
+                  <Button onClick={onCancel} variant="ghost">
                     Cancel
                   </Button>
                 </div>

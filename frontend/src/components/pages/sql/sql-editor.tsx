@@ -488,7 +488,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                     aria-label={`Close ${t.name}`}
                     onClick={(e) => closeTab(t.id, e)}
                     size="icon-xs"
-                    variant="secondary-ghost"
+                    variant="ghost"
                   >
                     <X />
                   </Button>
@@ -499,7 +499,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                 onClick={addTab}
                 size="icon-sm"
                 title="New query"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <Plus />
               </Button>
@@ -509,7 +509,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             <Popover onOpenChange={setHistOpen} open={histOpen}>
               <PopoverTrigger
                 render={
-                  <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
+                  <Button size="sm" title="Query history (this browser)" variant="ghost">
                     <History /> History
                   </Button>
                 }
@@ -530,7 +530,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                       setHistOpen(false);
                     }}
                     size="sm"
-                    variant="secondary-ghost"
+                    variant="ghost"
                   >
                     <Terminal />
                     <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
@@ -547,7 +547,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
               }}
               size="sm"
               title="Format SQL"
-              variant="secondary-ghost"
+              variant="ghost"
             >
               <Wand2 /> Format
             </Button>

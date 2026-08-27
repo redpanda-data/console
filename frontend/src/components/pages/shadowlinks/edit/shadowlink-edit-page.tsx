@@ -236,7 +236,7 @@ export const ShadowLinkEditPage = () => {
             <Button disabled={isUpdating} type="submit">
               Save
             </Button>
-            <Button onClick={() => navigate({ to: `/shadowlinks/${name}` })} type="button" variant="secondary-ghost">
+            <Button onClick={() => navigate({ to: `/shadowlinks/${name}` })} type="button" variant="ghost">
               Cancel
             </Button>
           </div>

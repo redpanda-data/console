@@ -555,7 +555,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
             <AddTopicStep hideTitle inline ref={topicStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
-            <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
+            <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="ghost">
               Cancel
             </Button>
             <Button
@@ -579,7 +579,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
             <AddUserStep hideTitle inline ref={userStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
-            <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
+            <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="ghost">
               Cancel
             </Button>
             <Button className="min-w-[70px]" disabled={isUserSubmitting} onClick={handleCreateUser} variant="primary">

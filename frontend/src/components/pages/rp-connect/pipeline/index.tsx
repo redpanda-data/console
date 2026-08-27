@@ -1415,7 +1415,7 @@ function PipelinePageContent() {
             <AddTopicStep hideTitle inline ref={topicStepRef} />
           </DialogBody>
           <DialogFooter>
-            <Button onClick={topicDialog.close} variant="secondary-ghost">
+            <Button onClick={topicDialog.close} variant="ghost">
               Cancel
             </Button>
             <Button
@@ -1464,7 +1464,7 @@ function PipelinePageContent() {
             />
           </DialogBody>
           <DialogFooter>
-            <Button onClick={userDialog.close} variant="secondary-ghost">
+            <Button onClick={userDialog.close} variant="ghost">
               Cancel
             </Button>
             <Button

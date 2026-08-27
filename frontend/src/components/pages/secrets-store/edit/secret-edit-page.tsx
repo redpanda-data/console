@@ -242,7 +242,7 @@ export const SecretEditPage = () => {
             data-testid="secret-edit-cancel-button"
             onClick={() => navigate({ to: '/secrets' })}
             type="button"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Cancel
           </Button>

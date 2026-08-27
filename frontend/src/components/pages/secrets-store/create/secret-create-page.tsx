@@ -197,7 +197,7 @@ export const SecretCreatePage = () => {
             data-testid="secret-create-cancel-button"
             onClick={() => navigate({ to: '/secrets' })}
             type="button"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Cancel
           </Button>

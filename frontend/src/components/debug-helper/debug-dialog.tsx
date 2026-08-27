@@ -190,7 +190,7 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
           <ItemDescription>{fixture.description}</ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="secondary-ghost">
+          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="ghost">
             {previewing ? 'Hide' : 'Preview'}
           </Button>
           <Button
@@ -450,12 +450,12 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             icon={<Clipboard />}
             onClick={() => copyToClipboard(value, `Copied ${storageKey}`)}
             size="xs"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Copy
           </Button>
           {isMultiline && !expanded ? (
-            <Button icon={<Eye />} onClick={() => setExpanded(true)} size="xs" variant="secondary-ghost" />
+            <Button icon={<Eye />} onClick={() => setExpanded(true)} size="xs" variant="ghost" />
           ) : null}
         </div>
       </div>
@@ -499,7 +499,7 @@ function StorageSection({
             icon={<Clipboard />}
             onClick={() => copyToClipboard(JSON.stringify(dumpStorage(storage), null, 2), `Copied ${title} JSON`)}
             size="xs"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Copy all
           </Button>
@@ -740,7 +740,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                             onMutate();
                           }}
                           size="xs"
-                          variant="secondary-ghost"
+                          variant="ghost"
                         >
                           Reset
                         </Button>

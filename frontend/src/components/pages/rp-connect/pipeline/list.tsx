@@ -361,7 +361,7 @@ const ActionsCell = memo(
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button className="size-8" size="icon" variant="secondary-ghost">
+              <Button className="size-8" size="icon" variant="ghost">
                 <MoreHorizontal />
                 <span className="sr-only">Open menu</span>
               </Button>

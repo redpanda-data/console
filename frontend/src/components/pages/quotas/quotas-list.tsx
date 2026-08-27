@@ -100,7 +100,7 @@ function SortableHeader({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <Button className="-ml-3 h-8" onClick={column.getToggleSortingHandler()} size="sm" variant="secondary-ghost">
+      <Button className="-ml-3 h-8" onClick={column.getToggleSortingHandler()} size="sm" variant="ghost">
         <span>{title}</span>
         {renderSortIcon(column.getIsSorted())}
       </Button>

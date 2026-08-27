@@ -97,7 +97,7 @@ const badgeVariants = cva(
 
         // shadcn aliases: `default` maps to our `neutral`; `ghost`/`link` mirror the button variants.
         default: 'border-transparent bg-neutral text-neutral-foreground [&:is(a,button)]:hover:bg-neutral-hover',
-        ghost: 'border-transparent bg-transparent text-action-primary [&:is(a,button)]:hover:bg-primary-wash',
+        ghost: 'border-transparent bg-transparent text-secondary [&:is(a,button)]:hover:bg-secondary-wash',
         link: 'link-standalone border-transparent bg-transparent text-action-primary',
       },
       size: {

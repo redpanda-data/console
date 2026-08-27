@@ -175,7 +175,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                   })
                 }
                 size="icon-xs"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <EditIcon />
               </Button>
@@ -197,7 +197,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                   })
                 }
                 size="icon-xs"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <EditIcon />
               </Button>

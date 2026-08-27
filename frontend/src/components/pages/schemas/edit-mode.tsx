@@ -292,7 +292,7 @@ function EditSchemaMode({
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
             </Tooltip>
-            <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="secondary-ghost">
+            <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="ghost">
               Cancel
             </Button>
           </div>

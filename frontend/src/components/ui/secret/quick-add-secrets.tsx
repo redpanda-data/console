@@ -403,7 +403,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     onClick={() => setShowAddAnotherForm(false)}
                     size="icon-xs"
                     type="button"
-                    variant="secondary-ghost"
+                    variant="ghost"
                   />
                 </div>
               )}
@@ -415,7 +415,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                 className="w-full"
                 onClick={() => setShowAddAnotherForm(true)}
                 type="button"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <Plus className="h-4 w-4" />
                 Add a custom secret
