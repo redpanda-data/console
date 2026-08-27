@@ -68,7 +68,7 @@ services:
       - redpanda
 
   connect:
-    image: docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest
+    image: redpandadata/connectors-unsupported:latest
     container_name: connect
     networks:
       - redpanda_network
