@@ -223,12 +223,7 @@ export const ShadowLinkListPage = () => {
             <TooltipTrigger
               render={
                 <span className="inline-block">
-                  <Button
-                    disabled={hasShadowLink}
-                    onClick={() => navigate({ to: '/shadowlinks/create' })}
-                    size="sm"
-                    variant="primary"
-                  >
+                  <Button disabled={hasShadowLink} onClick={() => navigate({ to: '/shadowlinks/create' })} size="sm">
                     <Plus className="h-4 w-4" />
                     Create shadow link
                   </Button>

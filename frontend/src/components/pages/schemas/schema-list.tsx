@@ -681,7 +681,6 @@ const SchemaList: FC = () => {
                           appGlobal.historyPush('/schema-registry/create');
                         }
                       }}
-                      variant="primary"
                     >
                       Create new schema
                     </Button>
