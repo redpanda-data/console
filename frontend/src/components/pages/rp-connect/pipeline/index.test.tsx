@@ -50,7 +50,7 @@ import {
   lintPipelineConfig,
   listComponents,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
-import * as rstestImported2 from 'react';
+import * as React from 'react';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
 const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
@@ -127,7 +127,6 @@ const mockEditorInstance = {
 } as unknown as editor.IStandaloneCodeEditor;
 
 rs.mock('components/ui/yaml/yaml-editor', () => {
-  const React = rstestImported2;
   return {
     ...rs.requireActual<typeof import('components/ui/yaml/yaml-editor')>('components/ui/yaml/yaml-editor'),
     YamlEditor: (props: {
@@ -151,7 +150,6 @@ rs.mock('components/ui/yaml/yaml-editor', () => {
 
 // The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
 rs.mock('./pipeline-flow-canvas', () => {
-  const React = rstestImported2;
   return {
     PipelineFlowCanvas: (props: { configYaml: string }) =>
       React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),

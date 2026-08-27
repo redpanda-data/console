@@ -1,9 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react';
-import * as rstestImported0 from 'react';
+import * as React from 'react';
 
 rs.mock('@redpanda-data/ui', () => {
-  const React = rstestImported0;
-
   return {
     __esModule: true,
     Box: React.forwardRef<HTMLDivElement, Record<string, unknown>>(({ children, ...props }, ref) => (
@@ -22,8 +20,6 @@ const { editorLayoutSpy, editorPropsSpy } = rs.hoisted(() => ({
 }));
 
 rs.mock('./kowl-editor', () => {
-  const React = rstestImported0;
-
   const MockKowlEditor = (props: any) => {
     editorPropsSpy(props);
 

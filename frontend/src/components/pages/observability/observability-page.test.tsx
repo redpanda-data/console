@@ -23,7 +23,7 @@ import {
   executeRangeQuery,
   listQueries,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
-import * as rstestImported1 from 'react';
+import * as React from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 // Recharts' ResponsiveContainer requires parent-container dimensions to
@@ -33,7 +33,6 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 // so the inner LineChart gets a positive layout and the warning stops.
 rs.mock('recharts', () => {
   const actual = rs.requireActual<typeof import('recharts')>('recharts');
-  const React = rstestImported1;
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>

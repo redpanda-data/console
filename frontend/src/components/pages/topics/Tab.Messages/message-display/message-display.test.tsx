@@ -1,10 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import * as rstestImported0 from 'react';
+import * as React from 'react';
 
 rs.mock('@redpanda-data/ui', () => {
-  const React = rstestImported0;
-
   const Div = React.forwardRef<HTMLDivElement, Record<string, unknown>>(({ children, ...props }, ref) => (
     <div ref={ref} {...props}>
       {children}

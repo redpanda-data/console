@@ -14,7 +14,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
-import * as rstestImported1 from 'zustand/vanilla';
+import { createStore as createZustandStore } from 'zustand/vanilla';
 
 import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
 
@@ -241,8 +241,6 @@ rs.mock('../../../../state/app-global', () => ({
 }));
 
 rs.mock('../../../../state/backend-api', () => {
-  const { createStore } = rstestImported1;
-
   const store = {
     ACLs: { isAuthorizerEnabled: true },
     userData: {
@@ -274,7 +272,7 @@ rs.mock('../../../../state/backend-api', () => {
       refreshRoles: refreshRolesMock,
       ...rolesState,
     },
-    useRolesStore: createStore(() => rolesState),
+    useRolesStore: createZustandStore(() => rolesState),
   };
 });
 
