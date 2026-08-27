@@ -25,6 +25,7 @@ import { LicenseNotification } from './license-notification';
 
 const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
 const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 27 days/;
+const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overview' } }));
 
 /**
  * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
@@ -34,6 +35,14 @@ const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expi
  * @returns Unix timestamp in seconds.
  */
 const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86_400;
+
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
+  return {
+    ...actual,
+    useLocation: () => mockLocation,
+  };
+});
 
 rs.mock('../../state/backend-api', () => {
   const actual = rs.requireActual<typeof import('../../state/backend-api')>('../../state/backend-api');
@@ -101,6 +110,7 @@ describe('licenseUtils', () => {
   });
 
   beforeEach(() => {
+    mockLocation.pathname = '/overview';
     api.licensesLoaded = undefined;
     api.licenseViolation = false;
     api.licenses = [];
@@ -295,15 +305,34 @@ describe('licenseUtils', () => {
 
   describe('LicenseNotification Banner', () => {
     test('render null on routes related to licensing', () => {
-      const uploadLicenseScreen = renderWithRouter(<LicenseNotification />, {
-        route: '/admin/upload-license',
-      });
-      expect(uploadLicenseScreen.queryByTestId('license-notification')).not.toBeInTheDocument();
+      api.licensesLoaded = 'loaded';
+      api.licenseViolation = true;
+      api.licenses = [
+        create(LicenseSchema, {
+          source: License_Source.REDPANDA_CORE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: BigInt(getUnixTimestampWithExpiration(-1)),
+        }),
+      ];
 
+      const overviewScreen = renderWithRouter(<LicenseNotification />, {
+        route: '/overview',
+      });
+      expect(overviewScreen.getByTestId('license-notification')).toBeVisible();
+      overviewScreen.unmount();
+
+      mockLocation.pathname = '/upload-license';
+      const uploadLicenseScreen = renderWithRouter(<LicenseNotification />, {
+        route: '/upload-license',
+      });
+      expect(uploadLicenseScreen.queryByTestId('license-notification')).toBeNull();
+      uploadLicenseScreen.unmount();
+
+      mockLocation.pathname = '/trial-expired';
       const trialExpiredScreen = renderWithRouter(<LicenseNotification />, {
         route: '/trial-expired',
       });
-      expect(trialExpiredScreen.queryByTestId('license-notification')).not.toBeInTheDocument();
+      expect(trialExpiredScreen.queryByTestId('license-notification')).toBeNull();
     });
 
     test('render null if license information is not loaded yet', () => {
