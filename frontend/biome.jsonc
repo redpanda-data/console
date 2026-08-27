@@ -137,7 +137,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*", "rstest.setup.ts"],
+      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*", "rstest.setup*.ts"],
       "javascript": {
         "globals": ["rs"]
       },

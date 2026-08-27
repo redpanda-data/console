@@ -1,5 +1,6 @@
 // Copyright 2026 Redpanda Data, Inc.
 
+// React 19 under Rstest's prebundled happy-dom no longer needs the former MessageChannel deletion workaround.
 import { afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
