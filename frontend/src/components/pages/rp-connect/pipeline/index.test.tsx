@@ -126,35 +126,31 @@ const mockEditorInstance = {
   getLayoutInfo: rs.fn(() => ({ height: 0 })),
 } as unknown as editor.IStandaloneCodeEditor;
 
-rs.mock('components/ui/yaml/yaml-editor', () => {
-  return {
-    ...rs.requireActual<typeof import('components/ui/yaml/yaml-editor')>('components/ui/yaml/yaml-editor'),
-    YamlEditor: (props: {
-      onChange?: (val: string) => void;
-      onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
-      value?: string;
-    }) => {
-      React.useEffect(() => {
-        props.onEditorMount?.(mockEditorInstance);
-      }, [props.onEditorMount]);
-      return (
-        <textarea
-          data-testid="yaml-editor"
-          onChange={(e) => props.onChange?.(e.target.value)}
-          value={props.value || ''}
-        />
-      );
-    },
-  };
-});
+rs.mock('components/ui/yaml/yaml-editor', () => ({
+  ...rs.requireActual<typeof import('components/ui/yaml/yaml-editor')>('components/ui/yaml/yaml-editor'),
+  YamlEditor: (props: {
+    onChange?: (val: string) => void;
+    onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
+    value?: string;
+  }) => {
+    React.useEffect(() => {
+      props.onEditorMount?.(mockEditorInstance);
+    }, [props.onEditorMount]);
+    return (
+      <textarea
+        data-testid="yaml-editor"
+        onChange={(e) => props.onChange?.(e.target.value)}
+        value={props.value || ''}
+      />
+    );
+  },
+}));
 
 // The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
-rs.mock('./pipeline-flow-canvas', () => {
-  return {
-    PipelineFlowCanvas: (props: { configYaml: string }) =>
-      React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
-  };
-});
+rs.mock('./pipeline-flow-canvas', () => ({
+  PipelineFlowCanvas: (props: { configYaml: string }) =>
+    React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
+}));
 rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
 rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
 rs.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
