@@ -42,12 +42,15 @@ describe('test runner policy', () => {
   test('keeps frontend tests independent from Vitest', () => {
     const testFiles = [
       ...[new URL('src/', frontendRoot), new URL('tests/', frontendRoot), new URL('__mocks__/', frontendRoot)].flatMap(
-        (directory) => findFiles(directory, /\.(?:ts|tsx)$/)
+        (directory) => findFiles(directory, /\.(?:test|spec)\.tsx?$/)
       ),
       new URL('rstest.setup.ts', frontendRoot),
       new URL('rstest.setup.unit.ts', frontendRoot),
     ];
 
+    expect(
+      testFiles.every((file) => /\.(?:test|spec)\.tsx?$|\/rstest\.setup(?:\.unit)?\.ts$/.test(fileURLToPath(file)))
+    ).toBe(true);
     expect(findVitestUsages(testFiles)).toEqual([]);
     expect(packageJson.devDependencies?.vitest).toBeUndefined();
     expect(packageJson.devDependencies?.['@vitest/ui']).toBeUndefined();
