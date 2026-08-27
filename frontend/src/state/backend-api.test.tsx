@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 
-vi.mock('../utils/fetch-with-timeout', () => ({ default: vi.fn() }));
+rs.mock('../utils/fetch-with-timeout', () => ({ default: rs.fn() }));
 
 import { useApiStore } from './backend-api';
 import type { TopicConsumer, TopicDescription } from './rest-interfaces';
@@ -25,7 +25,7 @@ const topicsResponse = (topicNames: string[]) =>
 
 describe('refreshTopics topic-cache pruning (F2)', () => {
   beforeEach(() => {
-    vi.mocked(fetchWithTimeout).mockReset();
+    rs.mocked(fetchWithTimeout).mockReset();
     // Reset the topic-keyed caches so state does not leak between tests (the api store is a
     // long-lived singleton that the harness does not reset).
     useApiStore.setState({
@@ -36,7 +36,7 @@ describe('refreshTopics topic-cache pruning (F2)', () => {
   });
 
   test('drops topic-keyed cache entries for topics that no longer exist', async () => {
-    vi.mocked(fetchWithTimeout).mockResolvedValue(topicsResponse(['live-topic']));
+    rs.mocked(fetchWithTimeout).mockResolvedValue(topicsResponse(['live-topic']));
     useApiStore.setState({
       topicConfig: new Map<string, TopicDescription | null>([
         ['live-topic', null],
@@ -57,7 +57,7 @@ describe('refreshTopics topic-cache pruning (F2)', () => {
   });
 
   test('keeps cache entries for topics that still exist', async () => {
-    vi.mocked(fetchWithTimeout).mockResolvedValue(topicsResponse(['a', 'b']));
+    rs.mocked(fetchWithTimeout).mockResolvedValue(topicsResponse(['a', 'b']));
     useApiStore.setState({
       topicConfig: new Map<string, TopicDescription | null>([
         ['a', null],

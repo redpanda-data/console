@@ -34,19 +34,19 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
-vi.mock('config', () => ({
+rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
     clusterId: 'test-cluster',
     isServerless: false,
   },
-  isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next: unknown) => next),
+  isFeatureFlagEnabled: rs.fn(() => false),
+  addBearerTokenInterceptor: rs.fn((next: unknown) => next),
 }));
 
-vi.mock('state/ui-state', () => ({
-  setPageHeader: vi.fn(),
+rs.mock('state/ui-state', () => ({
+  setPageHeader: rs.fn(),
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -54,14 +54,16 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock generatePassword for deterministic tests
-vi.mock('utils/password', () => ({
-  generatePassword: vi.fn(() => 'mock-password-1234567890'),
+rs.mock('utils/password', () => ({
+  generatePassword: rs.fn(() => 'mock-password-1234567890'),
 }));
 
 let mockRolesApiEnabled = false;
 
-vi.mock('../../../../state/supported-features', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../state/supported-features')>();
+rs.mock('../../../../state/supported-features', () => {
+  const actual = rs.requireActual<typeof import('../../../../state/supported-features')>(
+    '../../../../state/supported-features'
+  );
   return {
     ...actual,
     Features: { ...actual.Features, createUser: true, deleteUser: true, rolesApi: true },
@@ -76,7 +78,7 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ──────────────────────────────────────────
 import UserCreatePage from './user-create';
@@ -84,29 +86,29 @@ import UserCreatePage from './user-create';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildTransport(overrides?: {
-  listUsersMock?: ReturnType<typeof vi.fn>;
-  createUserMock?: ReturnType<typeof vi.fn>;
-  updateRoleMembershipMock?: ReturnType<typeof vi.fn>;
-  listRolesMock?: ReturnType<typeof vi.fn>;
-  listRoleMembersMock?: ReturnType<typeof vi.fn>;
+  listUsersMock?: ReturnType<typeof rs.fn>;
+  createUserMock?: ReturnType<typeof rs.fn>;
+  updateRoleMembershipMock?: ReturnType<typeof rs.fn>;
+  listRolesMock?: ReturnType<typeof rs.fn>;
+  listRoleMembersMock?: ReturnType<typeof rs.fn>;
 }) {
   const listUsersMock =
     overrides?.listUsersMock ??
-    vi.fn().mockReturnValue(
+    rs.fn().mockReturnValue(
       create(ListUsersResponseSchema, {
         users: [],
         nextPageToken: '',
       })
     );
 
-  const createUserMock = overrides?.createUserMock ?? vi.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
+  const createUserMock = overrides?.createUserMock ?? rs.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
 
   const updateRoleMembershipMock =
-    overrides?.updateRoleMembershipMock ?? vi.fn().mockReturnValue(create(UpdateRoleMembershipResponseSchema, {}));
+    overrides?.updateRoleMembershipMock ?? rs.fn().mockReturnValue(create(UpdateRoleMembershipResponseSchema, {}));
 
   const listRolesMock =
     overrides?.listRolesMock ??
-    vi.fn().mockReturnValue(
+    rs.fn().mockReturnValue(
       create(ListRolesResponseSchema, {
         roles: [],
         nextPageToken: '',
@@ -115,7 +117,7 @@ function buildTransport(overrides?: {
 
   const listRoleMembersMock =
     overrides?.listRoleMembersMock ??
-    vi.fn().mockReturnValue(
+    rs.fn().mockReturnValue(
       create(ListRoleMembersResponseSchema, {
         members: [],
         nextPageToken: '',
@@ -144,7 +146,7 @@ function buildTransport(overrides?: {
 
 describe('UserCreatePage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockRolesApiEnabled = false;
   });
 
@@ -202,7 +204,7 @@ describe('UserCreatePage', () => {
 
   test('stays on form when createUser fails', async () => {
     const user = userEvent.setup();
-    const createUserMock = vi.fn().mockImplementation(() => {
+    const createUserMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('permission denied', Code.PermissionDenied);
     });
     const { transport } = buildTransport({ createUserMock });
@@ -224,7 +226,7 @@ describe('UserCreatePage', () => {
   test('calls updateRoleMembership gRPC for each selected role', async () => {
     mockRolesApiEnabled = true;
     const user = userEvent.setup();
-    const listRolesMock = vi.fn().mockReturnValue(
+    const listRolesMock = rs.fn().mockReturnValue(
       create(ListRolesResponseSchema, {
         roles: [{ name: 'admin' }, { name: 'viewer' }],
         nextPageToken: '',
@@ -270,13 +272,13 @@ describe('UserCreatePage', () => {
   test('shows confirmation even when role assignment fails', async () => {
     mockRolesApiEnabled = true;
     const user = userEvent.setup();
-    const listRolesMock = vi.fn().mockReturnValue(
+    const listRolesMock = rs.fn().mockReturnValue(
       create(ListRolesResponseSchema, {
         roles: [{ name: 'admin' }],
         nextPageToken: '',
       })
     );
-    const updateRoleMembershipMock = vi.fn().mockImplementation(() => {
+    const updateRoleMembershipMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('permission denied', Code.PermissionDenied);
     });
     const { transport, createUserMock } = buildTransport({ listRolesMock, updateRoleMembershipMock });
@@ -332,7 +334,7 @@ describe('UserCreatePage', () => {
 
   test('shows error when username already exists', async () => {
     const user = userEvent.setup();
-    const listUsersMock = vi.fn().mockReturnValue(
+    const listUsersMock = rs.fn().mockReturnValue(
       create(ListUsersResponseSchema, {
         users: [create(ListUsersResponse_UserSchema, { name: 'bob' })],
         nextPageToken: '',

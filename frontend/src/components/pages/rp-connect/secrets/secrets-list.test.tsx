@@ -13,29 +13,29 @@ import { create } from '@bufbuild/protobuf';
 import { SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-vi.mock('state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('state/backend-api')>();
+rs.mock('state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
   return {
     ...actual,
     rpcnSecretManagerApi: {
       secrets: [] as unknown[],
       secretsByPipeline: [],
       isEnable: true,
-      refreshSecrets: vi.fn().mockResolvedValue(undefined),
-      delete: vi.fn().mockResolvedValue(undefined),
+      refreshSecrets: rs.fn().mockResolvedValue(undefined),
+      delete: rs.fn().mockResolvedValue(undefined),
     },
   };
 });
 
-vi.mock('state/app-global', () => ({
+rs.mock('state/app-global', () => ({
   appGlobal: {
     onRefresh: null,
-    historyPush: vi.fn(),
+    historyPush: rs.fn(),
   },
 }));
 
-vi.mock('state/ui', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('state/ui')>();
+rs.mock('state/ui', () => {
+  const actual = rs.requireActual<typeof import('state/ui')>('state/ui');
   return {
     ...actual,
     uiSettings: {
@@ -52,11 +52,11 @@ import RpConnectSecretsList from './secrets-list';
 
 describe('RpConnectSecretsList', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('should call refreshSecrets on render', async () => {
-    const refreshSecretsMock = vi.mocked(rpcnSecretManagerApi.refreshSecrets);
+    const refreshSecretsMock = rs.mocked(rpcnSecretManagerApi.refreshSecrets);
 
     renderWithFileRoutes(<RpConnectSecretsList matchedPath="/rp-connect/secrets" />);
 

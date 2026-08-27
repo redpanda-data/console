@@ -1,7 +1,8 @@
 import { act, render, waitFor } from '@testing-library/react';
+import * as rstestImported0 from 'react';
 
-vi.mock('@redpanda-data/ui', async () => {
-  const React = await import('react');
+rs.mock('@redpanda-data/ui', () => {
+  const React = rstestImported0;
 
   return {
     __esModule: true,
@@ -15,13 +16,13 @@ vi.mock('@redpanda-data/ui', async () => {
 
 import { KowlJsonView } from './kowl-json-view';
 
-const { editorLayoutSpy, editorPropsSpy } = vi.hoisted(() => ({
-  editorLayoutSpy: vi.fn(),
-  editorPropsSpy: vi.fn(),
+const { editorLayoutSpy, editorPropsSpy } = rs.hoisted(() => ({
+  editorLayoutSpy: rs.fn(),
+  editorPropsSpy: rs.fn(),
 }));
 
-vi.mock('./kowl-editor', async () => {
-  const React = await import('react');
+rs.mock('./kowl-editor', () => {
+  const React = rstestImported0;
 
   const MockKowlEditor = (props: any) => {
     editorPropsSpy(props);
@@ -45,7 +46,7 @@ describe('KowlJsonView', () => {
   let originalResizeObserver: typeof ResizeObserver | undefined;
   let resizeCallback: ResizeObserverCallback | undefined;
   let currentSize = { width: 640, height: 384 };
-  let getBoundingClientRectSpy: ReturnType<typeof vi.spyOn>;
+  let getBoundingClientRectSpy: ReturnType<typeof rs.spyOn>;
 
   beforeEach(() => {
     editorLayoutSpy.mockReset();
@@ -53,24 +54,24 @@ describe('KowlJsonView', () => {
     resizeCallback = undefined;
     currentSize = { width: 640, height: 384 };
 
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    rs.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       callback(0);
       return 1;
     });
-    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    rs.stubGlobal('cancelAnimationFrame', rs.fn());
 
     originalResizeObserver = globalThis.ResizeObserver;
     class ResizeObserverMock {
-      observe = vi.fn();
-      disconnect = vi.fn();
+      observe = rs.fn();
+      disconnect = rs.fn();
 
       constructor(callback: ResizeObserverCallback) {
         resizeCallback = callback;
       }
     }
 
-    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
-    getBoundingClientRectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({
+    rs.stubGlobal('ResizeObserver', ResizeObserverMock);
+    getBoundingClientRectSpy = rs.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({
       width: currentSize.width,
       height: currentSize.height,
       top: 0,
@@ -84,7 +85,7 @@ describe('KowlJsonView', () => {
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    rs.unstubAllGlobals();
     getBoundingClientRectSpy.mockRestore();
 
     if (originalResizeObserver) {

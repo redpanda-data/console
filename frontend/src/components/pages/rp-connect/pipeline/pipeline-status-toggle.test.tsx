@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { render, screen } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { PipelineStatusToggle } from './pipeline-status-toggle';
 
-const { startMutate, stopMutate } = vi.hoisted(() => ({ startMutate: vi.fn(), stopMutate: vi.fn() }));
+const { startMutate, stopMutate } = rs.hoisted(() => ({ startMutate: rs.fn(), stopMutate: rs.fn() }));
 
-vi.mock('react-query/api/pipeline', () => ({
+rs.mock('react-query/api/pipeline', () => ({
   useStartPipelineMutation: () => ({ mutate: startMutate, isPending: false }),
   useStopPipelineMutation: () => ({ mutate: stopMutate, isPending: false }),
 }));

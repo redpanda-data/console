@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
 import { DeleteShadowLinkResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
@@ -20,34 +21,35 @@ import { GetShadowLinkResponseSchema, ShadowLinkSchema } from 'protogen/redpanda
 import { getShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkConfigurationsSchema, ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Mock config module
-vi.mock('config', () => ({
-  isEmbedded: vi.fn(),
+rs.mock('config', () => ({
+  isEmbedded: rs.fn(),
 }));
 
 // Mock the controlplane query hook
-vi.mock('./controlplane/shadowlink', () => ({
-  useControlplaneGetShadowLinkByNameQuery: vi.fn(),
-  useControlplaneUpdateShadowLinkMutation: vi.fn(() => ({
-    mutateAsync: vi.fn(),
+rs.mock('./controlplane/shadowlink', () => ({
+  useControlplaneGetShadowLinkByNameQuery: rs.fn(),
+  useControlplaneUpdateShadowLinkMutation: rs.fn(() => ({
+    mutateAsync: rs.fn(),
     isPending: false,
   })),
-  useControlplaneDeleteShadowLinkMutation: vi.fn(() => ({
-    mutate: vi.fn(),
+  useControlplaneDeleteShadowLinkMutation: rs.fn(() => ({
+    mutate: rs.fn(),
     isPending: false,
   })),
 }));
 
 // Mock the controlplane mapper for the fallback scenario. Form-value building
 // delegates to the real mapper so useEditShadowLink tests exercise actual
-// hydration (vi.clearAllMocks clears calls, not this implementation).
-vi.mock('components/pages/shadowlinks/mappers/controlplane', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('components/pages/shadowlinks/mappers/controlplane')>();
+// hydration (rs.clearAllMocks clears calls, not this implementation).
+rs.mock('components/pages/shadowlinks/mappers/controlplane', () => {
+  const actual = rs.requireActual<typeof import('components/pages/shadowlinks/mappers/controlplane')>(
+    'components/pages/shadowlinks/mappers/controlplane'
+  );
   return {
-    fromControlplaneShadowLink: vi.fn(),
-    buildDefaultFormValuesFromControlplane: vi.fn(actual.buildDefaultFormValuesFromControlplane),
+    fromControlplaneShadowLink: rs.fn(),
+    buildDefaultFormValuesFromControlplane: rs.fn(actual.buildDefaultFormValuesFromControlplane),
   };
 });
 
@@ -61,10 +63,10 @@ import {
 } from './controlplane/shadowlink';
 import { useDeleteShadowLinkUnified, useEditShadowLink, useGetShadowLinkUnified } from './shadowlink';
 
-const mockIsEmbedded = vi.mocked(isEmbedded);
-const mockUseControlplaneGetShadowLinkByNameQuery = vi.mocked(useControlplaneGetShadowLinkByNameQuery);
-const mockFromControlplaneShadowLink = vi.mocked(fromControlplaneShadowLink);
-const mockUseControlplaneDeleteShadowLinkMutation = vi.mocked(useControlplaneDeleteShadowLinkMutation);
+const mockIsEmbedded = rs.mocked(isEmbedded);
+const mockUseControlplaneGetShadowLinkByNameQuery = rs.mocked(useControlplaneGetShadowLinkByNameQuery);
+const mockFromControlplaneShadowLink = rs.mocked(fromControlplaneShadowLink);
+const mockUseControlplaneDeleteShadowLinkMutation = rs.mocked(useControlplaneDeleteShadowLinkMutation);
 
 // Test data factories
 const createMockDataplaneShadowLink = () =>
@@ -90,7 +92,7 @@ const createMockControlplaneResponse = () => ({
 
 describe('useGetShadowLinkUnified', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('returns dataplane data in non-embedded mode', async () => {
@@ -98,14 +100,14 @@ describe('useGetShadowLinkUnified', () => {
     mockIsEmbedded.mockReturnValue(false);
 
     const mockShadowLink = createMockDataplaneShadowLink();
-    const mockGetShadowLink = vi.fn();
+    const mockGetShadowLink = rs.fn();
 
     // Mock controlplane to return nothing (not enabled)
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     // Create transport that returns dataplane data
@@ -152,14 +154,14 @@ describe('useGetShadowLinkUnified', () => {
 
     const mockShadowLink = createMockDataplaneShadowLink();
     const mockControlplaneData = createMockControlplaneResponse();
-    const mockGetShadowLink = vi.fn();
+    const mockGetShadowLink = rs.fn();
 
     // Mock controlplane to return data
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: mockControlplaneData,
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     // Create transport that returns dataplane data
@@ -208,14 +210,14 @@ describe('useGetShadowLinkUnified', () => {
     mockIsEmbedded.mockReturnValue(true);
 
     const mockControlplaneData = createMockControlplaneResponse();
-    const mockGetShadowLink = vi.fn();
+    const mockGetShadowLink = rs.fn();
 
     // Mock controlplane to return data
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: mockControlplaneData,
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     // Mock the controlplane mapper to return partial data
@@ -277,7 +279,7 @@ describe('useGetShadowLinkUnified', () => {
 
 describe('useEditShadowLink', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   const renderEditHook = () => {
@@ -306,7 +308,7 @@ describe('useEditShadowLink', () => {
       },
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     const { result } = renderEditHook();
@@ -328,7 +330,7 @@ describe('useEditShadowLink', () => {
       },
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     const { result } = renderEditHook();
@@ -342,22 +344,22 @@ describe('useEditShadowLink', () => {
 
 describe('useDeleteShadowLinkUnified', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('calls controlplane delete mutation when in embedded mode and does NOT call dataplane', () => {
     // Setup: embedded mode
     mockIsEmbedded.mockReturnValue(true);
 
-    const mockControlplaneMutate = vi.fn();
-    const mockDataplaneDelete = vi.fn();
+    const mockControlplaneMutate = rs.fn();
+    const mockDataplaneDelete = rs.fn();
 
     // Mock controlplane query to return shadowlink with ID
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: { id: 'cp-shadow-link-id-123', name: 'test-shadow-link' },
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     // Mock controlplane delete mutation
@@ -389,8 +391,8 @@ describe('useDeleteShadowLinkUnified', () => {
     expect(result.current.canDelete).toBe(true);
 
     // Call delete function
-    const onSuccess = vi.fn();
-    const onError = vi.fn();
+    const onSuccess = rs.fn();
+    const onError = rs.fn();
     result.current.deleteShadowLink({ force: false, onSuccess, onError });
 
     // Verify controlplane mutation was called with the ID
@@ -404,15 +406,15 @@ describe('useDeleteShadowLinkUnified', () => {
     // Setup: non-embedded mode
     mockIsEmbedded.mockReturnValue(false);
 
-    const mockDataplaneDelete = vi.fn();
-    const mockControlplaneMutate = vi.fn();
+    const mockDataplaneDelete = rs.fn();
+    const mockControlplaneMutate = rs.fn();
 
     // Mock controlplane query to return nothing (not enabled)
     mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: rs.fn(),
     } as any);
 
     // Mock controlplane delete mutation to verify it's NOT called
@@ -444,8 +446,8 @@ describe('useDeleteShadowLinkUnified', () => {
     expect(result.current.canDelete).toBe(true);
 
     // Call delete function
-    const onSuccess = vi.fn();
-    const onError = vi.fn();
+    const onSuccess = rs.fn();
+    const onError = rs.fn();
     result.current.deleteShadowLink({ force: true, onSuccess, onError });
 
     // Wait for the dataplane delete mutation to be called

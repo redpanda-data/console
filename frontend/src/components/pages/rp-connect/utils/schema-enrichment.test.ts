@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { getGroundTruthComponent, groundTruthComponents, groundTruthConfigSchema } from './__fixtures__/ground-truth';
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';

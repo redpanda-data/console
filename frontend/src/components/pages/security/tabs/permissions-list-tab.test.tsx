@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 /**
  * Tests for the Permissions List tab delete dropdown behavior.
@@ -26,8 +26,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const NuqsWrapper = ({ children }: { children: ReactNode }) => <NuqsTestingAdapter>{children}</NuqsTestingAdapter>;
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     Link: ({ children, to, ...props }: { children: ReactNode; to?: string; [key: string]: unknown }) => (
@@ -35,15 +35,15 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
         {children}
       </a>
     ),
-    useNavigate: () => vi.fn(),
+    useNavigate: () => rs.fn(),
   };
 });
 
-vi.mock('../shared/security-tabs-nav', () => ({
+rs.mock('../shared/security-tabs-nav', () => ({
   SecurityTabsNav: () => null,
 }));
 
-vi.mock('../shared/delete-user-confirm-modal', () => ({
+rs.mock('../shared/delete-user-confirm-modal', () => ({
   DeleteUserConfirmModal: ({
     open,
     userName,
@@ -63,15 +63,15 @@ vi.mock('../shared/delete-user-confirm-modal', () => ({
     ) : null,
 }));
 
-vi.mock('../../../../components/misc/error-result', () => ({
+rs.mock('../../../../components/misc/error-result', () => ({
   default: () => null,
 }));
 
-vi.mock('../../../../state/app-global', () => ({
-  appGlobal: { historyPush: vi.fn(), onRefresh: null },
+rs.mock('../../../../state/app-global', () => ({
+  appGlobal: { historyPush: rs.fn(), onRefresh: null },
 }));
 
-vi.mock('../../../../state/backend-api', () => {
+rs.mock('../../../../state/backend-api', () => {
   const store = {
     ACLs: { isAuthorizerEnabled: true },
     userData: { canCreateRoles: true, canListAcls: true, canManageUsers: true, canViewPermissionsList: true },
@@ -81,15 +81,15 @@ vi.mock('../../../../state/backend-api', () => {
   return {
     api: {
       ...store,
-      refreshAcls: vi.fn().mockResolvedValue(undefined),
-      refreshClusterOverview: vi.fn().mockResolvedValue(undefined),
-      refreshUserData: vi.fn().mockResolvedValue(undefined),
+      refreshAcls: rs.fn().mockResolvedValue(undefined),
+      refreshClusterOverview: rs.fn().mockResolvedValue(undefined),
+      refreshUserData: rs.fn().mockResolvedValue(undefined),
     },
     AclRequestDefault: {},
     useApiStoreHook: <T,>(selector: (s: typeof store) => T) => selector(store),
     rolesApi: {
-      refreshRoleMembers: vi.fn().mockResolvedValue(undefined),
-      refreshRoles: vi.fn().mockResolvedValue(undefined),
+      refreshRoleMembers: rs.fn().mockResolvedValue(undefined),
+      refreshRoles: rs.fn().mockResolvedValue(undefined),
       roleMembers: new Map(),
       roles: [],
       rolesError: null,
@@ -97,8 +97,10 @@ vi.mock('../../../../state/backend-api', () => {
   };
 });
 
-vi.mock('../../../../state/supported-features', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../state/supported-features')>();
+rs.mock('../../../../state/supported-features', () => {
+  const actual = rs.requireActual<typeof import('../../../../state/supported-features')>(
+    '../../../../state/supported-features'
+  );
   return {
     ...actual,
     Features: { ...actual.Features, createUser: true, deleteUser: true, rolesApi: true },
@@ -107,12 +109,12 @@ vi.mock('../../../../state/supported-features', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../../state/rest-interfaces', () => ({
+rs.mock('../../../../state/rest-interfaces', () => ({
   AclRequestDefault: {},
 }));
 
-vi.mock('../../../../config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../config')>();
+rs.mock('../../../../config', () => {
+  const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
   return {
     ...actual,
     isFeatureFlagEnabled: (flag: string) =>
@@ -120,18 +122,18 @@ vi.mock('../../../../config', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../../react-query/api/acl', () => ({
-  useCreateACLMutation: () => ({ mutateAsync: vi.fn() }),
-  useDeleteAclMutation: () => ({ mutateAsync: vi.fn() }),
+rs.mock('../../../../react-query/api/acl', () => ({
+  useCreateACLMutation: () => ({ mutateAsync: rs.fn() }),
+  useDeleteAclMutation: () => ({ mutateAsync: rs.fn() }),
 }));
 
-vi.mock('../../../../react-query/api/user', () => ({
-  useInvalidateUsersCache: () => vi.fn(),
-  useDeleteUserMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
+rs.mock('../../../../react-query/api/user', () => ({
+  useInvalidateUsersCache: () => rs.fn(),
+  useDeleteUserMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
   useListUsersQuery: () => ({ data: { users: [] }, isLoading: false }),
 }));
 
-vi.mock('../hooks/use-principal-permissions', () => ({
+rs.mock('../hooks/use-principal-permissions', () => ({
   usePrincipalPermissions: () => ({
     principalGroups: [
       {
@@ -180,7 +182,7 @@ import { PermissionsListTab } from './permissions-list-tab';
 
 describe('Permissions List - delete dropdown for different principal types', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('Group principal does not show "Delete User" options in dropdown', async () => {

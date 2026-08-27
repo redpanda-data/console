@@ -1,23 +1,17 @@
-// ── happy-dom scheduler fix ──────────────────────────────────────────
-// Must run BEFORE React loads. happy-dom's MessageChannel delivers
-// messages synchronously during act() flushes, which triggers React 18's
-// "Should not already be working" error. Removing MessageChannel forces
-// React's scheduler to use the setTimeout fallback, which is async-safe.
-if (typeof globalThis.MessageChannel !== 'undefined') {
-  // biome-ignore lint/suspicious/noExplicitAny: deleting a global at runtime
-  delete (globalThis as any).MessageChannel;
-}
+// Copyright 2026 Redpanda Data, Inc.
 
-import '@testing-library/jest-dom/vitest';
+import { afterEach, beforeEach, expect, rs } from '@rstest/core';
+import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import _rawUserEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, vi } from 'vitest';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 import './tests/mock-react-select';
 
 import { cleanupTestHarness } from './tests/harness-cleanup';
 import { createMemoryStorage } from './tests/memory-storage';
+
+expect.extend(jestDomMatchers);
 
 // Node 24 exposes an opt-in global localStorage getter that returns undefined
 // unless --localstorage-file is provided. Install a deterministic per-worker
@@ -60,25 +54,39 @@ function makeFocusPatchWritable() {
 // without migrating imports. Any `import userEvent from '@testing-library/user-event'`
 // call receives the patched setup transparently.
 const _rawSetup = _rawUserEvent.setup.bind(_rawUserEvent);
-_rawUserEvent.setup = ((...args: Parameters<typeof _rawUserEvent.setup>) => {
+const patchedSetup = ((...args: Parameters<typeof _rawUserEvent.setup>) => {
   const instance = _rawSetup(...args);
   makeFocusPatchWritable();
   return instance;
 }) as typeof _rawUserEvent.setup;
+Object.defineProperty(_rawUserEvent, 'setup', {
+  configurable: true,
+  value: patchedSetup,
+});
 
 // ── happy-dom network / resource isolation ───────────────────────────
 // Unlike jsdom, happy-dom attempts real network requests for scripts,
 // images, and fetch calls. Disable external loading + same-origin policy
 // to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
 if (typeof window !== 'undefined' && 'happyDOM' in window) {
-  // biome-ignore lint/suspicious/noExplicitAny: happy-dom settings shape is not typed
-  const settings = (window as any).happyDOM?.settings;
-  if (settings) {
-    settings.navigation = { ...settings.navigation, disableMainFrameNavigation: true };
-    settings.fetch = { ...settings.fetch, disableSameOriginPolicy: true };
-    settings.disableJavaScriptFileLoading = true;
-    settings.disableCSSFileLoading = true;
-    settings.disableJavaScriptEvaluation = true;
+  const happyDOM = Reflect.get(window, 'happyDOM');
+  if (typeof happyDOM === 'object' && happyDOM !== null) {
+    const settings = Reflect.get(happyDOM, 'settings');
+    if (typeof settings === 'object' && settings !== null) {
+      const navigation = Reflect.get(settings, 'navigation');
+      const fetchSettings = Reflect.get(settings, 'fetch');
+      Reflect.set(settings, 'navigation', {
+        ...(typeof navigation === 'object' && navigation !== null ? navigation : {}),
+        disableMainFrameNavigation: true,
+      });
+      Reflect.set(settings, 'fetch', {
+        ...(typeof fetchSettings === 'object' && fetchSettings !== null ? fetchSettings : {}),
+        disableSameOriginPolicy: true,
+      });
+      Reflect.set(settings, 'disableJavaScriptFileLoading', true);
+      Reflect.set(settings, 'disableCSSFileLoading', true);
+      Reflect.set(settings, 'disableJavaScriptEvaluation', true);
+    }
   }
 }
 
@@ -121,40 +129,40 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
 
 // ── Mocks ────────────────────────────────────────────────────────────
 // happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively,
-// but Chakra components still expect matchMedia to be a vi.fn so their
+// but Chakra components still expect matchMedia to be an rs.fn so their
 // colorMode polling sees deterministic breakpoint results.
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockImplementation((query) => ({
+    value: rs.fn().mockImplementation((query) => ({
       matches: false,
       media: query,
       onchange: null,
-      addListener: vi.fn(), // Deprecated
-      removeListener: vi.fn(), // Deprecated
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
+      addListener: rs.fn(), // Deprecated
+      removeListener: rs.fn(), // Deprecated
+      addEventListener: rs.fn(),
+      removeEventListener: rs.fn(),
+      dispatchEvent: rs.fn(),
     })),
   });
 });
 
 // Mock lottie-react — lottie-web schedules animation frames that leak
 // across tests even when canvas access is stubbed by the environment.
-vi.mock('lottie-react', () => ({
+rs.mock('lottie-react', () => ({
   useLottie: () => ({
     View: null,
-    play: vi.fn(),
-    stop: vi.fn(),
-    pause: vi.fn(),
-    setSpeed: vi.fn(),
-    goToAndStop: vi.fn(),
-    goToAndPlay: vi.fn(),
-    setDirection: vi.fn(),
-    playSegments: vi.fn(),
-    setSubframe: vi.fn(),
-    destroy: vi.fn(),
-    getDuration: vi.fn(),
+    play: rs.fn(),
+    stop: rs.fn(),
+    pause: rs.fn(),
+    setSpeed: rs.fn(),
+    goToAndStop: rs.fn(),
+    goToAndPlay: rs.fn(),
+    setDirection: rs.fn(),
+    playSegments: rs.fn(),
+    setSubframe: rs.fn(),
+    destroy: rs.fn(),
+    getDuration: rs.fn(),
     animationItem: null,
     animationContainerRef: { current: null },
     animationLoaded: false,
@@ -169,18 +177,18 @@ vi.mock('lottie-react', () => ({
 //   2. cleanupTestHarness() drops tracked QueryClients + routers held alive
 //      by test-file closures (primary source of +100–240 MB intra-file heap
 //      growth measured during the TDD audit).
-//   3. clearAllMocks / clearAllTimers is standard Vitest hygiene.
+//   3. clearAllMocks / clearAllTimers is standard test hygiene.
 //
 // Zustand store resets are intentionally not mounted here: importing any
 // store pins `isEmbedded` live bindings before test files'
-// `vi.mock('config', ...)` hoists can take effect. Tests that accumulate
+// `rs.mock('config', ...)` hoists can take effect. Tests that accumulate
 // store state should reset it explicitly in their own setup.
 afterEach(async () => {
   cleanup();
   await cleanupTestHarness();
   testLocalStorage.clear();
-  vi.clearAllMocks();
-  vi.clearAllTimers();
+  rs.clearAllMocks();
+  rs.clearAllTimers();
 });
 
 // ── Console suppression ──────────────────────────────────────────────

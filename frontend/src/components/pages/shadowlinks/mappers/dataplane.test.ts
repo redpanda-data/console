@@ -11,6 +11,7 @@
 
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { describe, expect, test } from '@rstest/core';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   FilterType,
@@ -18,7 +19,6 @@ import {
   type SchemaRegistrySyncOptionsSchema,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
 
 import { buildDefaultFormValues, fromDataplaneShadowLink } from './dataplane';
 import { FormSchema, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';

@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
@@ -19,7 +20,6 @@ import {
   PipelineSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { connectQueryWrapper } from 'test-utils';
-import { describe, expect, test } from 'vitest';
 
 import { useListPipelinesQuery } from './pipeline';
 

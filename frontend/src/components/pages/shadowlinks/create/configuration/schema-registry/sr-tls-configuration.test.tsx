@@ -10,24 +10,24 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { isEmbedded } from 'config';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
-import { vi } from 'vitest';
 
 import { SrTlsConfiguration } from './sr-tls-configuration';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../../model';
 
-vi.mock('config', () => ({
-  isEmbedded: vi.fn(() => false),
-  isFeatureFlagEnabled: vi.fn(() => false),
+rs.mock('config', () => ({
+  isEmbedded: rs.fn(() => false),
+  isFeatureFlagEnabled: rs.fn(() => false),
 }));
 
 let mockSecretsData: { secrets: { id: string }[] } | undefined;
-vi.mock('react-query/api/secret', () => ({
-  useCreateSecretMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+rs.mock('react-query/api/secret', () => ({
+  useCreateSecretMutation: () => ({ mutateAsync: rs.fn(), isPending: false }),
   useListSecretsQuery: () => ({ data: mockSecretsData }),
 }));
 
@@ -161,12 +161,12 @@ describe('SrTlsConfiguration', () => {
 
   describe('client key in embedded mode (Cloud)', () => {
     beforeEach(() => {
-      vi.mocked(isEmbedded).mockReturnValue(true);
+      rs.mocked(isEmbedded).mockReturnValue(true);
       mockSecretsData = { secrets: [{ id: 'SR_MTLS_CLIENT_KEY' }] };
     });
 
     afterEach(() => {
-      vi.mocked(isEmbedded).mockReturnValue(false);
+      rs.mocked(isEmbedded).mockReturnValue(false);
       mockSecretsData = undefined;
     });
 

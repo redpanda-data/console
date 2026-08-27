@@ -10,18 +10,18 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { Pipeline_State, PipelineSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ComponentProps } from 'react';
 import { render, screen } from 'test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DetailsDialog } from './details-dialog';
 
 function renderDetailsDialog(props: Partial<ComponentProps<typeof DetailsDialog>> = {}) {
   return render(
     <TooltipProvider>
-      <DetailsDialog onOpenChange={vi.fn()} open={true} {...props} />
+      <DetailsDialog onOpenChange={rs.fn()} open={true} {...props} />
     </TooltipProvider>
   );
 }
@@ -42,12 +42,12 @@ function createPipeline(overrides: Record<string, unknown> = {}) {
 
 describe('DetailsDialog', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    rs.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.runOnlyPendingTimers();
-    vi.useRealTimers();
+    rs.runOnlyPendingTimers();
+    rs.useRealTimers();
   });
 
   it('renders pipeline ID with copy button', () => {
@@ -128,7 +128,7 @@ describe('DetailsDialog', () => {
   });
 
   it('renders the Danger Zone section when onRequestDelete is provided', () => {
-    renderDetailsDialog({ onRequestDelete: vi.fn(), pipeline: createPipeline() });
+    renderDetailsDialog({ onRequestDelete: rs.fn(), pipeline: createPipeline() });
     expect(screen.getByText('Danger zone')).toBeInTheDocument();
     expect(screen.getByText('Delete pipeline')).toBeInTheDocument();
   });

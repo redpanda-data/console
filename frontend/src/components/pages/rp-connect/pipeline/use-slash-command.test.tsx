@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 import type { editor } from 'monaco-editor';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useSlashCommand } from './use-slash-command';
 
@@ -21,16 +21,16 @@ function createMockEditor(lineContent: string, cursorColumn: number) {
   const contentChangeListeners: ContentChangeCallback[] = [];
 
   const instance = {
-    getPosition: vi.fn(() => ({ lineNumber: 1, column: cursorColumn })),
-    getModel: vi.fn(() => ({
-      getLineContent: vi.fn(() => lineContent),
+    getPosition: rs.fn(() => ({ lineNumber: 1, column: cursorColumn })),
+    getModel: rs.fn(() => ({
+      getLineContent: rs.fn(() => lineContent),
     })),
-    onDidChangeModelContent: vi.fn((cb: ContentChangeCallback) => {
+    onDidChangeModelContent: rs.fn((cb: ContentChangeCallback) => {
       contentChangeListeners.push(cb);
-      return { dispose: vi.fn() };
+      return { dispose: rs.fn() };
     }),
-    executeEdits: vi.fn(),
-    focus: vi.fn(),
+    executeEdits: rs.fn(),
+    focus: rs.fn(),
   } as unknown as editor.IStandaloneCodeEditor;
 
   return {
@@ -45,12 +45,12 @@ function createMockEditor(lineContent: string, cursorColumn: number) {
 
 describe('useSlashCommand', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    rs.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
+    rs.useRealTimers();
+    rs.restoreAllMocks();
   });
 
   it('starts with menu closed and no position', () => {
@@ -62,7 +62,7 @@ describe('useSlashCommand', () => {
   it('does not subscribe when disabled', () => {
     const { instance } = createMockEditor('/', 2);
     renderHook(() => useSlashCommand(instance, false));
-    expect((instance.onDidChangeModelContent as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    expect((instance.onDidChangeModelContent as ReturnType<typeof rs.fn>).mock.calls.length).toBe(0);
   });
 
   it('does not subscribe when editor is null', () => {
@@ -128,7 +128,7 @@ describe('useSlashCommand', () => {
 
       act(() => {
         result.current.close();
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(result.current.isOpen).toBe(false);
@@ -143,7 +143,7 @@ describe('useSlashCommand', () => {
 
       act(() => {
         result.current.close();
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(instance.focus).toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('useSlashCommand', () => {
       act(() => fireContentChange('/'));
       act(() => {
         result.current.handleSlashSelect('kafka_franz');
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(instance.executeEdits).toHaveBeenCalledWith('slash-command', [
@@ -181,7 +181,7 @@ describe('useSlashCommand', () => {
       act(() => fireContentChange('/'));
       act(() => {
         result.current.handleSlashSelect('kafka_franz');
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(result.current.isOpen).toBe(false);
@@ -194,7 +194,7 @@ describe('useSlashCommand', () => {
       act(() => fireContentChange('/'));
       act(() => {
         result.current.handleSlashSelect('kafka_franz');
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(instance.focus).toHaveBeenCalled();
@@ -211,13 +211,13 @@ describe('useSlashCommand', () => {
       // Close without selecting (sub-dialog scenario)
       act(() => {
         result.current.close();
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       // Select via sub-dialog callback
       act(() => {
         result.current.handleSlashSelect(bloblangSnippet);
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(instance.executeEdits).toHaveBeenCalledWith('slash-command', [
@@ -239,7 +239,7 @@ describe('useSlashCommand', () => {
 
       act(() => {
         result.current.handleSlashSelect('inserted text');
-        vi.runAllTimers();
+        rs.runAllTimers();
       });
 
       expect(instance.executeEdits).toHaveBeenCalledWith('slash-command', [
@@ -268,7 +268,7 @@ describe('useSlashCommand', () => {
   describe('onOpen callback', () => {
     it('calls onOpen callback when slash triggers menu', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
-      const onOpen = vi.fn();
+      const onOpen = rs.fn();
       const { result } = renderHook(() => useSlashCommand(instance, true, onOpen));
 
       act(() => fireContentChange('/'));
@@ -279,7 +279,7 @@ describe('useSlashCommand', () => {
 
     it('does not call onOpen on invalid slash position', () => {
       const { instance, fireContentChange } = createMockEditor('input/', 6);
-      const onOpen = vi.fn();
+      const onOpen = rs.fn();
       const { result } = renderHook(() => useSlashCommand(instance, true, onOpen));
 
       act(() => fireContentChange('/'));
@@ -289,17 +289,17 @@ describe('useSlashCommand', () => {
     });
 
     it('re-subscribes when onOpen changes', () => {
-      const disposeFn = vi.fn();
+      const disposeFn = rs.fn();
       const instance = {
-        getPosition: vi.fn(),
-        getModel: vi.fn(),
-        onDidChangeModelContent: vi.fn(() => ({ dispose: disposeFn })),
-        executeEdits: vi.fn(),
-        focus: vi.fn(),
+        getPosition: rs.fn(),
+        getModel: rs.fn(),
+        onDidChangeModelContent: rs.fn(() => ({ dispose: disposeFn })),
+        executeEdits: rs.fn(),
+        focus: rs.fn(),
       } as unknown as editor.IStandaloneCodeEditor;
 
-      const onOpen1 = vi.fn();
-      const onOpen2 = vi.fn();
+      const onOpen1 = rs.fn();
+      const onOpen2 = rs.fn();
 
       const { rerender } = renderHook(({ onOpen }) => useSlashCommand(instance, true, onOpen), {
         initialProps: { onOpen: onOpen1 },
@@ -316,13 +316,13 @@ describe('useSlashCommand', () => {
 
   describe('cleanup', () => {
     it('disposes Monaco subscription on unmount', () => {
-      const disposeFn = vi.fn();
+      const disposeFn = rs.fn();
       const instance = {
-        getPosition: vi.fn(),
-        getModel: vi.fn(),
-        onDidChangeModelContent: vi.fn(() => ({ dispose: disposeFn })),
-        executeEdits: vi.fn(),
-        focus: vi.fn(),
+        getPosition: rs.fn(),
+        getModel: rs.fn(),
+        onDidChangeModelContent: rs.fn(() => ({ dispose: disposeFn })),
+        executeEdits: rs.fn(),
+        focus: rs.fn(),
       } as unknown as editor.IStandaloneCodeEditor;
 
       const { unmount } = renderHook(() => useSlashCommand(instance, true));
@@ -332,13 +332,13 @@ describe('useSlashCommand', () => {
     });
 
     it('disposes subscription when enabled changes to false', () => {
-      const disposeFn = vi.fn();
+      const disposeFn = rs.fn();
       const instance = {
-        getPosition: vi.fn(),
-        getModel: vi.fn(),
-        onDidChangeModelContent: vi.fn(() => ({ dispose: disposeFn })),
-        executeEdits: vi.fn(),
-        focus: vi.fn(),
+        getPosition: rs.fn(),
+        getModel: rs.fn(),
+        onDidChangeModelContent: rs.fn(() => ({ dispose: disposeFn })),
+        executeEdits: rs.fn(),
+        focus: rs.fn(),
       } as unknown as editor.IStandaloneCodeEditor;
 
       const { rerender } = renderHook(({ enabled }) => useSlashCommand(instance, enabled), {

@@ -6,16 +6,16 @@ import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha
 import { ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-vi.mock('config', () => ({
+rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
   },
-  isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
+  isFeatureFlagEnabled: rs.fn(() => false),
+  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
 }));
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -34,7 +34,7 @@ global.ResizeObserver = class ResizeObserver {
   }
 };
 
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 import { SecretCreatePage } from './secret-create-page';
 
@@ -44,7 +44,7 @@ describe('SecretCreatePage', () => {
   test('should create a new secret with all required fields', async () => {
     const user = userEvent.setup();
 
-    const listSecretsMock = vi.fn().mockReturnValue(
+    const listSecretsMock = rs.fn().mockReturnValue(
       create(ListSecretsResponseSchema, {
         response: create(ListSecretsResponseSchemaDataPlane, {
           secrets: [],
@@ -52,7 +52,7 @@ describe('SecretCreatePage', () => {
       })
     );
 
-    const createSecretMock = vi.fn().mockResolvedValue({});
+    const createSecretMock = rs.fn().mockResolvedValue({});
 
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listSecrets, listSecretsMock);

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { AUTH_METHOD, FormSchema, initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD, TLS_MODE } from './model';
 

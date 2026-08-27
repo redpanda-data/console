@@ -10,18 +10,18 @@
  */
 
 import { Code, ConnectError } from '@connectrpc/connect';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkListPage } from './shadowlink-list-page';
 
 // Mock the data hook so we can drive query state (error / loading / data) directly.
-vi.mock('react-query/api/shadowlink', () => ({
-  useListShadowLinksQuery: vi.fn(),
+rs.mock('react-query/api/shadowlink', () => ({
+  useListShadowLinksQuery: rs.fn(),
 }));
 
 // Mock ui-state (mutated in a useEffect for breadcrumbs/title).
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -29,10 +29,10 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock toast notifications so we can assert on them.
-vi.mock('sonner', () => ({
+rs.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: rs.fn(),
+    error: rs.fn(),
   },
 }));
 
@@ -40,20 +40,20 @@ import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { renderWithFileRoutes } from 'test-utils';
 
-const mockedUseListShadowLinksQuery = vi.mocked(useListShadowLinksQuery);
+const mockedUseListShadowLinksQuery = rs.mocked(useListShadowLinksQuery);
 
 const mockQueryResult = (overrides: Partial<ReturnType<typeof useListShadowLinksQuery>>) =>
   ({
     data: undefined,
     isLoading: false,
     error: null,
-    refetch: vi.fn(),
+    refetch: rs.fn(),
     ...overrides,
   }) as unknown as ReturnType<typeof useListShadowLinksQuery>;
 
 describe('ShadowLinkListPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('renders the no-permission state (not a raw error) when the API returns PermissionDenied', async () => {

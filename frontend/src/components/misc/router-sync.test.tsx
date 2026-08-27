@@ -11,37 +11,37 @@
 
 import { render } from '@testing-library/react';
 
-const mockNavigate = vi.fn();
+const mockNavigate = rs.fn();
 const mockLocation = { pathname: '/topics', searchStr: '' };
 const mockRouter = {};
 
-vi.mock('@tanstack/react-router', () => ({
+rs.mock('@tanstack/react-router', () => ({
   useNavigate: () => mockNavigate,
   useLocation: () => mockLocation,
   useRouter: () => mockRouter,
 }));
 
-vi.mock('../../config', () => ({
+rs.mock('../../config', () => ({
   config: {
     jwt: undefined as string | undefined,
     clusterId: undefined as string | undefined,
   },
-  isEmbedded: vi.fn(() => false),
+  isEmbedded: rs.fn(() => false),
 }));
 
-vi.mock('../../hubspot/hubspot.helper', () => ({
-  trackHubspotPage: vi.fn(),
+rs.mock('../../hubspot/hubspot.helper', () => ({
+  trackHubspotPage: rs.fn(),
 }));
 
-vi.mock('../../state/app-global', () => ({
+rs.mock('../../state/app-global', () => ({
   appGlobal: {
-    setNavigate: vi.fn(),
-    setRouter: vi.fn(),
-    setLocation: vi.fn(),
+    setNavigate: rs.fn(),
+    setRouter: rs.fn(),
+    setLocation: rs.fn(),
   },
 }));
 
-vi.mock('../../state/backend-api', () => ({
+rs.mock('../../state/backend-api', () => ({
   api: {
     errors: [],
   },
@@ -52,15 +52,15 @@ import { config, isEmbedded } from '../../config';
 
 describe('RouterSync', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     config.jwt = undefined;
     config.clusterId = undefined;
     mockLocation.pathname = '/topics';
   });
 
   test('does not dispatch [console] navigated events when not embedded', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    vi.mocked(isEmbedded).mockReturnValue(false);
+    const dispatchSpy = rs.spyOn(window, 'dispatchEvent');
+    rs.mocked(isEmbedded).mockReturnValue(false);
 
     render(<RouterSync />);
 
@@ -73,8 +73,8 @@ describe('RouterSync', () => {
   });
 
   test('does not dispatch [console] navigated events in federated mode (clusterId set)', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    vi.mocked(isEmbedded).mockReturnValue(true);
+    const dispatchSpy = rs.spyOn(window, 'dispatchEvent');
+    rs.mocked(isEmbedded).mockReturnValue(true);
     config.clusterId = 'test-cluster-123';
     mockLocation.pathname = '/schema-registry';
 
@@ -89,8 +89,8 @@ describe('RouterSync', () => {
   });
 
   test('dispatches [console] navigated events in embedded non-federated mode', () => {
-    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    vi.mocked(isEmbedded).mockReturnValue(true);
+    const dispatchSpy = rs.spyOn(window, 'dispatchEvent');
+    rs.mocked(isEmbedded).mockReturnValue(true);
     config.clusterId = undefined;
     mockLocation.pathname = '/schema-registry';
 

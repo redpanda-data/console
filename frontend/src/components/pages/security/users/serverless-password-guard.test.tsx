@@ -21,7 +21,7 @@ import { UserInformationCard } from './user-information-card';
  */
 describe('password change button visibility', () => {
   it('shows the Edit password button when onEditPassword is provided', () => {
-    render(<UserInformationCard onEditPassword={vi.fn()} username="test-user" />);
+    render(<UserInformationCard onEditPassword={rs.fn()} username="test-user" />);
 
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });

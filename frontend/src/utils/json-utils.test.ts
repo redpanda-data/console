@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect } from 'vitest';
+import { describe, expect } from '@rstest/core';
 
 import { deepParseJson, tryParseJson } from './json-utils';
 

@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
 import type { editor } from 'monaco-editor';
-import { describe, expect, it } from 'vitest';
 
 import { detectSlashTrigger, SLASH_TRIGGER_PATTERN } from './use-slash-command';
 

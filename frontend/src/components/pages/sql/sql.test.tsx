@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { bridgeTopicForQuery, firstKeyword, isWriteKeyword } from './sql';
 import type { Catalog } from './sql-types';

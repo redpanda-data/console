@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';

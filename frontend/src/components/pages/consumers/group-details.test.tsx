@@ -9,48 +9,48 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen } from 'test-utils';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = vi.hoisted(() => ({
-  refreshConsumerGroupMock: vi.fn(),
-  refreshConsumerGroupAclsMock: vi.fn(),
+const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = rs.hoisted(() => ({
+  refreshConsumerGroupMock: rs.fn(),
+  refreshConsumerGroupAclsMock: rs.fn(),
 }));
 
-vi.mock('state/ui-state', () => ({
-  setPageHeader: vi.fn(),
+rs.mock('state/ui-state', () => ({
+  setPageHeader: rs.fn(),
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
   },
 }));
 
-vi.mock('state/app-global', () => ({
+rs.mock('state/app-global', () => ({
   appGlobal: {
     onRefresh: null,
-    historyPush: vi.fn(),
+    historyPush: rs.fn(),
   },
 }));
 
-vi.mock('state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('state/backend-api')>();
+rs.mock('state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
   return {
     ...actual,
     api: {
       ...actual.api,
       refreshConsumerGroup: refreshConsumerGroupMock,
       refreshConsumerGroupAcls: refreshConsumerGroupAclsMock,
-      refreshPartitionsForTopic: vi.fn(),
+      refreshPartitionsForTopic: rs.fn(),
     },
   };
 });
 
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: { jwt: '' },
-    isFeatureFlagEnabled: vi.fn(() => false),
+    isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
 
@@ -108,7 +108,7 @@ describe('GroupDetails - unconsumed partitions', () => {
   });
 
   afterEach(() => {
-    // This afterEach runs before the harness's RTL cleanup() (vitest hooks are
+    // This afterEach runs before the harness's RTL cleanup() (test hooks are
     // LIFO), so the GroupDetails tree is still mounted and its PageComponent
     // store subscription fires forceUpdate() on this reset. Wrap the store
     // mutation in act() so that re-render is flushed inside act().

@@ -18,7 +18,7 @@ import {
 } from './license-utils';
 import '../../utils/array-extensions';
 import { create } from '@bufbuild/protobuf';
-import { vi } from 'vitest';
+import { rs } from '@rstest/core';
 import { api } from '../../state/backend-api';
 import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './license-notification';
@@ -35,8 +35,8 @@ const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expi
  */
 const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86_400;
 
-vi.mock('../../state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../state/backend-api')>();
+rs.mock('../../state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('../../state/backend-api')>('../../state/backend-api');
   return {
     ...actual,
     api: {
@@ -101,8 +101,8 @@ describe('licenseUtils', () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
-    vi.restoreAllMocks();
+    rs.resetAllMocks();
+    rs.restoreAllMocks();
   });
 
   const mockLicenseCommunity = create(LicenseSchema, {

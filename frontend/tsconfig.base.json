@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "types": ["vitest/globals", "node"],
+    "types": ["@rstest/core/globals", "node"],
     "emitDecoratorMetadata": true,
     "allowJs": true,
     "skipLibCheck": true,
@@ -23,11 +23,12 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    // allow: tsconfig-strict — existing override annotations are migrated separately.
     "noImplicitOverride": false,
     "strictNullChecks": true,
     "paths": { "*": ["./src/*"] }
   },
-  "include": ["src", "./vitest.setup.ts"],
+  "include": ["src", "./rstest.setup.ts", "./rstest.setup.unit.ts"],
   "exclude": [
     "src/utils/interpreter/**",
     "node_modules",
