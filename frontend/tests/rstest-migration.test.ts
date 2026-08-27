@@ -67,4 +67,17 @@ describe('test runner policy', () => {
 
     expect(legacyFiles.filter((file) => existsSync(new URL(file, frontendRoot)))).toEqual([]);
   });
+
+  test('keeps frontend testing guidance aligned with Rstest', () => {
+    const guidanceFiles = [
+      new URL('AGENTS.md', frontendRoot),
+      ...findFiles(new URL('.claude/', frontendRoot), /\.md$/),
+    ];
+    const staleGuidance = guidanceFiles
+      .filter((file) => /vitest|bun run test:ui/i.test(readFileSync(file, 'utf8')))
+      .map((file) => fileURLToPath(file));
+
+    expect(staleGuidance).toEqual([]);
+    expect(packageJson.scripts?.['test:ui']).toBeUndefined();
+  });
 });

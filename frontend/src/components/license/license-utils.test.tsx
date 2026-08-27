@@ -37,40 +37,46 @@ const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Da
 
 rs.mock('../../state/backend-api', () => {
   const actual = rs.requireActual<typeof import('../../state/backend-api')>('../../state/backend-api');
+  const mockApi = {
+    ...actual.api,
+    get isAdminApiConfigured() {
+      return true;
+    },
+    listLicenses: () => Promise.resolve(),
+    enterpriseFeaturesUsed: [
+      { name: 'rbac', enabled: true },
+      { name: 'datalake_iceberg', enabled: false },
+      { name: 'audit_logging' },
+      { name: 'core_balancing_continuous' },
+      { name: 'schema_id_validation' },
+      { name: 'cloud_storage' },
+      { name: 'gssapi' },
+      { name: 'leadership_pinning' },
+      { name: 'partition_auto_balancing_continuous' },
+      { name: 'oidc' },
+      { name: 'fips' },
+    ],
+    licensesLoaded: true,
+    licenseViolation: false,
+    licenses: [
+      {
+        source: License_Source.REDPANDA_CORE,
+        type: License_Type.ENTERPRISE,
+        expiresAt: undefined,
+      },
+      {
+        source: License_Source.REDPANDA_CONSOLE,
+        type: License_Type.ENTERPRISE,
+        expiresAt: undefined,
+      },
+    ],
+  };
+
   return {
     ...actual,
-    api: {
-      ...actual.api,
-      get isAdminApiConfigured() {
-        return true;
-      },
-      enterpriseFeaturesUsed: [
-        { name: 'rbac', enabled: true },
-        { name: 'datalake_iceberg', enabled: false },
-        { name: 'audit_logging' },
-        { name: 'core_balancing_continuous' },
-        { name: 'schema_id_validation' },
-        { name: 'cloud_storage' },
-        { name: 'gssapi' },
-        { name: 'leadership_pinning' },
-        { name: 'partition_auto_balancing_continuous' },
-        { name: 'oidc' },
-        { name: 'fips' },
-      ],
-      licensesLoaded: true,
-      licenseViolation: false,
-      licenses: [
-        {
-          source: License_Source.REDPANDA_CORE,
-          type: License_Type.ENTERPRISE,
-          expiresAt: undefined,
-        },
-        {
-          source: License_Source.REDPANDA_CONSOLE,
-          type: License_Type.ENTERPRISE,
-          expiresAt: undefined,
-        },
-      ],
+    api: mockApi,
+    useApiStoreHook<T>(selector: (state: typeof mockApi) => T): T {
+      return selector(mockApi);
     },
   };
 });
