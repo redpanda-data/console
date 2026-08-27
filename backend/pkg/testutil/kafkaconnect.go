@@ -38,7 +38,7 @@ func RunRedpandaConnectorsContainer(ctx context.Context, bootstrapServers []stri
 
 	request := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors:latest",
+			Image:        "redpandadata/connectors-unsupported:latest",
 			ExposedPorts: []string{"8083/tcp"},
 			Env: map[string]string{
 				"CONNECT_CONFIGURATION":     testConnectConfig,
