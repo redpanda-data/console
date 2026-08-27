@@ -145,41 +145,40 @@ const buttonVariants = cva(
           'active:bg-current/25',
           'disabled:text-disabled',
         ],
-        // 2px and unshadowed: a 1px dashed line reads as an artefact, and a placeholder should not
-        // sit proud of its ground.
+        // Unshadowed, unlike `outline`: a placeholder should not sit proud of its ground.
         dashed: [
-          '!border-secondary-line border-2 border-dashed bg-transparent text-secondary',
+          '!border-secondary-line border border-dashed bg-transparent text-secondary',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',
           'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
         'primary-dashed': [
-          '!border-primary-line border-2 border-dashed bg-transparent text-primary',
+          '!border-primary-line border border-dashed bg-transparent text-primary',
           'hover:!border-primary-line-hover hover:bg-primary-wash',
           'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
         'brand-dashed': [
-          '!border-brand-line border-2 border-dashed bg-transparent text-brand',
+          '!border-brand-line border border-dashed bg-transparent text-brand',
           'hover:!border-brand-line-hover hover:bg-brand-wash',
           'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
         'warning-dashed': [
-          '!border-warning-line border-2 border-dashed bg-transparent text-warning',
+          '!border-warning-line border border-dashed bg-transparent text-warning',
           'hover:!border-warning-line-hover hover:bg-warning-wash',
           'active:!border-warning-line-pressed active:bg-warning-wash-pressed',
           'disabled:!border-border disabled:text-disabled',
         ],
         'destructive-dashed': [
-          '!border-destructive-line border-2 border-dashed bg-transparent text-destructive',
+          '!border-destructive-line border border-dashed bg-transparent text-destructive',
           'hover:!border-destructive-line-hover hover:bg-destructive-wash',
           'active:!border-destructive-line-pressed active:bg-destructive-wash-pressed',
           'focus-visible:ring-destructive/50',
           'disabled:!border-border disabled:text-disabled',
         ],
         'current-dashed': [
-          '!border-current border-2 border-dashed bg-transparent text-current',
+          '!border-current border border-dashed bg-transparent text-current',
           'hover:bg-current/15',
           'active:bg-current/25',
           'disabled:!border-border disabled:text-disabled',
