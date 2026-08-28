@@ -65,7 +65,7 @@ export function DeleteDraftDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
+          <AlertDialogCancel render={<Button variant="ghost">Cancel</Button>} />
           <AlertDialogAction
             disabled={isDeleting}
             onClick={onConfirm}

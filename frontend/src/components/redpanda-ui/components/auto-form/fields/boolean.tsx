@@ -43,7 +43,7 @@ function BooleanFieldComponent({ error, field, id, inputProps, label }: AutoForm
       >
         <SelectValue placeholder="Choose a value">{renderBooleanSelectedValue}</SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent alignItemWithTrigger={false}>
         <SelectItem testId={testIds.option('not-set')} value={UNSET_SELECT_VALUE}>
           Not set
         </SelectItem>

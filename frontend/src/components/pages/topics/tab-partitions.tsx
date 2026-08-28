@@ -9,14 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
 import { AlertTriangle } from 'lucide-react';
 import type { FC } from 'react';
 
@@ -31,7 +23,12 @@ import { BrokerList } from '../../misc/broker-list';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import { Badge } from '../../redpanda-ui/components/badge';
 import { Button } from '../../redpanda-ui/components/button';
-import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  DataTablePagination,
+  useDataTable,
+} from '../../redpanda-ui/components/data-table';
 import { Popover, PopoverContent, PopoverTrigger } from '../../redpanda-ui/components/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 
@@ -64,7 +61,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
     ({ topicName }) => topicName === topic.topicName
   )?.partitionIds;
 
-  const columns: ColumnDef<Partition>[] = [
+  const columns: DataTableColumnDef<Partition>[] = [
     {
       accessorKey: 'id',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Partition ID" />,
@@ -72,9 +69,15 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
         <div className="flex items-center gap-2">
           <span>{partition.id}</span>
           {partition.hasErrors && <PartitionError partition={partition} />}
-          {leaderlessPartitions?.includes(partition.id) && <Badge variant="destructive-inverted">Leaderless</Badge>}
+          {leaderlessPartitions?.includes(partition.id) && (
+            <Badge tone="destructive" variant="subtle">
+              Leaderless
+            </Badge>
+          )}
           {underReplicatedPartitions?.includes(partition.id) && (
-            <Badge variant="warning-inverted">Under-replicated</Badge>
+            <Badge tone="warning" variant="subtle">
+              Under-replicated
+            </Badge>
           )}
         </div>
       ),
@@ -104,15 +107,12 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: partitions,
     columns,
     state: { sorting, pagination },
     onSortingChange,
     onPaginationChange,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     autoResetPageIndex: false,
   });
 
@@ -129,7 +129,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                 </TableHead>
               ))}
             </TableRow>
@@ -146,7 +146,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
                 ))}
               </TableRow>
             ))
@@ -174,7 +174,7 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
       />
       <PopoverContent align="start" className="max-w-[500px]" side="right">
         <p className="mb-2 font-medium">Partition Error</p>
-        <div className="flex flex-col gap-2 whitespace-pre-wrap text-sm">
+        <div className="flex flex-col gap-2 whitespace-pre-wrap text-body">
           {Boolean(partition.partitionError) && <p>{partition.partitionError}</p>}
           {Boolean(partition.waterMarksError) && <p>{partition.waterMarksError}</p>}
         </div>

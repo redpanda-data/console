@@ -9,21 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { PaginationState, SortingState } from '@tanstack/react-table';
 import { EditIcon, SkipIcon, TrashIcon } from 'components/icons';
 import { Search, X } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
-import type { ColumnMeta } from './column-meta';
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -38,7 +29,12 @@ import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardContent } from '../../redpanda-ui/components/card';
 import { Checkbox } from '../../redpanda-ui/components/checkbox';
 import { CopyButton } from '../../redpanda-ui/components/copy-button';
-import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  DataTablePagination,
+  useDataTable,
+} from '../../redpanda-ui/components/data-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '../../redpanda-ui/components/empty';
 import { Input, InputEnd, InputStart } from '../../redpanda-ui/components/input';
 import { Label } from '../../redpanda-ui/components/label';
@@ -373,17 +369,17 @@ const PartitionTable = ({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE });
 
-  const columns: ColumnDef<PartitionRow>[] = [
+  const columns: DataTableColumnDef<PartitionRow>[] = [
     {
       accessorKey: 'partitionId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
     },
     {
       accessorKey: 'id',
       header: 'Assigned Member',
       enableSorting: false,
-      meta: { headWidth: 'full' as const },
+      meta: columnMeta({ headWidth: 'full' as const }),
       cell: ({ row: { original } }) =>
         original.assignedMember ? (
           renderMergedID(original.id, original.clientId)
@@ -407,28 +403,28 @@ const PartitionTable = ({
     {
       accessorKey: 'highWaterMark',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Log End Offset" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original } }) =>
         original.highWaterMark !== null ? numberToThousandsString(original.highWaterMark) : '—',
     },
     {
       accessorKey: 'groupOffset',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Group Offset" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original } }) =>
         original.groupOffset !== null ? numberToThousandsString(original.groupOffset) : '—',
     },
     {
       accessorKey: 'lag',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Lag" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original } }) => (original.lag !== null ? <ShortNum tooltip value={original.lag} /> : '—'),
     },
     {
       id: 'action',
       header: '',
       enableSorting: false,
-      meta: { align: 'right' as const, headWidth: 'fit' as const },
+      meta: columnMeta({ align: 'right' as const, headWidth: 'fit' as const }),
       cell: ({ row: { original } }) => (
         <div className="flex justify-end gap-1">
           <DisabledReasonButton
@@ -456,15 +452,12 @@ const PartitionTable = ({
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: partitions,
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   return (
@@ -474,10 +467,10 @@ const PartitionTable = ({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                const meta = header.column.columnDef.meta as ColumnMeta | undefined;
+                const meta = readColumnMeta(header.column.columnDef.meta);
                 return (
                   <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 );
               })}
@@ -488,10 +481,10 @@ const PartitionTable = ({
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => {
-                const meta = cell.column.columnDef.meta as ColumnMeta | undefined;
+                const meta = readColumnMeta(cell.column.columnDef.meta);
                 return (
                   <TableCell align={meta?.align} key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {<table.FlexRender cell={cell} />}
                   </TableCell>
                 );
               })}
@@ -595,8 +588,8 @@ const GroupByTopics = (groupProps: {
         <AccordionItem key={entry.topicName} value={entry.topicName}>
           <AccordionTrigger className="px-4 py-3">
             <div className="flex flex-col gap-1 text-start">
-              <span className="font-semibold text-lg">{entry.topicName}</span>
-              <div className="flex items-center gap-4 font-normal text-muted-foreground text-sm">
+              <span className="font-semibold text-heading-md">{entry.topicName}</span>
+              <div className="flex items-center gap-4 font-normal text-body text-muted-foreground">
                 <span>Lag: {numberToThousandsString(entry.totalLagAll)}</span>
                 <span>Assigned partitions: {entry.partitionsAssigned}</span>
               </div>

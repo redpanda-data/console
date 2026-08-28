@@ -74,7 +74,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
 
   if (isLoading) {
     return (
-      <div className="rounded-md border border-gray-200 p-4">
+      <div className="rounded-md border border-border p-4">
         <Skeleton className="mt-2 h-[200px]" />
       </div>
     );
@@ -82,7 +82,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
 
   if (isError || !data) {
     return (
-      <div className="rounded-md border border-gray-200 p-4">
+      <div className="rounded-md border border-border p-4">
         <Alert className="mt-2" variant="warning">
           <AlertDescription>Failed to load data for this metric</AlertDescription>
         </Alert>
@@ -92,9 +92,9 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="rounded-md border border-gray-200 p-4">
+      <div className="rounded-md border border-border p-4">
         {data.metadata?.description ? <h4 className="mb-4 text-heading-sm">{data.metadata.description}</h4> : null}
-        <Alert className="mt-2" variant="info">
+        <Alert className="mt-2" variant="informative">
           <AlertDescription>No data available for this time range</AlertDescription>
         </Alert>
       </div>
@@ -102,7 +102,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
   }
 
   return (
-    <div className="rounded-md border border-gray-200 p-4">
+    <div className="rounded-md border border-border p-4">
       {data.metadata?.description ? <h3 className="mb-4 text-heading-md">{data.metadata.description}</h3> : null}
 
       <ChartContainer className="mt-4 h-[250px] w-full" config={chartConfig}>

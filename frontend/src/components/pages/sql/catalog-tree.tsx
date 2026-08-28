@@ -61,7 +61,7 @@ const CAT_LIMIT = 20;
 // Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
 // subtle hover background. Used by namespace rows and the "Add a topic" row.
 const ROW_BASE =
-  'flex w-full cursor-pointer items-center gap-1.5 rounded border-0 bg-transparent px-2 py-1.5 text-left text-sm text-strong hover:bg-accent-subtle';
+  'flex w-full cursor-pointer items-center gap-1.5 rounded border-0 bg-transparent px-2 py-1.5 text-left text-body text-strong hover:bg-accent';
 
 // Truncating label that fills the remaining row width.
 const LABEL = 'flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap';
@@ -100,13 +100,13 @@ function useCatalogTree(): CatalogTreeContextValue {
 function engineMark(engine: CatalogEngine) {
   if (engine === 'redpanda') {
     return (
-      <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-primary-subtle text-primary">
+      <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-primary-wash text-primary">
         <Layers size={13} />
       </span>
     );
   }
   return (
-    <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-info-subtle text-info">
+    <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-informative-wash text-informative">
       <Box size={13} />
     </span>
   );
@@ -221,7 +221,7 @@ function FieldRows({
         const hasNested = nested.length > 0;
         const isOpen = Boolean(open[path]);
         const FieldChevron = isOpen ? ChevronDown : ChevronRight;
-        const rowClass = 'flex w-full items-center gap-1.5 px-2 py-0.75 text-foreground text-xs';
+        const rowClass = 'flex w-full items-center gap-1.5 px-2 py-0.75 text-foreground text-body-sm';
         const indent = { paddingLeft: `${depth * 12}px` };
         const body = (
           <>
@@ -282,7 +282,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA trees use role="group" for nested tree item containers.
-    <div className="mb-0.5 ml-6.5 border-border-subtle border-l pl-2" role="group">
+    <div className="mb-0.5 ml-6.5 border-l pl-2" role="group">
       {content}
     </div>
   );
@@ -313,7 +313,7 @@ function TableRow({ catalog, table }: TableRowProps) {
   // The table icon picks up the Iceberg blue when the table is Iceberg-backed or
   // tiered, the disabled grey when locked, else the action-primary accent.
   const tableIcoClass = cn('shrink-0 text-action-primary', {
-    'text-info': (isIceberg || tiered) && allowed,
+    'text-informative': (isIceberg || tiered) && allowed,
     'text-disabled': !allowed,
   });
 
@@ -329,7 +329,7 @@ function TableRow({ catalog, table }: TableRowProps) {
           aria-expanded={allowed ? isOpen : undefined}
           aria-level={3}
           aria-selected={isActive}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-sm text-strong disabled:cursor-default disabled:text-disabled"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-body text-strong disabled:cursor-default disabled:text-disabled"
           data-tree-id={table.id}
           disabled={!allowed}
           onClick={() => toggleTable(table.id)}
@@ -341,7 +341,12 @@ function TableRow({ catalog, table }: TableRowProps) {
           <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
           {isIceberg || tiered ? (
-            <Badge size="sm" title={tiered ? 'Iceberg-tiered · bridge queried' : undefined} variant="info-inverted">
+            <Badge
+              size="sm"
+              title={tiered ? 'Iceberg-tiered · bridge queried' : undefined}
+              tone="informative"
+              variant="subtle"
+            >
               Iceberg
             </Badge>
           ) : null}
@@ -476,7 +481,7 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
         <button
           aria-expanded={isCatalogOpen}
           aria-level={1}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans font-semibold text-sm text-strong"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans font-semibold text-body text-strong"
           data-tree-id={catalog.name}
           onClick={() => toggle(catalog.name)}
           role="treeitem"

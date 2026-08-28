@@ -111,7 +111,7 @@ const ChildItemRow = ({
           {item.name}
         </span>
       </div>
-      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="error" /> : null}
+      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="destructive" /> : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </button>
   );
@@ -531,20 +531,20 @@ function buildComponentEntry({
 
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
-    <Label className="shrink-0 font-medium text-sm" htmlFor={htmlFor}>
+    <Label className="shrink-0 font-medium text-body" htmlFor={htmlFor}>
       {spec.name}
     </Label>
     {checkRequired(spec) ? (
-      <span aria-hidden className="shrink-0 text-destructive text-xs" title="Required">
+      <span aria-hidden className="shrink-0 text-body-sm text-destructive" title="Required">
         *
       </span>
     ) : null}
     {spec.type && spec.type !== 'string' ? (
-      <span className="shrink-0 text-muted-foreground text-xs">{spec.type}</span>
+      <span className="shrink-0 text-body-sm text-muted-foreground">{spec.type}</span>
     ) : null}
     {spec.defaultValue ? (
       // Defaults can be long templates — keep the label on one line and ellipsize, full value on hover.
-      <span className="min-w-0 truncate text-muted-foreground text-xs" title={`default: ${spec.defaultValue}`}>
+      <span className="min-w-0 truncate text-body-sm text-muted-foreground" title={`default: ${spec.defaultValue}`}>
         default: <span className="font-mono">{spec.defaultValue}</span>
       </span>
     ) : null}
@@ -616,7 +616,7 @@ const TopicScalarControl = ({
         className={invalid ? 'ring-1 ring-destructive' : undefined}
         creatable
         createLabel="value"
-        loading={isLoading}
+        isLoading={isLoading}
         onChange={onChange}
         onInputValueChange={onChange}
         options={options}
@@ -640,8 +640,8 @@ const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (top
     <div className="flex flex-col gap-2">
       <Combobox
         clearable={false}
+        isLoading={isLoading}
         key={pickCount}
-        loading={isLoading}
         onChange={(topic) => {
           if (topic) {
             onAppend(topic);
@@ -845,7 +845,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
             <Textarea
               aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
               aria-required={checkRequired(leaf.spec) || undefined}
-              className="font-mono text-sm"
+              className="font-mono text-body"
               id={inputId}
               onChange={field.onChange}
               placeholder="One value per line"
@@ -1173,7 +1173,7 @@ export function NodeConfigForm({
             {/* Full-bleed to the scroll edges; padded fields follow. */}
             {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
             <div className="flex flex-col gap-1.5">
-              <Label className="font-medium text-sm" htmlFor={labelId}>
+              <Label className="font-medium text-body" htmlFor={labelId}>
                 label
               </Label>
               <Controller
@@ -1284,7 +1284,7 @@ export function NodeConfigForm({
                 size="sm"
                 title="Apply now (⌘⏎) — edits also apply when you leave a field"
                 type="button"
-                variant="secondary"
+                variant="primary"
               >
                 Apply
               </Button>

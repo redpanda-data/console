@@ -9,22 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import {
-  flexRender,
-  getCoreRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Badge } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import { type DataTableColumnDef, DataTablePagination, useDataTable } from 'components/redpanda-ui/components/data-table';
 import { DataTableFilter, type FilterColumnConfig } from 'components/redpanda-ui/components/data-table-filter';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -77,26 +68,24 @@ function abbreviateComponentPath(path: string): string {
   return `${parts[0]}…${parts.slice(-2).join('.')}`;
 }
 
-type LogLevelVariant = 'destructive-inverted' | 'warning-inverted' | 'info-inverted' | 'neutral-inverted';
-
-function logLevelBadgeVariant(level: string | undefined): LogLevelVariant {
+function logLevelBadgeTone(level: string | undefined): BadgeTone {
   switch (level?.toUpperCase()) {
     case 'ERROR':
-      return 'destructive-inverted';
+      return 'destructive';
     case 'WARN':
     case 'WARNING':
-      return 'warning-inverted';
+      return 'warning';
     case 'INFO':
-      return 'info-inverted';
+      return 'informative';
     default:
-      return 'neutral-inverted';
+      return 'default';
   }
 }
 
 function LogLevelBadge({ level }: { level: string | undefined }) {
   const display = level?.toUpperCase() ?? 'UNKNOWN';
   return (
-    <Badge size="sm" variant={logLevelBadgeVariant(level)}>
+    <Badge size="sm" tone={logLevelBadgeTone(level)} variant="subtle">
       {display}
     </Badge>
   );
@@ -261,7 +250,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   }, [messages]);
 
 
-  const messageTableColumns = useMemo<ColumnDef<TopicMessage>[]>(
+  const messageTableColumns = useMemo<DataTableColumnDef<TopicMessage>[]>(
     () => [
       {
         header: 'Time',
@@ -275,8 +264,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           const d = new Date(timestamp);
           return (
             <div className="flex flex-col leading-tight" title={d.toLocaleString()}>
-              <span className="text-xs text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
-              <span className="font-medium text-sm tabular-nums">{d.toLocaleTimeString()}</span>
+              <span className="text-body-sm text-muted-foreground tabular-nums">{d.toLocaleDateString()}</span>
+              <span className="font-medium text-body tabular-nums">{d.toLocaleTimeString()}</span>
             </div>
           );
         },
@@ -339,7 +328,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
 
   const paginationParams = { pageIndex, pageSize };
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: messages,
     columns: messageTableColumns,
     state: {
@@ -356,11 +345,6 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
       setSorting(newSorting);
     },
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     autoResetPageIndex: false,
   });
 
@@ -439,7 +423,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                     onClick={header.column.getToggleSortingHandler()}
                     style={{ minWidth: header.column.columnDef.minSize, width: header.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? header.getSize() : undefined }}
                   >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     {header.column.getIsSorted() === 'asc' && <ArrowUp className="ml-1 inline size-3.5" />}
                     {header.column.getIsSorted() === 'desc' && <ArrowDown className="ml-1 inline size-3.5" />}
                   </TableHead>
@@ -482,11 +466,11 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                 return (
                   <TableRow>
                     <TableCell className="p-4" colSpan={table.getVisibleFlatColumns().length}>
-                      <Alert data-testid="pipeline-stopped-banner" variant="info">
+                      <Alert data-testid="pipeline-stopped-banner" variant="informative">
                         <AlertTitle>Pipeline is not running</AlertTitle>
                         <AlertDescription className="flex flex-col items-start gap-2">
                           Live logs require a running pipeline. Switch to recent logs to view historical logs.
-                          <Button onClick={() => setLiveView(false)} size="sm" variant="secondary-outline">
+                          <Button onClick={() => setLiveView(false)} size="sm" variant="outline">
                             Switch to Recent Logs
                           </Button>
                         </AlertDescription>
@@ -529,7 +513,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                           key={cell.id}
                           style={{ minWidth: cell.column.columnDef.minSize, width: cell.column.getSize() !== TANSTACK_DEFAULT_COLUMN_SIZE ? cell.column.getSize() : undefined }}
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {<table.FlexRender cell={cell} />}
                         </TableCell>
                       ))}
                     </TableRow>
@@ -541,8 +525,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                           {/* Mirror the Time cell's two-line height. */}
                           {columnIndex === 0 ? (
                             <div className="flex flex-col leading-tight">
-                              <span className="text-xs">&nbsp;</span>
-                              <span className="text-sm">&nbsp;</span>
+                              <span className="text-body-sm">&nbsp;</span>
+                              <span className="text-body">&nbsp;</span>
                             </div>
                           ) : null}
                         </TableCell>

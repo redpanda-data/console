@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from 'components/redpanda-ui/components/accordion';
-import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeEmphasis, type BadgeTone, type BadgeVariant } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
@@ -38,21 +38,17 @@ import {
 } from './topic-properties-config';
 import type { FormValues } from '../create/model';
 
-/**
- * Get badge variant based on status
- */
-const getBadgeVariant = (status: ShadowingStatus): BadgeVariant => {
+/** Tone + emphasis for a status badge. `optional` carries no tone, so it stays a plain outline. */
+const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } => {
   switch (status) {
     case 'always':
-      return 'success-inverted';
+      return { tone: 'success', variant: 'subtle' };
     case 'default':
-      return 'secondary-inverted';
-    case 'optional':
-      return 'outline';
+      return { tone: 'default', variant: 'subtle' };
     case 'never':
-      return 'destructive-inverted';
+      return { tone: 'destructive', variant: 'subtle' };
     default:
-      return 'outline';
+      return { variant: 'outline' };
   }
 };
 
@@ -110,7 +106,7 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
           <InlineCode>{property.name}</InlineCode>
           <div className="flex gap-1">
             {property.status.map((status) => (
-              <Badge data-testid={`badge-${property.name}-${status}`} key={status} variant={getBadgeVariant(status)}>
+              <Badge data-testid={`badge-${property.name}-${status}`} key={status} {...getBadgeStyle(status)}>
                 {formatStatusLabel(status)}
               </Badge>
             ))}
@@ -306,7 +302,7 @@ export const TopicConfigTab = () => {
 
                 return (
                   <AccordionItem data-testid={`category-${category}`} key={category} value={category}>
-                    <AccordionTrigger className="font-medium text-base">{category}</AccordionTrigger>
+                    <AccordionTrigger className="font-medium text-body-lg">{category}</AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-3">
                         {properties.map((property) => {

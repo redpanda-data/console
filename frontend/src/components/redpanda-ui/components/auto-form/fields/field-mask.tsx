@@ -33,7 +33,7 @@ function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormField
         value={textValue}
       />
       {allowedPaths?.length ? (
-        <div className="text-body-sm text-muted-foreground">Allowed paths: {allowedPaths.join(', ')}</div>
+        <div className="text-body-sm text-subtle">Allowed paths: {allowedPaths.join(', ')}</div>
       ) : null}
     </div>
   );

@@ -76,12 +76,14 @@ import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
 
-const TAG_VARIANT: Record<ConnectConfigFixture['tags'][number], React.ComponentProps<typeof Badge>['variant']> = {
-  simple: 'success-inverted',
-  medium: 'info-inverted',
-  complex: 'warning-inverted',
-  'edge-case': 'accent-inverted',
-  invalid: 'destructive-inverted',
+type BadgeProps = React.ComponentProps<typeof Badge>;
+
+const TAG_TONE: Record<ConnectConfigFixture['tags'][number], BadgeProps['tone']> = {
+  simple: 'success',
+  medium: 'informative',
+  complex: 'warning',
+  'edge-case': 'brand',
+  invalid: 'destructive',
 };
 
 type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
@@ -179,18 +181,18 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
           <ItemTitle className="flex-wrap">
             {fixture.name}
             {fixture.tags.map((tag) => (
-              <Badge key={tag} size="sm" variant={TAG_VARIANT[tag]}>
+              <Badge key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
                 {tag}
               </Badge>
             ))}
-            <Badge size="sm" variant="simple-outline">
+            <Badge size="sm" tone="default" variant="outline">
               {lineCount} lines
             </Badge>
           </ItemTitle>
           <ItemDescription>{fixture.description}</ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="secondary-ghost">
+          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="ghost">
             {previewing ? 'Hide' : 'Preview'}
           </Button>
           <Button
@@ -424,7 +426,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             <code className="min-w-0 flex-1 truncate font-medium font-mono text-body-sm" title={storageKey}>
               {storageKey}
             </code>
-            <Badge className="shrink-0" size="sm" variant="simple-outline">
+            <Badge className="shrink-0" size="sm" tone="default" variant="outline">
               {formatBytes(sizeBytes)}
             </Badge>
           </div>
@@ -450,12 +452,12 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
             icon={<Clipboard />}
             onClick={() => copyToClipboard(value, `Copied ${storageKey}`)}
             size="xs"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Copy
           </Button>
           {isMultiline && !expanded ? (
-            <Button icon={<Eye />} onClick={() => setExpanded(true)} size="xs" variant="secondary-ghost" />
+            <Button icon={<Eye />} onClick={() => setExpanded(true)} size="xs" variant="ghost" />
           ) : null}
         </div>
       </div>
@@ -490,7 +492,7 @@ function StorageSection({
       <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <div className="truncate font-medium text-body-sm">{title}</div>
-          <Badge className="shrink-0" size="sm" variant="simple-outline">
+          <Badge className="shrink-0" size="sm" tone="default" variant="outline">
             {storage.length} keys
           </Badge>
         </div>
@@ -499,7 +501,7 @@ function StorageSection({
             icon={<Clipboard />}
             onClick={() => copyToClipboard(JSON.stringify(dumpStorage(storage), null, 2), `Copied ${title} JSON`)}
             size="xs"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Copy all
           </Button>
@@ -599,7 +601,7 @@ function EnvironmentPanel() {
         icon={<Clipboard />}
         onClick={() => copyToClipboard(JSON.stringify(info, null, 2), 'Copied environment snapshot')}
         size="xs"
-        variant="secondary"
+        variant="primary"
       >
         Copy environment snapshot
       </Button>
@@ -622,7 +624,7 @@ function FlagToggle({
       className={cn(
         'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 font-medium text-body-sm transition-colors',
         checked
-          ? 'border-outline-success bg-background-success-subtle text-success'
+          ? 'border-success-line bg-success-wash text-success'
           : 'border-border bg-background text-muted-foreground'
       )}
     >
@@ -695,7 +697,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
               <Item
                 className={cn(
                   'flex-col items-stretch gap-2 transition-colors',
-                  effectiveValue ? 'border-outline-success bg-background-success-subtle/50' : 'bg-muted/40'
+                  effectiveValue ? 'border-success-line bg-success-wash/50' : 'bg-muted/40'
                 )}
                 key={key}
                 size="xs"
@@ -715,7 +717,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                   <AnimatePresence initial={false}>
                     {isOverridden ? (
                       <PopIn className="shrink-0" key="overridden">
-                        <Badge size="sm" variant="warning-inverted">
+                        <Badge size="sm" tone="warning" variant="subtle">
                           overridden
                         </Badge>
                       </PopIn>
@@ -740,7 +742,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                             onMutate();
                           }}
                           size="xs"
-                          variant="secondary-ghost"
+                          variant="ghost"
                         >
                           Reset
                         </Button>
@@ -879,7 +881,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
             <AnimatePresence initial={false}>
               {active ? (
                 <PopIn key="active">
-                  <Badge size="sm" variant="warning-inverted">
+                  <Badge size="sm" tone="warning" variant="subtle">
                     active
                   </Badge>
                 </PopIn>
@@ -934,7 +936,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <DialogTitle className="flex items-center gap-2">
             <DebugPanda className="h-5 w-5" />
             Debug helpers
-            <Badge size="sm" variant="simple-outline">
+            <Badge size="sm" tone="default" variant="outline">
               dev only
             </Badge>
           </DialogTitle>

@@ -32,7 +32,7 @@ export function AutosaveRestoreNotice({
   onDiscard: () => void;
 }) {
   return (
-    <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale ? 'warning' : 'info'}>
+    <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale ? 'warning' : 'informative'}>
       {/* Not "unsaved changes": that names the edits in this editor right now, which the header pill and
           the lane both track. This is work from an earlier visit that this browser kept. */}
       <AlertTitle>Restore your edits from {relativeAgeLabel(updatedAt)}?</AlertTitle>

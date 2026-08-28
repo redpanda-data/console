@@ -1,39 +1,3 @@
-import type { PaginationState, SortingState } from '@tanstack/react-table';
-
-export type PaginationMode = {
-  enabled: boolean;
-  controlledState: PaginationState | undefined;
-  defaultPageSize: number;
-};
-
-export const resolvePaginationMode = (
-  pagination: false | true | PaginationState | undefined,
-  defaultPageSize = 10
-): PaginationMode => {
-  if (pagination === false) {
-    return { enabled: false, controlledState: undefined, defaultPageSize };
-  }
-  if (pagination === true || pagination === undefined) {
-    return { enabled: true, controlledState: undefined, defaultPageSize };
-  }
-  return { enabled: true, controlledState: pagination, defaultPageSize: pagination.pageSize };
-};
-
-export type SortingMode = {
-  enabled: boolean;
-  controlledState: SortingState | undefined;
-};
-
-export const resolveSortingMode = (sorting: false | true | SortingState | undefined): SortingMode => {
-  if (sorting === false) {
-    return { enabled: false, controlledState: undefined };
-  }
-  if (sorting === true || sorting === undefined) {
-    return { enabled: true, controlledState: undefined };
-  }
-  return { enabled: true, controlledState: sorting };
-};
-
 export type DisplayState = 'loading' | 'empty' | 'data';
 
 // Takes the filtered count, not the page count: a stale page index leaves the page empty while

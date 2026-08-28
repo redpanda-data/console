@@ -49,7 +49,7 @@ function ComponentIcon({ component, className = 'size-5' }: { component: Connect
 
 // Compact section title matching the inspector's small-label style.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
-  <div className="mt-2 font-semibold text-foreground text-xs uppercase tracking-wide">{children}</div>
+  <div className="mt-2 font-semibold text-body-sm text-foreground uppercase tracking-wide">{children}</div>
 );
 
 // All heading levels collapse to the same compact label — these are short section titles, not a hierarchy.
@@ -60,15 +60,15 @@ const MARKDOWN_COMPONENTS: Components = {
   h4: MarkdownHeading,
   h5: MarkdownHeading,
   h6: MarkdownHeading,
-  p: ({ children }) => <div className="text-foreground text-sm leading-relaxed">{children}</div>,
+  p: ({ children }) => <div className="text-body text-foreground leading-relaxed">{children}</div>,
   a: ({ href, children }) => (
     <Link href={href} rel="noopener noreferrer" target="_blank">
       {children}
     </Link>
   ),
-  code: ({ children }) => <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{children}</code>,
-  ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-foreground text-sm">{children}</ul>,
-  ol: ({ children }) => <ol className="list-decimal space-y-0.5 pl-4 text-foreground text-sm">{children}</ol>,
+  code: ({ children }) => <code className="rounded bg-muted px-1 py-0.5 font-mono text-body-sm">{children}</code>,
+  ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-body text-foreground">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal space-y-0.5 pl-4 text-body text-foreground">{children}</ol>,
   li: ({ children }) => <li className="leading-relaxed">{children}</li>,
 };
 
@@ -88,7 +88,7 @@ function statusBadge(status: ComponentStatus, name: string) {
       status === ComponentStatus.DEPRECATED)
   ) {
     return (
-      <Badge size="sm" variant="neutral-inverted">
+      <Badge size="sm" tone="default" variant="subtle">
         {componentStatusToString(status)}
       </Badge>
     );
@@ -100,10 +100,10 @@ function statusBadge(status: ComponentStatus, name: string) {
 function HighlightedName({ name, query }: { name: string; query: string }) {
   const idx = query ? name.toLowerCase().indexOf(query) : -1;
   if (idx < 0) {
-    return <span className="font-mono font-semibold text-sm">{name}</span>;
+    return <span className="font-mono font-semibold text-body">{name}</span>;
   }
   return (
-    <span className="font-mono font-semibold text-sm">
+    <span className="font-mono font-semibold text-body">
       {name.slice(0, idx)}
       <span className="bg-primary/15 text-primary">{name.slice(idx, idx + query.length)}</span>
       {name.slice(idx + query.length)}
@@ -139,7 +139,7 @@ function Row({
         {statusBadge(component.status, component.name)}
       </span>
       {badgeLabel ? (
-        <Badge className="ml-auto shrink-0 capitalize" size="sm" variant="simple-outline">
+        <Badge className="ml-auto shrink-0 capitalize" size="sm" tone="default" variant="outline">
           {badgeLabel}
         </Badge>
       ) : null}
@@ -155,7 +155,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   if (!component) {
     return (
       <div className="hidden flex-1 items-center justify-center p-8 text-center md:flex">
-        <div className="max-w-[28ch] text-muted-foreground text-sm">
+        <div className="max-w-[28ch] text-body text-muted-foreground">
           Select a component to see its description, categories, and documentation, then add it to your pipeline.
         </div>
       </div>
@@ -175,32 +175,33 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
         <ComponentIcon className="size-8" component={component} />
         <div className="flex min-w-0 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="font-mono font-semibold text-base">{component.name}</span>
+            <span className="font-mono font-semibold text-body-lg">{component.name}</span>
             {statusBadge(component.status, component.name)}
           </span>
-          <span className="text-muted-foreground text-xs capitalize">
+          <span className="text-body-sm text-muted-foreground capitalize">
             {component.type.replace(/_/g, ' ')}
             {component.version ? ` · v${component.version}` : ''}
           </span>
         </div>
       </div>
 
-      {summary ? <div className="text-foreground text-sm leading-relaxed">{summary}</div> : null}
+      {summary ? <div className="text-body text-foreground leading-relaxed">{summary}</div> : null}
 
       {showDescription ? <FormattedDescription markdown={descriptionMd} /> : null}
 
       {categories.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          <div className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Categories</div>
+          <div className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Categories</div>
           <BadgeGroup
             gap="md"
             maxVisible={6}
             renderOverflowContent={(overflow) => <div className="flex flex-col gap-1">{overflow}</div>}
-            variant="neutral-inverted"
+            tone="default"
+            variant="subtle"
             wrap
           >
             {categories.map((category) => (
-              <Badge key={category} size="sm" variant="neutral-inverted">
+              <Badge key={category} size="sm" tone="default" variant="subtle">
                 {category}
               </Badge>
             ))}
@@ -210,7 +211,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
 
       {docsUrl ? (
         <Link
-          className="inline-flex items-center gap-1 text-sm"
+          className="inline-flex items-center gap-1 text-body"
           href={docsUrl}
           rel="noopener noreferrer"
           target="_blank"
@@ -420,7 +421,7 @@ export const ConnectCommandPalette = ({
         <CommandInput onValueChange={setQuery} placeholder={searchPlaceholder ?? 'Search components…'} value={query} />
         {q ? (
           <div className="flex h-10 shrink-0 items-center border-b px-3">
-            <div className="text-muted-foreground text-xs">{pluralizeWithNumber(results.length, 'result')}</div>
+            <div className="text-body-sm text-muted-foreground">{pluralizeWithNumber(results.length, 'result')}</div>
           </div>
         ) : (
           <div className="min-w-0 shrink-0">
@@ -487,12 +488,12 @@ export const ConnectCommandPalette = ({
         <div className="flex min-w-0 items-center gap-2">
           {activeComponent ? (
             <>
-              <span className="shrink-0 text-muted-foreground text-xs">Selected</span>
+              <span className="shrink-0 text-body-sm text-muted-foreground">Selected</span>
               <ComponentIcon className="size-4" component={activeComponent} />
-              <span className="truncate font-medium font-mono text-sm">{activeComponent.name}</span>
+              <span className="truncate font-medium font-mono text-body">{activeComponent.name}</span>
             </>
           ) : (
-            <div className="text-muted-foreground text-sm">Select a component to add</div>
+            <div className="text-body text-muted-foreground">Select a component to add</div>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">

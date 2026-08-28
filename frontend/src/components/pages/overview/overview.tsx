@@ -11,6 +11,7 @@
 
 import { isFeatureFlagEnabled } from 'config';
 import { docsLinks } from 'utils/docs-links';
+import type { LegacyRow } from 'utils/legacy-data-table';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -35,13 +36,11 @@ import {
   Tooltip,
 } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import type { Row } from '@tanstack/react-table';
 import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
 import React, { type FC, type ReactNode } from 'react';
 
 import ClusterHealthOverview from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
-import colors from '../../../colors';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/nurture-panel';
 import {
@@ -183,12 +182,12 @@ class Overview extends PageComponent {
                         <Flex gap={2}>
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
-                              <ErrorIcon color={colors.brandError} size={18} />
+                              <ErrorIcon className="text-destructive" size={18} />
                               Down
                             </>
                           ) : (
                             <>
-                              <CheckIcon color={colors.green} size={18} />
+                              <CheckIcon className="text-success" size={18} />
                               Running
                             </>
                           )}
@@ -225,7 +224,7 @@ class Overview extends PageComponent {
                           {
                             size: 100,
                             header: 'Rack',
-                            cell: ({ row: { original: broker } }: { row: Row<BrokerWithConfigAndStorage> }) =>
+                            cell: ({ row: { original: broker } }: { row: LegacyRow<BrokerWithConfigAndStorage> }) =>
                               broker.rack,
                           },
                         ]
@@ -242,9 +241,9 @@ class Overview extends PageComponent {
                 <Heading as="h3">Resources and updates</Heading>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr />
-                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-gray-600">
+                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
-                  <span className="mx-2 text-gray-300">|</span>
+                  <span className="mx-2 text-disabled">|</span>
                   <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
                 </div>
               </Section>
@@ -426,7 +425,7 @@ function ClusterDetails() {
             ? [
                 [
                   <Flex alignItems="center" gap={1} key="error">
-                    <AlertIcon color={colors.brandError} size={16} /> Failed to load license info
+                    <AlertIcon className="text-destructive" size={16} /> Failed to load license info
                   </Flex>,
                 ],
               ]
@@ -450,7 +449,7 @@ function ClusterDetails() {
           <GridItem />
           <GridItem colSpan={{ base: 1, lg: 2 }}>
             <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
-              <Badge variant="info">
+              <Badge tone="informative" variant="solid">
                 <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
               </Badge>
             </a>

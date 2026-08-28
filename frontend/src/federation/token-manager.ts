@@ -10,28 +10,8 @@
  */
 
 /**
- * TokenManager handles JWT token refresh with deduplication.
- *
- * Features:
- * - Deduplicates concurrent refresh requests (only one active refresh at a time)
- * - Type-safe callback pattern for token storage
- *
- * @example
- * ```ts
- * const tokenManager = new TokenManager(async () => {
- *   const token = await authService.getAccessToken();
- *   config.jwt = token;
- *   return token;
- * });
- *
- * // Refresh token (deduplicates concurrent calls)
- * const token = await tokenManager.refresh();
- *
- * // Cleanup on component unmount
- * useEffect(() => {
- *   return () => tokenManager.reset();
- * }, []);
- * ```
+ * JWT refresh with deduplication: concurrent `refresh()` calls share one in-flight request.
+ * Call `reset()` on unmount.
  */
 export class TokenManager {
   private refreshPromise: Promise<string> | null = null;

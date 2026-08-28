@@ -10,16 +10,10 @@
  */
 
 /**
- * Build-time shim for react-onclickoutside.
- *
- * react-onclickoutside@6 statically imports `findDOMNode` from react-dom, which
- * React 19 removed — this breaks the production bundle's ESM linking even though
- * Console never renders the only consumer (@redpanda-data/ui's
- * react-datepicker-backed DatePicker). This identity HOC drops the findDOMNode
- * import and returns the wrapped component unchanged. Click-outside behaviour is
- * intentionally a no-op because the datepicker is dead code here; if a DatePicker
- * is ever rendered, remove this shim and upgrade react-datepicker to a
- * React 19-compatible release instead.
+ * Build-time shim: react-onclickoutside@6 statically imports the `findDOMNode` React 19 removed,
+ * breaking ESM linking in the production bundle even though Console never renders its only consumer
+ * (@redpanda-data/ui's DatePicker). This identity HOC drops that import. Click-outside is a
+ * deliberate no-op; if a DatePicker is ever rendered, drop the shim and upgrade react-datepicker.
  */
 export const IGNORE_CLASS_NAME = 'ignore-react-onclickoutside';
 

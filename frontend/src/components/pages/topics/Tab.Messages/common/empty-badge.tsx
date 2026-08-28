@@ -15,7 +15,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import type { FC } from 'react';
 
 export const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
-  <Badge variant="neutral-inverted">
+  <Badge tone="default" variant="subtle">
     <Flex gap={2} verticalAlign="center">
       <BanIcon size={16} />
       <Text>

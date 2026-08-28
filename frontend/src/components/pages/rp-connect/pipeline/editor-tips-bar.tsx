@@ -105,7 +105,7 @@ export function EditorTipsBar({
   return (
     <aside
       aria-label="Editor tips"
-      className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/40 px-3 py-1.5 text-muted-foreground text-xs"
+      className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/40 px-3 py-1.5 text-body-sm text-muted-foreground"
     >
       <Lightbulb className="size-3.5 shrink-0 text-muted-foreground/70" />
       {tips.map((tip, i) => (

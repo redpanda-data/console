@@ -120,8 +120,6 @@ export const filterTypeOperatorDetails: Record<FilterType, FilterOperatorMap<Fil
   multiOption: multiOptionFilterOperators,
 };
 
-// ── Default Operators ──────────────────────────────────────────────────
-
 const DEFAULT_OPERATORS: Record<FilterType, Record<FilterOperatorTarget, string>> = {
   text: { single: 'contains', multiple: 'contains' },
   option: { single: 'is', multiple: 'is any of' },

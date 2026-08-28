@@ -128,10 +128,11 @@ const ReferenceList = ({ items }: { items: string[] }) => {
           ))}
         </List>
       )}
-      variant="simple-outline"
+      tone="default"
+      variant="outline"
     >
       {items.map((item) => (
-        <Badge key={item} variant="simple-outline">
+        <Badge key={item} tone="default" variant="outline">
           {item}
         </Badge>
       ))}
@@ -200,7 +201,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                   <Separator />
                   <section className="flex flex-col gap-3">
                     <SectionHeading className="text-destructive">Danger zone</SectionHeading>
-                    <div className="text-muted-foreground text-sm">
+                    <div className="text-body text-muted-foreground">
                       Deleting this pipeline is permanent and cannot be undone. Any secrets or resources used by this
                       pipeline will need to be cleaned up manually.
                     </div>

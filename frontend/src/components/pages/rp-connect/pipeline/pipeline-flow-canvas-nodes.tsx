@@ -163,7 +163,7 @@ const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boole
       <Split className="size-3.5 shrink-0 opacity-80" />
       <span className="shrink-0 font-semibold text-2xs uppercase tracking-wide opacity-70">{eyebrow}</span>
       {data.condition ? (
-        <span className="min-w-0 flex-1 truncate font-mono text-xs" title={data.condition}>
+        <span className="min-w-0 flex-1 truncate font-mono text-body-sm" title={data.condition}>
           {data.condition}
         </span>
       ) : null}
@@ -252,11 +252,11 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
   const shown = topics.slice(0, TOPIC_CHIP_LIMIT);
   const extra = topics.length - shown.length;
   return (
-    <div className="flex items-baseline gap-1.5 text-xs">
+    <div className="flex items-baseline gap-1.5 text-body-sm">
       <span className="shrink-0 text-muted-foreground">{pluralize(topics.length, 'topic')}</span>
       <span className="flex min-w-0 flex-wrap gap-1">
         {shown.map((topic) => (
-          <Badge className="max-w-full" key={topic} size="sm" title={topic} variant="neutral-inverted">
+          <Badge className="max-w-full" key={topic} size="sm" title={topic} tone="default" variant="subtle">
             <span className="truncate font-mono">{topic}</span>
           </Badge>
         ))}
@@ -278,7 +278,7 @@ const MetaRows = ({ data }: { data: FlowCardData }) => {
     <div className="flex flex-col gap-1.5 px-3 py-2">
       <TopicChips topics={data.topics} />
       {data.meta?.map((entry) => (
-        <div className="flex items-baseline gap-1.5 text-xs" key={`${entry.label}-${entry.value}`}>
+        <div className="flex items-baseline gap-1.5 text-body-sm" key={`${entry.label}-${entry.value}`}>
           <span className="shrink-0 text-muted-foreground">{entry.label}</span>
           <span className="min-w-0 truncate font-mono text-foreground" title={entry.value}>
             {entry.value}
@@ -326,12 +326,12 @@ const MissingChip = ({
         onAdd();
       }}
       size="xs"
-      variant="secondary"
+      variant="primary"
     >
       {addLabel}
     </Button>
   ) : (
-    <Badge size="sm" variant="neutral-inverted">
+    <Badge size="sm" tone="default" variant="subtle">
       {missingLabel}
     </Badge>
   );
@@ -406,7 +406,13 @@ const UnsavedDot = ({ show }: { show?: boolean }) =>
 // The component's `label:` — shown on every node (leaf, container) when set.
 const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
   label ? (
-    <Badge className={cn('min-w-0 max-w-full shrink-0', className)} size="sm" title={label} variant="info-inverted">
+    <Badge
+      className={cn('min-w-0 max-w-full shrink-0', className)}
+      size="sm"
+      title={label}
+      tone="informative"
+      variant="subtle"
+    >
       <span className="truncate">{label}</span>
     </Badge>
   ) : null;
@@ -493,7 +499,7 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
       <button
         aria-label={data.label ?? 'Add'}
         className={cn(
-          'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 font-medium text-primary text-xs transition-colors',
+          'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 font-medium text-body-sm text-primary transition-colors',
           data.ghost
             ? 'justify-center rounded-full border border-primary/40 border-dashed bg-background hover:border-primary hover:bg-primary/10'
             : 'rounded-md hover:bg-primary/10'
@@ -671,7 +677,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button
-            className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-border/70 border-t border-dashed px-3 py-1.5 font-medium text-primary text-xs transition-colors hover:bg-primary/5"
+            className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-border/70 border-t border-dashed px-3 py-1.5 font-medium text-body-sm text-primary transition-colors hover:bg-primary/5"
             onClick={(e) => {
               e.stopPropagation();
               data.onAddChild?.();

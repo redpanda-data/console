@@ -42,7 +42,7 @@ export const PIPELINE_STATE_STATUS_VARIANT: Record<Pipeline_State, StatusBadgeVa
   [Pipeline_State.STARTING]: 'starting',
   [Pipeline_State.STOPPING]: 'stopping',
   [Pipeline_State.STOPPED]: 'disabled',
-  [Pipeline_State.ERROR]: 'error',
+  [Pipeline_State.ERROR]: 'destructive',
   [Pipeline_State.RUNNING]: 'success',
   [Pipeline_State.UNSPECIFIED]: 'disabled',
   [Pipeline_State.DRAFT]: 'disabled',

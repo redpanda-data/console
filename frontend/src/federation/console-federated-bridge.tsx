@@ -15,20 +15,12 @@ import ConsoleApp from './console-app';
 import type { ConsoleAppProps } from './types';
 
 /**
- * Module Federation bridge entry consumed by Cloud UI (a React 18 host).
+ * Module Federation bridge consumed by Cloud UI, a React 18 host.
  *
- * Console runs React 19 while Cloud UI stays on React 18. A shared React
- * singleton cannot span both majors, so this remote stops sharing
- * react/react-dom (see module-federation.config.ts) and exposes its app through
- * the React bridge instead: the bridge mounts ConsoleApp into a host-provided
- * DOM node using Console's own React 19 `createRoot`, decoupling the two React
- * instances. The `/v19` entrypoint wires `react-dom/client`'s `createRoot`; the
- * default entry calls the legacy `render` API and throws on React 19.
- *
- * The prop contract is unchanged. The bridge forwards the same ConsoleAppProps
- * (getAccessToken, clusterId, navigateTo, onRouteChange, onSidebarItemsChange,
- * ...) straight through to ConsoleApp and re-renders the existing root in place
- * when they change (no remount), so the host<->remote navigation sync keeps
- * working.
+ * Console runs React 19, and no shared React singleton can span both majors — so this remote stops
+ * sharing react/react-dom (module-federation.config.ts) and mounts ConsoleApp into a host-provided
+ * node with its own `createRoot`. Import the `/v19` entrypoint; the default one calls the legacy
+ * `render` and throws on React 19. ConsoleAppProps pass straight through, re-rendering the existing
+ * root in place rather than remounting, so host<->remote navigation sync survives prop changes.
  */
 export default createBridgeComponent<ConsoleAppProps>({ rootComponent: ConsoleApp });

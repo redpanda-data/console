@@ -816,7 +816,7 @@ export const TaskState = (p: {
   );
 };
 
-export const okIcon = <CheckCircleIcon color="#52c41a" />;
+export const okIcon = <CheckCircleIcon className="text-success" />;
 export const warnIcon = <WarningIcon color="orange" />;
 export const errIcon = <AlertIcon color="orangered" />;
 const waitIcon = <HourglassIcon color="#888" />;

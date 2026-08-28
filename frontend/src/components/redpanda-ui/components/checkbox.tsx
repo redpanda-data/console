@@ -9,19 +9,19 @@ import { cn, type SharedProps } from '../lib/utils';
 // CSS-driven path-draw: pathLength={1} normalizes the dash space to 0..1; the native transition tweens
 // stroke-dashoffset/opacity (immune to React re-render frequency); 100ms delay lets the box-fill lead the stroke.
 const pathDrawClassName =
-  '[stroke-dasharray:1] [stroke-dashoffset:1] opacity-0 transition-[stroke-dashoffset,opacity] duration-200 ease-out data-[visible=true]:[stroke-dashoffset:0] data-[visible=true]:opacity-100 data-[visible=true]:delay-[100ms]';
+  '[stroke-dasharray:1] [stroke-dashoffset:1] opacity-0 transition-[stroke-dashoffset,opacity] duration-200 ease-out motion-reduce:transition-none data-[visible=true]:[stroke-dashoffset:0] data-[visible=true]:opacity-100 data-[visible=true]:delay-[100ms]';
 
 const checkboxVariants = cva(
-  'peer aria-invalid:!border-destructive flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border transition-colors duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
+  'peer aria-invalid:!border-destructive hover:not-disabled:not-data-[state=checked]:not-data-[state=indeterminate]:!border-input-hover focus-visible:!border-ring flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border outline-none transition-colors hover:not-disabled:not-data-[state=checked]:not-data-[state=indeterminate]:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none',
   {
     variants: {
       variant: {
         primary:
-          '!border-input data-[state=checked]:border-primary data-[state=indeterminate]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:bg-primary data-[state=checked]:text-inverse data-[state=indeterminate]:text-inverse',
+          '!border-input data-[state=checked]:!border-primary data-[state=indeterminate]:!border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:bg-primary data-[state=checked]:text-primary-foreground data-[state=indeterminate]:text-primary-foreground',
         secondary:
-          '!border-input data-[state=checked]:border-secondary data-[state=indeterminate]:border-secondary data-[state=checked]:bg-secondary data-[state=indeterminate]:bg-secondary data-[state=checked]:text-inverse data-[state=indeterminate]:text-inverse',
+          '!border-input data-[state=checked]:!border-secondary data-[state=indeterminate]:!border-secondary data-[state=checked]:bg-secondary data-[state=indeterminate]:bg-secondary data-[state=checked]:text-secondary-foreground data-[state=indeterminate]:text-secondary-foreground',
         outline:
-          '!border-input data-[state=checked]:border-foreground data-[state=indeterminate]:border-foreground data-[state=checked]:bg-transparent data-[state=indeterminate]:bg-transparent data-[state=checked]:text-foreground data-[state=indeterminate]:text-foreground',
+          '!border-input data-[state=checked]:!border-foreground data-[state=indeterminate]:!border-foreground data-[state=checked]:bg-transparent data-[state=indeterminate]:bg-transparent data-[state=checked]:text-foreground data-[state=indeterminate]:text-foreground',
       },
     },
     defaultVariants: {
@@ -29,6 +29,14 @@ const checkboxVariants = cva(
     },
   }
 );
+
+/** The `data-state` the variants key off. Mixed wins: Base UI carries it beside `checked`. */
+const dataStateFor = (checked: boolean, indeterminate: boolean): 'indeterminate' | 'checked' | 'unchecked' => {
+  if (indeterminate) {
+    return 'indeterminate';
+  }
+  return checked ? 'checked' : 'unchecked';
+};
 
 // Exposes the Radix `checked: boolean | 'indeterminate'` signature; translated to Base UI's separate props internally.
 type CheckboxProps = Omit<
@@ -79,7 +87,7 @@ function Checkbox({
   const renderRoot = React.useCallback(
     // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Root attrs for the consumer element
     (rootProps: Record<string, any>, state: CheckboxPrimitive.Root.State) => {
-      const dataState = state.indeterminate ? 'indeterminate' : state.checked ? 'checked' : 'unchecked';
+      const dataState = dataStateFor(state.checked, state.indeterminate);
       const showCheckmark = state.checked && !state.indeterminate;
 
       return (
@@ -147,6 +155,12 @@ function Checkbox({
 
 // Presentational, stateless sibling of `Checkbox` (no Base UI primitive). For row-selection surfaces where
 // many controlled `Checkbox` instances under a re-rendering parent would hit React's max-update-depth limit.
+//
+// It keeps `role="checkbox"` without being operable, which the two rules below object to — right in
+// general, wrong here: the enclosing row is the control, so a `tabIndex` adds a tab stop that does
+// nothing, and an `<input>` cannot hold the SVG this draws. The role is also API, queried by
+// consumers as `[role="checkbox"]`, so it cannot become `presentation` uncoordinated. Pass
+// `aria-label` to say which row it belongs to.
 export interface CheckboxViewProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'>,
     VariantProps<typeof checkboxVariants> {
@@ -156,10 +170,12 @@ export interface CheckboxViewProps
 
 function CheckboxView({ checked, className, variant, ref, ...divProps }: CheckboxViewProps) {
   const isIndeterminate = checked === 'indeterminate';
-  const dataState = isIndeterminate ? 'indeterminate' : checked ? 'checked' : 'unchecked';
+  const dataState = dataStateFor(checked === true, isIndeterminate);
   const showCheckmark = checked === true;
 
   return (
+    // biome-ignore lint/a11y/useFocusableInteractive: the enclosing row takes focus; see above
+    // biome-ignore lint/a11y/useSemanticElements: an <input> cannot hold the drawn SVG; see above
     <div
       aria-checked={isIndeterminate ? 'mixed' : checked}
       className={cn(checkboxVariants({ variant, className }), 'cursor-default')}

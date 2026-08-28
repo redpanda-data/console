@@ -476,26 +476,7 @@ export const prettyBytesOrNA = (n: number) => {
   return prettyBytes(n);
 };
 
-/**
- * Determines if two sets are equal.
- *
- * This function checks if two sets (xs and ys) have the same size and
- * the same elements. It assumes that the sets contain elements of type T.
- * Equality is determined by checking if every element in set xs is also
- * present in set ys.
- *
- * @template T - The type of elements in the sets.
- * @param {Set<T>} xs - The first set to be compared.
- * @param {Set<T>} ys - The second set to be compared.
- * @returns {boolean} - Returns `true` if the sets are equal, otherwise returns `false`.
- * @example
- * // returns true
- * eqSet(new Set([1, 2, 3]), new Set([3, 2, 1]));
- *
- * @example
- * // returns false
- * eqSet(new Set([1, 2, 3]), new Set([4, 5, 6]));
- */
+/** Same size, same members. */
 export const eqSet = <T = string>(xs: Set<T>, ys: Set<T>): boolean =>
   xs.size === ys.size && [...xs].every((x) => ys.has(x));
 
@@ -722,17 +703,7 @@ export function encodeBase64(rawData: string) {
   return Base64.encode(rawData);
 }
 
-/**
- * Validates whether a given string is a valid Base64 encoded string.
- *
- * This function tries to decode the string using the Base64.decode method from the js-base64 library.
- * If the decoding is successful without throwing an exception, the string is considered a valid Base64 string.
- * If an exception occurs during decoding, it is caught, and the function returns false, indicating that
- * the string is not a valid Base64 encoded string.
- *
- * @param {string} str - The string to be validated as a Base64 encoded string.
- * @returns {boolean} - Returns true if the string is a valid Base64 encoded string; false otherwise.
- */
+/** True when `Base64.decode` accepts the string. */
 export function isValidBase64(str: string): boolean {
   try {
     Base64.decode(str);
@@ -872,39 +843,8 @@ export function decodeURIComponentPercents(encodedStr: string): string {
 }
 
 /**
- * Extracts the OIDC subject from an error message when retrieving permissions.
- *
- * This function parses the error object to find the `subject` associated with the `OIDC` login type.
- * It iterates through the error details and looks for the `login_type` set to `"OIDC"`,
- * returning the corresponding `subject` if present.
- *
- * @param error - The error object containing details about the permission error.
- * @returns The OIDC subject as a string if found, otherwise `null`.
- *
- * @example
- * ```typescript
- * const error: Error = {
- *   code: "permission_denied",
- *   message: "you are not authorized to call this endpoint",
- *   details: [
- *     {
- *       type: "google.rpc.ErrorInfo",
- *       value: "some_encoded_value",
- *       debug: {
- *         reason: "REASON_PERMISSION_DENIED",
- *         domain: "redpanda.com/dataplane",
- *         metadata: {
- *           login_type: "OIDC",
- *           subject: "1231231232131",
- *         },
- *       },
- *     },
- *   ],
- * };
- *
- * const subject = getOidcSubject(error);
- * console.log(subject); // Output: "1231231232131"
- * ```
+ * Pulls the `subject` out of a permission error's details, from the entry whose
+ * `login_type` is `OIDC`. Null when there is no such entry.
  */
 export function getOidcSubject(error: {
   details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];

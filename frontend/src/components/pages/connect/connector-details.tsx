@@ -10,6 +10,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+import type { LegacyColumnDef } from 'utils/legacy-data-table';
 
 import { ConfigPage } from './dynamic-ui/components';
 import { appGlobal } from '../../../state/app-global';
@@ -50,7 +51,7 @@ import {
   Tooltip,
   useDisclosure,
 } from '@redpanda-data/ui';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 
 import { getConnectorFriendlyName } from './connector-box-card';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
@@ -729,7 +730,7 @@ const LogsTab = (p: {
   };
 
   const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: ColumnDef<TopicMessage>[] = [
+  const messageTableColumns: LegacyColumnDef<TopicMessage>[] = [
     {
       header: 'Timestamp',
       accessorKey: 'timestamp',

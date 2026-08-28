@@ -12,11 +12,12 @@
 import { ConnectError } from '@connectrpc/connect';
 import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
+import type { LegacyColumnDef } from 'utils/legacy-data-table';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -332,7 +333,7 @@ export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; va
 
   const paginationParams = usePaginationParams(messages.length, 10);
   const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
-  const messageTableColumns: ColumnDef<TopicMessage>[] = useMemo(
+  const messageTableColumns: LegacyColumnDef<TopicMessage>[] = useMemo(
     () => [
       {
         header: 'Timestamp',

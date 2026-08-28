@@ -10,21 +10,6 @@
  * by the Apache License, Version 2.0
  */
 
-/*
-    In index.tsx we use ConfigProvider to define theme color(s),
-    from which a whole pallete of css-variables become defined.
-
-        --ant-primary-color
-        --ant-primary-color-disabled
-        --ant-primary-color-hover
-        ... (20 more)
-
-    Full list of variables:
-        node_modules/antd/dist/antd.variable.css
-
-    In our own components we want to use the same colors that ant-design uses.
-    So we define our own css variables and copy the antd values.
-*/
 $color-brand-secondary: rgb(226, 64, 27);
 
 $color-reload-spinner: #e2401b;

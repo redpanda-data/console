@@ -34,7 +34,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
   return (
     <DialogPrimitive.Backdrop
       className={cn(
-        'fixed inset-0 z-50 bg-black/40 backdrop-blur-xs transition-opacity duration-200 ease-out',
+        'fixed inset-0 z-50 bg-modal-overlay backdrop-blur-xs transition-opacity duration-200 ease-out motion-reduce:transition-none',
         'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
         className
       )}
@@ -61,7 +61,7 @@ const dialogContentVariants = cva(
       variant: {
         standard: '',
         centered: 'text-center',
-        destructive: 'border-destructive/50',
+        destructive: 'border-destructive-line',
       },
       height: {
         auto: 'max-h-[85vh]',
@@ -123,7 +123,7 @@ function DialogContent({
             render={
               <Button
                 aria-label="Close"
-                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                className="absolute top-2 right-2 text-subtle hover:text-foreground"
                 size="icon-sm"
                 variant="ghost"
               >
@@ -229,7 +229,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
 function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
   return (
     <DialogPrimitive.Description
-      className={cn('text-body text-muted-foreground', className)}
+      className={cn('text-body text-subtle', className)}
       data-slot="dialog-description"
       // Render as <div> (not Base UI's default <p>) so block-level children don't trigger validateDOMNesting.
       render={<div />}
@@ -262,7 +262,7 @@ const dialogBodyContentVariants = cva('', {
   },
 });
 
-const dialogScrollShadow = 'pointer-events-none sticky z-10 h-0 transition-opacity duration-150';
+const dialogScrollShadow = 'pointer-events-none sticky z-10 h-0 transition-opacity motion-reduce:transition-none';
 const dialogScrollShadowState = (visible: boolean) => (visible ? 'opacity-100' : 'opacity-0');
 
 interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyContentVariants> {

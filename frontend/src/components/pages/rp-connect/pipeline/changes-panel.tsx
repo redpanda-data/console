@@ -42,7 +42,7 @@ const KIND_LABEL: Record<ChangeKind, string> = {
 const KIND_TONE: Record<ChangeKind, BadgeTone> = {
   added: 'success',
   removed: 'destructive',
-  changed: 'info',
+  changed: 'informative',
 };
 
 const DIFF_OPTIONS = {
@@ -177,7 +177,7 @@ export function ChangesPanel({
         <Alert
           icon={tone === 'warning' ? <TriangleAlert /> : <Info />}
           testId="changes-impact"
-          variant={tone === 'warning' ? 'warning' : 'info'}
+          variant={tone === 'warning' ? 'warning' : 'informative'}
         >
           <AlertDescription>{changesImpactMessage(pipelineState)}</AlertDescription>
         </Alert>
@@ -188,7 +188,7 @@ export function ChangesPanel({
         {itemCount > 0 ? (
           <div className="flex w-70 shrink-0 items-center gap-2 self-stretch border-border! border-r px-3 py-2">
             <h5 className="text-heading-xs text-muted-foreground">What changed</h5>
-            <CountDot count={itemCount} size="sm" variant="info" />
+            <CountDot count={itemCount} size="sm" variant="informative" />
           </div>
         ) : null}
         {/* Keyed on the gutter markers, not on colour or on which side is which — the diff drops to a

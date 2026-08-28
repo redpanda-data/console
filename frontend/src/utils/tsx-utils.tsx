@@ -32,7 +32,6 @@ import React, { Component, type CSSProperties, type JSX, type ReactNode, useEffe
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
 import { prettyMilliseconds, simpleUniqueId } from './utils';
-import colors from '../colors';
 import type { TimestampDisplayFormat } from '../state/ui';
 
 const defaultLocale = 'en';
@@ -298,7 +297,7 @@ export const InfoText = (p: {
   const size = p.iconSize ?? '14px';
   const gap = p.gap ?? '4px';
 
-  const gray = 'hsl(0deg, 0%, 50%)';
+  const gray = 'var(--color-subtle)';
   // const blue = 'hsl(209deg, 100%, 55%)';
   const color = p.iconColor ?? gray;
   const placement = p.placement ?? 'top';
@@ -510,10 +509,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
         {Boolean(this.props.bytesConsumed && this.props.messagesConsumed) && (
           <Flex fontSize="sm" fontWeight="bold" justifyContent="space-between">
             <Flex alignItems="center" gap={2}>
-              <DownloadIcon color={colors.brandOrange} size={14} /> {this.props.bytesConsumed}
+              <DownloadIcon className="text-brand" size={14} /> {this.props.bytesConsumed}
             </Flex>
             <Flex alignItems="center" gap={2}>
-              <CopyIcon color={colors.brandOrange} size={14} /> {this.props.messagesConsumed} messages
+              <CopyIcon className="text-brand" size={14} /> {this.props.messagesConsumed} messages
             </Flex>
           </Flex>
         )}
@@ -586,16 +585,7 @@ export const InlineSkeleton = (p: { width: string | number }) => (
   <Skeleton alignItems="center" display="flex" height={2} noOfLines={1} width={p.width} />
 );
 
-// Single line string, no wrapping, will not overflow and display ellipsis instead
-// const ellipsisDivStyle: CSSProperties = {
-//     display: 'inline-block',
-//     width: 0,
-//     minWidth: '100%',
-//     overflow: 'hidden',
-//     textOverflow: 'ellipsis',
-//     whiteSpace: 'nowrap',
-//     verticalAlign: 'text-bottom',
-// };
+// Single line, no wrapping; overflow shows an ellipsis.
 const ellipsisSpanStyle: CSSProperties = {
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',

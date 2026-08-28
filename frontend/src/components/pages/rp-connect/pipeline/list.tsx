@@ -12,27 +12,20 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
-import type { ColumnDef, FilterFn, SortingState } from '@tanstack/react-table';
-import {
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { FilterFn, SortingState } from '@tanstack/react-table';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { getUserTagEntries } from 'components/constants';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
+  type DataTableColumnDef,
   DataTableColumnHeader,
   DataTableFacetedFilter,
+  type DataTableFeatures,
   DataTablePagination,
   isRowActivationClick,
+  useDataTable,
 } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
@@ -160,7 +153,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       )}
     >
       {connectors.map((c) => (
-        <Badge key={c.name} variant="neutral-inverted">
+        <Badge key={c.name} tone="default" variant="subtle">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
           {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
@@ -174,7 +167,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
 };
 
 // autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
-const stateInFilterFn: FilterFn<Pipeline> = (row, columnId, filterValue: string[]) =>
+const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
@@ -385,7 +378,7 @@ const ActionsCell = memo(
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button className="size-8" size="icon" variant="secondary-ghost">
+              <Button className="size-8" size="icon" variant="ghost">
                 <MoreHorizontal />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -482,7 +475,7 @@ const createColumns = ({
   startMutation,
   stopMutation,
   isDeletingPipeline,
-}: CreateColumnsOptions): ColumnDef<Pipeline>[] => [
+}: CreateColumnsOptions): DataTableColumnDef<Pipeline>[] => [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
@@ -496,7 +489,7 @@ const createColumns = ({
             {/* Rows navigate on click, so the link underlines on hover only. */}
             <Link
               as={TanStackRouterLink}
-              className="block truncate text-base text-primary no-underline hover:underline"
+              className="block truncate text-body-lg text-primary no-underline hover:underline"
               title={name}
               {...pipelinePageLinkProps(row.original)}
             >
@@ -505,7 +498,7 @@ const createColumns = ({
           </span>
           {isDraftRow ? (
             // Age and author instead of the id: that is what decides whether to pick it up or bin it.
-            <span className="truncate text-muted-foreground text-xs">
+            <span className="truncate text-body-sm text-muted-foreground">
               {[editedAt ? `Edited ${relativeAgeLabel(editedAt)}` : null, createdBy ? `by ${createdBy}` : null]
                 .filter(Boolean)
                 .join(' · ')}
@@ -513,7 +506,7 @@ const createColumns = ({
           ) : null}
           {!isDraftRow && id !== name ? (
             // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
-            <span className="cursor-text select-all truncate font-mono text-muted-foreground text-xs" title={id}>
+            <span className="cursor-text select-all truncate font-mono text-body-sm text-muted-foreground" title={id}>
               {id}
             </span>
           ) : null}
@@ -560,10 +553,11 @@ const createColumns = ({
               ))}
             </List>
           )}
-          variant="simple-outline"
+          tone="default"
+          variant="outline"
         >
           {tags.map((t) => (
-            <Badge key={t.key} variant="simple-outline">
+            <Badge key={t.key} tone="default" variant="outline">
               {t.key}: {t.value}
             </Badge>
           ))}
@@ -578,7 +572,7 @@ const createColumns = ({
     filterFn: stateInFilterFn,
     // Enum values the generated Pipeline_State doesn't know yet sort last, not NaN. Ties among drafts
     // break on recency: the one edited last is the one being worked on.
-    sortingFn: (rowA, rowB) => {
+    sortFn: (rowA, rowB) => {
       const byState = sortPriority(rowA.original) - sortPriority(rowB.original);
       if (byState !== 0 || !(rowA.original.isDraft && rowB.original.isDraft)) {
         return byState;
@@ -668,7 +662,7 @@ const PipelineListPageContent = () => {
     [pipelines]
   );
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: pipelines,
     columns,
     // Id rather than row index: a row keeps its identity while pages stream in and the sort re-runs,
@@ -678,12 +672,6 @@ const PipelineListPageContent = () => {
     enableHiding: false,
     // Also drops the pagination footer's "X of N row(s) selected." text.
     enableRowSelection: false,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
     // autoResetPageIndex would yank the user to page 1 on every drained page; the layout effects below
     // reset on filter/sort changes instead.
@@ -693,6 +681,7 @@ const PipelineListPageContent = () => {
     },
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: PAGE_SIZE,
       },
     },
@@ -700,16 +689,16 @@ const PipelineListPageContent = () => {
 
   const pageCount = table.getPageCount();
   useLayoutEffect(() => {
-    const pageIndex = table.getState().pagination.pageIndex;
+    const pageIndex = table.state.pagination.pageIndex;
     if (pageIndex > 0 && pageIndex >= pageCount) {
       table.setPageIndex(Math.max(pageCount - 1, 0));
     }
   }, [pageCount, table]);
 
-  const { columnFilters } = table.getState();
+  const { columnFilters } = table.state;
   // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are the change-triggers — editing either jumps back to page 1.
   useLayoutEffect(() => {
-    if (table.getState().pagination.pageIndex !== 0) {
+    if (table.state.pagination.pageIndex !== 0) {
       table.setPageIndex(0);
     }
   }, [table, columnFilters, sorting]);
@@ -808,7 +797,7 @@ const PipelineListPageContent = () => {
 
   if (error && pipelines.length === 0) {
     return (
-      <div className="flex items-center justify-center gap-2 py-8 text-error">
+      <div className="flex items-center justify-center gap-2 py-8 text-destructive">
         <AlertCircle className="h-4 w-4" />
         Error loading pipelines: {error.message}
       </div>
@@ -839,7 +828,7 @@ const PipelineListPageContent = () => {
                 variant="underline"
               >
                 {tab.label}
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-muted-foreground text-xs tabular-nums">
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-body-sm text-muted-foreground tabular-nums">
                   {tabCounts[tab.id]}
                 </span>
               </TabsTrigger>
@@ -876,7 +865,7 @@ const PipelineListPageContent = () => {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
                 ))}
               </TableRow>
@@ -906,7 +895,7 @@ const PipelineListPageContent = () => {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell className="py-3" key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {<table.FlexRender cell={cell} />}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -916,13 +905,13 @@ const PipelineListPageContent = () => {
         </Table>
       </div>
       <FadePresence
-        className="flex items-center gap-2 text-muted-foreground text-sm"
+        className="flex items-center gap-2 text-body text-muted-foreground"
         show={isLoadingMorePages && rows.length > 0}
       >
         <Spinner /> Loading more pipelines...
       </FadePresence>
       <FadePresence
-        className="flex items-center gap-2 text-error text-sm"
+        className="flex items-center gap-2 text-body text-destructive"
         show={Boolean(listErrorMessage) && pipelines.length > 0}
       >
         <AlertCircle className="h-4 w-4" />
@@ -958,7 +947,7 @@ export const PipelineListPage = () => {
     return (
       <div className="flex flex-col gap-4">
         {showKafkaConnectLoadingHint ? (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2 text-body text-muted-foreground">
             <Spinner />
             <div className="text-body text-muted-foreground">Checking for Kafka Connect availability...</div>
           </div>
