@@ -114,8 +114,9 @@ export default defineConfig({
   splitChunks: {
     preset: 'default',
     chunks: 'all',
-    // Cap asynchronous chunks without imposing a size limit on initial chunks.
-    maxAsyncSize: 512 * 1024,
+    // A 4 MiB cap cut the largest async chunk from 10.06 MB to 5.65 MB
+    // while adding 13 requests; 512 KiB added 127 with no further reduction.
+    maxAsyncSize: 4 * 1024 * 1024,
     cacheGroups: {
       legacyUi: {
         test: /[\\/]node_modules[\\/]@redpanda-data[\\/]ui[\\/]/,

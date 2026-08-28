@@ -15,10 +15,13 @@ export default defineConfig(({ mode }) => {
     experimental: { fsModuleCache: true },
     test: {
       fileParallelism: true,
+      isolate: false,
+      pool: 'threads',
       testTimeout: 30_000,
       globals: true,
       environment: 'node', // Unit tests use node environment
       include: ['src/**/*.test.ts', 'tests/**/*.test.ts'], // Pure unit tests, including test-harness contracts
+      exclude: ['tests/**/*.integration.test.ts'],
       setupFiles: './vitest.setup.unit.ts',
       reporters: ['default', ...(process.env.CI ? ['github-actions' as const] : [])],
       coverage: {
