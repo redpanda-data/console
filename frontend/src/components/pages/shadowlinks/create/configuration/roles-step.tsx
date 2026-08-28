@@ -92,12 +92,12 @@ export const RolesStep = () => {
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <Card className="gap-0" size="full">
         <CardHeader>
-          <CardTitle>Shadow roles</CardTitle>
+          <CardTitle>Roles</CardTitle>
           <CardAction>
             <CollapsibleTrigger
               render={
                 <Button
-                  aria-label="Toggle shadow roles section"
+                  aria-label="Toggle roles section"
                   className="w-fit p-0"
                   data-testid="roles-toggle-button"
                   size="sm"

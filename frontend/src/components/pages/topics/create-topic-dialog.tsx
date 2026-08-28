@@ -569,11 +569,13 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
   useEffect(() => {
     api.refreshCluster();
+    api.refreshClusterOverview();
   }, []);
 
   useEffect(() => {
     if (isOpen) {
       api.refreshCluster();
+      api.refreshClusterOverview();
       form.reset();
       setResult(null);
     }

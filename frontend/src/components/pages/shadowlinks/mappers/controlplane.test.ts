@@ -12,7 +12,11 @@
 import { ShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { UnsupportedSchemaFeaturePolicy } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import {
+  FilterType,
+  PatternType,
+  UnsupportedSchemaFeaturePolicy,
+} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { describe, expect, test } from 'vitest';
 
 import { buildDefaultFormValuesFromControlplane, fromControlplaneShadowLink } from './controlplane';
@@ -22,14 +26,19 @@ import type { UnifiedSchemaRegistryApiOptions } from '../model';
 type SchemaRegistrySyncOptionsInit = NonNullable<
   MessageInitShape<typeof ShadowLinkSchema>['schemaRegistrySyncOptions']
 >;
+type RoleSyncOptionsInit = NonNullable<MessageInitShape<typeof ShadowLinkSchema>['roleSyncOptions']>;
 
-const buildShadowLink = (schemaRegistrySyncOptions?: SchemaRegistrySyncOptionsInit) =>
+const buildShadowLink = (
+  schemaRegistrySyncOptions?: SchemaRegistrySyncOptionsInit,
+  roleSyncOptions?: RoleSyncOptionsInit
+) =>
   create(ShadowLinkSchema, {
     id: 'cp-id-1',
     name: 'test-link',
     // clientOptions must be present for configurations to be mapped
     clientOptions: { bootstrapServers: ['localhost:9092'] },
     schemaRegistrySyncOptions,
+    roleSyncOptions,
   });
 
 const mapApiOptions = (
@@ -141,6 +150,64 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
     });
 
     expect(api.destinationMapping).toEqual({ case: 'identity' });
+  });
+});
+
+describe('fromControlplaneShadowLink role sync options', () => {
+  test('should map role name filters through to the unified model', () => {
+    const shadowLink = buildShadowLink(undefined, {
+      roleNameFilters: [{ name: 'admin-*', patternType: PatternType.PREFIXED, filterType: FilterType.INCLUDE }],
+    });
+
+    const result = fromControlplaneShadowLink(shadowLink);
+
+    expect(result.configurations?.roleSyncOptions?.roleNameFilters).toEqual([
+      { name: 'admin-*', patternType: PatternType.PREFIXED, filterType: FilterType.INCLUDE },
+    ]);
+  });
+
+  test('should leave roleSyncOptions undefined when absent', () => {
+    const result = fromControlplaneShadowLink(buildShadowLink());
+
+    expect(result.configurations?.roleSyncOptions).toBeUndefined();
+  });
+});
+
+describe('buildDefaultFormValuesFromControlplane role hydration', () => {
+  test.each([
+    {
+      description: 'unset role sync options',
+      roleSyncOptions: undefined,
+      expected: { rolesMode: 'specify', roles: [] },
+    },
+    {
+      description: 'empty role name filters',
+      roleSyncOptions: { roleNameFilters: [] },
+      expected: { rolesMode: 'specify', roles: [] },
+    },
+    {
+      description: 'the include-all filter',
+      roleSyncOptions: {
+        roleNameFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+      },
+      expected: { rolesMode: 'all', roles: [] },
+    },
+    {
+      description: 'specific role filters',
+      roleSyncOptions: {
+        roleNameFilters: [{ name: 'ops', patternType: PatternType.LITERAL, filterType: FilterType.EXCLUDE }],
+      },
+      expected: {
+        rolesMode: 'specify',
+        roles: [{ name: 'ops', patternType: PatternType.LITERAL, filterType: FilterType.EXCLUDE }],
+      },
+    },
+  ])('hydrates $description', ({ roleSyncOptions, expected }) => {
+    const formValues = buildDefaultFormValuesFromControlplane(buildShadowLink(undefined, roleSyncOptions));
+
+    expect(formValues.rolesMode).toBe(expected.rolesMode);
+    expect(formValues.roles).toEqual(expected.roles);
+    expect(FormSchema.safeParse(formValues).success).toBe(true);
   });
 });
 
