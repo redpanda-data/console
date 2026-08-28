@@ -32,10 +32,13 @@ function findVitestUsages(files: URL[]): string[] {
 }
 
 describe('test runner policy', () => {
-  test('runs unit and integration tests with Rstest', () => {
+  test('runs unit, integration, and federation tests with Rstest', () => {
     expect(packageJson.scripts?.['test:unit']).toContain('rstest');
     expect(packageJson.scripts?.['test:integration']).toContain('rstest');
+    expect(packageJson.scripts?.['test:federation']).toContain('rstest');
+    expect(packageJson.scripts?.['test:ci']).toContain('test:federation');
     expect(packageJson.scripts?.['test:coverage']).toContain('rstest');
+    expect(packageJson.devDependencies?.['@module-federation/rstest']).toBe('2.9.0');
     expect(import.meta.env.RSTEST).toBe('true');
   });
 

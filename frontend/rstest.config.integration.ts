@@ -24,6 +24,7 @@ export default defineProject({
     maxWorkers: '50%',
   },
   include: ['src/**/*.test.tsx', 'tests/**/*.integration.test.ts'],
+  exclude: ['src/**/*.federation.test.tsx'],
   setupFiles: './rstest.setup.ts',
   testTimeout: 30_000,
   reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],
