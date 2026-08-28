@@ -435,7 +435,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           'flex min-h-0 flex-1 overflow-hidden bg-background transition-[margin,border-radius,border-color,box-shadow] duration-300 ease-in-out',
           // Boxed: rounded card below the studio header. Full: flush sides; top/bottom
           // borders stay so clipped scrollable content keeps a visible edge.
-          expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border pt-3 shadow-sm'
+          expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border shadow-sm'
         )}
       >
         <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">
