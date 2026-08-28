@@ -21,13 +21,20 @@ const MACRO_LABEL = String.raw`((?:\\.|[^\]\\])*)`;
 const XREF_MACRO = new RegExp(String.raw`(?:xref|link):[^\s[\]]*\[${MACRO_LABEL}\]`, 'g');
 const URL_MACRO = new RegExp(String.raw`(https?://[^\s[\]]+)\[${MACRO_LABEL}\]`, 'g');
 
-// Every empty-label xref in the schema reads "More information can be found in xref:…[].", so a
-// generic noun keeps the sentence intact where dropping the macro would leave a dangling "in .".
+// Keeps "More information can be found in xref:…[]." from rendering as "…found in .".
 const EMPTY_XREF_LABEL = 'the documentation';
 
 const NEW_WINDOW_FLAG = /\^$/;
-const TABLE_CELL_LINE = /^\|\s*(.*)$/;
-const TABLE_CELL_SEPARATOR = /\s+\|\s+/;
+const ATTRIBUTE_LINE = /^:[a-zA-Z][\w-]*:.*$/gm;
+const TABLE_DELIMITER = /^\s*\|===\s*$/;
+const LEADING_CELL_MARKER = /^\|\s*/;
+const TABLE_CELL_SEPARATOR = /\s*\|\s*/;
+// Admonition markers keep their label; every other block attribute (`[source,yaml]`) is docs noise.
+const ADMONITION_LINE = /^\[(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]$/gm;
+const BLOCK_ATTRIBUTE_LINE = /^\[[^\]]*\]$/gm;
+// Block delimiters (`====` example, `----` listing). `-{4,}` leaves a Markdown `---` alone.
+const BLOCK_DELIMITER = /^(?:={2,}|-{4,}|\*{4,}|_{4,}|\+{4,})$/gm;
+const BLOCK_TITLE_LINE = /^\.([A-Z][^\n]*)$/gm;
 
 // `\]` escapes the bracket; a trailing `^` is AsciiDoc's "open in a new window" flag, not text.
 function macroLabel(label: string): string {
@@ -35,26 +42,29 @@ function macroLabel(label: string): string {
 }
 
 /**
- * Flattens `|===` tables to bullets. The schema's tables are one `| cell` per line with blank lines
- * between rows, so the row grouping survives; a real Markdown table isn't worth the conversion for
- * the handful of fields (sql_* DSN formats) that use one.
+ * Flattens `|===` tables to one bullet per source line, cells joined with an em dash. A Markdown
+ * table isn't worth the conversion for the handful of fields (sql DSN formats, Debezium type maps)
+ * that use one. Rows are only recognized between delimiters, so a `|` in prose is left alone.
  */
 function flattenTables(text: string): string {
   if (!text.includes('|===')) {
     return text;
   }
-  return text
-    .split('\n')
-    .filter((line) => line.trim() !== '|===')
-    .map((line) => {
-      const cells = TABLE_CELL_LINE.exec(line.trimEnd());
-      if (!cells) {
-        return line;
-      }
-      const joined = cells[1].split(TABLE_CELL_SEPARATOR).join(' — ').trim();
-      return joined ? `- ${joined}` : '';
-    })
-    .join('\n');
+  let inTable = false;
+  const lines: string[] = [];
+  for (const line of text.split('\n')) {
+    if (TABLE_DELIMITER.test(line)) {
+      inTable = !inTable;
+      continue;
+    }
+    if (!inTable) {
+      lines.push(line);
+      continue;
+    }
+    const row = line.trim().replace(LEADING_CELL_MARKER, '');
+    lines.push(row ? `- ${row.split(TABLE_CELL_SEPARATOR).join(' — ')}` : '');
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -73,7 +83,7 @@ function escapePlaceholders(text: string): string {
 export function cleanText(text: string): string {
   return text
     .replace(XREF_MACRO, (_match, label: string) => macroLabel(label) || EMPTY_XREF_LABEL)
-    .replace(URL_MACRO, (_match, _url: string, label: string) => macroLabel(label))
+    .replace(URL_MACRO, (_match, url: string, label: string) => macroLabel(label) || url)
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
@@ -87,7 +97,13 @@ export function asciidocToMarkdown(raw: string): string {
   return escapePlaceholders(
     flattenTables(raw.replace(/\r\n/g, '\n'))
       // Attribute definitions configure the docs build; they render as noise.
-      .replace(/^:[a-zA-Z][\w-]*:.*$/gm, '')
+      .replace(ATTRIBUTE_LINE, '')
+      .replace(ADMONITION_LINE, '**$1**')
+      .replace(BLOCK_ATTRIBUTE_LINE, '')
+      // Left in place, a delimiter turns the prose around it into a setext heading.
+      .replace(BLOCK_DELIMITER, '')
+      // Block titles (`.Endpoint caveats`) → small heading.
+      .replace(BLOCK_TITLE_LINE, '#### $1')
       // Link macros → label text.
       .replace(XREF_MACRO, (_match, label: string) => macroLabel(label) || EMPTY_XREF_LABEL)
       // Bare URL macro → Markdown link.
@@ -106,9 +122,9 @@ export function asciidocToMarkdown(raw: string): string {
   );
 }
 
-/** Single-line plain text for collapsed previews: the converted Markdown with its syntax removed. */
-export function asciidocToPlainText(raw: string): string {
-  return asciidocToMarkdown(raw)
+/** Strips Markdown syntax to a single line, for collapsed previews. */
+export function markdownToPlainText(markdown: string): string {
+  return markdown
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/^#+\s*/gm, '')
     .replace(/^[-*]\s+/gm, '')

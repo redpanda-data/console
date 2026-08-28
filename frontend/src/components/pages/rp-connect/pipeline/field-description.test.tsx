@@ -64,7 +64,7 @@ describe('FieldDescription', () => {
   test('renders nothing when the field carries no prose', () => {
     const { container } = render(<FieldDescription spec={field({})} />);
 
-    // The render wrapper contributes a hidden Chakra env node, so assert on visible text.
+    // The render wrapper adds a hidden Chakra node, so assert on text rather than an empty DOM.
     expect(container.textContent).toBe('');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
@@ -75,8 +75,7 @@ describe('FieldDescription', () => {
 
     const toggle = screen.getByRole('button', { name: SHOW_MORE_RE });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    // Collapsed is the flattened single-line rendering, so the trailing paragraph is clipped by CSS
-    // but the code span markup is already gone.
+    // Collapsed is the flattened single-line rendering: no code spans, trailing paragraph clipped by CSS.
     expect(screen.queryByText('consumer_group', { selector: 'code' })).not.toBeInTheDocument();
 
     await user.click(toggle);

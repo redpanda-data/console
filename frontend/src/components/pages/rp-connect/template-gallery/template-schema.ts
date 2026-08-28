@@ -11,6 +11,7 @@
 
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
 import type { ConnectComponentSpec } from '../types/schema';
+import { cleanText } from '../utils/asciidoc';
 import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
 
 // Slot-level values win; schema only fills unset `description` / `required` /
@@ -47,7 +48,8 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
 
     const merged: TemplateSlot = {
       ...slot,
-      description: slot.description ?? (field.shortDescription || field.description || undefined),
+      // Slot descriptions render as plain text, so the AsciiDoc fallback has to be flattened.
+      description: slot.description ?? (field.shortDescription || cleanText(field.description ?? '') || undefined),
       required: slot.required ?? checkRequired(field),
     };
 

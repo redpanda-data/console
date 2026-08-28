@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { asciidocToMarkdown, asciidocToPlainText, cleanText } from './asciidoc';
+import { asciidocToMarkdown, cleanText, markdownToPlainText } from './asciidoc';
 
 describe('asciidocToMarkdown', () => {
   it('turns AsciiDoc section titles into Markdown headings instead of leaking "=="', () => {
@@ -36,8 +36,7 @@ describe('asciidocToMarkdown', () => {
     expect(asciidocToMarkdown('* first\n* second')).toBe('- first\n- second');
   });
 
-  // Every AWS `credentials` field ends "…can be found in xref:guides:cloud/aws.adoc[]."; dropping
-  // the macro outright left the sentence as "…can be found in .".
+  // Every AWS `credentials` field ends "…can be found in xref:guides:cloud/aws.adoc[].".
   it('names a target for an empty-label xref rather than leaving dangling punctuation', () => {
     expect(asciidocToMarkdown('More information can be found in xref:guides:cloud/aws.adoc[].')).toBe(
       'More information can be found in the documentation.'
@@ -86,20 +85,47 @@ describe('asciidocToMarkdown', () => {
     );
   });
 
+  // The Debezium type table writes rows as `|Type Name |Bloblang Type`, with no space after the
+  // cell marker.
+  it('splits table cells that are not padded around the marker', () => {
+    const source = ['.Debezium Custom Temporal Types', '|===', '|Type Name |Bloblang Type', '|==='].join('\n');
+    expect(asciidocToMarkdown(source)).toBe(
+      ['#### Debezium Custom Temporal Types', '- Type Name — Bloblang Type'].join('\n')
+    );
+  });
+
+  it('leaves a pipe in prose alone even when the description also has a table', () => {
+    const source = ['Splits on | characters.', '', '|===', '|a |b', '|==='].join('\n');
+    expect(asciidocToMarkdown(source)).toBe(['Splits on | characters.', '', '- a — b'].join('\n'));
+  });
+
+  it('drops block delimiters that would promote the prose around them to a heading', () => {
+    const source = [
+      '[CAUTION]',
+      '.Endpoint caveats',
+      '====',
+      'Endpoints register in a non-deterministic order.',
+      '====',
+    ].join('\n');
+    expect(asciidocToMarkdown(source)).toBe(
+      ['**CAUTION**', '#### Endpoint caveats', '', 'Endpoints register in a non-deterministic order.'].join('\n')
+    );
+  });
+
   it('trims the leading newline that many field descriptions start with', () => {
     expect(asciidocToMarkdown('\nA list of topics to consume from.')).toBe('A list of topics to consume from.');
   });
 });
 
-describe('asciidocToPlainText', () => {
+describe('markdownToPlainText', () => {
   it('reduces converted Markdown to a single line without syntax', () => {
-    expect(asciidocToPlainText('\nUse `consumer_group` to share load.\n\n== Notes\n* first')).toBe(
+    expect(markdownToPlainText(asciidocToMarkdown('\nUse `consumer_group` to share load.\n\n== Notes\n* first'))).toBe(
       'Use consumer_group to share load. Notes first'
     );
   });
 
   it('keeps link labels and unescapes placeholders', () => {
-    expect(asciidocToPlainText('See https://example.com[the docs] for <token> usage.')).toBe(
+    expect(markdownToPlainText(asciidocToMarkdown('See https://example.com[the docs] for <token> usage.'))).toBe(
       'See the docs for <token> usage.'
     );
   });

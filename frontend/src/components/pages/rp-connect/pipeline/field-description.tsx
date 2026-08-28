@@ -14,13 +14,10 @@ import { useId, useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 
 import type { RawFieldSpec } from '../types/schema';
-import { asciidocToMarkdown, asciidocToPlainText } from '../utils/asciidoc';
+import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 
-/**
- * Longer than this (or spanning paragraphs) and the description is collapsed behind "Show more":
- * schema descriptions run to a few thousand characters, which buries the control it belongs to.
- * Short descriptions cap at ~140 and are never clamped.
- */
+// Descriptions longer than this (or spanning paragraphs) collapse behind "Show more"; schema prose
+// runs to a few thousand characters and buries the control it belongs to.
 const CLAMP_OVER_CHARS = 200;
 
 // Field prose sits under its control, so headings collapse to the same compact label as the body.
@@ -42,7 +39,7 @@ const MARKDOWN_COMPONENTS: Components = {
     </Link>
   ),
   code: ({ children }) => (
-    // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap, short tokens stay whole.
+    // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap mid-token.
     <code className="break-words rounded bg-muted px-1 py-0.5 font-mono text-body-sm text-foreground">{children}</code>
   ),
   ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-body-sm text-muted-foreground">{children}</ul>,
@@ -65,7 +62,7 @@ const LongDescription = ({ source }: { source: string }) => {
   const bodyId = useId();
   const { markdown, preview, clampable } = useMemo(() => {
     const converted = asciidocToMarkdown(source);
-    const plain = asciidocToPlainText(source);
+    const plain = markdownToPlainText(converted);
     return {
       markdown: converted,
       preview: plain,
@@ -83,7 +80,7 @@ const LongDescription = ({ source }: { source: string }) => {
         {expanded ? (
           <MarkdownBody markdown={markdown} />
         ) : (
-          // Collapsed shows the plain-text rendering: one text node, so line-clamp applies cleanly.
+          // Plain text collapsed: one text node, so line-clamp applies cleanly.
           <div className="line-clamp-2 text-body-sm text-muted-foreground">{preview}</div>
         )}
       </div>
@@ -102,8 +99,7 @@ const LongDescription = ({ source }: { source: string }) => {
 
 /**
  * Help text under a config control. Prefers the schema's `short_description` — a markup-free
- * one-liner written for inline display — and falls back to the AsciiDoc `description`, which most
- * fields are still limited to.
+ * one-liner — and falls back to the AsciiDoc `description` that most fields are still limited to.
  */
 export const FieldDescription = ({ spec }: { spec: RawFieldSpec }) => {
   const short = spec.shortDescription?.trim();
