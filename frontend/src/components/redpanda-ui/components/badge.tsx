@@ -14,10 +14,6 @@ const badgeVariants = cva(
       variant: {
         // `:is(a, button)` rather than shadcn's `[a&]`, so a Badge rendered as a button reacts too.
         // No `active:`: the click navigates or removes, which is the feedback.
-        //
-        // `<tone>` / `<tone>-inverted` / `<tone>-outline` are what `tone` × `variant` resolves to —
-        // targets, not API; `BadgeVariant` lists the few names worth passing directly. `default` is
-        // the neutral member, named after its slot like Button's and on the same `secondary-*` palette.
         default: 'border-transparent bg-secondary text-secondary-foreground [&:is(a,button)]:hover:bg-secondary-hover',
         'default-inverted':
           'border-transparent bg-secondary-wash text-secondary [&:is(a,button)]:hover:bg-secondary-wash-pressed',
@@ -73,7 +69,6 @@ const badgeVariants = cva(
         outline:
           'border-border text-foreground [&:is(a,button)]:hover:bg-accent [&:is(a,button)]:hover:text-accent-foreground',
 
-        // `ghost`/`link` mirror the button variants.
         ghost: 'border-transparent bg-transparent text-secondary [&:is(a,button)]:hover:bg-secondary-wash',
         link: 'link-standalone border-transparent bg-transparent text-action-primary',
       },

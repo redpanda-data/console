@@ -25,9 +25,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // The neutral member of the filled family, and the variant a bare <Button> gets. Named after
-        // its family like `outline`/`ghost`/`dashed`, not after `--color-secondary` which it paints:
-        // an unstyled control should not have to name a tone.
+        // Named after its family like `outline`/`ghost`/`dashed`, not after the `--color-secondary`
+        // it paints: an unstyled control should not have to name a tone.
         default: [
           'bg-secondary text-secondary-foreground shadow-xs',
           'hover:bg-secondary-hover',
@@ -66,9 +65,9 @@ const buttonVariants = cva(
           'active:bg-inverse-pressed',
           'disabled:bg-surface-disabled disabled:text-disabled',
         ],
-        // Outline, ghost and dashed repeat the filled tones with a border, no border, and a 2px
-        // dashed one. Each state steps the ramp its own rest token sits on, so a line moves one rung
-        // rather than jumping family. Every variant is named after the token it paints.
+        // Outline, ghost and dashed repeat the filled tones with a border, no border, and a dashed
+        // one. Each state steps the ramp its own rest token sits on, so a line moves one rung rather
+        // than jumping family.
         outline: [
           '!border-secondary-line border bg-transparent text-secondary shadow-xs',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',
