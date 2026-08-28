@@ -76,7 +76,7 @@ const ThroughputPlaceholder: FC<{ title: string; description: string; action?: R
   <Empty className="h-40 gap-2 rounded-md border border-dashed p-4 md:p-4">
     <EmptyHeader className="gap-1">
       <EmptyTitle className="text-body">{title}</EmptyTitle>
-      <EmptyDescription className="text-sm">{description}</EmptyDescription>
+      <EmptyDescription className="text-body">{description}</EmptyDescription>
     </EmptyHeader>
     {action ? <EmptyContent>{action}</EmptyContent> : null}
   </Empty>

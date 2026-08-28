@@ -41,7 +41,12 @@ function FieldLegend({
 }: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label' }) {
   return (
     <legend
-      className={cn('mb-3 font-medium', 'data-[variant=legend]:text-base', 'data-[variant=label]:text-sm', className)}
+      className={cn(
+        'mb-3 font-medium',
+        'data-[variant=legend]:text-body-lg',
+        'data-[variant=label]:text-body',
+        className
+      )}
       data-slot="field-legend"
       data-variant={variant}
       {...props}
@@ -131,9 +136,9 @@ function FieldLabel({
       className={cn(
         'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4',
-        'has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 dark:has-data-[state=checked]:bg-primary/10',
+        'has-data-[checked]:border-primary has-data-[checked]:bg-primary-wash',
         // Checkbox re-injects data-state; Base UI radio emits data-checked — match both so radio cards keep the selected highlight.
-        'has-data-[checked]:border-primary has-data-[checked]:bg-primary/5 dark:has-data-[checked]:bg-primary/10',
+        'has-data-[checked]:border-primary has-data-[checked]:bg-primary-wash',
         className
       )}
       data-slot="field-label"
@@ -164,7 +169,7 @@ function FieldDescription({ className, testId, ...props }: React.ComponentProps<
   return (
     <div
       className={cn(
-        'text-body text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance',
+        'text-body text-subtle group-has-[[data-orientation=horizontal]]/field:text-balance',
         'nth-last-2:-mt-1 last:mt-0 [[data-variant=legend]+&]:-mt-1.5',
         '[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
         className
@@ -185,7 +190,7 @@ function FieldSeparator({
 }) {
   return (
     <div
-      className={cn('relative -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2', className)}
+      className={cn('relative -my-2 h-5 text-body group-data-[variant=outline]/field-group:-mb-2', className)}
       data-content={!!children}
       data-slot="field-separator"
       {...props}
@@ -193,7 +198,7 @@ function FieldSeparator({
       <Separator className="absolute inset-0 top-1/2" />
       {children ? (
         <span
-          className="relative mx-auto block w-fit bg-background px-2 text-muted-foreground"
+          className="relative mx-auto block w-fit bg-background px-2 text-subtle"
           data-slot="field-separator-content"
         >
           {children}
@@ -242,7 +247,7 @@ function FieldError({
 
   return (
     <div
-      className={cn('font-normal text-destructive text-sm', className)}
+      className={cn('font-normal text-body text-destructive', className)}
       data-slot="field-error"
       data-testid={testId}
       id={errorId}

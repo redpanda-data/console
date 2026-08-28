@@ -10,8 +10,8 @@
  */
 
 import { Checkbox, DataTable } from '@redpanda-data/ui';
-import type { Row } from '@tanstack/react-table';
 import { Component } from 'react';
+import type { LegacyRow } from 'utils/legacy-data-table';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
@@ -76,7 +76,7 @@ export class StepSelectBrokers extends Component<{
                   />
                 );
               },
-              cell: ({ row: { original: broker } }: { row: Row<Broker> }) => {
+              cell: ({ row: { original: broker } }: { row: LegacyRow<Broker> }) => {
                 const checked = selectedBrokerIds.includes(broker.brokerId);
                 return (
                   <Checkbox

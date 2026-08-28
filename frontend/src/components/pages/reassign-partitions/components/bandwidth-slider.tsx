@@ -116,7 +116,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
       </SliderTrack>
 
       <Tooltip
-        bg="hsl(0 0% 30%)"
+        bg="var(--color-foreground)"
         color="white"
         hasArrow
         isOpen={isDragging}

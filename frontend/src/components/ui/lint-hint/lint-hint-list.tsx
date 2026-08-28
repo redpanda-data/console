@@ -48,7 +48,7 @@ export const LintHintList: React.FC<LintHintListProps> = memo(({ className, lint
             )}
             {/* min-w-0 + wrapping the inner <pre> keep long lint messages from stretching the page. */}
             <SimpleCodeBlock
-              className="my-0 text-xs [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+              className="my-0 text-body-sm [&_pre]:whitespace-pre-wrap [&_pre]:break-words"
               code={hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint}
               width="full"
             />

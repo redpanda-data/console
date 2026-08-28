@@ -115,7 +115,7 @@ const RoleDetailPage = () => {
     if (!data || data.length === 0) {
       return (
         <div className="flex h-96 items-center justify-center">
-          <div className="text-gray-500">No Role data found.</div>
+          <div className="text-subtle">No Role data found.</div>
         </div>
       );
     }
@@ -130,7 +130,7 @@ const RoleDetailPage = () => {
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <div className="text-gray-500">Loading role details...</div>
+        <div className="text-subtle">Loading role details...</div>
       </div>
     );
   }

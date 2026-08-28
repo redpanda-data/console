@@ -66,7 +66,7 @@ const RoleUpdatePage = () => {
     return (
       <div>
         <div className="flex h-96 items-center justify-center">
-          <div className="text-gray-500">Loading role configuration...</div>
+          <div className="text-subtle">Loading role configuration...</div>
         </div>
       </div>
     );
@@ -109,7 +109,7 @@ const RoleUpdatePage = () => {
   return (
     <div>
       {/* allow: react-rules [restoring master component, heading upgrade deferred] */}
-      <h2 className="pt-4 pb-3 font-semibold text-xl">Update role: {roleName}</h2>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Update role: {roleName}</h2>
       <CreateACL
         edit={true}
         onCancel={() =>

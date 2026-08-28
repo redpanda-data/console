@@ -10,15 +10,11 @@
  */
 
 /**
- * React 19 (`@types/react@19`) removed the global `JSX` namespace in favour of
- * the scoped `React.JSX`. Console's own code was migrated to the scoped form,
- * but third-party packages still reference the global namespace — notably the
- * `react-markdown@8` that `@redpanda-data/ui@4.2.0` bundles, whose
- * `complex-types.ts` ships as source (so `skipLibCheck` cannot skip it) and uses
- * `keyof JSX.IntrinsicElements`. This ambient declaration restores the global
- * `JSX` namespace as a thin alias of `React.JSX` so those libraries keep
- * type-checking. Remove it once every consumer of the global namespace is on a
- * React 19-aware release.
+ * `@types/react@19` dropped the global `JSX` namespace for the scoped `React.JSX`. Console's own code
+ * moved over, but third-party packages still reference the global one — notably the react-markdown@8
+ * bundled by @redpanda-data/ui@4.2.0, whose `complex-types.ts` ships as source (so `skipLibCheck`
+ * can't skip it). This aliases the global namespace back to `React.JSX`; drop it once every consumer
+ * is React 19-aware.
  */
 import type { JSX as ReactJSX } from 'react';
 

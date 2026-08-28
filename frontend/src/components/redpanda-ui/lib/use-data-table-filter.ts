@@ -1,6 +1,7 @@
-import type { Table } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 import { useEffect, useMemo } from 'react';
 
+import type { DataTableInstance as Table } from '../components/data-table';
 import type { FilterColumnConfig } from '../components/data-table-filter';
 import { useControllableState } from './use-controllable-state';
 import {
@@ -21,7 +22,7 @@ export type DataTableFilterActions = {
   setFilterOperator: (columnId: string, operator: string) => void;
 };
 
-export type UseDataTableFilterOptions<TData> = {
+export type UseDataTableFilterOptions<TData extends RowData> = {
   columns: FilterColumnConfig[];
   table?: Table<TData>;
   value?: FiltersState;
@@ -60,7 +61,7 @@ function computeSetFilterValues(
   return prev.map((f) => (f.columnId === columnId ? { columnId, type, operator: newOperator, values } : f));
 }
 
-export function useDataTableFilter<TData>({
+export function useDataTableFilter<TData extends RowData>({
   columns,
   table,
   value: valueProp,
@@ -193,9 +194,9 @@ export function useDataTableFilter<TData>({
       const filter = filters.find((f) => f.columnId === col.id);
       const currentValue = tableColumn.getFilterValue() as FilterModel | undefined;
 
-      if (filter) {
+      if (filter && !Object.is(currentValue, filter)) {
         tableColumn.setFilterValue(filter);
-      } else if (currentValue !== null) {
+      } else if (!filter && currentValue !== undefined && currentValue !== null) {
         tableColumn.setFilterValue(undefined);
       }
     }

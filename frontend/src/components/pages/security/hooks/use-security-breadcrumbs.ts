@@ -14,19 +14,8 @@ import { useLayoutEffect } from 'react';
 import { uiState } from '../../../../state/ui-state';
 
 /**
- * Sets breadcrumbs for security sub-pages while keeping the H1 as "Access Control".
- *
- * The header renders the last breadcrumb as H1. This hook always puts
- * "Access Control" as the last entry so the H1 stays constant.
- * The `trail` entries appear before it in the breadcrumb navigation.
- *
- * @example
- * useSecurityBreadcrumbs([
- *   { title: 'Users', linkTo: '/security/users' },
- *   { title: 'alice', linkTo: '/security/users/alice/details' },
- * ]);
- * // Breadcrumb trail: Users > alice
- * // H1 heading: Access Control
+ * Breadcrumbs for security sub-pages. The header renders the last entry as the H1, so this always
+ * appends "Access Control" after `trail` to keep that heading constant.
  */
 export function useSecurityBreadcrumbs(trail: { title: string; linkTo: string }[]) {
   // Serialize trail for stable dependency comparison (avoids infinite re-renders from new array refs)

@@ -11,6 +11,8 @@
 
 // Array prototype extensions (must be imported early)
 import '../utils/array-extensions';
+// Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
+import 'clipboard-polyfill/overwrite-globals';
 
 import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -49,21 +51,10 @@ import { installUISettingsSideEffects } from '../state/ui';
 /**
  * Re-root the generated route tree onto Console's federated root.
  *
- * In the federated dev build, the generated tree's root route (from
- * `src/routes/__root.tsx`) can be substituted by Cloud UI's own `__root` route
- * — both apps compile a module with the identical id `./src/routes/__root.tsx`,
- * and in the shared rsbuild/MF dev runtime the host's wins. The result is that
- * the embedded Console renders Cloud UI's root chrome (its react NuqsAdapter,
- * Builder.io `<Content>`, and `<CommandPalette>`/KBar) instead of Console's own
- * federated layout — which breaks nuqs (NUQS-404), crashes on KBar
- * (`getState is not a function`, no `KBarProvider` in this subtree), and leaves
- * the embedded sidebar empty.
- *
- * `federatedRootRoute` lives at a Console-unique module path
- * (`src/federation/federated-routes.tsx`) that cannot collide with Cloud UI, so
- * reattaching the generated child routes to it guarantees the embedded app
- * renders Console's own root. Standalone (`app.tsx`) and the legacy embedded
- * entry keep using the generated `routeTree` unchanged.
+ * Both apps compile a module with the id `./src/routes/__root.tsx`, and in the shared MF dev
+ * runtime the host's wins — so the embedded Console would render Cloud UI's root chrome instead of
+ * its own (breaking nuqs, crashing KBar, emptying the sidebar). `federatedRootRoute` sits at a
+ * Console-unique path that cannot collide. Standalone and legacy-embedded entries keep `routeTree`.
  */
 function createFederatedRouteTree() {
   const childRoutes = routeTree.children ? Object.values(routeTree.children) : [];
@@ -141,13 +132,13 @@ class ConsoleErrorBoundary extends Component<
       return (
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
-            <h2 className="font-semibold text-error text-lg">Something went wrong</h2>
-            <p className="mt-2 text-gray-600 text-sm">Console encountered an error.</p>
+            <h2 className="font-semibold text-destructive text-heading-md">Something went wrong</h2>
+            <p className="mt-2 text-body text-subtle">Console encountered an error.</p>
             {this.state.error ? (
-              <p className="mt-1 font-mono text-gray-500 text-xs">{this.state.error.message}</p>
+              <p className="mt-1 font-mono text-body-sm text-subtle">{this.state.error.message}</p>
             ) : null}
             <button
-              className="mt-4 rounded-md bg-background-informative-strong px-4 py-2 font-medium text-sm text-white hover:bg-background-informative-strong"
+              className="mt-4 rounded-md bg-surface-informative px-4 py-2 font-medium text-body text-informative-foreground hover:bg-surface-informative-hover"
               onClick={this.handleRetry}
               type="button"
             >

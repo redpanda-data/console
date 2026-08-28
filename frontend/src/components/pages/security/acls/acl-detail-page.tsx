@@ -61,7 +61,7 @@ const AclDetailPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="pt-4 pb-3 font-semibold text-xl">ACL: {principalName}</h2>
+      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">ACL: {principalName}</h2>
       <div className="text-body">Configuration details</div>
       <Button
         render={

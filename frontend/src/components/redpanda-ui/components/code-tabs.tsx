@@ -18,13 +18,24 @@ const codeTabsVariants = cva('w-full gap-0 overflow-hidden rounded-xl border bg-
   },
 });
 
+/**
+ * Shiki emits both themes' colours as custom properties per span; these rules pick the one matching the
+ * app theme, so the block follows it with no prop and no JS. Scoped to the component so installing it
+ * alone cannot restyle another highlighter on the page. `.dark` rides along as theme.css accepts it.
+ */
+const dualThemeStyles = `
+[data-slot='install-tabs'] .shiki code span { color: var(--shiki-light); }
+[data-theme='dark'] [data-slot='install-tabs'] .shiki code span { color: var(--shiki-dark); }
+.dark [data-slot='install-tabs'] .shiki code span { color: var(--shiki-dark); }
+`;
+
 const codeTabsListVariants = cva(
-  '!border-border relative h-10 w-full justify-between rounded-none border-b bg-muted px-4 py-0 text-current',
+  '!border-border relative h-10 w-full justify-between rounded-none border-b bg-surface-subtle px-4 py-0 text-current',
   {
     variants: {
       variant: {
         standard:
-          '!border-border relative h-10 w-full justify-between rounded-none border-b bg-muted px-4 py-0 text-current',
+          '!border-border relative h-10 w-full justify-between rounded-none border-b bg-surface-subtle px-4 py-0 text-current',
       },
     },
     defaultVariants: {
@@ -48,10 +59,10 @@ const codeTabsActiveVariants = cva(
   }
 );
 
-const codeTabsContentVariants = cva('flex w-full items-center overflow-auto p-4 text-sm', {
+const codeTabsContentVariants = cva('flex w-full items-center overflow-auto p-4 text-body', {
   variants: {
     variant: {
-      standard: 'flex w-full items-center overflow-auto p-4 text-sm',
+      standard: 'flex w-full items-center overflow-auto p-4 text-body',
     },
   },
   defaultVariants: {
@@ -86,7 +97,7 @@ function CodeTabs({
   lang = 'bash',
   themes = {
     light: 'github-light',
-    dark: 'github-dark',
+    dark: 'github-dark-default',
   },
   theme,
   className,
@@ -130,7 +141,8 @@ function CodeTabs({
               light: themes.light,
               dark: themes.dark,
             },
-            defaultColor: theme === 'dark' ? 'dark' : 'light',
+            // `false` keeps both themes in the markup for the CSS below to choose between.
+            defaultColor: theme === 'light' || theme === 'dark' ? theme : false,
           });
 
           newHighlightedItems.push({
@@ -165,6 +177,7 @@ function CodeTabs({
       }}
       value={selectedCode}
     >
+      <style>{dualThemeStyles}</style>
       <TabsList
         activeClassName={codeTabsActiveVariants({ variant })}
         className={codeTabsListVariants({ variant })}
@@ -173,7 +186,7 @@ function CodeTabs({
         <div className="flex h-full gap-x-1 overflow-x-auto [scrollbar-width:none] sm:gap-x-2 [&::-webkit-scrollbar]:hidden">
           {highlightedItems?.map((item) => (
             <TabsTrigger
-              className="shrink-0 px-2 text-muted-foreground text-xs data-[active]:text-selected sm:px-3"
+              className="shrink-0 px-2 text-body-sm text-subtle data-[active]:text-selected sm:px-3"
               key={item.id}
               value={item.id}
             >
@@ -184,7 +197,7 @@ function CodeTabs({
 
         {copyButton && highlightedItems && selectedItem ? (
           <CopyButton
-            className="-me-2 bg-transparent hover:bg-selected/10"
+            className="-me-2 bg-transparent hover:bg-accent active:bg-accent-pressed"
             content={selectedItem.code}
             onCopy={onCopy}
             size="sm"
@@ -201,7 +214,7 @@ function CodeTabs({
             value={item.id}
           >
             <div
-              className="[&>pre,_&_code]:!bg-transparent [&_code]:!text-[13px] [&>pre,_&_code]:border-none [&>pre,_&_code]:[background:transparent_!important]"
+              className="[&>pre,_&_code]:!bg-transparent [&_code]:!text-body [&>pre,_&_code]:border-none [&>pre,_&_code]:[background:transparent_!important]"
               // biome-ignore lint/security/noDangerouslySetInnerHtml: part of code tabs implementation
               dangerouslySetInnerHTML={{ __html: item.code }}
             />

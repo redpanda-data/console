@@ -1,5 +1,6 @@
 'use client';
 
+import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
 
@@ -25,7 +26,7 @@ function DrawerOverlay({ className, ...props }: React.ComponentProps<typeof Draw
   return (
     <DrawerPrimitive.Overlay
       className={cn(
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80 data-[state=closed]:animate-out data-[state=open]:animate-in',
+        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-modal-overlay-strong data-[state=closed]:animate-out data-[state=open]:animate-in',
         className
       )}
       data-slot="drawer-overlay"
@@ -34,11 +35,38 @@ function DrawerOverlay({ className, ...props }: React.ComponentProps<typeof Draw
   );
 }
 
+/**
+ * Width classes are in a `size` variant rather than the base string so consumers choose a size
+ * instead of fighting the data-attr defaults with `!` overrides — which are order-fragile when
+ * federated remotes ship a duplicate Tailwind `utilities` layer.
+ */
+const drawerContentVariants = cva(
+  [
+    'group/drawer-content fixed z-[60] flex h-auto flex-col bg-background',
+    'data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b',
+    'data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t',
+    'data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:border-l',
+    'data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:border-r',
+  ],
+  {
+    variants: {
+      size: {
+        md: 'data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=left]:sm:max-w-sm data-[vaul-drawer-direction=right]:sm:max-w-sm',
+        half: 'data-[vaul-drawer-direction=left]:max-sm:w-full data-[vaul-drawer-direction=right]:max-sm:w-full data-[vaul-drawer-direction=left]:sm:w-1/2 data-[vaul-drawer-direction=right]:sm:w-1/2',
+      },
+    },
+    defaultVariants: {
+      size: 'md',
+    },
+  }
+);
+
 type DrawerContentProps = React.ComponentProps<typeof DrawerPrimitive.Content> &
   SharedProps &
+  VariantProps<typeof drawerContentVariants> &
   Pick<FixedPositionContentProps, 'container' | 'showOverlay' | 'onOpenAutoFocus'>;
 
-// Drawer is vaul (Radix-derived), not Base UI — it keeps `onOpenAutoFocus` (no `initialFocus` equivalent).
+/** Drawer is vaul (Radix-derived), not Base UI — it keeps `onOpenAutoFocus` (no `initialFocus` equivalent). */
 function DrawerContent({
   className,
   children,
@@ -46,27 +74,20 @@ function DrawerContent({
   container,
   showOverlay = true,
   onOpenAutoFocus,
+  size,
   ...props
 }: DrawerContentProps) {
   return (
     <DrawerPortal container={container} data-slot="drawer-portal">
       {showOverlay ? <DrawerOverlay /> : null}
       <DrawerPrimitive.Content
-        className={cn(
-          // z-[60] keeps the panel above its own overlay (z-50) even if vaul flips DOM order on a fast toggle.
-          'group/drawer-content fixed z-[60] flex h-auto flex-col bg-background',
-          'data-[vaul-drawer-direction=top]:inset-x-0 data-[vaul-drawer-direction=top]:top-0 data-[vaul-drawer-direction=top]:mb-24 data-[vaul-drawer-direction=top]:max-h-[80vh] data-[vaul-drawer-direction=top]:rounded-b-lg data-[vaul-drawer-direction=top]:border-b',
-          'data-[vaul-drawer-direction=bottom]:inset-x-0 data-[vaul-drawer-direction=bottom]:bottom-0 data-[vaul-drawer-direction=bottom]:mt-24 data-[vaul-drawer-direction=bottom]:max-h-[80vh] data-[vaul-drawer-direction=bottom]:rounded-t-lg data-[vaul-drawer-direction=bottom]:border-t',
-          'data-[vaul-drawer-direction=right]:inset-y-0 data-[vaul-drawer-direction=right]:right-0 data-[vaul-drawer-direction=right]:w-3/4 data-[vaul-drawer-direction=right]:border-l data-[vaul-drawer-direction=right]:sm:max-w-sm',
-          'data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm',
-          className
-        )}
+        className={cn(drawerContentVariants({ size }), className)}
         data-slot="drawer-content"
         data-testid={testId}
         {...(onOpenAutoFocus && { onOpenAutoFocus })}
         {...props}
       >
-        <div className="mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        <div className="mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full bg-surface-subtle group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>
@@ -94,7 +115,7 @@ function DrawerTitle({ className, ...props }: React.ComponentProps<typeof Drawer
 function DrawerDescription({ className, ...props }: React.ComponentProps<typeof DrawerPrimitive.Description>) {
   return (
     <DrawerPrimitive.Description
-      className={cn('text-body text-muted-foreground', className)}
+      className={cn('text-body text-subtle', className)}
       data-slot="drawer-description"
       {...props}
     />

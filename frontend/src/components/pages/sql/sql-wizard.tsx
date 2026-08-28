@@ -107,8 +107,8 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-card">
-      <header className="flex items-center justify-between border-border-subtle border-b px-4 py-2">
-        <span className="inline-flex items-center gap-2 font-semibold text-sm text-strong [&_svg]:text-action-primary">
+      <header className="flex items-center justify-between border-b px-4 py-2">
+        <span className="inline-flex items-center gap-2 font-semibold text-body text-strong [&_svg]:text-action-primary">
           <Plus size={16} /> Add a topic to SQL
         </span>
         <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
@@ -118,10 +118,10 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="mx-auto w-full max-w-[720px] px-6 pt-4 pb-1">
-          <span className="font-semibold text-action-primary text-xs uppercase tracking-wider">
+          <span className="font-semibold text-action-primary text-body-sm uppercase tracking-wider">
             Step {step + 1} of {STEPS.length}
           </span>
-          <span className="mt-1 mb-2 block font-display font-semibold text-base text-strong">{STEPS[step]}</span>
+          <span className="mt-1 mb-2 block font-semibold text-heading-sm text-strong">{STEPS[step]}</span>
           <Progress
             className="h-1 bg-muted [&_[data-slot=progress-indicator]]:bg-action-primary"
             value={((step + 1) / STEPS.length) * 100}
@@ -136,13 +136,13 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
           )}
         </div>
 
-        <footer className="mx-auto flex w-full max-w-[720px] shrink-0 items-center justify-between border-border-subtle border-t px-6 py-3.5">
-          <Button onClick={onClose} size="md" variant="secondary-ghost">
+        <footer className="mx-auto flex w-full max-w-[720px] shrink-0 items-center justify-between border-t px-6 py-3.5">
+          <Button onClick={onClose} size="md" variant="ghost">
             Cancel
           </Button>
           <div className="flex gap-2">
             {step > 0 && (
-              <Button disabled={isCreating} onClick={() => setStep(0)} size="md" variant="secondary-outline">
+              <Button disabled={isCreating} onClick={() => setStep(0)} size="md" variant="outline">
                 Back
               </Button>
             )}
@@ -196,7 +196,7 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
                 <ChoiceboxItemIndicator />
               </ChoiceboxItemContent>
               <ChoiceboxItemHeader>
-                <ChoiceboxItemTitle className="gap-2 font-mono text-sm">
+                <ChoiceboxItemTitle className="gap-2 font-mono text-body">
                   <Layers className="shrink-0 text-action-primary" size={15} />
                   {topic.name}
                 </ChoiceboxItemTitle>
@@ -224,7 +224,7 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
     <div className="flex flex-col gap-4">
       <SummaryRow label="Catalog">
         <Layers size={14} /> {CATALOG_NAME}
-        <span className="ml-auto font-sans text-muted-foreground text-xs">fixed for Redpanda topics</span>
+        <span className="ml-auto font-sans text-body-sm text-muted-foreground">fixed for Redpanda topics</span>
       </SummaryRow>
 
       <SummaryRow label="Source topic">
@@ -237,8 +237,11 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
       </SummaryRow>
 
       {topic.iceberg ? (
-        <Alert className="border-info bg-info-subtle [&>svg]:text-info" icon={<GitMerge size={15} />}>
-          <AlertDescription className="text-foreground text-xs">
+        <Alert
+          className="border-informative-line bg-informative-wash [&>svg]:text-informative"
+          icon={<GitMerge size={15} />}
+        >
+          <AlertDescription className="text-body-sm text-foreground">
             This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes the live
             topic with its Iceberg table so results stay realtime despite the flush lag.
           </AlertDescription>
@@ -276,7 +279,7 @@ function SummaryRow({ label, children }: { label: string; children: ReactNode })
   return (
     <div className="flex flex-col gap-1.5">
       <Label className="text-strong">{label}</Label>
-      <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 font-mono text-sm text-strong [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
+      <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 font-mono text-body text-strong [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
         {children}
       </div>
     </div>
@@ -285,7 +288,7 @@ function SummaryRow({ label, children }: { label: string; children: ReactNode })
 
 function IcebergBadge() {
   return (
-    <Badge size="sm" title="Iceberg tiering enabled" variant="info-inverted">
+    <Badge size="sm" title="Iceberg tiering enabled" tone="informative" variant="subtle">
       <GitMerge size={11} />
       Iceberg
     </Badge>

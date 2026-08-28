@@ -11,20 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type Row,
-  type SortingState,
-  type Updater,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
 import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
@@ -54,6 +41,7 @@ import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
 import { useStore } from 'zustand';
 
@@ -65,7 +53,13 @@ import { setPageHeader } from '../../../../state/ui-state';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../../misc/null-fallback-boundary';
 import { Button } from '../../../redpanda-ui/components/button';
-import { DataTableColumnHeader, DataTablePagination } from '../../../redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  DataTablePagination,
+  type DataTableRow,
+  useDataTable,
+} from '../../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 import { DescriptionWithHelp } from '../shared/description-with-help';
@@ -76,7 +70,7 @@ type RoleEntry = {
   members: unknown[];
 };
 
-const nameFilterFn = (row: Row<RoleEntry>, columnId: string, filterValue: string) => {
+const nameFilterFn = (row: DataTableRow<RoleEntry>, columnId: string, filterValue: string) => {
   if (!filterValue) return true;
   try {
     return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
@@ -132,7 +126,7 @@ export const RolesTabNew: FC = () => {
     setPageSize(next.pageSize);
   };
 
-  const columns: ColumnDef<RoleEntry>[] = [
+  const columns: DataTableColumnDef<RoleEntry>[] = [
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
@@ -159,7 +153,7 @@ export const RolesTabNew: FC = () => {
       id: 'menu',
       header: '',
       enableSorting: false,
-      meta: { align: 'right' as const },
+      meta: columnMeta({ align: 'right' as const }),
       cell: ({ row: { original: entry } }) => (
         <RoleActions
           memberCount={entry.members.length}
@@ -172,7 +166,7 @@ export const RolesTabNew: FC = () => {
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: rolesWithMembers,
     columns,
     state: { sorting, pagination, columnFilters },
@@ -180,10 +174,6 @@ export const RolesTabNew: FC = () => {
     onPaginationChange: handlePaginationChange,
     onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (rolesIsError) {
@@ -217,8 +207,8 @@ export const RolesTabNew: FC = () => {
       return table.getRowModel().rows.map((row) => (
         <TableRow key={row.id}>
           {row.getVisibleCells().map((cell) => (
-            <TableCell align={(cell.column.columnDef.meta as { align?: 'right' })?.align} key={cell.id}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <TableCell align={readColumnMeta(cell.column.columnDef.meta).align} key={cell.id}>
+              {<table.FlexRender cell={cell} />}
             </TableCell>
           ))}
         </TableRow>
@@ -267,7 +257,7 @@ export const RolesTabNew: FC = () => {
     <>
       <SecurityTabsNav />
       <ListLayout className="my-4 min-h-0">
-        <div className="text-muted-foreground text-sm sm:text-base">
+        <div className="text-body text-muted-foreground sm:text-body-lg">
           <NullFallbackBoundary>
             <div className="mb-4">
               <FeatureLicenseNotification featureName="rbac" />
@@ -313,8 +303,8 @@ export const RolesTabNew: FC = () => {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead align={(header.column.columnDef.meta as { align?: 'right' })?.align} key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    <TableHead align={readColumnMeta(header.column.columnDef.meta).align} key={header.id}>
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   ))}
                 </TableRow>

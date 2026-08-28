@@ -415,7 +415,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
             return (
               <button
                 aria-current={active ? 'true' : undefined}
-                className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body transition-colors ${
                   active ? 'bg-muted font-medium' : 'hover:bg-muted/50'
                 }`}
                 key={c.name}
@@ -424,11 +424,11 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
               >
                 <span className="min-w-0 truncate">{c.name}</span>
                 {c.modifiedCount > 0 ? (
-                  <Badge aria-label={`${c.modifiedCount} modified`} size="sm" variant="info-inverted">
+                  <Badge aria-label={`${c.modifiedCount} modified`} size="sm" tone="informative" variant="subtle">
                     {c.modifiedCount}
                   </Badge>
                 ) : (
-                  <Badge size="sm" variant="neutral-outline">
+                  <Badge size="sm" tone="default" variant="outline">
                     {c.count}
                   </Badge>
                 )}
@@ -472,7 +472,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
             <ToggleGroupItem value="modified">
               Modified
               {totalModifiedCount > 0 && (
-                <Badge className="ml-2" size="sm" variant="info-inverted">
+                <Badge className="ml-2" size="sm" tone="informative" variant="subtle">
                   {totalModifiedCount}
                 </Badge>
               )}
@@ -496,10 +496,10 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
                 }}
               >
                 <div className="mb-3 flex flex-col">
-                  <h3 className="font-semibold text-lg" id={`config-section-${s.name}`}>
+                  <h3 className="font-semibold text-heading-md" id={`config-section-${s.name}`}>
                     {s.name}
                   </h3>
-                  <p className="text-muted-foreground text-sm">{s.blurb}</p>
+                  <p className="text-body text-muted-foreground">{s.blurb}</p>
                 </div>
                 <div className="divide-y rounded-lg border">
                   {s.rows.map((entry) => (
@@ -545,7 +545,7 @@ const ConfigRow: FC<{
       }}
       type="button"
     >
-      <span className="font-mono text-sm">{friendlyValue}</span>
+      <span className="font-mono text-body">{friendlyValue}</span>
       <EditIcon className="size-4" />
     </button>
   );
@@ -559,7 +559,7 @@ const ConfigRow: FC<{
               <PopoverTrigger
                 render={
                   <button
-                    className="cursor-pointer font-mono text-sm underline decoration-dotted underline-offset-4 hover:text-primary"
+                    className="cursor-pointer font-mono text-body underline decoration-dotted underline-offset-4 hover:text-primary"
                     type="button"
                   >
                     {entry.name}
@@ -569,22 +569,22 @@ const ConfigRow: FC<{
               <PopoverContent className="w-80">
                 <div className="flex flex-col gap-2">
                   <p className="font-bold">{entry.name}</p>
-                  <p className="text-sm">{entry.documentation}</p>
-                  <p className="text-muted-foreground text-sm">{getConfigDescription(entry.source)}</p>
+                  <p className="text-body">{entry.documentation}</p>
+                  <p className="text-body text-muted-foreground">{getConfigDescription(entry.source)}</p>
                 </div>
               </PopoverContent>
             </Popover>
           ) : (
-            <span className="font-mono text-sm">{entry.name}</span>
+            <span className="font-mono text-body">{entry.name}</span>
           )}
           {modified ? (
-            <Badge size="sm" variant="info-inverted">
+            <Badge size="sm" tone="informative" variant="subtle">
               Modified
             </Badge>
           ) : null}
         </div>
         {modified && defaultValue !== null && (
-          <p className="text-muted-foreground text-xs">
+          <p className="text-body-sm text-muted-foreground">
             Default: <span className="font-mono">{defaultValue}</span>
           </p>
         )}
@@ -842,7 +842,7 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <Label className="font-medium text-muted-foreground text-sm">Percentage ({pct}%)</Label>
+        <Label className="font-medium text-body text-muted-foreground">Percentage ({pct}%)</Label>
         <Slider
           aria-label="Percentage slider"
           className="w-full"
@@ -854,7 +854,7 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
         />
       </div>
       <div className="flex items-center gap-2">
-        <Label className="whitespace-nowrap font-medium text-sm" htmlFor="ratio-input">
+        <Label className="whitespace-nowrap font-medium text-body" htmlFor="ratio-input">
           Precise value:
         </Label>
         <div className="relative flex-shrink-0">
@@ -872,7 +872,7 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
             type="number"
             value={pct}
           />
-          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground text-sm">
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-body text-muted-foreground">
             %
           </span>
         </div>

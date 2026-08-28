@@ -117,7 +117,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
                 render={
                   <button
                     aria-label="Field help"
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition hover:text-foreground"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-subtle transition hover:text-foreground"
                     data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'help')}
                     type="button"
                   >
@@ -126,7 +126,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
                 }
               />
               <TooltipContent
-                className="max-w-sm text-pretty text-xs"
+                className="max-w-sm text-pretty text-body-sm"
                 testId={getAutoFormFieldTestId(testIdPrefix, id, 'help-content')}
               >
                 {tooltipText}
@@ -145,7 +145,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
             <>
               {helpText ? ' ' : null}
               <a
-                className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+                className="link-inline inline-flex items-center gap-1 text-primary transition-colors motion-reduce:transition-none"
                 data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'docs-link')}
                 href={docsUrl}
                 rel="noreferrer"
@@ -206,9 +206,9 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps & { testId?: string; has
                     </DepthHeading>
                     {field.required ? <span className="text-body-sm text-destructive">*</span> : null}
                   </div>
-                  {helpText ? <div className="text-body-sm text-muted-foreground">{helpText}</div> : null}
+                  {helpText ? <div className="text-body-sm text-subtle">{helpText}</div> : null}
                 </div>
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none [[data-panel-open]_&]:rotate-180" />
+                <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform duration-200 motion-reduce:transition-none [[data-panel-open]_&]:rotate-180" />
               </button>
             }
           />
@@ -236,7 +236,7 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps & { testId?: string; has
             </DepthHeading>
             {field.required ? <span className="text-body-sm text-destructive">*</span> : null}
           </div>
-          {helpText ? <div className="text-body-sm text-muted-foreground">{helpText}</div> : null}
+          {helpText ? <div className="text-body-sm text-subtle">{helpText}</div> : null}
         </div>
       ) : null}
       <FormDepthProvider depth={depth + 1}>

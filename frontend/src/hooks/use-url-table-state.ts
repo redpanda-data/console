@@ -37,16 +37,11 @@ type UseUrlTableStateResult = {
 };
 
 /**
- * URL-backed sorting + pagination state for TanStack Table tables.
- *
- * Keeps page index, page size and sorting in the URL search query (prefixed by
- * `keyPrefix`) so the view is shareable and survives reloads, while syncing page
- * size and sorting back to the provided ui settings slice.
- *
- * Because tables are configured with `autoResetPageIndex: false`, a stale
- * `?{prefix}Page=` from a shared link can point past the last page and render an
- * empty table even when rows exist. This hook clamps the effective page index
- * into range and repairs the URL once data is available (`enabled`).
+ * URL-backed sorting and pagination for TanStack Table: page index, size and sorting live in the
+ * search query under `keyPrefix` (shareable, reload-safe) and mirror back to the ui settings slice.
+ * Since tables set `autoResetPageIndex: false`, a stale `?{prefix}Page=` from a shared link can
+ * point past the last page and render empty — so the index is clamped and the URL repaired once
+ * data arrives.
  */
 export function useUrlTableState({
   keyPrefix,

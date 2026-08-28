@@ -24,24 +24,7 @@ type TagsFieldListProps<TFieldValues extends FieldValues> = {
   fieldName: string;
 };
 
-/**
- * Reusable tags field list component for managing key-value tags.
- *
- * @example
- * // In your form component:
- * const { fields, append, remove } = useFieldArray({
- *   control: form.control,
- *   name: 'tags',
- * });
- *
- * <TagsFieldList
- *   form={form}
- *   tagFields={fields}
- *   appendTag={append}
- *   removeTag={remove}
- *   fieldName="tags"
- * />
- */
+/** Key-value tag editor. Drive it from a `useFieldArray` on the tags field. */
 export const TagsFieldList = <TFieldValues extends FieldValues>({
   form,
   tagFields,

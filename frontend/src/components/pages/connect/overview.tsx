@@ -131,13 +131,6 @@ class KafkaConnectOverview extends PageComponent<{
 
   async refreshData() {
     await api.refreshConnectClusters();
-    // if (api.connectConnectors?.isConfigured) {
-    //     const clusters = api.connectConnectors.clusters;
-    //     if (clusters?.length == 1) {
-    //         const cluster = clusters[0];
-    //         appGlobal.historyReplace(`/connect-clusters/${cluster.clusterName}`);
-    //     }
-    // }
   }
 
   render() {
@@ -154,7 +147,7 @@ class KafkaConnectOverview extends PageComponent<{
         title: (
           <Box minWidth="180px">
             Redpanda Connect{' '}
-            <Badge className="ml-2" variant="neutral-inverted">
+            <Badge className="ml-2" tone="default" variant="subtle">
               Recommended
             </Badge>
           </Box>

@@ -73,8 +73,8 @@ export interface ComboboxProps
   /** Fires per keystroke with the input text; drive async/remote search from here. */
   onInputValueChange?: (value: string) => void;
   /** Shows an inline spinner and suppresses the empty state while async options load. */
-  loading?: boolean;
-  /** Override the "No options found." empty state. Ignored when `loading`. */
+  isLoading?: boolean;
+  /** Override the "No options found." empty state. Ignored when `isLoading`. */
   emptyState?: React.ReactNode;
   /** Override each option row's render. The active check icon is still rendered by the component. */
   renderOption?: (option: ComboboxOption) => React.ReactNode;
@@ -103,7 +103,7 @@ export const Combobox = memo(
     preventAutoFocusOnOpen = false,
     inputTestId,
     onInputValueChange,
-    loading = false,
+    isLoading = false,
     emptyState,
     renderOption,
   }: ComboboxProps) => {
@@ -381,7 +381,7 @@ export const Combobox = memo(
                 {showClearButton ? (
                   <button
                     aria-label="Clear selection"
-                    className="pointer-events-auto cursor-pointer rounded-sm opacity-50 hover:opacity-100"
+                    className="pointer-events-auto cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none"
                     onClick={handleClear}
                     onMouseDown={preventDefault}
                     tabIndex={-1}
@@ -396,7 +396,7 @@ export const Combobox = memo(
           }
         />
         <PopoverContent
-          className="w-(--anchor-width) p-0"
+          className="w-max min-w-(--anchor-width) max-w-[min(40rem,calc(100vw-2rem))] p-0"
           container={container}
           initialFocus={preventAutoFocusOnOpen ? false : undefined}
           onMouseDown={preventDefault}
@@ -411,12 +411,8 @@ export const Combobox = memo(
           >
             <ActiveDescendantBridge onIdChange={handleActiveDescendantChange} />
             <CommandList id={listId}>
-              {loading ? (
-                <div
-                  aria-busy="true"
-                  className="flex items-center gap-2 px-3 py-4 text-muted-foreground text-sm"
-                  role="status"
-                >
+              {isLoading ? (
+                <div aria-busy="true" className="flex items-center gap-2 px-3 py-4 text-body text-subtle" role="status">
                   <Spinner className="size-4" />
                   <span>Loading…</span>
                 </div>
@@ -457,7 +453,7 @@ export const Combobox = memo(
                 <CommandGroup>
                   <CommandItem disabled forceMount value="__create_prompt__">
                     <Plus className="size-4 shrink-0 opacity-50" />
-                    <span className="truncate text-muted-foreground">Type to create a new {createLabel}...</span>
+                    <span className="truncate text-subtle">Type to create a new {createLabel}...</span>
                   </CommandItem>
                 </CommandGroup>
               ) : null}

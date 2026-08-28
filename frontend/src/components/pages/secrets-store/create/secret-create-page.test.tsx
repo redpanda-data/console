@@ -61,8 +61,9 @@ describe('SecretCreatePage', () => {
 
     renderWithFileRoutes(<SecretCreatePage />, { transport });
 
-    // Verify the page loaded
-    expect(screen.getByRole('heading', { name: 'Create Secret' })).toBeInTheDocument();
+    // Verify the page loaded. The page title itself is rendered by the app chrome (layout/header.tsx)
+    // from uiState.pageTitle, which this harness does not mount, so assert on the page's own copy.
+    expect(screen.getByText('Create a new secret that can be securely accessed by your services.')).toBeInTheDocument();
 
     // Fill in the ID field
     const idInput = screen.getByPlaceholderText('SECRET_ID');

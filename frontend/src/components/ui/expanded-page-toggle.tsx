@@ -17,7 +17,7 @@ export function ExpandedPageToggle({ expanded, onToggle }: { expanded: boolean; 
   const label = expanded ? 'Exit fullscreen' : 'Enter fullscreen';
 
   return (
-    <Button aria-label={label} onClick={onToggle} size="icon-sm" title={label} variant="secondary-ghost">
+    <Button aria-label={label} onClick={onToggle} size="icon-sm" title={label} variant="ghost">
       {expanded ? <Minimize2 /> : <Maximize2 />}
     </Button>
   );

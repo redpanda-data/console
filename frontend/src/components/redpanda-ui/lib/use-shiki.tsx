@@ -20,7 +20,7 @@ import type { BundledTheme } from 'shiki/themes';
 
 export const defaultThemes = {
   light: 'github-light',
-  dark: 'github-dark',
+  dark: 'github-dark-default',
 };
 
 export type HighlightOptionsCommon = CodeToHastOptionsCommon<BundledLanguage> &

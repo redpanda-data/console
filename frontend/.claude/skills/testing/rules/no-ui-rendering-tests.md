@@ -24,7 +24,7 @@ test('displays user avatar', () => {
 
 test('applies correct styling for admin role', () => {
   render(<UserCard user={{ ...mockUser, role: 'admin' }} />);
-  expect(screen.getByTestId('badge')).toHaveClass('bg-red-500');
+  expect(screen.getByTestId('badge')).toHaveClass('bg-surface-destructive');
 });
 ```
 

@@ -10,8 +10,7 @@ import type * as React from 'react';
 /**
  * Brand red, kept as a literal because SVG `fill` attributes can't reference
  * CSS variables and the mark must not shift between themes. UI code should
- * use the matching `--color-primary-brand-600` token (alignment is
- * test-enforced).
+ * use the matching `--color-brand` token (alignment is test-enforced).
  */
 const REDPANDA_BRAND_RED = '#E2401B';
 

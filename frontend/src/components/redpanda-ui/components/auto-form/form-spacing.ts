@@ -1,3 +1,7 @@
+/**
+ * Single source of truth for AutoForm's vertical rhythm. Token names kept
+ * generic so the module ports cleanly to shadcn upstream.
+ */
 export const formSpacing = {
   /** Top-level form children: sections, root fields, submit slot. */
   form: 'space-y-8',
@@ -8,9 +12,9 @@ export const formSpacing = {
   /** Inside a section header: title → description. */
   sectionHeader: 'space-y-1',
   /** Divider under a section heading when shown. */
-  sectionDivider: 'pb-4 border-b border-border/60',
+  sectionDivider: 'pb-4 border-b border-border-subtle',
   /** Separator between array items (applied to every item except the first). */
-  arrayItemSeparator: 'pt-4 border-t border-border/60',
+  arrayItemSeparator: 'pt-4 border-t border-border-subtle',
   /** Gap between sibling rows inside an array/map body (before separator). */
   collectionRow: 'space-y-4',
   /** Gap between a oneof selector and the field it reveals. */

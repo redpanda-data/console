@@ -32,7 +32,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
-import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -90,7 +90,7 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
-  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const toasterTheme = useThemeAppearance();
 
   return (
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.

@@ -10,17 +10,11 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { Component, type ReactNode, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -46,7 +40,7 @@ import {
   AlertDialogTitle,
 } from '../../redpanda-ui/components/alert-dialog';
 import { Button as UiButton } from '../../redpanda-ui/components/button';
-import { DataTableColumnHeader } from '../../redpanda-ui/components/data-table';
+import { type DataTableColumnDef, DataTableColumnHeader, useDataTable } from '../../redpanda-ui/components/data-table';
 import {
   Dialog,
   DialogBody,
@@ -349,13 +343,13 @@ export class EditOffsetsModal extends Component<{
               onValueChange={(v) => this.setState({ otherGroupCopyMode: v as 'all' | 'onlyExisting' })}
               value={this.state.otherGroupCopyMode}
             >
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <label className="flex cursor-pointer items-center gap-2 text-body">
                 <RadioGroupItem value="onlyExisting" />
                 <InfoTooltip text="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored.">
                   Copy matching offsets
                 </InfoTooltip>
               </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <label className="flex cursor-pointer items-center gap-2 text-body">
                 <RadioGroupItem value="all" />
                 <InfoTooltip text="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway.">
                   Full Copy
@@ -695,7 +689,7 @@ class ColAfter extends Component<{
               <span
                 style={{
                   fontSize: 'smaller',
-                  color: 'hsl(0deg 0% 67%)',
+                  color: 'var(--color-subtle)',
                   userSelect: 'none',
                   cursor: 'default',
                 }}
@@ -752,7 +746,7 @@ class ColAfter extends Component<{
           <span
             style={{
               fontSize: 'smaller',
-              color: 'hsl(0deg 0% 67%)',
+              color: 'var(--color-subtle)',
               userSelect: 'none',
               cursor: 'default',
             }}
@@ -776,16 +770,16 @@ class ColAfter extends Component<{
 const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; selectedTime: number }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const columns: ColumnDef<GroupOffset>[] = [
+  const columns: DataTableColumnDef<GroupOffset>[] = [
     {
       accessorKey: 'partitionId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
     },
     {
       accessorKey: 'offset',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Offset Before" />,
-      meta: { headWidth: 'md' as const },
+      meta: columnMeta({ headWidth: 'md' as const }),
       cell: ({
         row: {
           original: { offset },
@@ -816,13 +810,11 @@ const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; sel
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: items,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   return (
@@ -831,10 +823,10 @@ const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; sel
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header) => {
-              const meta = header.column.columnDef.meta as { headWidth?: 'sm' | 'md' | 'full' } | undefined;
+              const meta = readColumnMeta(header.column.columnDef.meta);
               return (
                 <TableHead key={header.id} width={meta?.headWidth}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                 </TableHead>
               );
             })}
@@ -845,7 +837,7 @@ const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; sel
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+              <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
             ))}
           </TableRow>
         ))}
@@ -956,10 +948,10 @@ export const DeleteOffsetsModal = (props: {
         </AlertDialogHeader>
 
         <div className="flex gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive text-white">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-destructive text-destructive-foreground">
             <TrashIcon size={20} />
           </div>
-          <div className="flex flex-col gap-1 text-sm">
+          <div className="flex flex-col gap-1 text-body">
             {mode === 'group' && (
               <>
                 <p>

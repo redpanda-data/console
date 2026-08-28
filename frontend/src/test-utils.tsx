@@ -24,20 +24,12 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   transport?: Transport;
 }
 
-// Track every QueryClient and router created by the test harness so the
-// side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
-// tear them down after each test. A plain render + RTL cleanup only unmounts
-// the React tree — the QueryClient and the TanStack router are still held
-// alive by closures inside the test file, so every test's fetched data,
-// route matches, and history entries accumulate in the worker heap
-// otherwise. That retention is the primary cause of the +100–240 MB
-// intra-file heap growth measured during the TDD audit.
-//
-// `cleanupTestHarness` is kept in a separate module so that
-// `vitest.setup.integration.ts` does not transitively import `routeTree.gen`
-// (and therefore `config`), which would pin `isEmbedded` live
-// bindings before test files' `vi.mock('config', ...)` hoists can take
-// effect.
+// Track every QueryClient and router the harness creates so `cleanupTestHarness` can tear them down
+// after each test. RTL cleanup only unmounts the React tree; the QueryClient and router stay alive in
+// test-file closures, accumulating fetched data, route matches and history entries (+100-240 MB
+// intra-file heap growth). It lives in its own module so `vitest.setup.integration.ts` does not
+// transitively import `routeTree.gen` (and `config`), which would pin `isEmbedded` before test files'
+// `vi.mock('config', ...)` hoists run.
 import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';

@@ -3,52 +3,8 @@ import { type UseQueryStateReturn, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 /**
- * A custom hook that extends `useQueryState` with callback functionality for syncing state changes.
- *
- * This hook provides the same functionality as `useQueryState` but adds:
- * - Automatic callback execution when the query state changes
- * - Default value handling when the query parameter is not present in the URL
- * - Synchronization between URL state and external state management
- *
- * @template T - The type of the query state value
- * @template U - The type for additional options (defaults to null)
- *
- * @param params - Configuration object containing callback functions
- * @param params.onUpdate - Callback function called whenever the query state changes
- * @param params.getDefaultValue - Function that returns the default value when the query parameter is not in the URL
- * @param options - Spread parameters passed directly to `useQueryState`
- *
- * @returns A tuple containing the current value and a setter function, similar to `useQueryState`
- *
- * @example
- * ```tsx
- * const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>({
- *   onUpdate: (val) => {
- *     // Sync with external state management
- *     uiSettings.topicList.hideInternalTopics = val;
- *   },
- *   getDefaultValue: () => {
- *     // Return default value from external state
- *     return uiSettings.topicList.hideInternalTopics;
- *   }
- * }, "showInternal", parseAsBoolean);
- *
- * // Usage
- * setShowInternalTopics(true); // This will update both URL and call onUpdate
- * ```
- *
- * @example
- * ```tsx
- * const [searchTerm, setSearchTerm] = useQueryStateWithCallback<string>({
- *   onUpdate: (val) => {
- *     // Perform search or update search state
- *     performSearch(val);
- *   },
- *   getDefaultValue: () => {
- *     return '';
- *   }
- * }, "q", parseAsString);
- * ```
+ * `useQueryState`, plus an `onUpdate` callback on every change and a `getDefaultValue` fallback for
+ * when the parameter is absent from the URL — for keeping URL state and an external store in sync.
  */
 export function useQueryStateWithCallback<T, U = null>(
   params: {

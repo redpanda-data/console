@@ -11,6 +11,8 @@
 
 // Array prototype extensions (must be imported early)
 import './utils/array-extensions';
+// Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
+import 'clipboard-polyfill/overwrite-globals';
 
 import { useEffect, useMemo } from 'react';
 
@@ -64,16 +66,9 @@ const normalizePath = (path: string) => path.replace(TRAILING_SLASH_REGEX, '') |
 
 export interface EmbeddedProps extends SetConfigArguments {
   /**
-   * This is the base url that is used:
-   * - when making api requests
-   * - to setup the 'basename' in react-router
-   *
-   * In the simplest case this would be the exact url where the host is running,
-   * for example "http://localhost:3001/"
-   *
-   * When running in cloud-ui the base most likely need to include a few more
-   * things like cluster id, etc...
-   * So the base would probably be "https://cloud.redpanda.com/NAMESPACE/CLUSTER/"
+   * Base URL for API requests and the react-router `basename`. Standalone that is just the host
+   * (`http://localhost:3001/`); under cloud-ui it carries the namespace and cluster
+   * (`https://cloud.redpanda.com/NAMESPACE/CLUSTER/`).
    */
   basePath?: string;
   /**

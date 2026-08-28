@@ -49,7 +49,7 @@ type BaseNodeHeaderTitleProps = {
 };
 
 export function BaseNodeHeaderTitle({ children, className }: BaseNodeHeaderTitleProps) {
-  return <span className={cn('truncate text-xs font-medium', className)}>{children}</span>;
+  return <span className={cn('truncate text-body-sm font-medium', className)}>{children}</span>;
 }
 
 type BaseNodeContentProps = {

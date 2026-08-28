@@ -45,7 +45,7 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
                 <List className="my-0">
                   {exactTopics.map((topic, idx) => (
                     <ListItem key={idx}>
-                      <span className="text-body-sm font-mono text-gray-700">
+                      <span className="text-body-sm font-mono text-foreground">
                         {topic}
                       </span>
                     </ListItem>
@@ -67,18 +67,18 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
               <CardContent space="sm">
                 <div className="text-body font-medium font-mono text-informative">
                   {topic}{' '}
-                  <span className="text-body-sm text-gray-500">
+                  <span className="text-body-sm text-subtle">
                     (regex pattern)
                   </span>
                 </div>
                 {matchingTopics.length > 0 ? (
                   <>
-                    <div className="text-body-sm text-gray-600">Matches {matchingTopics.length} existing topics:</div>
+                    <div className="text-body-sm text-subtle">Matches {matchingTopics.length} existing topics:</div>
                     <div className="max-h-[100px] overflow-y-auto">
                       <List className="my-0">
                         {matchingTopics.map((matchedTopic, idx) => (
                           <ListItem key={idx}>
-                            <span className="text-body-sm font-mono text-gray-700">
+                            <span className="text-body-sm font-mono text-foreground">
                               {matchedTopic}
                             </span>
                           </ListItem>
@@ -87,7 +87,7 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
                     </div>
                   </>
                 ) : (
-                  <div className="text-body-sm text-gray-500">No existing topics match yet</div>
+                  <div className="text-body-sm text-subtle">No existing topics match yet</div>
                 )}
               </CardContent>
             </Card>

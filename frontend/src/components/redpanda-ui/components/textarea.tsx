@@ -5,12 +5,12 @@ import { useFieldContext } from './field';
 import { cn, type SharedProps } from '../lib/utils';
 
 const textareaVariants = cva(
-  '!border-input focus-visible:!border-ring aria-invalid:!border-destructive flex w-full rounded-md border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40',
+  '!border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full rounded-md border bg-input-fill text-body-lg shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] selection:bg-selection selection:text-selection-foreground placeholder:text-placeholder hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none md:text-body',
   {
     variants: {
       size: {
-        sm: 'min-h-12 px-2.5 py-1.5 text-sm',
-        default: 'min-h-16 px-3 py-2',
+        sm: 'min-h-12 px-2.5 py-1.5 text-body',
+        md: 'min-h-16 px-3 py-2',
         lg: 'min-h-20 px-4 py-3',
       },
       resize: {
@@ -22,7 +22,7 @@ const textareaVariants = cva(
       },
     },
     defaultVariants: {
-      size: 'default',
+      size: 'md',
       resize: 'auto',
     },
   }

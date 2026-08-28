@@ -45,8 +45,8 @@ function SheetOverlay({ className, ...props }: SheetOverlayProps) {
   return (
     <SheetPrimitive.Backdrop
       className={cn(
-        'fixed inset-0 z-50 bg-black/50 transition-opacity duration-500 ease-in-out data-[ending-style]:duration-300',
-        'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+        'fixed inset-0 z-50 bg-modal-overlay transition-opacity duration-500 ease-in-out data-[ending-style]:duration-300 motion-reduce:transition-none',
+        'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
         className
       )}
       data-slot="sheet-overlay"
@@ -54,6 +54,21 @@ function SheetOverlay({ className, ...props }: SheetOverlayProps) {
     />
   );
 }
+
+/**
+ * The width cap per size, and the single place the size names are declared. Only `left`/`right`
+ * sheets take a cap: a `top`/`bottom` sheet spans the viewport, so its `size` has nothing to bound.
+ */
+const SHEET_MAX_WIDTH = {
+  sm: 'sm:max-w-sm',
+  md: 'sm:max-w-md',
+  lg: 'sm:max-w-lg',
+  xl: 'sm:max-w-xl',
+  '2xl': 'sm:max-w-2xl',
+  full: 'sm:max-w-none',
+} as const;
+
+type SheetSize = keyof typeof SHEET_MAX_WIDTH;
 
 const sheetVariants = cva(
   cn(
@@ -68,20 +83,19 @@ const sheetVariants = cva(
   {
     variants: {
       side: {
-        top: 'inset-x-0 top-0 border-b',
-        bottom: 'inset-x-0 bottom-0 border-t',
-        left: 'inset-y-0 left-0 h-full border-r',
-        right: 'inset-y-0 right-0 h-full border-l',
+        top: 'inset-x-0 top-0 h-auto border-b',
+        bottom: 'inset-x-0 bottom-0 h-auto border-t',
+        left: 'inset-y-0 left-0 h-full w-full border-r',
+        right: 'inset-y-0 right-0 h-full w-full border-l',
       },
-      size: {
-        sm: 'w-full sm:max-w-sm',
-        md: 'w-full sm:max-w-md',
-        lg: 'w-full sm:max-w-lg',
-        xl: 'w-full sm:max-w-xl',
-        '2xl': 'w-full sm:max-w-2xl',
-        full: 'w-full sm:max-w-none',
-      },
+      /** Keyed empty so the prop keeps its type; the caps are compound variants, per `SHEET_MAX_WIDTH`. */
+      size: Object.fromEntries(Object.keys(SHEET_MAX_WIDTH).map((size) => [size, ''])) as Record<SheetSize, string>,
     },
+    compoundVariants: Object.entries(SHEET_MAX_WIDTH).map(([size, className]) => ({
+      class: className,
+      side: ['left', 'right'] as ('left' | 'right')[],
+      size: size as SheetSize,
+    })),
     defaultVariants: {
       side: 'right',
       size: 'xl',
@@ -90,9 +104,14 @@ const sheetVariants = cva(
 );
 
 type SheetContentProps = SheetPrimitive.Popup.Props &
-  VariantProps<typeof sheetVariants> &
+  Omit<VariantProps<typeof sheetVariants>, 'size'> &
   SharedProps &
   Pick<FixedPositionContentProps, 'container' | 'showOverlay'> & {
+    /**
+     * Caps the width of a `left`/`right` sheet. A `top`/`bottom` sheet spans the viewport and takes
+     * its height from its content, so this does not apply to one.
+     */
+    size?: SheetSize;
     showCloseButton?: boolean;
   };
 
@@ -122,7 +141,7 @@ function SheetContent({
         {children}
         {showCloseButton ? (
           <SheetPrimitive.Close
-            className="absolute top-5 right-5 cursor-pointer rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none"
+            className="absolute top-5 right-5 cursor-pointer rounded-sm opacity-70 outline-none transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none motion-reduce:transition-none"
             data-slot="sheet-close"
           >
             <X className="h-7 w-7" />
@@ -175,7 +194,7 @@ type SheetDescriptionProps = SheetPrimitive.Description.Props;
 function SheetDescription({ className, ...props }: SheetDescriptionProps) {
   return (
     <SheetPrimitive.Description
-      className={cn('text-body text-muted-foreground', className)}
+      className={cn('text-body text-subtle', className)}
       data-slot="sheet-description"
       {...props}
     />

@@ -14,7 +14,7 @@ export function FormDepthProvider({ depth, children }: { depth: number; children
 
 /**
  * Map nesting depth to a heading level. Root is h2 (h1 is reserved for the page
- * heading); clamped at 5 to match the Heading component's h1..h5 variants.
+ * heading); clamped at 5 because the heading scale has five rungs.
  */
 export function headingLevelForDepth(depth: number): 2 | 3 | 4 | 5 {
   const level = 2 + depth;

@@ -20,9 +20,9 @@ export const ChoiceboxItem = ({ className, children, testId, size, ...props }: C
   <RadioGroupPrimitive.Root {...props} className="group">
     <Card
       className={cn(
-        'flex cursor-pointer flex-row items-start justify-between rounded-md border-2 border-solid p-4 text-left shadow-none transition-all',
+        'flex cursor-pointer flex-row items-start justify-between rounded-md border-2 border-solid p-4 text-left shadow-none transition-all motion-reduce:transition-none',
         'group-data-[checked]:!border-selected',
-        'hover:shadow-elevated',
+        'hover:border-primary-line-hover hover:shadow-elevated',
         className
       )}
       data-testid={testId}
@@ -48,13 +48,13 @@ export const ChoiceboxItemTitle = ({ className, ...props }: ChoiceboxItemTitlePr
 export type ChoiceboxItemSubtitleProps = HTMLAttributes<HTMLSpanElement>;
 
 export const ChoiceboxItemSubtitle = ({ className, ...props }: ChoiceboxItemSubtitleProps) => (
-  <span className={cn('font-normal text-muted-foreground text-xs', className)} {...props} />
+  <span className={cn('font-normal text-body-sm text-subtle', className)} {...props} />
 );
 
 export type ChoiceboxItemDescriptionProps = ComponentProps<typeof CardDescription>;
 
 export const ChoiceboxItemDescription = ({ className, ...props }: ChoiceboxItemDescriptionProps) => (
-  <CardDescription className={cn('text-sm', className)} {...props} />
+  <CardDescription className={className} {...props} />
 );
 
 export type ChoiceboxItemContentProps = ComponentProps<typeof CardContent>;
@@ -62,7 +62,7 @@ export type ChoiceboxItemContentProps = ComponentProps<typeof CardContent>;
 export const ChoiceboxItemContent = ({ className, ...props }: ChoiceboxItemContentProps) => (
   <CardContent
     className={cn(
-      '!border-input flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border p-0 text-selected shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:bg-input/30 dark:aria-invalid:ring-destructive/40',
+      '!border-input focus-visible:!border-ring aria-invalid:!border-destructive flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border bg-input-fill p-0 text-selected shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none',
       'group-data-[checked]:!border-selected',
       className
     )}
@@ -75,7 +75,7 @@ export type ChoiceboxItemIndicatorProps = ComponentProps<typeof RadioGroupPrimit
 export const ChoiceboxItemIndicator = ({ className, ...props }: ChoiceboxItemIndicatorProps) => (
   <RadioGroupPrimitive.Indicator
     className={cn(
-      'flex items-center justify-center transition-[opacity,transform] duration-150 ease-out',
+      'flex items-center justify-center transition-[opacity,transform] ease-out motion-reduce:transition-none',
       'data-[starting-style]:scale-0 data-[starting-style]:opacity-0',
       'data-[ending-style]:scale-0 data-[ending-style]:opacity-0',
       className

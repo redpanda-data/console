@@ -277,11 +277,13 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
         </TableCell>
         <TableCell>
-          <Badge variant="simple">{row.resourceType}</Badge>
+          <Badge tone="default" variant="outline">
+            {row.resourceType}
+          </Badge>
         </TableCell>
         <TableCell className="font-mono">{row.resourceName}</TableCell>
         <TableCell>{row.operation}</TableCell>
-        <TableCell className={row.permissionType === 'Allow' ? 'text-success' : 'text-error'}>
+        <TableCell className={row.permissionType === 'Allow' ? 'text-success' : 'text-destructive'}>
           {row.permissionType}
         </TableCell>
         <TableCell className="text-muted-foreground">{row.host}</TableCell>

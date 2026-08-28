@@ -13,7 +13,7 @@ function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'>
     // biome-ignore lint/a11y/useSemanticElements: part of input group implementation
     <div
       className={cn(
-        'group/input-group !border-input relative flex w-full items-center rounded-md border shadow-xs outline-none transition-[color,box-shadow] dark:bg-input/30',
+        'group/input-group !border-input relative flex w-full items-center rounded-md border bg-input-fill shadow-xs outline-none transition-[color,box-shadow] motion-reduce:transition-none',
         'h-9 min-w-0 has-[>textarea]:h-auto',
 
         // <Input> wraps its control in a container div, so target the descendant input via [&_input]/has-[input].
@@ -26,7 +26,7 @@ function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'>
         'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/50',
         'has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50',
 
-        'has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-destructive/20 dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40',
+        'has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-invalid',
 
         className
       )}
@@ -39,7 +39,7 @@ function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'>
 }
 
 const inputGroupAddonVariants = cva(
-  "flex h-auto cursor-text select-none items-center gap-2 py-1.5 font-medium text-muted-foreground text-sm group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4",
+  "flex h-auto cursor-text select-none items-center gap-2 py-1.5 font-medium text-body text-subtle group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4",
   {
     variants: {
       align: {
@@ -81,7 +81,7 @@ function InputGroupAddon({
   );
 }
 
-const inputGroupButtonVariants = cva('flex items-center gap-2 text-sm shadow-none', {
+const inputGroupButtonVariants = cva('flex items-center gap-2 text-body shadow-none', {
   variants: {
     size: {
       xs: "h-6 gap-1 rounded-[calc(var(--radius)-5px)] px-2 has-[>svg]:px-2 [&>svg:not([class*='size-'])]:size-3.5",
@@ -119,7 +119,7 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
       className={cn(
-        "flex items-center gap-2 text-muted-foreground text-sm [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none",
+        "flex items-center gap-2 text-body text-subtle [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none",
         className
       )}
       {...props}
@@ -130,10 +130,7 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
 function InputGroupInput({ className, testId, ...props }: Omit<React.ComponentProps<'input'>, 'size'> & SharedProps) {
   return (
     <Input
-      className={cn(
-        'rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent',
-        className
-      )}
+      className={cn('rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0', className)}
       containerClassName="flex-1"
       testId={testId}
       {...props}
@@ -145,7 +142,7 @@ function InputGroupTextarea({ className, testId, ...props }: React.ComponentProp
   return (
     <Textarea
       className={cn(
-        'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent',
+        'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0',
         className
       )}
       testId={testId}

@@ -17,24 +17,8 @@ export const MAX_PAGE_SIZE = 25;
 export const SHORT_POLLING_INTERVAL = 2 * ONE_SECOND;
 
 /**
- * A fast-fail retry function that provides quick feedback to users.
- * Only retries transient network errors, not deterministic gRPC errors.
- *
- * Use cases:
- * - Queries that should fail fast on permission/auth errors
- * - Queries where server errors (500) are unlikely to succeed on retry
- * - Queries where you want to show errors to users immediately
- *
- * @example
- * ```typescript
- * export const useMyQuery = (request: MyRequest) => {
- *   return useQuery(myRpc, request, { retry: fastFailRetry });
- * };
- * ```
- *
- * @param failureCount - Number of times the query has already failed
- * @param error - The error from the failed query attempt
- * @returns true to retry, false to fail immediately
+ * `retry` for queries that should surface errors immediately: one retry for transient network
+ * failures, none for ConnectErrors, which are deterministic and would fail the same way again.
  */
 export const fastFailRetry = (failureCount: number, error: Error): boolean => {
   // Max 1 retry attempt (initial + 1 retry = 2 total attempts)
@@ -42,14 +26,6 @@ export const fastFailRetry = (failureCount: number, error: Error): boolean => {
     return false;
   }
 
-  // Don't retry on ConnectError - these are deterministic gRPC errors:
-  // - Code.PermissionDenied (user lacks permission)
-  // - Code.Unauthenticated (auth failure)
-  // - Code.InvalidArgument (bad request)
-  // - Code.NotFound (resource doesn't exist)
-  // - Code.Internal (server error - unlikely to succeed on retry)
-  // - Code.Unimplemented (feature not available)
-  // etc.
   if (error instanceof ConnectError) {
     return false;
   }
