@@ -1266,6 +1266,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     },
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
+    // Expanded rows must survive a data swap: loadLargeMessage replaces the message
+    // array, and v9 resets expanded state on every row-structure change.
+    autoResetExpanded: false,
   });
 
   // Search controls derived state
