@@ -1,0 +1,111 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import userEvent from '@testing-library/user-event';
+import { render, screen } from 'test-utils';
+import { describe, expect, test } from 'vitest';
+
+import { FieldDescription } from './field-description';
+import type { RawFieldSpec } from '../types/schema';
+
+const field = (overrides: Partial<RawFieldSpec>): RawFieldSpec =>
+  ({ name: 'topics', type: 'string', kind: 'scalar', ...overrides }) as RawFieldSpec;
+
+// The `input: redpanda` topics field: a one-line short description over a multi-paragraph AsciiDoc one.
+const LONG_TOPICS_DESCRIPTION =
+  '\nA list of topics to consume from. Multiple comma separated topics can be listed in a single element. ' +
+  'When a `consumer_group` is specified partitions are automatically distributed across consumers of a topic, ' +
+  'otherwise all partitions are consumed.\n\nAlternatively, it is possible to specify explicit partitions.';
+
+const SHORT_TOPICS_DESCRIPTION =
+  'A list of topics to consume from. Multiple comma-separated topics may share one element.';
+
+const SHOW_MORE_RE = /show more/i;
+const ALTERNATIVELY_RE = /Alternatively, it is possible/;
+const TOPICS_LEAD_RE = /A list of topics to consume from/;
+const SHOW_LESS_RE = /show less/i;
+
+describe('FieldDescription', () => {
+  test('prefers the short description over the long one', () => {
+    render(
+      <FieldDescription
+        spec={field({ description: LONG_TOPICS_DESCRIPTION, shortDescription: SHORT_TOPICS_DESCRIPTION })}
+      />
+    );
+
+    expect(screen.getByText(SHORT_TOPICS_DESCRIPTION)).toBeInTheDocument();
+    expect(screen.queryByText(ALTERNATIVELY_RE)).not.toBeInTheDocument();
+    // A one-liner needs no expander.
+    expect(screen.queryByRole('button', { name: SHOW_MORE_RE })).not.toBeInTheDocument();
+  });
+
+  test('falls back to the long description when no short one is served', () => {
+    render(<FieldDescription spec={field({ description: LONG_TOPICS_DESCRIPTION })} />);
+
+    expect(screen.getByText(TOPICS_LEAD_RE)).toBeInTheDocument();
+  });
+
+  test('treats a blank short description as absent', () => {
+    render(
+      <FieldDescription spec={field({ description: 'An identifier for the client.', shortDescription: '   ' })} />
+    );
+
+    expect(screen.getByText('An identifier for the client.')).toBeInTheDocument();
+  });
+
+  test('renders nothing when the field carries no prose', () => {
+    const { container } = render(<FieldDescription spec={field({})} />);
+
+    // The render wrapper contributes a hidden Chakra env node, so assert on visible text.
+    expect(container.textContent).toBe('');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  test('collapses a long fallback description behind an expander', async () => {
+    const user = userEvent.setup();
+    render(<FieldDescription spec={field({ description: LONG_TOPICS_DESCRIPTION })} />);
+
+    const toggle = screen.getByRole('button', { name: SHOW_MORE_RE });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // Collapsed is the flattened single-line rendering, so the trailing paragraph is clipped by CSS
+    // but the code span markup is already gone.
+    expect(screen.queryByText('consumer_group', { selector: 'code' })).not.toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(screen.getByRole('button', { name: SHOW_LESS_RE })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('consumer_group', { selector: 'code' })).toBeInTheDocument();
+    expect(screen.getByText(ALTERNATIVELY_RE)).toBeInTheDocument();
+  });
+
+  test('renders a short fallback description as Markdown with no expander', () => {
+    render(<FieldDescription spec={field({ description: 'Set the `topic` to publish to.' })} />);
+
+    expect(screen.getByText('topic', { selector: 'code' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: SHOW_MORE_RE })).not.toBeInTheDocument();
+  });
+
+  test('links a bare URL macro out of the AsciiDoc source', () => {
+    render(
+      <FieldDescription spec={field({ description: 'Uses https://github.com/twmb/franz-go[franz-go] internally.' })} />
+    );
+
+    const link = screen.getByRole('link', { name: 'franz-go' });
+    expect(link).toHaveAttribute('href', 'https://github.com/twmb/franz-go');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  test('keeps angle-bracket placeholders that Markdown would otherwise swallow', () => {
+    render(<FieldDescription spec={field({ description: 'Defaults to `cdc_metadata_<stream_id>`.' })} />);
+
+    expect(screen.getByText('cdc_metadata_<stream_id>', { selector: 'code' })).toBeInTheDocument();
+  });
+});

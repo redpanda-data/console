@@ -174,37 +174,6 @@ export function matchRank(component: ConnectComponentSpec, query: string, text: 
   return text.includes(query) ? 3 : -1;
 }
 
-// Reduce one-line AsciiDoc summaries (link macros, code spans) to plain label text on a single line.
-export function cleanText(text: string): string {
-  return text
-    .replace(/(?:xref|link):[^\s[]*\[([^\]]*)\]/g, '$1')
-    .replace(/https?:\/\/[^\s[]+\[([^\]]*)\]/g, '$1')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Convert the AsciiDoc constructs Connect uses (titles, link macros, bullets) to Markdown for react-markdown.
-// Unlike cleanText, newlines are preserved so titles/paragraphs stay distinct.
-export function asciidocToMarkdown(raw: string): string {
-  return (
-    raw
-      .replace(/\r\n/g, '\n')
-      // Link macros → label text.
-      .replace(/(?:xref|link):[^\s[\]]*\[([^\]]*)\]/g, '$1')
-      // Bare URL macro → Markdown link.
-      .replace(/(https?:\/\/[^\s[\]]+)\[([^\]]*)\]/g, '[$2]($1)')
-      // Section titles (`==`/`===`/… Title) → small heading.
-      .replace(/^=+\s+(.{1,60})$/gm, '#### $1')
-      // Strip leftover markers from over-long titles.
-      .replace(/^=+\s+/gm, '')
-      // List markers → bullets.
-      .replace(/^\*\s+/gm, '- ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  );
-}
-
 const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/;
 
 // Humanize + pluralize snake_case labels, joined with "or": ['cache', 'rate_limit'] → 'caches or rate limits'.

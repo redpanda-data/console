@@ -21,10 +21,8 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import { pluralizeWithNumber } from 'utils/string';
 
 import {
-  asciidocToMarkdown,
   buildEmptyMessage,
   byProminence,
-  cleanText,
   computeSuggested,
   matchRank,
   pushRecent,
@@ -33,6 +31,7 @@ import {
 } from './connect-command-palette-utils';
 import { ConnectorLogo } from './connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
+import { asciidocToMarkdown, cleanText } from '../utils/asciidoc';
 import { getCategoryDisplayName } from '../utils/categories';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { componentStatusToString, parseSchema } from '../utils/schema';

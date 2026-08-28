@@ -32,6 +32,7 @@ import { type Control, Controller, type FieldPath, useForm, useWatch } from 'rea
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
+import { FieldDescription } from './field-description';
 import type { FieldLintErrors } from './lint-field-mapping';
 import { ScrollShadow } from './scroll-shadow';
 import { getSecretSyntax, REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
@@ -550,9 +551,6 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
     ) : null}
   </div>
 );
-
-const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
-  spec.description ? <div className="text-body-sm text-muted-foreground">{spec.description}</div> : null;
 
 // Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
 // secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields

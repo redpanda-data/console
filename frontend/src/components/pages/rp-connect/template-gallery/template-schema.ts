@@ -47,7 +47,7 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
 
     const merged: TemplateSlot = {
       ...slot,
-      description: slot.description ?? (field.description || undefined),
+      description: slot.description ?? (field.shortDescription || field.description || undefined),
       required: slot.required ?? checkRequired(field),
     };
 
