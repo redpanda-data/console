@@ -270,6 +270,12 @@ serde:
 # Console settings
 #----------------------------------------------------------------------------
 console:
+  # Optional: Configure timeouts for Kafka admin operations.
+  # operationTimeouts:
+    # Timeout for fetching broker metadata and log dir sizes (cluster overview).
+    # clusterInfo: 6s
+    # Timeout for fetching topic metadata and per-topic log dir sizes (topics list).
+    # topicsOverview: 5s
   topicDocumentation:
     enabled: false
     # git:

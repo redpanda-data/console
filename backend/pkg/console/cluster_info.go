@@ -13,7 +13,6 @@ import (
 	"context"
 	"log/slog"
 	"sort"
-	"time"
 
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"golang.org/x/sync/errgroup"
@@ -53,7 +52,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
 	// times in case of a single broker being down.
-	childCtx, cancel := context.WithTimeout(egCtx, 6*time.Second)
+	childCtx, cancel := context.WithTimeout(egCtx, s.cfg.Console.OperationTimeouts.ClusterInfo)
 	defer cancel()
 
 	eg.Go(func() error {
