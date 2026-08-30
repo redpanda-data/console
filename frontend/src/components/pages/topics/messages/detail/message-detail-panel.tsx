@@ -178,17 +178,11 @@ export const MessageDetailPanel = ({
               size="icon-xs"
               testId="detail-collapse"
               title="Collapse back to panel"
-              variant="secondary-ghost"
+              variant="ghost"
             >
               <Minimize2Icon />
             </Button>
-            <Button
-              onClick={onClose}
-              size="icon-xs"
-              testId="detail-sheet-close"
-              title="Close"
-              variant="secondary-ghost"
-            >
+            <Button onClick={onClose} size="icon-xs" testId="detail-sheet-close" title="Close" variant="ghost">
               <XIcon />
             </Button>
           </SheetHeader>
@@ -213,11 +207,11 @@ export const MessageDetailPanel = ({
           size="icon-xs"
           testId="detail-expand"
           title="Expand"
-          variant="secondary-ghost"
+          variant="ghost"
         >
           <Maximize2Icon />
         </Button>
-        <Button onClick={onClose} size="icon-xs" testId="detail-close" title="Close" variant="secondary-ghost">
+        <Button onClick={onClose} size="icon-xs" testId="detail-close" title="Close" variant="ghost">
           <XIcon />
         </Button>
       </div>

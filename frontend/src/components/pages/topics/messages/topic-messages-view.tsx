@@ -490,7 +490,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
                 size="sm"
                 testId="messages-view-settings-button"
                 title="View settings — decoding, columns, format & preview fields"
-                variant={viewSettingsOpen ? 'secondary' : 'ghost'}
+                variant={viewSettingsOpen ? 'default' : 'ghost'}
               >
                 <SettingsIcon className="size-3.5" />
               </Button>

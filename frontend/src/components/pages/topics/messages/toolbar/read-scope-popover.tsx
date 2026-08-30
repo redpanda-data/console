@@ -170,7 +170,7 @@ export const ReadScopePopover = ({
                 }}
                 size="icon-xs"
                 title="How reading works — open explainer"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <InfoIcon />
               </Button>

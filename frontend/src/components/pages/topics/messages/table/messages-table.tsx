@@ -9,18 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type OnChangeFn,
-  type PaginationState,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
+import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
 import {
   Empty,
   EmptyContent,
@@ -79,10 +70,10 @@ const buildColumn = (
   timestampFormat: TimestampDisplayFormat,
   sortingDisabled: boolean,
   valuePreview?: ValuePreviewConfig
-): ColumnDef<TopicMessage> => {
+): DataTableColumnDef<TopicMessage> => {
   // enableSorting mirrors isSortableColumnId exactly — message-order.ts's visiblePageKeys reads
   // off the same predicate so keyboard nav walks the same order tanstack actually renders.
-  const base: ColumnDef<TopicMessage> = {
+  const base: DataTableColumnDef<TopicMessage> = {
     id: config.id,
     header: COLUMN_LABELS[config.id],
     enableSorting: isSortableColumnId(config.id, sortingDisabled),
@@ -215,7 +206,7 @@ export const MessagesTable = ({
     [columnConfig]
   );
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: messages,
     columns,
     state: { sorting, pagination, columnVisibility },
@@ -224,9 +215,6 @@ export const MessagesTable = ({
     // Pagination is controlled through URL state; auto-reset would fire
     // onPaginationChange on every data change and loop with the URL updates.
     autoResetPageIndex: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getRowId: (msg) => messageKey(msg),
   });
 
@@ -248,7 +236,7 @@ export const MessagesTable = ({
                 const sortDir = header.column.getIsSorted();
                 const label = (
                   <>
-                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    <table.FlexRender header={header} />
                     {sortDir === 'asc' && <ArrowUpIcon className="size-3.5" />}
                     {sortDir === 'desc' && <ArrowDownIcon className="size-3.5" />}
                   </>
@@ -303,7 +291,7 @@ export const MessagesTable = ({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell className={cn(density === 'compact' ? 'py-1.5' : 'py-2.5')} key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
                 </TableRow>

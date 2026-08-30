@@ -93,7 +93,7 @@ export const MetadataSection = ({ msg, open, onOpenChange }: SectionProps) => (
       <MetaRow label="Offset">{msg.offset.toLocaleString()}</MetaRow>
       <MetaRow label="Headers">{msg.headers.length}</MetaRow>
       <MetaRow label="Compression">
-        <Badge className="font-mono" size="sm" tone="neutral" variant="subtle">
+        <Badge className="font-mono" size="sm" tone="default" variant="subtle">
           {msg.compression}
         </Badge>
       </MetaRow>

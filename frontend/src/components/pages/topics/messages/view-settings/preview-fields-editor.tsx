@@ -44,12 +44,7 @@ const OptionRow = ({
       value={[value]}
     >
       {options.map((option) => (
-        <ToggleGroupItem
-          buttonProps={{ className: 'flex-1' }}
-          className="w-full text-xs"
-          key={option.value}
-          value={option.value}
-        >
+        <ToggleGroupItem className="flex-1 text-xs" key={option.value} value={option.value}>
           {option.label}
         </ToggleGroupItem>
       ))}

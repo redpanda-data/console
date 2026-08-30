@@ -435,13 +435,7 @@ export const FilterBar = ({
           value={rawText}
         />
         {hasChips && (
-          <Button
-            className="shrink-0"
-            onClick={clearAll}
-            size="icon-xs"
-            title="Clear all filters"
-            variant="secondary-ghost"
-          >
+          <Button className="shrink-0" onClick={clearAll} size="icon-xs" title="Clear all filters" variant="ghost">
             <XIcon />
           </Button>
         )}

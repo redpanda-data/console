@@ -180,9 +180,9 @@ const DateTimePickerPanel = ({
             type="time"
             value={timeInputValue}
           />
-          {/* variant="secondary" resolves to indigo-600 (bg-surface-primary), matching the
-          selected-day override above — variant="primary" is a dark navy token unrelated to it. */}
-          <Button disabled={disabled} onClick={() => onChange(Date.now())} size="sm" type="button" variant="secondary">
+          {/* variant="primary" paints `--color-primary`, the same token the selected-day
+          override above repaints `--color-selected` with, so the two affordances match. */}
+          <Button disabled={disabled} onClick={() => onChange(Date.now())} size="sm" type="button" variant="primary">
             Now
           </Button>
         </div>

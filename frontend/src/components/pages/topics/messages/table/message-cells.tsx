@@ -76,7 +76,7 @@ const payloadText = (
  */
 const PayloadMeta = ({ payload }: { payload: Payload }) => (
   <span className="mt-0.5 flex items-center gap-2">
-    <Badge className="font-mono text-[10px] uppercase" size="sm" tone="neutral" variant="subtle">
+    <Badge className="font-mono text-[10px] uppercase" size="sm" tone="default" variant="subtle">
       {payload.encoding}
     </Badge>
     <span className="text-[11px] text-muted-foreground">{prettyBytes(payload.size)}</span>

@@ -204,20 +204,10 @@ export const ViewSettingsPanel = ({
             size="sm"
             value={[density]}
           >
-            <ToggleGroupItem
-              buttonProps={{ className: 'flex-1' }}
-              className="w-full"
-              testId="view-settings-density-compact"
-              value="compact"
-            >
+            <ToggleGroupItem className="flex-1" testId="view-settings-density-compact" value="compact">
               Compact
             </ToggleGroupItem>
-            <ToggleGroupItem
-              buttonProps={{ className: 'flex-1' }}
-              className="w-full"
-              testId="view-settings-density-detailed"
-              value="detailed"
-            >
+            <ToggleGroupItem className="flex-1" testId="view-settings-density-detailed" value="detailed">
               Detailed
             </ToggleGroupItem>
           </ToggleGroup>
