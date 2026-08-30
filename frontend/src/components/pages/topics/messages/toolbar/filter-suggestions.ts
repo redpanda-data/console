@@ -18,7 +18,9 @@ import { looksLikeJs, looksLikeJsCode, NUMERIC_FIELDS, parseFilterInput, stripJs
 export type SuggestionAction =
   | { type: 'set-pending'; field: string }
   | { type: 'commit-field'; field: string; op: FilterOp; value: string }
-  | { type: 'fill-text'; text: string }
+  // `commit` marks a fill that confirms the search as-is (Enter on `Search "…"`), which closes
+  // the popup — as opposed to fills like `value:` that the user keeps typing into.
+  | { type: 'fill-text'; text: string; commit?: boolean }
   | { type: 'open-js'; code?: string; name?: string };
 
 export type SuggestionItem =
@@ -174,7 +176,7 @@ const defaultGroupItems = ({ query, recents, canUseJsFilters, messages }: Sugges
         kind: 'item',
         label: `Search "${query}"`,
         sub: msgs(fullTextCount),
-        action: { type: 'fill-text', text: query },
+        action: { type: 'fill-text', text: query, commit: true },
       }
     );
     if (canUseJsFilters && looksLikeJs(query)) {

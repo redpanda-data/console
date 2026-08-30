@@ -216,6 +216,18 @@ describe('FilterBar', () => {
     expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
   });
 
+  test('Enter on the full-text suggestion closes the popup', async () => {
+    renderBar();
+    await userEvent.click(input());
+    await userEvent.keyboard('asdasd');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(input()).toHaveAttribute('aria-expanded', 'false');
+    // the search text itself stays in the input
+    expect(input()).toHaveValue('asdasd');
+  });
+
   test('pressing Enter twice after committing a token does not duplicate it', async () => {
     const props = renderBar();
     await userEvent.click(input());

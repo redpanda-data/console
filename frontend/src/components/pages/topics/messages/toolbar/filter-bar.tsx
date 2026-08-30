@@ -301,6 +301,9 @@ export const FilterBar = ({
           action,
         });
       }
+      if (action.type === 'fill-text' && action.commit) {
+        setOpen(false);
+      }
       setActiveIdx(0);
       setNavigated(false);
       const el = inputRef.current;
