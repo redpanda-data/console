@@ -12,6 +12,11 @@
 // Array prototype extensions (must be imported early)
 import './utils/array-extensions';
 
+/* TLS is optional, so Console is often served over plain HTTP — not a secure context, where
+   `navigator.clipboard` is absent and every copy silently fails. Delegates to native where it exists.
+   Needed in each entry point. */
+import 'clipboard-polyfill/overwrite-globals';
+
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
 

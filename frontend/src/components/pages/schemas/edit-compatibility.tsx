@@ -269,7 +269,7 @@ function EditSchemaCompatibility(p: {
         {!!contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-compatibility-context-name">
             <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            <div className="font-bold text-lg">
+            <div className="font-bold text-heading-md">
               Editing compatibility for context: <span className="text-muted-foreground">{contextName}</span>
             </div>
           </div>
@@ -320,7 +320,7 @@ function EditSchemaCompatibility(p: {
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
             </Tooltip>
-            <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="secondary-ghost">
+            <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="ghost">
               Cancel
             </Button>
           </div>
@@ -329,12 +329,12 @@ function EditSchemaCompatibility(p: {
       {!!subjectName && schema && (
         <div className="flex-1">
           <div
-            className="whitespace-pre-wrap break-words font-bold text-lg"
+            className="whitespace-pre-wrap break-words font-bold text-heading-md"
             data-testid="edit-compatibility-subject-name"
           >
             {subjectName}
           </div>
-          <div className="mt-8 mb-4 font-bold text-lg">Schema</div>
+          <div className="mt-8 mb-4 font-bold text-heading-md">Schema</div>
           <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
         </div>
       )}

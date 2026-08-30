@@ -150,7 +150,7 @@ export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoun
   <div className="flex h-64 items-center justify-center">
     <div className="flex flex-col items-center gap-4">
       <SearchX className="h-12 w-12 text-muted-foreground" />
-      <div className="text-base">Shadow link "{name}" not found</div>
+      <div className="text-body-lg">Shadow link "{name}" not found</div>
       <div className="text-body text-muted-foreground">
         The shadow link may have been deleted or the name is incorrect.
       </div>
@@ -167,7 +167,7 @@ type ShadowLinkLoadErrorStateProps = {
 
 export const ShadowLinkLoadErrorState = ({ errorMessage }: ShadowLinkLoadErrorStateProps) => (
   <div className="flex h-64 items-center justify-center">
-    <div className="flex items-center gap-2 text-error">
+    <div className="flex items-center gap-2 text-destructive">
       <AlertCircle className="h-6 w-6" />
       <div className="text-body">Error loading shadow link: {errorMessage}</div>
     </div>

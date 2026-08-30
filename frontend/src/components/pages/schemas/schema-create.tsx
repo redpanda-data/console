@@ -315,10 +315,6 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
 
   return (
     <PageContent key="b">
-      <h1 className="text-heading-xl" data-testid="schema-add-version-heading">
-        Add schema version
-      </h1>
-
       <SchemaEditor mode="ADD_VERSION" onStateChange={setNonNullStateData} state={state} />
 
       <SchemaPageButtons editorState={state} parentSubjectName={subjectName} />
@@ -352,8 +348,12 @@ const SchemaPageButtons = (p: {
   return (
     <>
       {persistentValidationError ? (
-        <Alert className="my-4" testId="schema-create-validation-error-alert" variant="destructive">
-          <AlertCircle />
+        <Alert
+          className="my-4"
+          icon={<AlertCircle />}
+          testId="schema-create-validation-error-alert"
+          variant="destructive"
+        >
           <AlertTitle>
             {persistentValidationError.compatibilityError?.errorType
               ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
@@ -567,8 +567,7 @@ const SchemaEditor = (p: {
     <>
       <h2 className="text-heading-lg">Subject Settings</h2>
       {Boolean(isAddVersion) && (
-        <Alert variant="info">
-          <InfoIcon />
+        <Alert variant="informative">
           <AlertDescription>
             When adding a new schema version, the only thing that can be changed is the schema definition and its
             references. The rest of the fields have been disabled.
@@ -735,7 +734,7 @@ const SchemaEditor = (p: {
               <div className="font-mono text-body">
                 {isNamedContext(state.context) ? (
                   <>
-                    <span className="font-mono text-body text-gray-400">:{state.context}:</span>
+                    <span className="font-mono text-body text-disabled">:{state.context}:</span>
                     <span className="font-mono text-body">{state.computedSubjectName}</span>
                   </>
                 ) : (
@@ -788,7 +787,7 @@ const SchemaEditor = (p: {
             <span className="font-semibold">Normalize schema</span>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-gray-500" />} />
+                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-subtle" />} />
                 <TooltipContent side="right">
                   When enabled, the schema will be normalized to a canonical form before registration, reducing
                   duplicate schema versions

@@ -121,7 +121,7 @@ export const DeserializersModal: FC<{
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button onClick={() => setShowDialog(false)} variant="secondary">
+        <Button onClick={() => setShowDialog(false)} variant="primary">
           Close
         </Button>
       </DialogFooter>

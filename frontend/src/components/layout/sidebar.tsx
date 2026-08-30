@@ -53,7 +53,7 @@ function SidebarLogo() {
   return (
     <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
       <RedpandaLogo
-        className={isExpanded ? 'h-6 w-auto text-white' : 'h-6 w-6'}
+        className={isExpanded ? 'h-6 w-auto text-sidebar-foreground' : 'h-6 w-6'}
         variant={isExpanded ? 'horizontal' : 'mark'}
       />
     </Link>
@@ -117,12 +117,15 @@ const UserProfile = () => {
           <SidebarMenuButton
             aria-label={`User menu for ${user.displayName}`}
             className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
-            size={isCollapsed ? 'default' : 'lg'}
+            size={isCollapsed ? 'md' : 'lg'}
             tooltip={isCollapsed ? user.displayName : undefined}
           >
             <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
               <AvatarImage alt="" src={user.avatarUrl} />
-              <AvatarFallback aria-hidden="true" className="bg-primary font-medium text-primary-foreground text-xs">
+              <AvatarFallback
+                aria-hidden="true"
+                className="bg-primary font-medium text-body-sm text-primary-foreground"
+              >
                 {initials}
               </AvatarFallback>
             </Avatar>

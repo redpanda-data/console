@@ -138,7 +138,7 @@ export const AuthenticationSection = () => {
             className="border-primary/20 bg-primary/5 text-foreground"
             data-testid="auth-source-cluster-callout"
             icon={<InfoIcon className="text-primary" />}
-            variant="info"
+            variant="informative"
           >
             <AlertTitle className="font-medium text-foreground">The user must exist on the source cluster.</AlertTitle>
             <AlertDescription className="!block text-muted-foreground">

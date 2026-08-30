@@ -155,7 +155,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                 justifyContent="center"
                 w="80px"
               >
-                <CheckIcon color="#22c55e" size={40} />
+                <CheckIcon className="text-success" size={40} />
               </Box>
               <VStack align="center" spacing={2}>
                 <Text fontSize="lg" fontWeight="bold" textAlign="center">

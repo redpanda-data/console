@@ -10,31 +10,20 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type FilterFn,
-  flexRender,
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type Updater,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, FilterFn, PaginationState, Updater } from '@tanstack/react-table';
 import { ArchiveIcon, EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Badge } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
+  type DataTableColumnDef,
   DataTableColumnHeader,
   DataTableFacetedFilter,
+  type DataTableFeatures,
   DataTablePagination,
+  useDataTable,
 } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
@@ -53,6 +42,7 @@ import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQuery
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { sortingParser } from 'utils/sorting-parser';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
@@ -106,10 +96,10 @@ const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   );
 };
 
-const SCHEMA_TYPE_BADGE_VARIANT: Record<string, string> = {
-  AVRO: 'info-inverted',
-  PROTOBUF: 'accent-inverted',
-  JSON: 'warning-inverted',
+const SCHEMA_TYPE_BADGE_TONE: Record<string, BadgeTone> = {
+  AVRO: 'informative',
+  PROTOBUF: 'brand',
+  JSON: 'warning',
 };
 
 const SCHEMA_TYPE_FILTER_OPTIONS = [
@@ -130,7 +120,7 @@ type EnrichedSubject = SchemaRegistrySubject & {
 };
 
 // Faceted filters set an array of selected values; match rows whose column value is one of them.
-const multiSelectFilterFn: FilterFn<EnrichedSubject> = (row, columnId, filterValue) => {
+const multiSelectFilterFn: FilterFn<DataTableFeatures, EnrichedSubject> = (row, columnId, filterValue) => {
   const selected = filterValue as string[] | undefined;
   if (!selected?.length) {
     return true;
@@ -311,7 +301,7 @@ const SchemaList: FC = () => {
     [filteredSubjects, detailsByName]
   );
 
-  const columns = useMemo<ColumnDef<EnrichedSubject>[]>(
+  const columns = useMemo<DataTableColumnDef<EnrichedSubject>[]>(
     () => [
       {
         accessorKey: 'name',
@@ -364,12 +354,12 @@ const SchemaList: FC = () => {
               cell: ({ row }: { row: { original: EnrichedSubject } }) => {
                 const { context } = parseSubjectContext(row.original.name);
                 return (
-                  <Badge size="sm" variant="neutral-inverted">
+                  <Badge size="sm" tone="default" variant="subtle">
                     {context === 'default' ? 'Default' : `.${context}`}
                   </Badge>
                 );
               },
-            } satisfies ColumnDef<EnrichedSubject>,
+            } satisfies DataTableColumnDef<EnrichedSubject>,
           ]
         : []),
       {
@@ -385,9 +375,8 @@ const SchemaList: FC = () => {
           if (!subject.details) {
             return <span className="text-muted-foreground">—</span>;
           }
-          const variant = SCHEMA_TYPE_BADGE_VARIANT[subject.details.type] ?? 'neutral-inverted';
           return (
-            <Badge size="sm" variant={variant as 'info-inverted'}>
+            <Badge size="sm" tone={SCHEMA_TYPE_BADGE_TONE[subject.details.type] ?? 'default'} variant="subtle">
               {subject.details.type}
             </Badge>
           );
@@ -441,7 +430,7 @@ const SchemaList: FC = () => {
         header: '',
         id: 'actions',
         enableSorting: false,
-        meta: { align: 'right' as const },
+        meta: columnMeta({ align: 'right' as const }),
         cell: ({ row: { original: subject } }) => (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -478,7 +467,7 @@ const SchemaList: FC = () => {
     [isAllContext, selectedContext]
   );
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: enrichedSubjects,
     columns,
     state: { sorting, pagination, columnFilters },
@@ -486,12 +475,6 @@ const SchemaList: FC = () => {
     onPaginationChange: handlePaginationChange,
     onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const renderBody = () => {
@@ -511,10 +494,10 @@ const SchemaList: FC = () => {
       return table.getRowModel().rows.map((row) => (
         <TableRow className={row.original.isSoftDeleted ? 'text-muted-foreground' : ''} key={row.id}>
           {row.getVisibleCells().map((cell) => {
-            const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
+            const meta = readColumnMeta(cell.column.columnDef.meta);
             return (
               <TableCell align={meta?.align} key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                {<table.FlexRender cell={cell} />}
               </TableCell>
             );
           })}
@@ -583,7 +566,7 @@ const SchemaList: FC = () => {
                           : appGlobal.historyPush('/schema-registry/edit-mode')
                       }
                       size="icon-xs"
-                      variant="secondary-ghost"
+                      variant="ghost"
                     >
                       <EditIcon />
                     </Button>
@@ -621,7 +604,7 @@ const SchemaList: FC = () => {
                           : appGlobal.historyPush('/schema-registry/edit-compatibility')
                       }
                       size="icon-xs"
-                      variant="secondary-ghost"
+                      variant="ghost"
                     >
                       <EditIcon />
                     </Button>
@@ -641,8 +624,8 @@ const SchemaList: FC = () => {
           <AlertTitle>Error loading schemas</AlertTitle>
         </Alert>
       ) : (
-        <ListLayout className="my-4" data-testid="schema-list-table">
-          <div className="text-muted-foreground text-sm sm:text-base">
+        <ListLayout className="my-4 min-h-0" data-testid="schema-list-table">
+          <div className="text-body text-muted-foreground sm:text-body-lg">
             <DescriptionWithHelp
               short="Subjects and versions for the schemas that validate your topic records."
               testId="schema-search-help"
@@ -698,7 +681,6 @@ const SchemaList: FC = () => {
                           appGlobal.historyPush('/schema-registry/create');
                         }
                       }}
-                      variant="primary"
                     >
                       Create new schema
                     </Button>
@@ -739,7 +721,7 @@ const SchemaList: FC = () => {
               testId="schema-list-compatibility-filter"
               title="Compatibility"
             />
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <label className="flex cursor-pointer items-center gap-2 text-body">
               <Checkbox
                 checked={showSoftDeleted}
                 onCheckedChange={(checked) => {
@@ -756,10 +738,10 @@ const SchemaList: FC = () => {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
-                    const meta = header.column.columnDef.meta as { align?: 'right' } | undefined;
+                    const meta = readColumnMeta(header.column.columnDef.meta);
                     return (
                       <TableHead align={meta?.align} key={header.id}>
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                       </TableHead>
                     );
                   })}

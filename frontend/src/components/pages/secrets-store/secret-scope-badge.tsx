@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge, type BadgeVariant } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeEmphasis, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { CircleUser, Link, Server, Waypoints } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -33,10 +33,18 @@ const getScopeConfig = (scope: Scope): { text: string; icon?: React.ReactNode } 
   }
 };
 
-export const SecretScopeBadge = ({ scope, variant = 'primary-inverted' }: { scope: Scope; variant?: BadgeVariant }) => {
+export const SecretScopeBadge = ({
+  scope,
+  tone = 'primary',
+  variant = 'subtle',
+}: {
+  scope: Scope;
+  tone?: BadgeTone;
+  variant?: BadgeEmphasis;
+}) => {
   const config = getScopeConfig(scope);
   return (
-    <Badge icon={config.icon} variant={variant}>
+    <Badge icon={config.icon} tone={tone} variant={variant}>
       {config.text}
     </Badge>
   );

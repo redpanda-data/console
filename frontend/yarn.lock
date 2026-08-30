@@ -514,25 +514,25 @@
   resolved "https://registry.npmjs.org/@balena/dockerignore/-/dockerignore-1.0.2.tgz"
   integrity sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==
 
-"@base-ui/react@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.npmjs.org/@base-ui/react/-/react-1.5.0.tgz"
-  integrity sha512-z1gSAlced1yY+iM+mHDEtIkD8UI3Ebs52MuBPxvV6f5hRutk+xvCH/wuB7hDqDzK9JG5FoMz5nhrqtSs1wjt1A==
+"@base-ui/react@^1.7.0":
+  version "1.7.0"
+  resolved "https://registry.npmjs.org/@base-ui/react/-/react-1.7.0.tgz"
+  integrity sha512-j+8QjX44C32jrXD/qyEAGpFr70FRpGL2CY61mQd9nBPWN737CK0xxD1ceJ055rW4RtdvFDT1e7otzdlfxvsYug==
   dependencies:
     "@babel/runtime" "^7.29.2"
-    "@base-ui/utils" "0.2.9"
-    "@floating-ui/react-dom" "^2.1.8"
-    "@floating-ui/utils" "^0.2.11"
+    "@base-ui/utils" "0.3.2"
+    "@floating-ui/react-dom" "^2.1.9"
+    "@floating-ui/utils" "^0.2.12"
     use-sync-external-store "^1.6.0"
 
-"@base-ui/utils@0.2.9":
-  version "0.2.9"
-  resolved "https://registry.npmjs.org/@base-ui/utils/-/utils-0.2.9.tgz"
-  integrity sha512-x/PDDCYzoqPpjrdyb3VcyylTI2IjUXEtYDGi5foh7KsnmNJIIaVwA2GLgDH1dps1GgXiJbA60hM+AyuTfQzIvw==
+"@base-ui/utils@0.3.2":
+  version "0.3.2"
+  resolved "https://registry.npmjs.org/@base-ui/utils/-/utils-0.3.2.tgz"
+  integrity sha512-oWy1aq/I2GmYjpl4PhEAhzflF8VPGKgZeq0xAWTbfD5KBWyxcN0ZP2+WHSUm/5Z6lVMBDLReLcoXwSYoRc/zNQ==
   dependencies:
     "@babel/runtime" "^7.29.2"
-    "@floating-ui/utils" "^0.2.11"
-    reselect "^5.1.1"
+    "@floating-ui/utils" "^0.2.12"
+    reselect "^5.2.0"
     use-sync-external-store "^1.6.0"
 
 "@bcoe/v8-coverage@^1.0.2":
@@ -1497,12 +1497,12 @@
   dependencies:
     "@floating-ui/utils" "^0.2.10"
 
-"@floating-ui/core@^1.7.5":
-  version "1.7.5"
-  resolved "https://registry.npmjs.org/@floating-ui/core/-/core-1.7.5.tgz"
-  integrity sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==
+"@floating-ui/core@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.npmjs.org/@floating-ui/core/-/core-1.8.0.tgz"
+  integrity sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==
   dependencies:
-    "@floating-ui/utils" "^0.2.11"
+    "@floating-ui/utils" "^0.2.12"
 
 "@floating-ui/dom@^1.0.1":
   version "1.7.4"
@@ -1512,30 +1512,30 @@
     "@floating-ui/core" "^1.7.3"
     "@floating-ui/utils" "^0.2.10"
 
-"@floating-ui/dom@^1.7.6":
-  version "1.7.6"
-  resolved "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.7.6.tgz"
-  integrity sha512-9gZSAI5XM36880PPMm//9dfiEngYoC6Am2izES1FF406YFsjvyBMmeJ2g4SAju3xWwtuynNRFL2s9hgxpLI5SQ==
+"@floating-ui/dom@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.8.0.tgz"
+  integrity sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==
   dependencies:
-    "@floating-ui/core" "^1.7.5"
-    "@floating-ui/utils" "^0.2.11"
+    "@floating-ui/core" "^1.8.0"
+    "@floating-ui/utils" "^0.2.12"
 
-"@floating-ui/react-dom@^2.1.8":
-  version "2.1.8"
-  resolved "https://registry.npmjs.org/@floating-ui/react-dom/-/react-dom-2.1.8.tgz"
-  integrity sha512-cC52bHwM/n/CxS87FH0yWdngEZrjdtLW/qVruo68qg+prK7ZQ4YGdut2GyDVpoGeAYe/h899rVeOVm6Oi40k2A==
+"@floating-ui/react-dom@^2.1.9":
+  version "2.1.9"
+  resolved "https://registry.npmjs.org/@floating-ui/react-dom/-/react-dom-2.1.9.tgz"
+  integrity sha512-JDjEFGCpImxDCA7JJKviA0M9+RtmJdj0m/NVU5IMgBK+AmZouAQQ7/+2GLH0GXXY0YMw9oXPB8hKdbPYg5QLYg==
   dependencies:
-    "@floating-ui/dom" "^1.7.6"
+    "@floating-ui/dom" "^1.8.0"
 
 "@floating-ui/utils@^0.2.10":
   version "0.2.10"
   resolved "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.10.tgz"
   integrity sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==
 
-"@floating-ui/utils@^0.2.11":
-  version "0.2.11"
-  resolved "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.11.tgz"
-  integrity sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==
+"@floating-ui/utils@^0.2.12":
+  version "0.2.12"
+  resolved "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.12.tgz"
+  integrity sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==
 
 "@fontsource/geist-mono@^5.3.0":
   version "5.3.0"
@@ -2038,11 +2038,6 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
-
-"@opentelemetry/api@^1.9.0":
-  version "1.9.0"
-  resolved "https://registry.npmjs.org/@opentelemetry/api/-/api-1.9.0.tgz"
-  integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
 
 "@oxc-resolver/binding-android-arm-eabi@11.19.1":
   version "11.19.1"
@@ -2583,11 +2578,6 @@
     redux "^5.0.1"
     redux-thunk "^3.1.0"
     reselect "^5.1.0"
-
-"@remix-run/router@1.23.1":
-  version "1.23.1"
-  resolved "https://registry.npmjs.org/@remix-run/router/-/router-1.23.1.tgz"
-  integrity sha512-vDbaOzF7yT2Qs4vO6XV1MHcJv+3dgR1sT+l3B8xxOVhUC336prMvqrvsLL/9Dnw2xr6Qhz4J0dmS0llNAbnUmQ==
 
 "@rolldown/pluginutils@1.0.0-beta.53":
   version "1.0.0-beta.53"
@@ -3475,12 +3465,28 @@
     "@tanstack/store" "0.9.3"
     use-sync-external-store "^1.6.0"
 
-"@tanstack/react-table@^8.17.3", "@tanstack/react-table@^8.21.3":
+"@tanstack/react-store@^0.11.0":
+  version "0.11.1"
+  resolved "https://registry.npmjs.org/@tanstack/react-store/-/react-store-0.11.1.tgz"
+  integrity sha512-HaIGKI3YLmjBYIvy5DFDY23oNaYZIsTZfngey07Uh5iLVJgM3bIGCnZeOFOqzjFld9JHWcaHJnasD/bKoGKwJQ==
+  dependencies:
+    "@tanstack/store" "0.11.1"
+    use-sync-external-store "^1.6.0"
+
+"@tanstack/react-table@^8.17.3":
   version "8.21.3"
   resolved "https://registry.npmjs.org/@tanstack/react-table/-/react-table-8.21.3.tgz"
   integrity sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==
   dependencies:
     "@tanstack/table-core" "8.21.3"
+
+"@tanstack/react-table@^9.1.2":
+  version "9.1.2"
+  resolved "https://registry.npmjs.org/@tanstack/react-table/-/react-table-9.1.2.tgz"
+  integrity sha512-YQPZFJ1nIi/bjjwsPZVouABgahDcl7Gdm33CdTStUJBn0DjEVJ2uhSTVmIoWt9MVKdQziXGAsXipSzy949Hygg==
+  dependencies:
+    "@tanstack/react-store" "^0.11.0"
+    "@tanstack/table-core" "9.1.2"
 
 "@tanstack/react-virtual@^3.13.12":
   version "3.13.12"
@@ -3488,16 +3494,6 @@
   integrity sha512-Gd13QdxPSukP8ZrkbgS2RwoZseTTbQPLnQEn7HY/rqtM+8Zt95f7xKC7N0EsKs7aoz0WzZ+fditZux+F8EzYxA==
   dependencies:
     "@tanstack/virtual-core" "3.13.12"
-
-"@tanstack/router-core@^1.170.0":
-  version "1.171.13"
-  resolved "https://registry.npmjs.org/@tanstack/router-core/-/router-core-1.171.13.tgz"
-  integrity sha512-+NOwEj1kO/6IGmpHRIZHasYxYWpyBQGNIZAST9aNrk9Q3YlU9SgqVnl1pbLa9qAKfeNdXQIRve0RQb/0kyDeDA==
-  dependencies:
-    "@tanstack/history" "1.162.0"
-    cookie-es "^3.0.0"
-    seroval "^1.5.4"
-    seroval-plugins "^1.5.4"
 
 "@tanstack/router-core@1.171.14", "@tanstack/router-core@^1.170.0":
   version "1.171.14"
@@ -3570,10 +3566,22 @@
   resolved "https://registry.npmjs.org/@tanstack/store/-/store-0.9.3.tgz"
   integrity sha512-8reSzl/qGWGGVKhBoxXPMWzATSbZLZFWhwBAFO9NAyp0TxzfBP0mIrGb8CP8KrQTmvzXlR/vFPPUrHTLBGyFyw==
 
+"@tanstack/store@0.11.1", "@tanstack/store@^0.11.0":
+  version "0.11.1"
+  resolved "https://registry.npmjs.org/@tanstack/store/-/store-0.11.1.tgz"
+  integrity sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==
+
 "@tanstack/table-core@8.21.3":
   version "8.21.3"
   resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-8.21.3.tgz"
   integrity sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==
+
+"@tanstack/table-core@9.1.2":
+  version "9.1.2"
+  resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-9.1.2.tgz"
+  integrity sha512-ONpWQeass1sfg80CWF1NSwQ8r3GiqxA2lT/EdqIcrDEPZ0Z+0mM94eQoFYLPN0Kztzj8TQVb2+PrSZSItqA61g==
+  dependencies:
+    "@tanstack/store" "^0.11.0"
 
 "@tanstack/virtual-core@3.13.12":
   version "3.13.12"
@@ -5192,6 +5200,11 @@ cli-spinners@^3.2.0:
   resolved "https://registry.npmjs.org/cli-spinners/-/cli-spinners-3.4.0.tgz"
   integrity sha512-bXfOC4QcT1tKXGorxL3wbJm6XJPDqEnij2gQ2m7ESQuE+/z9YFIWnl/5RpTiKWbMq3EVKR4fRLJGn6DVfu0mpw==
 
+clipboard-polyfill@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.npmjs.org/clipboard-polyfill/-/clipboard-polyfill-4.1.1.tgz"
+  integrity sha512-nbvNLrcX0zviek5QHLFRAaLrx8y/s8+RF2stH43tuS+kP5XlHMrcD0UGBWq43Hwp6WuuK7KefRMP56S45ibZkA==
+
 cliui@^8.0.1:
   version "8.0.1"
   resolved "https://registry.npmjs.org/cliui/-/cliui-8.0.1.tgz"
@@ -5215,11 +5228,6 @@ cmdk@^1.1.1:
     "@radix-ui/react-dialog" "^1.1.6"
     "@radix-ui/react-id" "^1.1.0"
     "@radix-ui/react-primitive" "^2.0.2"
-
-cnfast@^0.0.8:
-  version "0.0.8"
-  resolved "https://registry.npmjs.org/cnfast/-/cnfast-0.0.8.tgz"
-  integrity sha512-EjXKMfGfdwtV4AcNSQ6AwQaVzpC1B7IxeiwA3FlhTXz+YFlMKVi4c1JX9tgD2QOlahQXjB8KUXrBaYG+3v871Q==
 
 codemirror@^6.0.0:
   version "6.0.2"
@@ -9861,14 +9869,7 @@ react-resizable-panels@^4.11.2:
   resolved "https://registry.npmjs.org/react-resizable-panels/-/react-resizable-panels-4.11.2.tgz"
   integrity sha512-+kfFbDZ8mygc7g0vxOcDzCVGuwiIUOnILqPoUHo6/uP+Mmyx6HzZU+kj1aOPDlktXuobYbr6BtQekvJwHRX4Eg==
 
-"react-router@^6 || ^7":
-  version "6.30.2"
-  resolved "https://registry.npmjs.org/react-router/-/react-router-6.30.2.tgz"
-  integrity sha512-H2Bm38Zu1bm8KUE5NVWRMzuIyAV8p/JrOaBJAwVmp37AXG72+CZJlEBw6pdn9i5TBgLMhNDgijS4ZlblpHyWTA==
-  dependencies:
-    "@remix-run/router" "1.23.1"
-
-react-router@7.12.0:
+react-router@7.12.0, "react-router@^6 || ^7":
   version "7.12.0"
   resolved "https://registry.npmjs.org/react-router/-/react-router-7.12.0.tgz"
   integrity sha512-kTPDYPFzDVGIIGNLS5VJykK0HfHLY5MF3b+xj0/tTyNYL1gF1qs7u67Z9jEhQk2sQ98SUaHxlG31g1JtF7IfVw==
@@ -10169,12 +10170,7 @@ require-from-string@^2.0.2:
   resolved "https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz"
   integrity sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==
 
-reselect@^5.1.1:
-  version "5.1.1"
-  resolved "https://registry.npmjs.org/reselect/-/reselect-5.1.1.tgz"
-  integrity sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==
-
-reselect@5.2.0, reselect@^5.1.0:
+reselect@5.2.0, reselect@^5.1.0, reselect@^5.2.0:
   version "5.2.0"
   resolved "https://registry.npmjs.org/reselect/-/reselect-5.2.0.tgz"
   integrity sha512-AgZ3UOZm3YndfrJ4OYjgrT7bmCm/1iqkjvEfH/oYjzh6PD2qw4QuT3jjnXIrpdt4MTpMXclMT3lXbmRY+XRakw==

@@ -33,11 +33,11 @@ function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFi
           data-testid={testIds.group(String(group.label ?? groupIndex))}
           key={`${field.key}-group-${groupIndex}`}
         >
-          {group.label ? <div className="text-body-sm text-muted-foreground">{group.label}</div> : null}
+          {group.label ? <div className="text-body-sm text-subtle">{group.label}</div> : null}
           <div className="grid gap-2">
             {group.options.map((option) => (
               <label
-                className="flex cursor-pointer items-center gap-3 rounded-md border border-border/70 px-3 py-2"
+                className="flex cursor-pointer items-center gap-3 rounded-md border border-border-subtle px-3 py-2 transition-colors hover:bg-accent motion-reduce:transition-none"
                 htmlFor={`${field.key}-${option.value}`}
                 key={option.value}
               >

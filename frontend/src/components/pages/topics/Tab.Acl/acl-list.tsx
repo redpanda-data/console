@@ -9,15 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-
 import { useUrlTableState } from '../../../../hooks/use-url-table-state';
 import type {
   AclRule,
@@ -30,7 +21,12 @@ import type {
 import { uiSettings } from '../../../../state/ui';
 import { toJson } from '../../../../utils/json-utils';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
-import { DataTableColumnHeader, DataTablePagination } from '../../../redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  DataTablePagination,
+  useDataTable,
+} from '../../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 
 type Acls = GetAclOverviewResponse | null | undefined;
@@ -56,7 +52,7 @@ function flatResourceList(store: Acls): AclFlatResource[] {
     .map((x) => ({ ...x, eqKey: toJson(x) }));
 }
 
-const columns: ColumnDef<AclFlatResource>[] = [
+const columns: DataTableColumnDef<AclFlatResource>[] = [
   {
     accessorKey: 'resourceType',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Resource" />,
@@ -96,15 +92,12 @@ const AclList = ({ acl }: { acl: Acls }) => {
     rowCount: resources.length,
   });
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: resources,
     columns,
     state: { sorting, pagination },
     onSortingChange,
     onPaginationChange,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     autoResetPageIndex: false,
   });
 
@@ -126,7 +119,7 @@ const AclList = ({ acl }: { acl: Acls }) => {
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                 </TableHead>
               ))}
             </TableRow>
@@ -143,7 +136,7 @@ const AclList = ({ acl }: { acl: Acls }) => {
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
                 ))}
               </TableRow>
             ))

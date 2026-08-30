@@ -224,14 +224,8 @@ export const useDeleteShadowLinkMutation = (options?: {
 };
 
 /**
- * Unified hook to delete a shadow link that works in both console and controlplane modes.
- * Automatically uses the appropriate API based on embedded mode.
- *
- * In embedded mode: uses controlplane API with ID-based deletion
- * In non-embedded mode: uses dataplane API with name-based deletion
- *
- * @param params.name - The shadow link name
- * @returns Unified delete interface with delete function and loading states
+ * Shadow-link deletion for both modes: embedded deletes by id via controlplane, standalone by name
+ * via dataplane.
  */
 export const useDeleteShadowLinkUnified = (params: { name: string }) => {
   const embedded = isEmbedded();
@@ -315,15 +309,10 @@ export type UnifiedShadowLinkResult = {
 };
 
 /**
- * Unified hook to get shadow link data that works in both console and controlplane modes.
- * Automatically uses the appropriate API based on embedded mode.
- * No TransportProvider wrapper needed - controlplane transport is created internally.
- *
- * In embedded mode: uses dataplane data but overrides state from controlplane API.
- * If dataplane fails but controlplane succeeds, returns controlplane data with partial info.
- *
- * @param params.name - The shadow link name
- * @returns Unified shadow link data with granular error information
+ * Shadow-link data for both console and controlplane modes, picking the API off embedded mode and
+ * creating the controlplane transport internally (no TransportProvider needed). Embedded, dataplane
+ * data wins but state comes from controlplane; if only controlplane answers, its partial data is
+ * returned.
  */
 export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadowLinkResult => {
   const embedded = isEmbedded();
@@ -375,17 +364,8 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
 /* ==================== EDIT SHADOW LINK HOOK ==================== */
 
 /**
- * Unified hook for editing shadow links that works in both console and controlplane modes.
- * Automatically uses the appropriate API based on embedded mode.
- *
- * Encapsulates:
- * - Data fetching (controlplane vs dataplane)
- * - Form values building
- * - Update mutation
- * - Loading/error states
- *
- * @param name - The shadow link name
- * @returns Unified edit interface with form values and update function
+ * Shadow-link editing for both console and controlplane modes, picking the API off embedded mode and
+ * bundling the fetch, form values, update mutation and loading/error state.
  */
 export const useEditShadowLink = (
   name: string

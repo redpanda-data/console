@@ -109,7 +109,7 @@ export function OneofFieldRenderer({
               {(value) => renderOneofSelectedValue(value, availableFields, field.required)}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent alignItemWithTrigger={false}>
             {field.required ? null : (
               <SelectItem
                 testId={getAutoFormFieldTestId(testIdPrefix, fullPath, 'option-not-set')}
@@ -131,8 +131,8 @@ export function OneofFieldRenderer({
         </Select>
         {selectedField ? (
           selectedField.type === 'object' && (!selectedField.schema || selectedField.schema.length === 0) ? (
-            <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-3">
-              <p className="text-body text-muted-foreground">
+            <div className="rounded-lg border border-dashed bg-surface-recess px-4 py-3">
+              <p className="text-body text-subtle">
                 {getLabel(selectedField)} selected. No additional configuration needed.
               </p>
             </div>

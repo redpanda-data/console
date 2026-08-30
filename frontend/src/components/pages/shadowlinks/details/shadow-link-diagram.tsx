@@ -12,6 +12,7 @@
 import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import type { CSSProperties } from 'react';
 
 import type { UnifiedShadowLink } from '../model';
@@ -24,7 +25,7 @@ const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
   <Item className="min-w-60 bg-background" size="sm" variant="outline">
     <ItemContent>
       <ItemTitle>Source cluster</ItemTitle>
-      <div className="flex flex-col gap-1 text-muted-foreground text-xs">
+      <div className="flex flex-col gap-1 text-body-sm text-muted-foreground">
         {data.brokers.map((broker) => (
           <div className="max-w-[240px] truncate text-body text-muted-foreground" key={broker}>
             {broker}
@@ -41,7 +42,7 @@ const ShadowClusterNode = () => (
     <Handle position={Position.Left} type="target" />
     <ItemContent>
       <ItemTitle>Shadow cluster</ItemTitle>
-      <div className="text-muted-foreground text-xs">
+      <div className="text-body-sm text-muted-foreground">
         <div className="text-body text-muted-foreground">This cluster </div>
       </div>
     </ItemContent>
@@ -54,13 +55,15 @@ const nodeTypes = {
 };
 
 const edgeStyle: CSSProperties = {
-  stroke: '#9ca3af',
+  stroke: 'var(--color-border-strong)',
   strokeWidth: 2,
   strokeDasharray: '5,5',
 };
 
 export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
   const brokers = shadowLink.configurations?.clientOptions?.bootstrapServers ?? [];
+  // Must be told, or react-flow's `light` default re-themes the subtree (see the pipeline canvas).
+  const appearance = useThemeAppearance();
 
   const nodes: Node[] = [
     {
@@ -96,6 +99,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
         <div className="relative h-[200px] w-full">
           <ReactFlowProvider>
             <ReactFlow
+              colorMode={appearance}
               edges={edges}
               elementsSelectable={false}
               fitView={true}

@@ -10,10 +10,10 @@
  */
 
 import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
-import type { Row } from '@tanstack/react-table';
 import { WarningIcon } from 'components/icons';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
+import type { LegacyRow } from 'utils/legacy-data-table';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
@@ -71,7 +71,7 @@ export class StepSelectPartitions extends Component<{
             {
               id: 'check',
               header: '',
-              cell: ({ row }: { row: Row<TopicWithPartitions> }) => {
+              cell: ({ row }: { row: LegacyRow<TopicWithPartitions> }) => {
                 const { checked, indeterminate } = this.getTopicCheckState(row.original.topicName);
                 return (
                   <Checkbox
@@ -300,7 +300,7 @@ export class SelectPartitionTable extends Component<{
         columns={[
           {
             header: 'Check',
-            cell: ({ row: { original: partition } }: { row: Row<Partition> }) => {
+            cell: ({ row: { original: partition } }: { row: LegacyRow<Partition> }) => {
               const isSelected = this.props.getSelectedPartitions().includes(partition.id);
               return (
                 <Checkbox
@@ -319,7 +319,7 @@ export class SelectPartitionTable extends Component<{
           },
           {
             header: 'Brokers',
-            cell: ({ row: { original: partition } }: { row: Row<Partition> }) =>
+            cell: ({ row: { original: partition } }: { row: LegacyRow<Partition> }) =>
               partition.replicas ? (
                 <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
               ) : (

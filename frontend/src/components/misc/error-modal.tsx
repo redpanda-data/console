@@ -55,7 +55,7 @@ class ErrorModal extends Component<ErrorModalProps> {
                     alignSelf: 'center',
                   }}
                 >
-                  <ErrorIcon color="#F53649" />
+                  <ErrorIcon className="text-destructive" />
                 </div>
 
                 {/* Title */}

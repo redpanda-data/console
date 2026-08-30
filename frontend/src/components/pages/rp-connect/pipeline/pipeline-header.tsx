@@ -45,7 +45,7 @@ const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
     return null;
   }
   return (
-    <div className="flex flex-wrap items-center gap-y-1 text-muted-foreground text-sm">
+    <div className="flex flex-wrap items-center gap-y-1 text-body text-muted-foreground">
       {visible.map((item, i) => (
         <Fragment key={item.key}>
           {i > 0 ? (
@@ -61,7 +61,7 @@ const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
 };
 
 const DetailLine = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div className="flex gap-2 text-sm">
+  <div className="flex gap-2 text-body">
     <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
     <div className="min-w-0 flex-1 text-foreground">{children}</div>
   </div>
@@ -69,7 +69,7 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
 
 // Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
-  <div className="flex flex-col gap-0.5 text-sm">
+  <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
     <p
       className={cn(
@@ -155,10 +155,11 @@ const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
         ))}
       </List>
     )}
-    variant="simple-outline"
+    tone="default"
+    variant="outline"
   >
     {tags.map((t) => (
-      <Badge key={t.key} variant="simple-outline">
+      <Badge key={t.key} tone="default" variant="outline">
         {tagLabel(t)}
       </Badge>
     ))}
@@ -187,13 +188,13 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
           aria-invalid={fieldState.invalid}
           aria-label="Pipeline name"
           className={cn(
-            'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 font-display font-medium text-2xl leading-none tracking-heading',
+            'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 text-heading-xl leading-none tracking-heading',
             'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
             fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
           )}
           placeholder={placeholder}
         />
-        {fieldState.error ? <p className="mt-1 text-destructive text-sm">{fieldState.error.message}</p> : null}
+        {fieldState.error ? <p className="mt-1 text-body text-destructive">{fieldState.error.message}</p> : null}
       </div>
     )}
   />
@@ -256,12 +257,11 @@ export function PipelineViewHeader({
           <Button
             icon={<EditIcon />}
             onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
-            variant="secondary-outline"
+            variant="outline"
           >
             Edit pipeline
           </Button>
-          {/* self-center: the Separator's default self-stretch top-aligns a fixed h-6 in this row. */}
-          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
+          <Separator className="mx-1 h-6" orientation="vertical" />
           <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
         </div>
       </div>
@@ -315,7 +315,11 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
-            {mode === 'create' ? <Badge variant="simple-outline">New</Badge> : null}
+            {mode === 'create' ? (
+              <Badge tone="default" variant="outline">
+                New
+              </Badge>
+            ) : null}
             <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
               Edit settings
             </Button>
@@ -338,7 +342,7 @@ export function PipelineEditHeader({
             </Button>
             {hasUnsavedChanges ? (
               <span
-                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-muted-foreground text-xs"
+                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-body-sm text-muted-foreground"
                 title="You have unsaved changes"
               >
                 <span aria-hidden className="size-2 rounded-full bg-informative" />

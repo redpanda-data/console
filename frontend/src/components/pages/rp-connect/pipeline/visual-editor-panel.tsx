@@ -987,7 +987,7 @@ export function VisualEditorPanel({
               ) : null}
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel render={<Button variant="secondary-ghost">Cancel</Button>} />
+              <AlertDialogCancel render={<Button variant="ghost">Cancel</Button>} />
               <AlertDialogAction onClick={confirmDeleteNode} render={<Button variant="destructive">Remove</Button>} />
             </AlertDialogFooter>
           </AlertDialogContent>

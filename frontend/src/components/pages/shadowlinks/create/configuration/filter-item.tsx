@@ -70,20 +70,20 @@ export const FilterItem = <TFieldValues extends FieldValues>({
     return (
       <div>
         <Item>
-          <div className="font-medium text-sm">{filterLabel}</div>
+          <div className="font-medium text-body">{filterLabel}</div>
           <div className="flex flex-wrap gap-2">
             {nameValue ? (
-              <Badge size="sm" variant="info-inverted">
+              <Badge size="sm" tone="informative" variant="subtle">
                 {nameValue}
               </Badge>
             ) : (
-              <Badge size="sm" variant="neutral-inverted">
+              <Badge size="sm" tone="default" variant="subtle">
                 (empty)
               </Badge>
             )}
           </div>
           {Boolean(errorMessage) && (
-            <p className="mt-1 text-destructive text-sm" data-slot="form-message">
+            <p className="mt-1 text-body text-destructive" data-slot="form-message">
               {errorMessage}
             </p>
           )}

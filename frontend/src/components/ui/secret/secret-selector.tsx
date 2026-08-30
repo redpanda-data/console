@@ -39,7 +39,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "components/redpanda-ui/components/select";
-import { Text } from "components/redpanda-ui/components/typography";
 import { KeyRound, Loader2, Plus } from "lucide-react";
 import { CreateSecretRequestSchema } from "protogen/redpanda/api/console/v1alpha1/secret_pb";
 import {
@@ -187,10 +186,10 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 				// No secrets available - show empty state
 				<div className="flex flex-col items-center justify-center rounded-lg border-2 border-muted border-dashed bg-muted/10 py-12">
 					<KeyRound className="mb-4 h-12 w-12 text-muted-foreground opacity-50" />
-					<Text className="mb-2 font-medium">No secrets available</Text>
-					<Text className="mb-4 text-center" variant="muted">
+					<div className="text-body mb-2 font-medium">No secrets available</div>
+					<div className="text-body text-subtle mb-4 text-center">
 						{customText.emptyStateDescription}
-					</Text>
+					</div>
 					<Button
 						onClick={() => setIsCreateDialogOpen(true)}
 						type="button"
@@ -198,7 +197,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 					>
 						<div className="flex items-center gap-2">
 							<Plus className="h-4 w-4" />
-							<Text as="span">Create secret</Text>
+							<span className="text-body">Create secret</span>
 						</div>
 					</Button>
 				</div>
@@ -232,7 +231,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 					>
 						<div className="flex items-center gap-2">
 							<Plus className="h-4 w-4" />
-							<Text as="span">Create secret</Text>
+							<span className="text-body">Create secret</span>
 						</div>
 					</Button>
 				</div>
@@ -305,7 +304,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 									{isCreateSecretPending ? (
 										<div className="flex items-center gap-2">
 											<Loader2 className="h-4 w-4 animate-spin" />
-											<Text as="span">Creating...</Text>
+											<span className="text-body">Creating...</span>
 										</div>
 									) : (
 										"Create Secret"

@@ -10,14 +10,6 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
 import { type FC, useEffect } from 'react';
 
 import { useUrlTableState } from '../../../hooks/use-url-table-state';
@@ -25,7 +17,12 @@ import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { Topic, TopicConsumer } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  DataTablePagination,
+  useDataTable,
+} from '../../redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 
 type TopicConsumersProps = { topic: Topic };
@@ -46,7 +43,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
     enabled: !isLoading,
   });
 
-  const columns: ColumnDef<TopicConsumer>[] = [
+  const columns: DataTableColumnDef<TopicConsumer>[] = [
     {
       accessorKey: 'groupId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Group" />,
@@ -67,15 +64,12 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: consumers,
     columns,
     state: { sorting, pagination },
     onSortingChange,
     onPaginationChange,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     autoResetPageIndex: false,
   });
 
@@ -91,7 +85,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                 </TableHead>
               ))}
             </TableRow>
@@ -108,7 +102,9 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                  <TableCell key={cell.id}>
+                    <table.FlexRender cell={cell} />
+                  </TableCell>
                 ))}
               </TableRow>
             ))

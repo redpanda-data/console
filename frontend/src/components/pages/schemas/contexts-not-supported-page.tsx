@@ -15,7 +15,7 @@ export function ContextsNotSupportedPage() {
   return (
     <PageContent>
       <div className="flex flex-col items-center gap-4" data-testid="contexts-not-supported">
-        <div className="font-bold text-lg">Not Supported</div>
+        <div className="font-bold text-heading-md">Not Supported</div>
         <div className="text-center text-body">Schema Registry contexts are not supported in this cluster.</div>
       </div>
     </PageContent>

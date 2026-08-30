@@ -83,12 +83,12 @@ const CSV_FORMULA_RE = /^[=+\-@]/;
 
 // Shared inline-stat layout used across the summary bar.
 const RES_STAT =
-  'inline-flex items-center gap-1.5 text-xs text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
+  'inline-flex items-center gap-1.5 text-body-sm text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
 
 // Bridge-query indicator shown in the summary bar.
 function BridgeBar() {
   return (
-    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" variant="neutral">
+    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" tone="default">
       <GitMerge /> Bridge query
     </Badge>
   );
@@ -111,7 +111,7 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
   }
   return (
     <div className="flex-shrink-0 border-border border-b bg-card px-4 pt-3 pb-3.5">
-      <div className="text-muted-foreground text-xs leading-snug">
+      <div className="text-body-sm text-muted-foreground leading-snug">
         Bridge query covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
         <PendingStat count={bridge.translationLag} label="pending translation" /> +{' '}
         <PendingStat count={bridge.commitLag} label="pending commit" />. Bridging serves them from the topic so results
@@ -181,10 +181,12 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
         container={container ?? undefined}
       >
         <div className="flex items-center gap-2 border-border border-b bg-muted px-3 py-2">
-          <Braces className="shrink-0 text-info" size={14} />
-          <span className="truncate font-mono font-semibold text-sm text-strong">{name}</span>
-          <span className="text-muted-foreground text-xs">·</span>
-          <span className="shrink-0 font-mono text-muted-foreground text-xs uppercase tracking-wide">{typeLabel}</span>
+          <Braces className="shrink-0 text-informative" size={14} />
+          <span className="truncate font-mono font-semibold text-body text-strong">{name}</span>
+          <span className="text-body-sm text-muted-foreground">·</span>
+          <span className="shrink-0 font-mono text-body-sm text-muted-foreground uppercase tracking-wide">
+            {typeLabel}
+          </span>
           <span className="flex-1" />
           <CopyButton className="size-7 p-0" content={pretty} size="sm" variant="ghost" />
           <Button aria-label="Close" className="size-7 p-0" onClick={() => setOpen(false)} size="sm" variant="ghost">
@@ -306,9 +308,9 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
     frozen: true,
     resizable: false,
     width: 'max-content',
-    renderHeaderCell: () => <span className="font-mono text-disabled text-xs">#</span>,
+    renderHeaderCell: () => <span className="font-mono text-body-sm text-disabled">#</span>,
     renderCell: ({ rowIdx }) => rowIdx + 1,
-    cellClass: 'sql-results-rownum text-right font-mono text-disabled text-xs [user-select:none]',
+    cellClass: 'sql-results-rownum text-right font-mono text-disabled text-body-sm [user-select:none]',
   };
   const dataCols = cols.map((c): Column<ResultRow> => {
     const alignRight = c.kind === 'num';
@@ -323,14 +325,14 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       // right-align (so digits line up) — keep the column name readable.
       renderHeaderCell: () => (
         <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
-          <span className="font-mono font-semibold text-strong text-xs">{c.name}</span>
+          <span className="font-mono font-semibold text-body-sm text-strong">{c.name}</span>
           <span className="inline-flex items-center gap-1 font-normal text-2xs text-muted-foreground uppercase tracking-wide">
             {c.short}
           </span>
         </span>
       ),
       renderCell: ({ row }) => <CellContent kind={c.kind} name={c.name} typeLabel={c.short} v={row[c.name]} />,
-      cellClass: cn('font-mono text-xs', alignRight && 'text-right'),
+      cellClass: cn('font-mono text-body-sm', alignRight && 'text-right'),
     };
   });
   return [rowNum, ...dataCols];
@@ -377,7 +379,8 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
                 className="rounded-full uppercase tracking-wide"
                 size="sm"
                 title="The server row cap fired; not all rows were returned."
-                variant="warning-inverted"
+                tone="warning"
+                variant="subtle"
               >
                 truncated
               </Badge>
@@ -481,7 +484,7 @@ export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = tru
         </EmptyHeader>
         {onCancel ? (
           <EmptyContent>
-            <Button onClick={onCancel} size="sm" variant="secondary-outline">
+            <Button onClick={onCancel} size="sm" variant="outline">
               <X /> Cancel
             </Button>
           </EmptyContent>
@@ -512,7 +515,7 @@ export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = tru
           <AlertDescription>{run.message}</AlertDescription>
         </Alert>
         {run.hint ? (
-          <Alert icon={<Lightbulb />} variant="info">
+          <Alert icon={<Lightbulb />} variant="informative">
             <AlertTitle>Hint</AlertTitle>
             <AlertDescription>
               {run.hint}

@@ -1,17 +1,6 @@
 /**
- * Central Icon System for Redpanda Console
- *
- * This file provides a unified icon export system using lucide-react and @icons-pack/react-simple-icons.
- * All icons are re-exported with consistent naming and typing.
- *
- * Migration Notes:
- * - Replaces react-icons (38 files, 6 sub-packages)
- * - Replaces @chakra-ui/icons (10 files)
- * - Replaces @heroicons/react (11 files)
- * - Replaces @primer/octicons-react (16 files)
- *
- * Usage:
- *   import { CheckIcon, TrashIcon, GitHubIcon } from 'components/icons';
+ * Central icon exports, from lucide-react and @icons-pack/react-simple-icons. The single source for
+ * icons in Console — `import { CheckIcon, GitHubIcon } from 'components/icons'`.
  */
 
 // Social media icons - simple-icons

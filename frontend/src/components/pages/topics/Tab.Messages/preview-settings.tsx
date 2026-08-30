@@ -420,20 +420,8 @@ function parseJsonPath(str: string): string[] | string {
     }
   }
 
-  // While we do support the '**' pattern, it must always appear alone.
-  // In other words, a path segment is valid if it is exactly equal to '**',
-  // but it is invalid if it contains '**'
-  //
-  // Valid example paths: can appear anywhere as long as it is
-  //    **.a.b.c
-  //    a.b.**.c.**
-  //    a.b.**
-  //
-  // Invalid example paths:
-  //    b**c.d
-  //    a.b**
-  //    a.**b
-  //
+  // '**' is supported anywhere in a path but must be a whole segment: `a.b.**.c` is valid,
+  // `a.b**` and `a.**b` are not.
 
   for (const segment of result) {
     if (segment !== '**' && segment.includes('**')) {

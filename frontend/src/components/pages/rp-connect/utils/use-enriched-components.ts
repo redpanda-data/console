@@ -37,15 +37,11 @@ function getEnrichedComponents(componentList: ComponentList, configSchema: strin
 }
 
 /**
- * Component specs enriched with the raw config schema's per-field signals (secret, exact
- * required-ness) that the ListComponents proto drops.
- *
- * Specs are available as soon as ListComponents resolves — insert/generate flows must keep
- * working even while the (much larger) config schema is still loading or hung — and are
- * re-emitted with the enrichment stamps once that query settles. Until then `checkRequired`
- * falls back to proto flags: the same degraded mode used for dataplanes that predate flag
- * serialization. Consumers that would rather wait for full fidelity (e.g. template forms
- * computing defaults once) can gate on `isLoading`.
+ * Component specs enriched with the per-field signals (secret, exact required-ness) the
+ * ListComponents proto drops. Specs land as soon as ListComponents resolves — insert/generate must
+ * keep working while the much larger config schema is still loading or hung — then re-emit with the
+ * enrichment stamps once it settles; until then `checkRequired` runs in its degraded proto-flag mode.
+ * Consumers needing full fidelity (template forms computing defaults once) can gate on `isLoading`.
  */
 export function useEnrichedComponents(): {
   components: ConnectComponentSpec[];

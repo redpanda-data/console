@@ -50,7 +50,7 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
   const resolvedName = endpoint.logoOverride ?? endpoint.component;
   const Logo = componentLogoMap[resolvedName as ComponentName];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono font-normal text-foreground text-xs normal-case tracking-normal">
+    <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono font-normal text-body-sm text-foreground normal-case tracking-normal">
       <span className="flex h-4 w-4 shrink-0 items-center justify-center">
         {Logo ? (
           <ConnectorLogo className="h-4 w-4" name={resolvedName as ComponentName} />
@@ -256,7 +256,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
                 data-testid={`template-section-${section}`}
                 key={section}
               >
-                <div className="flex flex-wrap items-center gap-2.5 border-divider-default border-b pb-2.5">
+                <div className="flex flex-wrap items-center gap-2.5 border-b pb-2.5">
                   <h5 className="font-bold text-heading-xs uppercase tracking-wider" id={`section-${section}`}>
                     {SECTION_LABELS[section]}
                   </h5>

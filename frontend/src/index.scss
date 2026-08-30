@@ -556,6 +556,19 @@ tr.consumerGroupNoMemberAssigned {
   }
 }
 
+// react-flow keys its dark palette on `.react-flow.dark`, which we never set — we theme off
+// `[data-theme='dark']` — so its Controls stayed on the light defaults and painted a white slab.
+// These are the un-suffixed override hooks, which win over both `-default` blocks, so one mapping
+// covers light and dark. Buttons stay transparent: the `<Controls>` className is what paints the
+// translucent panel, and an opaque button defeats its blur.
+.react-flow {
+  --xy-controls-button-background-color: transparent;
+  --xy-controls-button-background-color-hover: var(--color-accent);
+  --xy-controls-button-color: var(--color-foreground);
+  --xy-controls-button-color-hover: var(--color-strong);
+  --xy-controls-button-border-color: var(--color-border);
+}
+
 .quickTable {
   text-align: initial;
 }

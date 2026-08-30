@@ -95,11 +95,13 @@ const AclTableRow: FC<{
 }> = ({ resourceType, resourceName, operation, permissionType, host, editHref }) => (
   <TableRow>
     <TableCell>
-      <Badge variant="simple">{resourceType}</Badge>
+      <Badge tone="default" variant="outline">
+        {resourceType}
+      </Badge>
     </TableCell>
     <TableCell className="font-mono">{resourceName}</TableCell>
     <TableCell>{operation}</TableCell>
-    <TableCell className={permissionType === 'Allow' ? 'text-success' : 'text-error'}>{permissionType}</TableCell>
+    <TableCell className={permissionType === 'Allow' ? 'text-success' : 'text-destructive'}>{permissionType}</TableCell>
     <TableCell className="text-muted-foreground">{host}</TableCell>
     <TableCell align="right">
       {editHref && (
@@ -202,11 +204,15 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-mono font-semibold text-sm">{group.principalName}</span>
-                    {group.principalType === 'Group' && <Badge variant="neutral">Group</Badge>}
-                    {group.denyCount > 0 && <Badge variant="destructive">{group.denyCount} deny</Badge>}
+                    <span className="truncate font-mono font-semibold text-body">{group.principalName}</span>
+                    {group.principalType === 'Group' && (
+                      <Badge tone="default" variant="subtle">
+                        Group
+                      </Badge>
+                    )}
+                    {group.denyCount > 0 && <Badge tone="destructive">{group.denyCount} deny</Badge>}
                   </div>
-                  <span className="text-muted-foreground text-xs">{summaryText}</span>
+                  <span className="text-body-sm text-muted-foreground">{summaryText}</span>
                 </div>
 
                 <div
@@ -309,7 +315,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                   {group.roleAclGroups.map((rg) => (
                     <TableBody key={rg.roleName}>
                       <TableRow>
-                        <TableCell className="bg-muted/40 py-1.5 text-muted-foreground text-xs" colSpan={6}>
+                        <TableCell className="bg-muted/40 py-1.5 text-body-sm text-muted-foreground" colSpan={6}>
                           <div className="flex items-center gap-1.5">
                             <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
                             <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>
@@ -454,7 +460,7 @@ export const PermissionsListTabNew: FC = () => {
     }
     if (filteredGroups.length === 0) {
       if (searchQuery) {
-        return <div className="py-8 text-center text-muted-foreground text-sm">No principals match your search.</div>;
+        return <div className="py-8 text-center text-body text-muted-foreground">No principals match your search.</div>;
       }
       return (
         <div className="rounded-md border">
@@ -507,7 +513,7 @@ export const PermissionsListTabNew: FC = () => {
     <>
       <SecurityTabsNav />
       <ListLayout className="my-4 min-h-0">
-        <div className="text-muted-foreground text-sm sm:text-base">
+        <div className="text-body text-muted-foreground sm:text-body-lg">
           <DescriptionWithHelp
             short="Unified view of all principal permissions across your cluster."
             title="Permissions"

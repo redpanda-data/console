@@ -10,8 +10,9 @@
  */
 
 import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import { Fragment, useEffect, useRef, useState } from 'react';
+import type { LegacyColumnDef } from 'utils/legacy-data-table';
 
 import { openDeleteModal } from './modals';
 import { PartitionStatus } from './transforms-list';
@@ -254,7 +255,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
   };
 
   const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: ColumnDef<TopicMessage>[] = [
+  const messageTableColumns: LegacyColumnDef<TopicMessage>[] = [
     {
       header: 'Timestamp',
       accessorKey: 'timestamp',

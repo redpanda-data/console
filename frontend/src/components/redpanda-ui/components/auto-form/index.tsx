@@ -318,12 +318,12 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
 
               {protoMessageUi?.title || protoMessageUi?.description ? (
                 <header
-                  className="space-y-1 border-border/60 border-b pb-4"
+                  className="space-y-1 border-border-subtle border-b pb-4"
                   data-testid={`${testIdPrefix}-root-header`}
                 >
                   {protoMessageUi.title ? <h2 className="text-heading-lg">{protoMessageUi.title}</h2> : null}
                   {protoMessageUi.description ? (
-                    <div className="text-body-sm text-muted-foreground">{protoMessageUi.description}</div>
+                    <div className="text-body-sm text-subtle">{protoMessageUi.description}</div>
                   ) : null}
                 </header>
               ) : null}

@@ -7,13 +7,14 @@ import { cn, type SharedProps } from '../../lib/utils';
 export const statValueVariants = cva('leading-none', {
   variants: {
     size: {
-      sm: 'text-sm',
-      md: 'text-base',
+      sm: 'text-body',
+      md: 'text-body-lg',
       lg: 'font-bold text-2xl tracking-tighter',
     },
     tone: {
       default: 'text-foreground',
-      muted: 'text-muted-foreground',
+      muted: 'text-subtle',
+      informative: 'text-informative',
       success: 'text-success',
       warning: 'text-warning',
       destructive: 'text-destructive',
@@ -55,7 +56,7 @@ const deltaToneByDirection: Record<StatDeltaDirection, NonNullable<StatDelta['to
 
 const deltaToneClasses: Record<NonNullable<StatDelta['tone']>, string> = {
   default: 'text-foreground',
-  muted: 'text-muted-foreground',
+  muted: 'text-subtle',
   success: 'text-success',
   warning: 'text-warning',
   destructive: 'text-destructive',
@@ -77,7 +78,7 @@ export interface StatProps
 
 // Mirrors `labelStrongXSmall` typography so a linked label is visually identical to a plain one.
 const LABEL_LINK_CLASSNAME =
-  'inline-flex items-center gap-1 font-semibold text-body-sm text-muted-foreground uppercase transition-colors hover:text-foreground';
+  'inline-flex items-center gap-1 font-semibold text-body-sm text-subtle uppercase transition-colors motion-reduce:transition-none link-standalone hover:text-foreground';
 
 export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
   ({ className, label, value, sublabel, size, tone, mono, delta, labelLink, testId, ...props }, ref) => {
@@ -94,7 +95,7 @@ export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
         </>
       )
     ) : (
-      <span className="font-semibold text-body-sm text-muted-foreground uppercase" data-slot="stat-label">
+      <span className="font-semibold text-body-sm text-subtle uppercase" data-slot="stat-label">
         {label}
       </span>
     );
@@ -116,7 +117,7 @@ export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
             {delta && DeltaIcon ? (
               <span
                 className={cn(
-                  'inline-flex items-center gap-0.5 font-medium text-xs',
+                  'inline-flex items-center gap-0.5 font-medium text-body-sm',
                   deltaToneClasses[deltaTone ?? 'muted']
                 )}
                 data-slot="stat-delta"
@@ -127,7 +128,7 @@ export const Stat = React.forwardRef<HTMLDivElement, StatProps>(
             ) : null}
           </div>
           {sublabel ? (
-            <span className="font-normal text-muted-foreground text-xs" data-slot="stat-sublabel">
+            <span className="font-normal text-body-sm text-subtle" data-slot="stat-sublabel">
               {sublabel}
             </span>
           ) : null}

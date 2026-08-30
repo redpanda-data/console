@@ -414,17 +414,16 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   return (
     <div
       // In-flow page (footer below), viewport-bounded like the RPCN editor
-      // (page-fill-viewport, globals.css). Dark mode re-points the border tokens — the
-      // registry's near-black theme renders borders effectively invisible.
-      className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      // (page-fill-viewport, globals.css).
+      className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong"
       ref={expandedModeRef}
     >
       <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', expanded ? 'px-4' : 'mt-3')}>
-        <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
+        <div className="flex items-center gap-2 font-semibold text-heading-md text-strong tracking-heading [&_svg]:text-action-primary">
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" variant="simple">
+          <Badge size="sm" tone="default" variant="outline">
             {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
           <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />

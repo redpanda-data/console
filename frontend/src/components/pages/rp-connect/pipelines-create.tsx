@@ -201,7 +201,7 @@ const RpConnectPipelinesCreateContent = () => {
             </div>
             <div className="flex flex-1 flex-col">
               <span className="font-semibold text-foreground">Start from a template</span>
-              <span className="text-muted-foreground text-sm">
+              <span className="text-body text-muted-foreground">
                 Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
                 directly.
               </span>
@@ -468,29 +468,7 @@ export const PipelineEditor = (p: {
   );
 };
 
-/**
- * Determines whether a given string represents a Kafka Connect configuration.
- *
- * This function first attempts to parse the input as JSON. If the parsing is successful,
- * it checks for the presence of specific Kafka Connect-related keys commonly found in
- * configurations, such as "connector.class", "key.converter", and "value.converter".
- *
- * @param {string | undefined} value - The input string to evaluate as a potential Kafka Connect configuration.
- * @returns {boolean} - Returns `true` if the string is a valid JSON object containing
- *                      at least a subset of Kafka Connect configuration keys; otherwise, returns `false`.
- *
- * @example
- * ```typescript
- * const configString = `{
- *     "connector.class": "com.ibm.eventstreams.connect.mqsink.MQSinkConnector",
- *     "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
- *     "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter"
- * }`;
- *
- * const result = isKafkaConnectPipeline(configString);
- * console.log(result); // Output: true
- * ```
- */
+/** True when `value` parses as JSON carrying Kafka Connect config keys (`connector.class`, the converters, …). */
 const isKafkaConnectPipeline = (value: string | undefined): boolean => {
   if (value === undefined) {
     return false;

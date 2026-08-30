@@ -23,15 +23,7 @@ import {
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import '../../../../utils/array-extensions';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import {
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import {
   CalendarIcon,
   CodeIcon,
@@ -51,7 +43,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTablePagination,
+  useDataTable,
+} from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -284,7 +280,7 @@ const AddFilterMenuItem: FC<{
           render={
             <span
               aria-disabled
-              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
+              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
               data-testid={testId}
               role="menuitem"
               tabIndex={-1}
@@ -1012,7 +1008,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const isKeyDeserializerActive =
     keyDeserializer !== null && keyDeserializer !== undefined && keyDeserializer !== PayloadEncoding.UNSPECIFIED;
 
-  const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
+  const dataTableColumns: Record<DataColumnKey, DataTableColumnDef<TopicMessage>> = {
     offset: {
       header: 'Offset',
       accessorKey: 'offset',
@@ -1120,7 +1116,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const columnsVisibleByDefault: DataColumnKey[] = ['timestamp', 'key', 'value'];
 
-  const newColumns: ColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
+  const newColumns: DataTableColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
 
   const previewColumnFields = topicSettings?.previewColumnFields ?? [];
   if (previewColumnFields.length > 0) {
@@ -1143,7 +1139,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     }
   }
 
-  const columns: ColumnDef<TopicMessage>[] = [
+  const columns: DataTableColumnDef<TopicMessage>[] = [
     ...newColumns,
     {
       id: 'action',
@@ -1201,7 +1197,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     },
   ];
 
-  const expanderColumn: ColumnDef<TopicMessage> = {
+  const expanderColumn: DataTableColumnDef<TopicMessage> = {
     id: 'expander',
     size: 40,
     enableSorting: false,
@@ -1218,7 +1214,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       ) : null,
   };
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: filteredMessages,
     columns: [expanderColumn, ...columns],
     state: {
@@ -1242,12 +1238,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
       setSortingState(newSorting);
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
+    // Expanded rows must survive a data swap: loadLargeMessage replaces the message
+    // array, and v9 resets expanded state on every row-structure change.
+    autoResetExpanded: false,
   });
 
   // Search controls derived state
@@ -1643,7 +1638,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             placeholder="Filter table content ..."
             value={quickSearch}
           />
-          <div className="flex items-end gap-2 whitespace-nowrap text-sm">
+          <div className="flex items-end gap-2 whitespace-nowrap text-body">
             {searchPhase === null || searchPhase === 'Done' ? (
               <>
                 <div className="flex items-center gap-2">
@@ -1708,7 +1703,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         onClick={header.column.getToggleSortingHandler()}
                         style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
                       >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                         {header.column.getIsSorted() === 'asc' && ' ↑'}
                         {header.column.getIsSorted() === 'desc' && ' ↓'}
                       </TableHead>
@@ -1747,7 +1742,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                             key={cell.id}
                             style={{ width: cell.column.getSize() !== 150 ? cell.column.getSize() : undefined }}
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {<table.FlexRender cell={cell} />}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -1784,14 +1779,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             <div className="flex items-center justify-end px-2 py-2">
               <div className="flex items-center space-x-6 lg:space-x-8">
                 {/* Page counter */}
-                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+                <div className="flex w-[100px] items-center justify-center font-medium text-body">
                   Page {pageIndex + 1}
                   {hasMoreData ? '' : ` of ${windowStartPage + loadedPages}`}
                 </div>
 
                 {/* Rows per page selector */}
                 <div className="flex items-center space-x-2">
-                  <p className="font-medium text-sm">Rows per page</p>
+                  <p className="font-medium text-body">Rows per page</p>
                   <Select
                     onValueChange={(value) => {
                       const newSize = Number(value);
@@ -1859,7 +1854,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           {/* Virtual page indicator for continuous pagination mode */}
           {continuousPaginationEnabled && messages.length > 0 && (
-            <div className="mt-2 flex items-center justify-center gap-2 text-muted-foreground text-sm">
+            <div className="mt-2 flex items-center justify-center gap-2 text-body text-muted-foreground">
               <span>
                 Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
                 {` (pages ${windowStartPage + 1}–${windowStartPage + loadedPages} in memory)`}

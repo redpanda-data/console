@@ -511,7 +511,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                   </div>
 
                   {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
-                    <Alert variant="info">
+                    <Alert variant="informative">
                       <AlertDescription>
                         A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will be
                         used.
@@ -599,7 +599,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                               onClick={generateNewPassword}
                               size="icon-sm"
                               type="button"
-                              variant="secondary-outline"
+                              variant="outline"
                             >
                               <RefreshCcw size={15} />
                             </Button>
@@ -670,11 +670,11 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                   onCheckedChange={field.onChange}
                                 />
                               </FormControl>
-                              <FormLabel className="font-medium text-sm">
+                              <FormLabel className="font-medium text-body">
                                 Enable topic-specific permissions for this user for "{topicName}"
                               </FormLabel>
                             </div>
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-body text-muted-foreground">
                               {field.value && topicName ? (
                                 <span>
                                   This user will have full permissions (read, write, create, delete, describe, alter) on

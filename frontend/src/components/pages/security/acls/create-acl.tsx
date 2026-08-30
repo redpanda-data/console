@@ -164,7 +164,7 @@ const ResourceTypeSelection = ({
   ];
 
   return (
-    <span className="h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-600 md:inline-flex">
+    <span className="h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle md:inline-flex">
       {/*TODO: Add tooltip with <p>Only one cluster rule is allowed. A cluster rule already exists.</p>*/}
       {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
         <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
@@ -174,8 +174,8 @@ const ResourceTypeSelection = ({
                 <Button
                   className={
                     rule.resourceType === resourceType
-                      ? 'bg-gray-900 text-white shadow-sm hover:bg-gray-800'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-selected text-selected-foreground shadow-sm hover:bg-selected-hover'
+                      : 'text-subtle hover:bg-accent hover:text-strong'
                   }
                   data-testid={`rt-${resourceType}-button-${ruleIndex}`}
                   disabled={disabled}
@@ -200,7 +200,7 @@ const ResourceTypeSelection = ({
 
 const Summary = ({ sharedConfig, rules }: SummaryProps) => {
   return (
-    <Card className="bg-slate-100" size="full">
+    <Card className="bg-surface-subtle" size="full">
       <CardHeader>
         <h3>Summary</h3>
       </CardHeader>
@@ -208,13 +208,13 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
         {/* Shared Configuration Summary */}
         <div>
           <div className="rounded-lg border-0">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Principal:</span>
-              <span className="font-medium text-gray-900">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
+            <div className="flex items-center justify-between text-body">
+              <span className="text-subtle">Principal:</span>
+              <span className="font-medium text-strong">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Host:</span>
-              <span className="font-medium text-gray-900">
+            <div className="flex items-center justify-between text-body">
+              <span className="text-subtle">Host:</span>
+              <span className="font-medium text-strong">
                 {sharedConfig.host === '*' ? 'All hosts' : sharedConfig.host}
               </span>
             </div>
@@ -248,13 +248,13 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
 
             return (
               <div
-                className="space-y-2 rounded-lg border border-gray-200 bg-white/40 p-3"
+                className="space-y-2 rounded-lg border border-border bg-card/40 p-3"
                 data-testid={`summary-card-${getRuleDataTestId(rule)}`}
                 key={rule.id}
               >
                 {/* Combined Resource and Selector */}
                 <p
-                  className="text-gray-600 text-xs first-letter:uppercase"
+                  className="text-body-sm text-subtle first-letter:uppercase"
                   data-testid={`${getRuleDataTestId(rule)}-title`}
                 >
                   {(() => {
@@ -277,10 +277,8 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                     <div className="flex flex-wrap gap-1">
                       {showSummary ? (
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
-                            allAllow
-                              ? 'bg-background-success-subtle text-success'
-                              : 'bg-background-error-subtle text-error'
+                          className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-body-sm ${
+                            allAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive'
                           }`}
                         >
                           {allAllow ? 'Allow all' : 'Deny all'}
@@ -288,10 +286,10 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                       ) : (
                         enabledOperations.map((op) => (
                           <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${
+                            className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-body-sm ${
                               op.value === OperationTypeAllow
-                                ? 'bg-background-success-subtle text-success'
-                                : 'bg-background-error-subtle text-error'
+                                ? 'bg-success-wash text-success'
+                                : 'bg-destructive-wash text-destructive'
                             }`}
                             data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
                             key={op.name}
@@ -302,7 +300,7 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                       )}
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-xs italic">No operations configured</span>
+                    <span className="text-body-sm text-disabled italic">No operations configured</span>
                   )}
                 </div>
               </div>
@@ -337,8 +335,8 @@ const AclRules = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="font-medium text-gray-900 text-lg">ACL rules</CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardTitle className="font-medium text-heading-md text-strong">ACL rules</CardTitle>
+            <CardDescription className="text-subtle">
               Configure permissions for different resource types.
             </CardDescription>
           </div>
@@ -360,7 +358,7 @@ const AclRules = ({
               {/* Resource Type Selection */}
               <div className="flex items-center justify-between">
                 <span>
-                  <Label className="mb-1.5 block font-medium text-gray-700 text-sm">Select a resource type</Label>
+                  <Label className="mb-1.5 block font-medium text-body text-foreground">Select a resource type</Label>
                   <ResourceTypeSelection
                     getSchemaRegistryTooltipText={getSchemaRegistryTooltipText}
                     getSubjectTooltipText={getSubjectTooltipText}
@@ -387,7 +385,7 @@ const AclRules = ({
               {/* Show selector if resource type is not Cluster or SchemaRegistry */}
               {!(rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) && (
                 <div className="mb-6 space-y-2">
-                  <Label className="font-medium text-gray-700 text-sm">Selector</Label>
+                  <Label className="font-medium text-body text-foreground">Selector</Label>
                   <div className="grid grid-cols-4 gap-3">
                     <Select
                       items={{
@@ -422,7 +420,7 @@ const AclRules = ({
                       rule.selectorType === ResourcePatternTypePrefix) && (
                       <div className="col-span-3">
                         <Input
-                          className="flex-1 border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                          className="flex-1 border-border focus:border-ring focus:ring-ring"
                           onChange={(e) =>
                             updateRule(rule.id, {
                               selectorValue: e.target.value,
@@ -433,7 +431,7 @@ const AclRules = ({
                           value={rule.selectorValue}
                         />
                         <p
-                          className={`text-error text-sm ${!!rule.selectorValue.length && 'hidden'}`}
+                          className={`text-body text-destructive ${!!rule.selectorValue.length && 'hidden'}`}
                           data-testid={`selector-value-error-${index}`}
                         >
                           {rule.selectorType === ResourcePatternTypeLiteral
@@ -449,13 +447,13 @@ const AclRules = ({
               {/* Permission Mode */}
               <div className="mb-3">
                 <div className="flex items-center justify-between">
-                  <Label className="font-medium text-gray-700 text-sm">Operations</Label>
-                  <div className="inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-600">
+                  <Label className="font-medium text-body text-foreground">Operations</Label>
+                  <div className="inline-flex h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle">
                     <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-sm ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                         rule.mode === ModeCustom
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-background text-strong shadow-sm'
+                          : 'text-subtle hover:bg-accent hover:text-strong'
                       }`}
                       data-testid={`mode-custom-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeCustom)}
@@ -464,10 +462,10 @@ const AclRules = ({
                       Custom
                     </button>
                     <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-sm ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                         rule.mode === ModeAllowAll
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-background text-strong shadow-sm'
+                          : 'text-subtle hover:bg-accent hover:text-strong'
                       }`}
                       data-testid={`mode-allow-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeAllowAll)}
@@ -476,10 +474,10 @@ const AclRules = ({
                       Allow all
                     </button>
                     <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-sm ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
                         rule.mode === ModeDenyAll
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-background text-strong shadow-sm'
+                          : 'text-subtle hover:bg-accent hover:text-strong'
                       }`}
                       data-testid={`mode-deny-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeDenyAll)}
@@ -500,13 +498,13 @@ const AclRules = ({
                       value={operationValue}
                     >
                       <SelectTrigger
-                        className="h-10 flex-1 justify-between border-gray-300 focus:border-gray-500 focus:ring-gray-500/20"
+                        className="h-10 flex-1 justify-between border-border focus:border-ring focus:ring-ring/20"
                         data-testid={`operation-select-${operation}`}
                       >
                         <div className="flex items-center space-x-2">
                           {getPermissionIcon(operationValue)}
                           <span
-                            className={`font-medium text-sm ${operationValue === OperationTypeNotSet ? 'text-gray-400' : 'text-gray-900'}`}
+                            className={`font-medium text-body ${operationValue === OperationTypeNotSet ? 'text-disabled' : 'text-strong'}`}
                           >
                             {formatLabel(operation)}
                           </span>
@@ -518,7 +516,7 @@ const AclRules = ({
                           value={OperationTypeNotSet}
                         >
                           <div className="flex items-center space-x-2">
-                            <Circle className="h-4 w-4 text-gray-400" />
+                            <Circle className="h-4 w-4 text-disabled" />
                             <span>Not set</span>
                           </div>
                         </SelectItem>
@@ -536,7 +534,7 @@ const AclRules = ({
                           value={OperationTypeDeny}
                         >
                           <div className="flex items-center space-x-2">
-                            <X className="h-4 w-4 text-error" />
+                            <X className="h-4 w-4 text-destructive" />
                             <span>Deny</span>
                           </div>
                         </SelectItem>
@@ -544,7 +542,7 @@ const AclRules = ({
                     </Select>
                     <TooltipProvider>
                       <Tooltip>
-                        <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
+                        <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-disabled" />} />
                         <TooltipContent>
                           <p className="max-w-xs">{getPermissionDescription(operation, rule.resourceType)}</p>
                         </TooltipContent>
@@ -591,8 +589,8 @@ const SharedConfiguration = ({
   return (
     <Card size={'full'}>
       <CardHeader className="pb-4">
-        <CardTitle className="font-medium text-gray-900 text-lg">Shared configuration</CardTitle>
-        <CardDescription className="text-gray-600">These settings apply to all rules.</CardDescription>
+        <CardTitle className="font-medium text-heading-md text-strong">Shared configuration</CardTitle>
+        <CardDescription className="text-subtle">These settings apply to all rules.</CardDescription>
       </CardHeader>
       <CardContent>
         <CardForm>
@@ -606,18 +604,18 @@ const SharedConfiguration = ({
           ) : (
             <CardField>
               <div className="flex items-center gap-1">
-                <Label className="font-medium text-gray-700 text-sm" htmlFor="principal">
+                <Label className="font-medium text-body text-foreground" htmlFor="principal">
                   {principalType === RoleTypeRedpandaRole ? 'Role name' : 'User / principal'}
                 </Label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
+                    <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-disabled" />} />
                     <TooltipContent className="max-w-xs">
                       <div>
                         <p>
                           The user getting permissions granted or denied. In Kafka, this user is known as the principal.
                         </p>
-                        <ul className="mt-2 space-y-1 text-sm">
+                        <ul className="mt-2 space-y-1 text-body">
                           <li>• Use the wildcard * to target all users.</li>
                           <li>• Do not include the prefix. For example, use my-user instead of User:my-user.</li>
                         </ul>
@@ -669,7 +667,7 @@ const SharedConfiguration = ({
                     value={sharedConfig.principal.replace(PRINCIPAL_PREFIX_REGEX, '')}
                   />
                   {Boolean(principalError) && (
-                    <p className="text-error text-sm" data-testid="principal-error">
+                    <p className="text-body text-destructive" data-testid="principal-error">
                       {principalError}
                     </p>
                   )}
@@ -683,12 +681,12 @@ const SharedConfiguration = ({
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center gap-1">
-              <Label className="font-medium text-gray-700 text-sm" htmlFor="host">
+              <Label className="font-medium text-body text-foreground" htmlFor="host">
                 Host
               </Label>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-gray-400" />} />
+                  <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-disabled" />} />
                   <TooltipContent className="max-w-xs">
                     <p>
                       The IP address or hostname from which the user is allowed or denied access. Use * to allow from
@@ -716,10 +714,7 @@ const SharedConfiguration = ({
                 }}
                 value={hostType}
               >
-                <SelectTrigger
-                  className="w-48 focus:border-gray-500 focus:ring-gray-500/20"
-                  data-testid="shared-host-button"
-                >
+                <SelectTrigger className="w-48 focus:border-ring focus:ring-ring/20" data-testid="shared-host-button">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -729,7 +724,7 @@ const SharedConfiguration = ({
               </Select>
               {hostType === HostTypeSpecificHost && (
                 <Input
-                  className="flex-1 border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                  className="flex-1 border-border focus:border-ring focus:ring-ring"
                   disabled={edit}
                   id="host"
                   onChange={(e) =>
@@ -1014,9 +1009,9 @@ export default function CreateACL({
       case OperationTypeAllow:
         return <Check className="h-4 w-4 text-success" />;
       case OperationTypeDeny:
-        return <X className="h-4 w-4 text-error" />;
+        return <X className="h-4 w-4 text-destructive" />;
       default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
+        return <Circle className="h-4 w-4 text-disabled" />;
     }
   };
 
@@ -1101,7 +1096,7 @@ export default function CreateACL({
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Left Column - Main Form */}
             <div className="space-y-6 lg:col-span-2">
-              <p className="h-12 text-gray-600 text-sm">Configure access control rules for your Kafka resources.</p>
+              <p className="h-12 text-body text-subtle">Configure access control rules for your Kafka resources.</p>
 
               <SharedConfiguration
                 edit={edit}
@@ -1156,7 +1151,7 @@ export default function CreateACL({
                   >
                     {edit ? 'Save' : 'Create'}
                   </Button>
-                  <Button onClick={onCancel} variant="secondary-ghost">
+                  <Button onClick={onCancel} variant="ghost">
                     Cancel
                   </Button>
                 </div>

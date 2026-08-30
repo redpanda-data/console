@@ -40,7 +40,6 @@ import { TopicConfiguration } from './tab-config';
 import { TopicConsumers } from './tab-consumers';
 import { TopicDocumentation } from './tab-docu';
 import { TopicPartitions } from './tab-partitions';
-import colors from '../../../colors';
 import { isServerless } from '../../../config';
 import { AppFeatures } from '../../../utils/env';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -102,7 +101,7 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
   if (mode === 'trigger') {
     return (
       <TabsTrigger
-        className="text-base aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
+        className="text-body-lg aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
         disabled={isDisabled}
         value={id}
         variant="underline"
@@ -290,7 +289,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
                   <TooltipTrigger
                     render={
                       <div>
-                        <ErrorIcon color={colors.brandError} size={18} />
+                        <ErrorIcon className="text-destructive" size={18} />
                       </div>
                     }
                   />
@@ -306,7 +305,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
                   <TooltipTrigger
                     render={
                       <div>
-                        <WarningIcon color={colors.brandWarning} size={18} />
+                        <WarningIcon className="text-warning" size={18} />
                       </div>
                     }
                   />
@@ -329,7 +328,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
           <span className="inline-flex items-center gap-2">
             Configuration
             {modifiedConfigCount > 0 ? (
-              <Badge aria-label={`${modifiedConfigCount} modified`} size="sm" variant="info-inverted">
+              <Badge aria-label={`${modifiedConfigCount} modified`} size="sm" tone="informative" variant="subtle">
                 {modifiedConfigCount}
               </Badge>
             ) : null}

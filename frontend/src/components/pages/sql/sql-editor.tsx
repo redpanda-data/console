@@ -25,17 +25,9 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import { FileText, History, Play, Plus, Terminal, Wand2, X } from 'lucide-react';
-import {
-  forwardRef,
-  type MouseEvent,
-  useCallback,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { forwardRef, type MouseEvent, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { isMacOS } from 'utils/platform';
 import { z } from 'zod';
 
@@ -96,21 +88,6 @@ type Tab = { id: number; name: string; sql: string };
 const DEFAULT_QUERY =
   'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
 
-// Re-render the editor when the registry `.dark` class toggles.
-function subscribeToColorMode(onStoreChange: () => void): () => void {
-  const observer = new MutationObserver(onStoreChange);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  return () => observer.disconnect();
-}
-
-function getIsDarkSnapshot(): boolean {
-  return document.documentElement.classList.contains('dark');
-}
-
-function useIsDarkMode(): boolean {
-  return useSyncExternalStore(subscribeToColorMode, getIsDarkSnapshot, () => false);
-}
-
 // Transparent editor/gutter so the `bg-background` surface shows through.
 function editorChrome(mode: 'light' | 'dark'): Extension {
   return EditorView.theme(
@@ -131,7 +108,7 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
       '.cm-content ::selection': { color: 'var(--color-selection-foreground)' },
       '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--color-muted-foreground)' },
       '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--color-foreground)' },
-      '.cm-activeLine': { backgroundColor: 'var(--color-surface-default-hover)' },
+      '.cm-activeLine': { backgroundColor: 'var(--color-surface-subtle)' },
     },
     { dark: mode === 'dark' }
   );
@@ -335,7 +312,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
     const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
     const [histOpen, setHistOpen] = useState(false);
     const [hasSel, setHasSel] = useState(false);
-    const isDark = useIsDarkMode();
+    const appearance = useThemeAppearance();
 
     const editorRef = useRef<ReactCodeMirrorRef | null>(null);
     // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
@@ -424,7 +401,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         sqlSupport,
         sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
         sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
-        isDark ? DARK_THEME : LIGHT_THEME,
+        appearance === 'dark' ? DARK_THEME : LIGHT_THEME,
         EditorView.updateListener.of((update) => {
           if (update.selectionSet) {
             setHasSel(!update.state.selection.main.empty);
@@ -442,7 +419,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
         indentUnit.of('  '),
         EditorState.tabSize.of(2),
       ];
-    }, [catalogs, isDark]);
+    }, [catalogs, appearance]);
 
     const addTab = () => {
       const id = nextTabId();
@@ -474,7 +451,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             <TabsList className="overflow-x-auto" variant="underline">
               {tabs.map((t) => (
                 <TabsTrigger
-                  className="w-auto shrink-0 gap-1.5 px-3 text-xs"
+                  className="w-auto shrink-0 gap-1.5 px-3 text-body-sm"
                   key={t.id}
                   render={<div />}
                   value={String(t.id)}
@@ -486,19 +463,13 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                     aria-label={`Close ${t.name}`}
                     onClick={(e) => closeTab(t.id, e)}
                     size="icon-xs"
-                    variant="secondary-ghost"
+                    variant="ghost"
                   >
                     <X />
                   </Button>
                 </TabsTrigger>
               ))}
-              <Button
-                aria-label="New query"
-                onClick={addTab}
-                size="icon-sm"
-                title="New query"
-                variant="secondary-ghost"
-              >
+              <Button aria-label="New query" onClick={addTab} size="icon-sm" title="New query" variant="ghost">
                 <Plus />
               </Button>
             </TabsList>
@@ -507,7 +478,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             <Popover onOpenChange={setHistOpen} open={histOpen}>
               <PopoverTrigger
                 render={
-                  <Button size="sm" title="Query history (this browser)" variant="secondary-ghost">
+                  <Button size="sm" title="Query history (this browser)" variant="ghost">
                     <History /> History
                   </Button>
                 }
@@ -528,7 +499,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                       setHistOpen(false);
                     }}
                     size="sm"
-                    variant="secondary-ghost"
+                    variant="ghost"
                   >
                     <Terminal />
                     <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
@@ -545,14 +516,14 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
               }}
               size="sm"
               title="Format SQL"
-              variant="secondary-ghost"
+              variant="ghost"
             >
               <Wand2 /> Format
             </Button>
-            <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="secondary-outline">
+            <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="outline">
               Run selection
             </Button>
-            <Button onClick={doRun} size="sm" variant="secondary">
+            <Button onClick={doRun} size="sm" variant="primary">
               <Play /> Run
               <KbdGroup>
                 <Kbd size="xs">{isMacOS() ? '⌘' : 'Ctrl'}</Kbd>

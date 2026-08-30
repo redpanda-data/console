@@ -743,7 +743,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <UILabel className="font-medium text-muted-foreground text-sm">Percentage ({percentageValue}%)</UILabel>
+        <UILabel className="font-medium text-body text-muted-foreground">Percentage ({percentageValue}%)</UILabel>
         <UISlider
           aria-label="Percentage slider"
           className="w-full"
@@ -755,7 +755,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
         />
       </div>
       <div className="flex items-center gap-2">
-        <UILabel className="whitespace-nowrap font-medium text-sm" htmlFor="ratio-input">
+        <UILabel className="whitespace-nowrap font-medium text-body" htmlFor="ratio-input">
           Precise value:
         </UILabel>
         <div className="relative flex-shrink-0">
@@ -769,7 +769,7 @@ export function RatioInput(p: { value: number; onChange: (ratio: number) => void
             type="number"
             value={percentageValue}
           />
-          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground text-sm">
+          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-body text-muted-foreground">
             %
           </span>
         </div>
@@ -954,7 +954,7 @@ export function CreateTopicModal({ isOpen, onClose }: { isOpen: boolean; onClose
     const codeBoxStyle = {
       fontSize: '12px',
       fontFamily: 'monospace',
-      color: 'hsl(0deg 0% 25%)',
+      color: 'var(--color-foreground)',
       margin: '0em 1em',
     };
 

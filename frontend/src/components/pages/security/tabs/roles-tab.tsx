@@ -138,7 +138,7 @@ const RolesTabOriginal: FC = () => {
                           appGlobal.historyPush(`/security/roles/${encodeURIComponent(entry.name)}/update`);
                         }}
                         size="icon-sm"
-                        variant="secondary-ghost"
+                        variant="ghost"
                       >
                         <EditIcon className="h-4 w-4" />
                       </Button>

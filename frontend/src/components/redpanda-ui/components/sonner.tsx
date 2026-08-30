@@ -28,17 +28,17 @@ const Toaster = ({ testId, ...props }: ToasterProps & SharedProps) => {
         info: <Info className="h-4 w-4 text-informative" />,
         warning: <AlertTriangle className="h-4 w-4 text-warning" />,
         error: <XCircle className="h-4 w-4 text-destructive" />,
-        loading: <Loader className="h-4 w-4 animate-spin text-muted-foreground" />,
+        loading: <Loader className="h-4 w-4 animate-spin text-subtle" />,
       }}
       theme={props.theme ?? theme}
       toastOptions={{
         classNames: {
           toast:
             'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
-          description: 'group-[.toast]:text-muted-foreground',
-          actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-inverse',
-          cancelButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
-          closeButton: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+          description: 'group-[.toast]:text-subtle',
+          actionButton: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+          cancelButton: 'group-[.toast]:bg-surface-subtle group-[.toast]:text-subtle',
+          closeButton: 'group-[.toast]:bg-surface-subtle group-[.toast]:text-subtle',
         },
       }}
       {...props}

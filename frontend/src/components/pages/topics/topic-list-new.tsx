@@ -10,20 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type PaginationState,
-  type Row,
-  type SortingState,
-  type Updater,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import {
   Empty,
@@ -40,6 +27,7 @@ import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
+import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
 import { CreateTopicDialog } from './create-topic-dialog';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
@@ -53,7 +41,13 @@ import { renderLogDirSummary } from '../../misc/common';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
 import { Checkbox } from '../../redpanda-ui/components/checkbox';
-import { DataTableColumnHeader, DataTablePagination } from '../../redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  DataTablePagination,
+  type DataTableRow,
+  useDataTable,
+} from '../../redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,7 +59,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
 import { DeleteResourceAlertDialog } from '../../ui/delete-resource-alert-dialog';
 
-const nameFilterFn = (row: Row<Topic>, columnId: string, filterValue: string) => {
+const nameFilterFn = (row: DataTableRow<Topic>, columnId: string, filterValue: string) => {
   if (!filterValue) {
     return true;
   }
@@ -210,12 +204,12 @@ const TopicList: FC = () => {
     setSearchValue((nameFilter?.value as string) || null);
   };
 
-  const columns: ColumnDef<Topic>[] = [
+  const columns: DataTableColumnDef<Topic>[] = [
     {
       accessorKey: 'topicName',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
       filterFn: nameFilterFn,
-      meta: { headWidth: 'full' as const },
+      meta: columnMeta({ headWidth: 'full' as const }),
       cell: ({ row: { original: topic } }) => (
         <div className="flex items-start gap-2">
           <Link
@@ -234,32 +228,32 @@ const TopicList: FC = () => {
     {
       accessorKey: 'partitionCount',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Partitions" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original: topic } }) => topic.partitionCount,
     },
     {
       accessorKey: 'replicationFactor',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Replicas" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
     },
     {
       accessorKey: 'cleanupPolicy',
       header: 'Cleanup Policy',
       enableSorting: false,
-      meta: { headWidth: 'md' as const },
+      meta: columnMeta({ headWidth: 'md' as const }),
     },
     {
       id: 'size',
       accessorFn: (topic) => topic.logDirSummary?.totalSizeBytes ?? 0,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
-      meta: { headWidth: 'sm' as const },
+      meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original: topic } }) => renderLogDirSummary(topic.logDirSummary),
     },
     {
       id: 'actions',
       header: '',
       enableSorting: false,
-      meta: { align: 'right' as const, headWidth: 'fit' as const },
+      meta: columnMeta({ align: 'right' as const, headWidth: 'fit' as const }),
       cell: ({ row: { original: topic } }) => (
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -293,7 +287,7 @@ const TopicList: FC = () => {
     },
   ];
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: allTopics,
     columns,
     state: { sorting, pagination, columnFilters },
@@ -301,10 +295,6 @@ const TopicList: FC = () => {
     onPaginationChange: handlePaginationChange,
     onColumnFiltersChange: handleColumnFiltersChange,
     autoResetPageIndex: false,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (isError && error) {
@@ -333,10 +323,10 @@ const TopicList: FC = () => {
       return table.getRowModel().rows.map((row) => (
         <TableRow key={row.id}>
           {row.getVisibleCells().map((cell) => {
-            const meta = cell.column.columnDef.meta as { align?: 'right' } | undefined;
+            const meta = readColumnMeta(cell.column.columnDef.meta);
             return (
               <TableCell align={meta?.align} key={cell.id} testId="data-table-cell">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                {<table.FlexRender cell={cell} />}
               </TableCell>
             );
           })}
@@ -448,7 +438,7 @@ const TopicList: FC = () => {
               </button>
             )}
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <label className="flex cursor-pointer items-center gap-2 text-body">
             <Checkbox
               checked={showInternalTopics}
               onCheckedChange={(checked) => {
@@ -466,11 +456,10 @@ const TopicList: FC = () => {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  type Meta = { align?: 'right'; headWidth?: 'auto' | 'sm' | 'md' | 'lg' | 'xl' | 'fit' | 'full' };
-                  const meta = header.column.columnDef.meta as Meta | undefined;
+                  const meta = readColumnMeta(header.column.columnDef.meta);
                   return (
                     <TableHead align={meta?.align} key={header.id} width={meta?.headWidth}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   );
                 })}
@@ -533,7 +522,7 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
 };
 
 const iconAllowed = <span className="text-success">✓</span>;
-const iconForbidden = <span className="text-error">✗</span>;
+const iconForbidden = <span className="text-destructive">✗</span>;
 const iconClosedEye = (
   <span className="ml-1 inline-block opacity-50">
     <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />
@@ -559,14 +548,14 @@ const TopicName = ({ topic }: { topic: Topic }) => {
   }
 
   const popoverContent = (
-    <div className="text-sm">
+    <div className="text-body">
       <p className="mb-2 text-muted-foreground">
         You&apos;re missing permissions to view one or more aspects of this topic.
       </p>
       <div className="flex flex-col gap-0.5">
         {TopicActions.map((a) => (
           <div className="flex items-center justify-between gap-4" key={a}>
-            <span className="font-semibold text-xs capitalize">{a}</span>
+            <span className="font-semibold text-body-sm capitalize">{a}</span>
             {actions.includes(a) ? iconAllowed : iconForbidden}
           </div>
         ))}

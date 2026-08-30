@@ -15,8 +15,6 @@ import { useCallback, useState, useSyncExternalStore } from 'react';
 import { ConnectorStepComponent } from './connector-step';
 import { isEmbedded } from '../../../../config';
 import { api } from '../../../../state/backend-api';
-// import { IsDev } from '../../../../utils/env';
-// import { DebugEditor } from './DebugEditor';
 import type { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
 import type { ConnectorStep } from '../../../../state/rest-interfaces';
 import { clone } from '../../../../utils/json-utils';

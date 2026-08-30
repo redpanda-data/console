@@ -35,7 +35,7 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
     <AlertDialogPrimitive.Backdrop
       className={cn(
         // fill-mode-forwards holds the exit keyframe until Base UI unmounts (else a one-frame flash).
-        'data-[closed]:fade-out-0 data-[open]:fade-in-0 fixed inset-0 z-50 bg-black/50 fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in',
+        'data-[closed]:fade-out-0 data-[open]:fade-in-0 fixed inset-0 z-50 bg-modal-overlay fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in',
         className
       )}
       data-slot="alert-dialog-overlay"
@@ -99,7 +99,7 @@ function AlertDialogTitle({ className, ...props }: AlertDialogPrimitive.Title.Pr
 function AlertDialogDescription({ className, ...props }: AlertDialogPrimitive.Description.Props) {
   return (
     <AlertDialogPrimitive.Description
-      className={cn('text-body text-muted-foreground', className)}
+      className={cn('text-body text-subtle', className)}
       data-slot="alert-dialog-description"
       // Render as <div> (not the default <p>) so block-level children don't trigger validateDOMNesting.
       render={<div />}
