@@ -119,6 +119,17 @@ describe('FieldDescription', () => {
     expect(link).toHaveAttribute('target', '_blank');
   });
 
+  test('trails the link on the sentence when the description is a single paragraph', () => {
+    render(
+      <FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({ description: 'Set the `topic` to publish to.' })} />
+    );
+
+    // One block, so the link reads as part of the help text instead of claiming a row of its own.
+    const link = screen.getByRole('link', { name: TOPICS_DOCS_RE });
+    expect(link.parentElement?.textContent).toBe('Set the topic to publish to. Docs');
+    expect(screen.queryByRole('button', { name: SHOW_MORE_RE })).not.toBeInTheDocument();
+  });
+
   test('keeps the docs link reachable while a long description is collapsed', async () => {
     const user = userEvent.setup();
     render(<FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({ description: LONG_TOPICS_DESCRIPTION })} />);

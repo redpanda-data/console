@@ -51,6 +51,13 @@ const MARKDOWN_COMPONENTS: Components = {
   strong: ({ children }) => <strong className="font-medium text-foreground">{children}</strong>,
 };
 
+// Paragraphs unwrapped, so a single-paragraph description can flow inline with the docs link that
+// trails it. Everything else (code spans, links, emphasis) renders the same as in a block.
+const INLINE_MARKDOWN_COMPONENTS: Components = {
+  ...MARKDOWN_COMPONENTS,
+  p: ({ children }) => <>{children}</>,
+};
+
 const MarkdownBody = ({ markdown }: { markdown: string }) => (
   <div className="flex flex-col gap-1">
     <ReactMarkdown components={MARKDOWN_COMPONENTS}>{markdown}</ReactMarkdown>
@@ -75,7 +82,8 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
     target="_blank"
     tone="current"
   >
-    {/* size-3 matches the 12px text; -0.15em centres the icon on the word's cap height. */}
+    {/* size-3 is the same rung as text-body-sm, so the icon never outweighs the word it labels;
+        -0.15em centres it on the cap height. */}
     <BookOpenIcon className="mr-1 inline size-3 align-[-0.15em]" />
     <span className="underline decoration-dotted underline-offset-[3px] group-hover:decoration-solid">Docs</span>
   </Link>
@@ -95,11 +103,11 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
     };
   }, [source]);
 
+  // Not clampable means one paragraph and no block content, so it can carry the link on its line.
   if (!clampable) {
     return (
-      <div className="flex flex-col items-start gap-0.5">
-        <MarkdownBody markdown={markdown} />
-        {docsLink}
+      <div className="text-body-sm text-muted-foreground">
+        <ReactMarkdown components={INLINE_MARKDOWN_COMPONENTS}>{markdown}</ReactMarkdown> {docsLink}
       </div>
     );
   }
@@ -115,7 +123,7 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
         )}
       </div>
       {/* The expander already earns a row here, so the docs link joins it instead of adding one. */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-baseline gap-3">
         <button
           aria-controls={bodyId}
           aria-expanded={expanded}
