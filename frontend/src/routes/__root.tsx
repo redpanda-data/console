@@ -17,7 +17,7 @@ import AnnouncementBar from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
-import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
+import { NuqsAdapter } from 'utils/nuqs-tanstack-adapter';
 
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';

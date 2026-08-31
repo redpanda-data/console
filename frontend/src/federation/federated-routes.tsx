@@ -12,7 +12,6 @@
 import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
-import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { useLayoutEffect, useRef } from 'react';
 
 import { DebugHelper } from '../components/debug-helper/debug-helper';
@@ -30,6 +29,7 @@ import RequireAuth from '../components/require-auth';
 import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
+import { NuqsAdapter } from '../utils/nuqs-tanstack-adapter';
 
 /**
  * Builder.io components are excluded from federated routes.
