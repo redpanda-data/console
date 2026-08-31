@@ -105,6 +105,17 @@ describe('FieldDescription', () => {
     expect(link).toHaveAttribute('target', '_blank');
   });
 
+  test('links a URL macro whose label contains brackets', () => {
+    render(
+      <FieldDescription
+        spec={field({ description: 'A DSN: https://example.com/dsn[`user[:pass\\]@host`] applies.' })}
+      />
+    );
+
+    // A code span binds tighter than the link, so the `]` inside the label doesn't end it.
+    expect(screen.getByRole('link', { name: 'user[:pass]@host' })).toHaveAttribute('href', 'https://example.com/dsn');
+  });
+
   test('keeps angle-bracket placeholders that Markdown would otherwise swallow', () => {
     render(<FieldDescription spec={field({ description: 'Defaults to `cdc_metadata_<stream_id>`.' })} />);
 

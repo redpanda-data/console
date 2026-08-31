@@ -17,11 +17,9 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import type { RawFieldSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 
-// Descriptions longer than this (or spanning paragraphs) collapse behind "Show more"; schema prose
-// runs to a few thousand characters and buries the control it belongs to.
 const CLAMP_OVER_CHARS = 200;
 
-// Field prose sits under its control, so headings collapse to the same compact label as the body.
+// Field prose sits under its control: headings get no more weight than the body.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
   <div className="mt-1 font-medium text-body-sm text-foreground">{children}</div>
 );
@@ -51,8 +49,7 @@ const MARKDOWN_COMPONENTS: Components = {
   strong: ({ children }) => <strong className="font-medium text-foreground">{children}</strong>,
 };
 
-// Paragraphs unwrapped, so a single-paragraph description can flow inline with the docs link that
-// trails it. Everything else (code spans, links, emphasis) renders the same as in a block.
+// Paragraphs unwrapped, so a one-paragraph description can flow inline with its trailing docs link.
 const INLINE_MARKDOWN_COMPONENTS: Components = {
   ...MARKDOWN_COMPONENTS,
   p: ({ children }) => <>{children}</>,
@@ -65,13 +62,9 @@ const MarkdownBody = ({ markdown }: { markdown: string }) => (
 );
 
 /**
- * Trailing link to the field's own heading on the connector's docs page. Muted and named after the
- * field, so a form of twenty of these reads as help text rather than twenty calls to action.
- *
- * Laid out inline, not inline-flex: a flex box takes its baseline from the icon's bottom edge, which
- * drops the word below the baseline of the sentence it follows. Inline keeps one shared line box, so
- * `Docs` sits on the prose baseline and the icon is placed against it by `vertical-align`. The
- * underline is on the word alone — an ancestor's decoration would rule through the icon too.
+ * Link to the field's own heading on the connector's docs page. Inline, not inline-flex: a flex box
+ * baselines on the icon's bottom edge, which drops the word below the prose it follows. The underline
+ * is on the word alone so it doesn't rule through the icon.
  */
 const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }) => (
   <Link
@@ -82,8 +75,7 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
     target="_blank"
     tone="current"
   >
-    {/* size-3 is the same rung as text-body-sm, so the icon never outweighs the word it labels;
-        -0.15em centres it on the cap height. */}
+    {/* size-3 is the text's own rung; -0.15em centres it on the cap height. */}
     <BookOpenIcon className="mr-1 inline size-3 align-[-0.15em]" />
     <span className="underline decoration-dotted underline-offset-[3px] group-hover:decoration-solid">Docs</span>
   </Link>
@@ -103,7 +95,7 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
     };
   }, [source]);
 
-  // Not clampable means one paragraph and no block content, so it can carry the link on its line.
+  // One paragraph, no block content: it can carry the link on its own line.
   if (!clampable) {
     return (
       <div className="text-body-sm text-muted-foreground">
@@ -122,7 +114,6 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
           <div className="line-clamp-2 text-body-sm text-muted-foreground">{preview}</div>
         )}
       </div>
-      {/* The expander already earns a row here, so the docs link joins it instead of adding one. */}
       <div className="flex items-baseline gap-3">
         <button
           aria-controls={bodyId}
@@ -140,16 +131,14 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
 };
 
 /**
- * Help text under a config control. Prefers the schema's `short_description` — a markup-free
- * one-liner — and falls back to the AsciiDoc `description` that most fields are still limited to.
- * `docsUrl` deep-links the field's own heading on the connector's reference page.
+ * Help text under a config control. Prefers the markup-free `short_description`, falling back to the
+ * AsciiDoc `description` that most fields are still limited to.
  */
 export const FieldDescription = ({ spec, docsUrl }: { spec: RawFieldSpec; docsUrl?: string }) => {
   const docsLink = docsUrl ? <FieldDocsLink fieldName={spec.name} href={docsUrl} /> : null;
   const short = spec.shortDescription?.trim();
   if (short) {
     return (
-      // A one-liner and the link share a row rather than the link claiming its own.
       <div className="text-body-sm text-muted-foreground">
         {short} {docsLink}
       </div>

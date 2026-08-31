@@ -531,9 +531,7 @@ function buildComponentEntry({
   return next;
 }
 
-// Docs identity of the edited component, so a field can deep-link its own heading on that
-// component's reference page. Context for the same reason as ResourceFieldContext: the consumers are
-// leaf controls several generic layers down.
+// Context for the same reason as ResourceFieldContext: the consumers are leaf controls.
 type ComponentDocsIdentity = { section: string; componentName: string };
 const ComponentDocsContext = createContext<ComponentDocsIdentity | undefined>(undefined);
 

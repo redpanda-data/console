@@ -28,12 +28,10 @@ export function getConnectorDocsUrl(section: string, connectorName: string): str
 }
 
 /**
- * Docs URL for one field on a connector's reference page. Each field heading on those pages is
- * anchored by its dotted path with list markers dropped (`batching.byte_size` →
- * `#batching-byte_size`), which is exactly the form's field path. A field whose name collides with
- * a prose section of the same page is anchored `-2` (~0.2% of fields, e.g. `snowflake_put`'s
- * `snowpipe`); there the plain anchor lands on that same-named section, and an anchor that misses
- * outright leaves the reader at the top of the right page.
+ * Docs URL for one field, anchored by its dotted path with list markers dropped
+ * (`batching.byte_size` → `#batching-byte_size`) — exactly the form's field path. A name that
+ * collides with a prose section on the page is anchored `-2` there instead (~0.2% of fields), and a
+ * missed anchor lands at the top of the right page.
  */
 export function getFieldDocsUrl(
   section: string,

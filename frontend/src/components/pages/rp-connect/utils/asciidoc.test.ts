@@ -49,6 +49,18 @@ describe('asciidocToMarkdown', () => {
     expect(asciidocToMarkdown(source)).toBe('See [`http[s]://user[:pass]`](https://example.com/dsn) here.');
   });
 
+  it('reduces internal cross-references to their wording', () => {
+    expect(asciidocToMarkdown('Set the field <<batch_as_multipart, `batch_as_multipart`>> to `false`.')).toBe(
+      'Set the field `batch_as_multipart` to `false`.'
+    );
+    expect(asciidocToMarkdown('Brokering <<patterns>> are supported.')).toBe('Brokering patterns are supported.');
+  });
+
+  it('flattens a Markdown pipe table, dropping its header rule', () => {
+    const source = 'Placeholders:\n\n| Driver | Style |\n|---|---|\n| `mysql` | Question mark |';
+    expect(asciidocToMarkdown(source)).toBe('Placeholders:\n\n- Driver — Style\n- `mysql` — Question mark');
+  });
+
   it('escapes angle-bracket placeholders so Markdown does not swallow them as HTML', () => {
     const out = asciidocToMarkdown("Requests must include 'authorization: Bearer <token>' metadata.");
     expect(out).toBe(String.raw`Requests must include 'authorization: Bearer \<token>' metadata.`);
@@ -87,6 +99,11 @@ describe('asciidocToMarkdown', () => {
 
   // The Debezium type table writes rows as `|Type Name |Bloblang Type`, with no space after the
   // cell marker.
+  it('splits a dsv table on colons, the separator its attribute line declares', () => {
+    const source = '[%header,format=dsv]\n|===\nSnowflake type:Connect format\nCHAR, VARCHAR:string\n|===';
+    expect(asciidocToMarkdown(source)).toBe('- Snowflake type — Connect format\n- CHAR, VARCHAR — string');
+  });
+
   it('splits table cells that are not padded around the marker', () => {
     const source = ['.Debezium Custom Temporal Types', '|===', '|Type Name |Bloblang Type', '|==='].join('\n');
     expect(asciidocToMarkdown(source)).toBe(
@@ -124,6 +141,11 @@ describe('markdownToPlainText', () => {
     );
   });
 
+  it('strips a link whose label nests brackets, as the sql DSN examples do', () => {
+    const markdown = 'A DSN: [`clickhouse://[user[:pass]@][host]`](https://example.com/dsn) applies.';
+    expect(markdownToPlainText(markdown)).toBe('A DSN: clickhouse://[user[:pass]@][host] applies.');
+  });
+
   it('keeps link labels and unescapes placeholders', () => {
     expect(markdownToPlainText(asciidocToMarkdown('See https://example.com[the docs] for <token> usage.'))).toBe(
       'See the docs for <token> usage.'
@@ -135,6 +157,12 @@ describe('cleanText', () => {
   it('strips code spans and macros down to one line', () => {
     expect(cleanText('Sends to `redpanda`\nvia xref:guides:about.adoc[the guide].')).toBe(
       'Sends to redpanda via the guide.'
+    );
+  });
+
+  it('reduces internal cross-references to their wording', () => {
+    expect(cleanText('Brokering <<patterns>> with <<codecs, structured data>>.')).toBe(
+      'Brokering patterns with structured data.'
     );
   });
 

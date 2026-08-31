@@ -28,6 +28,19 @@ const components = [
         { name: 'dsn', type: 'string', kind: 'scalar', description: 'Postgres DSN', defaultValue: 'pg-default' },
         // No default → required by checkRequired.
         { name: 'snapshot', type: 'string', kind: 'scalar', description: 'Snapshot mode' },
+        {
+          name: 'multiline',
+          type: 'string',
+          kind: 'scalar',
+          description: 'A Data Source Name.\n\n==== Drivers\n:driver-support: mysql=certified\n\nSee the driver list.',
+        },
+        {
+          name: 'blankShort',
+          type: 'string',
+          kind: 'scalar',
+          description: 'The long one.',
+          shortDescription: '   ',
+        },
       ],
     },
   },
@@ -81,6 +94,24 @@ describe('applySchemaToSlots', () => {
 
     const [result] = applySchemaToSlots(template, components);
     expect(result.description).toBe('Snapshot mode');
+  });
+
+  test('flattens a multi-paragraph AsciiDoc description to plain slot help', () => {
+    const template = buildTemplate([
+      slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'multiline' }),
+    ]);
+
+    const [result] = applySchemaToSlots(template, components);
+    expect(result.description).toBe('A Data Source Name. Drivers See the driver list.');
+  });
+
+  test('treats a blank short description as absent, as the config form does', () => {
+    const template = buildTemplate([
+      slot({ id: 'blank', kind: 'string', section: 'source', label: 'Blank', schemaField: 'blankShort' }),
+    ]);
+
+    const [result] = applySchemaToSlots(template, components);
+    expect(result.description).toBe('The long one.');
   });
 
   test('keeps an explicit slot description over the schema description', () => {
