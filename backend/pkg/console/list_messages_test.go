@@ -173,6 +173,85 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 	}
 }
 
+func TestCalculateConsumeRequests_EmptyPartitions(t *testing.T) {
+	svc := Service{}
+
+	// Partition 0 has messages, partitions 1 and 2 are empty (never produced to, and
+	// emptied by retention respectively). Empty partitions must not be part of the
+	// consume request, otherwise the consumer waits indefinitely for messages that
+	// never arrive (until the request is cancelled).
+	startOffsets := make(kadm.ListedOffsets)
+	startOffsets["test"] = map[int32]kadm.ListedOffset{
+		0: {Topic: "test", Partition: 0, Offset: 0},
+		1: {Topic: "test", Partition: 1, Offset: 0},
+		2: {Topic: "test", Partition: 2, Offset: 25},
+	}
+
+	endOffsets := make(kadm.ListedOffsets)
+	endOffsets["test"] = map[int32]kadm.ListedOffset{
+		0: {Topic: "test", Partition: 0, Offset: 10},
+		1: {Topic: "test", Partition: 1, Offset: 0},
+		2: {Topic: "test", Partition: 2, Offset: 25},
+	}
+
+	req := &ListMessageRequest{
+		TopicName:    "test",
+		PartitionID:  partitionsAll,
+		StartOffset:  StartOffsetOldest,
+		MessageCount: 100,
+	}
+
+	expected := map[int32]*PartitionConsumeRequest{
+		0: {PartitionID: 0, IsDrained: true, LowWaterMark: 0, HighWaterMark: 10, StartOffset: 0, EndOffset: 10 - 1, MaxMessageCount: 10},
+	}
+	actual, err := svc.calculateConsumeRequests(t.Context(), nil, req, []int32{0, 1, 2}, startOffsets, endOffsets)
+	require.NoError(t, err)
+	assert.Equal(t, expected, actual, "empty partitions must be excluded from the consume request")
+}
+
+func TestCalculateConsumeRequests_AllPartitionsEmpty(t *testing.T) {
+	svc := Service{}
+
+	// A topic whose partitions are all empty must yield an empty consume request
+	// (and no error) so that the request completes immediately instead of waiting
+	// for messages until it is cancelled.
+	startOffsets := make(kadm.ListedOffsets)
+	startOffsets["test"] = map[int32]kadm.ListedOffset{
+		0: {Topic: "test", Partition: 0, Offset: 0},
+		1: {Topic: "test", Partition: 1, Offset: 30},
+	}
+
+	endOffsets := make(kadm.ListedOffsets)
+	endOffsets["test"] = map[int32]kadm.ListedOffset{
+		0: {Topic: "test", Partition: 0, Offset: 0},
+		1: {Topic: "test", Partition: 1, Offset: 30},
+	}
+
+	for _, startOffset := range []int64{StartOffsetOldest, StartOffsetRecent, 5} {
+		req := &ListMessageRequest{
+			TopicName:    "test",
+			PartitionID:  partitionsAll,
+			StartOffset:  startOffset,
+			MessageCount: 50,
+		}
+		actual, err := svc.calculateConsumeRequests(t.Context(), nil, req, []int32{0, 1}, startOffsets, endOffsets)
+		require.NoError(t, err)
+		assert.Empty(t, actual, "expected no consume requests for an empty topic (startOffset=%d)", startOffset)
+	}
+
+	// Live tail must still include empty partitions, as it deliberately waits for
+	// new messages to arrive.
+	req := &ListMessageRequest{
+		TopicName:    "test",
+		PartitionID:  partitionsAll,
+		StartOffset:  StartOffsetNewest,
+		MessageCount: 50,
+	}
+	actual, err := svc.calculateConsumeRequests(t.Context(), nil, req, []int32{0, 1}, startOffsets, endOffsets)
+	require.NoError(t, err)
+	assert.Len(t, actual, 2, "live tail must keep consuming from empty partitions")
+}
+
 func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 	svc := Service{}
 	// Request less messages than we have partitions, if filter code is set we handle consume requests different than

@@ -335,6 +335,7 @@ func (s *Service) calculateConsumeRequests(
 	startOffsets, endOffsets kadm.ListedOffsets,
 ) (map[int32]*PartitionConsumeRequest, error) {
 	requests := make(map[int32]*PartitionConsumeRequest)
+	failedPartitions := 0
 
 	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""
 
@@ -366,6 +367,7 @@ func (s *Service) calculateConsumeRequests(
 				slog.String("topic", listReq.TopicName),
 				slog.Int("partition", int(partitionID)),
 			)
+			failedPartitions++
 			continue
 		}
 		if !endExists {
@@ -374,6 +376,7 @@ func (s *Service) calculateConsumeRequests(
 				slog.String("topic", listReq.TopicName),
 				slog.Int("partition", int(partitionID)),
 			)
+			failedPartitions++
 			continue
 		}
 
@@ -385,6 +388,7 @@ func (s *Service) calculateConsumeRequests(
 				slog.Int("partition", int(partitionID)),
 				slog.Any("error", startOffset.Err),
 			)
+			failedPartitions++
 			continue
 		}
 		if endOffset.Err != nil {
@@ -394,6 +398,16 @@ func (s *Service) calculateConsumeRequests(
 				slog.Int("partition", int(partitionID)),
 				slog.Any("error", endOffset.Err),
 			)
+			failedPartitions++
+			continue
+		}
+
+		// Skip partitions that have no consumable messages (low watermark == high watermark),
+		// unless we live tail (StartOffsetNewest), which deliberately waits for new messages.
+		// Including an empty partition makes the whole request wait for messages that never
+		// arrive: e.g. a start offset resolved by timestamp is -1 on an empty partition, which
+		// kgo interprets as "start at the end", i.e. an indefinite live tail.
+		if listReq.StartOffset != StartOffsetNewest && endOffset.Offset <= startOffset.Offset {
 			continue
 		}
 
@@ -458,7 +472,12 @@ func (s *Service) calculateConsumeRequests(
 
 	// Validate that at least one partition was successfully processed
 	if len(requests) == 0 {
-		return nil, fmt.Errorf("no partitions available for consumption: all partitions failed offset retrieval. Check topic availability and permissions for %q", listReq.TopicName)
+		if failedPartitions > 0 {
+			return nil, fmt.Errorf("no partitions available for consumption: all partitions failed offset retrieval. Check topic availability and permissions for %q", listReq.TopicName)
+		}
+		// All requested partitions are empty — there is nothing to consume and the caller
+		// completes the request early.
+		return requests, nil
 	}
 
 	if !predictableResults {
