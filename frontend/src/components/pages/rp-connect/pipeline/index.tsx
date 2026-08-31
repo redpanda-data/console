@@ -1437,16 +1437,31 @@ function PipelinePageContent() {
     hasStoredBuffer &&
     // Against the baseline, not the live editor — the live one changes on every keystroke.
     (recoverableEntry.configYaml !== (initialYaml ?? '') || recoveredSettingsChanges.length > 0);
-  // The saved pipeline moved on since the buffer was captured: restoring is still the user's call, but
-  // it is no longer just "put my typing back".
-  const isAutosaveStale = (() => {
-    const savedAt = timestampToMillis(pipeline?.updateTime);
-    return !!recoverableEntry && savedAt !== null && savedAt > recoverableEntry.updatedAt;
-  })();
+  /**
+   * The pipeline's own last-write time, which the buffer records as the version its edits
+   * were based on.
+   */
+  const savedUpdateTime = timestampToMillis(pipeline?.updateTime);
+
+  /**
+   * The saved pipeline moved on since the buffer was captured: restoring is still the user's call, but
+   * it is no longer just "put my typing back".
+   *
+   * Both sides are the dataplane's own `update_time`, so this is immune to clock skew —
+   * comparing the server's timestamp against the browser's `updatedAt` got the answer
+   * wrong in both directions whenever the two clocks drifted. A buffer written before
+   * the baseline was recorded has nothing to compare and is treated as not stale.
+   */
+  const isAutosaveStale =
+    !!recoverableEntry &&
+    recoverableEntry.basedOnUpdateTime != null &&
+    savedUpdateTime !== null &&
+    savedUpdateTime !== recoverableEntry.basedOnUpdateTime;
 
   const { flush: flushAutosave } = useEditorAutosave({
     enabled: mode !== 'view',
     pipelineId: mode === 'create' ? undefined : pipelineId,
+    savedUpdateTime,
     form,
     editorStore,
   });

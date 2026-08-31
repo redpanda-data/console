@@ -32,6 +32,19 @@ export const MAX_AUTOSAVE_BUFFERS = 10;
 /** localStorage is ~5 MB per origin for the whole app, and 256 KB is far past the biggest real config. */
 export const MAX_AUTOSAVE_YAML_BYTES = 256 * 1024;
 
+/**
+ * Buffers older than this are dropped on read, and the pruned set written back.
+ *
+ * Two reasons, and the second is why it is not just an eviction policy. Nobody
+ * returning after a week wants a week-old configuration offered as "your edits" —
+ * they have forgotten writing it. And a buffer holds the configuration verbatim,
+ * which is normally `${secrets.NAME}` references but is whatever the user typed:
+ * a literal credential pasted mid-edit should not outlive the session that typed
+ * it by a month on a shared machine. `clearAll` on logout covers the deliberate
+ * exit; this covers the tab that was simply closed.
+ */
+export const MAX_AUTOSAVE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 /** Editor target for a buffer: the create page, or one pipeline's editor. */
 export const CREATE_AUTOSAVE_TARGET = 'create';
 
@@ -49,8 +62,19 @@ export type EditorAutosaveEntry = {
   computeUnits: number;
   tags: EditorAutosaveTag[];
   configYaml: string;
-  /** Epoch ms of the last autosave. */
+  /** Epoch ms of the last autosave, by this browser's clock. */
   updatedAt: number;
+  /**
+   * The saved pipeline's `update_time` when these edits were captured, in epoch ms —
+   * `null` while creating, or against a pipeline that has never been written since
+   * the server started recording it.
+   *
+   * This is what decides whether a buffer is stale, and it is a server value on both
+   * sides of that comparison. `updatedAt` cannot do the job: comparing this browser's
+   * clock against the dataplane's makes the answer wrong in both directions once the
+   * two drift, and a few minutes of drift is ordinary.
+   */
+  basedOnUpdateTime?: number | null;
 };
 
 /** Everything a buffer carries except the fields the store stamps itself. */
@@ -74,7 +98,17 @@ function isAutosaveEntry(value: unknown): value is EditorAutosaveEntry {
   );
 }
 
-/** Tolerant read: anything unparseable or shape-shifted (older format, hand-edited) is dropped. */
+export const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
+  now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
+
+/**
+ * Tolerant read: anything unparseable or shape-shifted (older format, hand-edited) is
+ * dropped, as is anything past `MAX_AUTOSAVE_AGE_MS`.
+ *
+ * Expired buffers are written back out rather than only filtered, so the stored YAML
+ * actually goes away instead of waiting for a later save to evict it — someone who
+ * stops using the editor is exactly the case the age cap is for.
+ */
 function readAll(): EditorAutosaveEntry[] {
   if (typeof window === 'undefined') {
     return [];
@@ -83,7 +117,12 @@ function readAll(): EditorAutosaveEntry[] {
     window.localStorage.removeItem(LEGACY_DRAFTS_STORAGE_KEY);
     const raw = window.localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY);
     const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? parsed.filter(isAutosaveEntry) : [];
+    const entries = Array.isArray(parsed) ? parsed.filter(isAutosaveEntry) : [];
+    const live = entries.filter((entry) => !isAutosaveExpired(entry));
+    if (live.length !== entries.length) {
+      writeAll(live);
+    }
+    return live;
   } catch {
     return [];
   }
@@ -117,6 +156,11 @@ type EditorAutosaveStore = {
   save: (input: EditorAutosaveInput) => boolean;
   /** Drop a target's buffer — on a successful save, or when the user declines to restore it. */
   clear: (targetKey: string) => void;
+  /**
+   * Drop every buffer, across clusters — for logout. Unsaved work is the user's, and
+   * leaving it in the browser for whoever logs in next is not this feature's job.
+   */
+  clearAll: () => void;
   /** Re-read from storage — for another tab's writes, and to reset between tests. */
   refresh: () => void;
 };
@@ -152,6 +196,11 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
     set({ entries: next });
   },
 
+  clearAll: () => {
+    writeAll([]);
+    set({ entries: [] });
+  },
+
   refresh: () => set({ entries: readAll() }),
 }));
 
@@ -170,5 +219,6 @@ export function selectAutosaveEntry(
 export const rpcnEditorAutosave = {
   save: (input: EditorAutosaveInput) => useRpcnEditorAutosaveStore.getState().save(input),
   clear: (targetKey: string) => useRpcnEditorAutosaveStore.getState().clear(targetKey),
+  clearAll: () => useRpcnEditorAutosaveStore.getState().clearAll(),
   get: (targetKey: string) => selectAutosaveEntry(useRpcnEditorAutosaveStore.getState().entries, targetKey),
 };

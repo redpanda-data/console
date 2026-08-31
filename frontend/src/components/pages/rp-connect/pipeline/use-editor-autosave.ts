@@ -26,6 +26,7 @@ export const AUTOSAVE_DEBOUNCE_MS = 1000;
 export function useEditorAutosave({
   enabled,
   pipelineId,
+  savedUpdateTime,
   form,
   editorStore,
 }: {
@@ -33,6 +34,12 @@ export function useEditorAutosave({
   enabled: boolean;
   /** Undefined on the create page, which has its own buffer. */
   pipelineId: string | undefined;
+  /**
+   * The loaded pipeline's `update_time` in epoch ms, stamped into the buffer so
+   * staleness is decided by comparing two server timestamps rather than this
+   * browser's clock against the dataplane's. Null while creating.
+   */
+  savedUpdateTime: number | null;
   form: UseFormReturn<PipelineFormValues>;
   editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
 }) {
@@ -40,6 +47,10 @@ export function useEditorAutosave({
   // Latest form handle for the long-lived subscription, without re-subscribing per render.
   const formRef = useRef(form);
   formRef.current = form;
+  // Read at write time, like the form handle: a save landing while the editor is open
+  // moves the pipeline's update_time, and the next buffer is based on that new one.
+  const savedUpdateTimeRef = useRef(savedUpdateTime);
+  savedUpdateTimeRef.current = savedUpdateTime;
   // A buffer left by an earlier session must never be cleaned up just because the editor opened:
   // loading a pipeline settles the document back to "nothing to recover", which would delete it a
   // second before the user could click Restore.
@@ -68,6 +79,7 @@ export function useEditorAutosave({
       computeUnits: values.computeUnits,
       tags: values.tags,
       configYaml: yamlContent,
+      basedOnUpdateTime: savedUpdateTimeRef.current,
     });
   }, [targetKey, editorStore]);
 

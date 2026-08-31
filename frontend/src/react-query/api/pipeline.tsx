@@ -173,6 +173,23 @@ export const useListPipelinesQuery = (
 const NAME_LOOKUP_PAGE_SIZE = 100;
 
 /**
+ * `ListPipelinesRequest.Filter.name_contains` is validated server-side against
+ * `^[A-Za-z0-9-_ /]+$` with a 128-character cap, so a name holding anything else — a
+ * dot, a bracket, an accent — is rejected as a malformed request rather than matching
+ * nothing.
+ *
+ * Everything outside the pattern is dropped instead. A substring filter that has lost
+ * some characters returns a superset of what was asked for, which is harmless for
+ * every caller here (they are checking which names are already taken); a 400 is not.
+ * Nothing left to match on means no filter at all, i.e. the first page unfiltered.
+ */
+const DISALLOWED_IN_NAME_FILTER = /[^A-Za-z0-9\-_ /]/g;
+const NAME_FILTER_MAX_LENGTH = 128;
+
+export const toNameContainsFilter = (nameContains: string): string =>
+  nameContains.replace(DISALLOWED_IN_NAME_FILTER, '').slice(0, NAME_FILTER_MAX_LENGTH);
+
+/**
  * Display names already in use, matched by substring — fetched on demand rather than subscribed to.
  *
  * Two reasons it is not a query. It is needed once, at the moment a draft is saved with the name field
@@ -184,13 +201,16 @@ export const useFetchPipelineNames = () => {
   const transport = useTransport();
   return useCallback(
     async (nameContains: string): Promise<string[]> => {
+      const safeNameContains = toNameContainsFilter(nameContains);
       const response = await callUnaryMethod(
         transport,
         listPipelines,
         create(ListPipelinesRequestSchema, {
           request: create(ListPipelinesRequestSchemaDataPlane, {
             pageSize: NAME_LOOKUP_PAGE_SIZE,
-            filter: { includeDrafts: true, nameContains },
+            // Omitted rather than sent empty: the field ignores an empty value anyway, and
+            // being explicit keeps "nothing usable to filter on" readable at the call site.
+            filter: { includeDrafts: true, ...(safeNameContains ? { nameContains: safeNameContains } : {}) },
           }),
         })
       );

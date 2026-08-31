@@ -21,7 +21,7 @@ import {
 import { connectQueryWrapper } from 'test-utils';
 import { describe, expect, test } from 'vitest';
 
-import { useListPipelinesQuery } from './pipeline';
+import { toNameContainsFilter, useListPipelinesQuery } from './pipeline';
 
 // Module scope: the hook memoizes its request on the input's identity.
 const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
@@ -272,5 +272,32 @@ describe('useListPipelinesQuery', () => {
       'pipeline-4',
       'pipeline-5',
     ]);
+  });
+});
+
+// The server validates name_contains against ^[A-Za-z0-9-_ /]+$ and rejects anything
+// else as a malformed request, so a name carrying ordinary punctuation has to be
+// filed down before it goes on the wire rather than 400ing the lookup it belongs to.
+describe('toNameContainsFilter', () => {
+  test('passes a name already inside the server pattern through unchanged', () => {
+    expect(toNameContainsFilter('Untitled pipeline')).toBe('Untitled pipeline');
+    expect(toNameContainsFilter('orders-v2_raw/eu')).toBe('orders-v2_raw/eu');
+  });
+
+  test('drops characters the pattern rejects', () => {
+    expect(toNameContainsFilter('orders (v2).raw')).toBe('orders v2raw');
+    expect(toNameContainsFilter('café')).toBe('caf');
+    expect(toNameContainsFilter('a@b#c')).toBe('abc');
+  });
+
+  // A filter that lost characters matches a superset of what was asked for, which is
+  // what every caller here can live with — they are checking which names are taken.
+  test('returns empty when nothing usable is left, so the filter can be omitted', () => {
+    expect(toNameContainsFilter('日本語')).toBe('');
+    expect(toNameContainsFilter('')).toBe('');
+  });
+
+  test('caps the length at the server maximum', () => {
+    expect(toNameContainsFilter('a'.repeat(200))).toHaveLength(128);
   });
 });

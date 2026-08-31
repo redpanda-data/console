@@ -20,6 +20,7 @@ import {
   CREATE_AUTOSAVE_TARGET,
   EDITOR_AUTOSAVE_STORAGE_KEY,
   type EditorAutosaveInput,
+  MAX_AUTOSAVE_AGE_MS,
   MAX_AUTOSAVE_BUFFERS,
   MAX_AUTOSAVE_YAML_BYTES,
   rpcnEditorAutosave,
@@ -173,6 +174,75 @@ describe('rpcn-editor-autosave', () => {
     useRpcnEditorAutosaveStore.getState().refresh();
 
     expect(localStorage.getItem('rpcn-pipeline-drafts')).toBeNull();
+  });
+
+  describe('age cap', () => {
+    // Written straight to storage: the store stamps `updatedAt` itself, so an old
+    // buffer can only be simulated the way a previous session left one behind.
+    const storeAged = (ageMs: number, targetKey = CREATE_AUTOSAVE_TARGET) => {
+      localStorage.setItem(
+        EDITOR_AUTOSAVE_STORAGE_KEY,
+        JSON.stringify([
+          {
+            ...buffer({ targetKey }),
+            clusterId: 'cluster-a',
+            updatedAt: Date.now() - ageMs,
+          },
+        ])
+      );
+      useRpcnEditorAutosaveStore.getState().refresh();
+    };
+
+    it('keeps a buffer that is merely old', () => {
+      storeAged(MAX_AUTOSAVE_AGE_MS - 60_000);
+
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)).not.toBeNull();
+    });
+
+    it('never offers a buffer past the cap', () => {
+      storeAged(MAX_AUTOSAVE_AGE_MS + 60_000);
+
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)).toBeNull();
+    });
+
+    // The point of the cap is that the stored YAML goes away, not just that it stops
+    // being offered — someone who never opens the editor again writes nothing to evict it.
+    it('removes the expired buffer from storage rather than only hiding it', () => {
+      storeAged(MAX_AUTOSAVE_AGE_MS + 60_000);
+
+      expect(stored()).toEqual([]);
+    });
+  });
+
+  describe('clearAll', () => {
+    it('drops buffers from every cluster, for logout', () => {
+      rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
+      mockConfig.clusterId = 'cluster-b';
+      rpcnEditorAutosave.save(buffer({ targetKey: 'p2' }));
+      expect(stored()).toHaveLength(2);
+
+      rpcnEditorAutosave.clearAll();
+
+      expect(stored()).toEqual([]);
+      mockConfig.clusterId = 'cluster-a';
+      expect(rpcnEditorAutosave.get('p1')).toBeNull();
+    });
+  });
+
+  describe('basedOnUpdateTime', () => {
+    // Staleness compares this against the pipeline's current update_time, both server
+    // values. Round-tripping it is the whole contract the editor relies on.
+    it('round-trips the pipeline version the edits were based on', () => {
+      rpcnEditorAutosave.save(buffer({ basedOnUpdateTime: 1_700_000_000_123 }));
+
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.basedOnUpdateTime).toBe(1_700_000_000_123);
+    });
+
+    it('accepts a buffer with no baseline, as the create page has none', () => {
+      rpcnEditorAutosave.save(buffer({ basedOnUpdateTime: null }));
+
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.basedOnUpdateTime).toBeNull();
+    });
   });
 
   describe('selectAutosaveEntry', () => {

@@ -11,6 +11,7 @@
 
 import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
+import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
 import type { editor } from 'monaco-editor';
@@ -1885,7 +1886,12 @@ describe('PipelinePage', () => {
       mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnPipelineDrafts');
     });
 
-    const seedBuffer = (targetKey: string, configYaml: string, name = 'Test Pipeline') => {
+    const seedBuffer = (
+      targetKey: string,
+      configYaml: string,
+      name = 'Test Pipeline',
+      basedOnUpdateTime: number | null = null
+    ) => {
       useRpcnEditorAutosaveStore.getState().save({
         targetKey,
         name,
@@ -1893,8 +1899,85 @@ describe('PipelinePage', () => {
         computeUnits: 1,
         tags: [],
         configYaml,
+        basedOnUpdateTime,
       });
     };
+
+    /** A pipeline whose `update_time` the server reports as the given epoch ms. */
+    const transportWithUpdateTime = (updateTimeMs: number) =>
+      createTransport({
+        getPipelineMock: vi.fn().mockReturnValue(
+          create(ConsoleGetPipelineResponseSchema, {
+            response: create(GetPipelineResponseSchema, {
+              pipeline: create(PipelineSchema, {
+                id: 'test-pipeline',
+                displayName: 'Test Pipeline',
+                configYaml: 'input:\n  stdin: {}\noutput:\n  stdout: {}',
+                state: Pipeline_State.RUNNING,
+                resources: { cpuShares: '100m', memoryShares: '0' },
+                tags: {},
+                updateTime: timestampFromMs(updateTimeMs),
+              }),
+            }),
+          })
+        ),
+      });
+
+    /**
+     * Staleness is "someone saved this pipeline since these edits were captured", and it
+     * is decided by comparing the pipeline's `update_time` against the one the buffer
+     * recorded — two server values. Comparing the server's clock against the browser's
+     * (the buffer's own `updatedAt`) got this wrong in both directions whenever the two
+     * drifted, which is ordinary.
+     */
+    describe('staleness is judged on server timestamps, not the browser clock', () => {
+      const SAVED_AT = 1_700_000_000_000;
+
+      it('warns when the pipeline was written after the buffer was captured', async () => {
+        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+        seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT - 60_000);
+
+        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+
+        const notice = await screen.findByTestId('autosave-restore-notice');
+        expect(notice).toHaveTextContent(/has been saved by someone since you were editing/);
+      });
+
+      it('does not warn when the pipeline has not moved since', async () => {
+        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+        seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT);
+
+        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+
+        const notice = await screen.findByTestId('autosave-restore-notice');
+        expect(notice).toHaveTextContent(/You left this editor without saving/);
+      });
+
+      // A browser hours ahead of the dataplane used to make every buffer look current,
+      // and one hours behind made every buffer look stale. Neither is read any more.
+      it('ignores a browser clock that disagrees with the server', async () => {
+        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+        // updatedAt is stamped from Date.now(), i.e. ~now — decades after SAVED_AT — yet
+        // the recorded baseline still matches what the server reports.
+        seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT);
+
+        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+
+        const notice = await screen.findByTestId('autosave-restore-notice');
+        expect(notice).not.toHaveTextContent(/has been saved by someone since you were editing/);
+      });
+
+      // Buffers written before the baseline existed have nothing to compare.
+      it('treats a buffer with no recorded baseline as not stale', async () => {
+        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+        seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', null);
+
+        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+
+        const notice = await screen.findByTestId('autosave-restore-notice');
+        expect(notice).toHaveTextContent(/You left this editor without saving/);
+      });
+    });
 
     // The acceptance criterion for a refresh mid-edit: whatever was typed is still reachable.
     it('mirrors the editor into local storage as the user types', async () => {
