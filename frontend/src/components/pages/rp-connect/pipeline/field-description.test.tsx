@@ -88,32 +88,19 @@ describe('FieldDescription', () => {
     expect(screen.getByText(ALTERNATIVELY_RE)).toBeInTheDocument();
   });
 
-  test('renders a short fallback description as Markdown with no expander', () => {
-    render(<FieldDescription spec={field({ description: 'Set the `topic` to publish to.' })} />);
-
-    expect(screen.getByText('topic', { selector: 'code' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: SHOW_MORE_RE })).not.toBeInTheDocument();
-  });
-
-  test('links a bare URL macro out of the AsciiDoc source', () => {
-    render(
+  test('links URL macros out of the AsciiDoc source, bracketed labels included', () => {
+    const { unmount } = render(
       <FieldDescription spec={field({ description: 'Uses https://github.com/twmb/franz-go[franz-go] internally.' })} />
     );
 
     const link = screen.getByRole('link', { name: 'franz-go' });
     expect(link).toHaveAttribute('href', 'https://github.com/twmb/franz-go');
     expect(link).toHaveAttribute('target', '_blank');
-  });
+    unmount();
 
-  test('links a URL macro whose label contains brackets', () => {
-    render(
-      <FieldDescription
-        spec={field({ description: 'A DSN: https://example.com/dsn[`user[:pass\\]@host`] applies.' })}
-      />
-    );
-
-    // A code span binds tighter than the link, so the `]` inside the label doesn't end it.
-    expect(screen.getByRole('link', { name: 'user[:pass]@host' })).toHaveAttribute('href', 'https://example.com/dsn');
+    // A code span binds tighter than the link, so a `]` inside the label doesn't end it.
+    render(<FieldDescription spec={field({ description: 'A DSN: https://x.com/dsn[`user[:pass\\]@host`].' })} />);
+    expect(screen.getByRole('link', { name: 'user[:pass]@host' })).toHaveAttribute('href', 'https://x.com/dsn');
   });
 
   test('keeps angle-bracket placeholders that Markdown would otherwise swallow', () => {
@@ -138,6 +125,7 @@ describe('FieldDescription', () => {
     // One block, so the link reads as part of the help text instead of claiming a row of its own.
     const link = screen.getByRole('link', { name: TOPICS_DOCS_RE });
     expect(link.parentElement?.textContent).toBe('Set the topic to publish to. Docs');
+    expect(screen.getByText('topic', { selector: 'code' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: SHOW_MORE_RE })).not.toBeInTheDocument();
   });
 
@@ -152,15 +140,12 @@ describe('FieldDescription', () => {
     expect(screen.getByRole('link', { name: TOPICS_DOCS_RE })).toBeInTheDocument();
   });
 
-  test('offers the docs link even for a field the schema documents nowhere else', () => {
-    render(<FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({})} />);
-
+  test('offers the docs link with no prose at all, and none when the component has no docs page', () => {
+    const { unmount } = render(<FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({})} />);
     expect(screen.getByRole('link', { name: TOPICS_DOCS_RE })).toBeInTheDocument();
-  });
+    unmount();
 
-  test('renders no docs link for a component without a docs page', () => {
     render(<FieldDescription spec={field({ shortDescription: SHORT_TOPICS_DESCRIPTION })} />);
-
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

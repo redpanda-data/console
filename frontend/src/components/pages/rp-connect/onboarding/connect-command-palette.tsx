@@ -31,7 +31,7 @@ import {
 } from './connect-command-palette-utils';
 import { ConnectorLogo } from './connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
-import { asciidocToMarkdown, cleanText } from '../utils/asciidoc';
+import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { getCategoryDisplayName } from '../utils/categories';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { componentStatusToString, parseSchema } from '../utils/schema';
@@ -162,10 +162,10 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   }
 
   const categories = (component.categories ?? []).map(getCategoryDisplayName).filter(Boolean);
-  const summary = cleanText(component.summary ?? '');
+  const summary = markdownToPlainText(asciidocToMarkdown(component.summary ?? ''));
   const descriptionMd = component.description ? asciidocToMarkdown(component.description) : '';
   // Skip the description when it just repeats the summary.
-  const showDescription = descriptionMd !== '' && cleanText(component.description ?? '') !== summary;
+  const showDescription = descriptionMd !== '' && markdownToPlainText(descriptionMd) !== summary;
   const docsUrl = getConnectorDocsUrl(component.type, component.name);
 
   return (

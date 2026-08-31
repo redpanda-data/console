@@ -13,6 +13,8 @@ import { describe, expect, it } from 'vitest';
 
 import { getConnectorDocsUrl, getFieldDocsUrl, getNodeDocsUrl } from './connector-docs';
 
+const DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components';
+
 describe('getConnectorDocsUrl', () => {
   it('builds correct URL for input connectors', () => {
     expect(getConnectorDocsUrl('input', 'aws_cloudwatch_logs')).toBe(
@@ -59,27 +61,19 @@ describe('getConnectorDocsUrl', () => {
 });
 
 describe('getFieldDocsUrl', () => {
-  const INPUT_REDPANDA = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/redpanda/';
+  const REDPANDA_INPUT = `${DOCS}/inputs/redpanda/`;
 
-  it('anchors a top-level field by its name', () => {
-    expect(getFieldDocsUrl('input', 'redpanda', ['consumer_group'])).toBe(`${INPUT_REDPANDA}#consumer_group`);
-  });
-
-  it('joins a nested field path with hyphens, as the docs generator ids it', () => {
-    expect(getFieldDocsUrl('output', 'sql_insert', ['batching', 'byte_size'])).toBe(
-      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/sql_insert/#batching-byte_size'
-    );
-  });
-
-  it('ignores list nesting, which the docs anchors drop', () => {
+  it.each([
+    ['a top-level field by its name', ['consumer_group'], `${REDPANDA_INPUT}#consumer_group`],
     // Documented as `sasl[].aws.credentials.role`, anchored `#sasl-aws-credentials-role`.
-    expect(getFieldDocsUrl('input', 'redpanda', ['sasl', 'aws', 'credentials', 'role'])).toBe(
-      `${INPUT_REDPANDA}#sasl-aws-credentials-role`
-    );
-  });
-
-  it('falls back to the component page when there is no field path', () => {
-    expect(getFieldDocsUrl('input', 'redpanda', [])).toBe(INPUT_REDPANDA);
+    [
+      'a nested path with hyphens, list nesting dropped',
+      ['sasl', 'aws', 'credentials', 'role'],
+      `${REDPANDA_INPUT}#sasl-aws-credentials-role`,
+    ],
+    ['the component page when there is no field path', [], REDPANDA_INPUT],
+  ])('anchors %s', (_case, path, expected) => {
+    expect(getFieldDocsUrl('input', 'redpanda', path)).toBe(expected);
   });
 
   it('returns undefined when the component itself has no docs page', () => {

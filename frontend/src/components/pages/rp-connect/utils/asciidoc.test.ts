@@ -11,162 +11,129 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { asciidocToMarkdown, cleanText, markdownToPlainText } from './asciidoc';
+import { asciidocToMarkdown, markdownToPlainText } from './asciidoc';
+
+const lines = (...rows: string[]) => rows.join('\n');
 
 describe('asciidocToMarkdown', () => {
-  it('turns AsciiDoc section titles into Markdown headings instead of leaking "=="', () => {
-    const out = asciidocToMarkdown('== Performance\nThis output benefits from batching.');
-    expect(out).toBe('#### Performance\nThis output benefits from batching.');
-    expect(out).not.toContain('== ');
-  });
-
-  it('handles multiple heading levels and keeps paragraphs separated', () => {
-    const out = asciidocToMarkdown('Intro paragraph.\n\n=== Delivery Guarantees\nAt least once.');
-    expect(out).toBe('Intro paragraph.\n\n#### Delivery Guarantees\nAt least once.');
-  });
-
-  it('converts link/xref macros to label text and bare URL macros to Markdown links', () => {
-    expect(asciidocToMarkdown('See xref:guides:about.adoc[the guide] for details.')).toBe('See the guide for details.');
-    expect(asciidocToMarkdown('Uses https://github.com/twmb/franz-go[franz-go] under the hood.')).toBe(
-      'Uses [franz-go](https://github.com/twmb/franz-go) under the hood.'
-    );
-  });
-
-  it('converts AsciiDoc bullets to Markdown list items', () => {
-    expect(asciidocToMarkdown('* first\n* second')).toBe('- first\n- second');
-  });
-
-  // Every AWS `credentials` field ends "…can be found in xref:guides:cloud/aws.adoc[].".
-  it('names a target for an empty-label xref rather than leaving dangling punctuation', () => {
-    expect(asciidocToMarkdown('More information can be found in xref:guides:cloud/aws.adoc[].')).toBe(
-      'More information can be found in the documentation.'
-    );
-  });
-
-  it('keeps a macro label that contains escaped brackets, dropping the new-window flag', () => {
-    // AsciiDoc escapes `]` inside a label, and a trailing `^` means "open in a new window".
-    const source = 'See https://example.com/dsn[`http[s\\]://user[:pass\\]`^] here.';
-    expect(asciidocToMarkdown(source)).toBe('See [`http[s]://user[:pass]`](https://example.com/dsn) here.');
-  });
-
-  it('reduces internal cross-references to their wording', () => {
-    expect(asciidocToMarkdown('Set the field <<batch_as_multipart, `batch_as_multipart`>> to `false`.')).toBe(
-      'Set the field `batch_as_multipart` to `false`.'
-    );
-    expect(asciidocToMarkdown('Brokering <<patterns>> are supported.')).toBe('Brokering patterns are supported.');
-  });
-
-  it('flattens a Markdown pipe table, dropping its header rule', () => {
-    const source = 'Placeholders:\n\n| Driver | Style |\n|---|---|\n| `mysql` | Question mark |';
-    expect(asciidocToMarkdown(source)).toBe('Placeholders:\n\n- Driver — Style\n- `mysql` — Question mark');
-  });
-
-  it('escapes angle-bracket placeholders so Markdown does not swallow them as HTML', () => {
-    const out = asciidocToMarkdown("Requests must include 'authorization: Bearer <token>' metadata.");
-    expect(out).toBe(String.raw`Requests must include 'authorization: Bearer \<token>' metadata.`);
-  });
-
-  it('leaves placeholders inside code spans untouched', () => {
-    expect(asciidocToMarkdown('Defaults to `redpanda_connect_jira_input_<resource>`.')).toBe(
-      'Defaults to `redpanda_connect_jira_input_<resource>`.'
-    );
-  });
-
-  it('flattens AsciiDoc tables to bullets and drops docs attribute lines', () => {
-    const source = [
-      'A Data Source Name.',
-      '',
-      ':driver-support: mysql=certified, postgres=certified',
-      '',
-      '|===',
-      '| Driver | Data Source Name Format',
-      '',
-      '| `mysql`',
-      '| `[username[:password]@]/dbname`',
-      '|===',
-    ].join('\n');
-    expect(asciidocToMarkdown(source)).toBe(
-      [
-        'A Data Source Name.',
+  it.each([
+    [
+      'section titles, so no "==" leaks',
+      '== Performance\nBenefits from batching.',
+      '#### Performance\nBenefits from batching.',
+    ],
+    [
+      'deeper titles, paragraphs kept apart',
+      'Intro.\n\n=== Guarantees\nAt least once.',
+      'Intro.\n\n#### Guarantees\nAt least once.',
+    ],
+    ['an over-long title, marker still stripped', `= ${'x'.repeat(70)}`, 'x'.repeat(70)],
+    ['xref macros, down to their label', 'See xref:guides:about.adoc[the guide].', 'See the guide.'],
+    [
+      'URL macros, as Markdown links',
+      'Uses https://example.com/go[franz-go].',
+      'Uses [franz-go](https://example.com/go).',
+    ],
+    // Every AWS `credentials` field ends "…can be found in xref:guides:cloud/aws.adoc[].".
+    [
+      'an empty-label xref, leaving no dangling punctuation',
+      'Found in xref:guides:cloud/aws.adoc[].',
+      'Found in the documentation.',
+    ],
+    // AsciiDoc escapes `]` inside a label; a trailing `^` means "open in a new window".
+    [
+      'bracketed labels and the new-window flag',
+      'See https://x.com/dsn[`http[s\\]://u[:p\\]`^] here.',
+      'See [`http[s]://u[:p]`](https://x.com/dsn) here.',
+    ],
+    [
+      'internal cross-references with a label',
+      'Set <<batch_as_multipart, `batch_as_multipart`>> to `false`.',
+      'Set `batch_as_multipart` to `false`.',
+    ],
+    [
+      'internal cross-references without one',
+      'Brokering <<patterns>> are supported.',
+      'Brokering patterns are supported.',
+    ],
+    ['AsciiDoc bullets', '* first\n* second', '- first\n- second'],
+    [
+      'admonitions, block titles and block delimiters',
+      lines('[CAUTION]', '.Endpoint caveats', '====', 'Order is not deterministic.', '===='),
+      lines('**CAUTION**', '#### Endpoint caveats', '', 'Order is not deterministic.'),
+    ],
+    ['the leading newline most descriptions start with', '\nA list of topics.', 'A list of topics.'],
+    [
+      'angle-bracket placeholders, escaped past remark',
+      "Send 'authorization: Bearer <token>'.",
+      String.raw`Send 'authorization: Bearer \<token>'.`,
+    ],
+    [
+      'placeholders inside a code span, untouched',
+      'Defaults to `jira_input_<resource>`.',
+      'Defaults to `jira_input_<resource>`.',
+    ],
+    [
+      'Markdown pipe tables, header rule dropped',
+      lines('Placeholders:', '', '| Driver | Style |', '|---|---|', '| `mysql` | Question mark |'),
+      lines('Placeholders:', '', '- Driver — Style', '- `mysql` — Question mark'),
+    ],
+    [
+      '`|===` tables and the `:attr:` lines around them',
+      lines(
+        'A DSN.',
         '',
-        '- Driver — Data Source Name Format',
+        ':driver-support: mysql=certified',
         '',
-        '- `mysql`',
-        '- `[username[:password]@]/dbname`',
-      ].join('\n')
-    );
-  });
-
-  // The Debezium type table writes rows as `|Type Name |Bloblang Type`, with no space after the
-  // cell marker.
-  it('splits a dsv table on colons, the separator its attribute line declares', () => {
-    const source = '[%header,format=dsv]\n|===\nSnowflake type:Connect format\nCHAR, VARCHAR:string\n|===';
-    expect(asciidocToMarkdown(source)).toBe('- Snowflake type — Connect format\n- CHAR, VARCHAR — string');
-  });
-
-  it('splits table cells that are not padded around the marker', () => {
-    const source = ['.Debezium Custom Temporal Types', '|===', '|Type Name |Bloblang Type', '|==='].join('\n');
-    expect(asciidocToMarkdown(source)).toBe(
-      ['#### Debezium Custom Temporal Types', '- Type Name — Bloblang Type'].join('\n')
-    );
-  });
-
-  it('leaves a pipe in prose alone even when the description also has a table', () => {
-    const source = ['Splits on | characters.', '', '|===', '|a |b', '|==='].join('\n');
-    expect(asciidocToMarkdown(source)).toBe(['Splits on | characters.', '', '- a — b'].join('\n'));
-  });
-
-  it('drops block delimiters that would promote the prose around them to a heading', () => {
-    const source = [
-      '[CAUTION]',
-      '.Endpoint caveats',
-      '====',
-      'Endpoints register in a non-deterministic order.',
-      '====',
-    ].join('\n');
-    expect(asciidocToMarkdown(source)).toBe(
-      ['**CAUTION**', '#### Endpoint caveats', '', 'Endpoints register in a non-deterministic order.'].join('\n')
-    );
-  });
-
-  it('trims the leading newline that many field descriptions start with', () => {
-    expect(asciidocToMarkdown('\nA list of topics to consume from.')).toBe('A list of topics to consume from.');
+        '|===',
+        '| Driver | Format',
+        '',
+        '| `mysql`',
+        '| `[user[:pass]@]/db`',
+        '|==='
+      ),
+      lines('A DSN.', '', '- Driver — Format', '', '- `mysql`', '- `[user[:pass]@]/db`'),
+    ],
+    // The Debezium type table writes rows as `|Type Name |Bloblang Type`, unpadded.
+    [
+      'cells that are not padded around the marker',
+      lines('|===', '|Type Name |Bloblang Type', '|==='),
+      '- Type Name — Bloblang Type',
+    ],
+    [
+      'dsv tables, split on the separator their attribute line declares',
+      lines('[%header,format=dsv]', '|===', 'Snowflake type:Connect format', 'CHAR, VARCHAR:string', '|==='),
+      lines('- Snowflake type — Connect format', '- CHAR, VARCHAR — string'),
+    ],
+    [
+      'a pipe in prose, even alongside a table',
+      lines('Splits on | characters.', '', '|===', '|a |b', '|==='),
+      lines('Splits on | characters.', '', '- a — b'),
+    ],
+  ])('handles %s', (_case, source, expected) => {
+    expect(asciidocToMarkdown(source)).toBe(expected);
   });
 });
 
 describe('markdownToPlainText', () => {
-  it('reduces converted Markdown to a single line without syntax', () => {
-    expect(markdownToPlainText(asciidocToMarkdown('\nUse `consumer_group` to share load.\n\n== Notes\n* first'))).toBe(
-      'Use consumer_group to share load. Notes first'
-    );
-  });
-
-  it('strips a link whose label nests brackets, as the sql DSN examples do', () => {
-    const markdown = 'A DSN: [`clickhouse://[user[:pass]@][host]`](https://example.com/dsn) applies.';
-    expect(markdownToPlainText(markdown)).toBe('A DSN: clickhouse://[user[:pass]@][host] applies.');
-  });
-
-  it('keeps link labels and unescapes placeholders', () => {
-    expect(markdownToPlainText(asciidocToMarkdown('See https://example.com[the docs] for <token> usage.'))).toBe(
-      'See the docs for <token> usage.'
-    );
-  });
-});
-
-describe('cleanText', () => {
-  it('strips code spans and macros down to one line', () => {
-    expect(cleanText('Sends to `redpanda`\nvia xref:guides:about.adoc[the guide].')).toBe(
-      'Sends to redpanda via the guide.'
-    );
-  });
-
-  it('reduces internal cross-references to their wording', () => {
-    expect(cleanText('Brokering <<patterns>> with <<codecs, structured data>>.')).toBe(
-      'Brokering patterns with structured data.'
-    );
-  });
-
-  it('substitutes a label for an empty-label xref', () => {
-    expect(cleanText('Found in xref:guides:cloud/aws.adoc[].')).toBe('Found in the documentation.');
+  it.each([
+    [
+      'converted Markdown to one line',
+      asciidocToMarkdown('\nUse `consumer_group`.\n\n== Notes\n* first'),
+      'Use consumer_group. Notes first',
+    ],
+    [
+      'link labels, unescaping placeholders',
+      asciidocToMarkdown('See https://x.com[the docs] for <token> usage.'),
+      'See the docs for <token> usage.',
+    ],
+    // The sql `dsn` fields document a bracket-heavy DSN inside the link label.
+    [
+      'a link whose label nests brackets',
+      'A DSN: [`ch://[user[:pass]@][host]`](https://x.com/dsn) applies.',
+      'A DSN: ch://[user[:pass]@][host] applies.',
+    ],
+  ])('reduces %s', (_case, markdown, expected) => {
+    expect(markdownToPlainText(markdown)).toBe(expected);
   });
 });

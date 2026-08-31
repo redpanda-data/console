@@ -48,7 +48,6 @@ const DSV_CELL_SEPARATOR = /\s*:\s*/;
 
 const CODE_BLOCK_OR_SPAN = /(```[\s\S]*?```|`[^`\n]*`)/g;
 const PLACEHOLDER_OPENER = /<(?!https?:\/\/)(?=[a-zA-Z/])/g;
-const CODE_SPAN_TICKS = /`([^`]+)`/g;
 const MARKDOWN_MARKS = /[`*]/g;
 const MARKDOWN_HEADING = /^#+\s*/gm;
 const MARKDOWN_LIST_MARKER = /^[-*]\s+/gm;
@@ -111,15 +110,6 @@ function escapePlaceholders(text: string): string {
     .split(CODE_BLOCK_OR_SPAN)
     .map((part, index) => (index % 2 === 1 ? part : part.replace(PLACEHOLDER_OPENER, String.raw`\<`)))
     .join('');
-}
-
-/** One-line prose (component summaries) to plain text. Multi-paragraph prose needs the pair below. */
-export function cleanText(text: string): string {
-  return macrosToLabels(text)
-    .replace(URL_MACRO, (_match, url: string, label: string) => macroLabel(label) || url)
-    .replace(CODE_SPAN_TICKS, '$1')
-    .replace(WHITESPACE_RUN, ' ')
-    .trim();
 }
 
 /** AsciiDoc to Markdown for react-markdown; newlines survive, so titles and paragraphs stay distinct. */

@@ -81,6 +81,13 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
   </Link>
 );
 
+// Help text and its trailing link share one line box, so the link reads as part of the sentence.
+const InlineHelp = ({ children, docsLink }: { children: React.ReactNode; docsLink: React.ReactNode }) => (
+  <div className="text-body-sm text-muted-foreground">
+    {children} {docsLink}
+  </div>
+);
+
 /** AsciiDoc `description`, rendered as Markdown and collapsed to two lines when it runs long. */
 const LongDescription = ({ source, docsLink }: { source: string; docsLink: React.ReactNode }) => {
   const [expanded, setExpanded] = useState(false);
@@ -98,9 +105,9 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
   // One paragraph, no block content: it can carry the link on its own line.
   if (!clampable) {
     return (
-      <div className="text-body-sm text-muted-foreground">
-        <ReactMarkdown components={INLINE_MARKDOWN_COMPONENTS}>{markdown}</ReactMarkdown> {docsLink}
-      </div>
+      <InlineHelp docsLink={docsLink}>
+        <ReactMarkdown components={INLINE_MARKDOWN_COMPONENTS}>{markdown}</ReactMarkdown>
+      </InlineHelp>
     );
   }
 
@@ -138,11 +145,7 @@ export const FieldDescription = ({ spec, docsUrl }: { spec: RawFieldSpec; docsUr
   const docsLink = docsUrl ? <FieldDocsLink fieldName={spec.name} href={docsUrl} /> : null;
   const short = spec.shortDescription?.trim();
   if (short) {
-    return (
-      <div className="text-body-sm text-muted-foreground">
-        {short} {docsLink}
-      </div>
-    );
+    return <InlineHelp docsLink={docsLink}>{short}</InlineHelp>;
   }
   const description = spec.description?.trim();
   if (!description) {

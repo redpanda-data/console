@@ -154,6 +154,8 @@ type ResourceFieldContextValue = {
   clusterTopicFields?: boolean;
   /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
   onCreateTopic?: () => void;
+  /** Docs URL for one field of the edited component, by its path. */
+  fieldDocsUrl?: (path: string[]) => string | undefined;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
@@ -531,15 +533,6 @@ function buildComponentEntry({
   return next;
 }
 
-// Context for the same reason as ResourceFieldContext: the consumers are leaf controls.
-type ComponentDocsIdentity = { section: string; componentName: string };
-const ComponentDocsContext = createContext<ComponentDocsIdentity | undefined>(undefined);
-
-const useFieldDocsUrl = (path: string[]): string | undefined => {
-  const component = useContext(ComponentDocsContext);
-  return component ? getFieldDocsUrl(component.section, component.componentName, path) : undefined;
-};
-
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
     <Label className="shrink-0 font-medium text-body" htmlFor={htmlFor}>
@@ -799,8 +792,8 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields } = useContext(ResourceFieldContext);
-  const docsUrl = useFieldDocsUrl(leaf.path);
+  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const docsUrl = fieldDocsUrl?.(leaf.path);
   // The topic picker's combobox can't take an id — don't point the label at a nonexistent one.
   const labelFor = clusterTopicFields && isTopicField(leaf.spec.name ?? '') ? undefined : inputId;
   return (
@@ -840,8 +833,8 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
 const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields } = useContext(ResourceFieldContext);
-  const docsUrl = useFieldDocsUrl(leaf.path);
+  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const docsUrl = fieldDocsUrl?.(leaf.path);
   const isTopics = Boolean(clusterTopicFields) && isTopicField(leaf.spec.name ?? '');
   return (
     <Controller
@@ -1150,6 +1143,7 @@ export function NodeConfigForm({
     componentResourceKind: resourceKindForComponentName(componentName),
     clusterTopicFields,
     onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
+    fieldDocsUrl: (path) => getFieldDocsUrl(spec.type, componentName, path),
   };
 
   const advancedLintSignature = advanced
@@ -1158,152 +1152,150 @@ export function NodeConfigForm({
     .join('\n');
 
   return (
-    <ComponentDocsContext.Provider value={{ section: spec.type, componentName }}>
-      <ResourceFieldContext.Provider value={resourceCtx}>
-        <FieldLintErrorsContext.Provider value={fieldErrors ?? NO_FIELD_ERRORS}>
-          {/* Committing per FIELD (not per node): the container listens for focus leaving any field
+    <ResourceFieldContext.Provider value={resourceCtx}>
+      <FieldLintErrorsContext.Provider value={fieldErrors ?? NO_FIELD_ERRORS}>
+        {/* Committing per FIELD (not per node): the container listens for focus leaving any field
             (bubbled focusout) and ⌘⏎, flushing the draft so the canvas card and lint react while
             the node is still selected. It is not itself interactive — the fields inside are. */}
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the form controls. */}
-          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: passive listener for events bubbling from the form controls. */}
-          <div
-            className="flex min-h-0 flex-1 flex-col"
-            onBlur={onCommitField ? commitNow : undefined}
-            onKeyDown={
-              onCommitField
-                ? (e) => {
-                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                      e.preventDefault();
-                      commitNow();
-                    }
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the form controls. */}
+        {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: passive listener for events bubbling from the form controls. */}
+        <div
+          className="flex min-h-0 flex-1 flex-col"
+          onBlur={onCommitField ? commitNow : undefined}
+          onKeyDown={
+            onCommitField
+              ? (e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    commitNow();
                   }
-                : undefined
-            }
-          >
-            <ScrollShadow contentClassName="space-y-4 px-4 py-4">
-              {/* Full-bleed to the scroll edges; padded fields follow. */}
-              {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
-              <div className="flex flex-col gap-1.5">
-                <Label className="font-medium text-body" htmlFor={labelId}>
-                  label
-                </Label>
-                <Controller
-                  control={control}
-                  name="label"
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Input
-                        aria-required={requireLabel || undefined}
-                        id={labelId}
-                        onChange={field.onChange}
-                        placeholder={
-                          requireLabel
-                            ? 'Name other nodes use to reference this resource'
-                            : 'Optional identifier for this component'
-                        }
-                        value={field.value}
-                      />
-                      {requireLabel && !field.value.trim() ? (
-                        <div className="text-body-sm text-destructive">
-                          A resource needs a label — nodes reference it by name. The saved label is kept.
-                        </div>
-                      ) : null}
-                      <FieldLintErrorList dirty={fieldState.isDirty} fieldKey="label" />
-                    </>
-                  )}
-                />
-              </div>
+                }
+              : undefined
+          }
+        >
+          <ScrollShadow contentClassName="space-y-4 px-4 py-4">
+            {/* Full-bleed to the scroll edges; padded fields follow. */}
+            {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
+            <div className="flex flex-col gap-1.5">
+              <Label className="font-medium text-body" htmlFor={labelId}>
+                label
+              </Label>
+              <Controller
+                control={control}
+                name="label"
+                render={({ field, fieldState }) => (
+                  <>
+                    <Input
+                      aria-required={requireLabel || undefined}
+                      id={labelId}
+                      onChange={field.onChange}
+                      placeholder={
+                        requireLabel
+                          ? 'Name other nodes use to reference this resource'
+                          : 'Optional identifier for this component'
+                      }
+                      value={field.value}
+                    />
+                    {requireLabel && !field.value.trim() ? (
+                      <div className="text-body-sm text-destructive">
+                        A resource needs a label — nodes reference it by name. The saved label is kept.
+                      </div>
+                    ) : null}
+                    <FieldLintErrorList dirty={fieldState.isDirty} fieldKey="label" />
+                  </>
+                )}
+              />
+            </div>
 
-              {isListValued && hasChildList ? (
-                <ChildItemsList
-                  items={childItems as InspectorChildItem[]}
-                  label="Cases"
-                  onSelect={onSelectChild as (item: InspectorChildItem) => void}
-                />
-              ) : null}
-              {isListValued && !hasChildList ? (
-                <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
-                  <div className="text-body-sm text-muted-foreground">
-                    This component's items (cases / processors) are edited on the canvas — select one to edit it.
-                  </div>
+            {isListValued && hasChildList ? (
+              <ChildItemsList
+                items={childItems as InspectorChildItem[]}
+                label="Cases"
+                onSelect={onSelectChild as (item: InspectorChildItem) => void}
+              />
+            ) : null}
+            {isListValued && !hasChildList ? (
+              <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
+                <div className="text-body-sm text-muted-foreground">
+                  This component's items (cases / processors) are edited on the canvas — select one to edit it.
                 </div>
-              ) : null}
-
-              {isListValued
-                ? null
-                : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
-
-              {isListValued ? null : (
-                <OptionalFieldsSection control={control} fields={optional} hasRequired={required.length > 0} />
-              )}
-
-              {!isListValued && advanced.length > 0 ? (
-                <FieldGroup defaultOpen={false} forceOpenSignal={advancedLintSignature} label="Advanced">
-                  {advanced.map((f) => (
-                    <SchemaField control={control} key={f.name} path={[]} spec={f} />
-                  ))}
-                </FieldGroup>
-              ) : null}
-
-              {!isListValued && componentFields.length > 0 && hasChildList ? (
-                <ChildItemsList
-                  items={childItems as InspectorChildItem[]}
-                  label="Steps"
-                  onSelect={onSelectChild as (item: InspectorChildItem) => void}
-                />
-              ) : null}
-
-              {!isListValued && showRaw ? (
-                <FieldGroup defaultOpen={false} label="Other settings (YAML)">
-                  <Controller
-                    control={control}
-                    name="raw"
-                    render={({ field }) => {
-                      const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
-                      return (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="h-[450px] overflow-hidden rounded-md border border-border">
-                            <YamlEditor
-                              onChange={(v) => field.onChange(v || '')}
-                              options={{ minimap: { enabled: false } }}
-                              transparentBackground
-                              value={field.value}
-                            />
-                          </div>
-                          {invalid ? (
-                            <div className="text-body-sm text-destructive">
-                              Invalid YAML — these settings won't be saved until fixed.
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    }}
-                  />
-                </FieldGroup>
-              ) : null}
-            </ScrollShadow>
-            {/* Edits normally apply on field blur; this is the visible pending state plus a manual
-            trigger (and ⌘⏎) for applying without moving focus. */}
-            {onCommitField && isDirty ? (
-              <div className="flex shrink-0 items-center justify-between gap-2 border-border border-t bg-muted/40 px-4 py-2">
-                <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
-                  <span aria-hidden className="size-1.5 rounded-full bg-informative" />
-                  Unsaved edits
-                </span>
-                <Button
-                  onClick={commitNow}
-                  size="sm"
-                  title="Apply now (⌘⏎) — edits also apply when you leave a field"
-                  type="button"
-                  variant="primary"
-                >
-                  Apply
-                </Button>
               </div>
             ) : null}
-          </div>
-        </FieldLintErrorsContext.Provider>
-      </ResourceFieldContext.Provider>
-    </ComponentDocsContext.Provider>
+
+            {isListValued
+              ? null
+              : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
+
+            {isListValued ? null : (
+              <OptionalFieldsSection control={control} fields={optional} hasRequired={required.length > 0} />
+            )}
+
+            {!isListValued && advanced.length > 0 ? (
+              <FieldGroup defaultOpen={false} forceOpenSignal={advancedLintSignature} label="Advanced">
+                {advanced.map((f) => (
+                  <SchemaField control={control} key={f.name} path={[]} spec={f} />
+                ))}
+              </FieldGroup>
+            ) : null}
+
+            {!isListValued && componentFields.length > 0 && hasChildList ? (
+              <ChildItemsList
+                items={childItems as InspectorChildItem[]}
+                label="Steps"
+                onSelect={onSelectChild as (item: InspectorChildItem) => void}
+              />
+            ) : null}
+
+            {!isListValued && showRaw ? (
+              <FieldGroup defaultOpen={false} label="Other settings (YAML)">
+                <Controller
+                  control={control}
+                  name="raw"
+                  render={({ field }) => {
+                    const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
+                    return (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="h-[450px] overflow-hidden rounded-md border border-border">
+                          <YamlEditor
+                            onChange={(v) => field.onChange(v || '')}
+                            options={{ minimap: { enabled: false } }}
+                            transparentBackground
+                            value={field.value}
+                          />
+                        </div>
+                        {invalid ? (
+                          <div className="text-body-sm text-destructive">
+                            Invalid YAML — these settings won't be saved until fixed.
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }}
+                />
+              </FieldGroup>
+            ) : null}
+          </ScrollShadow>
+          {/* Edits normally apply on field blur; this is the visible pending state plus a manual
+            trigger (and ⌘⏎) for applying without moving focus. */}
+          {onCommitField && isDirty ? (
+            <div className="flex shrink-0 items-center justify-between gap-2 border-border border-t bg-muted/40 px-4 py-2">
+              <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
+                <span aria-hidden className="size-1.5 rounded-full bg-informative" />
+                Unsaved edits
+              </span>
+              <Button
+                onClick={commitNow}
+                size="sm"
+                title="Apply now (⌘⏎) — edits also apply when you leave a field"
+                type="button"
+                variant="primary"
+              >
+                Apply
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </FieldLintErrorsContext.Provider>
+    </ResourceFieldContext.Provider>
   );
 }
