@@ -10,6 +10,7 @@
  */
 
 import { Link } from 'components/redpanda-ui/components/typography';
+import { BookOpenIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 
@@ -56,8 +57,32 @@ const MarkdownBody = ({ markdown }: { markdown: string }) => (
   </div>
 );
 
+/**
+ * Trailing link to the field's own heading on the connector's docs page. Muted and named after the
+ * field, so a form of twenty of these reads as help text rather than twenty calls to action.
+ *
+ * Laid out inline, not inline-flex: a flex box takes its baseline from the icon's bottom edge, which
+ * drops the word below the baseline of the sentence it follows. Inline keeps one shared line box, so
+ * `Docs` sits on the prose baseline and the icon is placed against it by `vertical-align`. The
+ * underline is on the word alone — an ancestor's decoration would rule through the icon too.
+ */
+const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }) => (
+  <Link
+    aria-label={fieldName ? `${fieldName} documentation` : 'Field documentation'}
+    className="group whitespace-nowrap text-body-sm text-muted-foreground no-underline hover:text-foreground"
+    href={href}
+    rel="noopener noreferrer"
+    target="_blank"
+    tone="current"
+  >
+    {/* size-3 matches the 12px text; -0.15em centres the icon on the word's cap height. */}
+    <BookOpenIcon className="mr-1 inline size-3 align-[-0.15em]" />
+    <span className="underline decoration-dotted underline-offset-[3px] group-hover:decoration-solid">Docs</span>
+  </Link>
+);
+
 /** AsciiDoc `description`, rendered as Markdown and collapsed to two lines when it runs long. */
-const LongDescription = ({ source }: { source: string }) => {
+const LongDescription = ({ source, docsLink }: { source: string; docsLink: React.ReactNode }) => {
   const [expanded, setExpanded] = useState(false);
   const bodyId = useId();
   const { markdown, preview, clampable } = useMemo(() => {
@@ -71,7 +96,12 @@ const LongDescription = ({ source }: { source: string }) => {
   }, [source]);
 
   if (!clampable) {
-    return <MarkdownBody markdown={markdown} />;
+    return (
+      <div className="flex flex-col items-start gap-0.5">
+        <MarkdownBody markdown={markdown} />
+        {docsLink}
+      </div>
+    );
   }
 
   return (
@@ -84,15 +114,19 @@ const LongDescription = ({ source }: { source: string }) => {
           <div className="line-clamp-2 text-body-sm text-muted-foreground">{preview}</div>
         )}
       </div>
-      <button
-        aria-controls={bodyId}
-        aria-expanded={expanded}
-        className="text-body-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
-        onClick={() => setExpanded((value) => !value)}
-        type="button"
-      >
-        {expanded ? 'Show less' : 'Show more'}
-      </button>
+      {/* The expander already earns a row here, so the docs link joins it instead of adding one. */}
+      <div className="flex items-center gap-3">
+        <button
+          aria-controls={bodyId}
+          aria-expanded={expanded}
+          className="text-body-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          onClick={() => setExpanded((value) => !value)}
+          type="button"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+        {docsLink}
+      </div>
     </div>
   );
 };
@@ -100,15 +134,22 @@ const LongDescription = ({ source }: { source: string }) => {
 /**
  * Help text under a config control. Prefers the schema's `short_description` — a markup-free
  * one-liner — and falls back to the AsciiDoc `description` that most fields are still limited to.
+ * `docsUrl` deep-links the field's own heading on the connector's reference page.
  */
-export const FieldDescription = ({ spec }: { spec: RawFieldSpec }) => {
+export const FieldDescription = ({ spec, docsUrl }: { spec: RawFieldSpec; docsUrl?: string }) => {
+  const docsLink = docsUrl ? <FieldDocsLink fieldName={spec.name} href={docsUrl} /> : null;
   const short = spec.shortDescription?.trim();
   if (short) {
-    return <div className="text-body-sm text-muted-foreground">{short}</div>;
+    return (
+      // A one-liner and the link share a row rather than the link claiming its own.
+      <div className="text-body-sm text-muted-foreground">
+        {short} {docsLink}
+      </div>
+    );
   }
   const description = spec.description?.trim();
   if (!description) {
-    return null;
+    return docsLink;
   }
-  return <LongDescription source={description} />;
+  return <LongDescription docsLink={docsLink} source={description} />;
 };

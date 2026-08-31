@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { getConnectorDocsUrl, getNodeDocsUrl } from './connector-docs';
+import { getConnectorDocsUrl, getFieldDocsUrl, getNodeDocsUrl } from './connector-docs';
 
 describe('getConnectorDocsUrl', () => {
   it('builds correct URL for input connectors', () => {
@@ -55,6 +55,35 @@ describe('getConnectorDocsUrl', () => {
 
   it('returns undefined for empty section', () => {
     expect(getConnectorDocsUrl('', 'kafka')).toBeUndefined();
+  });
+});
+
+describe('getFieldDocsUrl', () => {
+  const INPUT_REDPANDA = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/redpanda/';
+
+  it('anchors a top-level field by its name', () => {
+    expect(getFieldDocsUrl('input', 'redpanda', ['consumer_group'])).toBe(`${INPUT_REDPANDA}#consumer_group`);
+  });
+
+  it('joins a nested field path with hyphens, as the docs generator ids it', () => {
+    expect(getFieldDocsUrl('output', 'sql_insert', ['batching', 'byte_size'])).toBe(
+      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/sql_insert/#batching-byte_size'
+    );
+  });
+
+  it('ignores list nesting, which the docs anchors drop', () => {
+    // Documented as `sasl[].aws.credentials.role`, anchored `#sasl-aws-credentials-role`.
+    expect(getFieldDocsUrl('input', 'redpanda', ['sasl', 'aws', 'credentials', 'role'])).toBe(
+      `${INPUT_REDPANDA}#sasl-aws-credentials-role`
+    );
+  });
+
+  it('falls back to the component page when there is no field path', () => {
+    expect(getFieldDocsUrl('input', 'redpanda', [])).toBe(INPUT_REDPANDA);
+  });
+
+  it('returns undefined when the component itself has no docs page', () => {
+    expect(getFieldDocsUrl('metrics', 'prometheus', ['use_histogram_timing'])).toBeUndefined();
   });
 });
 

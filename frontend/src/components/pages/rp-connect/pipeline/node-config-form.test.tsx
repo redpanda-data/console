@@ -33,6 +33,9 @@ function renderForm(value: Record<string, unknown>, onConfigChange = vi.fn()) {
 }
 
 const CREATE_NEW_TOPIC_RE = /create new topic/i;
+const KAFKA_OUTPUT_DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/kafka/';
+const TOPIC_DOCS_RE = /topic documentation/i;
+const BATCHING_COUNT_DOCS_RE = /count documentation/i;
 
 // The most recent config reported by the form (undefined if never called, null when clean).
 function lastReported(onConfigChange: ReturnType<typeof vi.fn>): unknown {
@@ -73,6 +76,20 @@ describe('NodeConfigForm — full schema', () => {
     const mechRow = screen.getByText('mechanism').closest('div');
     expect(mechRow).not.toBeNull();
     expect(mechRow?.querySelector('[title="Required"]')).toBeNull();
+  });
+
+  test('deep-links every field to its own heading on the connector docs page', async () => {
+    const user = userEvent.setup();
+    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+
+    expect(screen.getByRole('link', { name: TOPIC_DOCS_RE })).toHaveAttribute('href', `${KAFKA_OUTPUT_DOCS}#topic`);
+
+    // A nested field is anchored by its whole path, as the docs generator ids it.
+    await user.click(screen.getByText('batching'));
+    expect(screen.getByRole('link', { name: BATCHING_COUNT_DOCS_RE })).toHaveAttribute(
+      'href',
+      `${KAFKA_OUTPUT_DOCS}#batching-count`
+    );
   });
 
   test('shows the schema default as a hint for optional fields', () => {

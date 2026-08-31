@@ -32,6 +32,9 @@ const SHOW_MORE_RE = /show more/i;
 const ALTERNATIVELY_RE = /Alternatively, it is possible/;
 const TOPICS_LEAD_RE = /A list of topics to consume from/;
 const SHOW_LESS_RE = /show less/i;
+const TOPICS_DOCS_RE = /topics documentation/i;
+const TOPICS_DOCS_URL =
+  'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/redpanda/#topics';
 
 describe('FieldDescription', () => {
   test('prefers the short description over the long one', () => {
@@ -106,5 +109,36 @@ describe('FieldDescription', () => {
     render(<FieldDescription spec={field({ description: 'Defaults to `cdc_metadata_<stream_id>`.' })} />);
 
     expect(screen.getByText('cdc_metadata_<stream_id>', { selector: 'code' })).toBeInTheDocument();
+  });
+
+  test('deep-links the field on the connector docs page, named for the field', () => {
+    render(<FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({ shortDescription: SHORT_TOPICS_DESCRIPTION })} />);
+
+    const link = screen.getByRole('link', { name: TOPICS_DOCS_RE });
+    expect(link).toHaveAttribute('href', TOPICS_DOCS_URL);
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  test('keeps the docs link reachable while a long description is collapsed', async () => {
+    const user = userEvent.setup();
+    render(<FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({ description: LONG_TOPICS_DESCRIPTION })} />);
+
+    expect(screen.getByRole('link', { name: TOPICS_DOCS_RE })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: SHOW_MORE_RE }));
+
+    expect(screen.getByRole('link', { name: TOPICS_DOCS_RE })).toBeInTheDocument();
+  });
+
+  test('offers the docs link even for a field the schema documents nowhere else', () => {
+    render(<FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({})} />);
+
+    expect(screen.getByRole('link', { name: TOPICS_DOCS_RE })).toBeInTheDocument();
+  });
+
+  test('renders no docs link for a component without a docs page', () => {
+    render(<FieldDescription spec={field({ shortDescription: SHORT_TOPICS_DESCRIPTION })} />);
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

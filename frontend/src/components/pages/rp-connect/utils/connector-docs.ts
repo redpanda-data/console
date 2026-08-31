@@ -27,6 +27,26 @@ export function getConnectorDocsUrl(section: string, connectorName: string): str
   return `${DOCS_BASE}/${section}s/${connectorName}/`;
 }
 
+/**
+ * Docs URL for one field on a connector's reference page. Each field heading on those pages is
+ * anchored by its dotted path with list markers dropped (`batching.byte_size` →
+ * `#batching-byte_size`), which is exactly the form's field path. A field whose name collides with
+ * a prose section of the same page is anchored `-2` (~0.2% of fields, e.g. `snowflake_put`'s
+ * `snowpipe`); there the plain anchor lands on that same-named section, and an anchor that misses
+ * outright leaves the reader at the top of the right page.
+ */
+export function getFieldDocsUrl(
+  section: string,
+  connectorName: string,
+  fieldPath: readonly string[]
+): string | undefined {
+  const base = getConnectorDocsUrl(section, connectorName);
+  if (!base || fieldPath.length === 0) {
+    return base;
+  }
+  return `${base}#${fieldPath.join('-')}`;
+}
+
 type DocsNode = Pick<PipelineFlowNode, 'kind' | 'label' | 'section' | 'isCase' | 'resourceKey'>;
 
 /** Docs URL for a parsed pipeline node, or undefined when the node names no documented component. */
