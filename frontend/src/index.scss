@@ -2007,3 +2007,7 @@ $borderRadius: 8px;
   user-select: none;
 }
 
+// Chakra modals sit at z-index 1400; keep Registry toasts above them until Chakra leaves.
+[data-slot='toast-viewport'] {
+  z-index: 1500;
+}

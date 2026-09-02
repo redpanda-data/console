@@ -1,7 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import {
   Button,
-  createStandaloneToast,
   Flex,
   FormField,
   isSingleValue,
@@ -24,10 +23,9 @@ import {
   type Secret,
 } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
+import { showToast } from '../../../../utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';
-
-const { toast } = createStandaloneToast();
 
 // Regex for validating secret ID format
 const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -64,20 +62,17 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           })
         )
         .then(async () => {
-          toast({
+          showToast({
             status: 'success',
             duration: 4000,
-            isClosable: false,
             title: 'Secret created',
           });
           await rpcnSecretManagerApi.refreshSecrets(true);
           return true;
         })
         .catch((err) => {
-          toast({
+          showToast({
             status: 'error',
-            duration: null,
-            isClosable: true,
             title: 'Failed to create secret',
             description: formatPipelineError(err),
           });
