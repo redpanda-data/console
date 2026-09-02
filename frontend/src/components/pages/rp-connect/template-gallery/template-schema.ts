@@ -10,8 +10,13 @@
  */
 
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
-import type { ConnectComponentSpec } from '../types/schema';
+import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
+
+// Slot help renders as plain text, and the fallback is often multi-paragraph AsciiDoc.
+const slotDescription = (field: RawFieldSpec): string | undefined =>
+  field.shortDescription?.trim() || markdownToPlainText(asciidocToMarkdown(field.description ?? '')) || undefined;
 
 // Slot-level values win; schema only fills unset `description` / `required` /
 // `default`. Slots without `schemaField` (or with unresolvable paths) pass through.
@@ -47,7 +52,7 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
 
     const merged: TemplateSlot = {
       ...slot,
-      description: slot.description ?? (field.description || undefined),
+      description: slot.description ?? slotDescription(field),
       required: slot.required ?? checkRequired(field),
     };
 

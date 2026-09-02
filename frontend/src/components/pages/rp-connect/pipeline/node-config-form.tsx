@@ -32,10 +32,12 @@ import { type Control, Controller, type FieldPath, useForm, useWatch } from 'rea
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
+import { FieldDescription } from './field-description';
 import type { FieldLintErrors } from './lint-field-mapping';
 import { ScrollShadow } from './scroll-shadow';
 import { getSecretSyntax, REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import { getFieldDocsUrl } from '../utils/connector-docs';
 import {
   checkRequired,
   fieldHasOptions,
@@ -152,6 +154,8 @@ type ResourceFieldContextValue = {
   clusterTopicFields?: boolean;
   /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
   onCreateTopic?: () => void;
+  /** Docs URL for one field of the edited component, by its path. */
+  fieldDocsUrl?: (path: string[]) => string | undefined;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
@@ -551,9 +555,6 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
   </div>
 );
 
-const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
-  spec.description ? <div className="text-body-sm text-muted-foreground">{spec.description}</div> : null;
-
 // Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
 // secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
 // like AWS session tokens and SAS tokens, and the heuristic is all we have on older dataplanes.
@@ -791,7 +792,8 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const docsUrl = fieldDocsUrl?.(leaf.path);
   // The topic picker's combobox can't take an id — don't point the label at a nonexistent one.
   const labelFor = clusterTopicFields && isTopicField(leaf.spec.name ?? '') ? undefined : inputId;
   return (
@@ -820,7 +822,7 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
                 value.
               </div>
             ) : null}
-            <FieldDescription spec={leaf.spec} />
+            <FieldDescription docsUrl={docsUrl} spec={leaf.spec} />
           </div>
         );
       }}
@@ -831,7 +833,8 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
 const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const docsUrl = fieldDocsUrl?.(leaf.path);
   const isTopics = Boolean(clusterTopicFields) && isTopicField(leaf.spec.name ?? '');
   return (
     <Controller
@@ -856,7 +859,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
               <TopicArrayPicker lines={lines} onAppend={(t) => field.onChange([...lines, t].join('\n'))} />
             ) : null}
             <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
-            <FieldDescription spec={leaf.spec} />
+            <FieldDescription docsUrl={docsUrl} spec={leaf.spec} />
           </div>
         );
       }}
@@ -1140,6 +1143,7 @@ export function NodeConfigForm({
     componentResourceKind: resourceKindForComponentName(componentName),
     clusterTopicFields,
     onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
+    fieldDocsUrl: (path) => getFieldDocsUrl(spec.type, componentName, path),
   };
 
   const advancedLintSignature = advanced
