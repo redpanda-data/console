@@ -9,15 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { DiffEditor } from '@monaco-editor/react';
+import { DiffEditor, type Monaco } from '@monaco-editor/react';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import { CheckCircle2, Info, MousePointerClick, TriangleAlert } from 'lucide-react';
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useEffect, useRef } from 'react';
 
-import { DIFF_THEME, defineDiffTheme } from './changes-diff-theme';
+import { applyDiffTheme, DIFF_THEME } from './changes-diff-theme';
 import {
   type ChangeKind,
   type ComponentChange,
@@ -42,6 +44,8 @@ const KIND_TONE: Record<ChangeKind, BadgeTone> = {
 const DIFF_OPTIONS = {
   readOnly: true,
   domReadOnly: true,
+  // Read-only, so no cursor line.
+  renderLineHighlight: 'none',
   // Monaco drops to inline under 900px on its own, so copy never says "left".
   renderSideBySide: true,
   hideUnchangedRegions: { enabled: true },
@@ -130,6 +134,17 @@ export function ChangesPanel({
   onSelectComponent?: (id: string) => void;
   onEditSettings?: () => void;
 }) {
+  const appearance = useThemeAppearance();
+  const monacoRef = useRef<Monaco | null>(null);
+
+  // `defineTheme` is global; re-resolving on a flip re-themes the mounted diff.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: appearance triggers the re-resolve
+  useEffect(() => {
+    if (monacoRef.current) {
+      applyDiffTheme(monacoRef.current);
+    }
+  }, [appearance]);
+
   const configChanged = editedYaml !== savedYaml;
 
   if (!(configChanged || settingsChanges.length > 0)) {
@@ -224,7 +239,10 @@ export function ChangesPanel({
           <div className="absolute inset-0">
             {configChanged ? (
               <DiffEditor
-                beforeMount={defineDiffTheme}
+                beforeMount={(monaco) => {
+                  monacoRef.current = monaco;
+                  applyDiffTheme(monaco);
+                }}
                 language="yaml"
                 loading={DIFF_LOADING}
                 modified={editedYaml}
