@@ -143,7 +143,7 @@
     "@module-federation/rsbuild-plugin": "^2.5.1",
     "@playwright/test": "^1.62.0",
     "@rollup/plugin-yaml": "^4.1.2",
-    "@rsbuild/core": "2.2.0",
+    "@rsbuild/core": "2.2.1",
     "@rsbuild/plugin-node-polyfill": "1.4.6",
     "@rsbuild/plugin-react": "2.1.0",
     "@rsbuild/plugin-sass": "2.0.1",
