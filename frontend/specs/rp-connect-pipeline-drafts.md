@@ -320,15 +320,18 @@ is then created for real and validated, which is exactly the failure the flag ex
 So: regenerating `backend/pkg/protogen` is **required**, not optional, even though no Go code in this
 repo implements `PipelineService`.
 
-1. `redpanda-connect-api` merged and deployed from `cloudv2`. Its generated dataplane types were
-   produced from this proto ahead of BSR publication (`TestGeneratedProto_CarriesDraftContract` guards
-   them), so this step does not wait on anything here.
+1. `redpanda-connect-api` merged and deployed from `cloudv2`. Console's Buf workflow publishes this
+   branch to the BSR as a label on every push that touches a `.proto`, and `cloudv2` pins
+   `DATAPLANE_BUF_API_VERSION` to that label's commit (`TestGeneratedProto_CarriesDraftContract` fails
+   if a pin ever loses the draft fields), so this step does not wait on anything here. cloudv2 CI
+   regenerates `proto/gen` from the pin on every run, so a hand-generated shim cannot pass it.
 2. Proto lands here, with `frontend/src/protogen`, `backend/pkg/protogen` **and** `proto/gen/openapi`
    regenerated — CI regenerates all three and fails on a dirty tree. `buf generate
    --template=buf.gen.backend.yaml` alone rewrites import grouping across ~200 files; follow it with
    `goimports -w -local "github.com/redpanda-data/console/backend" pkg/protogen` (what `task backend:fmt`
    does) and the diff collapses to just the changed proto.
-3. Published to the BSR; `DATAPLANE_BUF_API_VERSION` bumped in `cloudv2`, which is then a no-op regen.
+3. Published to the BSR under `master`; `DATAPLANE_BUF_API_VERSION` re-bumped in `cloudv2` via
+   `tools/scripts/update-dataplane-deps.sh`, a no-op regeneration.
 4. `console-enterprise` picks up the new `github.com/redpanda-data/console/backend` module version.
 5. Only then flip `enable-rpcn-pipeline-drafts` in LaunchDarkly.
 
