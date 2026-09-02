@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   aliasTermsForName,
-  asciidocToMarkdown,
   buildEmptyMessage,
   byProminence,
   COMPONENT_ALIASES,
@@ -114,30 +113,6 @@ describe('searchableText', () => {
     expect(text).toContain('rest endpoints');
     expect(text).toContain('network');
     expect(text).toBe(text.toLowerCase());
-  });
-});
-
-describe('asciidocToMarkdown', () => {
-  it('turns AsciiDoc section titles into Markdown headings instead of leaking "=="', () => {
-    const out = asciidocToMarkdown('== Performance\nThis output benefits from batching.');
-    expect(out).toBe('#### Performance\nThis output benefits from batching.');
-    expect(out).not.toContain('== ');
-  });
-
-  it('handles multiple heading levels and keeps paragraphs separated', () => {
-    const out = asciidocToMarkdown('Intro paragraph.\n\n=== Delivery Guarantees\nAt least once.');
-    expect(out).toBe('Intro paragraph.\n\n#### Delivery Guarantees\nAt least once.');
-  });
-
-  it('converts link/xref macros to label text and bare URL macros to Markdown links', () => {
-    expect(asciidocToMarkdown('See xref:guides:about.adoc[the guide] for details.')).toBe('See the guide for details.');
-    expect(asciidocToMarkdown('Uses https://github.com/twmb/franz-go[franz-go] under the hood.')).toBe(
-      'Uses [franz-go](https://github.com/twmb/franz-go) under the hood.'
-    );
-  });
-
-  it('converts AsciiDoc bullets to Markdown list items', () => {
-    expect(asciidocToMarkdown('* first\n* second')).toBe('- first\n- second');
   });
 });
 

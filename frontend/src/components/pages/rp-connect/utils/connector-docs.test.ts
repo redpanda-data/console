@@ -11,7 +11,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { getConnectorDocsUrl, getNodeDocsUrl } from './connector-docs';
+import { getConnectorDocsUrl, getFieldDocsUrl, getNodeDocsUrl } from './connector-docs';
+
+const DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components';
 
 describe('getConnectorDocsUrl', () => {
   it('builds correct URL for input connectors', () => {
@@ -55,6 +57,27 @@ describe('getConnectorDocsUrl', () => {
 
   it('returns undefined for empty section', () => {
     expect(getConnectorDocsUrl('', 'kafka')).toBeUndefined();
+  });
+});
+
+describe('getFieldDocsUrl', () => {
+  const REDPANDA_INPUT = `${DOCS}/inputs/redpanda/`;
+
+  it.each([
+    ['a top-level field by its name', ['consumer_group'], `${REDPANDA_INPUT}#consumer_group`],
+    // Documented as `sasl[].aws.credentials.role`, anchored `#sasl-aws-credentials-role`.
+    [
+      'a nested path with hyphens, list nesting dropped',
+      ['sasl', 'aws', 'credentials', 'role'],
+      `${REDPANDA_INPUT}#sasl-aws-credentials-role`,
+    ],
+    ['the component page when there is no field path', [], REDPANDA_INPUT],
+  ])('anchors %s', (_case, path, expected) => {
+    expect(getFieldDocsUrl('input', 'redpanda', path)).toBe(expected);
+  });
+
+  it('returns undefined when the component itself has no docs page', () => {
+    expect(getFieldDocsUrl('metrics', 'prometheus', ['use_histogram_timing'])).toBeUndefined();
   });
 });
 
