@@ -37,19 +37,14 @@ import {
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
+import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { FadePresence } from 'components/ui/fade-presence';
-import {
-  PIPELINE_STATE_LABELS,
-  PIPELINE_STATE_STATUS_VARIANT,
-  STARTABLE_STATES,
-  STOPPABLE_STATES,
-} from 'components/ui/pipeline/constants';
+import { PIPELINE_STATE_LABELS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { AlertCircle, Box, MoreHorizontal, Search, X } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -165,6 +160,17 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
   );
 };
 
+const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> = {
+  [Pipeline_State.COMPLETED]: 'success',
+  [Pipeline_State.STARTING]: 'starting',
+  [Pipeline_State.STOPPING]: 'stopping',
+  [Pipeline_State.STOPPED]: 'disabled',
+  [Pipeline_State.ERROR]: 'destructive',
+  [Pipeline_State.RUNNING]: 'success',
+  [Pipeline_State.UNSPECIFIED]: 'disabled',
+  [Pipeline_State.DRAFT]: 'disabled',
+};
+
 // autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
 const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
@@ -183,9 +189,6 @@ const pipelineStateSortPriority: Record<Pipeline_State, number> = {
 };
 
 const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.state] ?? Number.MAX_SAFE_INTEGER;
-
-const pipelinePageLinkProps = (row: Pipeline) =>
-  ({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(row.id) } }) as const;
 
 const PAGE_SIZE = 20;
 
@@ -312,7 +315,7 @@ const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
-          toast.success('Pipeline starting');
+          toast.success('Pipeline started');
         },
         onError: (err) => {
           toast.error(
@@ -332,7 +335,7 @@ const ActionsCell = memo(
       });
       stopMutation(stopRequest, {
         onSuccess: () => {
-          toast.success('Pipeline stopping');
+          toast.success('Pipeline stopped');
         },
         onError: (err) => {
           toast.error(
@@ -480,16 +483,15 @@ const createColumns = ({
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
           {/* Rows navigate on click, so the link underlines on hover only. */}
-          <span className="flex min-w-0 items-center gap-1.5">
-            <Link
-              as={TanStackRouterLink}
-              className="block truncate text-body-lg text-primary no-underline hover:underline"
-              title={name}
-              {...pipelinePageLinkProps(row.original)}
-            >
-              {name}
-            </Link>
-          </span>
+          <Link
+            as={TanStackRouterLink}
+            className="block truncate text-body-lg text-primary no-underline hover:underline"
+            params={{ pipelineId: encodeURIComponent(id) }}
+            title={name}
+            to="/rp-connect/$pipelineId"
+          >
+            {name}
+          </Link>
           {isDraftRow ? (
             <span className="truncate text-body-sm text-muted-foreground">
               {[editedAt ? `Edited ${relativeAgeLabel(editedAt)}` : null, createdBy ? `by ${createdBy}` : null]
@@ -577,7 +579,7 @@ const createColumns = ({
       <StatusBadge
         size="sm"
         title={row.original.isDraft ? DRAFT_BADGE_TOOLTIP : undefined}
-        variant={PIPELINE_STATE_STATUS_VARIANT[row.original.state]}
+        variant={pipelineStateToStatusVariant[row.original.state]}
       >
         {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
       </StatusBadge>
@@ -752,7 +754,7 @@ const PipelineListPageContent = () => {
   }, [table]);
 
   const handleRowClick = useCallback(
-    (row: Pipeline, event: MouseEvent<HTMLTableRowElement>) => {
+    (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
       // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
       if (isModifiedClick(event)) {
         return;
@@ -766,7 +768,7 @@ const PipelineListPageContent = () => {
       if (window.getSelection()?.toString()) {
         return;
       }
-      navigate(pipelinePageLinkProps(row));
+      navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } });
     },
     [navigate]
   );
@@ -881,7 +883,7 @@ const PipelineListPageContent = () => {
                 <TableRow
                   className="cursor-pointer"
                   key={row.id}
-                  onClick={(event) => handleRowClick(row.original, event)}
+                  onClick={(event) => handleRowClick(row.original.id, event)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell className="py-3" key={cell.id}>

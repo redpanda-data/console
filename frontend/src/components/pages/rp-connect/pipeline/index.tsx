@@ -278,7 +278,6 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
   }
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one save path covering create/update × draft/deploy × run-state transitions
 function usePipelineSave({
   form,
   editorStore,
@@ -341,6 +340,7 @@ function usePipelineSave({
 
   // Resolves to whether the configuration was persisted; a failed start/stop after the write still counts.
   const handleSave = useCallback(
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one save path covering create/update × draft/deploy × run-state transitions
     async (intent?: SaveIntent): Promise<boolean> => {
       const run: SaveRunIntent = intent?.run ?? primaryRunIntent(saveContext);
       const isDraftSave = run === 'draft';
@@ -1180,7 +1180,8 @@ function PipelinePageContent() {
   const yamlDirty = initialYaml !== null && yamlContent !== initialYaml;
   const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
 
-  // Flushes a pending inspector edit first; the rendered `hasUnsavedChanges` can't see it.
+  // Guard-time dirty check: flush any in-progress inspector draft into the store first (the
+  // rendered `hasUnsavedChanges` above can't see a pending draft), then re-read fresh state.
   const checkUnsavedChanges = useCallback(() => {
     if (mode === 'view') {
       return false;
@@ -1516,7 +1517,9 @@ function PipelinePageContent() {
     <div
       className={cn(
         '-ml-3.5 flex min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
-        isMonitorLane ? 'page-min-fill-viewport' : 'page-fill-viewport min-h-[500px]'
+        isMonitorLane
+          ? 'min-h-[calc(100dvh_-_var(--console-page-top,7rem)_-_1rem)]'
+          : 'page-fill-viewport min-h-[500px]'
       )}
       ref={expandedModeRef}
     >

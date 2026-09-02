@@ -848,15 +848,16 @@ describe('PipelinePage', () => {
 
     render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
 
-    // The running pipeline's run control is named for what it does, not for where the pipeline is.
-    await user.click(await screen.findByTestId('pipeline-stop'));
+    // The running pipeline shows a run toggle in the header; switching it off
+    // initiates a stop.
+    await user.click(await screen.findByTestId('pipeline-run-toggle'));
 
     // It must not stop immediately — a confirmation dialog appears first.
     expect(stopPipelineMock).not.toHaveBeenCalled();
     expect(await screen.findByText('Stop pipeline?')).toBeInTheDocument();
 
     // Confirming actually issues the stop.
-    await user.click(screen.getByTestId('confirm-stop-pipeline'));
+    await user.click(screen.getByRole('button', { name: /stop pipeline/i }));
     await waitFor(() => {
       expect(stopPipelineMock).toHaveBeenCalled();
     });
@@ -2254,9 +2255,9 @@ describe('PipelinePage', () => {
       render(<PipelinePage />, { transport: draftTransport() });
 
       await screen.findByTestId('draft-view-notice');
-      // Same button copy as any other pipeline, but the generic start has nowhere to send a lint failure.
+      // The generic run toggle has nowhere to send a lint failure.
       expect(await screen.findByTestId('start-draft')).toHaveTextContent('Start pipeline');
-      expect(screen.queryByTestId('pipeline-start')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pipeline-run-toggle')).not.toBeInTheDocument();
     });
   });
 });

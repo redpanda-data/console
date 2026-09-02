@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import type { StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 /**
@@ -31,17 +30,6 @@ export const PIPELINE_STATE_LABELS: Partial<Record<Pipeline_State, string>> = {
   [Pipeline_State.ERROR]: 'Error',
   [Pipeline_State.COMPLETED]: 'Completed',
   [Pipeline_State.DRAFT]: 'Draft',
-};
-
-export const PIPELINE_STATE_STATUS_VARIANT: Record<Pipeline_State, StatusBadgeVariant> = {
-  [Pipeline_State.COMPLETED]: 'success',
-  [Pipeline_State.STARTING]: 'starting',
-  [Pipeline_State.STOPPING]: 'stopping',
-  [Pipeline_State.STOPPED]: 'disabled',
-  [Pipeline_State.ERROR]: 'destructive',
-  [Pipeline_State.RUNNING]: 'success',
-  [Pipeline_State.UNSPECIFIED]: 'disabled',
-  [Pipeline_State.DRAFT]: 'disabled',
 };
 
 /**

@@ -74,11 +74,6 @@ export const useGetPipelineQuery = (
   });
 };
 
-/**
- * The input never reaches the query key: `request` is the `pageParamKey`, so connect-query omits it and
- * every caller shares one cache entry. A narrower filter would overwrite the list's data — fetch around
- * the cache instead (`callUnaryMethod`, as `useFetchPipelineNames` does).
- */
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
   options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
@@ -165,7 +160,7 @@ const NAME_FILTER_MAX_LENGTH = 128;
 export const toNameContainsFilter = (nameContains: string): string =>
   nameContains.replace(DISALLOWED_IN_NAME_FILTER, '').slice(0, NAME_FILTER_MAX_LENGTH);
 
-/** Display names matching a substring, fetched on demand and outside the list query's cache. */
+// Bypasses useListPipelinesQuery: its cache key omits the input, so a narrower filter would overwrite the list.
 export const useFetchPipelineNames = () => {
   const transport = useTransport();
   return useCallback(

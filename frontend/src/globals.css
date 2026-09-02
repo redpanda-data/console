@@ -51,11 +51,6 @@
   .page-fill-viewport {
     height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
   }
-
-  /* Same measure as a floor, for surfaces that grow with their content. */
-  .page-min-fill-viewport {
-    min-height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
-  }
 }
 
 /* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width cap. Not a

@@ -42,8 +42,7 @@ const (
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 type PipelineServiceClient interface {
 	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
-	// The configuration is validated and the pipeline starts running, unless
-	// `PipelineCreate.draft` is set — a draft is stored unvalidated and does not run.
+	// The pipeline is validated and started unless `PipelineCreate.draft` is set.
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(ctx context.Context, in *GetPipelineRequest, opts ...grpc.CallOption) (*GetPipelineResponse, error)
@@ -59,11 +58,8 @@ type PipelineServiceClient interface {
 	// A draft is not running, so stopping one fails with FAILED_PRECONDITION.
 	StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
-	//
-	// This is also how a draft is deployed for the first time. Because a draft's
-	// configuration was stored without validation, it is validated here: an
-	// invalid one fails with INVALID_ARGUMENT plus a LintHint per problem, and the
-	// pipeline stays a draft.
+	// It also deploys a draft: the configuration is validated first, and an invalid
+	// one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
@@ -216,8 +212,7 @@ func (c *pipelineServiceClient) LintPipelineConfig(ctx context.Context, in *Lint
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 type PipelineServiceServer interface {
 	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
-	// The configuration is validated and the pipeline starts running, unless
-	// `PipelineCreate.draft` is set — a draft is stored unvalidated and does not run.
+	// The pipeline is validated and started unless `PipelineCreate.draft` is set.
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(context.Context, *GetPipelineRequest) (*GetPipelineResponse, error)
@@ -233,11 +228,8 @@ type PipelineServiceServer interface {
 	// A draft is not running, so stopping one fails with FAILED_PRECONDITION.
 	StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
-	//
-	// This is also how a draft is deployed for the first time. Because a draft's
-	// configuration was stored without validation, it is validated here: an
-	// invalid one fails with INVALID_ARGUMENT plus a LintHint per problem, and the
-	// pipeline stays a draft.
+	// It also deploys a draft: the configuration is validated first, and an invalid
+	// one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)

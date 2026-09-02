@@ -25,6 +25,7 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -47,7 +48,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
-import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
+import { PipelineStatusToggle } from './pipeline-status-toggle';
 import {
   alternateRunIntents,
   primaryRunIntent,
@@ -242,10 +243,16 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
   />
 );
 
+const DraftBadge = () => (
+  <StatusBadge role="status" size="sm" title={DRAFT_BADGE_TOOLTIP} variant="disabled">
+    Draft
+  </StatusBadge>
+);
+
 const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
   const { startDraft, isStartingDraft } = useStartDraft();
   if (!isDraft(pipeline)) {
-    return <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />;
+    return <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />;
   }
   return (
     <Button
@@ -315,7 +322,7 @@ export function PipelineViewHeader({
           <h1 className="min-w-0 truncate text-heading-xl" title={name}>
             {name}
           </h1>
-          <PipelineStateBadge state={pipeline.state} tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : undefined} />
+          {viewingDraft ? <DraftBadge /> : null}
           <Button
             aria-label="View pipeline details"
             icon={<Info className="size-4!" />}
@@ -443,7 +450,7 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
-            {editingDraft ? <PipelineStateBadge state={pipelineState} tooltip={DRAFT_BADGE_TOOLTIP} /> : null}
+            {editingDraft ? <DraftBadge /> : null}
             {mode === 'create' ? (
               <Badge tone="default" variant="outline">
                 New

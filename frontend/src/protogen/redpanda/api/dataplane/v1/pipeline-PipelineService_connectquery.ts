@@ -6,8 +6,7 @@ import { PipelineService } from "./pipeline_pb";
 
 /**
  * CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
- * The configuration is validated and the pipeline starts running, unless
- * `PipelineCreate.draft` is set — a draft is stored unvalidated and does not run.
+ * The pipeline is validated and started unless `PipelineCreate.draft` is set.
  *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.CreatePipeline
  */
@@ -53,11 +52,8 @@ export const stopPipeline = PipelineService.method.stopPipeline;
 
 /**
  * StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
- *
- * This is also how a draft is deployed for the first time. Because a draft's
- * configuration was stored without validation, it is validated here: an
- * invalid one fails with INVALID_ARGUMENT plus a LintHint per problem, and the
- * pipeline stays a draft.
+ * It also deploys a draft: the configuration is validated first, and an invalid
+ * one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
  *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.StartPipeline
  */
