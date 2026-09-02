@@ -9,11 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, List, ListIcon, ListItem, Result, Section } from '@redpanda-data/ui';
 import { WarningIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import type { FC, ReactElement } from 'react';
 
 import ErrorResult from './error-result';
+import Section from './section';
 import { api } from '../../state/backend-api';
 import type { WrappedApiError } from '../../state/rest-interfaces';
 
@@ -31,31 +39,30 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
   return (
     <>
       {isWrappedApiError(error) ? (
-        <Box py={10}>
+        <div className="py-10">
           <ErrorResult error={error} />
-        </Box>
+        </div>
       ) : (
-        <Result
-          extra={
-            <Button alignSelf="center" onClick={clearErrors}>
-              Retry
-            </Button>
-          }
-          status={500}
-          title="Backend API Error"
-          userMessage="Something went wrong while pulling data from the backend server"
-        />
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Backend API Error</EmptyTitle>
+            <EmptyDescription>Something went wrong while pulling data from the backend server</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button onClick={clearErrors}>Retry</Button>
+          </EmptyContent>
+        </Empty>
       )}
 
       <Section>
-        <List spacing={3}>
+        <ul className="flex flex-col gap-3">
           {api.errors.map((e) => (
-            <ListItem display="flex" key={formatError(e)}>
-              <ListIcon alignSelf="center" as={WarningIcon} color="red.500" />
+            <li className="flex items-center gap-2" key={formatError(e)}>
+              <WarningIcon className="shrink-0 text-destructive" />
               {formatError(e)}
-            </ListItem>
+            </li>
           ))}
-        </List>
+        </ul>
       </Section>
     </>
   );

@@ -1,4 +1,3 @@
-import { Center, Heading, Image, Stack } from '@redpanda-data/ui';
 import { Link, useLocation, useRouter } from '@tanstack/react-router';
 
 import { getLegacyAiDestination } from './legacy-ai-route';
@@ -14,12 +13,10 @@ export const NotFoundPage = () => {
 
   if (legacyAiDestination) {
     return (
-      <Center data-testid="not-found-page" h="80vh">
-        <Stack spacing={4} textAlign="center">
-          <Image alt="" height="180px" src={rocketPanda} />
-          <Heading as="h1" fontSize={32} variant="lg">
-            This feature has moved
-          </Heading>
+      <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-page">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <img alt="" className="h-[180px]" src={rocketPanda} />
+          <h1 className="text-heading-xl">This feature has moved</h1>
           <p className="max-w-xl text-muted-foreground">
             AI agents, MCP servers, knowledge bases, and transcripts are now available in Redpanda AI.
           </p>
@@ -35,18 +32,16 @@ export const NotFoundPage = () => {
           >
             Go back
           </Button>
-        </Stack>
-      </Center>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Center data-testid="not-found-page" h="80vh">
-      <Stack spacing={4} textAlign="center">
-        <Image alt="Error" height="180px" src={errorBananaSlip} />
-        <Heading as="h1" fontSize={32} variant="lg">
-          Resource not found.
-        </Heading>
+    <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-page">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <img alt="Error" className="h-[180px]" src={errorBananaSlip} />
+        <h1 className="text-heading-xl">Resource not found.</h1>
         <Button
           onClick={() => {
             router.history.back();
@@ -59,7 +54,7 @@ export const NotFoundPage = () => {
         <Link className={buttonVariants({ variant: 'link' })} to="/">
           Return home
         </Link>
-      </Stack>
-    </Center>
+      </div>
+    </div>
   );
 };

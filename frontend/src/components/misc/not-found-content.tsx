@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Center, Heading, Image, Stack } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
@@ -33,18 +32,16 @@ export const NotFoundContent = ({ resourceType, resourceId, backLink, backLinkTe
   const message = resourceId ? `${resourceType} "${resourceId}" not found.` : `${resourceType} not found.`;
 
   return (
-    <Center data-testid="not-found-content" h="80vh">
-      <Stack spacing={4} textAlign="center">
-        <Image alt="Error" height="180px" src={errorBananaSlip} />
-        <Heading as="h1" fontSize={32} variant="lg">
-          {message}
-        </Heading>
+    <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-content">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <img alt="Error" className="h-[180px]" src={errorBananaSlip} />
+        <h1 className="text-heading-xl">{message}</h1>
         {backLink ? (
           <Link className="text-body-lg underline" data-testid="back-link" to={backLink}>
             {backLinkText ?? 'Go back'}
           </Link>
         ) : null}
-      </Stack>
-    </Center>
+      </div>
+    </div>
   );
 };

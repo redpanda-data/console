@@ -9,19 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Box,
-  Button,
-  Flex,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-} from '@redpanda-data/ui';
 import { ErrorIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import React, { Component, useEffect, useReducer } from 'react';
 
 class ErrorModal extends Component<ErrorModalProps> {
@@ -40,43 +37,41 @@ class ErrorModal extends Component<ErrorModalProps> {
     const p = this.props;
 
     return (
-      <Modal isOpen={p.isVisible} onClose={p.onClose} onCloseComplete={p.afterClose}>
-        <ModalOverlay />
-        <ModalContent minW="3xl">
-          <ModalHeader>{this.title}</ModalHeader>
-          <ModalBody>
-            <Flex flexDirection="column" gap={8}>
-              {/* Header */}
-              <Flex flexDirection="row" gap={2} pr={6}>
-                {/* Icon */}
-                <div
-                  style={{
-                    height: '70px', // height determines icon size
-                    alignSelf: 'center',
-                  }}
-                >
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            p.onClose();
+          }
+        }}
+        onOpenChangeComplete={(open) => {
+          if (!open) {
+            p.afterClose();
+          }
+        }}
+        open={p.isVisible}
+      >
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>{this.title}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-row gap-2 pr-6">
+                {/* height determines icon size */}
+                <div className="self-center" style={{ height: '70px' }}>
                   <ErrorIcon className="text-destructive" />
                 </div>
+                <div className="self-center">{this.subTitle}</div>
+              </div>
 
-                {/* Title */}
-                <Box alignSelf="center">
-                  <Text>{this.subTitle}</Text>
-                </Box>
-              </Flex>
-
-              {/* Content */}
-              {Boolean(this.content) && (
-                <Box alignSelf="stretch" maxHeight="300px" overflowY="auto">
-                  {this.content}
-                </Box>
-              )}
-            </Flex>
-          </ModalBody>
-          <ModalFooter gap={2}>
+              {this.content ? <div className="max-h-[300px] self-stretch overflow-y-auto">{this.content}</div> : null}
+            </div>
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={p.onClose}>OK</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   }
 }

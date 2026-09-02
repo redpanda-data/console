@@ -161,14 +161,10 @@ const BasicAuthComponent = () => {
         />
       </FormControl>
 
-      <FormControl>
+      <FormControl id="sasl-mechanism">
         <FormLabel>SASL Mechanism</FormLabel>
         <SingleSelect<SASLMechanism>
-          chakraStyles={{
-            control: (provided) => ({
-              ...provided,
-            }),
-          }}
+          id="sasl-mechanism"
           onChange={(value) => {
             setMechanism(value);
           }}

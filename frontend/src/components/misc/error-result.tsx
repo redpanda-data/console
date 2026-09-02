@@ -1,9 +1,10 @@
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
-import { Avatars, Box, CodeBlock, Heading, HStack, Image, Stack, Text } from '@redpanda-data/ui';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import React from 'react';
 import { capitalizeFirst } from 'utils/utils';
 
+import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 import type { WrappedApiError } from '../../state/rest-interfaces';
 
 type ErrorResultProps = {
@@ -92,37 +93,18 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   const errorMessage = message || error.message;
 
   return (
-    <HStack
-      alignItems="center"
-      flexWrap={{ base: 'wrap', md: 'nowrap' }}
-      gap={8}
-      justifyContent="center"
-      p={4}
-      spacing={8}
-      w="full"
-    >
-      <Stack maxW="700px" p={5} spacing={4}>
-        <Heading fontSize="2xl" lineHeight="short">
-          {errorTitle}
-        </Heading>
-        <Text fontSize="lg">{capitalizeFirst(errorMessage)}</Text>
+    <div className="flex w-full flex-wrap items-center justify-center gap-8 p-4 md:flex-nowrap">
+      <div className="flex max-w-[700px] flex-col gap-4 p-5">
+        <h2 className="text-heading-lg">{errorTitle}</h2>
+        <p className="text-body-lg">{capitalizeFirst(errorMessage)}</p>
         {errorDetails ? (
-          <CodeBlock codeString={errorDetails} language="json" maxW="50vw" showCopyButton theme="light" />
+          <SimpleCodeBlock className="max-w-[50vw]" code={errorDetails} language="json" width="full" />
         ) : null}
-      </Stack>
-      <Box alignItems="center" display="flex" justifyContent="center" minW="300px">
-        <Image
-          alt="Dev Redpanda"
-          display="block"
-          fallback={<Text color="gray.500">Error image not available</Text>}
-          h="auto"
-          maxW="300px"
-          objectFit="contain"
-          src={Avatars.errorBananaSlipSvg}
-          w="full"
-        />
-      </Box>
-    </HStack>
+      </div>
+      <div className="flex min-w-[300px] items-center justify-center">
+        <img alt="Dev Redpanda" className="block h-auto w-full max-w-[300px] object-contain" src={errorBananaSlip} />
+      </div>
+    </div>
   );
 };
 
