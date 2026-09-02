@@ -320,14 +320,26 @@ is then created for real and validated, which is exactly the failure the flag ex
 So: regenerating `backend/pkg/protogen` is **required**, not optional, even though no Go code in this
 repo implements `PipelineService`.
 
-1. Proto lands here, with **both** `frontend/src/protogen` and `backend/pkg/protogen` regenerated.
-   `buf generate --template=buf.gen.backend.yaml` alone rewrites import grouping across ~200 files;
-   follow it with `goimports -w -local "github.com/redpanda-data/console/backend" pkg/protogen`
-   (what `task backend:fmt` does) and the diff collapses to just the changed proto.
-2. Published to the BSR.
-3. `DATAPLANE_BUF_API_VERSION` bumped in `cloudv2`, `redpanda-connect-api` deployed.
+1. `redpanda-connect-api` merged and deployed from `cloudv2`. Its generated dataplane types were
+   produced from this proto ahead of BSR publication (`TestGeneratedProto_CarriesDraftContract` guards
+   them), so this step does not wait on anything here.
+2. Proto lands here, with `frontend/src/protogen`, `backend/pkg/protogen` **and** `proto/gen/openapi`
+   regenerated — CI regenerates all three and fails on a dirty tree. `buf generate
+   --template=buf.gen.backend.yaml` alone rewrites import grouping across ~200 files; follow it with
+   `goimports -w -local "github.com/redpanda-data/console/backend" pkg/protogen` (what `task backend:fmt`
+   does) and the diff collapses to just the changed proto.
+3. Published to the BSR; `DATAPLANE_BUF_API_VERSION` bumped in `cloudv2`, which is then a no-op regen.
 4. `console-enterprise` picks up the new `github.com/redpanda-data/console/backend` module version.
 5. Only then flip `enable-rpcn-pipeline-drafts` in LaunchDarkly.
+
+**Only step 5 is a hard ordering.** While the flag is off the three deployables can ship in any order:
+the frontend sends none of the new request fields, and `STATE_DRAFT`, `created_by`, `create_time` and
+`update_time` are opt-in or output-only, so an older reader never sees a value it cannot handle. If the
+flag is flipped while any hop is still old, nothing errors, but a **Save draft** is deployed for real:
+the proxy or service drops `draft`, the pipeline is created and validated as usual, and the frontend
+detects the returned state and says so (`DRAFT_UNSUPPORTED_MESSAGE`). An invalid configuration is refused
+with lint hints instead of being parked. That is a broken promise to the user, not a broken system, and
+it is the whole reason the flag flips last.
 
 The flag is forwarded to the embedded console by cloud-ui's `useConsoleFeatureFlags`, which passes an
 explicit allow-list — a console flag missing from that list can never be turned on in Cloud.

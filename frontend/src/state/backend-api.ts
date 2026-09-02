@@ -481,9 +481,7 @@ const _apiCreator = (set: any, get: any) => ({
 
   async logout() {
     await appConfig.fetch('./auth/logout');
-    // The RPCN editor's recovery buffers hold whatever was typed but never saved,
-    // configuration verbatim. That belongs to the session that typed it, not to
-    // whoever logs in next on this browser.
+    // Recovery buffers hold unsaved configuration verbatim; they must not outlive the session.
     rpcnEditorAutosave.clearAll();
     set({ userData: null });
   },

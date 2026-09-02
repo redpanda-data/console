@@ -13,45 +13,26 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-/**
- * What a save does, beyond writing the configuration.
- *
- * - `draft`   — save without deploying. The configuration is stored as typed, valid or not.
- * - `keep`    — write the configuration and leave the run state alone. On a running pipeline the
- *               dataplane rolls it, so this restarts it; there is no apply-later.
- * - `start`   — write, then run. For a draft this is promotion, which validates first.
- * - `stopped` — write, then stop.
- */
+/** `draft` stores unvalidated; `keep` leaves the run state (restarts a running pipeline); `start`/`stopped` transition after the write. */
 export type SaveRunIntent = 'draft' | 'keep' | 'start' | 'stopped';
 
 export type SaveIntent = {
   run: SaveRunIntent;
-  /**
-   * Suppresses the editor's own post-save navigation, for the leave-without-saving dialog: it resumes
-   * the navigation itself, and two would flash a route nobody chose.
-   */
+  /** The leave dialog resumes its own navigation. */
   skipNavigation?: boolean;
 };
 
-/** Editor context that decides which actions make sense. */
 export type SaveContext = {
   mode: 'create' | 'edit';
-  /** Absent while creating. */
   state?: Pipeline_State;
-  /** False when the dataplane has no draft support, so drafts must not be offered. */
   draftsEnabled: boolean;
 };
 
-/**
- * "This config isn't deployable yet", rather than a transport, auth or naming problem. The dataplane
- * answers an unlintable config with `invalid_argument` plus LintHint details or
- * `REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION`; a duplicate name or bad field is a different class.
- */
 const LINT_HINT_TYPE = 'redpanda.api.common.v1.LintHint';
 const ERROR_INFO_TYPE = 'google.rpc.ErrorInfo';
 const INVALID_CONFIG_REASON = 'REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION';
 
-/** Details arrive decoded from the wire (`type` + `debug`) or attached locally as `{ desc, value }`. */
+// Wire details are `{ type, debug }`; locally attached ones are `{ desc, value }`.
 function detailTypeAndPayload(detail: unknown): { typeName: string; payload: unknown } | null {
   if (detail === null || typeof detail !== 'object') {
     return null;
@@ -86,10 +67,7 @@ export function isInvalidConfigError(error: unknown): boolean {
   });
 }
 
-/**
- * True when someone else started the draft while it was being edited. The service refuses the update
- * rather than applying it to a pipeline that is now running.
- */
+/** The service refuses a `draft: true` update once the pipeline has been started. */
 export const isNoLongerDraftError = (error: unknown): boolean =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition;
 
@@ -104,21 +82,13 @@ export const isStoppableState = (state: Pipeline_State | undefined): boolean =>
 
 const isDraftState = (state: Pipeline_State | undefined): boolean => state === Pipeline_State.DRAFT;
 
-/** Is this editor working on something that has never been deployed? */
 export const isUndeployed = (context: SaveContext): boolean => context.mode === 'create' || isDraftState(context.state);
 
-/**
- * The primary save action, in one place because the copy and the behaviour have to agree.
- *
- * - Nothing deployed yet → **Save draft**: the only action that always succeeds, and it starts nothing.
- * - Deployed and stopped → **Save**, which applies and leaves it stopped.
- * - Deployed and running → **Apply and restart**, because "Save" would hide the restart.
- */
 export function primaryRunIntent(context: SaveContext): SaveRunIntent {
   if (isUndeployed(context) && context.draftsEnabled) {
     return 'draft';
   }
-  // Without draft support a new pipeline is deployed stopped, which is the closest thing to parking it.
+  // Without draft support a new pipeline is deployed stopped.
   if (context.mode === 'create') {
     return 'stopped';
   }
@@ -138,10 +108,6 @@ export function alternateRunIntents(context: SaveContext): SaveRunIntent[] {
   return [];
 }
 
-/**
- * Button copy per intent and context. A running pipeline's labels say "restart" out loud, because that
- * is what applying a configuration to it does.
- */
 export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): string {
   switch (intent) {
     case 'draft':
@@ -149,14 +115,12 @@ export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): str
     case 'start':
       return 'Save and start';
     case 'stopped':
-      // Creating never runs it, so there is no "and stop" to announce. Editing a running one does.
       return context.mode === 'create' ? 'Save' : 'Save and stop';
     default:
       return isStoppableState(context.state) ? 'Apply and restart' : 'Save';
   }
 }
 
-/** Shown beside the button, so neither a restart nor a pipeline staying stopped is a surprise. */
 export function saveRunHint(context: SaveContext): string | null {
   const intent = primaryRunIntent(context);
   if (intent === 'draft') {
@@ -174,12 +138,10 @@ export function saveRunHint(context: SaveContext): string | null {
   return null;
 }
 
-/** An empty config can be parked as a draft, but not started — blocked here to save the round trip. */
 export const isBlankConfig = (configYaml: string): boolean => configYaml.trim().length === 0;
 
 export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before starting this pipeline.';
 
-/** Toast copy for a successful save, given what it did with the run state. */
 export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): string {
   const isCreate = context.mode === 'create';
   if (run === 'draft') {
@@ -199,24 +161,9 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): st
     : 'Pipeline updated';
 }
 
-/**
- * The way out of the leave-without-saving dialog that keeps the work.
- *
- * - `save-draft`  — park it server-side. Strictly better than the browser: a teammate can pick it up,
- *                   and it survives this profile. Only possible before a pipeline has ever deployed.
- * - `leave-for-now` — keep it in this browser's recovery buffer, which is all that is left once a
- *                   pipeline is deployed. Named as a choice rather than left as a hidden mechanism:
- *                   with only Discard and Keep editing on offer, someone with real work and no way to
- *                   save it has to either sit on the page forever or close the tab to save their
- *                   changes from the app's own dialog. Closing the tab should not be the safe move.
- */
+/** The leave dialog's exit that keeps the work: a server-side draft, or this browser's recovery buffer. */
 export type UnsavedChangesEscape = 'save-draft' | 'leave-for-now';
 
-/**
- * Says why the work cannot simply be saved here, and what the primary button will do instead. The
- * promise that the browser keeps the edits belongs to `leave-for-now` alone — Discard clears the buffer,
- * so a dialog-wide promise would be false for one of its own buttons.
- */
 export function unsavedChangesCopy(context: SaveContext): { body: string; escape: UnsavedChangesEscape } {
   if (isUndeployed(context) && context.draftsEnabled) {
     return {

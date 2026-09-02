@@ -168,8 +168,7 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return type ? `Search ${type}s...` : undefined;
 }
 
-// Tips to show beneath the editor for the active lane; read-only YAML, Monitor and the read-only
-// unsaved-changes diff get none — nothing there takes a keystroke.
+// Read-only lanes (view YAML, Monitor, the diff) get no tips.
 function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
   if (isView) {
     return viewLane === 'visual' ? 'visual' : null;
@@ -180,10 +179,9 @@ function tipsContextForLane(isView: boolean, viewLane: string, editLane: string)
   return editLane === 'visual' ? 'visual' : 'yaml';
 }
 
-// Stable empty set for the "nothing unsaved" / view-mode case so highlights don't churn renders.
 const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 
-// How many effect re-runs (editor mount, ranges catch-up) a reveal request survives unresolved.
+// Effect re-runs a reveal request survives unresolved.
 const MAX_REVEAL_ATTEMPTS = 5;
 
 const pipelineFormSchema = z.object({
@@ -233,7 +231,6 @@ function buildCreateRequest(opts: {
   computeUnits: number;
   userTags: Record<string, string>;
   yamlContent: string;
-  /** Store it without deploying or validating it. */
   draft: boolean;
 }) {
   const userData = useRpcnWizardStore.getState();
@@ -292,16 +289,12 @@ function usePipelineSave({
   saveContext,
 }: {
   form: UseFormReturn<PipelineFormValues>;
-  /** The editor store — read fresh at save time (after flushing pending visual edits). */
   editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
   mode: string;
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  /**
-   * Called right before this page navigates away on its own — after a save, or after a delete — so the
-   * unsaved-changes guard lets a departure the user already asked for through.
-   */
+  /** Stands the unsaved-changes guard down before a navigation this page performs itself. */
   onBeforeGuardedNavigate?: () => void;
   saveContext: SaveContext;
 }) {
@@ -314,11 +307,7 @@ function usePipelineSave({
   const fetchPipelineNames = useFetchPipelineNames();
   const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
 
-  /**
-   * Read at save time, not subscribed to: it is only wanted when a draft is saved with the name field
-   * empty. A failed lookup must not fail the save — a duplicate display name is legal, and an unnumbered
-   * `Untitled pipeline` is a better outcome than refusing to park the work.
-   */
+  // A failed lookup must not fail the save; duplicate display names are legal.
   const nextUntitledName = useCallback(async () => {
     try {
       return untitledPipelineName(await fetchPipelineNames(UNTITLED_PIPELINE_NAME));
@@ -336,54 +325,39 @@ function usePipelineSave({
     useRpcnWizardStore.getState().setWizardData({ input: undefined, output: undefined });
   }, [isPipelineDiagramsEnabled]);
 
-  /**
-   * Re-baseline the document and the form so the unsaved-changes guard reads clean, and drop the
-   * recovery buffer — what it was protecting is now saved.
-   */
   const markSaved = useCallback(
     (yamlContent: string, savedPipelineId: string | undefined) => {
       editorStore.getState().markSavedBaseline(yamlContent);
       form.reset(form.getValues());
       rpcnEditorAutosave.clear(autosaveTargetKey(mode === 'create' ? undefined : pipelineId));
       if (savedPipelineId && savedPipelineId !== pipelineId) {
-        // The create page's buffer is keyed on `create`; once saved, the pipeline owns its own.
         rpcnEditorAutosave.clear(autosaveTargetKey(savedPipelineId));
       }
     },
     [editorStore, form, mode, pipelineId]
   );
 
-  /**
-   * Resolves to whether the configuration was persisted, so a caller continuing a navigation on the
-   * user's behalf doesn't proceed on a failure and take the explaining toast with the route. A failed
-   * run transition still counts: the configuration landed, only the start or stop didn't.
-   */
+  // Resolves to whether the configuration was persisted; a failed start/stop after the write still counts.
   const handleSave = useCallback(
     async (intent?: SaveIntent): Promise<boolean> => {
       const run: SaveRunIntent = intent?.run ?? primaryRunIntent(saveContext);
       const isDraftSave = run === 'draft';
 
-      // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
+      // Flush the Visual lane's in-progress edit before reading the YAML.
       editorStore.getState().pendingEditCommit?.();
       const yamlContent = editorStore.getState().yamlContent;
 
-      // Nothing typed at all. A draft protects work, and there is none here — parking this would put an
-      // empty row in everyone's pipeline list and spend a quota slot on it. The message names the way
-      // out, since a name alone is enough to make it worth keeping.
       if (isDraftSave && mode === 'create' && isBlankConfig(yamlContent) && !form.getValues('name').trim()) {
         toast.error(NOTHING_TO_SAVE_MESSAGE);
         return false;
       }
 
-      // A draft is saved as typed, so the only settings that must hold are the ones the server will
-      // reject outright. An unnamed draft gets a name rather than a scolding.
       if (isDraftSave && !form.getValues('name').trim()) {
         form.setValue('name', await nextUntitledName(), { shouldValidate: true });
       }
 
       const isValid = await form.trigger();
       if (!isValid) {
-        // Settings live in the header/dialog, so surface why the save was blocked.
         const fieldErrors = form.formState.errors;
         const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
         toast.error(
@@ -392,8 +366,6 @@ function usePipelineSave({
         return false;
       }
 
-      // An empty document can be parked but not deployed. Caught here so `Save and start` doesn't
-      // round-trip just to be told there is nothing to run.
       if (!isDraftSave && isBlankConfig(yamlContent)) {
         toast.error(BLANK_CONFIG_MESSAGE);
         return false;
@@ -411,14 +383,11 @@ function usePipelineSave({
           const newPipelineId = createdPipeline?.id;
           setErrorLintHints({});
 
-          // Rollout guard of last resort: anything predating drafts drops `draft` without complaint
-          // and deploys for real, so trust what came back rather than what was asked for.
+          // A pre-drafts proxy drops `draft` silently and deploys for real; trust the response state.
           const draftWasIgnored =
             isDraftSave && createdPipeline !== undefined && createdPipeline.state !== Pipeline_State.DRAFT;
 
-          // Without draft support, CreatePipeline always starts the pipeline, so "save without
-          // starting" is a follow-up stop. It lands in well under a second, but the pipeline is
-          // briefly STARTING first. A draft never runs, so it needs no such correction.
+          // Without draft support CreatePipeline always starts, so "stopped" is a follow-up stop.
           let stopFailed = false;
           if (run === 'stopped' && newPipelineId) {
             try {
@@ -434,7 +403,6 @@ function usePipelineSave({
           if (draftWasIgnored) {
             toast.error(DRAFT_UNSUPPORTED_MESSAGE);
           } else if (!stopFailed) {
-            // The warning above already said what happened — a success toast would contradict it.
             toast.success(saveSuccessMessage(saveContext, run));
           }
           warnIfResized(form, createdPipeline?.resources?.cpuShares);
@@ -446,8 +414,7 @@ function usePipelineSave({
             navigate({ to: '/connect-clusters' });
             return true;
           }
-          // A parked draft stays in the editor on its own route, so the next save updates it rather
-          // than forking another. Anything deployed goes to its page — including a refused draft.
+          // A draft stays in the editor on its own route so the next save updates it.
           navigate({
             to: isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
           });
@@ -472,8 +439,7 @@ function usePipelineSave({
                   ...userTags,
                 },
                 serviceAccount: pipeline?.serviceAccount,
-                // Stated explicitly so the server refuses the write if someone started the draft
-                // while it was open, rather than deploying this configuration to a running pipeline.
+                // Asserted so the server refuses the write if the draft was started meanwhile.
                 draft: isDraftSave ? true : undefined,
               }),
             }),
@@ -481,9 +447,7 @@ function usePipelineSave({
         );
         setErrorLintHints({});
 
-        // UpdatePipeline keeps the pipeline's run state, so only an explicit start/stop needs a call.
-        // On a draft, `start` is promotion: the server validates the stored config and refuses an
-        // invalid one, which is why its failure is reported rather than swallowed.
+        // UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first.
         let runFailed = false;
         try {
           if (run === 'start') {
@@ -495,8 +459,6 @@ function usePipelineSave({
           runFailed = true;
           const runError = ConnectError.from(runErr);
           if (run === 'start' && isInvalidConfigError(runError)) {
-            // The configuration was saved; only the start was refused. Keep the hints on screen so the
-            // problems stay anchored to their lines.
             const hints = extractLintHintsFromError(runError);
             setErrorLintHints(hints);
             toast.warning(startBlockedMessage(Object.keys(hints).length));
@@ -514,13 +476,9 @@ function usePipelineSave({
         markSaved(yamlContent, pipelineId);
         warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
         if (runFailed) {
-          // Staying put: the reason it didn't start is only actionable here.
           return true;
         }
         toast.success(saveSuccessMessage(saveContext, run));
-        // Parking a draft is a "keep working" action, so it doesn't leave the editor. It also must not
-        // navigate on its own when it was triggered from the leave-without-saving dialog, whose own
-        // `proceed()` is what resumes the navigation the user actually asked for.
         if (isDraftSave || intent?.skipNavigation) {
           return true;
         }
@@ -530,8 +488,6 @@ function usePipelineSave({
       } catch (err) {
         const connectError = ConnectError.from(err);
         setErrorLintHints(extractLintHintsFromError(connectError));
-        // Only a draft save asserts `draft`, so only a draft save can be refused for that reason. Any
-        // other FAILED_PRECONDITION is a different problem and must report itself, not this.
         if (isDraftSave && isNoLongerDraftError(connectError)) {
           toast.error(NO_LONGER_DRAFT_MESSAGE);
           return false;
@@ -571,13 +527,8 @@ function usePipelineSave({
       const deleteRequest = create(DeletePipelineRequestSchema, { request: { id } });
       deleteMutation(deleteRequest, {
         onSuccess: () => {
-          // The recovery buffer outlives the pipeline otherwise, and would offer to restore edits to
-          // something that no longer exists.
           rpcnEditorAutosave.clear(autosaveTargetKey(id));
           toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
-          // Deleting from the editor with unsaved edits used to trip the leave-without-saving guard, so
-          // confirming a delete opened a second dialog asking whether to save the thing just deleted —
-          // and its Save draft button would have written to a pipeline that no longer exists.
           onBeforeGuardedNavigate?.();
           navigateToConnectClusters(navigate);
         },
@@ -597,7 +548,6 @@ function usePipelineSave({
     clearWizardStore,
     errorLintHints,
     clearErrorLintHints,
-    // The run transitions are part of the save, so the button stays busy until they settle.
     isSaving: isCreatePending || isUpdatePending || isStartPending || isStopPending,
     isDeleting: isDeletePending,
   };
@@ -701,11 +651,9 @@ function YamlViewPanel({
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
 }) {
-  // Top/bottom shadows from Monaco's scroll position (it virtualizes, so onDidScrollChange is the only signal).
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
-  // Mount-time listener disposables, torn down on unmount so the editor + listener graph can be GC'd.
   const scrollSyncSubscriptions = useRef<ReturnType<editor.IStandaloneCodeEditor['onDidScrollChange']>[]>([]);
-  // Register the read-only viewer as the active editor so sidebar/Visual selection can reveal lines here too.
+  // Registered so sidebar/Visual selection can reveal lines here too.
   const setEditorInstance = usePipelineEditorStore((s) => s.setEditorInstance);
   const handleMount = useCallback(
     (instance: editor.IStandaloneCodeEditor) => {
@@ -741,7 +689,7 @@ function YamlViewPanel({
     'pointer-events-none absolute inset-x-0 h-4 from-static-dark/10 to-transparent transition-opacity duration-150 dark:from-static-dark/40';
   return (
     <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
-      {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
+      {/* Out of flow so Monaco can't feed its width up the layout. */}
       <div className="absolute inset-0">
         <YamlEditor
           onEditorMount={handleMount}
@@ -781,8 +729,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       ? isFeatureFlagEnabled('enableDataplaneObservabilityServerless')
       : isFeatureFlagEnabled('enableDataplaneObservability'));
   return (
-    // Natural height on purpose: this lane scrolls with the page, so logs pagination sits right below
-    // the table.
+    // Natural height: this lane scrolls with the page.
     <div className="flex flex-col p-6">
       {showThroughput ? (
         <>
@@ -792,7 +739,6 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
       ) : null}
       <section className="flex flex-col gap-4">
         {isFeatureFlagEnabled('enableNewPipelineLogs') ? (
-          // Title renders inline in the explorer's control row to line up with the table.
           <LogExplorer
             enableLiveView={pipeline.state === Pipeline_State.RUNNING}
             pipeline={pipeline}
@@ -834,7 +780,6 @@ function EditorPanel({
           {isServerlessInitializing ? (
             <EditorSkeleton />
           ) : (
-            // Out of flow so Monaco can't feed its width up the layout and latch the page wide.
             <div className="absolute inset-0">
               <YamlEditor
                 onChange={(val) => onYamlChange(val || '')}
@@ -886,14 +831,12 @@ function SidebarPanel({
   onBrowseTemplates?: () => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
 }) {
-  // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
-  // The full-document parses below tolerate stale YAML — defer it off the per-keystroke critical path.
+  // Full-document parses tolerate stale YAML, so they run off the deferred value.
   const deferredYaml = useDeferredValue(yamlContent);
   const offerTemplate = useShouldOfferTemplate(deferredYaml);
   const showStructureTree = isPipelineDiagramsEnabled;
 
-  // Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node.
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
   const nodeRanges = useMemo(() => {
@@ -903,12 +846,10 @@ function SidebarPanel({
       return [];
     }
   }, [deferredYaml]);
-  // Latest ranges for the long-lived cursor listener, without re-subscribing per keystroke.
   const nodeRangesRef = useRef(nodeRanges);
   nodeRangesRef.current = nodeRanges;
 
-  // While true, the cursor listener below skips its highlight sync — a programmatic reveal
-  // (which fires setSelection synchronously) must not overwrite the user's explicit tree selection.
+  // A programmatic reveal fires setSelection synchronously; the cursor listener must not re-derive from it.
   const suppressCursorSyncRef = useRef(false);
 
   const revealNodeInEditor = useCallback(
@@ -920,8 +861,6 @@ function SidebarPanel({
         return;
       }
       const endLine = Math.min(range.end, model.getLineCount());
-      // setSelection dispatches onDidChangeCursorPosition synchronously, so a same-tick flag
-      // is enough to keep it from re-deriving the highlight from the (possibly ancestor) range.
       suppressCursorSyncRef.current = true;
       try {
         ed.setSelection({
@@ -947,14 +886,11 @@ function SidebarPanel({
     [revealNodeInEditor]
   );
 
-  // Editor cursor → highlight the most specific node enclosing the caret line.
   useEffect(() => {
     if (!editorInstance) {
       return;
     }
     const sub = editorInstance.onDidChangeCursorPosition((e) => {
-      // Skip while a programmatic reveal is selecting an editable ancestor on the tree's behalf;
-      // syncing here would snap the highlight from the clicked child row to that ancestor.
       if (suppressCursorSyncRef.current) {
         return;
       }
@@ -963,7 +899,7 @@ function SidebarPanel({
     return () => sub.dispose();
   }, [editorInstance]);
 
-  // Pending reveal request from the Visual lane: honour once editor + ranges mount, then clear (fires once).
+  // Pending reveal from the Visual lane, honoured once editor + ranges exist.
   const revealNodeId = usePipelineEditorStore((s) => s.revealNodeId);
   const requestRevealNode = usePipelineEditorStore((s) => s.requestRevealNode);
   const revealAttemptRef = useRef<{ id: string | null; count: number }>({ id: null, count: 0 });
@@ -982,7 +918,6 @@ function SidebarPanel({
       requestRevealNode(null);
       return;
     }
-    // Bounded retry: drop the request so an id that never resolves can't fire a surprise jump later.
     revealAttemptRef.current.count += 1;
     if (revealAttemptRef.current.count > MAX_REVEAL_ATTEMPTS) {
       requestRevealNode(null);
@@ -992,7 +927,6 @@ function SidebarPanel({
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-border! border-r">
-      {/* Relative so the template entry point can float pinned at the bottom with an enter/exit animation. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <ScrollShadow className="h-full overflow-x-hidden">
           {showStructureTree ? (
@@ -1073,25 +1007,21 @@ function SidebarPanel({
   );
 }
 
-/** One tab of the editor surface's lane strip. */
 type LaneTab = {
   value: string;
   label: string;
   onSelect: () => void;
   count?: number;
-  /** Shows a plain marker when the lane has something to say but nothing to count. */
+  /** Plain marker when there is something to say but nothing to count. */
   showDot?: boolean;
 };
 
-// The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
-// embedded Cloud UI.
 const isVisualEditorFeatureEnabled = (): boolean =>
   isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
 export default function PipelinePage() {
   const { pipelineId } = usePipelineMode();
   const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
-  // Keyed by pipeline id so each pipeline gets a fresh editor store.
   return (
     <PipelineEditorProvider initialEditLane={isVisualEditorEnabled ? 'visual' : 'yaml'} key={pipelineId ?? 'create'}>
       <PipelinePageContent />
@@ -1111,7 +1041,6 @@ function PipelinePageContent() {
   const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
 
-  // Actions are stable, so read them once via getState; values use selectors.
   const editorStore = usePipelineEditorStoreApi();
   const {
     setYamlContent,
@@ -1174,11 +1103,8 @@ function PipelinePageContent() {
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
 
-  // Lets a successful save navigate away without tripping the unsaved-changes guard.
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
-  // Drafts are a server-side pipeline state, so nothing about them is local. The local store below is
-  // only crash recovery for the editor buffer.
   const draftsEnabled = areDraftsEnabled();
   const saveContext = useMemo<SaveContext>(
     () => ({ mode: mode === 'create' ? 'create' : 'edit', state: pipeline?.state, draftsEnabled }),
@@ -1187,25 +1113,15 @@ function PipelinePageContent() {
   const editingDraft = isDraft(pipeline);
 
   const autosaveTarget = autosaveTargetKey(mode === 'create' ? undefined : pipelineId);
-  /**
-   * A boolean rather than the entry, so autosave rewriting its contents once a second isn't a re-render.
-   * It exists to hide the notice once a save clears the buffer it was protecting.
-   */
+  // A boolean so autosave rewriting the entry isn't a re-render.
   const hasStoredBuffer = useRpcnEditorAutosaveStore(
     (s) => mode !== 'view' && selectAutosaveEntry(s.entries, autosaveTarget) !== null
   );
-  /**
-   * The buffer as it was when this editor opened, captured once. It has to be a snapshot: read live, a
-   * keystroke after each debounced write made this session's *own* buffer look recoverable, so the
-   * notice blinked once per second. Holding it also means Restore returns what the user was offered,
-   * even after autosave has overwritten the stored copy.
-   */
+  // Snapshot taken when the editor opened; read live, this session's own writes would look recoverable.
   const [recoverableEntry, setRecoverableEntry] = useState<EditorAutosaveEntry | null>(null);
-  // Recovery is offered once per visit: restoring rewrites the document, and re-offering it afterwards
-  // (or after an explicit discard) would make the notice impossible to get rid of.
   const [isAutosaveDismissed, setIsAutosaveDismissed] = useState(false);
 
-  /** Load a buffer over the editor. It is unsaved work, so the document stays dirty on purpose. */
+  // Restored work is unsaved, so the form must read dirty against the loaded defaults.
   const applyAutosave = useCallback(
     (entry: EditorAutosaveEntry) => {
       setYamlContent(entry.configYaml);
@@ -1216,7 +1132,7 @@ function PipelinePageContent() {
           computeUnits: entry.computeUnits,
           tags: entry.tags,
         },
-        { keepDirty: true, keepDefaultValues: true }
+        { keepDefaultValues: true }
       );
     },
     [setYamlContent, form]
@@ -1235,12 +1151,10 @@ function PipelinePageContent() {
     });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
-  // Guard against losing unsaved edits when navigating away from the editor (edit or create).
   const yamlDirty = initialYaml !== null && yamlContent !== initialYaml;
   const hasUnsavedChanges = mode !== 'view' && (form.formState.isDirty || yamlDirty);
 
-  // Guard-time dirty check: flush any in-progress inspector draft into the store first (the
-  // rendered `hasUnsavedChanges` above can't see a pending draft), then re-read fresh state.
+  // Flushes a pending inspector edit first; the rendered `hasUnsavedChanges` can't see it.
   const checkUnsavedChanges = useCallback(() => {
     if (mode === 'view') {
       return false;
@@ -1250,14 +1164,11 @@ function PipelinePageContent() {
     return form.formState.isDirty || (baseline !== null && yaml !== baseline);
   }, [mode, editorStore, form]);
 
-  // Structure-tree highlights (lint + unsaved). Deferred YAML keeps the parses off the keystroke path.
   const deferredYamlContent = useDeferredValue(yamlContent);
   const errorNodeIds = useMemo(
     () => new Set(mapLintHintsToNodes(deferredYamlContent, Object.values(lintHints)).keys()),
     [deferredYamlContent, lintHints]
   );
-  // Ids first (also drive the structure-tree markers), then the same ids described per component for
-  // the Changes lane. Both off the deferred document, so neither parse sits on the keystroke path.
   const changedIds = useMemo(
     () => (mode !== 'view' && initialYaml !== null ? changedNodeIds(initialYaml, deferredYamlContent) : []),
     [mode, initialYaml, deferredYamlContent]
@@ -1270,9 +1181,7 @@ function PipelinePageContent() {
         : [],
     [mode, initialYaml, deferredYamlContent, changedIds]
   );
-  // Settings are the other half of what a save writes, so an edit to one is an unsaved change too — the
-  // tab count and the lane's list are the same array. Against the form's default values, which every
-  // successful save re-baselines.
+  // Against the form's default values, which every successful save re-baselines.
   const settingsValues = useWatch({ control: form.control });
   const settingsChanges = useMemo(
     () => (mode === 'edit' ? summarizeSettingsChanges(form.formState.defaultValues, settingsValues) : []),
@@ -1284,15 +1193,14 @@ function PipelinePageContent() {
     withResolver: true,
   });
   const unsavedChanges = useMemo(() => unsavedChangesCopy(saveContext), [saveContext]);
-  // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).
+  // Re-arm the guard whenever the mode changes.
   useEffect(() => {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes.
   useSaveHotkey({ enabled: mode !== 'view', isSaving, onSave: handleSave });
 
-  // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
+  // On document change: clear stale lint and mirror create-mode YAML to the wizard store.
   useEffect(
     () =>
       editorStore.subscribe((state, prev) => {
@@ -1307,7 +1215,6 @@ function PipelinePageContent() {
     [editorStore, clearErrorLintHints, mode, isPipelineDiagramsEnabled]
   );
 
-  // Move the caret to the end after a programmatic edit so the user sees the change.
   const focusEditorEnd = useCallback(() => {
     setTimeout(() => {
       const ed = editorStore.getState().editorInstance;
@@ -1345,15 +1252,14 @@ function PipelinePageContent() {
     [components, yamlContent, setYamlContent, focusEditorEnd, setAddConnectorType]
   );
 
-  // Hydrate from the loaded pipeline once per id, so re-renders don't clobber edits.
+  // Once per id, so re-renders don't clobber edits.
   useEffect(() => {
     if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
       hydrateFromServer(pipeline.id, pipeline.configYaml);
     }
   }, [pipeline, mode, hydratedPipelineId, hydrateFromServer]);
 
-  // Populate the form from the loaded pipeline. The query polls, so a DIRTY form is never reset
-  // (would clobber edits) — but a clean form re-syncs when the payload changes (concurrent rename).
+  // The query polls: a dirty form is never reset, a clean one re-syncs when the payload changes.
   const formResetSnapshotRef = useRef<string | null>(null);
   useEffect(() => {
     if (!(pipeline && mode === 'edit')) {
@@ -1383,7 +1289,6 @@ function PipelinePageContent() {
     onResolved: handleInitialYamlResolved,
   });
 
-  /** Restore the autosaved buffer over the document the editor loaded. */
   const handleRestoreAutosave = useCallback(() => {
     if (recoverableEntry) {
       applyAutosave(recoverableEntry);
@@ -1397,19 +1302,14 @@ function PipelinePageContent() {
     setIsAutosaveDismissed(true);
   }, [autosaveTarget]);
 
-  /**
-   * Leaving on purpose without saving. The recovery buffer has to go with the edits: it is a crash net,
-   * not a second copy of a decision — offering these edits back next visit would undo the discard.
-   */
+  // Discard clears the recovery buffer too, or the next visit offers the edits back.
   const handleDiscardAndLeave = useCallback(() => {
     rpcnEditorAutosave.clear(autosaveTarget);
     blocker.proceed?.();
   }, [autosaveTarget, blocker]);
 
-  // Only once the document it would replace has loaded, or the notice appears over a skeleton. Creating
-  // waits only on the serverless template, which resolves late enough to overwrite a restore.
+  // The serverless template resolves late enough to overwrite a restore, so create waits on it.
   const isDocumentLoaded = mode === 'create' ? !isServerlessInitializing : initialYaml !== null;
-  // Keyed by target, so moving between editors looks again instead of holding the previous offer.
   const capturedTargetRef = useRef<string | null>(null);
   useEffect(() => {
     if (mode === 'view' || !isDocumentLoaded || capturedTargetRef.current === autosaveTarget) {
@@ -1420,11 +1320,6 @@ function PipelinePageContent() {
     setIsAutosaveDismissed(false);
   }, [mode, isDocumentLoaded, autosaveTarget]);
 
-  /**
-   * The buffer keeps the settings as well as the configuration, because a save writes both — so an
-   * unsaved rename or resize is recoverable work, and offering it only when the YAML differed dropped
-   * it on the floor.
-   */
   const recoveredSettingsChanges = useMemo(
     () => (recoverableEntry ? summarizeSettingsChanges(form.formState.defaultValues, recoverableEntry) : []),
     [recoverableEntry, form.formState.defaultValues]
@@ -1433,25 +1328,12 @@ function PipelinePageContent() {
     mode !== 'view' &&
     !isAutosaveDismissed &&
     !!recoverableEntry &&
-    // A save clears the buffer, and the offer to recover it has to go at the same time.
     hasStoredBuffer &&
-    // Against the baseline, not the live editor — the live one changes on every keystroke.
+    // Against the baseline, not the live editor.
     (recoverableEntry.configYaml !== (initialYaml ?? '') || recoveredSettingsChanges.length > 0);
-  /**
-   * The pipeline's own last-write time, which the buffer records as the version its edits
-   * were based on.
-   */
   const savedUpdateTime = timestampToMillis(pipeline?.updateTime);
 
-  /**
-   * The saved pipeline moved on since the buffer was captured: restoring is still the user's call, but
-   * it is no longer just "put my typing back".
-   *
-   * Both sides are the dataplane's own `update_time`, so this is immune to clock skew —
-   * comparing the server's timestamp against the browser's `updatedAt` got the answer
-   * wrong in both directions whenever the two clocks drifted. A buffer written before
-   * the baseline was recorded has nothing to compare and is treated as not stale.
-   */
+  // Both sides are the dataplane's `update_time`, so clock skew can't affect this.
   const isAutosaveStale =
     !!recoverableEntry &&
     recoverableEntry.basedOnUpdateTime != null &&
@@ -1466,20 +1348,13 @@ function PipelinePageContent() {
     editorStore,
   });
 
-  /**
-   * Leave, keeping the edits in this browser — the only "don't lose my work" action left once a pipeline
-   * is deployed. Flushed rather than left to the debounce, because this button says the edits are kept
-   * and the pending write dies with the page.
-   */
+  // Flushed, not debounced: the pending write dies with the page.
   const handleLeaveAndKeepEdits = useCallback(() => {
     flushAutosave();
     blocker.proceed?.();
   }, [flushAutosave, blocker]);
 
-  /**
-   * A draft is the better exit where one is possible, so it is the only one offered — until it fails,
-   * when the browser buffer is offered beside it rather than leaving Discard as the way out.
-   */
+  // After a failed draft save the browser buffer is offered beside it, so Discard is never the only exit.
   const [hasDraftEscapeFailed, setHasDraftEscapeFailed] = useState(false);
   const canSaveDraftAndLeave = unsavedChanges.escape === 'save-draft';
   useEffect(() => {
@@ -1488,8 +1363,7 @@ function PipelinePageContent() {
     }
   }, [blocker.status]);
 
-  // Create + diagrams: useCreateModeInitialYaml bails, so seed the baseline here or the unsaved-changes
-  // guard never arms. Serverless resolves its own baseline later; seeding '' first would read false-dirty.
+  // Create + diagrams: useCreateModeInitialYaml bails, so the baseline is seeded here. Serverless seeds its own.
   useEffect(() => {
     if (mode === 'create' && isPipelineDiagramsEnabled && !isServerlessMode && initialYaml === null) {
       resolveInitialYaml(yamlContent);
@@ -1500,7 +1374,7 @@ function PipelinePageContent() {
     if (mode === 'create') {
       clearWizardStore();
     }
-    // Route through `navigate` (not history.back) so the unsaved-changes blocker intercepts.
+    // `navigate`, not history.back, so the blocker intercepts.
     if (mode === 'edit' && pipelineId) {
       navigate({ to: `/rp-connect/${pipelineId}` });
       return;
@@ -1516,11 +1390,9 @@ function PipelinePageContent() {
     }
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
-  // Visual lanes take the full canvas, so the YAML/diagram sidebar is hidden.
+  // Visual and changes lanes take the full canvas.
   const isViewVisualLane = mode === 'view' && activeViewLane === 'visual';
   const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
-  // The Unsaved changes lane lists the components it touched itself, so the structure tree would be a
-  // second, less specific copy of the same information.
   const isEditChangesLane = mode === 'edit' && activeEditLane === 'changes';
   const showSidebar = !(isViewVisualLane || isEditVisualLane || isEditChangesLane);
 
@@ -1530,7 +1402,6 @@ function PipelinePageContent() {
     ref: expandedModeRef,
   } = useExpandedPageMode({ storageKey: 'rp-pipeline-editor-mode' });
 
-  // Open the YAML lane and reveal a node: explicit id, else the selected node. Routes per mode.
   const goToYamlNode = useCallback(
     (nodeId?: string) => {
       const target = nodeId ?? selectedNodeId;
@@ -1540,8 +1411,7 @@ function PipelinePageContent() {
       if (mode === 'view') {
         setActiveViewLane('configuration');
       } else {
-        // Commit the selected node's in-progress edit before unmounting the Visual lane,
-        // otherwise the lane switch discards it (no commit-on-unmount).
+        // The Visual lane has no commit-on-unmount.
         editorStore.getState().pendingEditCommit?.();
         setActiveEditLane('yaml');
       }
@@ -1551,15 +1421,13 @@ function PipelinePageContent() {
 
   const isMonitorLane = mode === 'view' && activeViewLane === 'monitor';
 
-  // Empty while a view-mode pipeline is still loading, or in edit mode without the visual editor.
   const lanes = useMemo<LaneTab[]>(() => {
     if (mode === 'view') {
       if (!pipeline) {
         return [];
       }
       const viewLanes: LaneTab[] = [
-        // A draft has never run, so it has no throughput and no logs. Offering the lane would only
-        // promise metrics that cannot exist.
+        // A draft has never run, so there is nothing to monitor.
         ...(editingDraft
           ? []
           : [{ value: 'monitor', label: 'Monitor', onSelect: () => setActiveViewLane('monitor') } as LaneTab]),
@@ -1574,15 +1442,12 @@ function PipelinePageContent() {
     if (isVisualEditorEnabled) {
       editLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') });
     }
-    // Only where something is saved to compare against. On the create page nothing is, so every
-    // component would be listed as "Added" and the count would just restate the document's size.
+    // Only where something is saved to compare against.
     if (mode === 'edit') {
       editLanes.push({
         value: 'changes',
         label: UNSAVED_CHANGES_LANE_LABEL,
         count: componentChanges.length + settingsChanges.length,
-        // A comment or whitespace edit changes nothing itemisable, and a count of zero beside the label
-        // would read as "no unsaved changes" while the lane and the header both say there are.
         showDot: hasUnsavedChanges,
         onSelect: () => setActiveEditLane('changes'),
       });
@@ -1601,7 +1466,6 @@ function PipelinePageContent() {
     hasUnsavedChanges,
   ]);
 
-  // A draft opens on its configuration, since Monitor isn't offered.
   useEffect(() => {
     if (mode === 'view' && editingDraft && activeViewLane === 'monitor') {
       setActiveViewLane('configuration');
@@ -1609,11 +1473,7 @@ function PipelinePageContent() {
   }, [mode, editingDraft, activeViewLane, setActiveViewLane]);
 
   return (
-    // Editor lanes are viewport-bounded (page-fill-viewport, globals.css) because Monaco needs a
-    // bounded box. The Monitor lane takes the same measure as a *minimum* (page-min-fill-viewport) instead,
-    // so it grows with the document — keeping its logs pagination out from behind an inner fold — without
-    // collapsing to the height of a short metrics panel. It carries no second min-h: two min-heights on one
-    // element resolve by stylesheet order.
+    // Editor lanes are viewport-bounded for Monaco; the Monitor lane uses the same measure as a minimum.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
     <div
       className={cn(
@@ -1632,7 +1492,6 @@ function PipelinePageContent() {
         />
       ) : null}
       {mode === 'view' && !pipeline ? (
-        // Same inset as the loaded header, so nothing shifts when the pipeline arrives.
         <div className={cn('flex items-center gap-2', expanded && 'px-4')}>
           <Button aria-label="Go back" className="-ml-3.5 shrink-0" onClick={handleCancel} size="icon" variant="ghost">
             <ArrowLeftIcon className="h-5 w-5" />
@@ -1658,7 +1517,6 @@ function PipelinePageContent() {
         />
       ) : null}
       {showAutosaveRestore && recoverableEntry ? (
-        // Matches the header's fullscreen inset so it lines up with the title above it.
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <AutosaveRestoreNotice
             isStale={isAutosaveStale}
@@ -1669,13 +1527,9 @@ function PipelinePageContent() {
         </div>
       ) : null}
       {mode === 'view' && editingDraft ? (
-        // No metrics and no logs to show, so it says what it is rather than looking broken.
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <Alert icon={<FileClock />} testId="draft-view-notice" variant="informative">
             <AlertTitle>This pipeline is a draft</AlertTitle>
-            {/* The one place the whole model is stated, because this is the page someone lands on when
-                they ask what a draft is — including the part that surprises people: a draft is a stage
-                before a pipeline has ever run, not a parking space you can come back to afterwards. */}
             <AlertDescription>
               It has never run, so there is nothing to monitor yet and it costs nothing. Starting it checks the
               configuration first — anything it finds is shown in the editor. Once it starts it becomes a regular
@@ -1684,26 +1538,20 @@ function PipelinePageContent() {
           </Alert>
         </div>
       ) : null}
-      {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-        {/* Boxed: rounded frame. Fullscreen: flush sides, top/bottom borders kept so the
-            clipped scroll area still has a visible edge. */}
         <div
           className={cn(
             'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border border-border! transition-[border-radius,border-color] duration-300 ease-in-out',
             expanded ? 'rounded-none border-x-transparent!' : 'rounded-lg'
           )}
         >
-          {/* Lane tabs with the fullscreen toggle overlaid at the right end (pr-12 keeps the
-              triggers clear of it). Lane-less modes keep an empty strip so it stays put. */}
+          {/* pr-12 keeps the triggers clear of the overlaid fullscreen toggle. */}
           <div className="relative shrink-0">
             {lanes.length > 0 ? (
               <Tabs value={mode === 'view' ? activeViewLane : activeEditLane}>
                 <TabsList className="pr-12 [&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
                   {lanes.map((lane) => (
                     <TabsTrigger key={lane.value} onClick={lane.onSelect} value={lane.value} variant="underline">
-                      {/* TabsTrigger is a gapless inline-flex, so the pairing owns its spacing rather
-                          than a margin reaching into CountDot. Matches the sidebar's "Lint issues". */}
                       <span className="flex items-center gap-2">
                         {lane.label}
                         {lane.count ? <CountDot count={lane.count} size="sm" variant="informative" /> : null}
@@ -1722,11 +1570,9 @@ function PipelinePageContent() {
               <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />
             </div>
           </div>
-          {/* min-w-0 + overflow-hidden keep the editor region from propagating width upward. */}
           <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             {showSidebar ? (
-              // The monitor lane is document-height, so the structure tree is absolute: with intrinsic
-              // height, a huge pipeline would stretch the page far past the metrics.
+              // The monitor lane is document-height, so the structure tree is absolute there.
               <div className={cn(isMonitorLane && 'relative w-[300px] shrink-0', !isMonitorLane && 'contents')}>
                 <div className={cn(isMonitorLane ? 'absolute inset-0 flex' : 'contents')}>
                   <SidebarPanel
@@ -1762,7 +1608,6 @@ function PipelinePageContent() {
                 <VisualEditorPanel
                   componentList={componentList ?? ({} as ComponentList)}
                   components={components}
-                  // Only edit mode waits on server hydration; create shows its empty state, not a skeleton.
                   isLoading={mode === 'edit' && initialYaml === null}
                   lintHints={Object.values(lintHints)}
                   mode={mode}
@@ -1801,7 +1646,6 @@ function PipelinePageContent() {
           </div>
         </div>
         {tipsContext ? (
-          // Match the header's fullscreen inset.
           <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
             <EditorTipsBar context={tipsContext} readOnly={mode === 'view'} slashMenuEnabled={isSlashMenuEnabled} />
           </div>
@@ -1815,7 +1659,6 @@ function PipelinePageContent() {
         onRequestDelete={
           pipeline
             ? () => {
-                // Close the details dialog first so the two don't stack.
                 setIsViewConfigDialogOpen(false);
                 setIsDeleteAlertOpen(true);
               }
@@ -1825,7 +1668,6 @@ function PipelinePageContent() {
         pipeline={pipeline}
       />
 
-      {/* A draft gets the lighter confirmation: nothing is deployed, so type-to-confirm is theatre. */}
       {pipeline && editingDraft ? (
         <DeleteDraftDialog
           draftName={pipeline.displayName}
@@ -1852,13 +1694,9 @@ function PipelinePageContent() {
       <Dialog onOpenChange={(open) => (open ? undefined : blocker.reset?.())} open={blocker.status === 'blocked'}>
         <DialogContent>
           <DialogHeader>
-            {/* Names the thing the body then refers to, and the lane and the header pill call it the
-                same. */}
             <DialogTitle>Leave without saving your changes?</DialogTitle>
           </DialogHeader>
           <DialogBody>{unsavedChanges.body}</DialogBody>
-          {/* Three ways out, and exactly one of them loses the work: losing it is the quiet option on
-              the left, and there is always an exit on the right that keeps it. */}
           <DialogFooter>
             <Button onClick={handleDiscardAndLeave} testId="discard-and-leave" variant="ghost">
               Discard changes
@@ -1868,16 +1706,11 @@ function PipelinePageContent() {
             </Button>
             {canSaveDraftAndLeave ? (
               <Button
-                // Draft first, then continue the navigation the guard interrupted — but only if the
-                // draft actually landed. Leaving on a failed save would take the toast explaining it
-                // with the route, and this button would have told the user their work was safe.
                 onClick={async () => {
                   if (await handleSave({ run: 'draft', skipNavigation: true })) {
                     blocker.proceed?.();
                     return;
                   }
-                  // A quota-full cluster or a dropped connection would otherwise leave Discard as the
-                  // only way out of the dialog, which is the dead end this footer exists to avoid.
                   setHasDraftEscapeFailed(true);
                 }}
                 testId="save-draft-and-leave"
@@ -1890,8 +1723,6 @@ function PipelinePageContent() {
               <Button
                 onClick={handleLeaveAndKeepEdits}
                 testId="leave-and-keep-edits"
-                // Also on the button, so it stands on its own when it appears next to a failed draft
-                // save whose body copy is about drafts.
                 title="Your edits stay in this browser, and this editor offers them back next time"
                 variant="primary"
               >

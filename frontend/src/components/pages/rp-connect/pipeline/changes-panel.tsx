@@ -27,18 +27,12 @@ import {
   type SettingsChange,
 } from './changes-summary';
 
-/**
- * Read-only comparison of what is saved against what the editor holds — configuration and settings, the
- * two halves a save writes: what am I about to do to this pipeline, before the answer is a restart.
- */
-
 const KIND_LABEL: Record<ChangeKind, string> = {
   added: 'Added',
   removed: 'Removed',
   changed: 'Changed',
 };
 
-// Removals read as destructive, additions as positive, edits as informative.
 const KIND_TONE: Record<ChangeKind, BadgeTone> = {
   added: 'success',
   removed: 'destructive',
@@ -48,37 +42,28 @@ const KIND_TONE: Record<ChangeKind, BadgeTone> = {
 const DIFF_OPTIONS = {
   readOnly: true,
   domReadOnly: true,
-  // Falls back to the inline view under 900px by itself, which is why the copy never says "left".
+  // Monaco drops to inline under 900px on its own, so copy never says "left".
   renderSideBySide: true,
-  // The interesting change is usually a handful of lines in a long document.
   hideUnchangedRegions: { enabled: true },
   renderOverviewRuler: false,
-  // Read-only, so the revert arrows do nothing — and their margin is a stripe between the panes.
   renderMarginRevertIcon: false,
   minimap: { enabled: false },
   scrollBeyondLastLine: false,
-  // The panes are half a lane wide, so a long line clips exactly where the change is.
   wordWrap: 'on',
   fontSize: 12,
   lineNumbersMinChars: 3,
   glyphMargin: false,
   folding: false,
-  // useShadows off: the bars Monaco casts at a scrollable edge read as layout borders.
   scrollbar: { alwaysConsumeMouseWheel: false, useShadows: false },
 } as const;
 
-// Monaco is loaded lazily, so the lane has a beat with nothing in it.
 const DIFF_LOADING = (
   <div className="flex h-full items-center justify-center">
     <Spinner className="size-6 text-muted-foreground" />
   </div>
 );
 
-/**
- * One row of the change list, clickable to go where it can be edited. A plain button rather than a ghost
- * `Button`, whose padding, height and link colour all had to be overridden to make a dense row —
- * matching `PipelineProblemsPanel`, the other jump-to-a-node list here.
- */
+// Plain button rather than a ghost `Button`, for a dense row (matches `PipelineProblemsPanel`).
 const ChangeRow = ({
   kind,
   title,
@@ -88,9 +73,7 @@ const ChangeRow = ({
 }: {
   kind: ChangeKind;
   title: string;
-  /** Second line — the values for a setting; components say what they are on the first line. */
   detail?: string;
-  /** Tooltip on a clickable row, so where it goes is knowable before clicking. */
   actionLabel?: string;
   onSelect?: () => void;
 }) => {
@@ -139,16 +122,12 @@ export function ChangesPanel({
   onSelectComponent,
   onEditSettings,
 }: {
-  /** The configuration as saved — the deployed pipeline, or the draft as last stored. */
   savedYaml: string;
   editedYaml: string;
   changes: ComponentChange[];
-  /** Settings are the other half of what a save writes, so they are listed here too. */
   settingsChanges: SettingsChange[];
   pipelineState?: Pipeline_State;
-  /** Jumps to a component in the YAML lane. */
   onSelectComponent?: (id: string) => void;
-  /** Opens the settings dialog, where a changed setting is edited. */
   onEditSettings?: () => void;
 }) {
   const configChanged = editedYaml !== savedYaml;
@@ -167,8 +146,7 @@ export function ChangesPanel({
   }
 
   const tone = changesImpactTone(pipelineState);
-  // A change with nothing itemisable (a comment, whitespace) still opens the lane, and then the diff
-  // takes the full width rather than sitting beside an empty column.
+  // Zero items (a comment or whitespace edit) gives the diff the full width.
   const itemCount = settingsChanges.length + changes.length;
 
   return (
@@ -182,8 +160,6 @@ export function ChangesPanel({
           <AlertDescription>{changesImpactMessage(pipelineState)}</AlertDescription>
         </Alert>
       </div>
-      {/* Column headers on one row, each sitting over the pane it names and sharing its divider, so the
-          lane reads as a single table rather than three stacked regions. */}
       <div className="flex shrink-0 items-center border-border! border-b">
         {itemCount > 0 ? (
           <div className="flex w-70 shrink-0 items-center gap-2 self-stretch border-border! border-r px-3 py-2">
@@ -191,8 +167,6 @@ export function ChangesPanel({
             <CountDot count={itemCount} size="sm" variant="informative" />
           </div>
         ) : null}
-        {/* Keyed on the gutter markers, not on colour or on which side is which — the diff drops to a
-            single inline pane on a narrow lane. */}
         <p className="min-w-0 flex-1 truncate px-3 py-2 text-body-sm text-muted-foreground">
           {configChanged ? (
             <>
@@ -245,7 +219,7 @@ export function ChangesPanel({
             ) : null}
           </div>
         ) : null}
-        {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
+        {/* Out of flow so Monaco can't feed its width up the layout. */}
         <div className="relative min-w-0 flex-1">
           <div className="absolute inset-0">
             {configChanged ? (
@@ -259,7 +233,6 @@ export function ChangesPanel({
                 theme={DIFF_THEME}
               />
             ) : (
-              // A settings-only change would otherwise show an empty diff, which reads as a broken pane.
               <p className="flex h-full items-center justify-center p-8 text-center text-body-sm text-muted-foreground">
                 The configuration itself is unchanged.
               </p>

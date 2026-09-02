@@ -35,23 +35,16 @@ import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/a
 import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-/**
- * What the pipeline is, as a read-only badge. Kept separate from the run button because a control that
- * doubles as the status display has to be read twice: once for where the pipeline is and once for where
- * clicking would take it. Same chrome as the list's state column.
- */
 export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State; tooltip?: string }) {
   const label = (state !== undefined && PIPELINE_STATE_LABELS[state]) || 'Unknown';
   const variant = (state !== undefined && PIPELINE_STATE_STATUS_VARIANT[state]) || 'disabled';
   return (
-    // role=status: the state changes on its own as the dataplane settles, with nobody having clicked here.
     <StatusBadge role="status" size="sm" testId="pipeline-state-badge" title={tooltip} variant={variant}>
       {label}
     </StatusBadge>
   );
 }
 
-/** The one run action that applies to a given state. `null` where none does. */
 type RunAction = 'start' | 'stop' | 'cancel-start' | 'settling';
 
 export function runActionForState(state?: Pipeline_State): RunAction | null {
@@ -59,17 +52,14 @@ export function runActionForState(state?: Pipeline_State): RunAction | null {
     case PipelineState.RUNNING:
       return 'stop';
     case PipelineState.STARTING:
-      // Not locked mid-start: cancelling is what rescues a pipeline stuck on its way up.
       return 'cancel-start';
     case PipelineState.STOPPING:
-      // Already settling toward Stopped. Offered but disabled, so the button doesn't vanish and reappear.
       return 'settling';
     case PipelineState.STOPPED:
     case PipelineState.ERROR:
     case PipelineState.COMPLETED:
       return 'start';
-    // A draft starts through `useStartDraft` (its first start validates), and an unknown state has no
-    // action anyone can name.
+    // Drafts start through `useStartDraft`.
     default:
       return null;
   }
@@ -91,10 +81,6 @@ const CANCEL_START_COPY = {
   dismiss: 'Keep starting',
 } as const;
 
-/**
- * The run control: a button labelled with what it will do, not with where the pipeline currently is.
- * Pairs with `PipelineStateBadge`, which carries the state.
- */
 export function PipelineRunButton({
   pipelineId,
   pipelineState,
@@ -150,8 +136,6 @@ export function PipelineRunButton({
   }
 
   if (action === 'settling') {
-    // Held rather than hidden, so the control doesn't disappear and come back as the state settles. The
-    // badge says "Stopping"; `title` answers the disabled button where it is.
     return (
       <Button disabled icon={<Play />} testId="pipeline-start" title="Wait for the pipeline to finish stopping.">
         {START_LABEL}
@@ -159,7 +143,6 @@ export function PipelineRunButton({
     );
   }
 
-  // Both the button and the confirmation it opens say the same thing, so the copy is resolved once.
   const stopCopy = isCancellingStart ? CANCEL_START_COPY : STOP_COPY;
   return (
     <>

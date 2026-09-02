@@ -33,10 +33,6 @@ export const PIPELINE_STATE_LABELS: Partial<Record<Pipeline_State, string>> = {
   [Pipeline_State.DRAFT]: 'Draft',
 };
 
-/**
- * Badge chrome per pipeline state. Shared so a state never reads one way in the list and another on the
- * pipeline's own page.
- */
 export const PIPELINE_STATE_STATUS_VARIANT: Record<Pipeline_State, StatusBadgeVariant> = {
   [Pipeline_State.COMPLETED]: 'success',
   [Pipeline_State.STARTING]: 'starting',
@@ -57,10 +53,7 @@ export const ISSUE_FILTER_OPTIONS = [
 ] as const;
 
 /**
- * States where a pipeline can be started.
- *
- * A draft is startable too, but not listed here: it can fail with lint issues that are only actionable
- * in the editor, so callers handle `STATE_DRAFT` explicitly (see `use-start-draft`).
+ * States where a pipeline can be started. Drafts are excluded: they start via `use-start-draft`.
  */
 export const STARTABLE_STATES = [Pipeline_State.STOPPED, Pipeline_State.ERROR, Pipeline_State.COMPLETED, Pipeline_State.STOPPING] as const;
 

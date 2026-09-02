@@ -11,27 +11,21 @@
 
 import type { Monaco } from '@monaco-editor/react';
 
-/**
- * Light-theme values of the semantic tokens, since Monaco can only take literal hex. A copy, so re-check
- * it against `theme.css` when the registry palette moves — nothing fails automatically. Not the
- * `--color-*-alpha-*` ramps: they are being retired, and are not built on these hues.
- */
+// Light-theme hex copies of the semantic tokens (Monaco can't read CSS vars); re-check against theme.css
+// when the palette moves. Never the retiring `--color-*-alpha-*` ramps.
 const DIFF_BASE = {
-  /** `--color-destructive` → `--color-red-600`. */
+  /** `--color-destructive` */
   removed: '#cd372c',
-  /** `--color-success` → `--color-green-600`. */
+  /** `--color-success` */
   inserted: '#25855a',
-  /** `--color-border` → `--color-grey-200`. The hatching is a divider, not a state. */
+  /** `--color-border` */
   neutral: '#c3c4c6',
 } as const;
 
-/** Monaco requires non-opaque fills, so emphasis is alpha over the semantic hue. */
 const DIFF_ALPHA = {
   line: 0.08,
   gutter: 0.12,
-  /** Composites over `line`, so it lands near a third. */
   text: 0.24,
-  /** The hatching is already a light grey, so less sheer. */
   fill: 0.6,
 } as const;
 
@@ -57,14 +51,7 @@ export const DIFF_COLORS = {
 
 export const DIFF_THEME = 'rpcn-changes-diff';
 
-/**
- * Three tiers — line, gutter, changed words — rather than one flat wash, and the chrome cleared so the
- * panel's surface shows through (as `kowl-transparent` does for the YAML lanes).
- *
- * Monaco's defaults are why an unthemed diff shouts: removals are pure `rgb(255, 0, 0)` doubled up on
- * the changed words, additions a muted olive, so deletions read as an error and additions as an
- * afterthought.
- */
+// Transparent chrome so the panel surface shows through, as `kowl-transparent` does for the YAML lanes.
 export const defineDiffTheme = (monaco: Monaco) =>
   monaco.editor.defineTheme(DIFF_THEME, {
     base: 'vs',
@@ -72,7 +59,6 @@ export const defineDiffTheme = (monaco: Monaco) =>
     colors: {
       'editor.background': DIFF_COLORS.transparent,
       'editorGutter.background': DIFF_COLORS.transparent,
-      // The collapsed-region strip, otherwise a filled grey band across our surface.
       'diffEditor.unchangedRegionBackground': DIFF_COLORS.transparent,
 
       'diffEditor.removedLineBackground': DIFF_COLORS.removed.line,
@@ -83,7 +69,6 @@ export const defineDiffTheme = (monaco: Monaco) =>
       'diffEditor.insertedTextBackground': DIFF_COLORS.inserted.text,
       'diffEditorGutter.insertedLineBackground': DIFF_COLORS.inserted.gutter,
 
-      // An absence rather than a change, so neutral.
       'diffEditor.diagonalFill': DIFF_COLORS.neutral,
     },
     rules: [],

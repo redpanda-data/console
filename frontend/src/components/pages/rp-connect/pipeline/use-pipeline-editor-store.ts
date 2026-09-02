@@ -37,8 +37,7 @@ type DocumentSlice = {
   hydrateFromServer: (pipelineId: string, configYaml: string) => void;
   // Resolve the create-mode starting YAML; seeds the baseline only once.
   resolveInitialYaml: (yaml: string) => void;
-  // Re-baseline to `yaml` after it has been persisted (server save or local draft), so the
-  // unsaved-changes guard reads clean. Unlike hydrateFromServer this keeps the edit history.
+  // Re-baseline after a save; unlike hydrateFromServer this keeps the edit history.
   markSavedBaseline: (yaml: string) => void;
   setAllowNavigation: (allowNavigation: boolean) => void;
 };

@@ -25,10 +25,7 @@ import { InlineCode } from 'components/redpanda-ui/components/typography';
 
 import { UNTITLED_PIPELINE_NAME } from './draft-copy';
 
-/**
- * Lighter than `DeleteResourceAlertDialog`, which makes you type "delete" — weight earned by a pipeline
- * that is running and moving data. It still confirms: a draft is unfinished work that only exists here.
- */
+/** Lighter than `DeleteResourceAlertDialog`: no type-to-confirm, since nothing is deployed. */
 export function DeleteDraftDialog({
   open,
   draftName,
@@ -40,8 +37,6 @@ export function DeleteDraftDialog({
   open: boolean;
   draftName: string;
   isDeleting?: boolean;
-  /** Editing this draft with unsaved edits: they go too, and a trash icon in an editor can read as
-   *  "throw away my changes". */
   hasUnsavedChanges?: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
@@ -69,9 +64,7 @@ export function DeleteDraftDialog({
           <AlertDialogAction
             disabled={isDeleting}
             onClick={onConfirm}
-            // data-testid rather than Button's `testId`: Base UI's `render` merges DOM props, and the
-            // component-level prop doesn't survive the clone (same reason DeleteResourceAlertDialog
-            // does it this way).
+            // data-testid: Button's `testId` prop doesn't survive Base UI's `render` clone.
             render={
               <Button
                 data-testid="confirm-delete-draft"

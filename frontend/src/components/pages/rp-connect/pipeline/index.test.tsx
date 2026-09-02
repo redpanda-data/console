@@ -2030,6 +2030,28 @@ describe('PipelinePage', () => {
       expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
     });
 
+    // The reset must recompute `isDirty` from the restored values; keeping the pre-restore flag left the
+    // guard disarmed when only a setting differed.
+    it('arms the unsaved-changes guard after restoring a settings-only buffer', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      useRpcnEditorAutosaveStore.getState().save({
+        targetKey: 'test-pipeline',
+        name: 'Test Pipeline',
+        description: '',
+        computeUnits: 6,
+        tags: [],
+        configYaml: 'input:\n  stdin: {}\noutput:\n  stdout: {}',
+      });
+
+      render(<PipelinePage />, { transport: createTransport() });
+
+      await user.click(await screen.findByTestId('restore-autosave'));
+
+      expect(await screen.findByText('Unsaved changes', { selector: '[role="status"]' })).toBeInTheDocument();
+      expect(lastShouldBlockFn()()).toBe(true);
+    });
+
     // Loading a pipeline settles the document back to "nothing to recover". Tidying up on that signal
     // would delete the recovery buffer about a second before the user could click Restore.
     it('keeps a buffer left by an earlier session while the editor just sits there', async () => {

@@ -59,10 +59,7 @@ export const PipelineStatus = (p: { status: Pipeline_State }) => {
           <CloseIcon color="orange" fontSize="17px" width="auto" /> Unspecified
         </Flex>
       );
-    // This list never asks for drafts (they are excluded from ListPipelines unless
-    // Filter.include_drafts is set), so this case should be unreachable here. It exists so that the
-    // rendering does not depend on that invariant holding — without it a draft reaching this table
-    // would render as a red "Unknown", which reads as a broken pipeline rather than a parked one.
+    // Unreachable unless a caller asks for drafts; otherwise one would render as a red "Unknown".
     case Pipeline_State.DRAFT:
       return (
         <Flex alignItems="center" gap="2">

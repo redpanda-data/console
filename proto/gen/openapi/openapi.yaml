@@ -1704,11 +1704,24 @@ components:
       type: object
     ListPipelinesRequest.Filter:
       properties:
+        include_drafts:
+          description: |-
+            Include drafts (`STATE_DRAFT`) in the response.
+
+            Drafts are excluded by default, including when `states` names
+            `STATE_DRAFT`, so that clients written before drafts existed never
+            receive a state they cannot render.
+          type: boolean
         name_contains:
           description: Any pipelines that partially match this name will be returned.
           type: string
         secret_id:
           type: string
+        states:
+          description: Only pipelines in one of these states will be returned. Drafts additionally require include_drafts.
+          items:
+            $ref: '#/components/schemas/Pipeline.State'
+          type: array
         tags[string]:
           additionalProperties:
             type: string
@@ -2277,6 +2290,23 @@ components:
             The pipeline configuration in YAML.
             See https://docs.redpanda.com/redpanda-connect/configuration/about/
           type: string
+        create_time:
+          description: When the pipeline was created.
+          format: date-time
+          readOnly: true
+          type: string
+        created_by:
+          description: |-
+            Identifier of the principal that created the pipeline — an email address
+            for a user, or the service account's identifier. Empty for pipelines
+            created before this field existed, and for pipelines created by internal
+            callers that carry no identity.
+
+            This attributes a pipeline, it does not restrict it: pipeline permissions
+            are cluster-wide, so anyone with edit permission on this cluster can change
+            or delete any pipeline regardless of who created it.
+          readOnly: true
+          type: string
         description:
           description: Optional pipeline description.
           type: string
@@ -2301,6 +2331,14 @@ components:
             Tags are key-value pairs that can be assigned to a pipeline resource.
             They help organize pipelines and enable filtering when listing them.
           type: object
+        update_time:
+          description: |-
+            When the pipeline's configuration, name, description, resources or tags
+            were last changed. Starting and stopping a pipeline does not change it.
+            Empty for pipelines that have not been written since this field existed.
+          format: date-time
+          readOnly: true
+          type: string
         url:
           description: |-
             URL to connect to the pipeline, for example, via http_server.
@@ -2328,6 +2366,16 @@ components:
          - STATE_STOPPED: The pipeline is stopped and in paused state.
          - STATE_ERROR: The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
          - STATE_COMPLETED: The pipeline has completed the job successfully.
+         - STATE_DRAFT: The pipeline is saved but has never been deployed: it runs no pods, is not
+        billed, and its configuration is allowed to be incomplete or invalid.
+
+        Call StartPipeline to deploy a draft. That validates the configuration
+        first and refuses to start an invalid one, so a draft can only leave this
+        state by becoming a real, validated pipeline.
+
+        Drafts are omitted from ListPipelines unless
+        ListPipelinesRequest.Filter.include_drafts is set, so clients written
+        before drafts existed never receive a state they cannot render.
       enum:
         - STATE_STARTING
         - STATE_RUNNING
@@ -2335,6 +2383,7 @@ components:
         - STATE_STOPPED
         - STATE_ERROR
         - STATE_COMPLETED
+        - STATE_DRAFT
       type: string
     Pipeline.Status:
       description: Pipeline status may contain an error message.
@@ -2346,7 +2395,15 @@ components:
       description: PipelineCreate contains the details for the pipeline creation request.
       properties:
         config_yaml:
-          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: |-
+            The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+
+            Required unless `draft` is set, in which case it may be empty or fail
+            validation — that is the point of a draft. The service enforces this rather
+            than a field rule, so that a missing configuration is reported the same way
+            here, on UpdatePipeline and on StartPipeline: INVALID_ARGUMENT carrying
+            `REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION`, which is how a client tells
+            "not deployable yet" apart from a malformed request.
           type: string
         description:
           description: Pipeline description.
@@ -2354,6 +2411,17 @@ components:
         display_name:
           description: User-friendly pipeline name.
           type: string
+        draft:
+          description: |-
+            Save the pipeline as a draft (`STATE_DRAFT`) instead of deploying it.
+
+            The configuration is stored as given and is not validated, so partially
+            written work can be saved and picked up later. A draft runs no pods and is
+            not billed. Call StartPipeline to validate and deploy it.
+
+            Drafts are ordinary pipeline resources, so each one counts against the
+            cluster's pipeline limit.
+          type: boolean
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
@@ -2370,7 +2438,14 @@ components:
     PipelineUpdate:
       properties:
         config_yaml:
-          description: The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+          description: |-
+            The Redpanda Connect pipeline configuration in YAML format. See the [Redpanda Connect Configuration](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/about) documentation for more details.
+
+            May be empty only when the result of the update is a draft — either because
+            `draft` is set, or because the pipeline is already one. Whether that holds
+            depends on the stored pipeline, so unlike PipelineCreate this message cannot
+            check it itself; the service rejects an empty configuration on anything that
+            is not a draft.
           type: string
         description:
           description: Pipeline description.
@@ -2378,6 +2453,21 @@ components:
         display_name:
           description: User-friendly pipeline name.
           type: string
+        draft:
+          description: |-
+            Asserts that the pipeline being updated is a draft. An update never changes
+            whether a pipeline is a draft: a draft stays a draft, and a deployed
+            pipeline stays deployed.
+
+            Leave unset to update whatever is stored. Set it to true to say "I am
+            editing a draft" — the update then fails with FAILED_PRECONDITION if the
+            pipeline has since been started, rather than silently deploying the new
+            configuration to a running pipeline. Setting it to false is rejected; use
+            StartPipeline to promote a draft, so its configuration is validated first.
+
+            While a pipeline is a draft its configuration is stored without validation.
+          nullable: true
+          type: boolean
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
@@ -6188,6 +6278,49 @@ paths:
           name: filter.secret_id
           schema:
             type: string
+        - description: |-
+            Only pipelines in one of these states will be returned. Drafts additionally require include_drafts.
+
+             - STATE_STARTING: The pipeline is starting.
+             - STATE_RUNNING: The pipeline is running.
+             - STATE_STOPPING: The pipeline is in the process of stopping.
+             - STATE_STOPPED: The pipeline is stopped and in paused state.
+             - STATE_ERROR: The pipeline encountered an error. See [Error Handling](https://docs.redpanda.com/redpanda-cloud/develop/connect/configuration/error_handling/) for further guidance.
+             - STATE_COMPLETED: The pipeline has completed the job successfully.
+             - STATE_DRAFT: The pipeline is saved but has never been deployed: it runs no pods, is not
+            billed, and its configuration is allowed to be incomplete or invalid.
+
+            Call StartPipeline to deploy a draft. That validates the configuration
+            first and refuses to start an invalid one, so a draft can only leave this
+            state by becoming a real, validated pipeline.
+
+            Drafts are omitted from ListPipelines unless
+            ListPipelinesRequest.Filter.include_drafts is set, so clients written
+            before drafts existed never receive a state they cannot render.
+          in: query
+          name: filter.states
+          schema:
+            items:
+              enum:
+                - STATE_STARTING
+                - STATE_RUNNING
+                - STATE_STOPPING
+                - STATE_STOPPED
+                - STATE_ERROR
+                - STATE_COMPLETED
+                - STATE_DRAFT
+              type: string
+            type: array
+        - description: |-
+            Include drafts (`STATE_DRAFT`) in the response.
+
+            Drafts are excluded by default, including when `states` names
+            `STATE_DRAFT`, so that clients written before drafts existed never
+            receive a state they cannot render.
+          in: query
+          name: filter.include_drafts
+          schema:
+            type: boolean
         - description: Limit the paginated response to a number of items. Defaults to 100. Use -1 to disable pagination.
           in: query
           name: page_size

@@ -95,7 +95,6 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
-// Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
   <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
@@ -200,10 +199,6 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-/**
- * Offered wherever a draft is open. Abandoned drafts are the expected outcome of parking work and never
- * expire, so the way to be rid of one has to be in reach.
- */
 const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
   <Button
     aria-label="Delete draft"
@@ -218,11 +213,9 @@ const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-// Expanded mode insets the header while the panel below it goes flush.
 const headerClassName = (expanded: boolean) =>
   cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
 
-// Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
     control={form.control}
@@ -246,11 +239,6 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
   />
 );
 
-/**
- * A draft starts through its own mutation — a rejected start has to open the editor, since that is the
- * only place its lint problems are actionable — but it wears the same button as every other pipeline, so
- * "start" looks like one thing across the feature.
- */
 const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
   const { startDraft, isStartingDraft } = useStartDraft();
   if (!isDraft(pipeline)) {
@@ -278,7 +266,7 @@ export function PipelineViewHeader({
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
-  /** Opens the delete confirmation. Offered inline on a draft; other pipelines use the details dialog. */
+  /** Only offered inline on a draft. */
   onRequestDelete?: () => void;
   expanded: boolean;
 }) {
@@ -306,7 +294,6 @@ export function PipelineViewHeader({
       key: 'url',
       node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
     },
-    // Who parked it and when — a shared draft pool with no author is a shared mutable pool.
     {
       key: 'edited',
       node: viewingDraft && editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null,
@@ -325,8 +312,6 @@ export function PipelineViewHeader({
           <h1 className="min-w-0 truncate text-heading-xl" title={name}>
             {name}
           </h1>
-          {/* State sits with the name, not on the run button: Draft is one of these states, so this is the
-              one place to read what a pipeline is doing, whatever it is doing. */}
           <PipelineStateBadge state={pipeline.state} tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : undefined} />
           <Button
             aria-label="View pipeline details"
@@ -348,7 +333,6 @@ export function PipelineViewHeader({
             {viewingDraft ? 'Continue editing' : 'Edit pipeline'}
           </Button>
           {viewingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
-          {/* self-center: the Separator's default self-stretch top-aligns a fixed h-6 in this row. */}
           <Separator className="mx-1 h-6 self-center" orientation="vertical" />
           <RunControl pipeline={pipeline} />
         </div>
@@ -366,10 +350,6 @@ export function PipelineViewHeader({
   );
 }
 
-/**
- * The primary click never starts or stops anything the user didn't ask for; the menu holds the explicit
- * run actions.
- */
 const SaveActions = ({
   context,
   isSaving,
@@ -430,16 +410,14 @@ export function PipelineEditHeader({
   onBack: () => void;
   onSave: (intent?: SaveIntent) => void;
   onEditSettings: () => void;
-  /** Opens the delete confirmation. Only offered while editing a draft. */
+  /** Only offered while editing a draft. */
   onRequestDelete?: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   expanded: boolean;
-  /** Current run state, for the save hint and the alternate run action. Absent while creating. */
   pipelineState?: Pipeline_State;
-  /** Whether this deployment can store drafts at all. */
   draftsEnabled: boolean;
-  /** Outstanding lint issues, shown on a draft as what stands between it and starting. */
+  /** Outstanding lint issues; shown on a draft only. */
   draftIssueCount?: number;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
@@ -448,7 +426,6 @@ export function PipelineEditHeader({
   const context: SaveContext = { mode, state: pipelineState, draftsEnabled };
   const runHint = saveRunHint(context);
   const editingDraft = isDraft({ state: pipelineState });
-  // Lint is a warning on a draft, not a blocked save, so the count is stated rather than enforced.
   const issueSummary = editingDraft ? draftIssueSummary(draftIssueCount ?? 0) : null;
 
   const items: MetaEntry[] = [
@@ -463,7 +440,6 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
-            {/* Same badge as the view header, so Draft doesn't change appearance on the way into the editor. */}
             {editingDraft ? <PipelineStateBadge state={pipelineState} tooltip={DRAFT_BADGE_TOOLTIP} /> : null}
             {mode === 'create' ? (
               <Badge tone="default" variant="outline">
@@ -475,7 +451,7 @@ export function PipelineEditHeader({
             </Button>
             {editingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
           </div>
-          {/* Relative anchor: the hints sit below (absolute) so toggling them never shifts the buttons. */}
+          {/* Relative anchor for the absolutely positioned hints below. */}
           <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"
@@ -489,8 +465,6 @@ export function PipelineEditHeader({
             </Button>
             <SaveActions context={context} isSaving={isSaving} onSave={onSave} />
             <span className="absolute top-full right-0 mt-1.5 flex items-center gap-2 whitespace-nowrap text-body-sm text-muted-foreground">
-              {/* role=status: the pill appears without the user acting on this part of the page, and it
-                  is the answer to "do I still need to save". */}
               {hasUnsavedChanges ? (
                 <span className="flex items-center gap-1.5" role="status" title={UNSAVED_CHANGES_PILL_TOOLTIP}>
                   <span aria-hidden className="size-2 rounded-full bg-informative" />

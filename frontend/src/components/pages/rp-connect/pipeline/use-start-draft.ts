@@ -22,11 +22,7 @@ import { startBlockedMessage } from './draft-copy';
 import { isInvalidConfigError } from './save-actions';
 import { extractLintHintsFromError } from '../errors';
 
-/**
- * Starting a draft is its first deployment, so it is the moment its configuration is validated — the one
- * start that can fail for a reason the user has to go and *edit*. A rejected start therefore opens the
- * editor, where the problems are already marked. Any other failure is reported where the user is.
- */
+/** Starting a draft validates it; a lint refusal opens the editor, where the hints are actionable. */
 export function useStartDraft() {
   const navigate = useNavigate();
   const { mutateAsync, isPending } = useStartPipelineMutation();

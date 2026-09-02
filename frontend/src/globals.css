@@ -52,9 +52,7 @@
     height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
   }
 
-  /* The same measure as a floor rather than a fixed height, for a surface that has to grow with its
-     content — a paginated table whose controls must not sit behind an inner fold — but should never
-     collapse to less than the space it was given. */
+  /* Same measure as a floor, for surfaces that grow with their content. */
   .page-min-fill-viewport {
     min-height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
   }

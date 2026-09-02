@@ -16,13 +16,9 @@ import { autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosav
 import type { usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import type { PipelineFormValues } from '.';
 
-/** Long enough that continuous typing writes once; short enough that a crash costs a sentence. */
 export const AUTOSAVE_DEBOUNCE_MS = 1000;
 
-/**
- * Mirrors the editor into localStorage so a refresh or a crashed tab doesn't take the work with it.
- * Deliberately dumb: writes whatever is there, valid or not, and never navigates, toasts or blocks.
- */
+/** Mirrors the editor (YAML + settings) into localStorage on a debounce. Never navigates, toasts or blocks. */
 export function useEditorAutosave({
   enabled,
   pipelineId,
@@ -30,40 +26,26 @@ export function useEditorAutosave({
   form,
   editorStore,
 }: {
-  /** Off in view mode, which has nothing to lose. */
   enabled: boolean;
-  /** Undefined on the create page, which has its own buffer. */
+  /** Undefined on the create page. */
   pipelineId: string | undefined;
-  /**
-   * The loaded pipeline's `update_time` in epoch ms, stamped into the buffer so
-   * staleness is decided by comparing two server timestamps rather than this
-   * browser's clock against the dataplane's. Null while creating.
-   */
+  /** The loaded pipeline's `update_time` in epoch ms; null while creating. */
   savedUpdateTime: number | null;
   form: UseFormReturn<PipelineFormValues>;
   editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
 }) {
   const targetKey = autosaveTargetKey(pipelineId);
-  // Latest form handle for the long-lived subscription, without re-subscribing per render.
   const formRef = useRef(form);
   formRef.current = form;
-  // Read at write time, like the form handle: a save landing while the editor is open
-  // moves the pipeline's update_time, and the next buffer is based on that new one.
   const savedUpdateTimeRef = useRef(savedUpdateTime);
   savedUpdateTimeRef.current = savedUpdateTime;
-  // A buffer left by an earlier session must never be cleaned up just because the editor opened:
-  // loading a pipeline settles the document back to "nothing to recover", which would delete it a
-  // second before the user could click Restore.
+  // Only clear a buffer this editor wrote; an earlier session's must survive the load settling.
   const hasWrittenRef = useRef(false);
 
   const write = useCallback(() => {
     const { yamlContent, initialYaml } = editorStore.getState();
-    // Only what is actually recoverable, or every visit would leave a buffer the next visit offered
-    // to restore. A null baseline means nothing loaded yet (the create page), where anything
-    // non-empty is by definition something the user typed.
     const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
     if (!(documentChanged || formRef.current.formState.isDirty)) {
-      // Only tidying up after this editor — an undo back to the loaded state, say.
       if (hasWrittenRef.current) {
         rpcnEditorAutosave.clear(targetKey);
         hasWrittenRef.current = false;
@@ -95,7 +77,6 @@ export function useEditorAutosave({
       timer = setTimeout(write, AUTOSAVE_DEBOUNCE_MS);
     };
 
-    // Both halves of the document: the YAML lives in the editor store, the settings in the form.
     const unsubscribeStore = editorStore.subscribe((state, prev) => {
       if (state.yamlContent !== prev.yamlContent) {
         schedule();
@@ -104,18 +85,12 @@ export function useEditorAutosave({
     const unsubscribeForm = formRef.current.subscribe({ formState: { values: true }, callback: schedule });
 
     return () => {
-      // Dropped rather than flushed, deliberately: "Discard changes" has to mean discard, and a flush
-      // here would resurrect it as a recovery offer next visit.
+      // Dropped, not flushed: "Discard changes" must not leave a buffer behind.
       clearTimeout(timer);
       unsubscribeStore();
       unsubscribeForm();
     };
   }, [enabled, editorStore, write]);
 
-  /**
-   * Write now instead of on the debounce. For "Leave for now", which promises the edits are kept: the
-   * pending write is dropped on unmount, so without this the promise loses up to a second of typing —
-   * and a second of typing is exactly what someone leaving in a hurry has just done.
-   */
   return { flush: write };
 }

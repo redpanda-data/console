@@ -15,13 +15,9 @@ import { FileClock } from 'lucide-react';
 
 import { relativeAgeLabel } from './draft-copy';
 
-/**
- * Offered when an autosaved buffer doesn't match what loaded. The loaded configuration stays on screen
- * until the user chooses, so recovered work can never silently overwrite what is saved.
- */
 export function AutosaveRestoreNotice({
   updatedAt,
-  /** True when the saved pipeline has been written since this buffer was captured. */
+  /** The pipeline was saved since this buffer was captured. */
   isStale,
   onRestore,
   onDiscard,
@@ -33,14 +29,9 @@ export function AutosaveRestoreNotice({
 }) {
   return (
     <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale ? 'warning' : 'informative'}>
-      {/* Not "unsaved changes": that names the edits in this editor right now, which the header pill and
-          the lane both track. This is work from an earlier visit that this browser kept. */}
       <AlertTitle>Restore your edits from {relativeAgeLabel(updatedAt)}?</AlertTitle>
       <AlertDescription className="flex flex-wrap items-center gap-3">
         <span>
-          {/* Both variants say restoring replaces what is on screen. The offer stays up while the user
-              carries on typing — it has to, since their typing overwrites the stored copy — so copy that
-              only described the moment they arrived would stop being true a keystroke later. */}
           {isStale
             ? 'This pipeline has been saved by someone since you were editing. Restoring replaces what is on screen with your unsaved version.'
             : 'You left this editor without saving these edits. Restoring puts them back, replacing what is on screen.'}

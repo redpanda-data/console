@@ -13,44 +13,24 @@ import { isFeatureFlagEnabled } from 'config';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { prettyMilliseconds } from 'utils/utils';
 
-/** One place for the word "draft", so the list, the header and the recovery notice can't drift apart. */
-
-/** Drafts need the server-side `STATE_DRAFT` support, so they roll out behind a flag. */
 export const areDraftsEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnPipelineDrafts');
 
 export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boolean =>
   pipeline?.state === Pipeline_State.DRAFT;
 
-/**
- * The most-hovered explanation of the feature: this badge is on list rows, the editor and the detail
- * header. It carries the surprising half too — a draft is a stage before first deployment, so starting
- * one spends it. Without that, "draft" reads as a parking space a live pipeline could also use.
- */
 export const DRAFT_BADGE_TOOLTIP =
   'Saved but never deployed — it uses no compute and processes no data. Starting it makes it a regular pipeline.';
 
-/**
- * A create asked for a draft and got a deployed pipeline back. Anything compiled against a pre-drafts
- * proto drops `draft` silently — Connect's JSON codec discards unknown fields — so a mis-ordered
- * rollout deploys for real, and must not be reported as a parked draft.
- */
+/** A pre-drafts proxy drops `draft` silently (Connect JSON discards unknown fields) and deploys for real. */
 export const DRAFT_UNSUPPORTED_MESSAGE =
   'Drafts are not available on this cluster yet, so the pipeline was created and is starting. Stop it from its page if you did not mean to deploy it.';
 
-/** Name used when a draft is saved with the name field left empty, so saving never stops to ask. */
 export const UNTITLED_PIPELINE_NAME = 'Untitled pipeline';
 
-/**
- * The one case where parking is refused: an untouched create page. A draft exists to protect work, and
- * an empty configuration with no name is not work — it is a row in everyone's list and a quota slot.
- */
 export const NOTHING_TO_SAVE_MESSAGE =
   "There's nothing to save yet. Add some configuration, or a name if you want somewhere to come back to.";
 
-/**
- * `display_name` is required (min 3 chars), but making the user think of one before their work can be
- * parked defeats the point. Numbered past the names already taken so two drafts stay tellable apart.
- */
+/** `display_name` is required (min 3 chars); numbered past the names already taken. */
 export function untitledPipelineName(existingNames: Iterable<string>): string {
   const taken = new Set<string>();
   for (const name of existingNames) {
@@ -65,11 +45,9 @@ export function untitledPipelineName(existingNames: Iterable<string>): string {
       return candidate;
     }
   }
-  // A thousand untitled drafts. Ugly but unique, and still a legal display name.
   return `${UNTITLED_PIPELINE_NAME} ${Date.now()}`;
 }
 
-/** "5m ago" — same phrasing the rest of Console uses for recent timestamps. */
 export const relativeAgeLabel = (at: number, now: number = Date.now()): string => {
   const elapsed = now - at;
   if (elapsed < 60_000) {
@@ -78,11 +56,9 @@ export const relativeAgeLabel = (at: number, now: number = Date.now()): string =
   return `${prettyMilliseconds(elapsed, { compact: true })} ago`;
 };
 
-/** Millisecond epoch of a proto timestamp, for comparing against a local buffer's `updatedAt`. */
 export const timestampToMillis = (timestamp: Pipeline['updateTime']): number | null =>
   timestamp ? Number(timestamp.seconds) * 1000 + Math.floor(timestamp.nanos / 1_000_000) : null;
 
-/** The count matters: "some issues" sends people hunting, "3 issues" tells them when they're done. */
 export function startBlockedMessage(issueCount: number): string {
   if (issueCount === 1) {
     return "This draft has 1 issue to fix before it can start. We've opened the editor on it.";
@@ -93,7 +69,6 @@ export function startBlockedMessage(issueCount: number): string {
   return "This draft isn't valid yet, so it can't start. We've opened the editor so you can fix it.";
 }
 
-/** Shown under the editor header while a draft has outstanding lint issues. */
 export function draftIssueSummary(issueCount: number): string | null {
   if (issueCount <= 0) {
     return null;
