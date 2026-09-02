@@ -14,9 +14,9 @@ import type { Monaco } from '@monaco-editor/react';
 // Light-theme hex copies of the semantic tokens (Monaco can't read CSS vars); re-check against theme.css
 // when the palette moves. Never the retiring `--color-*-alpha-*` ramps.
 const DIFF_BASE = {
-  /** `--color-destructive` */
+  /** `--color-surface-destructive` */
   removed: '#cd372c',
-  /** `--color-success` */
+  /** `--color-surface-success` */
   inserted: '#25855a',
   /** `--color-border` */
   neutral: '#c3c4c6',
@@ -51,7 +51,7 @@ export const DIFF_COLORS = {
 
 export const DIFF_THEME = 'rpcn-changes-diff';
 
-// Transparent chrome so the panel surface shows through, as `kowl-transparent` does for the YAML lanes.
+// Transparent chrome so the panel surface shows through, as the YAML lanes' `redpanda-yaml` theme does.
 export const defineDiffTheme = (monaco: Monaco) =>
   monaco.editor.defineTheme(DIFF_THEME, {
     base: 'vs',

@@ -95,6 +95,7 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
+// Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
   <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
@@ -213,9 +214,11 @@ const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
+// Expanded mode insets the header while the panel below it goes flush.
 const headerClassName = (expanded: boolean) =>
   cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
 
+// Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
     control={form.control}
@@ -451,7 +454,7 @@ export function PipelineEditHeader({
             </Button>
             {editingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
           </div>
-          {/* Relative anchor for the absolutely positioned hints below. */}
+          {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
           <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"

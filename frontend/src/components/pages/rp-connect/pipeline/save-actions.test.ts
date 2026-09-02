@@ -98,6 +98,10 @@ describe('isNoLongerDraftError', () => {
 
   it('leaves everything else alone', () => {
     expect(isNoLongerDraftError(new ConnectError('nope', Code.PermissionDenied))).toBe(false);
+    // A suspended cluster refuses writes with the same code.
+    expect(
+      isNoLongerDraftError(new ConnectError('create/edit/start operations are suspended', Code.FailedPrecondition))
+    ).toBe(false);
     expect(isNoLongerDraftError(new Error('network down'))).toBe(false);
   });
 });

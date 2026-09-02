@@ -18,7 +18,10 @@ import type { PipelineFormValues } from '.';
 
 export const AUTOSAVE_DEBOUNCE_MS = 1000;
 
-/** Mirrors the editor (YAML + settings) into localStorage on a debounce. Never navigates, toasts or blocks. */
+/**
+ * Mirrors the editor (YAML + settings) into localStorage on a debounce. Never navigates, toasts or blocks;
+ * `flush` reports whether the buffer is in storage, for the one caller that promises it is.
+ */
 export function useEditorAutosave({
   enabled,
   pipelineId,
@@ -42,7 +45,7 @@ export function useEditorAutosave({
   // Only clear a buffer this editor wrote; an earlier session's must survive the load settling.
   const hasWrittenRef = useRef(false);
 
-  const write = useCallback(() => {
+  const write = useCallback((): boolean => {
     const { yamlContent, initialYaml } = editorStore.getState();
     const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
     if (!(documentChanged || formRef.current.formState.isDirty)) {
@@ -50,11 +53,11 @@ export function useEditorAutosave({
         rpcnEditorAutosave.clear(targetKey);
         hasWrittenRef.current = false;
       }
-      return;
+      return true;
     }
     const values = formRef.current.getValues();
     hasWrittenRef.current = true;
-    rpcnEditorAutosave.save({
+    return rpcnEditorAutosave.save({
       targetKey,
       name: values.name,
       description: values.description ?? '',

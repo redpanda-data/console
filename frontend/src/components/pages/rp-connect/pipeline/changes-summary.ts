@@ -11,6 +11,7 @@
 
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
+import { changedNodeIds } from '../utils/pipeline-diff';
 import { type PipelineFlowNode, parsePipelineFlowTree, sectionLabel } from '../utils/pipeline-flow-parser';
 
 export type ChangeKind = 'added' | 'removed' | 'changed';
@@ -49,7 +50,9 @@ const describe = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKi
   label: node?.labelText ?? node?.label ?? '',
 });
 
-// `changedNodeIds` decides "changed"; this classifies added/removed by id presence.
+// Ids are positional, so presence alone can't tell an insertion from a change. `changedIds` are the edited
+// nodes with no counterpart in the saved config; the reverse pass finds the saved nodes with none in the
+// edited one. Unmatched on both sides is a change in place; on one side only, an addition or a removal.
 export function summarizeComponentChanges(
   savedYaml: string,
   editedYaml: string,
@@ -57,32 +60,29 @@ export function summarizeComponentChanges(
 ): ComponentChange[] {
   const saved = componentNodesById(savedYaml);
   const edited = componentNodesById(editedYaml);
+  const unmatchedEdited = changedIds.filter((id) => edited.has(id));
+  const unmatchedSaved = new Set(changedNodeIds(editedYaml, savedYaml).filter((id) => saved.has(id)));
   const changes: ComponentChange[] = [];
 
-  for (const id of edited.keys()) {
-    if (!saved.has(id)) {
-      changes.push(describe(id, edited.get(id), 'added'));
-    }
+  for (const id of unmatchedEdited) {
+    changes.push(describe(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added'));
   }
-  for (const id of saved.keys()) {
-    if (!edited.has(id)) {
+  for (const id of unmatchedSaved) {
+    if (!unmatchedEdited.includes(id)) {
       changes.push(describe(id, saved.get(id), 'removed'));
     }
   }
-  for (const id of changedIds) {
-    if (saved.has(id) && edited.has(id)) {
-      changes.push(describe(id, edited.get(id), 'changed'));
-    }
-  }
 
-  return changes.sort((a, b) => a.section.localeCompare(b.section) || a.id.localeCompare(b.id));
+  return changes.sort(
+    (a, b) => a.section.localeCompare(b.section) || a.id.localeCompare(b.id, undefined, { numeric: true })
+  );
 }
 
 export const UNSAVED_CHANGES_LANE_LABEL = 'Unsaved changes';
 
 export const UNSAVED_CHANGES_PILL_TOOLTIP = 'Unsaved changes — kept in this browser until you save or discard them';
 
-export type SettingsFieldKey = 'name' | 'description' | 'computeUnits' | 'tags';
+type SettingsFieldKey = 'name' | 'description' | 'computeUnits' | 'tags';
 
 const SETTINGS_FIELDS: { key: SettingsFieldKey; label: string }[] = [
   { key: 'name', label: 'Name' },
@@ -91,7 +91,7 @@ const SETTINGS_FIELDS: { key: SettingsFieldKey; label: string }[] = [
   { key: 'tags', label: 'Tags' },
 ];
 
-export type SettingsValues = {
+type SettingsValues = {
   name?: string;
   description?: string;
   computeUnits?: number;

@@ -32,7 +32,7 @@ export const CREATE_AUTOSAVE_TARGET = 'create';
 
 export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || CREATE_AUTOSAVE_TARGET;
 
-export type EditorAutosaveTag = { key: string; value: string };
+type EditorAutosaveTag = { key: string; value: string };
 
 export type EditorAutosaveEntry = {
   /** `create`, or a pipeline id. */
@@ -53,8 +53,7 @@ export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'clusterId' | 'updat
 
 const currentClusterId = (): string => config.clusterId || 'default';
 
-export const isAutosaveYamlTooLarge = (configYaml: string): boolean =>
-  new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
+const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
 
 function isAutosaveEntry(value: unknown): value is EditorAutosaveEntry {
   if (value === null || typeof value !== 'object') {
@@ -64,12 +63,14 @@ function isAutosaveEntry(value: unknown): value is EditorAutosaveEntry {
   return (
     typeof entry.targetKey === 'string' &&
     typeof entry.clusterId === 'string' &&
+    typeof entry.name === 'string' &&
     typeof entry.configYaml === 'string' &&
-    typeof entry.updatedAt === 'number'
+    typeof entry.updatedAt === 'number' &&
+    Array.isArray(entry.tags)
   );
 }
 
-export const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
+const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
   now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
 
 // Drops malformed and expired entries, writing the pruned set back.

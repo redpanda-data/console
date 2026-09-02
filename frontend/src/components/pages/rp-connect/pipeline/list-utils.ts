@@ -35,12 +35,12 @@ export type PipelineStateTabId = 'all' | 'draft' | 'running' | 'stopped' | 'erro
 export type PipelineStateTab = {
   id: PipelineStateTabId;
   label: string;
-  /** Undefined means unfiltered. */
+  /** States the tab shows; undefined means no state filtering. */
   states?: Pipeline_State[];
   emptyText: string;
 };
 
-// Transitional states ride with their destination.
+// Transitional states ride with their destination: starting counts as running, stopping as stopped.
 export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   { id: 'all', label: 'All', emptyText: 'You have no Redpanda Connect pipelines' },
   {
@@ -74,6 +74,7 @@ export function stateFilterValues(tab: PipelineStateTab): string[] | undefined {
   return values.length > 0 ? values : undefined;
 }
 
+// Inverted once, so counting is one pass over the rows rather than one scan per tab.
 const TAB_BY_STATE = new Map<Pipeline_State, PipelineStateTabId>(
   PIPELINE_STATE_TABS.flatMap((tab) => (tab.states ?? []).map((state) => [state, tab.id] as const))
 );
@@ -95,7 +96,10 @@ export function countPipelinesPerTab(states: Pipeline_State[]): Record<PipelineS
   return counts;
 }
 
-// Null for an unfiltered All view that has pipelines: a stale page index about to be clamped.
+/**
+ * What to show when no rows are visible. Null for an unfiltered All view that has pipelines — that is
+ * a stale page index about to be clamped, and it must not flash an empty message.
+ */
 export function pipelineListEmptyText({
   hasActiveFilters,
   activeTab,
@@ -114,6 +118,7 @@ export function pipelineListEmptyText({
   return PIPELINE_STATE_TABS.find((t) => t.id === activeTab)?.emptyText ?? null;
 }
 
+/** Case-insensitive substring match over a pipeline's display name and id. */
 export function matchesNameOrId(search: string, name: string, id: string): boolean {
   const needle = search.trim().toLowerCase();
   if (!needle) {

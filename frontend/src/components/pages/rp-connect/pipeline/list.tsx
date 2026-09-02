@@ -132,7 +132,7 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
 
 const EmptyCell = () => <span className="text-muted-foreground">—</span>;
 
-// One string per pair so `arrIncludesSome` and the facet counts agree.
+// One string per tag pair, so `arrIncludesSome` and the facet counts agree on the value.
 const tagFilterValue = (tag: TagPair) => `${tag.key}:${tag.value}`;
 
 const ConnectorBadges = ({ names }: { names: string[] }) => {
@@ -154,6 +154,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       {connectors.map((c) => (
         <Badge key={c.name} tone="default" variant="subtle">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
+          {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
             {c.name}
             {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
@@ -164,7 +165,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
   );
 };
 
-// Empty selection means "no filter", as the built-in array filters do.
+// autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
 const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
@@ -191,11 +192,13 @@ const PAGE_SIZE = 20;
 // Module scope: the query hook memoizes on request identity.
 const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
-// One table for every tab, so the tabs need an explicit `aria-controls` target.
+// One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
+// reader announces "tab, 1 of 4" with nowhere to move into.
 const STATUS_PANEL_ID = 'pipeline-status-panel';
 const statusTabId = (tabId: PipelineStateTabId) => `pipeline-status-tab-${tabId}`;
 
-// Stays mounted: a live region only announces changes made while mounted.
+// The status lines below the table unmount as they animate, and a live region only announces changes
+// made while already mounted — so these stay mounted for the reader.
 const ListStatusAnnouncements = ({
   isLoadingMorePages,
   listErrorMessage,
@@ -275,7 +278,7 @@ const PipelineListSkeleton = () => (
         ))}
       </TableBody>
     </Table>
-    {/* Pagination footer stand-in, so the first real paint doesn't shift the table. */}
+    {/* Stands in for the pagination footer: without it, the first real paint lifts the table. */}
     <div className="flex items-center justify-end gap-6 px-2">
       <Skeleton className="h-8 w-36" />
       <Skeleton className="h-8 w-24" />
@@ -438,7 +441,8 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-// Cached: a fresh component type per render remounts every logo in the open popover.
+// Facet options are rebuilt on every drain page and poll tick, and a fresh component type per render
+// remounts every logo in the open popover.
 const connectorIcons = new Map<string, (props: { className?: string }) => ReactElement>();
 
 const connectorIcon = (name: string) => {
@@ -475,6 +479,7 @@ const createColumns = ({
       const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
+          {/* Rows navigate on click, so the link underlines on hover only. */}
           <span className="flex min-w-0 items-center gap-1.5">
             <Link
               as={TanStackRouterLink}
@@ -493,6 +498,7 @@ const createColumns = ({
             </span>
           ) : null}
           {!isDraftRow && id !== name ? (
+            // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
             <span className="cursor-text select-all truncate font-mono text-body-sm text-muted-foreground" title={id}>
               {id}
             </span>
@@ -505,7 +511,8 @@ const createColumns = ({
     accessorKey: 'inputs',
     header: 'Input',
     filterFn: 'arrIncludesSome',
-    // Deduplicated per row so facet counts count rows, not occurrences.
+    // Without this, faceting keys on the array itself and the per-option counts never resolve.
+    // Deduplicated per row, or two `redpanda` inputs would count 2 against a single row.
     getUniqueValues: (row) => [...new Set(row.inputs)],
     cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs') as string[]} />,
   },
@@ -564,7 +571,8 @@ const createColumns = ({
       }
       return (rowB.original.editedAt ?? 0) - (rowA.original.editedAt ?? 0);
     },
-    // Label from the state, not the variant: COMPLETED and RUNNING share `success`.
+    // Label from the state, not the variant: COMPLETED and RUNNING share `success`, whose default
+    // copy is "Running".
     cell: ({ row }) => (
       <StatusBadge
         size="sm"
@@ -594,6 +602,7 @@ const createColumns = ({
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetRpcnWizardStore = useResetRpcnWizardStore();
+  // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
   const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
   const {
@@ -647,11 +656,16 @@ const PipelineListPageContent = () => {
   const table = useDataTable({
     data: pipelines,
     columns,
+    // Id rather than row index: a row keeps its identity while pages stream in and the sort re-runs,
+    // so React reuses its DOM.
     getRowId: (row) => row.id,
+    // No column-visibility UI here; also drops Hide from the column header menus.
     enableHiding: false,
+    // Also drops the pagination footer's "X of N row(s) selected." text.
     enableRowSelection: false,
     onSortingChange: setSorting,
-    // The layout effects below reset the page on filter/sort changes instead of on every drained page.
+    // autoResetPageIndex would yank the user to page 1 on every drained page; the layout effects below
+    // reset on filter/sort changes instead.
     autoResetPageIndex: false,
     state: {
       sorting,
@@ -683,7 +697,7 @@ const PipelineListPageContent = () => {
   const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
   const [search, setSearch] = useState('');
 
-  // The faceted model applies every filter but the state column's own.
+  // Each tab counts what selecting it would yield: the faceted model applies every filter but its own.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
   const tabCounts = useMemo(
     () => countPipelinesPerTab((stateFacetedRows ?? []).map((r) => r.original.state)),
@@ -718,7 +732,8 @@ const PipelineListPageContent = () => {
     const timer = setTimeout(() => {
       const column = table.getColumn('name');
       const next = search.trim() ? search : undefined;
-      // A no-op setFilterValue still makes a new columnFilters array and trips the page reset.
+      // setFilterValue(undefined) on an unfiltered column still makes a new columnFilters array, which
+      // trips the page-reset effect — so skip no-op writes, including the post-mount tick.
       if (column && column.getFilterValue() !== next) {
         column.setFilterValue(next);
       }
@@ -726,7 +741,8 @@ const PipelineListPageContent = () => {
     return () => clearTimeout(timer);
   }, [search, table]);
 
-  // Status tabs are views, not filters. `search` is read directly because its column filter lands 200ms later.
+  // Status tabs are views, not filters. Read `search` directly, not its column filter: that lands
+  // 200ms later, and Clear filters must be clickable as soon as the user has typed.
   const hasActiveFilters = search.trim() !== '' || columnFilters.some((f) => f.id !== 'state');
   const clearFilters = useCallback(() => {
     setSearch('');
@@ -737,14 +753,16 @@ const PipelineListPageContent = () => {
 
   const handleRowClick = useCallback(
     (row: Pipeline, event: MouseEvent<HTMLTableRowElement>) => {
-      // Modified clicks are left to the name cell's link.
+      // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
       if (isModifiedClick(event)) {
         return;
       }
+      // Registry guard, same one DataTable's rows use: drops clicks on a control in the row, and
+      // portaled children (open menus, the delete-confirm backdrop) that bubble outside the <tr>.
       if (!isRowActivationClick(event.target, event.currentTarget)) {
         return;
       }
-      // Ending a text selection isn't navigation intent.
+      // A mouseup that ends a text selection (copying the id) isn't navigation intent.
       if (window.getSelection()?.toString()) {
         return;
       }
@@ -758,7 +776,8 @@ const PipelineListPageContent = () => {
     navigate({ to: '/rp-connect/create', search: { serverless: undefined } });
   }, [resetRpcnWizardStore, navigate]);
 
-  // isLoading stays true until every page is drained; page one renders while the rest stream in.
+  // isLoading stays true until every page is drained, so render page one and stream the rest in behind
+  // it. A mid-drain error halts the drain for good, so it replaces the spinner.
   const isInitialLoading = isLoading && pipelines.length === 0 && !error;
   const isLoadingMorePages = isLoading && pipelines.length > 0 && !error;
 
@@ -777,6 +796,7 @@ const PipelineListPageContent = () => {
 
   const rows = table.getRowModel().rows;
 
+  // Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
   let listErrorMessage: string | null = null;
   if (error) {
     listErrorMessage = hasNextPage
@@ -856,7 +876,8 @@ const PipelineListPageContent = () => {
               </TableRow>
             ) : (
               rows.map((row) => (
-                // Pointer shortcut only; the name cell holds the keyboard-reachable link.
+                // Pointer shortcut only: the name cell holds the same link, so a row tab stop would
+                // duplicate it on every row.
                 <TableRow
                   className="cursor-pointer"
                   key={row.id}
@@ -942,7 +963,8 @@ export const PipelineListPage = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContents className="p-6">
-          {/* keepMounted preserves search/facets/page across a trip to the other tab. */}
+          {/* keepMounted: panels unmount by default, dropping search/facets/page on a trip to the
+              Kafka Connect tab and back. */}
           <TabsContent keepMounted value="redpanda-connect">
             <RedpandaConnectContent />
           </TabsContent>

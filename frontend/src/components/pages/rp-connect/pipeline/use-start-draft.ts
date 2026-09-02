@@ -28,11 +28,10 @@ export function useStartDraft() {
   const { mutateAsync, isPending } = useStartPipelineMutation();
 
   const startDraft = useCallback(
-    async (pipelineId: string): Promise<boolean> => {
+    async (pipelineId: string): Promise<void> => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');
-        return true;
       } catch (err) {
         const error = ConnectError.from(err);
         if (isInvalidConfigError(error)) {
@@ -41,10 +40,9 @@ export function useStartDraft() {
             to: '/rp-connect/$pipelineId/edit',
             params: { pipelineId: encodeURIComponent(pipelineId) },
           });
-          return false;
+          return;
         }
         toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }));
-        return false;
       }
     },
     [mutateAsync, navigate]

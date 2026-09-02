@@ -67,22 +67,28 @@ export function isInvalidConfigError(error: unknown): boolean {
   });
 }
 
-/** The service refuses a `draft: true` update once the pipeline has been started. */
+/**
+ * The service refuses a `draft: true` update once the pipeline has been started. Matched on the message as
+ * well as the code: a suspended cluster also answers FAILED_PRECONDITION.
+ */
 export const isNoLongerDraftError = (error: unknown): boolean =>
-  error instanceof ConnectError && error.code === Code.FailedPrecondition;
+  error instanceof ConnectError && error.code === Code.FailedPrecondition && /not a draft/i.test(error.rawMessage);
 
 export const NO_LONGER_DRAFT_MESSAGE =
   'This pipeline has been started since you opened it, so it is no longer a draft. Reload to see the running configuration before saving.';
 
-export const isStartableState = (state: Pipeline_State | undefined): boolean =>
-  state !== undefined && (STARTABLE_STATES as readonly Pipeline_State[]).includes(state);
+// STOPPING is in `STARTABLE_STATES` so a row menu can rescue a stuck stop, but a save offers nothing while it settles.
+const isStartableState = (state: Pipeline_State | undefined): boolean =>
+  state !== undefined &&
+  state !== Pipeline_State.STOPPING &&
+  (STARTABLE_STATES as readonly Pipeline_State[]).includes(state);
 
-export const isStoppableState = (state: Pipeline_State | undefined): boolean =>
+const isStoppableState = (state: Pipeline_State | undefined): boolean =>
   state !== undefined && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(state);
 
 const isDraftState = (state: Pipeline_State | undefined): boolean => state === Pipeline_State.DRAFT;
 
-export const isUndeployed = (context: SaveContext): boolean => context.mode === 'create' || isDraftState(context.state);
+const isUndeployed = (context: SaveContext): boolean => context.mode === 'create' || isDraftState(context.state);
 
 export function primaryRunIntent(context: SaveContext): SaveRunIntent {
   if (isUndeployed(context) && context.draftsEnabled) {
@@ -162,7 +168,7 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): st
 }
 
 /** The leave dialog's exit that keeps the work: a server-side draft, or this browser's recovery buffer. */
-export type UnsavedChangesEscape = 'save-draft' | 'leave-for-now';
+type UnsavedChangesEscape = 'save-draft' | 'leave-for-now';
 
 export function unsavedChangesCopy(context: SaveContext): { body: string; escape: UnsavedChangesEscape } {
   if (isUndeployed(context) && context.draftsEnabled) {

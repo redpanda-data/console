@@ -68,6 +68,22 @@ describe('summarizeComponentChanges', () => {
     expect(changes.some((c) => c.kind === 'added')).toBe(false);
   });
 
+  // Ids are positional: deleting the first processor renumbers the second into its slot.
+  it('names the component that was removed, not the one that slid into its place', () => {
+    const changes = summarize(
+      config({ processors: ['mapping: root = this', 'log: {}'] }),
+      config({ processors: ['log: {}'] })
+    );
+
+    expect(changes).toEqual([expect.objectContaining({ kind: 'removed', id: 'proc-0' })]);
+  });
+
+  it('reports a component inserted ahead of the others as added, not as a change to them', () => {
+    const changes = summarize(config(), config({ processors: ['log: {}', 'mapping: root = this'] }));
+
+    expect(changes).toEqual([expect.objectContaining({ kind: 'added', id: 'proc-0' })]);
+  });
+
   // The section headings exist to hold children; counting them would double-report every change.
   it('never reports a section container', () => {
     const changes = summarize(config({ input: 'generate' }), config({ input: 'kafka_franz' }));

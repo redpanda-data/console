@@ -64,16 +64,12 @@ export function DeleteDraftDialog({
           <AlertDialogAction
             disabled={isDeleting}
             onClick={onConfirm}
-            // data-testid: Button's `testId` prop doesn't survive Base UI's `render` clone.
             render={
-              <Button
-                data-testid="confirm-delete-draft"
-                icon={isDeleting ? <Spinner /> : undefined}
-                variant="destructive"
-              >
+              <Button icon={isDeleting ? <Spinner /> : undefined} variant="destructive">
                 {isDeleting ? 'Deleting...' : 'Delete draft'}
               </Button>
             }
+            testId="confirm-delete-draft"
           />
         </AlertDialogFooter>
       </AlertDialogContent>
