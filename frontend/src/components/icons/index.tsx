@@ -97,7 +97,6 @@ export {
   StopCircle as StopCircleIcon, // FaRegStopCircle
   Timer as TimerIcon, // MdOutlineTimer
   Trash2 as TrashIcon, // MdDeleteOutline, DeleteIcon (Chakra), TrashIcon (Heroicons/Octicons), AiOutlineDelete, HiOutlineTrash
-  UserCircle as UserCircleIcon, // UserCircleIcon (Heroicons), MdOutlinePermIdentity
   Wrench as WrenchIcon, // FaWrench
   X as CloseIcon, // MdClose, CloseIcon (Chakra), XIcon (Heroicons/Octicons)
   XCircle as ErrorIcon, // MdError, XCircleIcon (Heroicons/Octicons)

@@ -238,7 +238,6 @@ const TransformsListContent: FC = () => {
                         });
                     });
                   }}
-                  // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
                   variant="icon"
                 >
                   <TrashIcon />

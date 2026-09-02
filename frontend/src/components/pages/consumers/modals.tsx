@@ -861,7 +861,6 @@ export const DeleteOffsetsModal = (props: {
   offsets: GroupOffset[] | null;
   onClose: () => void;
   onInit?: () => void;
-  disabledReason?: string;
 }) => {
   const { group, mode, offsets, onClose } = props;
   const [isDeleting, setIsDeleting] = useState(false);
