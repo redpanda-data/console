@@ -108,8 +108,8 @@
         "@rsbuild/plugin-tailwindcss": "2.0.3",
         "@rsbuild/plugin-yaml": "2.0.0",
         "@rsdoctor/rspack-plugin": "1.6.0",
-        "@rstest/core": "0.11.10",
-        "@rstest/coverage-v8": "0.11.10",
+        "@rstest/core": "0.11.11",
+        "@rstest/coverage-v8": "0.11.11",
         "@tanstack/react-query-devtools": "^5.90.2",
         "@tanstack/react-router-devtools": "^1.167.0",
         "@tanstack/router-plugin": "^1.168.19",
@@ -748,9 +748,9 @@
 
     "@rspack/resolver-binding-win32-x64-msvc": ["@rspack/resolver-binding-win32-x64-msvc@0.2.8", "", { "os": "win32", "cpu": "x64" }, "sha512-hzRpfbtvv4M4EVrKKIAaHDs5wT8lVcbSUjtwPs5u4IeLEix45nQPQ6ZQjmE4lIH0GP/3L3XQhZroYmTcH/xdsQ=="],
 
-    "@rstest/core": ["@rstest/core@0.11.10", "", { "dependencies": { "@rsbuild/core": "~2.2.0", "@types/chai": "^5.2.3" }, "peerDependencies": { "happy-dom": "^20.8.3", "jsdom": ">=15.0.0" }, "optionalPeers": ["happy-dom", "jsdom"], "bin": { "rstest": "./bin/rstest.js" } }, "sha512-x/PNGPdyKQWbiVhpoOQco8xXevh4P/QamuyJ0/YdTrdEiUcUglT6tGSnxaudwyrQr8e/5gwWuOt6zykZKWmSUg=="],
+    "@rstest/core": ["@rstest/core@0.11.11", "", { "dependencies": { "@rsbuild/core": "~2.2.0", "@types/chai": "^5.2.3" }, "peerDependencies": { "happy-dom": "^20.8.3", "jsdom": ">=15.0.0" }, "optionalPeers": ["happy-dom", "jsdom"], "bin": { "rstest": "./bin/rstest.js" } }, "sha512-7Ii2/2/ex1Oa0Kg5Qk5RKx2+e0I83BHLwH0/gn1B7IDwXCh5msFCF7yTyVGFuMltlm3E8Cf4QD7jadOEaBfXfw=="],
 
-    "@rstest/coverage-v8": ["@rstest/coverage-v8@0.11.10", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.31", "istanbul-lib-coverage": "^3.2.2", "istanbul-lib-report": "^3.0.1", "istanbul-reports": "^3.2.0", "picomatch": "^4.0.5", "yuku-ast": "^0.9.0", "yuku-parser": "^0.9.0" }, "peerDependencies": { "@rstest/core": "^0.11.3" } }, "sha512-luVEx4OK6QV3ulKDZoCAylVo7UsgHN4akCODHaUe+5gSUyDhWcflvxLTlAOahVOjWXMzlXoeY//uW1Z68iOeCA=="],
+    "@rstest/coverage-v8": ["@rstest/coverage-v8@0.11.11", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.31", "istanbul-lib-coverage": "^3.2.2", "istanbul-lib-report": "^3.0.1", "istanbul-reports": "^3.2.0", "picomatch": "^4.0.7", "yuku-ast": "^0.9.1", "yuku-parser": "^0.9.1" }, "peerDependencies": { "@rstest/core": "^0.11.3" } }, "sha512-66nrUdJWGJVue5d3GAy+EFLV9exBuGlZPn/6No7mgFzCD7DQ36Qyj9f6RZnA2XBrGWzOXXFRgjukG86x04ILvg=="],
 
     "@shikijs/core": ["@shikijs/core@3.23.0", "", { "dependencies": { "@shikijs/types": "3.23.0", "@shikijs/vscode-textmate": "^10.0.2", "@types/hast": "^3.0.4", "hast-util-to-html": "^9.0.5" } }, "sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA=="],
 

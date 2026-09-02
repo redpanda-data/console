@@ -2707,26 +2707,26 @@
   resolved "https://registry.npmjs.org/@rspack/resolver-binding-win32-x64-msvc/-/resolver-binding-win32-x64-msvc-0.2.8.tgz"
   integrity sha512-hzRpfbtvv4M4EVrKKIAaHDs5wT8lVcbSUjtwPs5u4IeLEix45nQPQ6ZQjmE4lIH0GP/3L3XQhZroYmTcH/xdsQ==
 
-"@rstest/core@0.11.10", "@rstest/core@>=0.11.4", "@rstest/core@^0.11.3":
-  version "0.11.10"
-  resolved "https://registry.npmjs.org/@rstest/core/-/core-0.11.10.tgz"
-  integrity sha512-x/PNGPdyKQWbiVhpoOQco8xXevh4P/QamuyJ0/YdTrdEiUcUglT6tGSnxaudwyrQr8e/5gwWuOt6zykZKWmSUg==
+"@rstest/core@0.11.11", "@rstest/core@>=0.11.4", "@rstest/core@^0.11.3":
+  version "0.11.11"
+  resolved "https://registry.npmjs.org/@rstest/core/-/core-0.11.11.tgz"
+  integrity sha512-7Ii2/2/ex1Oa0Kg5Qk5RKx2+e0I83BHLwH0/gn1B7IDwXCh5msFCF7yTyVGFuMltlm3E8Cf4QD7jadOEaBfXfw==
   dependencies:
     "@rsbuild/core" "~2.2.0"
     "@types/chai" "^5.2.3"
 
-"@rstest/coverage-v8@0.11.10":
-  version "0.11.10"
-  resolved "https://registry.npmjs.org/@rstest/coverage-v8/-/coverage-v8-0.11.10.tgz"
-  integrity sha512-luVEx4OK6QV3ulKDZoCAylVo7UsgHN4akCODHaUe+5gSUyDhWcflvxLTlAOahVOjWXMzlXoeY//uW1Z68iOeCA==
+"@rstest/coverage-v8@0.11.11":
+  version "0.11.11"
+  resolved "https://registry.npmjs.org/@rstest/coverage-v8/-/coverage-v8-0.11.11.tgz"
+  integrity sha512-66nrUdJWGJVue5d3GAy+EFLV9exBuGlZPn/6No7mgFzCD7DQ36Qyj9f6RZnA2XBrGWzOXXFRgjukG86x04ILvg==
   dependencies:
     "@jridgewell/trace-mapping" "0.3.31"
     istanbul-lib-coverage "^3.2.2"
     istanbul-lib-report "^3.0.1"
     istanbul-reports "^3.2.0"
-    picomatch "^4.0.5"
-    yuku-ast "^0.9.0"
-    yuku-parser "^0.9.0"
+    picomatch "^4.0.7"
+    yuku-ast "^0.9.1"
+    yuku-parser "^0.9.1"
 
 "@shikijs/core@3.23.0":
   version "3.23.0"
@@ -8848,7 +8848,7 @@ picomatch@^4.0.1, picomatch@^4.0.3:
   resolved "https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz"
   integrity sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==
 
-"picomatch@^3 || ^4", picomatch@^4.0.5:
+"picomatch@^3 || ^4", picomatch@^4.0.7:
   version "4.0.7"
   resolved "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz"
   integrity sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==
@@ -11339,14 +11339,14 @@ yoctocolors@^2.1.1:
   resolved "https://registry.npmjs.org/yoctocolors/-/yoctocolors-2.1.2.tgz"
   integrity sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==
 
-yuku-ast@^0.9.0, yuku-ast@^0.9.3:
+yuku-ast@^0.9.1, yuku-ast@^0.9.3:
   version "0.9.3"
   resolved "https://registry.npmjs.org/yuku-ast/-/yuku-ast-0.9.3.tgz"
   integrity sha512-Kt0PXlPCXdKF1fWFTl7N3DaxsVk6DHF8VAXHJMkwPtJnWYgbx20pYgGSweuC/86mIM7k1NUITQ4JffgOLUWTCw==
   dependencies:
     "@yuku-toolchain/types" "^0.9.3"
 
-yuku-parser@^0.9.0:
+yuku-parser@^0.9.1:
   version "0.9.3"
   resolved "https://registry.npmjs.org/yuku-parser/-/yuku-parser-0.9.3.tgz"
   integrity sha512-96wPoHnwaXfkZv7UIOUkDb+s7ZH8lv8Qtg+MxdvHUV1LFa5jV9iKOaams1942YQt+krFQrWiD6lSg2ermv5kHA==

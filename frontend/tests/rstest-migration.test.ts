@@ -44,6 +44,8 @@ describe('test runner policy', () => {
     expect(packageJson.scripts?.['test:ci']).toContain('test:federation');
     expect(packageJson.scripts?.['test:coverage']).toContain('rstest');
     expect(packageJson.devDependencies?.['@module-federation/rstest']).toBe('2.9.0');
+    expect(packageJson.devDependencies?.['@rstest/core']).toBe('0.11.11');
+    expect(packageJson.devDependencies?.['@rstest/coverage-v8']).toBe('0.11.11');
     expect(frontendWorkflow).toContain('bun run test:federation');
     expect(import.meta.env.RSTEST).toBe('true');
   });
