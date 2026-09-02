@@ -31,7 +31,7 @@ export function useStartDraft() {
     async (pipelineId: string): Promise<void> => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
-        toast.success('Pipeline started');
+        toast.success('Pipeline starting');
       } catch (err) {
         const error = ConnectError.from(err);
         if (isInvalidConfigError(error)) {
