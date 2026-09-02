@@ -48,15 +48,15 @@ export function DeleteDraftDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete draft?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <span className="block text-body">
+            <span className="block">
               <InlineCode>{name}</InlineCode> and its configuration are deleted for everyone.
             </span>
             {hasUnsavedChanges ? (
-              <span className="block text-body">
+              <span className="block">
                 Your unsaved changes go with it — this deletes the whole draft, not just your edits.
               </span>
             ) : null}
-            <span className="block text-body">This can't be undone.</span>
+            <span className="block">This can't be undone.</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

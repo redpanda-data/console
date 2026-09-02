@@ -16,12 +16,14 @@ const { mockConfig } = vi.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' 
 vi.mock('config', () => ({ config: mockConfig }));
 
 import {
+  AUTOSAVE_ENTRY_VERSION,
   autosaveTargetKey,
   CREATE_AUTOSAVE_TARGET,
   EDITOR_AUTOSAVE_STORAGE_KEY,
   type EditorAutosaveInput,
   MAX_AUTOSAVE_AGE_MS,
   MAX_AUTOSAVE_BUFFERS,
+  MAX_AUTOSAVE_BUFFERS_TOTAL,
   MAX_AUTOSAVE_YAML_BYTES,
   rpcnEditorAutosave,
   selectAutosaveEntry,
@@ -117,6 +119,39 @@ describe('rpcn-editor-autosave', () => {
     expect(entries.map((e) => e.targetKey)).toContain(`p${MAX_AUTOSAVE_BUFFERS + 2}`);
   });
 
+  // Ten per cluster with an uncapped tail is no cap at all against the origin's storage budget.
+  it('caps buffers across clusters, newest kept', () => {
+    let tick = 0;
+    for (const clusterId of ['cluster-a', 'cluster-b', 'cluster-c']) {
+      mockConfig.clusterId = clusterId;
+      for (let i = 0; i < MAX_AUTOSAVE_BUFFERS; i++) {
+        vi.setSystemTime(new Date(2026, 0, 1, 0, 0, tick));
+        tick += 1;
+        rpcnEditorAutosave.save(buffer({ targetKey: `${clusterId}-p${i}` }));
+      }
+    }
+    vi.useRealTimers();
+
+    const entries = stored() as Array<{ targetKey: string; clusterId: string }>;
+    expect(entries).toHaveLength(MAX_AUTOSAVE_BUFFERS_TOTAL);
+    expect(entries.some((e) => e.clusterId === 'cluster-a')).toBe(false);
+    expect(entries.filter((e) => e.clusterId === 'cluster-c')).toHaveLength(MAX_AUTOSAVE_BUFFERS);
+  });
+
+  it('does not let a buffer it failed to clear come back and offer to overwrite the save', () => {
+    rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
+    const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    rpcnEditorAutosave.clear('p1');
+
+    setItem.mockRestore();
+    expect(rpcnEditorAutosave.get('p1')).toBeNull();
+    useRpcnEditorAutosaveStore.getState().refresh();
+    expect(rpcnEditorAutosave.get('p1')).toBeNull();
+  });
+
   it('refuses a config too large to keep, rather than blowing the storage quota', () => {
     expect(rpcnEditorAutosave.save(buffer({ configYaml: 'x'.repeat(MAX_AUTOSAVE_YAML_BYTES + 1) }))).toBe(false);
     expect(stored()).toHaveLength(0);
@@ -139,6 +174,7 @@ describe('rpcn-editor-autosave', () => {
     const otherTab = [
       ...stored(),
       {
+        version: AUTOSAVE_ENTRY_VERSION,
         targetKey: 'p2',
         clusterId: 'cluster-a',
         name: 'other tab',
@@ -167,6 +203,39 @@ describe('rpcn-editor-autosave', () => {
     expect(useRpcnEditorAutosaveStore.getState().entries).toEqual([]);
   });
 
+  // Everything an entry feeds into `form.reset`; a shape change bumps the version rather than risking a render crash.
+  describe('shape guard', () => {
+    const persisted = () => {
+      rpcnEditorAutosave.save(buffer({ targetKey: 'p1', tags: [{ key: 'team', value: 'data' }] }));
+      return stored()[0] as Record<string, unknown>;
+    };
+
+    const reloadWith = (entry: Record<string, unknown>) => {
+      localStorage.setItem(EDITOR_AUTOSAVE_STORAGE_KEY, JSON.stringify([entry]));
+      useRpcnEditorAutosaveStore.getState().refresh();
+      return useRpcnEditorAutosaveStore.getState().entries;
+    };
+
+    it('keeps an entry of the current shape', () => {
+      expect(reloadWith(persisted())).toHaveLength(1);
+    });
+
+    it('drops an entry written by another version', () => {
+      expect(reloadWith({ ...persisted(), version: AUTOSAVE_ENTRY_VERSION + 1 })).toEqual([]);
+      const { version: _version, ...unversioned } = persisted();
+      expect(reloadWith(unversioned)).toEqual([]);
+    });
+
+    it('drops an entry whose settings would not survive the form', () => {
+      expect(reloadWith({ ...persisted(), tags: [null] })).toEqual([]);
+      expect(reloadWith({ ...persisted(), tags: [{ key: 'team' }] })).toEqual([]);
+      const { computeUnits: _units, ...noUnits } = persisted();
+      expect(reloadWith(noUnits)).toEqual([]);
+      expect(reloadWith({ ...persisted(), description: undefined })).toEqual([]);
+      expect(reloadWith({ ...persisted(), basedOnUpdateTime: 'yesterday' })).toEqual([]);
+    });
+  });
+
   // The browser-local drafts prototype this replaced; superseded by server-side drafts.
   it('cleans up the storage the old local-drafts prototype left behind', () => {
     localStorage.setItem('rpcn-pipeline-drafts', JSON.stringify([{ id: 'old', configYaml: 'x' }]));
@@ -185,6 +254,7 @@ describe('rpcn-editor-autosave', () => {
         JSON.stringify([
           {
             ...buffer({ targetKey }),
+            version: AUTOSAVE_ENTRY_VERSION,
             clusterId: 'cluster-a',
             updatedAt: Date.now() - ageMs,
           },

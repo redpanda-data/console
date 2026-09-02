@@ -29,6 +29,7 @@ import {
   Pipeline_State,
   PipelineSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
@@ -463,6 +464,28 @@ describe('PipelineListPage', () => {
 
       await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
       expect(deletePipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+    });
+
+    // The dialog's line about unsaved edits is only true when this browser holds a buffer for the draft.
+    it('says when deleting the draft also drops edits this browser was keeping', async () => {
+      const user = userEvent.setup();
+      localStorage.clear();
+      useRpcnEditorAutosaveStore.getState().save({
+        targetKey: 'draft777',
+        name: 'half-built-pipeline',
+        description: '',
+        computeUnits: 1,
+        tags: [],
+        configYaml: 'input:\n  generate: {}\n# half way through',
+      });
+      renderList({ withDraft: true });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+      await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+      await user.click(await screen.findByRole('menuitem', { name: /delete draft/i }));
+
+      expect(await screen.findByText(/your unsaved changes go with it/i)).toBeInTheDocument();
+      useRpcnEditorAutosaveStore.getState().clearAll();
     });
 
     // Nothing is running, so there is nothing to stop.

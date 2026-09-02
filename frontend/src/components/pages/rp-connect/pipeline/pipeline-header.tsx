@@ -39,7 +39,7 @@ import {
   Settings,
   Trash2,
 } from 'lucide-react';
-import type { Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
@@ -394,7 +394,7 @@ const SaveActions = ({
 
 export function PipelineEditHeader({
   form,
-  mode,
+  saveContext,
   url,
   onBack,
   onSave,
@@ -403,12 +403,11 @@ export function PipelineEditHeader({
   isSaving,
   hasUnsavedChanges,
   expanded,
-  pipelineState,
-  draftsEnabled,
   draftIssueCount,
 }: {
   form: UseFormReturn<PipelineFormValues>;
-  mode: 'edit' | 'create';
+  /** The object `handleSave` reads too, so the button's label and its action can't drift apart. */
+  saveContext: SaveContext;
   url?: string;
   onBack: () => void;
   onSave: (intent?: SaveIntent) => void;
@@ -418,16 +417,14 @@ export function PipelineEditHeader({
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   expanded: boolean;
-  pipelineState?: Pipeline_State;
-  draftsEnabled: boolean;
   /** Outstanding lint issues; shown on a draft only. */
   draftIssueCount?: number;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
-  const context: SaveContext = { mode, state: pipelineState, draftsEnabled };
-  const runHint = saveRunHint(context);
+  const { mode, state: pipelineState } = saveContext;
+  const runHint = saveRunHint(saveContext);
   const editingDraft = isDraft({ state: pipelineState });
   const issueSummary = editingDraft ? draftIssueSummary(draftIssueCount ?? 0) : null;
 
@@ -466,7 +463,7 @@ export function PipelineEditHeader({
             >
               Docs
             </Button>
-            <SaveActions context={context} isSaving={isSaving} onSave={onSave} />
+            <SaveActions context={saveContext} isSaving={isSaving} onSave={onSave} />
             <span className="absolute top-full right-0 mt-1.5 flex items-center gap-2 whitespace-nowrap text-body-sm text-muted-foreground">
               {hasUnsavedChanges ? (
                 <span className="flex items-center gap-1.5" role="status" title={UNSAVED_CHANGES_PILL_TOOLTIP}>

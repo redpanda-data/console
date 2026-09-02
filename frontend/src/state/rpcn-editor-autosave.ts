@@ -23,6 +23,12 @@ const LEGACY_DRAFTS_STORAGE_KEY = 'rpcn-pipeline-drafts';
 /** Per cluster, evicted oldest-first. */
 export const MAX_AUTOSAVE_BUFFERS = 10;
 
+/** Across clusters, so idle clusters can't multiply the per-cluster cap. */
+export const MAX_AUTOSAVE_BUFFERS_TOTAL = 20;
+
+/** Bumped on shape changes; entries from another version are dropped on read. */
+export const AUTOSAVE_ENTRY_VERSION = 1;
+
 export const MAX_AUTOSAVE_YAML_BYTES = 256 * 1024;
 
 /** Expired buffers are dropped on read. Configs are stored verbatim, so a pasted credential must not outlive the week. */
@@ -35,6 +41,7 @@ export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || 
 type EditorAutosaveTag = { key: string; value: string };
 
 export type EditorAutosaveEntry = {
+  version: number;
   /** `create`, or a pipeline id. */
   targetKey: string;
   clusterId: string;
@@ -49,24 +56,38 @@ export type EditorAutosaveEntry = {
   basedOnUpdateTime?: number | null;
 };
 
-export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'clusterId' | 'updatedAt'>;
+export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'version' | 'clusterId' | 'updatedAt'>;
 
 const currentClusterId = (): string => config.clusterId || 'default';
 
 const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
 
+const isAutosaveTag = (value: unknown): value is EditorAutosaveTag =>
+  value !== null &&
+  typeof value === 'object' &&
+  typeof (value as EditorAutosaveTag).key === 'string' &&
+  typeof (value as EditorAutosaveTag).value === 'string';
+
+// Every field `applyAutosave` hands to `form.reset`, so a stale shape can't crash the editor.
 function isAutosaveEntry(value: unknown): value is EditorAutosaveEntry {
   if (value === null || typeof value !== 'object') {
     return false;
   }
   const entry = value as Partial<EditorAutosaveEntry>;
   return (
+    entry.version === AUTOSAVE_ENTRY_VERSION &&
     typeof entry.targetKey === 'string' &&
     typeof entry.clusterId === 'string' &&
     typeof entry.name === 'string' &&
+    typeof entry.description === 'string' &&
+    typeof entry.computeUnits === 'number' &&
+    Array.isArray(entry.tags) &&
+    entry.tags.every(isAutosaveTag) &&
     typeof entry.configYaml === 'string' &&
     typeof entry.updatedAt === 'number' &&
-    Array.isArray(entry.tags)
+    (entry.basedOnUpdateTime === undefined ||
+      entry.basedOnUpdateTime === null ||
+      typeof entry.basedOnUpdateTime === 'number')
   );
 }
 
@@ -105,10 +126,23 @@ function writeAll(entries: EditorAutosaveEntry[]): boolean {
   }
 }
 
-function pruneForCluster(entries: EditorAutosaveEntry[], clusterId: string): EditorAutosaveEntry[] {
-  const mine = entries.filter((e) => e.clusterId === clusterId).sort((a, b) => b.updatedAt - a.updatedAt);
+function removeAll(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(EDITOR_AUTOSAVE_STORAGE_KEY);
+  } catch {
+    // Storage is unavailable, so there is nothing left to remove.
+  }
+}
+
+const newestFirst = (a: EditorAutosaveEntry, b: EditorAutosaveEntry) => b.updatedAt - a.updatedAt;
+
+function prune(entries: EditorAutosaveEntry[], clusterId: string): EditorAutosaveEntry[] {
+  const mine = entries.filter((e) => e.clusterId === clusterId).sort(newestFirst);
   const others = entries.filter((e) => e.clusterId !== clusterId);
-  return [...mine.slice(0, MAX_AUTOSAVE_BUFFERS), ...others];
+  return [...mine.slice(0, MAX_AUTOSAVE_BUFFERS), ...others].sort(newestFirst).slice(0, MAX_AUTOSAVE_BUFFERS_TOTAL);
 }
 
 type EditorAutosaveStore = {
@@ -130,11 +164,12 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
     }
     const entry: EditorAutosaveEntry = {
       ...input,
+      version: AUTOSAVE_ENTRY_VERSION,
       clusterId: currentClusterId(),
       updatedAt: Date.now(),
     };
     // Read through storage so another tab's write isn't clobbered.
-    const next = pruneForCluster(
+    const next = prune(
       [...readAll().filter((e) => !(e.targetKey === entry.targetKey && e.clusterId === entry.clusterId)), entry],
       entry.clusterId
     );
@@ -148,12 +183,17 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
   clear: (targetKey) => {
     const clusterId = currentClusterId();
     const next = readAll().filter((e) => !(e.targetKey === targetKey && e.clusterId === clusterId));
-    writeAll(next);
+    if (!writeAll(next)) {
+      // A buffer that can't be removed would come back and offer to overwrite the save it protected.
+      removeAll();
+      set({ entries: [] });
+      return;
+    }
     set({ entries: next });
   },
 
   clearAll: () => {
-    writeAll([]);
+    removeAll();
     set({ entries: [] });
   },
 

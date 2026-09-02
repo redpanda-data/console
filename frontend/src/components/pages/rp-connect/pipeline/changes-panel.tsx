@@ -13,6 +13,7 @@ import { DiffEditor, type Monaco } from '@monaco-editor/react';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import { CheckCircle2, Info, MousePointerClick, TriangleAlert } from 'lucide-react';
@@ -114,7 +115,7 @@ const ChangeRow = ({
 };
 
 const GroupLabel = ({ children }: { children: string }) => (
-  <h6 className="px-2 pt-1 pb-0.5 text-caption text-muted-foreground uppercase">{children}</h6>
+  <h6 className="px-2 pt-1 pb-0.5 text-muted-foreground text-overline-sm">{children}</h6>
 );
 
 export function ChangesPanel({
@@ -149,14 +150,15 @@ export function ChangesPanel({
 
   if (!(configChanged || settingsChanges.length > 0)) {
     return (
-      <div
-        className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center"
-        data-testid="changes-panel-empty"
-      >
-        <CheckCircle2 className="size-5 text-success" />
-        <p className="text-body">{NO_CHANGES_COPY.title}</p>
-        <p className="max-w-prose text-body-sm text-muted-foreground">{NO_CHANGES_COPY.body}</p>
-      </div>
+      <Empty className="h-full" testId="changes-panel-empty">
+        <EmptyHeader>
+          <EmptyMedia>
+            <CheckCircle2 className="size-5 text-success" />
+          </EmptyMedia>
+          <EmptyTitle>{NO_CHANGES_COPY.title}</EmptyTitle>
+          <EmptyDescription>{NO_CHANGES_COPY.body}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 

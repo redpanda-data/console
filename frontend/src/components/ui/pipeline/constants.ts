@@ -21,9 +21,10 @@ export type IssueLevel = (typeof ISSUE_LEVELS)[number];
 
 /**
  * Human-readable labels for each pipeline state. Single source of truth for
- * state copy across the pipeline UI.
+ * state copy across the pipeline UI. Exhaustive, so a new proto state fails the build here.
  */
-export const PIPELINE_STATE_LABELS: Partial<Record<Pipeline_State, string>> = {
+export const PIPELINE_STATE_LABELS: Record<Pipeline_State, string> = {
+  [Pipeline_State.UNSPECIFIED]: 'Unknown',
   [Pipeline_State.RUNNING]: 'Running',
   [Pipeline_State.STARTING]: 'Starting',
   [Pipeline_State.STOPPING]: 'Stopping',

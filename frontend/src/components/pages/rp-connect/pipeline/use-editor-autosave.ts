@@ -25,28 +25,24 @@ export const AUTOSAVE_DEBOUNCE_MS = 1000;
 export function useEditorAutosave({
   enabled,
   pipelineId,
-  savedUpdateTime,
   form,
   editorStore,
 }: {
   enabled: boolean;
   /** Undefined on the create page. */
   pipelineId: string | undefined;
-  /** The loaded pipeline's `update_time` in epoch ms; null while creating. */
-  savedUpdateTime: number | null;
   form: UseFormReturn<PipelineFormValues>;
   editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
 }) {
   const targetKey = autosaveTargetKey(pipelineId);
   const formRef = useRef(form);
   formRef.current = form;
-  const savedUpdateTimeRef = useRef(savedUpdateTime);
-  savedUpdateTimeRef.current = savedUpdateTime;
   // Only clear a buffer this editor wrote; an earlier session's must survive the load settling.
   const hasWrittenRef = useRef(false);
 
   const write = useCallback((): boolean => {
-    const { yamlContent, initialYaml } = editorStore.getState();
+    // `baselineUpdateTime` is the version on screen, not the live query: a refetch must not move it.
+    const { yamlContent, initialYaml, baselineUpdateTime } = editorStore.getState();
     const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
     if (!(documentChanged || formRef.current.formState.isDirty)) {
       if (hasWrittenRef.current) {
@@ -64,7 +60,7 @@ export function useEditorAutosave({
       computeUnits: values.computeUnits,
       tags: values.tags,
       configYaml: yamlContent,
-      basedOnUpdateTime: savedUpdateTimeRef.current,
+      basedOnUpdateTime: baselineUpdateTime,
     });
   }, [targetKey, editorStore]);
 

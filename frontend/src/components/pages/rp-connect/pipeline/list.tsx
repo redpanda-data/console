@@ -75,7 +75,12 @@ import {
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
-import { autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
+import {
+  autosaveTargetKey,
+  rpcnEditorAutosave,
+  selectAutosaveEntry,
+  useRpcnEditorAutosaveStore,
+} from 'state/rpcn-editor-autosave';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
@@ -302,6 +307,10 @@ const ActionsCell = memo(
     const isStopping = pipeline.state === Pipeline_State.STOPPING;
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const { startDraft, isStartingDraft } = useStartDraft();
+    // The dialog says so when this browser also holds unsaved edits for the draft.
+    const hasUnsavedChanges = useRpcnEditorAutosaveStore(
+      (s) => isDraftRow && selectAutosaveEntry(s.entries, autosaveTargetKey(pipeline.id)) !== null
+    );
 
     const handleStart = () => {
       const startRequest = create(StartPipelineRequestSchema, {
@@ -407,6 +416,7 @@ const ActionsCell = memo(
         {isDraftRow ? (
           <DeleteDraftDialog
             draftName={pipeline.name}
+            hasUnsavedChanges={hasUnsavedChanges}
             isDeleting={isDeletingPipeline}
             onConfirm={() => handleDelete(pipeline.id)}
             onOpenChange={setIsDeleteDialogOpen}
@@ -717,12 +727,12 @@ const PipelineListPageContent = () => {
     [draftCount]
   );
 
-  // Deleting or starting the last draft hides its tab.
+  // Deleting or starting the last draft hides its tab; not while the drain is still filling it.
   useEffect(() => {
-    if (activeTab === 'draft' && draftCount === 0) {
+    if (!isLoading && activeTab === 'draft' && draftCount === 0) {
       handleTabChange('all');
     }
-  }, [activeTab, draftCount, handleTabChange]);
+  }, [isLoading, activeTab, draftCount, handleTabChange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

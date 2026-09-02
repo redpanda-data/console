@@ -25,6 +25,9 @@ export const DRAFT_BADGE_TOOLTIP =
 export const DRAFT_UNSUPPORTED_MESSAGE =
   'Drafts are not available on this cluster yet, so the pipeline was created and is starting. Stop it from its page if you did not mean to deploy it.';
 
+export const DRAFT_UPDATE_UNSUPPORTED_MESSAGE =
+  'Drafts are not available on this cluster yet, so this pipeline is no longer a draft. Check its state on its page before starting it.';
+
 export const UNTITLED_PIPELINE_NAME = 'Untitled pipeline';
 
 export const NOTHING_TO_SAVE_MESSAGE =
