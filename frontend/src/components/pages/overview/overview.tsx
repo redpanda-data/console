@@ -139,20 +139,22 @@ class Overview extends PageComponent {
         </NullFallbackBoundary>
 
         <PageContent className="overviewGrid">
-          <Section my={4} py={5}>
-            <Flex>
-              <Statistic
-                className={`status-bar ${clusterStatus.className}`}
-                title="Cluster Status"
-                value={clusterStatus.displayText}
-              />
-              <Statistic title="Cluster Storage Size" value={brokerSize} />
-              <Statistic title="Cluster Version" value={version} />
-              <Statistic title="Brokers Online" value={brokersOnlineText} />
-              <Statistic title="Topics" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
-              <Statistic title="Replicas" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
-            </Flex>
-          </Section>
+          <div className="my-4">
+            <Section className="py-5">
+              <Flex gap={8}>
+                <Statistic
+                  className={`status-bar ${clusterStatus.className}`}
+                  title="Cluster Status"
+                  value={clusterStatus.displayText}
+                />
+                <Statistic title="Cluster Storage Size" value={brokerSize} />
+                <Statistic title="Cluster Version" value={version} />
+                <Statistic title="Brokers Online" value={brokersOnlineText} />
+                <Statistic title="Topics" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
+                <Statistic title="Replicas" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
+              </Flex>
+            </Section>
+          </div>
 
           {/* Shadow Link Overview Section */}
           <ShadowLinkSection />
@@ -160,13 +162,13 @@ class Overview extends PageComponent {
           <Grid gap={6} gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }}>
             <GridItem display="flex" flexDirection="column" gap={6}>
               {api.clusterHealth?.isHealthy === false && (
-                <Section gridArea="debugInfo" py={4}>
+                <Section className="py-4" style={{ gridArea: 'debugInfo' }}>
                   <Heading as="h3">Cluster Health Debug</Heading>
                   <ClusterHealthOverview />
                 </Section>
               )}
 
-              <Section py={4}>
+              <Section className="py-4">
                 <Heading as="h3">Broker Details</Heading>
                 <DataTable<BrokerWithConfigAndStorage>
                   columns={[
@@ -237,10 +239,10 @@ class Overview extends PageComponent {
                 />
               </Section>
 
-              <Section flexDirection="column">
+              <Section>
                 <Heading as="h3">Resources and updates</Heading>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
-                <hr />
+                <hr className="mt-4 mb-2" />
                 <div className="mt-4 flex flex-row items-center gap-2 font-sm text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
                   <span className="mx-2 text-disabled">|</span>
@@ -250,7 +252,7 @@ class Overview extends PageComponent {
             </GridItem>
 
             <GridItem>
-              <Section py={4}>
+              <Section className="py-4">
                 <h3>Cluster Details</h3>
 
                 <ClusterDetails />

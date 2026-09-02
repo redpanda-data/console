@@ -74,8 +74,8 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
 
   return (
     <PageContent>
-      <Section py={4}>
-        <Flex>
+      <Section className="py-4">
+        <Flex gap={8}>
           <Statistic title="Broker ID" value={brokerId} />
           <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
           {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
@@ -84,7 +84,7 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
           {Boolean(broker.rack) && <Statistic title="Rack" value={broker.rack} />}
         </Flex>
       </Section>
-      <Section py={4}>
+      <Section className="py-4">
         <BrokerConfigView entries={brokerConfigs} />
       </Section>
     </PageContent>

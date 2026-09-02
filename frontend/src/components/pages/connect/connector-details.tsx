@@ -403,7 +403,7 @@ const ConfigOverviewTab = (p: {
         ))}
       </Flex>
 
-      <Section gridArea="health">
+      <Section style={{ gridArea: 'health' }}>
         <Flex flexDirection="row" gap="4" m="1">
           <Box background={statusColors[connector.status]} borderRadius="3px" width="5px" />
 
@@ -416,7 +416,7 @@ const ConfigOverviewTab = (p: {
         </Flex>
       </Section>
 
-      <Section gridArea="tasks" minWidth="500px" py={4}>
+      <Section className="min-w-[500px] py-4" style={{ gridArea: 'tasks' }}>
         <Flex alignItems="center" gap="2" mb="6" mt="2">
           <Heading as="h3" color="blackAlpha.800" fontSize="1rem" fontWeight="semibold" textTransform="uppercase">
             Tasks
@@ -455,7 +455,7 @@ const ConfigOverviewTab = (p: {
         />
       </Section>
 
-      <Section gridArea="details" py={4}>
+      <Section className="py-4" style={{ gridArea: 'details' }}>
         <Heading
           as="h3"
           color="blackAlpha.800"
@@ -766,7 +766,7 @@ const LogsTab = (p: {
     <>
       <Box my="1rem">The logs below are for the last three hours.</Box>
 
-      <Section minWidth="800px">
+      <Section className="min-w-[800px]">
         <Flex mb="6">
           <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
           <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">

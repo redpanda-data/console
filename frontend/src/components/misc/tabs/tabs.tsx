@@ -9,13 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { Tabs as RpTabs } from '@redpanda-data/ui';
-import React, { useState } from 'react';
+import { Tabs as RegistryTabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import type React from 'react';
+
+type Slot = React.ReactNode | (() => React.ReactNode);
 
 export type Tab = {
   key: string;
-  title: React.ReactNode | (() => React.ReactNode);
-  content: React.ReactNode | (() => React.ReactNode);
+  title: Slot;
+  content: Slot;
   disabled?: boolean;
 };
 
@@ -28,41 +30,30 @@ type TabsProps = {
   isFitted?: boolean; // whether or not to fit tab buttons to max width
 };
 
-export default function Tabs(props: TabsProps) {
-  const { tabs, selectedTabKey } = props;
+const renderSlot = (slot: Slot) => (typeof slot === 'function' ? slot() : slot);
 
-  const [selectedIndex, setSelectedIndex] = useState(() =>
-    selectedTabKey ? tabs.findIndex((t) => t.key === selectedTabKey) : undefined
-  );
-  const defaultIndex = props.defaultSelectedTabKey
-    ? tabs.findIndex((t) => t.key === props.defaultSelectedTabKey)
-    : undefined;
+// Only the active panel renders its children, so function content runs for one tab.
+const TabSlot = ({ slot }: { slot: Slot }) => <>{renderSlot(slot)}</>;
 
+export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onChange, isFitted }: TabsProps) {
   return (
-    <RpTabs
-      defaultIndex={defaultIndex}
-      index={selectedIndex}
-      isFitted={props.isFitted}
-      items={tabs.map((t) => {
-        const titleComp = t.title;
-        const title: React.ReactNode = typeof titleComp === 'function' ? titleComp() : titleComp;
-
-        const contentComp = t.content;
-        const content = typeof contentComp === 'function' ? contentComp() : contentComp;
-
-        return {
-          key: t.key,
-          name: title,
-          component: content,
-          isDisabled: t.disabled,
-        };
-      })}
-      onChange={(index, key) => {
-        setSelectedIndex(Number(index));
-        if (props.onChange) {
-          props.onChange(String(key));
-        }
-      }}
-    />
+    <RegistryTabs
+      defaultValue={selectedTabKey || defaultSelectedTabKey || tabs[0]?.key}
+      onValueChange={(next) => onChange?.(String(next))}
+    >
+      <TabsList activateOnFocus layout={isFitted ? 'full' : 'auto'} variant="underline">
+        {tabs.map((t) => (
+          <TabsTrigger disabled={t.disabled} key={t.key} value={t.key} variant="underline">
+            {renderSlot(t.title)}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      {tabs.map((t) => (
+        // Legacy tab bodies space themselves; keep Chakra's 1rem panel padding, drop the registry rhythm.
+        <TabsContent className="space-y-0 pt-2 pb-4" key={t.key} value={t.key}>
+          <TabSlot slot={t.content} />
+        </TabsContent>
+      ))}
+    </RegistryTabs>
   );
 }
