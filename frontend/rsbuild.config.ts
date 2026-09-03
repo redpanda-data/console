@@ -1,6 +1,7 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { defineConfig, loadEnv } from '@rsbuild/core';
-import { pluginBabel } from '@rsbuild/plugin-babel';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
@@ -27,36 +28,15 @@ export default defineConfig({
       reactRefreshOptions: {
         forceEnable: true,
       },
-    }),
-    pluginBabel({
-      include: /\.(?:ts|tsx)$/,
-      babelLoaderOptions(opts) {
-        opts.plugins ??= [];
-        opts.plugins.unshift([
-          'babel-plugin-react-compiler',
-          {
-            target: '19',
-            compilationMode: 'annotation',
-            panicThreshold: 'critical_errors',
-            // In annotation mode, this still gates which files CAN be opted in.
-            // Files excluded here are ineligible even with 'use memo'.
-            sources: (filename: string) => {
-              if (filename.includes('/lib/redpanda-ui/')) {
-                return false;
-              }
-              if (filename.includes('/gen/')) {
-                return false;
-              }
-              if (filename.includes('node_modules')) {
-                return false;
-              }
-              return true;
-            },
-          },
-        ]);
+      // Rspack's Rust implementation avoids the extra Babel transform while
+      // preserving the existing opt-in React Compiler behavior.
+      reactCompiler: {
+        target: '19',
+        compilationMode: 'annotation',
+        panicThreshold: 'critical_errors',
       },
     }),
-    pluginSvgr({ mixedImport: true }),
+    pluginSvgr({ mixedImport: true, parallel: true }),
     pluginSass(),
     pluginTailwindcss(),
     pluginYaml(),
@@ -131,18 +111,43 @@ export default defineConfig({
     // production diagnostics.
     removeConsole: ['log', 'warn'],
   },
+  splitChunks: {
+    preset: 'default',
+    chunks: 'all',
+    // A 4 MiB cap cut the largest async chunk from 10.06 MB to 5.65 MB
+    // while adding 13 requests; 512 KiB added 127 with no further reduction.
+    maxAsyncSize: 4 * 1024 * 1024,
+    cacheGroups: {
+      legacyUi: {
+        test: /[\\/]node_modules[\\/]@redpanda-data[\\/]ui[\\/]/,
+        name: 'lib-redpanda-ui',
+        priority: 40,
+        enforce: true,
+        reuseExistingChunk: true,
+      },
+      monaco: {
+        test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+        name: 'lib-monaco-editor',
+        priority: 30,
+        enforce: true,
+        reuseExistingChunk: true,
+      },
+    },
+  },
   output: {
     distPath: {
       root: 'build',
     },
   },
   tools: {
-    rspack: (config, { appendPlugins }) => {
+    rspack: (config, { appendPlugins, isProd }) => {
       config.lazyCompilation = false;
       config.experiments = {
         ...config.experiments,
-        lazyBarrel: false,
+        asyncWebAssembly: true,
+        futureDefaults: true,
         nativeWatcher: true,
+        pureFunctions: isProd,
       };
       config.resolve ||= {};
       config.resolve.alias ||= {};

@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
       testTimeout: 30_000,
       globals: true,
       environment: 'happy-dom', // Aligns with cloud-ui / adp-ui; required to run Chakra + Radix integration tests consistently
-      include: ['src/**/*.test.tsx'], // Only .test.tsx files (integration tests)
+      include: ['src/**/*.test.tsx', 'tests/**/*.integration.test.ts'],
       setupFiles: './vitest.setup.integration.ts',
       deps: {
         registerNodeLoader: true,
