@@ -11,8 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { describe, expect, it } from '@rstest/core';
 import { Pipeline_State, PipelineSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { describe, expect, it } from 'vitest';
 
 import {
   draftIssueSummary,

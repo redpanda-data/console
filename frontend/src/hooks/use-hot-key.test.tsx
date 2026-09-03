@@ -15,7 +15,7 @@ import { useHotKey } from './use-hot-key';
 
 describe('useHotKey', () => {
   it('calls onTrigger when key combo matches', () => {
-    const onTrigger = vi.fn();
+    const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], onTrigger }));
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', metaKey: true, shiftKey: true }));
@@ -23,7 +23,7 @@ describe('useHotKey', () => {
   });
 
   it('does not trigger without required modifiers', () => {
-    const onTrigger = vi.fn();
+    const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], onTrigger }));
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', shiftKey: true }));
@@ -31,7 +31,7 @@ describe('useHotKey', () => {
   });
 
   it('does not trigger when enabled is false', () => {
-    const onTrigger = vi.fn();
+    const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], enabled: false, onTrigger }));
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', metaKey: true, shiftKey: true }));
@@ -39,7 +39,7 @@ describe('useHotKey', () => {
   });
 
   it('treats ctrl as meta on non-mac', () => {
-    const onTrigger = vi.fn();
+    const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], onTrigger }));
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }));
@@ -47,7 +47,7 @@ describe('useHotKey', () => {
   });
 
   it('cleans up listener on unmount', () => {
-    const onTrigger = vi.fn();
+    const onTrigger = rs.fn();
     const { unmount } = renderHook(() => useHotKey({ key: 'p', modifiers: ['meta'], onTrigger }));
 
     unmount();
@@ -57,8 +57,8 @@ describe('useHotKey', () => {
   });
 
   it('uses latest onTrigger without re-subscribing', () => {
-    const first = vi.fn();
-    const second = vi.fn();
+    const first = rs.fn();
+    const second = rs.fn();
     const { rerender } = renderHook(({ cb }) => useHotKey({ key: 'k', modifiers: ['meta'], onTrigger: cb }), {
       initialProps: { cb: first },
     });

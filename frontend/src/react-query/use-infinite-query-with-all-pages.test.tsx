@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
   type ListUsersRequest,
@@ -20,7 +21,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
-import { describe, expect, test } from 'vitest';
 
 import { useInfiniteQueryWithAllPages } from './use-infinite-query-with-all-pages';
 
@@ -121,7 +121,7 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // RTL's waitFor batches state updates in act(); vi.waitFor does not,
+    // RTL's waitFor batches state updates in act(); rs.waitFor does not,
     // so the second-page error triggers "not wrapped in act" on TestComponent.
     await waitFor(
       () => {

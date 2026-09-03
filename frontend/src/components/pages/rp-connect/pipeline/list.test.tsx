@@ -32,13 +32,13 @@ import {
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
-const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: { jwt: 'test-jwt-token' },
-    isEmbedded: vi.fn(() => false),
+    isEmbedded: rs.fn(() => false),
     isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
   };
 });
@@ -118,8 +118,8 @@ const DRAFT_FIXTURE: Fixture = {
 const buildTransport = (opts?: {
   withDraft?: boolean;
   extraDrafts?: Fixture[];
-  startPipelineMock?: ReturnType<typeof vi.fn>;
-  deletePipelineMock?: ReturnType<typeof vi.fn>;
+  startPipelineMock?: ReturnType<typeof rs.fn>;
+  deletePipelineMock?: ReturnType<typeof rs.fn>;
   onRequest?: (req: ListPipelinesRequest) => void;
 }) =>
   createRouterTransport(({ rpc }) => {
@@ -146,8 +146,8 @@ const buildTransport = (opts?: {
         }),
       });
     });
-    rpc(startPipeline, opts?.startPipelineMock ?? vi.fn().mockReturnValue(create(StartPipelineResponseSchema, {})));
-    rpc(deletePipeline, opts?.deletePipelineMock ?? vi.fn().mockReturnValue(create(DeletePipelineResponseSchema, {})));
+    rpc(startPipeline, opts?.startPipelineMock ?? rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {})));
+    rpc(deletePipeline, opts?.deletePipelineMock ?? rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {})));
   });
 
 const renderList = (opts?: { withDraft?: boolean }) =>
@@ -430,7 +430,7 @@ describe('PipelineListPage', () => {
 
     it('starts a draft from its row', async () => {
       const user = userEvent.setup();
-      const startPipelineMock = vi.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
+      const startPipelineMock = rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
       renderWithFileRoutes(<PipelineListPage />, {
         transport: buildTransport({ withDraft: true, startPipelineMock }),
       });
@@ -446,7 +446,7 @@ describe('PipelineListPage', () => {
 
     it('deletes a draft from its row, after a confirmation', async () => {
       const user = userEvent.setup();
-      const deletePipelineMock = vi.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
+      const deletePipelineMock = rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
       renderWithFileRoutes(<PipelineListPage />, {
         transport: buildTransport({ withDraft: true, deletePipelineMock }),
       });

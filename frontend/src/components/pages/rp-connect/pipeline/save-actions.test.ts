@@ -12,8 +12,8 @@
 import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
+import { describe, expect, it } from '@rstest/core';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { describe, expect, it } from 'vitest';
 
 import {
   alternateRunIntents,

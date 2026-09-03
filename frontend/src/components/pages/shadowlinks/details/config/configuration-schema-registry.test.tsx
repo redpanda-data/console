@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
 
 import { ConfigurationSchemaRegistry } from './configuration-schema-registry';
 import type { UnifiedSchemaRegistryApiOptions } from '../../model';

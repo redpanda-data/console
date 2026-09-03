@@ -9,14 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { SqlEditor } from './sql-editor';
 
 // CodeMirror's layout/measure loop doesn't run in jsdom; the editor surface is
 // exercised manually/e2e.
-vi.mock('@uiw/react-codemirror', () => ({
+rs.mock('@uiw/react-codemirror', () => ({
   default: ({ value }: { value: string }) => <div data-testid="editor">{value}</div>,
 }));
 
@@ -25,7 +25,7 @@ const QUERY_2_TAB = /Query 2/;
 // Matches the Run button's accessible name including its platform Kbd hint.
 const RUN_BUTTON = /Run (Ctrl|⌘)/;
 
-const renderEditor = (onRun = vi.fn()) => {
+const renderEditor = (onRun = rs.fn()) => {
   render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} />);
   return onRun;
 };
@@ -46,11 +46,11 @@ function createMemoryStorage(): Storage {
 
 describe('SqlEditor', () => {
   beforeEach(() => {
-    vi.stubGlobal('localStorage', createMemoryStorage());
+    rs.stubGlobal('localStorage', createMemoryStorage());
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    rs.unstubAllGlobals();
   });
 
   test('renders the first query tab as the active tab', () => {

@@ -12,12 +12,12 @@
 import { ShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { describe, expect, test } from '@rstest/core';
 import {
   FilterType,
   PatternType,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
 
 import { buildDefaultFormValuesFromControlplane, fromControlplaneShadowLink } from './controlplane';
 import { FormSchema, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';

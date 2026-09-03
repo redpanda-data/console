@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { describe, expect, test, vi } from 'vitest';
 
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 
@@ -21,13 +21,13 @@ const PROBLEMS: PipelineProblem[] = [
 
 describe('PipelineProblemsPanel', () => {
   test('renders nothing without problems or missing secrets', () => {
-    render(<PipelineProblemsPanel onSelectProblem={vi.fn()} problems={[]} />);
+    render(<PipelineProblemsPanel onSelectProblem={rs.fn()} problems={[]} />);
     expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();
   });
 
   test('expands to the problem list and selects a node on click', async () => {
     const user = userEvent.setup();
-    const onSelectProblem = vi.fn();
+    const onSelectProblem = rs.fn();
     render(<PipelineProblemsPanel onSelectProblem={onSelectProblem} problems={PROBLEMS} />);
 
     const chip = screen.getByTestId('pipeline-problems-chip');
@@ -42,7 +42,7 @@ describe('PipelineProblemsPanel', () => {
 
   test('dismisses the expanded list on Escape', async () => {
     const user = userEvent.setup();
-    render(<PipelineProblemsPanel onSelectProblem={vi.fn()} problems={PROBLEMS} />);
+    render(<PipelineProblemsPanel onSelectProblem={rs.fn()} problems={PROBLEMS} />);
 
     await user.click(screen.getByTestId('pipeline-problems-chip'));
     expect(screen.getByTestId('pipeline-problems-list')).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('PipelineProblemsPanel', () => {
         <button data-testid="outside" type="button">
           outside
         </button>
-        <PipelineProblemsPanel onSelectProblem={vi.fn()} problems={PROBLEMS} />
+        <PipelineProblemsPanel onSelectProblem={rs.fn()} problems={PROBLEMS} />
       </div>
     );
 

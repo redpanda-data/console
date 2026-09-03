@@ -9,27 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const mockMutateAsync = vi.fn();
+const mockMutateAsync = rs.fn();
 
-vi.mock('../../../react-query/api/topic', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../react-query/api/topic')>();
+rs.mock('../../../react-query/api/topic', () => {
+  const actual = rs.requireActual<typeof import('../../../react-query/api/topic')>('../../../react-query/api/topic');
   return {
     ...actual,
-    useCreateTopicMutation: vi.fn(() => ({
+    useCreateTopicMutation: rs.fn(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
     })),
   };
 });
 
-vi.mock('../../../state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../state/backend-api')>();
+rs.mock('../../../state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('../../../state/backend-api')>('../../../state/backend-api');
   return {
     ...actual,
     api: {
@@ -37,18 +37,18 @@ vi.mock('../../../state/backend-api', async (importOriginal) => {
       isRedpanda: false,
       clusterOverview: null,
       clusterInfo: undefined,
-      refreshCluster: vi.fn(),
-      refreshClusterOverview: vi.fn(),
-      refreshClusterHealth: vi.fn().mockResolvedValue(undefined),
+      refreshCluster: rs.fn(),
+      refreshClusterOverview: rs.fn(),
+      refreshClusterHealth: rs.fn().mockResolvedValue(undefined),
     },
   };
 });
 
-vi.mock('../../../config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../config')>();
+rs.mock('../../../config', () => {
+  const actual = rs.requireActual<typeof import('../../../config')>('../../../config');
   return {
     ...actual,
-    isServerless: vi.fn(() => false),
+    isServerless: rs.fn(() => false),
     config: {
       ...actual.config,
       isServerless: false,
@@ -56,10 +56,10 @@ vi.mock('../../../config', async (importOriginal) => {
   };
 });
 
-vi.mock('sonner', () => ({
+rs.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: rs.fn(),
+    error: rs.fn(),
   },
 }));
 
@@ -69,9 +69,9 @@ import { CreateTopicDialog } from './create-topic-dialog';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
-function renderDialog(isOpen = true, onClose = vi.fn()) {
+function renderDialog(isOpen = true, onClose = rs.fn()) {
   return renderWithFileRoutes(<CreateTopicDialog isOpen={isOpen} onClose={onClose} />, {
     initialLocation: '/topics',
   });
@@ -81,7 +81,7 @@ function renderDialog(isOpen = true, onClose = vi.fn()) {
 
 describe('CreateTopicDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockMutateAsync.mockResolvedValue({
       topicName: 'my-topic',
       partitionCount: 1,
@@ -265,7 +265,7 @@ describe('CreateTopicDialog', () => {
 
   test('Refreshes cluster overview whenever the dialog opens, so isRedpanda is never stale (UX-1460)', async () => {
     const { api } = await import('../../../state/backend-api');
-    const onClose = vi.fn();
+    const onClose = rs.fn();
 
     // Dialog mounts closed: the unconditional mount effect still fires once.
     const { rerender } = renderDialog(false, onClose);
@@ -274,7 +274,7 @@ describe('CreateTopicDialog', () => {
       expect(api.refreshClusterOverview).toHaveBeenCalled();
     });
 
-    (api.refreshClusterOverview as ReturnType<typeof vi.fn>).mockClear();
+    (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
 
     // Reopening the dialog (e.g. after closing it without a page refresh) must
     // re-fetch the cluster overview rather than relying on a stale cached value.

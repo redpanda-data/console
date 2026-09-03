@@ -11,16 +11,16 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-vi.mock('config', () => ({
+rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
   },
-  isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
+  isFeatureFlagEnabled: rs.fn(() => false),
+  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
 }));
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -29,8 +29,8 @@ vi.mock('state/ui-state', () => ({
 
 const SECRET_ID = 'TEST_SECRET';
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     getRouteApi: () => ({
@@ -51,7 +51,7 @@ global.ResizeObserver = class ResizeObserver {
   }
 };
 
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 import { SecretEditPage } from './secret-edit-page';
 
@@ -67,7 +67,7 @@ describe('SecretEditPage', () => {
       labels: { env: 'production' },
     });
 
-    const getSecretMock = vi.fn().mockReturnValue(
+    const getSecretMock = rs.fn().mockReturnValue(
       create(GetSecretResponseSchema, {
         response: create(GetSecretResponseSchemaDataPlane, {
           secret: existingSecret,
@@ -75,7 +75,7 @@ describe('SecretEditPage', () => {
       })
     );
 
-    const updateSecretMock = vi.fn().mockResolvedValue({});
+    const updateSecretMock = rs.fn().mockResolvedValue({});
 
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getSecret, getSecretMock);

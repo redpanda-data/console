@@ -3,9 +3,9 @@
 /**
  * Enforces merged-coverage thresholds defined in `coverage.config.json`.
  *
- * Why a script (and not `coverage.thresholds` in vitest config)?
+ * Why a script (and not `coverage.thresholds` in Rstest config)?
  *   - Thresholds must apply to the MERGED summary (unit + integration), not
- *     to either individual run. Running vitest thresholds on unit-only would
+ *     to either individual run. Running thresholds on unit-only would
  *     fail immediately because unit tests cover a small subset of .tsx code.
  *   - This script runs in CI as a post-step after `merge-coverage.mjs`.
  *

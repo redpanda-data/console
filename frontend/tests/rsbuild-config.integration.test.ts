@@ -1,6 +1,6 @@
 // Copyright 2026 Redpanda Data, Inc.
 import { createRsbuild } from '@rsbuild/core';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import rsbuildConfig from '../rsbuild.config';
 

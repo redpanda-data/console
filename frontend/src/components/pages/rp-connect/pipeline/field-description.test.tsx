@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { describe, expect, test } from 'vitest';
 
 import { FieldDescription } from './field-description';
 import type { RawFieldSpec } from '../types/schema';

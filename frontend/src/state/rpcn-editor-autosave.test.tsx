@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, rs } from '@rstest/core';
 
-// Hoisted so the module factory below can close over it (vi.mock is lifted to the top of the file).
-const { mockConfig } = vi.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
-vi.mock('config', () => ({ config: mockConfig }));
+// Hoisted so the module factory below can close over it (rs.mock is lifted to the top of the file).
+const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
+rs.mock('config', () => ({ config: mockConfig }));
 
 import {
   AUTOSAVE_ENTRY_VERSION,
@@ -108,10 +108,10 @@ describe('rpcn-editor-autosave', () => {
   it('evicts the stalest buffers past the cap', () => {
     for (let i = 0; i < MAX_AUTOSAVE_BUFFERS + 3; i++) {
       // Distinct timestamps, so "stalest" is well-defined.
-      vi.setSystemTime(new Date(2026, 0, 1, 0, 0, i));
+      rs.setSystemTime(new Date(2026, 0, 1, 0, 0, i));
       rpcnEditorAutosave.save(buffer({ targetKey: `p${i}` }));
     }
-    vi.useRealTimers();
+    rs.useRealTimers();
 
     const entries = stored() as Array<{ targetKey: string }>;
     expect(entries).toHaveLength(MAX_AUTOSAVE_BUFFERS);
@@ -125,12 +125,12 @@ describe('rpcn-editor-autosave', () => {
     for (const clusterId of ['cluster-a', 'cluster-b', 'cluster-c']) {
       mockConfig.clusterId = clusterId;
       for (let i = 0; i < MAX_AUTOSAVE_BUFFERS; i++) {
-        vi.setSystemTime(new Date(2026, 0, 1, 0, 0, tick));
+        rs.setSystemTime(new Date(2026, 0, 1, 0, 0, tick));
         tick += 1;
         rpcnEditorAutosave.save(buffer({ targetKey: `${clusterId}-p${i}` }));
       }
     }
-    vi.useRealTimers();
+    rs.useRealTimers();
 
     const entries = stored() as Array<{ targetKey: string; clusterId: string }>;
     expect(entries).toHaveLength(MAX_AUTOSAVE_BUFFERS_TOTAL);
@@ -140,7 +140,7 @@ describe('rpcn-editor-autosave', () => {
 
   it('does not let a buffer it failed to clear come back and offer to overwrite the save', () => {
     rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
-    const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    const setItem = rs.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
       throw new Error('quota exceeded');
     });
 
@@ -158,7 +158,7 @@ describe('rpcn-editor-autosave', () => {
   });
 
   it('reports a refusal when storage is unavailable, instead of pretending it saved', () => {
-    const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    const setItem = rs.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
       throw new Error('quota exceeded');
     });
 

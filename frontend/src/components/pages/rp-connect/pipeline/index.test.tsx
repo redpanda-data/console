@@ -56,6 +56,7 @@ import {
   lintPipelineConfig,
   listComponents,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
+import * as React from 'react';
 import { toast } from 'sonner';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
@@ -65,32 +66,32 @@ import { NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
 
-const mockUsePipelineMode = vi.fn(() => ({ mode: 'create' as const }));
-vi.mock('../utils/use-pipeline-mode', () => ({
+const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
+rs.mock('../utils/use-pipeline-mode', () => ({
   usePipelineMode: (...args: unknown[]) => mockUsePipelineMode(...args),
 }));
 
 // Overridable per test so flags and embedded can be toggled.
-const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
-const mockIsEmbedded = vi.fn(() => false);
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
+const mockIsEmbedded = rs.fn(() => false);
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
     isEmbedded: (...args: unknown[]) => mockIsEmbedded(),
-    isServerless: vi.fn(() => false),
+    isServerless: rs.fn(() => false),
   };
 });
 
-const mockNavigate = vi.fn();
-const mockBack = vi.fn();
-const mockSearch = vi.fn(() => ({}));
+const mockNavigate = rs.fn();
+const mockBack = rs.fn();
+const mockSearch = rs.fn(() => ({}));
 // Overridable so the leave-without-saving dialog can be driven directly; the guard itself belongs to
 // the router, not to this page. The options are passed through so a test can ask the page's own
 // `shouldBlockFn` whether it would block, which is the only honest way to test the guard here.
 type BlockerOptions = { shouldBlockFn: () => boolean };
-const mockBlocker = vi.fn(
+const mockBlocker = rs.fn(
   (_options?: BlockerOptions) =>
     ({
       status: 'idle',
@@ -100,8 +101,8 @@ const mockBlocker = vi.fn(
 );
 const lastShouldBlockFn = () =>
   (mockBlocker.mock.calls.at(-1)?.[0] as BlockerOptions | undefined)?.shouldBlockFn ?? (() => false);
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
@@ -117,89 +118,81 @@ type CursorPositionCallback = (e: { position: { lineNumber: number; column: numb
 const cursorPositionListeners: CursorPositionCallback[] = [];
 
 const mockEditorInstance = {
-  getPosition: vi.fn(() => ({ lineNumber: 1, column: 4 })),
-  getModel: vi.fn(() => ({
-    getLineContent: vi.fn(() => '  /'),
+  getPosition: rs.fn(() => ({ lineNumber: 1, column: 4 })),
+  getModel: rs.fn(() => ({
+    getLineContent: rs.fn(() => '  /'),
     // Large enough that node ranges from any test YAML are never clamped.
-    getLineCount: vi.fn(() => 1000),
-    getLineMaxColumn: vi.fn(() => 1),
+    getLineCount: rs.fn(() => 1000),
+    getLineMaxColumn: rs.fn(() => 1),
   })),
-  onDidChangeModelContent: vi.fn((cb: ContentChangeCallback) => {
+  onDidChangeModelContent: rs.fn((cb: ContentChangeCallback) => {
     contentChangeListeners.push(cb);
-    return { dispose: vi.fn() };
+    return { dispose: rs.fn() };
   }),
   // Cursor → structure-tree highlight sync subscribes to this.
-  onDidChangeCursorPosition: vi.fn((cb: CursorPositionCallback) => {
+  onDidChangeCursorPosition: rs.fn((cb: CursorPositionCallback) => {
     cursorPositionListeners.push(cb);
-    return { dispose: vi.fn() };
+    return { dispose: rs.fn() };
   }),
   // Mirrors Monaco: setSelection places the cursor at the selection end and notifies
   // cursor-position listeners synchronously, before the call returns.
-  setSelection: vi.fn((sel: { endLineNumber: number; endColumn: number }) => {
+  setSelection: rs.fn((sel: { endLineNumber: number; endColumn: number }) => {
     for (const cb of cursorPositionListeners) {
       cb({ position: { lineNumber: sel.endLineNumber, column: sel.endColumn } });
     }
   }),
-  revealLineInCenterIfOutsideViewport: vi.fn(),
-  executeEdits: vi.fn(),
-  focus: vi.fn(),
+  revealLineInCenterIfOutsideViewport: rs.fn(),
+  executeEdits: rs.fn(),
+  focus: rs.fn(),
   // Scroll API used by the read-only viewer's vertical overflow shadows.
-  onDidScrollChange: vi.fn(() => ({ dispose: vi.fn() })),
-  onDidContentSizeChange: vi.fn(() => ({ dispose: vi.fn() })),
-  onDidLayoutChange: vi.fn(() => ({ dispose: vi.fn() })),
-  getScrollTop: vi.fn(() => 0),
-  getScrollHeight: vi.fn(() => 0),
-  getLayoutInfo: vi.fn(() => ({ height: 0 })),
+  onDidScrollChange: rs.fn(() => ({ dispose: rs.fn() })),
+  onDidContentSizeChange: rs.fn(() => ({ dispose: rs.fn() })),
+  onDidLayoutChange: rs.fn(() => ({ dispose: rs.fn() })),
+  getScrollTop: rs.fn(() => 0),
+  getScrollHeight: rs.fn(() => 0),
+  getLayoutInfo: rs.fn(() => ({ height: 0 })),
 } as unknown as editor.IStandaloneCodeEditor;
 
-vi.mock('components/ui/yaml/yaml-editor', async () => {
-  const React = await import('react');
-  return {
-    YamlEditor: (props: {
-      onChange?: (val: string) => void;
-      onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
-      value?: string;
-    }) => {
-      React.useEffect(() => {
-        props.onEditorMount?.(mockEditorInstance);
-      }, [props.onEditorMount]);
-      return (
-        <textarea
-          data-testid="yaml-editor"
-          onChange={(e) => props.onChange?.(e.target.value)}
-          value={props.value || ''}
-        />
-      );
-    },
-  };
-});
+rs.mock('components/ui/yaml/yaml-editor', () => ({
+  ...rs.requireActual<typeof import('components/ui/yaml/yaml-editor')>('components/ui/yaml/yaml-editor'),
+  YamlEditor: (props: {
+    onChange?: (val: string) => void;
+    onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
+    value?: string;
+  }) => {
+    React.useEffect(() => {
+      props.onEditorMount?.(mockEditorInstance);
+    }, [props.onEditorMount]);
+    return (
+      <textarea
+        data-testid="yaml-editor"
+        onChange={(e) => props.onChange?.(e.target.value)}
+        value={props.value || ''}
+      />
+    );
+  },
+}));
 
 // Monaco's diff editor is heavy and needs a real layout; stub it to a marker carrying both sides.
-vi.mock('@monaco-editor/react', async () => {
-  const React = await import('react');
-  return {
-    DiffEditor: (props: { original?: string; modified?: string }) =>
-      React.createElement('div', {
-        'data-testid': 'diff-editor',
-        'data-original': props.original ?? '',
-        'data-modified': props.modified ?? '',
-      }),
-  };
-});
+rs.mock('@monaco-editor/react', () => ({
+  DiffEditor: (props: { original?: string; modified?: string }) =>
+    React.createElement('div', {
+      'data-testid': 'diff-editor',
+      'data-original': props.original ?? '',
+      'data-modified': props.modified ?? '',
+    }),
+}));
 
 // The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
-vi.mock('./pipeline-flow-canvas', async () => {
-  const React = await import('react');
-  return {
-    PipelineFlowCanvas: (props: { configYaml: string }) =>
-      React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
-  };
-});
-vi.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
-vi.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
-vi.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
-vi.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: () => <div data-testid="log-explorer" /> }));
-vi.mock('../onboarding/add-connector-dialog', () => ({
+rs.mock('./pipeline-flow-canvas', () => ({
+  PipelineFlowCanvas: (props: { configYaml: string }) =>
+    React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
+}));
+rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
+rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
+rs.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
+rs.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: () => <div data-testid="log-explorer" /> }));
+rs.mock('../onboarding/add-connector-dialog', () => ({
   AddConnectorDialog: (props: {
     isOpen: boolean;
     onAddConnector?: (name: string, type: string) => void;
@@ -219,7 +212,7 @@ vi.mock('../onboarding/add-connector-dialog', () => ({
 }));
 
 // Simplified stub — the real menu needs secrets/topics/users RPCs; variant distinguishes dialog vs popover.
-vi.mock('./pipeline-command-menu', async () => ({
+rs.mock('./pipeline-command-menu', () => ({
   PipelineCommandMenu: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -242,11 +235,11 @@ vi.mock('./pipeline-command-menu', async () => ({
   },
 }));
 
-vi.mock('state/rpcn-wizard-store', () => ({
+rs.mock('state/rpcn-wizard-store', () => ({
   useRpcnWizardStore: Object.assign(
-    vi.fn(() => ''),
+    rs.fn(() => ''),
     {
-      getState: () => ({ setYamlContent: vi.fn(), yamlContent: '', setWizardData: vi.fn(), reset: vi.fn() }),
+      getState: () => ({ setYamlContent: rs.fn(), yamlContent: '', setWizardData: rs.fn(), reset: rs.fn() }),
     }
   ),
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
@@ -254,11 +247,11 @@ vi.mock('state/rpcn-wizard-store', () => ({
 
 // Only the emitters are spied, so the rest of sonner stays real. Copy is covered in save-actions.test.ts;
 // what matters here is which toasts a save fires, because two contradicting each other is the bug.
-vi.mock('sonner', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('sonner')>();
+rs.mock('sonner', () => {
+  const actual = rs.requireActual<typeof import('sonner')>('sonner');
   return {
     ...actual,
-    toast: { ...actual.toast, success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
+    toast: { ...actual.toast, success: rs.fn(), error: rs.fn(), warning: rs.fn(), info: rs.fn() },
   };
 });
 
@@ -266,21 +259,21 @@ vi.mock('sonner', async (importOriginal) => {
 import PipelinePage from '.';
 
 function createTransport(overrides?: {
-  getPipelineMock?: ReturnType<typeof vi.fn>;
-  createPipelineMock?: ReturnType<typeof vi.fn>;
-  updatePipelineMock?: ReturnType<typeof vi.fn>;
-  lintMock?: ReturnType<typeof vi.fn>;
-  stopPipelineMock?: ReturnType<typeof vi.fn>;
-  startPipelineMock?: ReturnType<typeof vi.fn>;
-  listPipelinesMock?: ReturnType<typeof vi.fn>;
-  deletePipelineMock?: ReturnType<typeof vi.fn>;
+  getPipelineMock?: ReturnType<typeof rs.fn>;
+  createPipelineMock?: ReturnType<typeof rs.fn>;
+  updatePipelineMock?: ReturnType<typeof rs.fn>;
+  lintMock?: ReturnType<typeof rs.fn>;
+  stopPipelineMock?: ReturnType<typeof rs.fn>;
+  startPipelineMock?: ReturnType<typeof rs.fn>;
+  listPipelinesMock?: ReturnType<typeof rs.fn>;
+  deletePipelineMock?: ReturnType<typeof rs.fn>;
 }) {
   return createRouterTransport(({ rpc }) => {
     // Console-layer RPCs (used by react-query/api/pipeline hooks)
     rpc(
       getPipeline,
       overrides?.getPipelineMock ??
-        vi.fn().mockReturnValue(
+        rs.fn().mockReturnValue(
           create(ConsoleGetPipelineResponseSchema, {
             response: create(GetPipelineResponseSchema, {
               pipeline: create(PipelineSchema, {
@@ -298,7 +291,7 @@ function createTransport(overrides?: {
     rpc(
       createPipeline,
       overrides?.createPipelineMock ??
-        vi.fn().mockReturnValue(
+        rs.fn().mockReturnValue(
           create(ConsoleCreatePipelineResponseSchema, {
             response: create(CreatePipelineResponseSchema, {
               pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -308,17 +301,17 @@ function createTransport(overrides?: {
     );
     rpc(
       updatePipeline,
-      overrides?.updatePipelineMock ?? vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}))
+      overrides?.updatePipelineMock ?? rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}))
     );
     rpc(
       deletePipeline,
-      overrides?.deletePipelineMock ?? vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}))
+      overrides?.deletePipelineMock ?? rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}))
     );
     // Read to number an unnamed draft against the names already in use.
     rpc(
       listPipelines,
       overrides?.listPipelinesMock ??
-        vi.fn().mockReturnValue(
+        rs.fn().mockReturnValue(
           create(ConsoleListPipelinesResponseSchema, {
             response: create(ListPipelinesResponseSchema, { pipelines: [] }),
           })
@@ -326,26 +319,26 @@ function createTransport(overrides?: {
     );
     rpc(
       startPipeline,
-      overrides?.startPipelineMock ?? vi.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}))
+      overrides?.startPipelineMock ?? rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}))
     );
     rpc(
       stopPipeline,
-      overrides?.stopPipelineMock ?? vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}))
+      overrides?.stopPipelineMock ?? rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}))
     );
     rpc(
       consoleGetPipelineServiceConfigSchema,
-      vi.fn().mockReturnValue(create(ConsoleGetPipelineServiceConfigSchemaResponseSchema, {}))
+      rs.fn().mockReturnValue(create(ConsoleGetPipelineServiceConfigSchemaResponseSchema, {}))
     );
 
     // Dataplane RPCs (used by react-query/api/connect hooks)
     rpc(
       lintPipelineConfig,
-      overrides?.lintMock ?? vi.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }))
+      overrides?.lintMock ?? rs.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }))
     );
-    rpc(listComponents, vi.fn().mockReturnValue(create(ListComponentsResponseSchema, {})));
+    rpc(listComponents, rs.fn().mockReturnValue(create(ListComponentsResponseSchema, {})));
     rpc(
       getPipelineServiceConfigSchema,
-      vi.fn().mockReturnValue(create(GetPipelineServiceConfigSchemaResponseSchema, {}))
+      rs.fn().mockReturnValue(create(GetPipelineServiceConfigSchemaResponseSchema, {}))
     );
   });
 }
@@ -377,9 +370,9 @@ const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>
 
 describe('PipelinePage', () => {
   beforeEach(() => {
-    vi.mocked(toast.success).mockClear();
-    vi.mocked(toast.error).mockClear();
-    vi.mocked(toast.warning).mockClear();
+    rs.mocked(toast.success).mockClear();
+    rs.mocked(toast.error).mockClear();
+    rs.mocked(toast.warning).mockClear();
     mockNavigate.mockClear();
     mockBack.mockClear();
     mockSearch.mockReturnValue({});
@@ -394,7 +387,7 @@ describe('PipelinePage', () => {
   // Lint panel — LintHintList has no tests of its own.
 
   it('displays lint warnings from the backend as the user types YAML', async () => {
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 1, column: 1, hint: 'response lint warning' })],
       })
@@ -426,7 +419,7 @@ describe('PipelinePage', () => {
   });
 
   it('displays general warnings without line numbers', async () => {
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 0, column: 0, hint: 'general config warning' })],
       })
@@ -444,7 +437,7 @@ describe('PipelinePage', () => {
   });
 
   it('shows a count badge when multiple lint issues are found', async () => {
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [
           create(LintHintSchema, { line: 1, column: 1, hint: 'first warning' }),
@@ -470,7 +463,7 @@ describe('PipelinePage', () => {
 
   it('Cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -492,7 +485,7 @@ describe('PipelinePage', () => {
 
   it('saving a new pipeline sends the name and YAML config to the backend', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -520,7 +513,7 @@ describe('PipelinePage', () => {
 
   it('redirects to the new pipeline after successful creation', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -545,7 +538,7 @@ describe('PipelinePage', () => {
 
   it('lets the name be edited inline from the header title and submits it', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -569,7 +562,7 @@ describe('PipelinePage', () => {
 
   it('blocks saving a new pipeline with an invalid name and shows the error inline', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn();
+    const createPipelineMock = rs.fn();
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -581,7 +574,7 @@ describe('PipelinePage', () => {
 
   it("doesn't send an empty config to the backend, which would answer with a raw proto field error", async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn();
+    const createPipelineMock = rs.fn();
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -599,13 +592,13 @@ describe('PipelinePage', () => {
   it('shows both save errors and real-time lint warnings when a save fails', async () => {
     const user = userEvent.setup();
 
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 3, column: 1, hint: 'response warning' })],
       })
     );
 
-    const createPipelineMock = vi.fn().mockImplementation(() => {
+    const createPipelineMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('invalid config');
     });
 
@@ -635,9 +628,9 @@ describe('PipelinePage', () => {
   it('editing YAML after a failed save clears the stale error messages', async () => {
     const user = userEvent.setup();
 
-    const lintMock = vi.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }));
+    const lintMock = rs.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }));
 
-    const createPipelineMock = vi.fn().mockImplementation(() => {
+    const createPipelineMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('invalid config');
     });
 
@@ -847,7 +840,7 @@ describe('PipelinePage', () => {
   it('confirms before stopping a running pipeline', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-    const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+    const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
     render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
 
@@ -1031,8 +1024,8 @@ describe('PipelinePage', () => {
 
     it('leads with Save draft on a new pipeline, and stores it without deploying', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
 
@@ -1055,7 +1048,7 @@ describe('PipelinePage', () => {
     // dropped in transit and the pipeline deploys for real. Never report that as a parked draft.
     it('reports a create that came back deployed instead of drafted', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi
+      const createPipelineMock = rs
         .fn()
         .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
 
@@ -1078,11 +1071,11 @@ describe('PipelinePage', () => {
     it('stays in the editor when a draft is saved from its own page', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const updatePipelineMock = vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
           updatePipelineMock,
         }),
       });
@@ -1101,7 +1094,7 @@ describe('PipelinePage', () => {
       ['an empty config', ''],
     ])('saves %s as a draft', async (_name, configYaml) => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -1123,7 +1116,7 @@ describe('PipelinePage', () => {
      */
     it('refuses to park a create page with nothing on it, and says what would make it savable', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -1139,7 +1132,7 @@ describe('PipelinePage', () => {
     // A name is enough to be worth keeping: it is somewhere to come back to.
     it('parks a named draft with no configuration at all', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -1153,7 +1146,7 @@ describe('PipelinePage', () => {
 
     it('names an unnamed draft rather than refusing to save it', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -1174,8 +1167,8 @@ describe('PipelinePage', () => {
     it('looks up untitled names only when saving, with a narrow request', async () => {
       const user = userEvent.setup();
       const requests: unknown[] = [];
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = vi.fn().mockImplementation((req: unknown) => {
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const listPipelinesMock = rs.fn().mockImplementation((req: unknown) => {
         requests.push(req);
         return create(ConsoleListPipelinesResponseSchema, {
           response: create(ListPipelinesResponseSchema, { pipelines: [] }),
@@ -1198,8 +1191,8 @@ describe('PipelinePage', () => {
 
     it('numbers an unnamed draft against the names already taken', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = vi.fn().mockReturnValue(
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const listPipelinesMock = rs.fn().mockReturnValue(
         create(ConsoleListPipelinesResponseSchema, {
           response: create(ListPipelinesResponseSchema, {
             pipelines: [create(PipelineSchema, { id: 'p1', displayName: 'Untitled pipeline' })],
@@ -1220,7 +1213,7 @@ describe('PipelinePage', () => {
     it('shows the save as busy while the untitled name is being looked up', async () => {
       const user = userEvent.setup();
       let releaseLookup: () => void = () => undefined;
-      const listPipelinesMock = vi.fn().mockImplementation(
+      const listPipelinesMock = rs.fn().mockImplementation(
         () =>
           new Promise((resolve) => {
             releaseLookup = () =>
@@ -1231,7 +1224,7 @@ describe('PipelinePage', () => {
               );
           })
       );
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
 
@@ -1249,8 +1242,8 @@ describe('PipelinePage', () => {
     // Numbering is a nicety; duplicate display names are legal. Losing the work is not an option.
     it('still saves the draft when the name lookup fails', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = vi.fn().mockImplementation(() => {
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+      const listPipelinesMock = rs.fn().mockImplementation(() => {
         throw new ConnectError('list unavailable', Code.Unavailable);
       });
 
@@ -1265,10 +1258,10 @@ describe('PipelinePage', () => {
 
     it('"Save and start" on a new pipeline deploys it for real', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi
+      const createPipelineMock = rs
         .fn()
         .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
-      const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
 
@@ -1288,7 +1281,7 @@ describe('PipelinePage', () => {
     // itself is covered in save-actions.test.ts; toasts aren't mounted in this harness.
     it("won't start an empty pipeline", async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn();
+      const createPipelineMock = rs.fn();
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -1307,10 +1300,10 @@ describe('PipelinePage', () => {
     it('falls back to deploy-then-stop when drafts are unavailable', async () => {
       const user = userEvent.setup();
       mockIsFeatureFlagEnabled.mockImplementation(() => false);
-      const createPipelineMock = vi
+      const createPipelineMock = rs
         .fn()
         .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
-      const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
 
@@ -1330,10 +1323,10 @@ describe('PipelinePage', () => {
     it('does not claim success when the pipeline it created could not be stopped', async () => {
       const user = userEvent.setup();
       mockIsFeatureFlagEnabled.mockImplementation(() => false);
-      const createPipelineMock = vi
+      const createPipelineMock = rs
         .fn()
         .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
-      const stopPipelineMock = vi.fn().mockRejectedValue(new ConnectError('pipeline is not running', Code.Internal));
+      const stopPipelineMock = rs.fn().mockRejectedValue(new ConnectError('pipeline is not running', Code.Internal));
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
 
@@ -1351,11 +1344,11 @@ describe('PipelinePage', () => {
     it('editing a draft keeps it a draft, and says so', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const updatePipelineMock = vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
           updatePipelineMock,
         }),
       });
@@ -1376,7 +1369,7 @@ describe('PipelinePage', () => {
     it('reports a draft update that came back deployed, and hands over to the pipeline page', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const updatePipelineMock = vi.fn().mockReturnValue(
+      const updatePipelineMock = rs.fn().mockReturnValue(
         create(ConsoleUpdatePipelineResponseSchema, {
           response: create(UpdatePipelineResponseSchema, {
             pipeline: create(PipelineSchema, { id: 'test-pipeline', state: Pipeline_State.STOPPED }),
@@ -1386,7 +1379,7 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
           updatePipelineMock,
         }),
       });
@@ -1408,11 +1401,11 @@ describe('PipelinePage', () => {
       const user = userEvent.setup();
       const partialConfig = 'input:\n  kafka_\n# where was I\noutput:';
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const updatePipelineMock = vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi
+          getPipelineMock: rs
             .fn()
             .mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT, configYaml: partialConfig })),
           updatePipelineMock,
@@ -1434,13 +1427,13 @@ describe('PipelinePage', () => {
     it('reports a draft that has been started by someone else instead of deploying to it', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const updatePipelineMock = vi.fn().mockImplementation(() => {
+      const updatePipelineMock = rs.fn().mockImplementation(() => {
         throw new ConnectError('pipeline is not a draft', Code.FailedPrecondition);
       });
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
           updatePipelineMock,
         }),
       });
@@ -1457,13 +1450,13 @@ describe('PipelinePage', () => {
     it('does not blame drafts for a failed precondition on a pipeline that is not one', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const updatePipelineMock = vi.fn().mockImplementation(() => {
+      const updatePipelineMock = rs.fn().mockImplementation(() => {
         throw new ConnectError('pipeline is suspended', Code.FailedPrecondition);
       });
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.STOPPED })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.STOPPED })),
           updatePipelineMock,
         }),
       });
@@ -1481,13 +1474,13 @@ describe('PipelinePage', () => {
     it('a refused start keeps the saved draft and shows the issues on their lines', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const startPipelineMock = vi.fn().mockImplementation(() => {
+      const startPipelineMock = rs.fn().mockImplementation(() => {
         throw invalidConfigError();
       });
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
           startPipelineMock,
         }),
       });
@@ -1514,11 +1507,11 @@ describe('PipelinePage', () => {
     it('offers to start a stopped pipeline as part of saving it', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const startPipelineMock = vi.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));
+      const startPipelineMock = rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.STOPPED })),
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.STOPPED })),
           startPipelineMock,
         }),
       });
@@ -1713,10 +1706,10 @@ describe('PipelinePage', () => {
     ])('deletes a draft from %s, after confirming', async (_name, mode) => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode, pipelineId: 'test-pipeline' });
-      const deletePipelineMock = vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}));
+      const deletePipelineMock = rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}));
 
       render(<PipelinePage />, {
-        transport: createTransport({ getPipelineMock: vi.fn().mockReturnValue(draftPipeline()), deletePipelineMock }),
+        transport: createTransport({ getPipelineMock: rs.fn().mockReturnValue(draftPipeline()), deletePipelineMock }),
       });
 
       await user.click(await screen.findByTestId('delete-draft'));
@@ -1758,8 +1751,8 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(draftPipeline()),
-          deletePipelineMock: vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {})),
+          getPipelineMock: rs.fn().mockReturnValue(draftPipeline()),
+          deletePipelineMock: rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {})),
         }),
       });
 
@@ -1777,10 +1770,10 @@ describe('PipelinePage', () => {
     it('stands the unsaved-changes guard down after deleting, so no second dialog follows', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      const deletePipelineMock = vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}));
+      const deletePipelineMock = rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}));
 
       render(<PipelinePage />, {
-        transport: createTransport({ getPipelineMock: vi.fn().mockReturnValue(draftPipeline()), deletePipelineMock }),
+        transport: createTransport({ getPipelineMock: rs.fn().mockReturnValue(draftPipeline()), deletePipelineMock }),
       });
 
       const editor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
@@ -1808,8 +1801,8 @@ describe('PipelinePage', () => {
     });
 
     const blocked = () => {
-      const proceed = vi.fn();
-      const reset = vi.fn();
+      const proceed = rs.fn();
+      const reset = rs.fn();
       mockBlocker.mockReturnValue({ status: 'blocked', proceed, reset });
       return { proceed, reset };
     };
@@ -1817,7 +1810,7 @@ describe('PipelinePage', () => {
     it('offers a draft as the way out, and resumes the interrupted navigation', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
-      const createPipelineMock = vi.fn().mockReturnValue(
+      const createPipelineMock = rs.fn().mockReturnValue(
         create(ConsoleCreatePipelineResponseSchema, {
           response: create(CreatePipelineResponseSchema, {
             pipeline: create(PipelineSchema, { id: 'new-pipeline', state: Pipeline_State.DRAFT }),
@@ -1842,7 +1835,7 @@ describe('PipelinePage', () => {
     it('stays put when the draft it offered to save fails', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
-      const createPipelineMock = vi
+      const createPipelineMock = rs
         .fn()
         .mockRejectedValue(new ConnectError('pipeline quota exceeded', Code.ResourceExhausted));
 
@@ -1863,7 +1856,7 @@ describe('PipelinePage', () => {
     it('falls back to keeping the edits in this browser when the draft cannot be saved', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
-      const createPipelineMock = vi
+      const createPipelineMock = rs
         .fn()
         .mockRejectedValue(new ConnectError('pipeline quota exceeded', Code.ResourceExhausted));
 
@@ -1982,7 +1975,7 @@ describe('PipelinePage', () => {
         }),
       });
     const transportWithUpdateTime = (updateTimeMs: number) =>
-      createTransport({ getPipelineMock: vi.fn().mockReturnValue(pipelineAt(updateTimeMs)) });
+      createTransport({ getPipelineMock: rs.fn().mockReturnValue(pipelineAt(updateTimeMs)) });
 
     /**
      * Staleness is "someone saved this pipeline since these edits were captured", and it
@@ -2032,7 +2025,7 @@ describe('PipelinePage', () => {
       // must not move it, or a colleague's save is adopted unseen and the warning it exists for never shows.
       it('stamps the buffer with the version on screen, not the one the query last fetched', async () => {
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-        const getPipelineMock = vi
+        const getPipelineMock = rs
           .fn()
           .mockReturnValueOnce(pipelineAt(SAVED_AT))
           .mockReturnValue(pipelineAt(SAVED_AT + 60_000));
@@ -2221,8 +2214,8 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, {
         transport: createTransport({
-          getPipelineMock: vi.fn().mockReturnValue(draftPipeline()),
-          updatePipelineMock: vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})),
+          getPipelineMock: rs.fn().mockReturnValue(draftPipeline()),
+          updatePipelineMock: rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})),
         }),
       });
 
@@ -2252,7 +2245,7 @@ describe('PipelinePage', () => {
 
     it('a saved draft clears the buffer it was protecting', async () => {
       const user = userEvent.setup();
-      const createPipelineMock = vi.fn().mockReturnValue(
+      const createPipelineMock = rs.fn().mockReturnValue(
         create(ConsoleCreatePipelineResponseSchema, {
           response: create(CreatePipelineResponseSchema, {
             pipeline: create(PipelineSchema, { id: 'new-pipeline', state: Pipeline_State.DRAFT }),
@@ -2284,9 +2277,9 @@ describe('PipelinePage', () => {
       takeStartLintHints('test-pipeline');
     });
 
-    const draftTransport = (overrides?: { startPipelineMock?: ReturnType<typeof vi.fn> }) =>
+    const draftTransport = (overrides?: { startPipelineMock?: ReturnType<typeof rs.fn> }) =>
       createTransport({
-        getPipelineMock: vi.fn().mockReturnValue(
+        getPipelineMock: rs.fn().mockReturnValue(
           create(ConsoleGetPipelineResponseSchema, {
             response: create(GetPipelineResponseSchema, {
               pipeline: create(PipelineSchema, {
@@ -2314,7 +2307,7 @@ describe('PipelinePage', () => {
 
     it('starts from the detail view', async () => {
       const user = userEvent.setup();
-      const startPipelineMock = vi.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));
+      const startPipelineMock = rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));
 
       render(<PipelinePage />, { transport: draftTransport({ startPipelineMock }) });
 
@@ -2326,7 +2319,7 @@ describe('PipelinePage', () => {
 
     it('routes a refused start into the editor, where the issues are', async () => {
       const user = userEvent.setup();
-      const startPipelineMock = vi.fn().mockImplementation(() => {
+      const startPipelineMock = rs.fn().mockImplementation(() => {
         throw new ConnectError('invalid pipeline configuration', Code.InvalidArgument, undefined, [
           {
             desc: LintHintSchema,
@@ -2350,7 +2343,7 @@ describe('PipelinePage', () => {
     // whatever the editor's own lint happens to find.
     it("hands the refused start's hints to the editor it opens", async () => {
       const user = userEvent.setup();
-      const startPipelineMock = vi.fn().mockImplementation(() => {
+      const startPipelineMock = rs.fn().mockImplementation(() => {
         throw new ConnectError('invalid pipeline configuration', Code.InvalidArgument, undefined, [
           {
             desc: LintHintSchema,

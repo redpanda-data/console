@@ -28,7 +28,7 @@ afterEach(() => {
 
 describe('useSaveHotkey', () => {
   it('saves and prevents the browser default on ⌘S', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     const event = pressSave();
@@ -37,7 +37,7 @@ describe('useSaveHotkey', () => {
   });
 
   it('treats Ctrl+S as save on non-mac', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     pressSave({ metaKey: false, ctrlKey: true });
@@ -45,7 +45,7 @@ describe('useSaveHotkey', () => {
   });
 
   it('ignores ⌘⇧S so save-as keeps its browser behaviour', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     const event = pressSave({ shiftKey: true });
@@ -59,7 +59,7 @@ describe('useSaveHotkey', () => {
     modal.setAttribute('aria-modal', 'true');
     document.body.appendChild(modal);
 
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     const event = pressSave();
@@ -68,7 +68,7 @@ describe('useSaveHotkey', () => {
   });
 
   it('ignores auto-repeated keydowns from a held ⌘S', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     pressSave();
@@ -80,7 +80,7 @@ describe('useSaveHotkey', () => {
   });
 
   it('swallows the shortcut but does not start a second save while one is in flight', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: true, onSave }));
 
     const event = pressSave();
@@ -89,7 +89,7 @@ describe('useSaveHotkey', () => {
   });
 
   it('does nothing when disabled', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: false, isSaving: false, onSave }));
 
     const event = pressSave();
@@ -98,7 +98,7 @@ describe('useSaveHotkey', () => {
   });
 
   it('cleans up the listener on unmount', () => {
-    const onSave = vi.fn();
+    const onSave = rs.fn();
     const { unmount } = renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     unmount();
@@ -108,8 +108,8 @@ describe('useSaveHotkey', () => {
   });
 
   it('uses the latest onSave/isSaving without re-subscribing', () => {
-    const first = vi.fn();
-    const second = vi.fn();
+    const first = rs.fn();
+    const second = rs.fn();
     const { rerender } = renderHook(
       ({ cb, saving }) => useSaveHotkey({ enabled: true, isSaving: saving, onSave: cb }),
       {

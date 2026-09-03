@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
 import type { EditorTheme } from 'components/redpanda-ui/lib/editor-theme';
-import { describe, expect, it } from 'vitest';
 
 import { type DiffBase, diffColors, diffTheme } from './changes-diff-theme';
 

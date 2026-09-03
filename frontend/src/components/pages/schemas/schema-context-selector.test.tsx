@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeAll, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { render, screen } from 'test-utils';
-import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
@@ -25,7 +25,7 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 beforeAll(() => {
-  Element.prototype.scrollIntoView = vi.fn();
+  Element.prototype.scrollIntoView = rs.fn();
   if (!HTMLElement.prototype.hasPointerCapture) {
     HTMLElement.prototype.hasPointerCapture = () => false;
   }
@@ -53,14 +53,14 @@ const makeContexts = (): DerivedContext[] => [
 
 describe('SchemaContextSelector', () => {
   test('renders selected context label in trigger button', () => {
-    renderSelector({ contexts: makeContexts(), onContextChange: vi.fn(), selectedContext: DEFAULT_CONTEXT_ID });
+    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: DEFAULT_CONTEXT_ID });
 
     const trigger = screen.getByTestId('schema-context-selector');
     expect(trigger).toHaveTextContent('Default');
   });
 
   test('falls back to "All" label when selectedContext not in contexts', () => {
-    renderSelector({ contexts: makeContexts(), onContextChange: vi.fn(), selectedContext: 'nonexistent' });
+    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: 'nonexistent' });
 
     const trigger = screen.getByTestId('schema-context-selector');
     expect(trigger).toHaveTextContent('All');
@@ -68,7 +68,7 @@ describe('SchemaContextSelector', () => {
 
   test('opens popover on button click and shows all context options', async () => {
     const user = userEvent.setup();
-    renderSelector({ contexts: makeContexts(), onContextChange: vi.fn(), selectedContext: ALL_CONTEXT_ID });
+    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: ALL_CONTEXT_ID });
 
     await user.click(screen.getByTestId('schema-context-selector'));
 
@@ -80,7 +80,7 @@ describe('SchemaContextSelector', () => {
 
   test('calls onContextChange with correct id when option selected', async () => {
     const user = userEvent.setup();
-    const onContextChange = vi.fn();
+    const onContextChange = rs.fn();
     renderSelector({ contexts: makeContexts(), onContextChange, selectedContext: ALL_CONTEXT_ID });
 
     await user.click(screen.getByTestId('schema-context-selector'));
@@ -91,7 +91,7 @@ describe('SchemaContextSelector', () => {
 
   test('displays subject count per context', async () => {
     const user = userEvent.setup();
-    renderSelector({ contexts: makeContexts(), onContextChange: vi.fn(), selectedContext: ALL_CONTEXT_ID });
+    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: ALL_CONTEXT_ID });
 
     await user.click(screen.getByTestId('schema-context-selector'));
 

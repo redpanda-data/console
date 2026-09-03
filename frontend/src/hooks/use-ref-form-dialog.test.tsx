@@ -9,27 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, describe, expect, it, rs } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useRefFormDialog } from './use-ref-form-dialog';
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
+rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
 
 // Import after mock so we get the mocked version
 const getToastError = async () => {
   const { toast } = await import('sonner');
-  return toast.error as ReturnType<typeof vi.fn>;
+  return toast.error as ReturnType<typeof rs.fn>;
 };
 
 describe('useRefFormDialog', () => {
   afterEach(() => {
-    vi.useRealTimers();
+    rs.useRealTimers();
   });
 
   it('starts closed and not submitting', () => {
     const ref = { current: null };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
@@ -40,7 +40,7 @@ describe('useRefFormDialog', () => {
 
   it('opens with target and derives isOpen', () => {
     const ref = { current: null };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog<string, string>({ ref, onSuccess }));
 
@@ -54,7 +54,7 @@ describe('useRefFormDialog', () => {
 
   it('defaults target to true when open is called without argument', () => {
     const ref = { current: null };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
@@ -68,7 +68,7 @@ describe('useRefFormDialog', () => {
 
   it('close resets all state', async () => {
     const ref = { current: null };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
@@ -89,9 +89,9 @@ describe('useRefFormDialog', () => {
 
   it('calls onSuccess and closes on successful submit', async () => {
     const data = { id: 42 };
-    const triggerSubmit = vi.fn().mockResolvedValue({ success: true, data });
+    const triggerSubmit = rs.fn().mockResolvedValue({ success: true, data });
     const ref = { current: { triggerSubmit } };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
@@ -109,9 +109,9 @@ describe('useRefFormDialog', () => {
   });
 
   it('keeps dialog open on failed submit', async () => {
-    const triggerSubmit = vi.fn().mockResolvedValue({ success: false });
+    const triggerSubmit = rs.fn().mockResolvedValue({ success: false });
     const ref = { current: { triggerSubmit } };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
@@ -133,9 +133,9 @@ describe('useRefFormDialog', () => {
     const inflightPromise = new Promise<{ success: boolean; data?: unknown }>((resolve) => {
       resolveSubmit = resolve;
     });
-    const triggerSubmit = vi.fn().mockReturnValue(inflightPromise);
+    const triggerSubmit = rs.fn().mockReturnValue(inflightPromise);
     const ref = { current: { triggerSubmit } };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
@@ -168,14 +168,14 @@ describe('useRefFormDialog', () => {
   });
 
   it('shows timeout toast and closes on timeout', async () => {
-    vi.useFakeTimers();
+    rs.useFakeTimers();
 
     const neverResolves = new Promise<never>(() => {
       // intentionally never resolves
     });
-    const triggerSubmit = vi.fn().mockReturnValue(neverResolves);
+    const triggerSubmit = rs.fn().mockReturnValue(neverResolves);
     const ref = { current: { triggerSubmit } };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess, timeout: 5000 }));
 
@@ -190,7 +190,7 @@ describe('useRefFormDialog', () => {
 
     // Advance timers past the timeout
     await act(async () => {
-      vi.advanceTimersByTime(6000);
+      rs.advanceTimersByTime(6000);
       await submitPromise;
     });
 
@@ -201,9 +201,9 @@ describe('useRefFormDialog', () => {
   });
 
   it('does nothing when submit is called while closed', async () => {
-    const triggerSubmit = vi.fn().mockResolvedValue({ success: true, data: {} });
+    const triggerSubmit = rs.fn().mockResolvedValue({ success: true, data: {} });
     const ref = { current: { triggerSubmit } };
-    const onSuccess = vi.fn();
+    const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 

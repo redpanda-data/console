@@ -2,16 +2,16 @@
 title: Unit vs Integration Tests
 impact: CRITICAL
 impactDescription: Wrong file extension causes tests to run in wrong environment
-tags: vitest, unit, integration, configuration
+tags: rstest, unit, integration, configuration
 ---
 
 # Unit vs Integration Tests (CRITICAL)
 
 ## Explanation
 
-Vitest uses dual configuration. File extension determines environment:
+Rstest uses separate unit and integration projects. File extension determines environment:
 - `.test.ts` runs in Node.js (fast, no DOM)
-- `.test.tsx` runs in JSDOM (browser-like, slower)
+- `.test.tsx` runs in happy-dom (browser-like, slower)
 
 Using wrong extension causes environment mismatches and test failures.
 
@@ -63,9 +63,10 @@ test('renders button', () => {
 | Test Type | Extension | Environment | Use For |
 |-----------|-----------|-------------|---------|
 | Unit | `.test.ts` | Node.js | Utilities, helpers, pure functions |
-| Integration | `.test.tsx` | JSDOM | React components, hooks with DOM |
+| Integration | `.test.tsx` | happy-dom | React components, hooks with DOM |
 
 ## Reference
 
-- `vitest.config.unit.ts` - Unit test configuration
-- `vitest.config.ts` - Integration test configuration
+- `rstest.config.unit.ts` - Unit test project
+- `rstest.config.integration.ts` - Integration test project
+- `rstest.config.ts` - Multi-project watch configuration

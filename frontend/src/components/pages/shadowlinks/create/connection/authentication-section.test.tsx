@@ -10,20 +10,20 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
-import { vi } from 'vitest';
 
 import { AuthenticationSection } from './authentication-section';
 import { AUTH_METHOD, FormSchema, type FormValues, initialValues } from '../model';
 
 const VIEW_REQUIRED_ACLS_RE = /view required acls/i;
 
-vi.mock('config', () => ({
-  isEmbedded: vi.fn(() => false),
-  isFeatureFlagEnabled: vi.fn(() => false),
+rs.mock('config', () => ({
+  isEmbedded: rs.fn(() => false),
+  isFeatureFlagEnabled: rs.fn(() => false),
 }));
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
