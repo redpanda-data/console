@@ -153,6 +153,7 @@ export const statGroupVariants = cva(
         2: 'grid-cols-2',
         3: 'grid-cols-1 sm:grid-cols-3',
         4: 'grid-cols-2 md:grid-cols-4',
+        6: 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6',
       },
       gap: {
         sm: 'gap-3',
