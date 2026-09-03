@@ -210,6 +210,41 @@ describe('CreateTopicDialog', () => {
     expect(screen.getByText('Replication factor')).toBeInTheDocument();
   });
 
+  test('Success state falls back to the requested counts when the broker reports -1', async () => {
+    const user = userEvent.setup();
+    // Brokers on CreateTopics response versions < 5 return -1 even for explicit requests
+    mockMutateAsync.mockResolvedValue({
+      topicName: 'my-new-topic',
+      partitionCount: -1,
+      replicationFactor: -1,
+    });
+
+    renderDialog();
+
+    await user.type(screen.getByTestId('topic-name'), 'my-new-topic');
+    const partitionsInput = screen.getByTestId('topic-partitions');
+    await user.clear(partitionsInput);
+    await user.type(partitionsInput, '5');
+    const replicationFactorInput = screen.getByTestId('topic-replication-factor');
+    await user.clear(replicationFactorInput);
+    await user.type(replicationFactorInput, '3');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
+    });
+
+    await user.click(screen.getByTestId('onOk-button'));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Topic created').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // The values the user asked for, not the broker's -1 placeholders
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
+
   test('API error shows inline Alert and form stays open', async () => {
     const user = userEvent.setup();
     const apiError = new Error('topic already exists');

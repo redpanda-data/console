@@ -1,4 +1,31 @@
-import { substringWithEllipsis } from './utils'; // Adjust the import path as needed
+import { assignDeep, substringWithEllipsis } from './utils'; // Adjust the import path as needed
+
+describe('assignDeep', () => {
+  test('merges nested objects', () => {
+    const target = { a: { b: 1, c: 2 }, d: 3 };
+    assignDeep(target, { a: { b: 9 } });
+    expect(target).toEqual({ a: { b: 9, c: 2 }, d: 3 });
+  });
+
+  test('replaces arrays wholesale instead of merging index-by-index', () => {
+    const target: Record<string, unknown> = { list: [{ id: 'a' }, { id: 'b' }] };
+    const next = [{ id: 'b' }, { id: 'a' }, { id: 'c' }];
+    assignDeep(target, { list: next });
+    expect(target.list).toBe(next);
+  });
+
+  test('reordering an array of shared object references never mutates the elements', () => {
+    // Regression: an index-wise merge of a reordered array would write one
+    // element's fields onto another shared element, duplicating ids.
+    const a = { id: 'a', visible: true };
+    const b = { id: 'b', visible: false };
+    const target: Record<string, unknown> = { cols: [a, b] };
+    assignDeep(target, { cols: [b, a] });
+    expect(a).toEqual({ id: 'a', visible: true });
+    expect(b).toEqual({ id: 'b', visible: false });
+    expect((target.cols as { id: string }[]).map((c) => c.id)).toEqual(['b', 'a']);
+  });
+});
 
 describe('substringWithEllipsis', () => {
   test('returns the original string if its length is less than maxLength', () => {
