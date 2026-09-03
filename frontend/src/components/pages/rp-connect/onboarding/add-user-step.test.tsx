@@ -38,18 +38,18 @@ import type { UserStepRef } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
-vi.mock('config', () => ({
+rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
     clusterId: 'test-cluster',
     isServerless: false,
   },
-  isFeatureFlagEnabled: vi.fn(() => false),
-  addBearerTokenInterceptor: vi.fn((next: unknown) => next),
+  isFeatureFlagEnabled: rs.fn(() => false),
+  addBearerTokenInterceptor: rs.fn((next: unknown) => next),
 }));
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -57,17 +57,17 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock generatePassword to return deterministic value
-vi.mock('utils/password', () => ({
-  generatePassword: vi.fn(() => 'mock-generated-password-12345'),
+rs.mock('utils/password', () => ({
+  generatePassword: rs.fn(() => 'mock-generated-password-12345'),
 }));
 
 // Mock ServiceAccountSelector with functional ref
-vi.mock('components/ui/service-account/service-account-selector', () => {
+rs.mock('components/ui/service-account/service-account-selector', () => {
   const React = require('react');
   return {
     ServiceAccountSelector: React.forwardRef((_props: unknown, ref: unknown) => {
       React.useImperativeHandle(ref, () => ({
-        createServiceAccount: vi.fn().mockResolvedValue({
+        createServiceAccount: rs.fn().mockResolvedValue({
           serviceAccountId: 'sa-123',
           secretName: 'sa-secret',
         }),
@@ -79,8 +79,8 @@ vi.mock('components/ui/service-account/service-account-selector', () => {
 });
 
 // Mock TanStack Router Link
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     Link: (props: { children: unknown }) => {
@@ -96,7 +96,7 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ────────────────────────────────────────────
 import { AddUserStep } from './add-user-step';
@@ -124,30 +124,30 @@ function TestHarness({ onResult, ...props }: { onResult: (result: unknown) => vo
 
 /** Build transport with common RPC mocks */
 function buildTransport(overrides?: {
-  listUsersMock?: ReturnType<typeof vi.fn>;
-  createUserMock?: ReturnType<typeof vi.fn>;
-  listACLsMock?: ReturnType<typeof vi.fn>;
-  createACLMock?: ReturnType<typeof vi.fn>;
-  createSecretMock?: ReturnType<typeof vi.fn>;
+  listUsersMock?: ReturnType<typeof rs.fn>;
+  createUserMock?: ReturnType<typeof rs.fn>;
+  listACLsMock?: ReturnType<typeof rs.fn>;
+  createACLMock?: ReturnType<typeof rs.fn>;
+  createSecretMock?: ReturnType<typeof rs.fn>;
 }) {
   const listUsersMock =
     overrides?.listUsersMock ??
-    vi.fn().mockReturnValue(
+    rs.fn().mockReturnValue(
       create(ListUsersResponseSchema, {
         users: [],
         nextPageToken: '',
       })
     );
 
-  const createUserMock = overrides?.createUserMock ?? vi.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
+  const createUserMock = overrides?.createUserMock ?? rs.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
 
   const listACLsMock =
-    overrides?.listACLsMock ?? vi.fn().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
+    overrides?.listACLsMock ?? rs.fn().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
 
-  const createACLMock = overrides?.createACLMock ?? vi.fn().mockReturnValue({});
+  const createACLMock = overrides?.createACLMock ?? rs.fn().mockReturnValue({});
 
   const createSecretMock =
-    overrides?.createSecretMock ?? vi.fn().mockReturnValue(create(CreateSecretResponseSchemaConsole, {}));
+    overrides?.createSecretMock ?? rs.fn().mockReturnValue(create(CreateSecretResponseSchemaConsole, {}));
 
   const transport = createRouterTransport(({ rpc }) => {
     rpc(listUsers, listUsersMock);
@@ -171,7 +171,7 @@ function buildTransport(overrides?: {
 
 describe('AddUserStep', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   // ── SASL path ──────────────────────────────────────────────────────────────
@@ -268,7 +268,7 @@ describe('AddUserStep', () => {
       const user = userEvent.setup();
       const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'existing-user' })];
 
-      const listUsersMock = vi.fn().mockReturnValue(
+      const listUsersMock = rs.fn().mockReturnValue(
         create(ListUsersResponseSchema, {
           users: existingUsers,
           nextPageToken: '',
@@ -449,7 +449,7 @@ describe('AddUserStep', () => {
       const user = userEvent.setup();
       const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'no-perms-user' })];
 
-      const listUsersMock = vi.fn().mockReturnValue(
+      const listUsersMock = rs.fn().mockReturnValue(
         create(ListUsersResponseSchema, {
           users: existingUsers,
           nextPageToken: '',
@@ -457,7 +457,7 @@ describe('AddUserStep', () => {
       );
 
       // Return empty ACLs — user has no permissions
-      const listACLsMock = vi.fn().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
+      const listACLsMock = rs.fn().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
 
       const { transport } = buildTransport({ listUsersMock, listACLsMock });
 
@@ -494,7 +494,7 @@ describe('AddUserStep', () => {
     test('11. has permissions alert when user has ACLs', async () => {
       const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'perms-user' })];
 
-      const listUsersMock = vi.fn().mockReturnValue(
+      const listUsersMock = rs.fn().mockReturnValue(
         create(ListUsersResponseSchema, {
           users: existingUsers,
           nextPageToken: '',
@@ -502,7 +502,7 @@ describe('AddUserStep', () => {
       );
 
       // Return ACLs with READ and WRITE permissions
-      const listACLsMock = vi.fn().mockReturnValue(
+      const listACLsMock = rs.fn().mockReturnValue(
         create(ListACLsResponseSchema, {
           resources: [
             create(ListACLsResponse_ResourceSchema, {

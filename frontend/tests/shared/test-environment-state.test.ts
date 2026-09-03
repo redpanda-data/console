@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, rs, test } from '@rstest/core';
 
 import {
   cleanupSerializedResources,
@@ -36,14 +36,14 @@ describe('test environment state', () => {
   test('stops containers in parallel before removing the network', async () => {
     const state = createEnvironmentState();
     let finishFirst: (() => void) | undefined;
-    const firstStop = vi.fn(
+    const firstStop = rs.fn(
       () =>
         new Promise<void>((resolve) => {
           finishFirst = resolve;
         })
     );
-    const secondStop = vi.fn().mockResolvedValue(undefined);
-    const networkStop = vi.fn().mockResolvedValue(undefined);
+    const secondStop = rs.fn().mockResolvedValue(undefined);
+    const networkStop = rs.fn().mockResolvedValue(undefined);
 
     rememberContainer(state, 'redpanda', { getId: () => 'redpanda-id', stop: firstStop });
     rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
@@ -64,12 +64,12 @@ describe('test environment state', () => {
   test('attempts all cleanup and reports failures', async () => {
     const state = createEnvironmentState();
     const firstError = new Error('first stop failed');
-    const secondStop = vi.fn().mockResolvedValue(undefined);
-    const networkStop = vi.fn().mockRejectedValue(new Error('network stop failed'));
+    const secondStop = rs.fn().mockResolvedValue(undefined);
+    const networkStop = rs.fn().mockRejectedValue(new Error('network stop failed'));
 
     rememberContainer(state, 'redpanda', {
       getId: () => 'redpanda-id',
-      stop: vi.fn().mockRejectedValue(firstError),
+      stop: rs.fn().mockRejectedValue(firstError),
     });
     rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
     state.network = { stop: networkStop };
@@ -88,9 +88,9 @@ describe('test environment state', () => {
       backendId: 'backend-id',
       tempPaths: ['/tmp/license-one', '/tmp/license-two'],
     });
-    const removeContainer = vi.fn().mockResolvedValue(undefined);
-    const removeNetwork = vi.fn().mockResolvedValue(undefined);
-    const removePath = vi.fn().mockResolvedValue(undefined);
+    const removeContainer = rs.fn().mockResolvedValue(undefined);
+    const removeNetwork = rs.fn().mockResolvedValue(undefined);
+    const removePath = rs.fn().mockResolvedValue(undefined);
 
     await cleanupSerializedResources(state, {
       removeContainer,

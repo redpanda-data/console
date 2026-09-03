@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { createStore as createZustandStore } from 'zustand/vanilla';
 
 import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
 
@@ -23,14 +24,14 @@ const NuqsWrapper = ({ children }: { children: ReactNode }) => (
   </NuqsTestingAdapter>
 );
 
-const { historyPushMock, refreshRoleMembersMock, refreshRolesMock, deleteRoleMutationMock } = vi.hoisted(() => ({
-  historyPushMock: vi.fn(),
-  refreshRoleMembersMock: vi.fn().mockResolvedValue(undefined),
-  refreshRolesMock: vi.fn().mockResolvedValue(undefined),
-  deleteRoleMutationMock: vi.fn().mockResolvedValue(undefined),
+const { historyPushMock, refreshRoleMembersMock, refreshRolesMock, deleteRoleMutationMock } = rs.hoisted(() => ({
+  historyPushMock: rs.fn(),
+  refreshRoleMembersMock: rs.fn().mockResolvedValue(undefined),
+  refreshRolesMock: rs.fn().mockResolvedValue(undefined),
+  deleteRoleMutationMock: rs.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@redpanda-data/ui', () => {
+rs.mock('@redpanda-data/ui', () => {
   const Div = ({
     children,
     flexDirection: _flexDirection,
@@ -80,7 +81,7 @@ vi.mock('@redpanda-data/ui', () => {
     ),
     createStandaloneToast: () => ({
       ToastContainer: () => null,
-      toast: vi.fn(),
+      toast: rs.fn(),
     }),
     DataTable: ({
       columns,
@@ -187,8 +188,8 @@ vi.mock('@redpanda-data/ui', () => {
   };
 });
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
 
   return {
     ...actual,
@@ -209,11 +210,11 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
         {children}
       </a>
     ),
-    useNavigate: () => vi.fn(),
+    useNavigate: () => rs.fn(),
   };
 });
 
-vi.mock('../shared/delete-role-confirm-modal', () => ({
+rs.mock('../shared/delete-role-confirm-modal', () => ({
   DeleteRoleConfirmModal: ({
     onConfirm,
     roleName,
@@ -228,20 +229,18 @@ vi.mock('../shared/delete-role-confirm-modal', () => ({
   ),
 }));
 
-vi.mock('../../../../components/misc/error-result', () => ({
+rs.mock('../../../../components/misc/error-result', () => ({
   default: () => null,
 }));
 
-vi.mock('../../../../state/app-global', () => ({
+rs.mock('../../../../state/app-global', () => ({
   appGlobal: {
     historyPush: historyPushMock,
     onRefresh: null,
   },
 }));
 
-vi.mock('../../../../state/backend-api', async () => {
-  const { createStore } = await import('zustand/vanilla');
-
+rs.mock('../../../../state/backend-api', () => {
   const store = {
     ACLs: { isAuthorizerEnabled: true },
     userData: {
@@ -263,22 +262,24 @@ vi.mock('../../../../state/backend-api', async () => {
   return {
     api: {
       ...store,
-      refreshClusterOverview: vi.fn().mockResolvedValue(undefined),
-      refreshUserData: vi.fn().mockResolvedValue(undefined),
+      refreshClusterOverview: rs.fn().mockResolvedValue(undefined),
+      refreshUserData: rs.fn().mockResolvedValue(undefined),
     },
     useApiStoreHook: <T,>(selector: (s: typeof store) => T) => selector(store),
     rolesApi: {
-      deleteRole: vi.fn().mockResolvedValue(undefined),
+      deleteRole: rs.fn().mockResolvedValue(undefined),
       refreshRoleMembers: refreshRoleMembersMock,
       refreshRoles: refreshRolesMock,
       ...rolesState,
     },
-    useRolesStore: createStore(() => rolesState),
+    useRolesStore: createZustandStore(() => rolesState),
   };
 });
 
-vi.mock('../../../../state/supported-features', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../state/supported-features')>();
+rs.mock('../../../../state/supported-features', () => {
+  const actual = rs.requireActual<typeof import('../../../../state/supported-features')>(
+    '../../../../state/supported-features'
+  );
 
   return {
     ...actual,
@@ -290,24 +291,24 @@ vi.mock('../../../../state/supported-features', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../license/feature-license-notification', () => ({
+rs.mock('../../../license/feature-license-notification', () => ({
   FeatureLicenseNotification: () => null,
 }));
 
-vi.mock('../../../misc/null-fallback-boundary', () => ({
+rs.mock('../../../misc/null-fallback-boundary', () => ({
   NullFallbackBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
-vi.mock('../../../misc/section', () => ({
+rs.mock('../../../misc/section', () => ({
   default: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
 }));
 
-vi.mock('../shared/security-tabs-nav', () => ({
+rs.mock('../shared/security-tabs-nav', () => ({
   SecurityTabsNav: () => null,
 }));
 
-vi.mock('react-query/api/security', () => ({
-  useCreateRoleMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
+rs.mock('react-query/api/security', () => ({
+  useCreateRoleMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
   useDeleteRoleMutation: () => ({
     mutateAsync: deleteRoleMutationMock,
   }),
@@ -324,7 +325,7 @@ import { RolesTab } from './roles-tab';
 
 describe('RolesTab role navigation', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('renders role list from useListRolesQuery', async () => {

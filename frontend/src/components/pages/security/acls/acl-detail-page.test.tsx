@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import AclDetailPage from './acl-detail-page';
 import type { AclDetail } from '../shared/acl-model';
@@ -19,13 +19,13 @@ import type { AclDetail } from '../shared/acl-model';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { mockUseGetAclsByPrincipal, mockNavigate } = vi.hoisted(() => ({
-  mockUseGetAclsByPrincipal: vi.fn(),
-  mockNavigate: vi.fn(),
+const { mockUseGetAclsByPrincipal, mockNavigate } = rs.hoisted(() => ({
+  mockUseGetAclsByPrincipal: rs.fn(),
+  mockNavigate: rs.fn(),
 }));
 
-vi.mock('react-query/api/acl', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-query/api/acl')>();
+rs.mock('react-query/api/acl', () => {
+  const actual = rs.requireActual<typeof import('react-query/api/acl')>('react-query/api/acl');
   return { ...actual, useGetAclsByPrincipal: mockUseGetAclsByPrincipal };
 });
 
@@ -33,8 +33,8 @@ vi.mock('react-query/api/acl', async (importOriginal) => {
 let currentAclName = '';
 let currentHost: string | undefined;
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     getRouteApi: () => ({
@@ -45,12 +45,12 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   };
 });
 
-vi.mock('state/ui-state', () => ({
-  setPageHeader: vi.fn(),
+rs.mock('state/ui-state', () => ({
+  setPageHeader: rs.fn(),
   uiState: { pageBreadcrumbs: [] },
 }));
 
-vi.mock('./acl-details', () => ({
+rs.mock('./acl-details', () => ({
   ACLDetails: () => <div data-testid="acl-details" />,
 }));
 
@@ -79,7 +79,7 @@ const loadingResult = { data: undefined, isLoading: true };
 
 describe('AclDetailPage — principal URL encoding', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockUseGetAclsByPrincipal.mockReturnValue(loadingResult);
   });
 

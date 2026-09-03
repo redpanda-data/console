@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 
 // Enable automatic store reset between tests - must be before imports
-vi.mock('zustand');
+rs.mock('zustand');
 
 import { act, renderHook } from '@testing-library/react';
 

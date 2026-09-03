@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it, rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { act, render, screen } from 'test-utils';
-import { describe, expect, it, vi } from 'vitest';
 
 import { PipelineStructureTree } from './pipeline-structure-tree';
 
@@ -49,7 +49,7 @@ describe('PipelineStructureTree', () => {
   });
 
   it('selects an editable node directly when its row is clicked', async () => {
-    const onSelectNode = vi.fn();
+    const onSelectNode = rs.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     await userEvent.click(screen.getByText('http'));
     // http maps to its own YAML location, so the highlighted and editable ids match.
@@ -60,7 +60,7 @@ describe('PipelineStructureTree', () => {
   });
 
   it('resolves a switch case to itself so its routing condition is editable', async () => {
-    const onSelectNode = vi.fn();
+    const onSelectNode = rs.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     await userEvent.click(screen.getByText('case 1'));
     const [highlightId, editableId] = onSelectNode.mock.calls[0];
@@ -83,7 +83,7 @@ describe('PipelineStructureTree', () => {
   });
 
   it('toggles a group via the chevron without selecting the node', async () => {
-    const onSelectNode = vi.fn();
+    const onSelectNode = rs.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     const switchRow = screen.getByRole('treeitem', { name: 'switch' });
     // The chevron is presentational (the row owns the ARIA expansion), so target it directly.
@@ -140,7 +140,7 @@ describe('PipelineStructureTree', () => {
   });
 
   it('selects the focused row with Enter', async () => {
-    const onSelectNode = vi.fn();
+    const onSelectNode = rs.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     const httpRow = screen.getByRole('treeitem', { name: 'http' });
     act(() => httpRow.focus());
@@ -174,7 +174,7 @@ describe('PipelineStructureTree', () => {
   });
 
   it('opens the docs link without also selecting the row', async () => {
-    const onSelectNode = vi.fn();
+    const onSelectNode = rs.fn();
     render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
     const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
     await userEvent.click(docsLink);

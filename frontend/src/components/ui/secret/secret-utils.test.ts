@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { extractSecretName, formatSecretTemplate, SECRET_TEMPLATE_REGEX } from './secret-utils';
 

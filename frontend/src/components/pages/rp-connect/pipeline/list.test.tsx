@@ -21,13 +21,13 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: { jwt: 'test-jwt-token' },
-    isEmbedded: vi.fn(() => false),
-    isFeatureFlagEnabled: vi.fn(() => false),
+    isEmbedded: rs.fn(() => false),
+    isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
 

@@ -97,9 +97,9 @@ for (const k in env) {
 }
 
 // - print
-// Skip the banner under Vitest so test output stays clean. The value is
+// Skip the banner during tests so test output stays clean. The value is
 // still exported below for any code that wants to introspect env at runtime.
-if (!process.env.VITEST && process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test') {
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log(toJson(envVarDebugObj));
 }

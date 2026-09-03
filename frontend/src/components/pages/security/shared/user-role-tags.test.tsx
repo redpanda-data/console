@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const { mockRoleMembers, mockListACLsFilter } = vi.hoisted(() => ({
+const { mockRoleMembers, mockListACLsFilter } = rs.hoisted(() => ({
   mockRoleMembers: new Map<string, { name: string; principalType: string }[]>(),
   mockListACLsFilter: { captured: null as { principal: string } | null },
 }));
 
-vi.mock('@connectrpc/connect-query', () => ({
+rs.mock('@connectrpc/connect-query', () => ({
   useQuery: (_schema: unknown, input: { filter?: { principal: string } }, _opts: unknown) => {
     if (input?.filter) {
       mockListACLsFilter.captured = input.filter;
@@ -27,11 +27,11 @@ vi.mock('@connectrpc/connect-query', () => ({
   },
 }));
 
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(),
+rs.mock('@tanstack/react-router', () => ({
+  useNavigate: () => rs.fn(),
 }));
 
-vi.mock('components/redpanda-ui/components/tags', () => ({
+rs.mock('components/redpanda-ui/components/tags', () => ({
   TagsValue: ({ children, ...props }: { children: ReactNode; [key: string]: unknown }) => (
     <span data-testid="tag" {...props}>
       {children}
@@ -39,7 +39,7 @@ vi.mock('components/redpanda-ui/components/tags', () => ({
   ),
 }));
 
-vi.mock('../../../../state/backend-api', () => ({
+rs.mock('../../../../state/backend-api', () => ({
   rolesApi: {
     get roleMembers() {
       return mockRoleMembers;
@@ -47,7 +47,7 @@ vi.mock('../../../../state/backend-api', () => ({
   },
 }));
 
-vi.mock('../../../../state/supported-features', () => ({
+rs.mock('../../../../state/supported-features', () => ({
   useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) => selector({ rolesApi: true }),
 }));
 

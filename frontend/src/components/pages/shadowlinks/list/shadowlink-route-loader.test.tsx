@@ -10,10 +10,10 @@
  */
 
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import { QueryClient } from '@tanstack/react-query';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { Route } from 'routes/shadowlinks/index';
-import { describe, expect, test } from 'vitest';
 
 // A transport whose listShadowLinks RPC always fails with the given code, so we
 // can drive the route loader's error handling.

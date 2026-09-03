@@ -23,6 +23,7 @@ import {
   executeRangeQuery,
   listQueries,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
+import * as React from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 // Recharts' ResponsiveContainer requires parent-container dimensions to
@@ -30,9 +31,8 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 // emit "width(0) and height(0) of chart should be greater than 0" on every
 // chart mount. Mock ResponsiveContainer with a fixed-size passthrough div
 // so the inner LineChart gets a positive layout and the warning stops.
-vi.mock('recharts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('recharts')>();
-  const React = await import('react');
+rs.mock('recharts', () => {
+  const actual = rs.requireActual<typeof import('recharts')>('recharts');
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
@@ -40,28 +40,28 @@ vi.mock('recharts', async (importOriginal) => {
   };
 });
 
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: {
       jwt: 'test-jwt-token',
       controlplaneUrl: 'http://localhost:9090',
     },
-    isFeatureFlagEnabled: vi.fn(() => false),
-    addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
+    isFeatureFlagEnabled: rs.fn(() => false),
+    addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
   };
 });
 
-vi.mock('state/ui-state', () => ({
-  setPageHeader: vi.fn(),
+rs.mock('state/ui-state', () => ({
+  setPageHeader: rs.fn(),
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
   },
 }));
 
-vi.mock('state/app-global', () => ({
+rs.mock('state/app-global', () => ({
   appGlobal: {
     onRefresh: null,
   },
@@ -109,8 +109,8 @@ describe('ObservabilityPage', () => {
       ],
     });
 
-    const listQueriesMock = vi.fn().mockReturnValue(listQueriesResponse);
-    const executeRangeQueryMock = vi.fn().mockImplementation((request) => {
+    const listQueriesMock = rs.fn().mockReturnValue(listQueriesResponse);
+    const executeRangeQueryMock = rs.fn().mockImplementation((request) => {
       let metadata: typeof query1 | typeof query2 | undefined;
       if (request.queryName === 'cpu_usage') {
         metadata = query1;
@@ -143,7 +143,7 @@ describe('ObservabilityPage', () => {
       queries: [],
     });
 
-    const listQueriesMock = vi.fn().mockReturnValue(listQueriesResponse);
+    const listQueriesMock = rs.fn().mockReturnValue(listQueriesResponse);
 
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listQueries, listQueriesMock);
@@ -157,7 +157,7 @@ describe('ObservabilityPage', () => {
   });
 
   test('should display error message when query fails', async () => {
-    const listQueriesMock = vi.fn().mockImplementation(() => {
+    const listQueriesMock = rs.fn().mockImplementation(() => {
       throw new Error('Failed to fetch metrics');
     });
 

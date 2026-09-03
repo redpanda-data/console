@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '@rstest/core';
 
 import { computeGraphLayout } from './pipeline-flow-layout';
 import { summarizeComponent } from './pipeline-flow-meta';

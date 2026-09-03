@@ -9,14 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
-import { vi } from 'vitest';
 
 import AclList from './acl-list';
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return { ...actual, useLocation: () => ({ searchStr: '' }) };
 });
 

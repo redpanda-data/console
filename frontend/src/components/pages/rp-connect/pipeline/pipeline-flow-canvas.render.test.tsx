@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterAll, beforeAll, describe, expect, it, rs } from '@rstest/core';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import { useEffect } from 'react';
 import { render, screen } from 'test-utils';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
@@ -30,7 +30,7 @@ let originalClientWidth: PropertyDescriptor | undefined;
 let originalClientHeight: PropertyDescriptor | undefined;
 
 beforeAll(() => {
-  vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+  rs.stubGlobal('ResizeObserver', ResizeObserverMock);
   originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
   originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
   Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 1200 });
@@ -38,7 +38,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  vi.unstubAllGlobals();
+  rs.unstubAllGlobals();
   if (originalClientWidth) {
     Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth);
   }
@@ -102,7 +102,7 @@ describe('PipelineFlowCanvas — placeholder cards', () => {
   });
 
   it('renders an enabled "Add output" button in edit mode', async () => {
-    render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={vi.fn()} />);
+    render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={rs.fn()} />);
     expect(await screen.findByRole('button', { name: ADD_OUTPUT_RE })).toBeEnabled();
   });
 });

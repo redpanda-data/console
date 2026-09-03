@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import type { InfiniteData } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
@@ -23,7 +24,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { updateRoleMembership } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { connectQueryWrapper } from 'test-utils';
-import { beforeEach, describe, expect, test } from 'vitest';
 
 import { useUpdateRoleMembershipMutation } from './security';
 

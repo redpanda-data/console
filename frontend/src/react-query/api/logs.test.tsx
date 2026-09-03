@@ -19,7 +19,7 @@ import type { TopicMessage } from '../../state/rest-interfaces';
 let convertCallIndex = 0;
 const fakeMessages: TopicMessage[] = [];
 
-vi.mock('../../utils/message-converters', () => ({
+rs.mock('../../utils/message-converters', () => ({
   convertListMessageData: () => {
     const msg = fakeMessages[convertCallIndex];
     convertCallIndex++;
@@ -27,13 +27,13 @@ vi.mock('../../utils/message-converters', () => ({
   },
 }));
 
-vi.mock('sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+rs.mock('sonner', () => ({
+  toast: { error: rs.fn(), success: rs.fn() },
 }));
 
 // Mock config with a fake consoleClient
-const mockListMessages = vi.fn();
-vi.mock('../../config', () => ({
+const mockListMessages = rs.fn();
+rs.mock('../../config', () => ({
   config: {
     get consoleClient() {
       return { listMessages: mockListMessages };
@@ -71,7 +71,7 @@ function createWrapper() {
 
 describe('useLogSearch live mode', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     convertCallIndex = 0;
     fakeMessages.length = 0;
   });
@@ -158,14 +158,14 @@ describe('useLogSearch live mode', () => {
 
 describe('useLogSearch history mode', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.clearAllMocks();
+    rs.useFakeTimers({ shouldAdvanceTime: true });
+    rs.clearAllMocks();
     convertCallIndex = 0;
     fakeMessages.length = 0;
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    rs.useRealTimers();
   });
 
   test('reports progress during history streaming', async () => {
@@ -182,7 +182,7 @@ describe('useLogSearch history mode', () => {
         controlMessage: { case: 'data' as const, value: {} },
       };
       // Pause before done so the 200ms flush interval fires while phase is active
-      await vi.advanceTimersByTimeAsync(250);
+      await rs.advanceTimersByTimeAsync(250);
       yield {
         controlMessage: { case: 'done' as const, value: {} },
       };

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Merge v8 coverage output from unit + integration Vitest runs into a single
+ * Merge V8 coverage output from unit + integration Rstest runs into a single
  * `coverage-merged/` directory. The merge is a file-level union: for each source
  * file, we take the max coverage seen across both runs (i.e. a line covered by
  * EITHER run counts as covered). We operate on `coverage-summary.json` which is

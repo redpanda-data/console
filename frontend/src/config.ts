@@ -301,7 +301,7 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
 // Subscribe to UI state changes for breadcrumbs and sidebar items.
 // Installed from `setup()` so it is tied to the app's lifecycle and can be
 // torn down by the returned teardown function — not at module-top-level,
-// which previously pinned store subscribers across vitest isolate resets.
+// which previously pinned store subscribers across test-runner module resets.
 function installUiStateSubscriptions(): () => void {
   const unsubs: Array<() => void> = [];
 

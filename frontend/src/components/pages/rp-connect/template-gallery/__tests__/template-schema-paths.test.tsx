@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { describe, expect, test } from 'vitest';
 
 import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import { findComponentByName, resolveFieldByPath } from '../../utils/schema';

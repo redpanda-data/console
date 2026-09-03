@@ -23,7 +23,7 @@ global.ResizeObserver = class ResizeObserver {
   }
 };
 
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 import { SecretsStoreActionsCell } from './secrets-store-actions';
 import type { SecretTableRow } from './secrets-store-list-page';
@@ -42,8 +42,8 @@ describe('SecretsStoreActionsCell', () => {
       scope: '',
     };
 
-    const deleteSecretMock = vi.fn().mockResolvedValue({});
-    const listResourcesMock = vi.fn().mockReturnValue(
+    const deleteSecretMock = rs.fn().mockResolvedValue({});
+    const listResourcesMock = rs.fn().mockReturnValue(
       create(ListResourcesResponseSchema, {
         resources: [],
       })
@@ -63,7 +63,7 @@ describe('SecretsStoreActionsCell', () => {
       );
     };
 
-    const onEditMock = vi.fn();
+    const onEditMock = rs.fn();
 
     render(
       <SecretsStoreActionsCell isDeleting={false} onDelete={handleDelete} onEdit={onEditMock} secret={mockSecret} />,
@@ -109,10 +109,10 @@ describe('SecretsStoreActionsCell', () => {
       scope: '',
     };
 
-    const onDeleteMock = vi.fn();
-    const onEditMock = vi.fn();
+    const onDeleteMock = rs.fn();
+    const onEditMock = rs.fn();
 
-    const listResourcesMock = vi.fn().mockReturnValue(
+    const listResourcesMock = rs.fn().mockReturnValue(
       create(ListResourcesResponseSchema, {
         resources: [
           {

@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { describe, expect, test } from '@rstest/core';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -19,7 +20,6 @@ import {
   ListACLsResponse_ResourceSchema,
   ListACLsResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { describe, expect, test } from 'vitest';
 
 import {
   getAclFromAclListResponse,

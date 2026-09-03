@@ -19,29 +19,29 @@ import React from 'react';
 import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
   },
 }));
 
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: {
       jwt: 'test-jwt-token',
     },
-    isFeatureFlagEnabled: vi.fn(() => false),
+    isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
 
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 import { SecretsStoreListPage } from './secrets-store-list-page';
 
-const createListSecretsTransport = (listSecretsMock: ReturnType<typeof vi.fn>) =>
+const createListSecretsTransport = (listSecretsMock: ReturnType<typeof rs.fn>) =>
   createRouterTransport(({ rpc }) => {
     rpc(listSecrets, listSecretsMock);
   });
@@ -70,7 +70,7 @@ describe('SecretsStoreListPage', () => {
       },
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
+    const listSecretsMock = rs.fn().mockReturnValue(listSecretsResponse);
     const transport = createListSecretsTransport(listSecretsMock);
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
@@ -103,7 +103,7 @@ describe('SecretsStoreListPage', () => {
       }),
     ];
 
-    const listSecretsMock = vi.fn().mockImplementation(({ request }) => {
+    const listSecretsMock = rs.fn().mockImplementation(({ request }) => {
       if (!request?.pageToken) {
         return create(ListSecretsResponseSchema, {
           response: { secrets: pageOne, nextPageToken: 'page2' },
@@ -126,7 +126,7 @@ describe('SecretsStoreListPage', () => {
   });
 
   test('stops and surfaces an error if the server returns a non-advancing pageToken', async () => {
-    const listSecretsMock = vi.fn().mockImplementation(() =>
+    const listSecretsMock = rs.fn().mockImplementation(() =>
       create(ListSecretsResponseSchema, {
         response: {
           secrets: [create(SecretSchema, { id: 'looping-secret', scopes: [Scope.AI_GATEWAY] })],
@@ -154,7 +154,7 @@ describe('SecretsStoreListPage', () => {
       },
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
+    const listSecretsMock = rs.fn().mockReturnValue(listSecretsResponse);
     const transport = createListSecretsTransport(listSecretsMock);
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
@@ -163,7 +163,7 @@ describe('SecretsStoreListPage', () => {
   });
 
   test('should display loading state while fetching secrets', async () => {
-    const listSecretsMock = vi.fn().mockImplementation(
+    const listSecretsMock = rs.fn().mockImplementation(
       () =>
         new Promise((resolve) => {
           setTimeout(() => {
@@ -200,7 +200,7 @@ describe('SecretsStoreListPage', () => {
       },
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue(listSecretsResponse);
+    const listSecretsMock = rs.fn().mockReturnValue(listSecretsResponse);
     const transport = createListSecretsTransport(listSecretsMock);
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
@@ -241,7 +241,7 @@ describe('SecretsStoreListPage', () => {
       scopes: [Scope.MCP_SERVER],
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue(
+    const listSecretsMock = rs.fn().mockReturnValue(
       create(ListSecretsResponseSchema, {
         response: { secrets: [secret1, secret2], nextPageToken: '' },
       })
@@ -287,7 +287,7 @@ describe('SecretsStoreListPage', () => {
       scopes: [Scope.MCP_SERVER],
     });
 
-    const listSecretsMock = vi.fn().mockReturnValue(
+    const listSecretsMock = rs.fn().mockReturnValue(
       create(ListSecretsResponseSchema, {
         response: { secrets: [secret1, secret2], nextPageToken: '' },
       })

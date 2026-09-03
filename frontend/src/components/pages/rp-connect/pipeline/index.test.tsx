@@ -50,31 +50,32 @@ import {
   lintPipelineConfig,
   listComponents,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
+import * as React from 'react';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
-const mockUsePipelineMode = vi.fn(() => ({ mode: 'create' as const }));
-vi.mock('../utils/use-pipeline-mode', () => ({
+const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
+rs.mock('../utils/use-pipeline-mode', () => ({
   usePipelineMode: (...args: unknown[]) => mockUsePipelineMode(...args),
 }));
 
 // Overridable per test so flags and embedded can be toggled.
-const mockIsFeatureFlagEnabled = vi.fn((_flag: string) => false);
-const mockIsEmbedded = vi.fn(() => false);
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
+const mockIsEmbedded = rs.fn(() => false);
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
     isEmbedded: (...args: unknown[]) => mockIsEmbedded(),
-    isServerless: vi.fn(() => false),
+    isServerless: rs.fn(() => false),
   };
 });
 
-const mockNavigate = vi.fn();
-const mockBack = vi.fn();
-const mockSearch = vi.fn(() => ({}));
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+const mockNavigate = rs.fn();
+const mockBack = rs.fn();
+const mockSearch = rs.fn(() => ({}));
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
@@ -90,76 +91,71 @@ type CursorPositionCallback = (e: { position: { lineNumber: number; column: numb
 const cursorPositionListeners: CursorPositionCallback[] = [];
 
 const mockEditorInstance = {
-  getPosition: vi.fn(() => ({ lineNumber: 1, column: 4 })),
-  getModel: vi.fn(() => ({
-    getLineContent: vi.fn(() => '  /'),
+  getPosition: rs.fn(() => ({ lineNumber: 1, column: 4 })),
+  getModel: rs.fn(() => ({
+    getLineContent: rs.fn(() => '  /'),
     // Large enough that node ranges from any test YAML are never clamped.
-    getLineCount: vi.fn(() => 1000),
-    getLineMaxColumn: vi.fn(() => 1),
+    getLineCount: rs.fn(() => 1000),
+    getLineMaxColumn: rs.fn(() => 1),
   })),
-  onDidChangeModelContent: vi.fn((cb: ContentChangeCallback) => {
+  onDidChangeModelContent: rs.fn((cb: ContentChangeCallback) => {
     contentChangeListeners.push(cb);
-    return { dispose: vi.fn() };
+    return { dispose: rs.fn() };
   }),
   // Cursor → structure-tree highlight sync subscribes to this.
-  onDidChangeCursorPosition: vi.fn((cb: CursorPositionCallback) => {
+  onDidChangeCursorPosition: rs.fn((cb: CursorPositionCallback) => {
     cursorPositionListeners.push(cb);
-    return { dispose: vi.fn() };
+    return { dispose: rs.fn() };
   }),
   // Mirrors Monaco: setSelection places the cursor at the selection end and notifies
   // cursor-position listeners synchronously, before the call returns.
-  setSelection: vi.fn((sel: { endLineNumber: number; endColumn: number }) => {
+  setSelection: rs.fn((sel: { endLineNumber: number; endColumn: number }) => {
     for (const cb of cursorPositionListeners) {
       cb({ position: { lineNumber: sel.endLineNumber, column: sel.endColumn } });
     }
   }),
-  revealLineInCenterIfOutsideViewport: vi.fn(),
-  executeEdits: vi.fn(),
-  focus: vi.fn(),
+  revealLineInCenterIfOutsideViewport: rs.fn(),
+  executeEdits: rs.fn(),
+  focus: rs.fn(),
   // Scroll API used by the read-only viewer's vertical overflow shadows.
-  onDidScrollChange: vi.fn(() => ({ dispose: vi.fn() })),
-  onDidContentSizeChange: vi.fn(() => ({ dispose: vi.fn() })),
-  onDidLayoutChange: vi.fn(() => ({ dispose: vi.fn() })),
-  getScrollTop: vi.fn(() => 0),
-  getScrollHeight: vi.fn(() => 0),
-  getLayoutInfo: vi.fn(() => ({ height: 0 })),
+  onDidScrollChange: rs.fn(() => ({ dispose: rs.fn() })),
+  onDidContentSizeChange: rs.fn(() => ({ dispose: rs.fn() })),
+  onDidLayoutChange: rs.fn(() => ({ dispose: rs.fn() })),
+  getScrollTop: rs.fn(() => 0),
+  getScrollHeight: rs.fn(() => 0),
+  getLayoutInfo: rs.fn(() => ({ height: 0 })),
 } as unknown as editor.IStandaloneCodeEditor;
 
-vi.mock('components/ui/yaml/yaml-editor', async () => {
-  const React = await import('react');
-  return {
-    YamlEditor: (props: {
-      onChange?: (val: string) => void;
-      onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
-      value?: string;
-    }) => {
-      React.useEffect(() => {
-        props.onEditorMount?.(mockEditorInstance);
-      }, [props.onEditorMount]);
-      return (
-        <textarea
-          data-testid="yaml-editor"
-          onChange={(e) => props.onChange?.(e.target.value)}
-          value={props.value || ''}
-        />
-      );
-    },
-  };
-});
+rs.mock('components/ui/yaml/yaml-editor', () => ({
+  ...rs.requireActual<typeof import('components/ui/yaml/yaml-editor')>('components/ui/yaml/yaml-editor'),
+  YamlEditor: (props: {
+    onChange?: (val: string) => void;
+    onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
+    value?: string;
+  }) => {
+    React.useEffect(() => {
+      props.onEditorMount?.(mockEditorInstance);
+    }, [props.onEditorMount]);
+    return (
+      <textarea
+        data-testid="yaml-editor"
+        onChange={(e) => props.onChange?.(e.target.value)}
+        value={props.value || ''}
+      />
+    );
+  },
+}));
 
 // The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
-vi.mock('./pipeline-flow-canvas', async () => {
-  const React = await import('react');
-  return {
-    PipelineFlowCanvas: (props: { configYaml: string }) =>
-      React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
-  };
-});
-vi.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
-vi.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
-vi.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
-vi.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: () => <div data-testid="log-explorer" /> }));
-vi.mock('../onboarding/add-connector-dialog', () => ({
+rs.mock('./pipeline-flow-canvas', () => ({
+  PipelineFlowCanvas: (props: { configYaml: string }) =>
+    React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
+}));
+rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
+rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
+rs.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
+rs.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: () => <div data-testid="log-explorer" /> }));
+rs.mock('../onboarding/add-connector-dialog', () => ({
   AddConnectorDialog: (props: {
     isOpen: boolean;
     onAddConnector?: (name: string, type: string) => void;
@@ -179,7 +175,7 @@ vi.mock('../onboarding/add-connector-dialog', () => ({
 }));
 
 // Simplified stub — the real menu needs secrets/topics/users RPCs; variant distinguishes dialog vs popover.
-vi.mock('./pipeline-command-menu', async () => ({
+rs.mock('./pipeline-command-menu', () => ({
   PipelineCommandMenu: (props: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -202,11 +198,11 @@ vi.mock('./pipeline-command-menu', async () => ({
   },
 }));
 
-vi.mock('state/rpcn-wizard-store', () => ({
+rs.mock('state/rpcn-wizard-store', () => ({
   useRpcnWizardStore: Object.assign(
-    vi.fn(() => ''),
+    rs.fn(() => ''),
     {
-      getState: () => ({ setYamlContent: vi.fn(), yamlContent: '', setWizardData: vi.fn(), reset: vi.fn() }),
+      getState: () => ({ setYamlContent: rs.fn(), yamlContent: '', setWizardData: rs.fn(), reset: rs.fn() }),
     }
   ),
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
@@ -216,17 +212,17 @@ vi.mock('state/rpcn-wizard-store', () => ({
 import PipelinePage from '.';
 
 function createTransport(overrides?: {
-  getPipelineMock?: ReturnType<typeof vi.fn>;
-  createPipelineMock?: ReturnType<typeof vi.fn>;
-  lintMock?: ReturnType<typeof vi.fn>;
-  stopPipelineMock?: ReturnType<typeof vi.fn>;
+  getPipelineMock?: ReturnType<typeof rs.fn>;
+  createPipelineMock?: ReturnType<typeof rs.fn>;
+  lintMock?: ReturnType<typeof rs.fn>;
+  stopPipelineMock?: ReturnType<typeof rs.fn>;
 }) {
   return createRouterTransport(({ rpc }) => {
     // Console-layer RPCs (used by react-query/api/pipeline hooks)
     rpc(
       getPipeline,
       overrides?.getPipelineMock ??
-        vi.fn().mockReturnValue(
+        rs.fn().mockReturnValue(
           create(ConsoleGetPipelineResponseSchema, {
             response: create(GetPipelineResponseSchema, {
               pipeline: create(PipelineSchema, {
@@ -244,7 +240,7 @@ function createTransport(overrides?: {
     rpc(
       createPipeline,
       overrides?.createPipelineMock ??
-        vi.fn().mockReturnValue(
+        rs.fn().mockReturnValue(
           create(ConsoleCreatePipelineResponseSchema, {
             response: create(CreatePipelineResponseSchema, {
               pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -252,27 +248,27 @@ function createTransport(overrides?: {
           })
         )
     );
-    rpc(updatePipeline, vi.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})));
-    rpc(deletePipeline, vi.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {})));
-    rpc(startPipeline, vi.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {})));
+    rpc(updatePipeline, rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {})));
+    rpc(deletePipeline, rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {})));
+    rpc(startPipeline, rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {})));
     rpc(
       stopPipeline,
-      overrides?.stopPipelineMock ?? vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}))
+      overrides?.stopPipelineMock ?? rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}))
     );
     rpc(
       consoleGetPipelineServiceConfigSchema,
-      vi.fn().mockReturnValue(create(ConsoleGetPipelineServiceConfigSchemaResponseSchema, {}))
+      rs.fn().mockReturnValue(create(ConsoleGetPipelineServiceConfigSchemaResponseSchema, {}))
     );
 
     // Dataplane RPCs (used by react-query/api/connect hooks)
     rpc(
       lintPipelineConfig,
-      overrides?.lintMock ?? vi.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }))
+      overrides?.lintMock ?? rs.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }))
     );
-    rpc(listComponents, vi.fn().mockReturnValue(create(ListComponentsResponseSchema, {})));
+    rpc(listComponents, rs.fn().mockReturnValue(create(ListComponentsResponseSchema, {})));
     rpc(
       getPipelineServiceConfigSchema,
-      vi.fn().mockReturnValue(create(GetPipelineServiceConfigSchemaResponseSchema, {}))
+      rs.fn().mockReturnValue(create(GetPipelineServiceConfigSchemaResponseSchema, {}))
     );
   });
 }
@@ -303,7 +299,7 @@ describe('PipelinePage', () => {
   // Lint panel — LintHintList has no tests of its own.
 
   it('displays lint warnings from the backend as the user types YAML', async () => {
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 1, column: 1, hint: 'response lint warning' })],
       })
@@ -335,7 +331,7 @@ describe('PipelinePage', () => {
   });
 
   it('displays general warnings without line numbers', async () => {
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 0, column: 0, hint: 'general config warning' })],
       })
@@ -353,7 +349,7 @@ describe('PipelinePage', () => {
   });
 
   it('shows a count badge when multiple lint issues are found', async () => {
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [
           create(LintHintSchema, { line: 1, column: 1, hint: 'first warning' }),
@@ -379,7 +375,7 @@ describe('PipelinePage', () => {
 
   it('Cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -401,7 +397,7 @@ describe('PipelinePage', () => {
 
   it('saving a new pipeline sends the name and YAML config to the backend', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -429,7 +425,7 @@ describe('PipelinePage', () => {
 
   it('redirects to the new pipeline after successful creation', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -454,7 +450,7 @@ describe('PipelinePage', () => {
 
   it('lets the name be edited inline from the header title and submits it', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn().mockReturnValue(
+    const createPipelineMock = rs.fn().mockReturnValue(
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, {
           pipeline: create(PipelineSchema, { id: 'new-pipeline' }),
@@ -478,7 +474,7 @@ describe('PipelinePage', () => {
 
   it('blocks saving a new pipeline with an invalid name and shows the error inline', async () => {
     const user = userEvent.setup();
-    const createPipelineMock = vi.fn();
+    const createPipelineMock = rs.fn();
 
     render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
 
@@ -491,13 +487,13 @@ describe('PipelinePage', () => {
   it('shows both save errors and real-time lint warnings when a save fails', async () => {
     const user = userEvent.setup();
 
-    const lintMock = vi.fn().mockReturnValue(
+    const lintMock = rs.fn().mockReturnValue(
       create(LintPipelineConfigResponseSchema, {
         lintHints: [create(LintHintSchema, { line: 3, column: 1, hint: 'response warning' })],
       })
     );
 
-    const createPipelineMock = vi.fn().mockImplementation(() => {
+    const createPipelineMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('invalid config');
     });
 
@@ -527,9 +523,9 @@ describe('PipelinePage', () => {
   it('editing YAML after a failed save clears the stale error messages', async () => {
     const user = userEvent.setup();
 
-    const lintMock = vi.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }));
+    const lintMock = rs.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }));
 
-    const createPipelineMock = vi.fn().mockImplementation(() => {
+    const createPipelineMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('invalid config');
     });
 
@@ -739,7 +735,7 @@ describe('PipelinePage', () => {
   it('confirms before stopping a running pipeline', async () => {
     const user = userEvent.setup();
     mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-    const stopPipelineMock = vi.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+    const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
     render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
 

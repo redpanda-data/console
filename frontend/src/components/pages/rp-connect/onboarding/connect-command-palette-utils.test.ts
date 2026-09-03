@@ -1,5 +1,5 @@
+import { describe, expect, it } from '@rstest/core';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { describe, expect, it } from 'vitest';
 
 import {
   aliasTermsForName,

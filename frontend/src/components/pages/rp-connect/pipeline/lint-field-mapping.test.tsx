@@ -10,7 +10,7 @@
  */
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { mapLintHintsToFields } from './lint-field-mapping';
 import type { EditTarget } from '../utils/yaml';

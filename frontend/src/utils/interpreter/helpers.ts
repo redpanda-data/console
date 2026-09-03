@@ -46,10 +46,12 @@ Expected:
 export function expect(test: () => boolean): void;
 export function expect(name: string, test: () => boolean): void;
 export function expect(testOrName: string | (() => boolean), test?: () => boolean) {
-  // biome-ignore lint/style/noNonNullAssertion: test related, will remove soon with Vitest
-  const testFunc = typeof testOrName === 'function' ? (testOrName as () => boolean) : test!;
+  const testFunc = typeof testOrName === 'function' ? testOrName : test;
+  if (!testFunc) {
+    throw new Error(`Missing test function for "${testOrName}"`);
+  }
 
-  const name = typeof testOrName === 'string' ? (testOrName as string) : null;
+  const name = typeof testOrName === 'string' ? testOrName : null;
 
   if (testFunc()) {
     successfulTests += 1;
@@ -57,8 +59,9 @@ export function expect(testOrName: string | (() => boolean), test?: () => boolea
   }
 
   // Failed!
+  const failureName = name ? `: ${name}` : '';
   throw new Error(`
-Test failed ${name ? `: ${name}` : ''}
+Test failed ${failureName}
     ${testFunc.toString()}
 
 `);
