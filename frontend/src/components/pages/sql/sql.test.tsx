@@ -59,12 +59,13 @@ describe('sql helpers', () => {
     expect(isWriteKeyword('EXPLAIN SELECT 1')).toBe(false);
     expect(isWriteKeyword('(SELECT 1)')).toBe(false);
     expect(isWriteKeyword('SHOW TABLES')).toBe(false);
-    // Writes / DDL / DCL — blocked.
+    // No longer blocked in the editor.
+    expect(isWriteKeyword('CREATE TABLE t (a int)')).toBe(false);
+    expect(isWriteKeyword('DROP TABLE t')).toBe(false);
+    expect(isWriteKeyword('GRANT ALL ON t TO u')).toBe(false);
+    // Writes / DDL / DCL — still blocked.
     expect(isWriteKeyword('INSERT INTO t VALUES (1)')).toBe(true);
     expect(isWriteKeyword('DELETE FROM t')).toBe(true);
-    expect(isWriteKeyword('CREATE TABLE t (a int)')).toBe(true);
-    expect(isWriteKeyword('DROP TABLE t')).toBe(true);
-    expect(isWriteKeyword('GRANT ALL ON t TO u')).toBe(true);
   });
 
   test('bridgeTopicForQuery resolves a single Redpanda SQL table to its backing topic', () => {
