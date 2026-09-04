@@ -1,4 +1,3 @@
-import { Box } from '@redpanda-data/ui';
 import React, { type JSX, useEffect, useState } from 'react';
 
 let nextModalId = 1;
@@ -42,10 +41,10 @@ export const ModalContainer = () => {
   }, []);
 
   return (
-    <Box id="modalContainer">
+    <div id="modalContainer">
       {modalList.map((e) => (
         <React.Fragment key={e.id}>{e.element}</React.Fragment>
       ))}
-    </Box>
+    </div>
   );
 };
