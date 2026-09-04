@@ -27,7 +27,7 @@ type AdvancedTopicSettingsProps = {
 };
 
 export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, isExistingTopic, disabled = false }) => {
-  // Generate unit options from CreateTopicModal factors for consistency
+  // Generate unit options from create-topic-dialog factors for consistency
   const retentionTimeUnits = useMemo(() => getRetentionTimeUnitOptions(), []);
   const retentionSizeUnits = useMemo(() => getRetentionSizeUnitOptions(), []);
 

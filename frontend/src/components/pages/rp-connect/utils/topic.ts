@@ -37,7 +37,7 @@ export const resetToDefaults = (form: UseFormReturn<AddTopicFormData>) => {
 };
 
 export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: RetentionTimeUnit } => {
-  // Find the best unit by choosing the shortest text representation (same logic as CreateTopicModal)
+  // Find the best unit by choosing the shortest text representation (same logic as create-topic-dialog)
   const validUnits = Object.entries(timeFactors)
     .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
     .map(([unit, factor]) => ({
@@ -59,7 +59,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
   }
 
   let value = best.value;
-  // Clean up decimal places like in CreateTopicModal
+  // Clean up decimal places like create-topic-dialog
   if (DECIMAL_PLACES_REGEX.test(String(value))) {
     value = Math.round(value);
   }
@@ -68,7 +68,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
 };
 
 export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit: RetentionSizeUnit } => {
-  // Find the best unit by choosing the shortest text representation (same logic as CreateTopicModal)
+  // Find the best unit by choosing the shortest text representation (same logic as create-topic-dialog)
   const validUnits = Object.entries(sizeFactors)
     .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
     .map(([unit, factor]) => ({
@@ -90,7 +90,7 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
   }
 
   let value = best.value;
-  // Clean up decimal places like in CreateTopicModal
+  // Clean up decimal places like create-topic-dialog
   if (DECIMAL_PLACES_REGEX.test(String(value))) {
     value = Math.round(value);
   }
@@ -159,7 +159,7 @@ export const createFloatChangeHandler =
     onChange(e.target.value ? Number.parseFloat(e.target.value) : 0);
   };
 
-// Generate unit options from CreateTopicModal factors for consistency
+// Generate unit options from create-topic-dialog factors for consistency
 export const getRetentionTimeUnitOptions = () => {
   return Object.keys(timeFactors)
     .filter((unit) => unit !== 'default') // Exclude default from UI options

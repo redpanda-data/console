@@ -11,7 +11,7 @@
 
 /**
  * Shared topic utilities for retention time and size conversions
- * Used by both CreateTopicModal and rp-connect wizard
+ * Used by the create-topic dialog and the rp-connect wizard
  */
 
 export type RetentionTimeUnit = keyof typeof timeFactors;
