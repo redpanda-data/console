@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Spinner } from '@redpanda-data/ui';
 import { useParams } from '@tanstack/react-router';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Component } from 'react';
 
 import { appGlobal } from '../../state/app-global';
@@ -76,11 +76,11 @@ class LoginCompletePage extends Component<{ provider: string }> {
 
   render() {
     return (
-      <div style={{ height: '100vh', display: 'flex', placeContent: 'center', background: 'var(--color-page)' }}>
-        <div style={{ display: 'flex', placeContent: 'center', placeItems: 'center', flexFlow: 'column' }}>
-          <span style={{ fontSize: '1.5em', color: 'var(--color-foreground)' }}>Completing login...</span>
+      <div className="flex h-screen place-content-center bg-page">
+        <div className="flex flex-col place-content-center place-items-center">
+          <span className="text-[1.5em] text-foreground">Completing login...</span>
           <br />
-          <Spinner size="lg" />
+          <Spinner className="size-8" />
         </div>
       </div>
     );

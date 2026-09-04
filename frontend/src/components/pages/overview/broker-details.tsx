@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Flex } from '@redpanda-data/ui';
 import type { FC } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
@@ -75,14 +74,14 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
   return (
     <PageContent>
       <Section className="py-4">
-        <Flex gap={8}>
+        <div className="flex gap-8">
           <Statistic title="Broker ID" value={brokerId} />
           <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
           {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
           <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
           <Statistic title="IP address" value={broker.address} />
           {Boolean(broker.rack) && <Statistic title="Rack" value={broker.rack} />}
-        </Flex>
+        </div>
       </Section>
       <Section className="py-4">
         <BrokerConfigView entries={brokerConfigs} />
@@ -113,7 +112,7 @@ const BrokerConfigView: FC<{ entries: ConfigEntry[] }> = ({ entries }) => {
   return (
     <div className="brokerConfigView">
       <div className="brokerConfigViewSettings" style={{ marginLeft: '1px', marginBottom: '1em' }}>
-        <Flex gap="2rem">
+        <div className="flex gap-8">
           <OptionGroup
             label="Formatting"
             onChange={(s) => updateSettings({ brokerList: { ...brokerList, valueDisplay: s } })}
@@ -133,7 +132,7 @@ const BrokerConfigView: FC<{ entries: ConfigEntry[] }> = ({ entries }) => {
             }}
             value={brokerList.propsOrder}
           />
-        </Flex>
+        </div>
       </div>
       <ConfigList configEntries={sorted} key={brokerList.propsOrder} valueDisplay={brokerList.valueDisplay} />
     </div>
