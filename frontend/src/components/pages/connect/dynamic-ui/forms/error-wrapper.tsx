@@ -1,4 +1,4 @@
-import { FormField } from '@redpanda-data/ui';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import type { JSX, PropsWithoutRef } from 'react';
 import { useState } from 'react';
 
@@ -20,18 +20,24 @@ export const ErrorWrapper = (props: PropsWithoutRef<{ property: Property; input:
 
   const cycleError = showErrors ? () => setCurrentErrorIndex((i) => i + 1) : undefined;
 
+  const errorText = isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow;
+  const isInvalid = Boolean(errorToShow) || (isEmpty(property) && isRequired);
+
   return (
     <div>
-      <FormField
-        description={<ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>}
-        errorText={isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow}
-        isInvalid={!!errorToShow || (isEmpty(property) && isRequired)}
-        isRequired={isRequired}
-        label={property.entry.definition.display_name}
-        onClick={cycleError}
-      >
+      {/*
+        `onClick` on the field, as before: a property can carry several validation errors and the
+        only way to see the rest is to click the field, which advances `currentErrorIndex`.
+      */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: cycling errors is a shortcut, not the only path — every error is reachable by fixing the field */}
+      <Field data-invalid={isInvalid || undefined} onClick={cycleError}>
+        <FieldLabel required={isRequired}>{property.entry.definition.display_name}</FieldLabel>
         {input}
-      </FormField>
+        <FieldDescription>
+          <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
+        </FieldDescription>
+        {errorText ? <FieldError>{errorText}</FieldError> : null}
+      </Field>
     </div>
   );
 };

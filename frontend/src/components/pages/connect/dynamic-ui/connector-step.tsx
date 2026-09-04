@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Heading, Text } from '@redpanda-data/ui';
-
 import type { ConfigPageProps } from './components';
 import { PropertyGroupComponent } from './property-group';
 import type { PropertyGroup } from '../../../../state/connect/state';
@@ -33,16 +31,10 @@ export const ConnectorStepComponent = (props: {
   }
 
   return (
-    <Box>
-      <Heading as="h3" mb="4" mt="8" size="md">
-        {step.name}
-      </Heading>
+    <div>
+      <h3 className="mt-8 mb-4 text-heading-md">{step.name}</h3>
 
-      {Boolean(step.description) && (
-        <Text mb="4" size="sm">
-          {step.description}
-        </Text>
-      )}
+      {Boolean(step.description) && <p className="mb-4 text-body-sm">{step.description}</p>}
 
       {groups.map((g) => (
         <PropertyGroupComponent
@@ -54,6 +46,6 @@ export const ConnectorStepComponent = (props: {
           showAdvancedOptions={props.showAdvancedOptions}
         />
       ))}
-    </Box>
+    </div>
   );
 };

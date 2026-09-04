@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
+import { Switch } from 'components/redpanda-ui/components/switch';
 
 import { ErrorWrapper } from './forms/error-wrapper';
 import { SecretInput } from './forms/secret-input';
@@ -59,13 +62,26 @@ export const PropertyComponent = (props: { property: Property }) => {
             : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
         inputComp = (
           <RadioGroup
+            className="flex flex-wrap gap-4"
             name={p.name}
-            onChange={(e) => {
-              updatePropertyValue(p, e);
+            onValueChange={(next) => {
+              updatePropertyValue(p, next as Property['value']);
             }}
-            options={options}
+            orientation="horizontal"
             value={String(v || def.default_value)}
-          />
+          >
+            {options.map((option) => {
+              const id = `${p.name}-${option.value}`;
+              return (
+                <div className="flex items-center gap-2" key={String(option.value)}>
+                  <RadioGroupItem id={id} value={String(option.value)} />
+                  <Label className="cursor-pointer" htmlFor={id}>
+                    {option.label}
+                  </Label>
+                </div>
+              );
+            })}
+          </RadioGroup>
         );
         break;
       }
@@ -74,7 +90,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         // Enum (recommended_values)
         const options = recValues.map((x: string) => ({ label: x, value: x }));
         inputComp = (
-          <Box maxWidth={260}>
+          <div className="max-w-[260px]">
             <SingleSelect
               onChange={(e) => {
                 updatePropertyValue(p, e);
@@ -82,14 +98,14 @@ export const PropertyComponent = (props: { property: Property }) => {
               options={options}
               value={v}
             />
-          </Box>
+          </div>
         );
       } else {
         // Input
         inputComp = (
           <Input
             defaultValue={def.default_value ?? undefined}
-            isDisabled={props.property.isDisabled}
+            disabled={props.property.isDisabled}
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
@@ -118,11 +134,14 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'DOUBLE':
     case 'FLOAT':
       inputComp = (
-        <NumberInput
+        // Chakra's NumberInput emitted a number; a native number input emits a string, so coerce
+        // here or the config would carry `"3"` where the connector expects `3`.
+        <Input
           onChange={(e) => {
-            updatePropertyValue(p, e);
+            updatePropertyValue(p, e.target.valueAsNumber);
           }}
-          value={Number(v)}
+          type="number"
+          value={Number.isNaN(Number(v)) ? '' : Number(v)}
         />
       );
       break;
@@ -130,9 +149,9 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'BOOLEAN':
       inputComp = (
         <Switch
-          isChecked={Boolean(v)}
-          onChange={(e) => {
-            updatePropertyValue(p, e.target.checked);
+          checked={Boolean(v)}
+          onCheckedChange={(checked) => {
+            updatePropertyValue(p, checked);
           }}
         />
       );
@@ -177,9 +196,9 @@ export const PropertyComponent = (props: { property: Property }) => {
   inputComp = <ErrorWrapper input={inputComp} property={p} />;
   // Wrap name and input element
   return (
-    <Box className={inputSizeToClass[def.width]} data-testid={`property-${p.name}`} mt="6">
+    <div className={`mt-6 ${inputSizeToClass[def.width]}`} data-testid={`property-${p.name}`}>
       {inputComp}
-    </Box>
+    </div>
   );
 };
 

@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, RadioGroup, Skeleton, Switch } from '@redpanda-data/ui';
+import { Label } from 'components/redpanda-ui/components/label';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { Switch } from 'components/redpanda-ui/components/switch';
 import { useCallback, useState, useSyncExternalStore } from 'react';
 
 import { ConnectorStepComponent } from './connector-step';
@@ -41,7 +44,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
   }
 
   if (connectorStore.initPending) {
-    return <Skeleton height={4} mt={5} noOfLines={20} />;
+    return <SkeletonText className="mt-5" lines={20} width="full" />;
   }
 
   if (connectorStore.allGroups.length === 0) {
@@ -61,32 +64,43 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
 
   return (
     <>
-      <Box mb="8">
+      <div className="mb-8">
         <RadioGroup
+          className="flex gap-4"
           name="settingsMode"
-          onChange={(x) => {
-            connectorStore.viewMode = x;
-            setViewMode(x as 'form' | 'json');
+          onValueChange={(next) => {
+            connectorStore.viewMode = next as 'form' | 'json';
+            setViewMode(next as 'form' | 'json');
           }}
-          options={[
-            { value: 'form', label: <Box mx="4">Form</Box> },
-            { value: 'json', label: <Box mx="4">JSON</Box> },
-          ]}
+          orientation="horizontal"
           value={viewMode}
-        />
-      </Box>
+        >
+          {(['form', 'json'] as const).map((mode) => (
+            <div className="flex items-center gap-2" key={mode}>
+              <RadioGroupItem id={`settings-mode-${mode}`} value={mode} />
+              <Label className="mx-4 cursor-pointer" htmlFor={`settings-mode-${mode}`}>
+                {mode === 'form' ? 'Form' : 'JSON'}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </div>
 
       {viewMode === 'form' ? (
         <>
-          <Switch
-            isChecked={showAdvancedOptions}
-            onChange={(s) => {
-              connectorStore.showAdvancedOptions = s.target.checked;
-              setShowAdvancedOptions(s.target.checked);
-            }}
-          >
-            Show advanced options
-          </Switch>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={showAdvancedOptions}
+              id="show-advanced-options"
+              onCheckedChange={(checked) => {
+                connectorStore.showAdvancedOptions = checked;
+                setShowAdvancedOptions(checked);
+              }}
+            />
+            <Label className="cursor-pointer" htmlFor="show-advanced-options">
+              Show advanced options
+            </Label>
+          </div>
 
           {steps.map(({ step, groups }) => (
             <ConnectorStepComponent

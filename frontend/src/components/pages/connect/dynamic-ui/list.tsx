@@ -10,9 +10,11 @@
  */
 
 import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from '@hello-pangea/dnd';
-import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { type JSX, useEffect, useRef, useState } from 'react';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
@@ -41,44 +43,49 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
 
   return (
     <>
-      {/* Input */}
-      <Tooltip hasArrow={true} isOpen={hasFocus} label="[Enter] confirm, [ESC] cancel" placement="top">
-        <Input
-          className="ghostInput"
-          onBlur={() => {
-            setHasFocus(false);
-          }}
-          onChange={(e) => setValuePending(e.target.value)}
-          onFocus={() => {
-            setValuePending(item.id);
-            setHasFocus(true);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              // can we rename that entry?
-              if (allItems.some((x) => x.id === valuePending)) {
-                // no, already exists
-                e.stopPropagation();
-                return;
-              }
+      {/* Input. The hint is shown while the field has focus, not on hover, so the Tooltip is controlled. */}
+      <Tooltip open={hasFocus}>
+        <TooltipTrigger
+          render={
+            <Input
+              className="ghostInput"
+              onBlur={() => {
+                setHasFocus(false);
+              }}
+              onChange={(e) => setValuePending(e.target.value)}
+              onFocus={() => {
+                setValuePending(item.id);
+                setHasFocus(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  // can we rename that entry?
+                  if (allItems.some((x) => x.id === valuePending)) {
+                    // no, already exists
+                    e.stopPropagation();
+                    return;
+                  }
 
-              if (VALID_NAME_REGEX.test(valuePending) === false) {
-                // no, invalid characters
-                e.stopPropagation();
-                return;
-              }
+                  if (VALID_NAME_REGEX.test(valuePending) === false) {
+                    // no, invalid characters
+                    e.stopPropagation();
+                    return;
+                  }
 
-              onUpdate(valuePending);
-              (e.target as HTMLElement).blur();
-            } else if (e.key === 'Escape') {
-              (e.target as HTMLElement).blur();
-            }
-          }}
-          size="sm"
-          spellCheck={false}
-          style={{ flexGrow: 1, flexBasis: '400px' }}
-          value={hasFocus ? valuePending : item.id}
+                  onUpdate(valuePending);
+                  (e.target as HTMLElement).blur();
+                } else if (e.key === 'Escape') {
+                  (e.target as HTMLElement).blur();
+                }
+              }}
+              size="sm"
+              spellCheck={false}
+              style={{ flexGrow: 1, flexBasis: '400px' }}
+              value={hasFocus ? valuePending : item.id}
+            />
+          }
         />
+        <TooltipContent side="top">[Enter] confirm, [ESC] cancel</TooltipContent>
       </Tooltip>
 
       {/* Delete */}
@@ -161,7 +168,7 @@ export function CommaSeparatedStringList(props: {
             setNewEntry(null);
           }}
           style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
-          variant="solid"
+          variant="primary"
         >
           Add
         </Button>

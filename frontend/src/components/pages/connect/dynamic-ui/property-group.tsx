@@ -9,7 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Accordion, Box, Divider, Flex, Heading, Text } from '@redpanda-data/ui';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from 'components/redpanda-ui/components/accordion';
+import { Separator } from 'components/redpanda-ui/components/separator';
 import { Link } from 'components/redpanda-ui/components/typography';
 
 import type { ConfigPageProps } from './components';
@@ -46,46 +52,40 @@ export const PropertyGroupComponent = (props: {
           <PropertyComponent key={p.name} property={p} />
         ))}
 
-        <div style={{ gridColumn: 'span 4', paddingLeft: '8px' }}>
-          <Accordion
-            items={subGroups.map((subGroup) => ({
-              heading: (
-                <Flex alignItems="center" gap={4}>
-                  <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>
-                    {subGroup.group.name}
-                  </span>
-                  <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>
-                    {subGroup.group.name}
-                  </span>
-                  <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
-                </Flex>
-              ),
-              description: (
-                <PropertyGroupComponent
-                  allGroups={props.allGroups}
-                  connectorType={props.connectorType}
-                  context={props.context}
-                  group={subGroup}
-                  showAdvancedOptions={props.showAdvancedOptions}
-                />
-              ),
-            }))}
-          />
+        <div className="col-span-4 pl-2">
+          <Accordion variant="contained">
+            {subGroups.map((subGroup) => (
+              <AccordionItem key={subGroup.group.name} value={subGroup.group.name ?? ''}>
+                <AccordionTrigger>
+                  <div className="flex items-center gap-4">
+                    {/* The group name was rendered twice here before the migration. */}
+                    <span className="font-semibold text-heading-sm">{subGroup.group.name}</span>
+                    <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <PropertyGroupComponent
+                    allGroups={props.allGroups}
+                    connectorType={props.connectorType}
+                    context={props.context}
+                    group={subGroup}
+                    showAdvancedOptions={props.showAdvancedOptions}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </div>
     );
   }
   // Normal group
   return (
-    <Box>
-      {Boolean(g.group.name) && (
-        <Heading as="h3" mb="4" mt="8" size="md">
-          {g.group.name}
-        </Heading>
-      )}
+    <div>
+      {Boolean(g.group.name) && <h3 className="mt-8 mb-4 text-heading-md">{g.group.name}</h3>}
 
       {Boolean(g.group.description) && (
-        <Text>
+        <p className="text-body">
           {g.group.description}
           {g.group.documentation_link ? (
             <>
@@ -93,7 +93,7 @@ export const PropertyGroupComponent = (props: {
               <Link href={g.group.documentation_link}>Documentation</Link>
             </>
           ) : null}
-        </Text>
+        </p>
       )}
 
       <div>
@@ -112,7 +112,7 @@ export const PropertyGroupComponent = (props: {
             return <PropertyComponent key={p.name} property={p} />;
           })}
       </div>
-      <Divider my={10} />
-    </Box>
+      <Separator className="my-10" />
+    </div>
   );
 };
