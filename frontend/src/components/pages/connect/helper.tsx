@@ -9,31 +9,29 @@
  * by the Apache License, Version 2.0
  */
 
+import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import {
-  Alert,
-  AlertDescription,
   AlertDialog,
-  AlertDialogBody,
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogOverlay,
-  Box,
-  Button,
-  Empty,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Popover,
-  Text,
-  VStack,
-} from '@redpanda-data/ui';
-import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Empty, EmptyDescription, EmptyHeader } from 'components/redpanda-ui/components/empty';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
-import { type CSSProperties, type JSX, useRef, useState } from 'react';
+import { CircleAlertIcon } from 'lucide-react';
+import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
 
@@ -441,13 +439,11 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
         </span>
       ) : null}
 
-      <Popover
-        content={<div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>}
-        hideCloseButton={true}
-        placement="right"
-        size="stretch"
-      >
-        {displayName}
+      <Popover>
+        <PopoverTrigger render={<button type="button">{displayName}</button>} />
+        <PopoverContent side="right">
+          <div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>
+        </PopoverContent>
       </Popover>
     </div>
   );
@@ -526,18 +522,27 @@ export function NotConfigured() {
   return (
     <PageContent key="b">
       <Section>
-        <VStack gap={4}>
-          <Empty description="Not Configured" />
-          <Text textAlign="center">
+        <div className="flex flex-col items-center gap-4">
+          <Empty>
+            <EmptyHeader>
+              <EmptyDescription>Not Configured</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+          <p className="text-center text-body">
             Kafka Connect is not configured in Redpanda Console.
             <br />
             Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and
             control all your connectors and tasks.
-          </Text>
-          <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
-            <Button variant="solid">Redpanda Console Config Documentation</Button>
+          </p>
+          <a
+            className={buttonVariants({ variant: 'primary' })}
+            href={docsLinks.selfManaged.console}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Redpanda Console Config Documentation
           </a>
-        </VStack>
+        </div>
       </Section>
     </PageContent>
   );
@@ -557,7 +562,6 @@ type ConfirmModalProps<T> = {
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
-  const cancelRef = useRef<HTMLButtonElement | null>(null);
 
   const renderError = (): { title: string; content: string } | undefined => {
     if (!error) {
@@ -629,36 +633,43 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const content = target && props.content(target);
 
   return (
-    <AlertDialog isOpen={target !== null} leastDestructiveRef={cancelRef} onClose={cancel}>
-      <AlertDialogOverlay>
-        <AlertDialogContent>
-          <AlertDialogHeader>Confirm</AlertDialogHeader>
-          <AlertDialogBody>
-            {content}
-            {err ? (
-              <Box mt={4}>
-                <Alert status="error" variant="left-accent">
-                  <AlertIcon />
-                  <AlertDescription>
-                    <Box>
-                      <Text as="h3">{err.title}</Text>
-                      <Text>{err.content}</Text>
-                    </Box>
-                  </AlertDescription>
-                </Alert>
-              </Box>
-            ) : null}
-          </AlertDialogBody>
-          <AlertDialogFooter gap={2}>
-            <Button onClick={cancel} ref={cancelRef} variant="outline">
-              No
-            </Button>
-            <Button isLoading={isPending} onClick={onOk}>
-              {error ? 'Retry' : 'Yes'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!open) {
+          cancel();
+        }
+      }}
+      open={target !== null}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm</AlertDialogTitle>
+        </AlertDialogHeader>
+        <div className="flex flex-col gap-2">
+          {content}
+          {err ? (
+            <div className="mt-4">
+              <Alert icon={<CircleAlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">{err.title}</h3>
+                    <div>{err.content}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : null}
+        </div>
+        <AlertDialogFooter>
+          {/* Cancel first, as `leastDestructiveRef` made it the initial focus. */}
+          <Button onClick={cancel} variant="outline">
+            No
+          </Button>
+          <Button isLoading={isPending} onClick={onOk}>
+            {error ? 'Retry' : 'Yes'}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
     </AlertDialog>
   );
 };
@@ -767,7 +778,6 @@ export const TaskState = (p: {
   if (task.trace) {
     errBtn = (
       <Button
-        colorScheme="red"
         onClick={() => showErr(task.trace)}
         style={{
           padding: '0px 12px',
@@ -776,7 +786,7 @@ export const TaskState = (p: {
           height: '30px',
           gap: '5px',
         }}
-        variant="outline"
+        variant="destructive-outline"
       >
         {stateContent}
         <span>(Show Error)</span>
@@ -785,22 +795,28 @@ export const TaskState = (p: {
 
     const close = () => showErr(undefined);
     errModal = (
-      <Modal isOpen={err !== null && err !== undefined} onClose={close}>
-        <ModalOverlay />
-        <ModalContent minW="5xl">
-          <ModalHeader>
-            {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
-          </ModalHeader>
-          <ModalBody>
-            <Box className="codeBox" px={2} py={3} style={{ whiteSpace: 'pre', overflow: 'scroll' }} w="full">
-              {err}
-            </Box>
-          </ModalBody>
-          <ModalFooter gap={2}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+          }
+        }}
+        open={err !== null && err !== undefined}
+      >
+        <DialogContent size="full">
+          <DialogHeader>
+            <DialogTitle>
+              {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <div className="codeBox w-full overflow-scroll whitespace-pre px-2 py-3">{err}</div>
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={close}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
 
     stateContent = errBtn;

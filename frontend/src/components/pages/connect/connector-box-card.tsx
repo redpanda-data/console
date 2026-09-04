@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Flex, Tag, TagLabel, Text } from '@redpanda-data/ui';
+import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link } from 'components/redpanda-ui/components/typography';
 
 import { findConnectorMetadata, removeNamespace } from './helper';
@@ -46,32 +46,24 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
   const type = connectorPlugin.type ?? 'unknown';
 
   return (
-    <Flex direction="column">
-      <Box height="32px" mb="2" width="32px">
-        {logo}
-      </Box>
+    <div className="flex flex-col">
+      <div className="mb-2 size-8">{logo}</div>
 
-      <Box fontSize=".85em" fontWeight="600">
-        {type === 'source' ? 'Import from' : 'Export to'}
-      </Box>
+      <div className="font-semibold text-[0.85em]">{type === 'source' ? 'Import from' : 'Export to'}</div>
 
-      <Box fontSize="1.1em" fontWeight="600" mb="2">
-        {displayName}
-      </Box>
+      <div className="mb-2 font-semibold text-[1.1em]">{displayName}</div>
 
-      <Text color="gray.500" fontSize=".85em" noOfLines={3}>
-        {description}
-      </Text>
+      <p className="line-clamp-3 text-[0.85em] text-subtle">{description}</p>
       {learnMoreLink ? (
-        <Box mt="2">
-          <Tag mt="auto">
+        <div className="mt-2">
+          <Badge tone="default" variant="subtle">
             <Link className="opacity-80" href={learnMoreLink} rel="noopener noreferrer" target="_blank">
-              <TagLabel>Documentation</TagLabel>
+              Documentation
             </Link>
-          </Tag>
-        </Box>
+          </Badge>
+        </div>
       ) : null}
-    </Flex>
+    </div>
   );
 }
 

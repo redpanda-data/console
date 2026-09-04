@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
+import { buttonVariants } from 'components/redpanda-ui/components/button';
+import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
 import { useCallback, useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
@@ -78,23 +79,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
             <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
-              columns={[
-                {
-                  header: 'Class',
-                  accessorKey: 'class',
-                  cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
-                  size: 500,
-                },
-                {
-                  header: 'Version',
-                  accessorKey: 'version',
-                  size: 300,
-                },
-                {
-                  header: 'Type',
-                  accessorKey: 'type',
-                },
-              ]}
+              columns={pluginColumns}
               data={additionalInfo?.plugins ?? []}
               pagination
               sorting
@@ -105,6 +90,24 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     );
   }
 }
+
+const pluginColumns: DataTableColumnDef<ClusterAdditionalInfo['plugins'][0]>[] = [
+  {
+    header: 'Class',
+    accessorKey: 'class',
+    cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
+    size: 500,
+  },
+  {
+    header: 'Version',
+    accessorKey: 'version',
+    size: 300,
+  },
+  {
+    header: 'Type',
+    accessorKey: 'type',
+  },
+];
 
 const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; connectors: ClusterConnectorInfo[] }) => {
   const [filteredResults, setFilteredResults] = useState<ClusterConnectorInfo[]>([]);
@@ -133,13 +136,17 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
 
   return (
     <div>
-      <div style={{ display: 'flex', marginBottom: '.5em' }}>
-        <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
-          <Button variant="solid">Create connector</Button>
+      <div className="mb-2 flex">
+        <Link
+          className={buttonVariants({ variant: 'primary' })}
+          params={{ clusterName }}
+          to="/connect-clusters/$clusterName/create-connector"
+        >
+          Create connector
         </Link>
       </div>
 
-      <Box my={5}>
+      <div className="my-5">
         <SearchBar<ClusterConnectorInfo>
           dataSource={dataSource}
           filterText={searchText}
@@ -148,7 +155,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
           onQueryChanged={onQueryChanged}
           placeholderText="Enter search term/regex"
         />
-      </Box>
+      </div>
 
       <DataTable<ClusterConnectorInfo>
         columns={[
@@ -164,9 +171,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
                 search={{} as never}
                 to="/connect-clusters/$clusterName/$connector"
               >
-                <Text whiteSpace="break-spaces" wordBreak="break-word">
-                  {original.name}
-                </Text>
+                <span className="whitespace-break-spaces break-words">{original.name}</span>
               </Link>
             ),
             size: Number.POSITIVE_INFINITY,
@@ -194,9 +199,9 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
           },
         ]}
         data={filteredResults}
-        defaultPageSize={10}
         pagination
         sorting
+        tableOptions={{ initialState: { pagination: { pageIndex: 0, pageSize: 10 } } }}
       />
     </div>
   );
