@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
+
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from '../tanstack-router.config';
 
 describe('tanstackRouterConfig', () => {

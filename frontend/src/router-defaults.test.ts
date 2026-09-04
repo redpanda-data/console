@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
+
 import { RouteError } from './components/routes/route-error';
 import { RoutePending } from './components/routes/route-pending';
 import { routerDefaults } from './router-defaults';

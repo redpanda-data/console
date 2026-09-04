@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 
 import { RoutePending } from './route-pending';
