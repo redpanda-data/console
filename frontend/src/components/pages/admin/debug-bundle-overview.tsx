@@ -1,6 +1,6 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { Box, Flex, List, ListItem, Spinner, Stack, Text } from '@redpanda-data/ui';
 import { CheckCircleIcon, ErrorIcon } from 'components/icons';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import React, { type FC, useEffect } from 'react';
 
 import {
@@ -12,7 +12,7 @@ import { api } from '../../../state/backend-api';
 const StatusIcons: Record<DebugBundleStatus_Status, React.ReactElement> = {
   [DebugBundleStatus_Status.UNSPECIFIED]: <ErrorIcon className="text-success" size={16} />,
   [DebugBundleStatus_Status.SUCCESS]: <CheckCircleIcon className="text-success" size={16} />,
-  [DebugBundleStatus_Status.RUNNING]: <Spinner size="sm" />,
+  [DebugBundleStatus_Status.RUNNING]: <Spinner />,
   [DebugBundleStatus_Status.ERROR]: <ErrorIcon className="text-destructive" size={16} />,
   [DebugBundleStatus_Status.EXPIRED]: <ErrorIcon className="text-destructive" size={16} />,
 };
@@ -34,52 +34,49 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
     };
   }, []);
   return (
-    <Box data-testid="debug-bundle-overview" my={4}>
-      <List>
+    <div className="my-4" data-testid="debug-bundle-overview">
+      <ul>
         {statuses.map((status) => (
-          <ListItem data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={status.brokerId}>
-            <Flex alignItems="center" gap={3} mb={3}>
+          <li data-testid={`debug-bundle-broker-status-${status.brokerId}`} key={status.brokerId}>
+            <div className="mb-3 flex items-center gap-3">
               {status.value.case === 'bundleStatus' && (
                 <>
                   {StatusIcons[status.value.value.status]}
-                  <Stack spacing={0.5}>
-                    <Box>
-                      <Text data-testid={`broker-${status.brokerId}-label`} display="inline" fontWeight="bold">
+                  <div className="flex flex-col gap-0.5">
+                    <div>
+                      <span className="font-bold" data-testid={`broker-${status.brokerId}-label`}>
                         Broker {status.brokerId}
-                      </Text>
+                      </span>
                       {status.value.value.createdAt ? (
-                        <Text display="inline">
-                          {' '}
-                          started at {timestampDate(status.value.value.createdAt).toLocaleString()}
-                        </Text>
+                        <span> started at {timestampDate(status.value.value.createdAt).toLocaleString()}</span>
                       ) : null}
-                    </Box>
-                    <Text color="gray.500" data-testid={`broker-${status.brokerId}-job-id`} fontSize="sm">
+                    </div>
+                    <div className="text-body-sm text-subtle" data-testid={`broker-${status.brokerId}-job-id`}>
                       {status.value.value.jobId}
-                    </Text>
-                  </Stack>
+                    </div>
+                  </div>
                 </>
               )}
               {status.value.case === 'error' && (
                 <>
                   {StatusIcons[DebugBundleStatus_Status.ERROR]}
-                  <Stack spacing={0.5}>
-                    <Box>
-                      <Text data-testid={`broker-${status.brokerId}-error-label`} display="inline" fontWeight="bold">
+                  <div className="flex flex-col gap-0.5">
+                    <div>
+                      <span className="font-bold" data-testid={`broker-${status.brokerId}-error-label`}>
                         Broker {status.brokerId}
-                      </Text>
-                    </Box>
-                    <Text color="gray.500" data-testid={`broker-${status.brokerId}-error-message`} fontSize="sm">
+                      </span>
+                    </div>
+                    <div className="text-body-sm text-subtle" data-testid={`broker-${status.brokerId}-error-message`}>
                       {status.value.value.message}
-                    </Text>
-                  </Stack>
+                    </div>
+                  </div>
                 </>
               )}
-            </Flex>
-          </ListItem>
+            </div>
+          </li>
         ))}
-      </List>
-    </Box>
+      </ul>
+    </div>
   );
 };
 

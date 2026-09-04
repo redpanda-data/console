@@ -383,8 +383,8 @@ describe('licenseUtils', () => {
 
       // Check that user is informed about a license that will expire.
       expect(screen.getByText(LICENSE_EXPIRE_MESSAGE_REGEX)).toBeInTheDocument();
-      // Check for the color of the notification banner
-      expect(screen.queryByTestId('license-alert')).toHaveAttribute('data-status', 'info');
+      // The Registry Alert carries its tone in the variant classes, not a data-status attribute.
+      expect(screen.queryByTestId('license-alert')).toHaveClass('bg-informative-wash');
       // Check for CTAs
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Request a license')).toHaveAttribute(
         'href',

@@ -1,25 +1,19 @@
 import { ConnectError } from '@connectrpc/connect';
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  Button,
-  Flex,
-  FormField,
-  Input,
-  Link,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Text,
-  VStack,
-} from '@redpanda-data/ui';
 import { CheckIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Field, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Link } from 'components/redpanda-ui/components/typography';
+import { CircleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { capitalizeFirst } from 'utils/utils';
@@ -137,44 +131,42 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     }
   };
 
+  const givenNameError = errors.givenName?.message || fieldErrors.givenName;
+  const familyNameError = errors.familyName?.message || fieldErrors.familyName;
+  const emailError = errors.email?.message || fieldErrors.email;
+
   return (
-    <Modal isCentered isOpen={isOpen} onClose={handleClose} size="md">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Register</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          handleClose();
+        }
+      }}
+      open={isOpen}
+    >
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>Register</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           {isSuccess ? (
-            <VStack align="center" py={4} spacing={6}>
-              <Box
-                alignItems="center"
-                bg="green.100"
-                borderRadius="full"
-                display="flex"
-                h="80px"
-                justifyContent="center"
-                w="80px"
-              >
+            <div className="flex flex-col items-center gap-6 py-4">
+              <div className="flex size-20 items-center justify-center rounded-full bg-success-wash">
                 <CheckIcon className="text-success" size={40} />
-              </Box>
-              <VStack align="center" spacing={2}>
-                <Text fontSize="lg" fontWeight="bold" textAlign="center">
-                  Cluster registered
-                </Text>
-                <Text color="gray.600" textAlign="center">
-                  Enjoy 30 more days of enterprise features.
-                </Text>
-              </VStack>
-            </VStack>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-center text-heading-sm">Cluster registered</div>
+                <div className="text-center text-body text-subtle">Enjoy 30 more days of enterprise features.</div>
+              </div>
+            </div>
           ) : (
-            <Box>
-              <Text color="gray.600" mb={4}>
+            <div>
+              <div className="mb-4 text-body text-subtle">
                 Register this cluster for an additional 30 days of enterprise features.
-              </Text>
+              </div>
 
               {signupMutation.error && Object.keys(fieldErrors).length === 0 && (
-                <Alert mb={4} status="error" variant="left-accent">
-                  <AlertIcon />
+                <Alert className="mb-4" icon={<CircleAlertIcon />} variant="destructive">
                   <AlertDescription>
                     {capitalizeFirst(signupMutation.error.rawMessage) || 'Registration failed. Please try again.'}
                   </AlertDescription>
@@ -182,17 +174,15 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               )}
 
               <form onSubmit={handleSubmit(onSubmit)}>
-                <Flex gap={4} mb={4}>
-                  <FormField
-                    errorText={errors.givenName?.message || fieldErrors.givenName}
-                    flex={1}
-                    isInvalid={!!errors.givenName || !!fieldErrors.givenName}
-                    label="First name"
-                  >
+                <div className="mb-4 flex gap-4">
+                  <Field data-invalid={Boolean(givenNameError) || undefined}>
+                    <FieldLabel htmlFor="register-given-name">First name</FieldLabel>
                     <Controller
                       control={control}
                       name="givenName"
-                      render={({ field }) => <Input {...field} autoComplete="given-name" placeholder="First name" />}
+                      render={({ field }) => (
+                        <Input {...field} autoComplete="given-name" id="register-given-name" placeholder="First name" />
+                      )}
                       rules={{
                         required: 'First name is required',
                         pattern: {
@@ -209,18 +199,22 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         },
                       }}
                     />
-                  </FormField>
+                    {givenNameError ? <FieldError>{givenNameError}</FieldError> : null}
+                  </Field>
 
-                  <FormField
-                    errorText={errors.familyName?.message || fieldErrors.familyName}
-                    flex={1}
-                    isInvalid={!!errors.familyName || !!fieldErrors.familyName}
-                    label="Last name"
-                  >
+                  <Field data-invalid={Boolean(familyNameError) || undefined}>
+                    <FieldLabel htmlFor="register-family-name">Last name</FieldLabel>
                     <Controller
                       control={control}
                       name="familyName"
-                      render={({ field }) => <Input {...field} autoComplete="family-name" placeholder="Last name" />}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          autoComplete="family-name"
+                          id="register-family-name"
+                          placeholder="Last name"
+                        />
+                      )}
                       rules={{
                         required: 'Last name is required',
                         pattern: {
@@ -237,20 +231,23 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         },
                       }}
                     />
-                  </FormField>
-                </Flex>
+                    {familyNameError ? <FieldError>{familyNameError}</FieldError> : null}
+                  </Field>
+                </div>
 
-                <FormField
-                  errorText={errors.email?.message || fieldErrors.email}
-                  isInvalid={!!errors.email || !!fieldErrors.email}
-                  label="Email address"
-                  mb={4}
-                >
+                <Field className="mb-4" data-invalid={Boolean(emailError) || undefined}>
+                  <FieldLabel htmlFor="register-email">Email address</FieldLabel>
                   <Controller
                     control={control}
                     name="email"
                     render={({ field }) => (
-                      <Input {...field} autoComplete="email" placeholder="Email address" type="email" />
+                      <Input
+                        {...field}
+                        autoComplete="email"
+                        id="register-email"
+                        placeholder="Email address"
+                        type="email"
+                      />
                     )}
                     rules={{
                       required: 'Email address is required',
@@ -260,21 +257,16 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                       },
                     }}
                   />
-                </FormField>
+                  {emailError ? <FieldError>{emailError}</FieldError> : null}
+                </Field>
 
-                <Text color="gray.600" fontSize="sm" mb={4}>
+                <div className="mb-4 text-body-sm text-subtle">
                   By registering you acknowledge having read and accepted our{' '}
-                  <Link
-                    color="blue.500"
-                    href="https://www.redpanda.com/legal/privacy-policy"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
+                  <Link href="https://www.redpanda.com/legal/privacy-policy" rel="noopener noreferrer" target="_blank">
                     Privacy Policy
                   </Link>{' '}
                   and{' '}
                   <Link
-                    color="blue.500"
                     href="https://www.redpanda.com/legal/redpanda-subscription-terms-and-conditions"
                     rel="noopener noreferrer"
                     target="_blank"
@@ -282,32 +274,28 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                     Terms of Service
                   </Link>
                   .
-                </Text>
+                </div>
               </form>
-            </Box>
+            </div>
           )}
-        </ModalBody>
+        </DialogBody>
 
-        <ModalFooter>
+        <DialogFooter>
           {isSuccess ? (
             <Button onClick={handleClose}>Close</Button>
           ) : (
             <>
-              <Button mr={3} onClick={handleClose} variant="ghost">
+              <Button onClick={handleClose} variant="ghost">
                 Close
               </Button>
-              <Button
-                isDisabled={signupMutation.isPending}
-                isLoading={isSubmitting || signupMutation.isPending}
-                loadingText="Registering..."
-                onClick={handleSubmit(onSubmit)}
-              >
+              {/* isLoading keeps the label in place and sets aria-busy, so the accessible name stays "Register". */}
+              <Button isLoading={isSubmitting || signupMutation.isPending} onClick={handleSubmit(onSubmit)}>
                 Register
               </Button>
             </>
           )}
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

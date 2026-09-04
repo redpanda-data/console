@@ -1,5 +1,6 @@
-import { Alert, AlertDescription, AlertIcon, Box, Flex, Text } from '@redpanda-data/ui';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Link } from 'components/redpanda-ui/components/typography';
+import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { type FC, type ReactElement, useEffect, useState } from 'react';
 
 import {
@@ -25,7 +26,7 @@ const getLicenseAlertContent = (
   licenses: License[],
   onRegisterModalOpen: () => void
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; status: 'warning' | 'info' } | null => {
+): { message: ReactElement; status: 'warning' | 'informative' } | null => {
   if (licenses.length === 0) {
     return null;
   }
@@ -51,17 +52,17 @@ const getLicenseAlertContent = (
       if (msToExpiration < 0) {
         return {
           message: (
-            <Box>
+            <div>
               This cluster's Enterprise Trial has expired. Register for an additional 30 days of{' '}
               <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>
               .
-              <Flex gap={2} my={2}>
+              <div className="my-2 flex gap-2">
                 <UploadLicenseButton />
                 <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
-              </Flex>
-            </Box>
+              </div>
+            </div>
           ),
           status: 'warning',
         };
@@ -72,19 +73,19 @@ const getLicenseAlertContent = (
       if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
         return {
           message: (
-            <Box>
+            <div>
               This cluster is on an Enterprise trial. Register for an additional 30 days of{' '}
               <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
                 enterprise features
               </Link>
               .
-              <Flex gap={2} my={2}>
+              <div className="my-2 flex gap-2">
                 <UploadLicenseButton />
                 <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
-              </Flex>
-            </Box>
+              </div>
+            </div>
           ),
-          status: 'info',
+          status: 'informative',
         };
       }
       // Trial is baked-in and has < 5 days left
@@ -92,7 +93,7 @@ const getLicenseAlertContent = (
       if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
         return {
           message: (
-            <Box>
+            <div>
               This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. SSO/RBAC is enabled
               and Console will be inaccessible after license expiry. Disable SSO/RBAC, or register for an additional 30
               days of{' '}
@@ -100,29 +101,29 @@ const getLicenseAlertContent = (
                 enterprise features
               </Link>
               .
-              <Flex gap={2} my={2}>
+              <div className="my-2 flex gap-2">
                 <UploadLicenseButton />
                 <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
-              </Flex>
-            </Box>
+              </div>
+            </div>
           ),
           status: 'warning',
         };
       }
       return {
         message: (
-          <Box>
+          <div>
             This cluster's Enterprise trial will expire in {getPrettyTimeToExpiration(license)}. Register for an
             additional 30 days of{' '}
             <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
               enterprise features
             </Link>
             .
-            <Flex gap={2} my={2}>
+            <div className="my-2 flex gap-2">
               <UploadLicenseButton />
               <RegisterButton onRegisterModalOpen={onRegisterModalOpen} />
-            </Flex>
-          </Box>
+            </div>
+          </div>
         ),
         status: 'warning',
       };
@@ -132,13 +133,13 @@ const getLicenseAlertContent = (
     if (msToExpiration < 0) {
       return {
         message: (
-          <Box>
+          <div>
             This Extended Enterprise trial has expired. The fastest way to continue is with{' '}
             <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
               Redpanda Serverless
             </Link>
             .
-          </Box>
+          </div>
         ),
         status: 'warning',
       };
@@ -149,16 +150,16 @@ const getLicenseAlertContent = (
     if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
       return {
         message: (
-          <Box>
+          <div>
             This cluster is on an Extended Enterprise trial. When your trial expires, the fastest way to continue is
             with{' '}
             <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
               Redpanda Serverless
             </Link>
             .
-          </Box>
+          </div>
         ),
-        status: 'info',
+        status: 'informative',
       };
     }
     // Trial is baked-in and has < 5 days left
@@ -166,7 +167,7 @@ const getLicenseAlertContent = (
     if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
       return {
         message: (
-          <Box>
+          <div>
             This Extended Enterprise trial expires in {getPrettyTimeToExpiration(license)}. Enterprise features like
             SSO/RBAC will be unavailable after the trial expires. When your trial expires, the fastest way to continue
             is with{' '}
@@ -174,27 +175,27 @@ const getLicenseAlertContent = (
               Redpanda Serverless
             </Link>
             .
-            <Flex gap={2} my={2}>
+            <div className="my-2 flex gap-2">
               <UploadLicenseButton />
-            </Flex>
-          </Box>
+            </div>
+          </div>
         ),
         status: 'warning',
       };
     }
     return {
       message: (
-        <Box>
+        <div>
           This Extended Enterprise trial expires in {getPrettyTimeToExpiration(license)}. When your trial expires, the
           fastest way to continue is with{' '}
           <Link href={SERVERLESS_LINK} rel="noopener noreferrer" target="_blank">
             Redpanda Serverless
           </Link>
           .
-          <Flex gap={2} my={2}>
+          <div className="my-2 flex gap-2">
             <UploadLicenseButton />
-          </Flex>
-        </Box>
+          </div>
+        </div>
       ),
       status: 'warning',
     };
@@ -204,8 +205,8 @@ const getLicenseAlertContent = (
     if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
       return {
         message: (
-          <Box>
-            <Text>
+          <div>
+            <p className="text-body">
               Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)} and Console SSO/RBAC is
               enabled. As a result, Console will be inaccessible after license expiry. To prevent this,{' '}
               <Link href={DISABLE_SSO_DOCS_LINK} rel="noopener noreferrer" target="_blank">
@@ -216,20 +217,20 @@ const getLicenseAlertContent = (
                 full Redpanda Enterprise license
               </Link>
               .
-            </Text>
-            <Flex gap={2} my={2}>
+            </p>
+            <div className="my-2 flex gap-2">
               <UploadLicenseButton />
               <UpgradeButton />
-            </Flex>
-          </Box>
+            </div>
+          </div>
         ),
         status: 'warning',
       };
     }
     return {
       message: (
-        <Box>
-          <Text>
+        <div>
+          <p className="text-body">
             Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
             <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
               enterprise features
@@ -239,12 +240,12 @@ const getLicenseAlertContent = (
               contact us
             </Link>
             .
-          </Text>
-          <Flex gap={2} my={2}>
+          </p>
+          <div className="my-2 flex gap-2">
             <UploadLicenseButton />
             <UpgradeButton />
-          </Flex>
-        </Box>
+          </div>
+        </div>
       ),
       status: 'warning',
     };
@@ -289,13 +290,12 @@ export const OverviewLicenseNotification: FC = () => {
   const { message, status } = alertContent;
 
   return (
-    <Box>
-      <Alert mb={4} status={status} variant="subtle">
-        <AlertIcon />
+    <div>
+      <Alert className="mb-4" icon={status === 'warning' ? <TriangleAlertIcon /> : <InfoIcon />} variant={status}>
         <AlertDescription>{message}</AlertDescription>
       </Alert>
 
       <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />
-    </Box>
+    </div>
   );
 };
