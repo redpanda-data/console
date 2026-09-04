@@ -13,7 +13,7 @@ import { Link } from '@tanstack/react-router';
 
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import '../../../utils/array-extensions';
-import { Box, Button, Flex, Text } from '@redpanda-data/ui';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect } from 'react';
 
 import DebugBundleOverview from './debug-bundle-overview';
@@ -75,35 +75,35 @@ const AdminPageDebugBundleProgressContent: FC = () => {
   }, []);
 
   return (
-    <Box>
-      <Text data-testid="debug-bundle-description">
+    <div>
+      <div data-testid="debug-bundle-description">
         Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the
         machine it's running on. This will bundle the collected data into a ZIP file.
-      </Text>
+      </div>
 
-      <Box mt={4}>
-        {Boolean(isInProgress) && <Text data-testid="debug-bundle-generating-text">Generating bundle...</Text>}
+      <div className="mt-4">
+        {Boolean(isInProgress) && <div data-testid="debug-bundle-generating-text">Generating bundle...</div>}
         {Boolean(isExpired) && (
-          <Text data-testid="debug-bundle-expired-text" fontWeight="bold">
+          <div className="font-bold" data-testid="debug-bundle-expired-text">
             Your previous bundle has expired and cannot be downloaded.
-          </Text>
+          </div>
         )}
-        {Boolean(isError) && <Text data-testid="debug-bundle-error-text">Your debug bundle was not generated.</Text>}
+        {Boolean(isError) && <div data-testid="debug-bundle-error-text">Your debug bundle was not generated.</div>}
         {Boolean(canDownload) && (
-          <Box data-testid="debug-bundle-complete-box">
-            <Flex gap={2}>
-              <Text fontWeight="bold">Debug bundle complete:</Text>
+          <div data-testid="debug-bundle-complete-box">
+            <div className="flex gap-2">
+              <div className="font-bold">Debug bundle complete:</div>
               <DebugBundleLink showDatetime={false} statuses={statuses} />
-            </Flex>
-          </Box>
+            </div>
+          </div>
         )}
-      </Box>
+      </div>
 
       {!isExpired && (
-        <Box mt={2}>
+        <div className="mt-2">
           {statuses.length > 0 && <DebugBundleOverview statuses={statuses} />}
 
-          <Box my={2}>
+          <div className="my-2">
             {isInProgress ? (
               <Button
                 data-testid="debug-bundle-stop-button"
@@ -121,18 +121,17 @@ const AdminPageDebugBundleProgressContent: FC = () => {
                 Stop
               </Button>
             ) : (
-              <Button
-                as={Link}
+              <Link
+                className={buttonVariants({ variant: 'outline' })}
                 data-testid={isError ? 'debug-bundle-try-again-button' : 'debug-bundle-done-button'}
                 to="/debug-bundle"
-                variant="outline"
               >
                 {isError ? 'Try again' : 'Done'}
-              </Button>
+              </Link>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
