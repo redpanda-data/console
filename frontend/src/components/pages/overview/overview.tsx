@@ -162,7 +162,7 @@ class Overview extends PageComponent {
           <Grid gap={6} gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }}>
             <GridItem display="flex" flexDirection="column" gap={6}>
               {api.clusterHealth?.isHealthy === false && (
-                <Section className="py-4" style={{ gridArea: 'debugInfo' }}>
+                <Section className="py-4">
                   <Heading as="h3">Cluster Health Debug</Heading>
                   <ClusterHealthOverview />
                 </Section>

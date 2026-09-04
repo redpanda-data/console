@@ -39,7 +39,12 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
   return (
     <RegistryTabs
       defaultValue={selectedTabKey || defaultSelectedTabKey || tabs[0]?.key}
-      onValueChange={(next) => onChange?.(String(next))}
+      onValueChange={(next, details) => {
+        // Only user activation; Base UI also reports its own initial/fallback selection.
+        if (details.reason === 'none' && next !== null) {
+          onChange?.(String(next));
+        }
+      }}
     >
       <TabsList activateOnFocus layout={isFitted ? 'full' : 'auto'} variant="underline">
         {tabs.map((t) => (

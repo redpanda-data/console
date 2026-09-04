@@ -10,9 +10,8 @@
  */
 
 import { CopyIcon, DownloadIcon, InfoIcon } from 'components/icons';
-import { Label as RegistryLabel } from 'components/redpanda-ui/components/label';
-import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
 import React, { Component, type CSSProperties, type JSX, useEffect, useState } from 'react';
@@ -313,21 +312,22 @@ export class OptionGroup<T extends string> extends Component<{
 
     return (
       <Label text={p.label}>
-        <RadioGroup
-          name={p.label}
-          onValueChange={(val) => {
-            p.onChange(val as T);
+        <ToggleGroup
+          aria-label={p.label}
+          onValueChange={([next]) => {
+            // Single-select: ignore the deselect that toggling the active segment reports.
+            if (next !== undefined && next !== p.value) {
+              p.onChange(next as T);
+            }
           }}
-          orientation="horizontal"
-          value={p.value}
+          value={[p.value]}
         >
           {ObjToKv(p.options).map((kv) => (
-            <RegistryLabel className="cursor-pointer" key={kv.key}>
-              <RadioGroupItem value={String(kv.value)} />
+            <ToggleGroupItem key={kv.key} value={String(kv.value)}>
               {kv.key}
-            </RegistryLabel>
+            </ToggleGroupItem>
           ))}
-        </RadioGroup>
+        </ToggleGroup>
       </Label>
     );
   }
