@@ -9,9 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Link as ChakraLink, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, TrashIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
+import { Link as ExternalLink } from 'components/redpanda-ui/components/typography';
+import { SearchIcon, XIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -34,27 +42,27 @@ export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionS
   switch (p.status) {
     case PartitionTransformStatus_PartitionStatus.UNSPECIFIED:
       return (
-        <Flex alignItems="center" gap="2">
-          <CloseIcon color="orange" height="14px" /> Unspecified
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CloseIcon className="size-3.5 text-warning" /> Unspecified
+        </div>
       );
     case PartitionTransformStatus_PartitionStatus.RUNNING:
       return (
-        <Flex alignItems="center" gap="2">
-          <CheckIcon color="green" height="14px" /> Running
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CheckIcon className="size-3.5 text-success" /> Running
+        </div>
       );
     case PartitionTransformStatus_PartitionStatus.INACTIVE:
       return (
-        <Flex alignItems="center" gap="2">
-          <CloseIcon color="red" height="14px" /> Inactive
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CloseIcon className="size-3.5 text-destructive" /> Inactive
+        </div>
       );
     case PartitionTransformStatus_PartitionStatus.ERRORED:
       return (
-        <Flex alignItems="center" gap="2">
-          <CloseIcon color="red" height="14px" /> Errored
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CloseIcon className="size-3.5 text-destructive" /> Errored
+        </div>
       );
     default:
       return 'Unknown';
@@ -78,6 +86,98 @@ class TransformsList extends PageComponent {
   }
 }
 
+const columns: DataTableColumnDef<TransformMetadata>[] = [
+  {
+    id: 'name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    accessorKey: 'name',
+    size: 300,
+    cell: ({ row: { original: r } }) => (
+      <div className="whitespace-break-spaces break-words">
+        <Link
+          params={{ transformName: encodeURIComponentPercents(r.name) }}
+          search={{} as never}
+          to="/transforms/$transformName"
+        >
+          {r.name}
+        </Link>
+      </div>
+    ),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    enableSorting: false,
+    cell: ({ row: { original: r } }) => {
+      if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
+        return <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
+      }
+      // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
+      const partitionTransformStatus = r.statuses.first(
+        (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
+      )!;
+
+      return <PartitionStatus status={partitionTransformStatus.status} />;
+    },
+  },
+  {
+    id: 'inputTopicName',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Input topic" />,
+    accessorKey: 'inputTopicName',
+  },
+  {
+    id: 'outputTopicNames',
+    header: 'Output topics',
+    enableSorting: false,
+    cell: ({ row: { original: r } }) => (
+      <div className="flex flex-col">
+        {r.outputTopicNames.map((n) => (
+          <div key={n}>{n}</div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    header: '',
+    id: 'actions',
+    enableSorting: false,
+    cell: ({ row: { original: r } }) => (
+      <Button
+        aria-label={`Delete transform ${r.name}`}
+        onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+          e.stopPropagation();
+          e.preventDefault();
+
+          openDeleteModal(r.name, () => {
+            transformsApi
+              .deleteTransform(r.name)
+              .then(() => {
+                showToast({
+                  status: 'success',
+                  duration: 4000,
+                  title: 'Transform deleted',
+                });
+                transformsApi.refreshTransforms(true);
+              })
+              .catch((err) => {
+                showToast({
+                  status: 'error',
+                  title: 'Failed to delete transform',
+                  description: String(err),
+                });
+              });
+          });
+        }}
+        size="icon-xs"
+        variant="ghost"
+      >
+        <TrashIcon />
+      </Button>
+    ),
+    size: 1,
+  },
+];
+
 const TransformsListContent: FC = () => {
   const { transformsList, updateSettings } = useUISettingsStore();
 
@@ -89,13 +189,13 @@ const TransformsListContent: FC = () => {
     return null;
   }
 
+  const quickSearch = transformsList.quickSearch;
   const filteredTransforms = (transformsApi.transforms ?? []).filter((u) => {
-    const filter = transformsList.quickSearch;
-    if (!filter) {
+    if (!quickSearch) {
       return true;
     }
     try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
+      const quickSearchRegExp = new RegExp(quickSearch, 'i');
       return u.name.match(quickSearchRegExp);
     } catch {
       return false;
@@ -104,137 +204,53 @@ const TransformsListContent: FC = () => {
 
   return (
     <PageContent>
-      <Text maxWidth="600px">
+      <p className="max-w-[600px] text-body">
         Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
         Redpanda.{' '}
-        <ChakraLink
-          href={docsLinks.selfManaged.dataTransforms}
-          isExternal
-          style={{ textDecoration: 'underline solid 1px' }}
-        >
+        <ExternalLink href={docsLinks.selfManaged.dataTransforms} rel="noopener noreferrer" target="_blank">
           Learn more
-        </ChakraLink>
-      </Text>
+        </ExternalLink>
+      </p>
 
-      <Stack direction="row" mb="6">
+      <div className="mb-6 flex flex-row gap-2">
         <Link to="/transforms-setup">
           <Button variant="outline">Create transform</Button>
         </Link>
 
-        <Button isDisabled variant="outline">
+        <Button disabled variant="outline">
           Export metrics
         </Button>
-      </Stack>
+      </div>
 
       <Section>
-        <Box mb="5">
-          <SearchField
-            placeholderText="Enter search term / regex..."
-            searchText={transformsList.quickSearch}
-            setSearchText={(x) => {
-              updateSettings({ transformsList: { quickSearch: x } });
-            }}
-            width="350px"
-          />
-        </Box>
-
-        <DataTable<TransformMetadata>
-          columns={[
-            {
-              header: 'Name',
-              accessorKey: 'name',
-              size: 300,
-              cell: ({ row: { original: r } }) => (
-                <Box whiteSpace="break-spaces" wordBreak="break-word">
-                  <Link
-                    params={{ transformName: encodeURIComponentPercents(r.name) }}
-                    search={{} as never}
-                    to="/transforms/$transformName"
-                  >
-                    {r.name}
-                  </Link>
-                </Box>
-              ),
-            },
-            {
-              header: 'Status',
-              cell: ({ row: { original: r } }) => {
-                if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
-                  return (
-                    <Flex alignItems="center">
-                      <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />
-                    </Flex>
-                  );
-                }
-                // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-                const partitionTransformStatus = r.statuses.first(
-                  (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
-                )!;
-
-                return (
-                  <Flex alignItems="center">
-                    <PartitionStatus status={partitionTransformStatus.status} />
-                  </Flex>
-                );
-              },
-            },
-            {
-              header: 'Input topic',
-              accessorKey: 'inputTopicName',
-            },
-            {
-              header: 'Output topics',
-              cell: ({ row: { original: r } }) => (
-                <Stack>
-                  {r.outputTopicNames.map((n) => (
-                    <Box key={n}>{n}</Box>
-                  ))}
-                </Stack>
-              ),
-            },
-            {
-              header: '',
-              id: 'actions',
-              cell: ({ row: { original: r } }) => (
+        <div className="mb-5">
+          <Input
+            containerClassName="max-w-[350px]"
+            onChange={(e) => updateSettings({ transformsList: { quickSearch: e.target.value } })}
+            placeholder="Enter search term / regex..."
+            testId="search-field-input"
+            value={quickSearch}
+          >
+            <InputStart>
+              <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
+            </InputStart>
+            {quickSearch !== '' && (
+              <InputEnd className="pointer-events-auto">
                 <Button
-                  color="gray.500"
-                  height="16px"
-                  onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-
-                    openDeleteModal(r.name, () => {
-                      transformsApi
-                        .deleteTransform(r.name)
-                        .then(() => {
-                          showToast({
-                            status: 'success',
-                            duration: 4000,
-                            title: 'Transform deleted',
-                          });
-                          transformsApi.refreshTransforms(true);
-                        })
-                        .catch((err) => {
-                          showToast({
-                            status: 'error',
-                            title: 'Failed to delete transform',
-                            description: String(err),
-                          });
-                        });
-                    });
-                  }}
-                  variant="icon"
+                  aria-label="Clear search"
+                  data-testid="search-field-reset-icon"
+                  onClick={() => updateSettings({ transformsList: { quickSearch: '' } })}
+                  size="icon-xs"
+                  variant="ghost"
                 >
-                  <TrashIcon />
+                  <XIcon />
                 </Button>
-              ),
-              size: 1,
-            },
-          ]}
-          data={filteredTransforms}
-          pagination
-          sorting
-        />
+              </InputEnd>
+            )}
+          </Input>
+        </div>
+
+        <DataTable<TransformMetadata> columns={columns} data={filteredTransforms} pagination sorting />
       </Section>
     </PageContent>
   );

@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
-import type { SortingState } from '@tanstack/react-table';
+import { Button } from 'components/redpanda-ui/components/button';
+import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
+import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
+import { SearchIcon, XIcon } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import type { LegacyColumnDef } from 'utils/legacy-data-table';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -79,10 +80,9 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 
     return (
       <PageContent>
-        <Box>
-          {/* <Heading as="h2">{transformName}</Heading> */}
+        <div>
           <Button
-            mt="2"
+            className="mt-2"
             onClick={() =>
               openDeleteModal(transformName, () => {
                 transformsApi
@@ -104,11 +104,11 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
                   });
               })
             }
-            variant="outline-delete"
+            variant="destructive-outline"
           >
             Delete
           </Button>
-        </Box>
+        </div>
 
         <Tabs
           tabs={[
@@ -121,6 +121,17 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 }
 export default TransformDetails;
+
+const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
+  { header: 'Partition', accessorKey: 'partitionId' },
+  { header: 'Node', accessorKey: 'brokerId' },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
+  },
+  { header: 'Lag', accessorKey: 'lag' },
+];
 
 const OverviewTab = (p: { transform: TransformMetadata }) => {
   let overallStatus = <></>;
@@ -136,7 +147,7 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
 
   return (
     <>
-      <Box my="6">
+      <div className="my-6">
         {QuickTable(
           [
             { key: 'Status', value: overallStatus },
@@ -162,21 +173,15 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
             gapWidth: '4rem',
           }
         )}
-      </Box>
-      <Box maxWidth="35rem">
+      </div>
+      <div className="max-w-[35rem]">
         <DataTable<PartitionTransformStatus>
-          columns={[
-            { header: 'Partition', accessorKey: 'partitionId' },
-            { header: 'Node', accessorKey: 'brokerId' },
-            {
-              header: 'Status',
-              cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
-            },
-            { header: 'Lag', accessorKey: 'lag' },
-          ]}
+          columns={partitionStatusColumns}
           data={p.transform.statuses}
+          pagination={false}
+          sorting={false}
         />
-      </Box>
+      </div>
     </>
   );
 };
@@ -191,7 +196,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
   });
   const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
-  const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -250,7 +254,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
   };
 
   const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: LegacyColumnDef<TopicMessage>[] = [
+  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = [
     {
       header: 'Timestamp',
       accessorKey: 'timestamp',
@@ -284,26 +288,44 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
   return (
     <>
-      <Box my="1rem">The logs below are for the last five hours.</Box>
+      <div className="my-4">The logs below are for the last five hours.</div>
 
       <Section className="min-w-[800px]">
-        <Flex mb="6">
-          <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
-          <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
+        <div className="mb-6 flex">
+          <Input
+            containerClassName="max-w-[230px]"
+            onChange={(e) => setLogsQuickSearch(e.target.value)}
+            placeholder="Search..."
+            testId="search-field-input"
+            value={logsQuickSearch}
+          >
+            <InputStart>
+              <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
+            </InputStart>
+            {logsQuickSearch !== '' && (
+              <InputEnd className="pointer-events-auto">
+                <Button
+                  aria-label="Clear search"
+                  data-testid="search-field-reset-icon"
+                  onClick={() => setLogsQuickSearch('')}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <XIcon />
+                </Button>
+              </InputEnd>
+            )}
+          </Input>
+          <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
             Refresh logs
           </Button>
-        </Flex>
+        </div>
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}
-          onSortingChange={setSorting}
-          pagination={paginationParams}
-          sorting={sorting}
-          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
-          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
               loadLargeMessage={() =>
@@ -316,6 +338,9 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
               msg={original}
             />
           )}
+          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
+          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
+          tableOptions={{ initialState: { pagination: paginationParams } }}
         />
       </Section>
     </>
