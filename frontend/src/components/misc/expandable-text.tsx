@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Icon, Text } from '@redpanda-data/ui';
 import { ChevronDownIcon, ChevronUpIcon } from 'components/icons';
 import { useState } from 'react';
 
@@ -22,32 +21,29 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
   const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
 
   return (
-    <Text>
+    <div>
       {text}
 
       {Boolean(isTruncated) && '...'}
 
       {Boolean(showExpander) && (
-        <Box
-          cursor="pointer"
-          display="inline"
-          fontWeight="semibold"
-          mt="1px"
+        // A real button: it was a clickable Box with no role, name or keyboard path.
+        <button
+          className="mt-px inline cursor-pointer select-none border-none bg-transparent px-2 font-semibold"
           onClick={() => setExpanded(!expanded)}
-          px="2"
-          userSelect="none"
+          type="button"
         >
           {expanded ? (
-            <span style={{ whiteSpace: 'nowrap' }}>
-              less <Icon as={ChevronUpIcon} />
+            <span className="whitespace-nowrap">
+              less <ChevronUpIcon className="inline size-4" />
             </span>
           ) : (
-            <span style={{ whiteSpace: 'nowrap' }}>
-              more <Icon as={ChevronDownIcon} />
+            <span className="whitespace-nowrap">
+              more <ChevronDownIcon className="inline size-4" />
             </span>
           )}
-        </Box>
+        </button>
       )}
-    </Text>
+    </div>
   );
 }

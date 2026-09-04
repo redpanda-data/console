@@ -57,6 +57,7 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
+import { ThemeProvider } from './components/redpanda-ui/components/theme-provider';
 import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routerDefaults } from './router-defaults';
@@ -132,16 +133,23 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      <ChakraProvider resetCSS={false} theme={redpandaTheme}>
-        {/* showToast viewport, above the router so the error boundary and login can toast */}
-        <BaseUiToaster testId="console-toasts" />
-        <TransportProvider transport={dataplaneTransport}>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
-          </QueryClientProvider>
-        </TransportProvider>
-      </ChakraProvider>
+      {/*
+        Standalone only. `data-theme` on <html> is what theme.css keys its dark palette on, and in
+        embedded and federated mode the Cloud UI host owns that attribute — a second writer there
+        would fight it. Outside ChakraProvider so its mount effect lands last while both are up.
+      */}
+      <ThemeProvider>
+        <ChakraProvider resetCSS={false} theme={redpandaTheme}>
+          {/* showToast viewport, above the router so the error boundary and login can toast */}
+          <BaseUiToaster testId="console-toasts" />
+          <TransportProvider transport={dataplaneTransport}>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+              <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
+            </QueryClientProvider>
+          </TransportProvider>
+        </ChakraProvider>
+      </ThemeProvider>
     </CustomFeatureFlagProvider>
   );
 };

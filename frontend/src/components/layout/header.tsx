@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { ColorModeSwitch } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
+import { ThemeModeSwitch } from './theme-mode-switch';
 import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
@@ -165,7 +165,7 @@ function AppPageHeader() {
                   </Tooltip>
                 </TooltipProvider>
               ))}
-            {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
+            {IsDev && !isEmbedded() && <ThemeModeSwitch />}
           </div>
         </div>
       )}

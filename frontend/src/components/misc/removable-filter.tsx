@@ -1,17 +1,14 @@
-import { Flex, IconButton } from '@redpanda-data/ui';
 import { CloseIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import type { FC, ReactElement } from 'react';
 
 const RemovableFilter: FC<{ children: ReactElement; onRemove: () => void }> = ({ children, onRemove }) => (
-  <Flex alignItems="center" border="1px solid" borderColor="gray.200" borderRadius="md">
+  <div className="!border-border flex items-center rounded-md border">
     {children}
-    <IconButton
-      aria-label="Remove filter"
-      icon={<CloseIcon size={18} />}
-      onClick={() => onRemove()}
-      variant="unstyled"
-    />
-  </Flex>
+    <Button aria-label="Remove filter" onClick={() => onRemove()} size="icon-sm" variant="ghost">
+      <CloseIcon size={18} />
+    </Button>
+  </div>
 );
 
 export default RemovableFilter;

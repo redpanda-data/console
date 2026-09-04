@@ -9,7 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { SearchField } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
+import { SearchIcon, XIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo } from 'react';
 
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animation-props';
@@ -72,12 +74,30 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
         alignItems: 'center',
       }}
     >
-      <SearchField
-        placeholderText={placeholderText}
-        searchText={filterText}
-        setSearchText={onQueryChanged}
-        width="350px"
-      />
+      <Input
+        containerClassName="max-w-[350px]"
+        onChange={(e) => onQueryChanged(e.target.value)}
+        placeholder={placeholderText ?? 'Search...'}
+        testId="search-field-input"
+        value={filterText}
+      >
+        <InputStart>
+          <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
+        </InputStart>
+        {filterText !== '' && (
+          <InputEnd className="pointer-events-auto">
+            <Button
+              aria-label="Clear search"
+              data-testid="search-field-reset-icon"
+              onClick={() => onQueryChanged('')}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <XIcon />
+            </Button>
+          </InputEnd>
+        )}
+      </Input>
 
       <AnimatePresence>
         {Boolean(filterSummary) && (
