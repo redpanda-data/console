@@ -154,7 +154,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
       <ChakraProvider resetCSS={false} theme={redpandaTheme}>
         {/* showToast viewport, above the router so the error boundary and login can toast */}
-        <BaseUiToaster />
+        <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />

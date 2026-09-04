@@ -35,7 +35,7 @@ export function FederatedProviders({ children, transport, queryClient, featureFl
     <CustomFeatureFlagProvider initialFlags={featureFlags}>
       <ChakraProvider resetCSS={false} theme={redpandaTheme}>
         {/* showToast viewport; mirrors app.tsx */}
-        <BaseUiToaster />
+        <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={transport}>
           <QueryClientProvider client={queryClient}>
             <TooltipProvider>{children}</TooltipProvider>
