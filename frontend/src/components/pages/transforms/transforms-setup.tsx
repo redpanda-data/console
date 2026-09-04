@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { InlineCode, Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { docsLinks } from 'utils/docs-links';
 
@@ -56,9 +56,7 @@ function TabGo(_p: Record<string, never>) {
     <List className="flex flex-col gap-2" ordered>
       <ListItem>
         <p className="mt-3 text-body">Create and initialize a data transforms project:</p>
-        <CodeBlock width="full">
-          <Pre>{rpkInitTransform}</Pre>
-        </CodeBlock>
+        <DynamicCodeBlock code={rpkInitTransform} lang="bash" />
 
         <p className="mt-3 text-body">
           If you do not include the <InlineCode>--language</InlineCode> flag, the{' '}
@@ -66,9 +64,7 @@ function TabGo(_p: Record<string, never>) {
         </p>
 
         <p className="mt-3 text-body">A successful command generates project files in your current directory:</p>
-        <CodeBlock width="full">
-          <Pre>{exampleDir}</Pre>
-        </CodeBlock>
+        <DynamicCodeBlock code={exampleDir} lang="text" />
 
         <p className="mt-3 text-body">
           The <InlineCode>transform.go</InlineCode> file contains the transform logic, and the{' '}
@@ -78,10 +74,13 @@ function TabGo(_p: Record<string, never>) {
         <Alert variant="informative">
           <AlertTitle>Hint</AlertTitle>
           <AlertDescription>
-            When creating a custom data transform, initialization steps can be done either in{' '}
-            <InlineCode>main</InlineCode> (because it's only run once at the start of the package) or in Go's standard
-            predefined <InlineCode>init()</InlineCode> function. Although state can be cached in global variables,
-            Redpanda may restart a WASM module at any point, which causes the state to be lost.
+            {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
+            <p>
+              When creating a custom data transform, initialization steps can be done either in{' '}
+              <InlineCode>main</InlineCode> (because it's only run once at the start of the package) or in Go's standard
+              predefined <InlineCode>init()</InlineCode> function. Although state can be cached in global variables,
+              Redpanda may restart a WASM module at any point, which causes the state to be lost.
+            </p>
           </AlertDescription>
         </Alert>
       </ListItem>

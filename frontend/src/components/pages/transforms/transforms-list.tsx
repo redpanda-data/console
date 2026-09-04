@@ -19,7 +19,7 @@ import {
 } from 'components/redpanda-ui/components/data-table';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { Link as ExternalLink } from 'components/redpanda-ui/components/typography';
-import { SearchIcon, XIcon } from 'lucide-react';
+import { SearchIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -89,6 +89,8 @@ class TransformsList extends PageComponent {
 const columns: DataTableColumnDef<TransformMetadata>[] = [
   {
     id: 'name',
+    // No DataTableViewOptions on this page, so a hidden column could not be brought back.
+    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     accessorKey: 'name',
     size: 300,
@@ -122,6 +124,7 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
   },
   {
     id: 'inputTopicName',
+    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Input topic" />,
     accessorKey: 'inputTopicName',
   },
@@ -190,16 +193,20 @@ const TransformsListContent: FC = () => {
   }
 
   const quickSearch = transformsList.quickSearch;
+  // Compiled once, not once per row. An invalid pattern matches nothing, as before.
+  let quickSearchRegExp: RegExp | null = null;
+  if (quickSearch) {
+    try {
+      quickSearchRegExp = new RegExp(quickSearch, 'i');
+    } catch {
+      quickSearchRegExp = null;
+    }
+  }
   const filteredTransforms = (transformsApi.transforms ?? []).filter((u) => {
     if (!quickSearch) {
       return true;
     }
-    try {
-      const quickSearchRegExp = new RegExp(quickSearch, 'i');
-      return u.name.match(quickSearchRegExp);
-    } catch {
-      return false;
-    }
+    return quickSearchRegExp ? quickSearchRegExp.test(u.name) : false;
   });
 
   return (
@@ -234,19 +241,21 @@ const TransformsListContent: FC = () => {
             <InputStart>
               <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
             </InputStart>
-            {quickSearch !== '' && (
-              <InputEnd className="pointer-events-auto">
-                <Button
-                  aria-label="Clear search"
-                  data-testid="search-field-reset-icon"
-                  onClick={() => updateSettings({ transformsList: { quickSearch: '' } })}
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <XIcon />
-                </Button>
-              </InputEnd>
-            )}
+            {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
+                button under the click would drop focus to <body>. */}
+            <InputEnd className="pointer-events-auto">
+              <Button
+                aria-label="Clear search"
+                className={quickSearch === '' ? 'invisible' : undefined}
+                data-testid="search-field-reset-icon"
+                disabled={quickSearch === ''}
+                onClick={() => updateSettings({ transformsList: { quickSearch: '' } })}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <CloseIcon />
+              </Button>
+            </InputEnd>
           </Input>
         </div>
 

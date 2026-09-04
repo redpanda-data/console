@@ -9,11 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { ChevronDownIcon, ChevronRightIcon, CloseIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
-import { ChevronDown, ChevronRight, SearchIcon, XIcon } from 'lucide-react';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { SearchIcon } from 'lucide-react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -254,47 +259,58 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
   };
 
   const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = [
-    // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
-    {
-      id: 'expander',
-      size: 40,
-      enableSorting: false,
-      cell: ({ row }) =>
-        row.getCanExpand() ? (
-          <Button
-            aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
-            onClick={row.getToggleExpandedHandler()}
-            size="icon-xs"
-            variant="ghost"
-          >
-            {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-          </Button>
-        ) : null,
-    },
-    {
-      header: 'Timestamp',
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 30,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          msg={original}
-          previewFields={() => []}
-        />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  const logsTableOptions = useMemo(() => ({ initialState: { pagination: paginationParams } }), [paginationParams]);
+  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      // The Registry only sets aria-expanded on the row, and only for `expandRowByClick`, so it goes here.
+      {
+        id: 'expander',
+        enableHiding: false,
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.getCanExpand() ? (
+            <Button
+              aria-expanded={row.getIsExpanded()}
+              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              onClick={row.getToggleExpandedHandler()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
+            </Button>
+          ) : null,
+      },
+      {
+        id: 'timestamp',
+        enableHiding: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
+        size: 30,
+      },
+      {
+        header: 'Value',
+        // The cell renders a decoded preview; sorting the raw value was never meaningful.
+        enableSorting: false,
+        enableHiding: false,
+        accessorKey: 'value',
+        cell: ({ row: { original } }) => (
+          <MessagePreview
+            isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
+            msg={original}
+            previewFields={() => []}
+          />
+        ),
+        size: Number.MAX_SAFE_INTEGER,
+      },
+    ],
+    [topic]
+  );
 
   const filteredMessages = messages.filter((x) => {
     if (!logsQuickSearch) {
@@ -319,19 +335,21 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
             <InputStart>
               <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
             </InputStart>
-            {logsQuickSearch !== '' && (
-              <InputEnd className="pointer-events-auto">
-                <Button
-                  aria-label="Clear search"
-                  data-testid="search-field-reset-icon"
-                  onClick={() => setLogsQuickSearch('')}
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <XIcon />
-                </Button>
-              </InputEnd>
-            )}
+            {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
+                button under the click would drop focus to <body>. */}
+            <InputEnd className="pointer-events-auto">
+              <Button
+                aria-label="Clear search"
+                className={logsQuickSearch === '' ? 'invisible' : undefined}
+                data-testid="search-field-reset-icon"
+                disabled={logsQuickSearch === ''}
+                onClick={() => setLogsQuickSearch('')}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <CloseIcon />
+              </Button>
+            </InputEnd>
           </Input>
           <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
             Refresh logs
@@ -343,6 +361,9 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}
+          sorting
+          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
+          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
               loadLargeMessage={() =>
@@ -355,9 +376,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
               msg={original}
             />
           )}
-          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
-          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
-          tableOptions={{ initialState: { pagination: paginationParams } }}
+          tableOptions={logsTableOptions}
         />
       </Section>
     </>
