@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
+import { afterEach, describe, expect, it, rs } from '@rstest/core';
 
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from '../tanstack-router.config';
 
@@ -31,5 +31,26 @@ describe('tanstackRouterConfig', () => {
     expect(TANSTACK_CHUNK_PATTERN.test('/app/node_modules/@tanstack/react-router/dist/index.js')).toBe(true);
     expect(TANSTACK_CHUNK_PATTERN.test(String.raw`C:\app\node_modules\@tanstack\react-query\dist\index.js`)).toBe(true);
     expect(TANSTACK_CHUNK_PATTERN.test('/app/node_modules/@redpanda-data/ui/dist/index.js')).toBe(false);
+  });
+});
+
+describe('route-level HMR', () => {
+  const loadConfig = async () => (await import('../tanstack-router.config')).tanstackRouterConfig;
+
+  afterEach(() => {
+    rs.unstubAllEnvs();
+    rs.resetModules();
+  });
+
+  it('stays on for the standalone dev server', async () => {
+    rs.stubEnv('PROXY_TARGET', undefined);
+    rs.resetModules();
+    expect((await loadConfig()).codeSplittingOptions.addHmr).toBe(true);
+  });
+
+  it('turns off when the dev server proxies to a host', async () => {
+    rs.stubEnv('PROXY_TARGET', 'http://localhost:4200');
+    rs.resetModules();
+    expect((await loadConfig()).codeSplittingOptions.addHmr).toBe(false);
   });
 });
