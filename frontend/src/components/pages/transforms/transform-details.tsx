@@ -12,7 +12,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
-import { SearchIcon, XIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, SearchIcon, XIcon } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { showToast } from 'utils/toast.utils';
 
@@ -255,6 +255,23 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
   const paginationParams = usePaginationParams(messages.length, 10);
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = [
+    // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+    {
+      id: 'expander',
+      size: 40,
+      enableSorting: false,
+      cell: ({ row }) =>
+        row.getCanExpand() ? (
+          <Button
+            aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+            onClick={row.getToggleExpandedHandler()}
+            size="icon-xs"
+            variant="ghost"
+          >
+            {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          </Button>
+        ) : null,
+    },
     {
       header: 'Timestamp',
       accessorKey: 'timestamp',
