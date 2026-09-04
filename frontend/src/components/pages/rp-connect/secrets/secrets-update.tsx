@@ -1,17 +1,16 @@
 import { create } from '@bufbuild/protobuf';
-import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
+import { Button, ButtonGroup, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
 import { useState } from 'react';
 
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backend-api';
+import { showToast } from '../../../../utils/toast.utils';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import PageContent from '../../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 const returnToListTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
 
@@ -59,10 +58,9 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
         })
       )
       .then(() => {
-        toast({
+        showToast({
           status: 'success',
           duration: 4000,
-          isClosable: false,
           title: 'Secret updated',
           id: 'secret-update-success',
         });
@@ -70,10 +68,8 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
         appGlobal.historyPush(returnToListTab);
       })
       .catch((err) => {
-        toast({
+        showToast({
           status: 'error',
-          duration: null,
-          isClosable: true,
           title: 'Failed to update secret',
           description: formatPipelineError(err),
         });
@@ -87,7 +83,6 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
 
   return (
     <PageContent>
-      <ToastContainer />
       <Flex flexDirection="column" gap={5}>
         <FormField label="Secret name">
           <Flex alignItems="center" gap="2">

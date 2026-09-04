@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import type { SortingState } from '@tanstack/react-table';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import type { LegacyColumnDef } from 'utils/legacy-data-table';
+import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PartitionStatus } from './transforms-list';
@@ -42,8 +43,6 @@ import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 class TransformDetails extends PageComponent<{ transformName: string }> {
   initPage(p: PageInitHelper): void {
@@ -80,7 +79,6 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 
     return (
       <PageContent>
-        <ToastContainer />
         <Box>
           {/* <Heading as="h2">{transformName}</Heading> */}
           <Button
@@ -90,19 +88,16 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
                 transformsApi
                   .deleteTransform(transformName)
                   .then(() => {
-                    toast({
+                    showToast({
                       status: 'success',
                       duration: 4000,
-                      isClosable: false,
                       title: 'Transform deleted',
                     });
                     transformsApi.refreshTransforms(true);
                   })
                   .catch((err) => {
-                    toast({
+                    showToast({
                       status: 'error',
-                      duration: null,
-                      isClosable: true,
                       title: 'Failed to delete transform',
                       description: String(err),
                     });

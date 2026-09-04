@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, createStandaloneToast, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
+import { Box, Button, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
 import { Button as NewButton } from 'components/redpanda-ui/components/button';
+import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import EmptyConnectors from '../../../assets/redpanda/EmptyConnectors.svg';
@@ -25,8 +26,6 @@ import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 /**
  * Navigates to /rp-connect/create (legacy flow)
@@ -139,10 +138,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       }
 
       if (Features.pipelinesApi) {
-        toast({
+        showToast({
           status: 'error',
-          duration: null,
-          isClosable: true,
           title: 'Failed to load pipelines',
           description: String(err),
         });
@@ -178,7 +175,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
 
     return (
       <PageContent>
-        <ToastContainer />
         {/* Pipeline List */}
 
         {pipelinesApi.pipelines.length !== 0 && (
@@ -257,19 +253,16 @@ class RpConnectPipelinesList extends PageComponent<{}> {
                         pipelinesApi
                           .deletePipeline(r.id)
                           .then(async () => {
-                            toast({
+                            showToast({
                               status: 'success',
                               duration: 4000,
-                              isClosable: false,
                               title: 'Pipeline deleted',
                             });
                             await pipelinesApi.refreshPipelines(true);
                           })
                           .catch((err) => {
-                            toast({
+                            showToast({
                               status: 'error',
-                              duration: null,
-                              isClosable: true,
                               title: 'Failed to delete pipeline',
                               description: String(err),
                             });

@@ -9,26 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Box,
-  createStandaloneToast,
-  Flex,
-  type PlacementWithLogical,
-  Progress,
-  RadioGroup,
-  redpandaTheme,
-  redpandaToastOptions,
-  Skeleton,
-  Text,
-  type ToastId,
-  Tooltip,
-} from '@redpanda-data/ui';
+import { type PlacementWithLogical, RadioGroup, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CopyIcon, DownloadIcon, InfoIcon } from 'components/icons';
 import { motion } from 'motion/react';
 import React, { Component, type CSSProperties, type JSX, useEffect, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
+import { closeToast, showToast, updateToast } from './toast.utils';
 import { prettyMilliseconds, simpleUniqueId } from './utils';
 import type { TimestampDisplayFormat } from '../state/ui';
 
@@ -347,17 +335,9 @@ type StatusIndicatorProps = {
   progressText: string;
 };
 
-// TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
-const { ToastContainer, toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: {
-    ...redpandaToastOptions.defaultOptions,
-    isClosable: false,
-  },
-});
-
 export class StatusIndicator extends Component<StatusIndicatorProps, { showWaitingText: boolean }> {
-  toastRef: ToastId | null = null;
+  toastRef: string | null = null;
+  dismissed = false;
 
   timerHandle: NodeJS.Timeout;
   lastUpdateTimestamp: number;
@@ -406,58 +386,75 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
   componentWillUnmount() {
     clearInterval(this.timerHandle);
     if (this.toastRef) {
-      toast.close(this.toastRef);
+      closeToast(this.toastRef);
     }
     this.toastRef = null;
   }
 
   customRender() {
+    if (this.dismissed) {
+      return;
+    }
+    const indeterminate = this.props.statusText === 'Connecting';
+    const percent = Math.round(this.props.fillFactor * 100);
+    const showCounters = Boolean(this.props.bytesConsumed && this.props.messagesConsumed);
+
+    // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
     const content = (
-      <Box mb="0.2em">
-        <Box minW={300}>
-          <Progress
-            colorScheme="blue"
-            isIndeterminate={this.props.statusText === 'Connecting'}
-            value={this.props.fillFactor * 100}
+      <span className="flex flex-col gap-1 text-body text-foreground">
+        <span
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={indeterminate ? undefined : percent}
+          className="block h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
+          role="progressbar"
+        >
+          <span
+            className={
+              indeterminate
+                ? 'block h-full w-full animate-pulse rounded-full bg-primary'
+                : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
+            }
+            style={indeterminate ? undefined : { width: `${percent}%` }}
           />
-        </Box>
-        <Flex fontSize="sm" fontWeight="bold">
-          <div>
+        </span>
+        <span className="flex font-semibold">
+          <span>
             {this.state.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}
-          </div>
-          <Text ml="auto" pl="2em">
-            {this.props.progressText}
-          </Text>
-        </Flex>
-        {Boolean(this.props.bytesConsumed && this.props.messagesConsumed) && (
-          <Flex fontSize="sm" fontWeight="bold" justifyContent="space-between">
-            <Flex alignItems="center" gap={2}>
+          </span>
+          <span className="ml-auto pl-8">{this.props.progressText}</span>
+        </span>
+        {showCounters ? (
+          <span className="flex justify-between font-semibold">
+            <span className="inline-flex items-center gap-2">
               <DownloadIcon className="text-brand" size={14} /> {this.props.bytesConsumed}
-            </Flex>
-            <Flex alignItems="center" gap={2}>
+            </span>
+            <span className="inline-flex items-center gap-2">
               <CopyIcon className="text-brand" size={14} /> {this.props.messagesConsumed} messages
-            </Flex>
-          </Flex>
-        )}
-      </Box>
+            </span>
+          </span>
+        ) : null}
+      </span>
     );
 
     if (this.toastRef === null) {
-      this.toastRef = toast({
+      this.toastRef = showToast({
         status: 'info',
         description: content,
         duration: null,
+        // A closed progress toast stays closed for this search.
+        onClose: () => {
+          this.toastRef = null;
+          this.dismissed = true;
+        },
       });
     } else {
-      toast.update(this.toastRef, {
-        description: content,
-        duration: null,
-      });
+      updateToast(this.toastRef, { description: content });
     }
   }
 
   render() {
-    return <ToastContainer />;
+    return null;
   }
 }
 
@@ -524,8 +521,9 @@ export const Code = (p: { children?: React.ReactNode; nowrap?: boolean }) => {
 };
 
 export const navigatorClipboardErrorHandler = (e: DOMException) => {
-  toast({
+  showToast({
     status: 'error',
+    duration: 5000,
     description: 'Unable to copy settings to clipboard. See console for more information.',
   });
   // biome-ignore lint/suspicious/noConsole: error logging for debugging clipboard failures

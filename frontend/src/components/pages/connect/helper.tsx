@@ -29,13 +29,13 @@ import {
   ModalOverlay,
   Popover,
   Text,
-  useToast,
   VStack,
 } from '@redpanda-data/ui';
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { type CSSProperties, type JSX, useRef, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -559,8 +559,6 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [error, setError] = useState<string | Error | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
 
-  const toast = useToast();
-
   const renderError = (): { title: string; content: string } | undefined => {
     if (!error) {
       return;
@@ -602,7 +600,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
 
   const success = (successTarget: T) => {
     const messageContent = props.successMessage(successTarget);
-    toast({
+    showToast({
       status: 'success',
       description: messageContent,
     });

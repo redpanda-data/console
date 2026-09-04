@@ -2007,3 +2007,31 @@ $borderRadius: 8px;
   user-select: none;
 }
 
+// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above Chakra's
+// modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below mirrors
+// toast.tsx with the vertical signs flipped; it goes once the registry has a position prop. Keyed
+// on the console test id so it cannot reach a host app's viewport.
+[data-slot='toast-viewport'][data-testid='console-toasts'] {
+  top: 1rem;
+  bottom: auto;
+  z-index: 1500;
+
+  [data-slot='toast'] {
+    top: 0;
+    bottom: auto;
+    transform-origin: top;
+    --offset-y: calc(var(--toast-offset-y) + var(--toast-index) * var(--gap) + var(--toast-swipe-movement-y));
+    transform: translateX(var(--toast-swipe-movement-x))
+      translateY(calc(var(--toast-swipe-movement-y) + var(--toast-index) * var(--peek) + var(--shrink) * var(--height)))
+      scale(var(--scale));
+
+    &[data-expanded] {
+      transform: translateX(var(--toast-swipe-movement-x)) translateY(var(--offset-y));
+    }
+
+    &[data-starting-style],
+    &[data-ending-style]:not([data-limited]):not([data-swipe-direction]) {
+      transform: translateY(-150%);
+    }
+  }
+}

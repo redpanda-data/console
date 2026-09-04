@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Button, Flex, FormField, Input, NumberInput, useToast } from '@redpanda-data/ui';
+import { Button, Flex, FormField, Input, NumberInput } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import {
@@ -20,6 +20,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { formatPipelineError } from './errors';
 import { PipelineEditor } from './pipelines-create';
@@ -79,8 +80,6 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   const tags = pipeline.tags;
   const [serviceAccount] = useState<Pipeline_ServiceAccount | undefined>(pipeline.serviceAccount);
 
-  const toast = useToast();
-
   const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
   const isNameEmpty = !displayName;
 
@@ -105,19 +104,17 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         })
       )
       .then(async (r) => {
-        toast({
+        showToast({
           status: 'success',
           duration: 4000,
-          isClosable: false,
           title: 'Pipeline updated',
         });
 
         const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
         if (retUnits && tasks !== retUnits) {
-          toast({
+          showToast({
             status: 'info',
             duration: 6000,
-            isClosable: false,
             title: `Pipeline has been resized to use ${retUnits} compute units`,
           });
         }
@@ -125,10 +122,8 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         appGlobal.historyPush(`/rp-connect/${pipelineId}`);
       })
       .catch((err) => {
-        toast({
+        showToast({
           status: 'error',
-          duration: null,
-          isClosable: true,
           title: 'Failed to update pipeline',
           description: formatPipelineError(err),
         });

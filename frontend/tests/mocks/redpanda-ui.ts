@@ -1,13 +1,7 @@
 // Stub for @redpanda-data/ui in Node unit tests
 // The package includes CSS that can't be parsed in Node environment
 
-export const createStandaloneToast = () => ({
-  toast: () => {},
-  ToastContainer: null,
-});
-
 export const redpandaTheme = {};
-export const redpandaToastOptions = {};
 
 // Lightweight component stubs. Unit tests never render JSX, but modules
 // imported by the unit-test graph (e.g. src/utils/tsx-utils.tsx) evaluate
@@ -31,4 +25,3 @@ export const Tooltip = stubComponent;
 export type SortingState = Array<{ id: string; desc: boolean }>;
 export type PlacementWithLogical = string;
 export type ButtonProps = Record<string, unknown>;
-export type ToastId = string;
