@@ -57,10 +57,7 @@ class ErrorModal extends Component<ErrorModalProps> {
           <DialogBody>
             <div className="flex flex-col gap-8">
               <div className="flex flex-row gap-2 pr-6">
-                {/* height determines icon size */}
-                <div className="self-center" style={{ height: '70px' }}>
-                  <ErrorIcon className="text-destructive" />
-                </div>
+                <ErrorIcon className="size-6 shrink-0 self-center text-destructive" />
                 <div className="self-center">{this.subTitle}</div>
               </div>
 

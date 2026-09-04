@@ -1,7 +1,7 @@
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
-import React from 'react';
+import React, { useState } from 'react';
 import { capitalizeFirst } from 'utils/utils';
 
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
@@ -14,6 +14,7 @@ type ErrorResultProps = {
 };
 
 const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
+  const [imageFailed, setImageFailed] = useState(false);
   if (!error) {
     return null;
   }
@@ -95,14 +96,30 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   return (
     <div className="flex w-full flex-wrap items-center justify-center gap-8 p-4 md:flex-nowrap">
       <div className="flex max-w-[700px] flex-col gap-4 p-5">
-        <h2 className="text-heading-lg">{errorTitle}</h2>
+        <h2 className="font-semibold text-heading-xl">{errorTitle}</h2>
         <p className="text-body-lg">{capitalizeFirst(errorMessage)}</p>
         {errorDetails ? (
-          <SimpleCodeBlock className="max-w-[50vw]" code={errorDetails} language="json" width="full" />
+          <SimpleCodeBlock
+            className="my-0 max-w-[50vw]"
+            code={errorDetails}
+            language="json"
+            maxHeight="none"
+            width="full"
+          />
         ) : null}
       </div>
       <div className="flex min-w-[300px] items-center justify-center">
-        <img alt="Dev Redpanda" className="block h-auto w-full max-w-[300px] object-contain" src={errorBananaSlip} />
+        {imageFailed ? (
+          <p className="text-subtle">Error image not available</p>
+        ) : (
+          // biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is a load event, not an interaction
+          <img
+            alt="Dev Redpanda"
+            className="block h-auto w-full max-w-[300px] object-contain"
+            onError={() => setImageFailed(true)}
+            src={errorBananaSlip}
+          />
+        )}
       </div>
     </div>
   );

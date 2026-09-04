@@ -35,7 +35,7 @@ export const NotFoundContent = ({ resourceType, resourceId, backLink, backLinkTe
     <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-content">
       <div className="flex flex-col items-center gap-4 text-center">
         <img alt="Error" className="h-[180px]" src={errorBananaSlip} />
-        <h1 className="text-heading-xl">{message}</h1>
+        <h1 className="font-semibold text-heading-xl">{message}</h1>
         {backLink ? (
           <Link className="text-body-lg underline" data-testid="back-link" to={backLink}>
             {backLinkText ?? 'Go back'}

@@ -13,6 +13,7 @@
 // default, so a Chakra-style `<AlertIcon />` child would paint two. Swaps
 // from Chakra must pass `icon` (or `icon={null}`), never an icon child.
 
+import { describe, expect, test } from '@rstest/core';
 import { render } from '@testing-library/react';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { CircleAlert } from 'lucide-react';

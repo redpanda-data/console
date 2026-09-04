@@ -56,10 +56,10 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
 
       <Section>
         <ul className="flex flex-col gap-3">
-          {api.errors.map((e) => (
-            <li className="flex items-center gap-2" key={formatError(e)}>
+          {[...new Set(api.errors.map(formatError))].map((message) => (
+            <li className="flex items-center gap-2" key={message}>
               <WarningIcon className="shrink-0 text-destructive" />
-              {formatError(e)}
+              {message}
             </li>
           ))}
         </ul>

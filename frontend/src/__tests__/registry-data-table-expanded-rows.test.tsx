@@ -13,6 +13,7 @@
 // TanStack v9 resets uncontrolled `expanded` when `data` is replaced unless
 // `autoResetExpanded: false` is set (registry 3.4.1).
 
+import { describe, expect, test } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DataTable } from 'components/redpanda-ui/components/data-table';
@@ -46,9 +47,8 @@ describe('registry DataTable expanded rows', () => {
     expect(screen.getByText('alpha detail')).toBeInTheDocument();
 
     rerender(<Table data={rows('v2')} />);
-    // TanStack schedules the reset; let it run before asserting.
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      // TanStack queues the reset as a microtask; act drains it before asserting.
     });
 
     expect(screen.getByText('alpha v2')).toBeInTheDocument();

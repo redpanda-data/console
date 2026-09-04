@@ -16,7 +16,7 @@ export const NotFoundPage = () => {
       <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-page">
         <div className="flex flex-col items-center gap-4 text-center">
           <img alt="" className="h-[180px]" src={rocketPanda} />
-          <h1 className="text-heading-xl">This feature has moved</h1>
+          <h1 className="font-semibold text-heading-xl">This feature has moved</h1>
           <p className="max-w-xl text-muted-foreground">
             AI agents, MCP servers, knowledge bases, and transcripts are now available in Redpanda AI.
           </p>
@@ -41,7 +41,7 @@ export const NotFoundPage = () => {
     <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-page">
       <div className="flex flex-col items-center gap-4 text-center">
         <img alt="Error" className="h-[180px]" src={errorBananaSlip} />
-        <h1 className="text-heading-xl">Resource not found.</h1>
+        <h1 className="font-semibold text-heading-xl">Resource not found.</h1>
         <Button
           onClick={() => {
             router.history.back();
