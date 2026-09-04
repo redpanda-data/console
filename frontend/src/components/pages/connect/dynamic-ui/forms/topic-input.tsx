@@ -9,16 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Checkbox,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  Grid,
-  Input,
-  isMultiValue,
-  Select,
-} from '@redpanda-data/ui';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { Field, FieldDescription, FieldError } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
 import { useEffect, useMemo, useState } from 'react';
 
 import { api } from '../../../../../state/backend-api';
@@ -60,24 +55,30 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
       }
     : undefined;
 
+  const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
+
   return (
-    <Grid gap="10" templateColumns="1fr">
-      <FormControl position="relative">
+    <div className="grid grid-cols-1 gap-10">
+      <Field className="relative">
         {propsMap.has('topics.regex') && (
-          <Checkbox
-            isChecked={isRegex}
-            onChange={(e) => {
-              setPropertyValue(property, '');
-              setSelected(e.target.checked ? 'topics.regex' : 'topics');
-            }}
-          >
-            Use regular expressions
-          </Checkbox>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={isRegex}
+              id="topics-use-regex"
+              onCheckedChange={(checked) => {
+                setPropertyValue(property, '');
+                setSelected(checked === true ? 'topics.regex' : 'topics');
+              }}
+            />
+            <Label className="cursor-pointer" htmlFor="topics-use-regex">
+              Use regular expressions
+            </Label>
+          </div>
         )}
 
-        <FormHelperText mb={15}>
+        <FieldDescription className="mb-4">
           <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
-        </FormHelperText>
+        </FieldDescription>
 
         {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
         {isRegex || p.connectorType === 'source' ? (
@@ -90,35 +91,19 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
             value={String(property.value)}
           />
         ) : (
-          <Select
-            isMulti
-            onChange={(v) => {
-              if (isMultiValue(v)) {
-                setPropertyValue(property, v.map(({ value }) => value)?.join(',') ?? []);
-              }
+          <SimpleMultiSelect
+            onValueChange={(values) => {
+              setPropertyValue(property, values.join(','));
             }}
-            options={api.topics?.map((x) => ({ value: x.topicName, label: x.topicName })) ?? []}
-            value={
-              property.value
-                ? property.value
-                    ?.toString()
-                    .split(',')
-                    .map((val) => ({
-                      value: val,
-                      label: val,
-                    }))
-                : []
-            }
+            options={api.topics?.map((x) => x.topicName) ?? []}
+            value={selectedTopics}
+            width="full"
           />
         )}
 
-        {Boolean(showErrors) && <FormErrorMessage onClick={cycleError}>{errorToShow}</FormErrorMessage>}
-      </FormControl>
-
-      {/* <Box p="4" >
-                <h2>Matching Topics</h2>
-
-            </Box> */}
-    </Grid>
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: cycling errors is a shortcut, not the only path */}
+        {Boolean(showErrors) && <FieldError onClick={cycleError}>{errorToShow}</FieldError>}
+      </Field>
+    </div>
   );
 };

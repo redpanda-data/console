@@ -1,15 +1,6 @@
-import {
-  Button,
-  type ButtonProps,
-  Flex,
-  Icon,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Tooltip,
-  useBoolean,
-} from '@redpanda-data/ui';
-import { EyeIcon, EyeOffIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { useRef, useState } from 'react';
 
 export type SecretInputProps = {
@@ -18,22 +9,26 @@ export type SecretInputProps = {
   updating: boolean;
 };
 
-const EditButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
-  <Tooltip hasArrow={true} label="Edit secret value" placement="top">
-    <Button onClick={onClick} variant="link">
-      Edit
-    </Button>
+const EditButton = ({ onClick }: { onClick: () => void }) => (
+  <Tooltip>
+    <TooltipTrigger
+      render={
+        <Button onClick={onClick} variant="link">
+          Edit
+        </Button>
+      }
+    />
+    <TooltipContent side="top">Edit secret value</TooltipContent>
   </Tooltip>
 );
 
-const ClearButton = ({ onClick }: Pick<ButtonProps, 'onClick'>) => (
+const ClearButton = ({ onClick }: { onClick: () => void }) => (
   <Button onClick={onClick} variant="link">
     Undo
   </Button>
 );
 
 export const SecretInput = ({ value, onChange, updating = false }: SecretInputProps) => {
-  const [visible, setVisible] = useBoolean();
   const initialValueRef = useRef(value);
   const [canEdit, setCanEdit] = useState(!updating);
   // Intentionally seeded from prop: localValue is edited independently during user interaction
@@ -54,35 +49,32 @@ export const SecretInput = ({ value, onChange, updating = false }: SecretInputPr
         setCanEdit(false);
         setLocalValue(initialValueRef.current);
         onChange(initialValueRef.current);
-        setVisible.off();
       }}
     />
   );
 
   return (
-    <Flex flexDirection="row" gap={2}>
-      <InputGroup>
-        <Input
-          onChange={(e) => {
-            setLocalValue(e.target.value);
-            if (onChange) {
-              onChange(e.target.value);
-            }
-          }}
-          readOnly={!canEdit}
-          type={visible ? 'text' : 'password'}
-          value={localValue}
-        />
-        {Boolean(canEdit) && (
-          <InputRightElement>
-            <Button onClick={() => setVisible.toggle()} variant="ghost">
-              <Icon as={visible ? EyeIcon : EyeOffIcon} color="gray.500" />
-            </Button>
-          </InputRightElement>
-        )}
-      </InputGroup>
+    <div className="flex flex-row gap-2">
+      {/*
+        The Registry Input owns the reveal toggle for `type="password"`, and disables it while the
+        field is read-only — which is the state an existing secret sits in before Edit. `key` is
+        what re-masks on Undo: the toggle's state lives inside the Input, so the transition out of
+        editing has to remount it or Undo would leave the restored secret in plain text.
+      */}
+      <Input
+        key={canEdit ? 'editing' : 'masked'}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          if (onChange) {
+            onChange(e.target.value);
+          }
+        }}
+        readOnly={!canEdit}
+        type="password"
+        value={localValue}
+      />
       {Boolean(updating) && (canEdit ? clearButton : editButton)}
-    </Flex>
+    </div>
   );
 };
 
