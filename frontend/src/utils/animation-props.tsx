@@ -108,28 +108,6 @@ export const MotionAlways: FC = (p: { children?: React.ReactNode; style?: CSSPro
   </motion.div>
 );
 
-export const MotionDiv: FC<{
-  identityKey?: React.Key;
-  children?: React.ReactNode;
-  positionTransition?: boolean;
-  layoutTransition?: boolean;
-  // biome-ignore lint/suspicious/noExplicitAny: framer-motion props are complex and vary by component
-  animProps?: any;
-  style?: CSSProperties;
-  className?: string;
-}> = (p) => (
-  <motion.div
-    className={p.className}
-    key={p.identityKey}
-    layout={p.positionTransition}
-    layoutTransition={p.layoutTransition}
-    style={p.style}
-    {...(p.animProps ?? animProps)}
-  >
-    {p.children}
-  </motion.div>
-);
-
 export const MotionSpan: FC<{
   identityKey?: React.Key;
   children?: React.ReactNode;

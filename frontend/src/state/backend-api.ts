@@ -32,7 +32,6 @@ import { appGlobal } from './app-global';
 import {
   AclRequestDefault,
   type AclResource,
-  type AdminInfo,
   AlterConfigOperation,
   type AlterPartitionReassignmentsResponse,
   type ApiError,
@@ -427,8 +426,6 @@ const _apiCreator = (set: any, get: any) => ({
   clusterInfo: null as ClusterInfo | null,
 
   brokerConfigs: new Map<number, ConfigEntry[] | string>(), // config entries, or error string
-
-  adminInfo: undefined as AdminInfo | undefined | null,
 
   schemaOverviewIsConfigured: undefined as boolean | undefined,
 
@@ -1217,63 +1214,6 @@ const _apiCreator = (set: any, get: any) => ({
     });
 
     await parseOrUnwrap<void>(response, null);
-  },
-
-  refreshAdminInfo(force?: boolean) {
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-    cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force).then((info) => {
-      if (info === null) {
-        set({ adminInfo: null });
-        return;
-      }
-
-      // normalize responses (missing arrays, or arrays with an empty string)
-      // todo: not needed anymore, responses are always correct now
-      for (const role of info.roles) {
-        for (const permission of role.permissions) {
-          for (const k of ['allowedActions', 'includes', 'excludes']) {
-            const ar: string[] = ((permission as Record<string, unknown>)[k] as string[]) ?? [];
-            (permission as Record<string, unknown>)[k] = ar.filter((x) => x.length > 0);
-          }
-        }
-      }
-
-      // resolve role of each binding
-      for (const binding of info.roleBindings) {
-        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-        binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
-        if (binding.resolvedRole === null) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
-        }
-      }
-
-      // resolve bindings, and roles of each user
-      for (const user of info.users) {
-        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-        user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
-        if (user.bindings.any((b) => b === null)) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
-        }
-
-        user.grantedRoles = [];
-        for (const roleName in user.audits) {
-          if (Object.hasOwn(user.audits, roleName)) {
-            user.grantedRoles.push({
-              // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-              role: info.roles.first((r) => r.name === roleName)!,
-              grantedBy: user.audits[roleName].map(
-                // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-                (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!
-              ),
-            });
-          }
-        }
-      }
-
-      set({ adminInfo: info });
-    }, addError);
   },
 
   async refreshSchemaMode() {

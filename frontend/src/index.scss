@@ -439,16 +439,6 @@ tr.tombstone {
   color: rgba(0, 0, 0, 0.25);
 }
 
-.kowlCard {
-  position: relative;
-  margin: 0;
-  margin-bottom: 0.75rem;
-  padding: 1rem 1.5rem;
-  background: #fff;
-  border-radius: 2px;
-  box-shadow: 0px 3px 3px 1px rgba(0, 0, 0, 0.05);
-}
-
 .noSelect {
   user-select: none;
 }
@@ -503,18 +493,6 @@ tr > td.msgTableActionColumn {
 .fill {
   width: 100%;
   height: 100%;
-}
-
-.roleTitle {
-  margin-bottom: 1em;
-  /* padding: 0 8px; */
-  cursor: default;
-  font-size: 0.7rem;
-  font-weight: 600;
-  /* todo: use open sans for all "small text" like labels and small headings */
-  font-family: "Open Sans";
-  color: rgb(139, 139, 139);
-  /* border-bottom: solid 1px rgba(0, 0, 0, 0.1); */
 }
 
 tr.consumerGroupNoMemberAssigned {
@@ -634,72 +612,7 @@ tr.consumerGroupNoMemberAssigned {
   border-radius: 50px;
 }
 
-.resourceLabel {
-  font-weight: 600;
-  font-size: 100%;
-  color: hsl(0, 0%, 30%);
-  font-family: "Open Sans";
-  cursor: default;
-}
-
-.resourceName {
-  text-transform: capitalize;
-  font-weight: bold;
-  font-size: 90%;
-  padding-bottom: 2px;
-  display: inline-block;
-  padding: 0px 3px;
-}
-
-.resourceLabelSub {
-  color: #606060;
-}
-
-.permissionsList {
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
 /* Permission "Actions" */
-.permissionsList span {
-  margin-right: 3px;
-  margin-top: 2px;
-  padding: 1px 8px;
-  font-size: 85%;
-  text-transform: capitalize;
-  border-radius: 20px;
-  background: rgba(124, 211, 255, 0.35);
-  color: hsl(208, 32%, 55%);
-  border-width: 0;
-}
-
-.joinerOr {
-  font-size: 80%;
-  font-weight: bolder;
-  padding-bottom: 4px;
-  margin: 0 3px;
-  padding: 0 1px;
-  font-family: sans-serif;
-  text-transform: lowercase;
-  background: transparent;
-}
-
-.permissionRegex span.codeBox {
-  padding: 2px 4px;
-  font-size: 12px;
-  color: hsl(0, 0%, 40%);
-  background: rgb(219, 219, 219);
-  border-width: 0px;
-}
-
-.roleBindingId {
-  font-size: 70%;
-  font-weight: 600;
-  color: #aaa;
-  display: flex;
-}
-
 .expander {
   background: none;
 }
@@ -1185,12 +1098,6 @@ mark {
       cursor: pointer;
     }
   }
-}
-
-// disabled iconButtons use 0.6 opacity
-.iconButton.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 // iconButton in a table row is invisible unless hovered
@@ -2000,33 +1907,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.inputGroup {
-  display: inline-flex;
-  flex-grow: 1;
-
-  > input.chakra-input,
-  > button.chakra-button {
-    margin-right: -1px;
-    flex-grow: 1;
-    width: auto;
-
-    &:not(:first-child) {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-    }
-
-    &:not(:last-child) {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    &:hover,
-    &:focus-within {
-      z-index: 1;
-    }
-  }
-}
-
 .labelText {
   width: 100%;
   // display: inline-block;
@@ -2042,81 +1922,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
     color: red;
     top: -2px;
     left: -9px;
-  }
-}
-
-.createTopicModal {
-  .labelText {
-    // color: rgb(0 0 0 / 60%);
-    font-size: 10px;
-  }
-}
-
-.numericInput {
-  $numericInputBtnSize: 26px;
-  padding-right: 0;
-
-  .ant-input-suffix,
-  .ant-input-prefix {
-    // min-width: 18px;
-
-    .btnWrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 1px;
-      gap: 1px;
-
-      user-select: none;
-    }
-
-    .stepBtn {
-      width: $numericInputBtnSize;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      color: rgb(0 0 0 / 40%);
-
-      cursor: pointer;
-
-      > svg {
-        transform: scale(0.8) translate(1px, 0);
-      }
-
-      & {
-        transition: all ease-out 150ms;
-      }
-
-      &:hover {
-        color: variables.$color-brand-secondary;
-
-        &::after {
-          background: hsl(207deg 7% 76% / 14%);
-        }
-      }
-
-      // larger hit-test
-      &::after {
-        content: " ";
-        position: absolute;
-        inset: -6px 0;
-        border-radius: 2px;
-        // background: #ff000030;
-        // background: #40a9ff30;
-      }
-    }
-  }
-
-  .ant-input-affix-wrapper-disabled,
-  &.ant-input-affix-wrapper-disabled,
-  &:not(:hover) {
-    .stepBtn {
-      opacity: 0;
-      pointer-events: none;
-      cursor: default;
-    }
   }
 }
 
@@ -2184,24 +1989,6 @@ h5 {
 }
 
 $borderRadius: 8px;
-
-.inputGroup {
-  > * {
-    border-radius: 0 !important;
-  }
-
-  &:first-child,
-  input:first-child {
-    border-top-left-radius: $borderRadius !important;
-    border-bottom-left-radius: $borderRadius !important;
-  }
-
-  &:last-child,
-  button:last-child {
-    border-top-right-radius: $borderRadius !important;
-    border-bottom-right-radius: $borderRadius !important;
-  }
-}
 
 .controlChar {
   display: inline-block;

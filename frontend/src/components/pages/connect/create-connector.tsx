@@ -227,12 +227,6 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
     return (
       <PageContent>
         <ConnectorWizard activeCluster={clusterName} connectClusters={clusters} />
-        {/*
-                <Section>
-                    <div className={styles.wizardView}>
-
-                    </div>
-                </Section> */}
       </PageContent>
     );
   }

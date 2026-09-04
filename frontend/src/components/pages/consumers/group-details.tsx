@@ -323,7 +323,6 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
         }}
       />
       <DeleteOffsetsModal
-        disabledReason={cannotDeleteGroupReason(group, featureDeleteGroup)}
         group={group}
         mode={deletingMode}
         offsets={deletingOffsets}

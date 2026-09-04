@@ -292,10 +292,6 @@ type UISettings = {
     quickSearch: string;
   };
 
-  rpcnSecretList: {
-    quickSearch: string;
-  };
-
   pipelinesDetails: {
     logsQuickSearch: string;
     sorting: SortingState;
@@ -472,10 +468,6 @@ const defaultUiSettings: UISettings = {
   },
 
   pipelinesList: {
-    quickSearch: '',
-  },
-
-  rpcnSecretList: {
     quickSearch: '',
   },
 
