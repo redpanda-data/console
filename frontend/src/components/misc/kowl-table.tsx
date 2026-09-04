@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Input } from '@redpanda-data/ui';
+import { Input } from 'components/redpanda-ui/components/input';
 import React, { Component } from 'react';
 
 export class SearchTitle extends Component<{
@@ -50,17 +50,12 @@ export class SearchTitle extends Component<{
     return (
       <span>
         {!this.state.filterOpen && <span>{this.props.title}</span>}
-        <Box
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: the handlers only stop propagation to the sortable column header */}
+        <div
+          className="absolute inset-y-0 right-0 left-[-8px] flex place-content-center place-items-center"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            inset: '0px 0px 0px -8px',
-            display: 'flex',
-            placeContent: 'center',
-            placeItems: 'center',
-          }}
         >
           <Input
             onBlur={(e) => {
@@ -86,7 +81,7 @@ export class SearchTitle extends Component<{
             spellCheck={false}
             value={this.state.quickSearch}
           />
-        </Box>
+        </div>
       </span>
     );
   }
