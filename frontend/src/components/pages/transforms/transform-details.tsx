@@ -286,7 +286,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
     <>
       <Box my="1rem">The logs below are for the last five hours.</Box>
 
-      <Section minWidth="800px">
+      <Section className="min-w-[800px]">
         <Flex mb="6">
           <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
           <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">

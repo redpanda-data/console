@@ -490,7 +490,6 @@ export const TabKafkaConnect = (_p: {}) => {
   );
 };
 
-export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 const connectTabs: Tab[] = [
   { key: 'clusters', title: 'Clusters', content: <TabClusters /> },
   { key: 'connectors', title: 'Connectors', content: <TabConnectors /> },
