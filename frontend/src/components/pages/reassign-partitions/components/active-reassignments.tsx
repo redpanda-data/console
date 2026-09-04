@@ -9,34 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
+import { ButtonGroup } from 'components/redpanda-ui/components/button-group';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { DataTable } from 'components/redpanda-ui/components/data-table';
 import {
-  Box,
-  Button,
-  ButtonGroup,
-  Checkbox,
-  DataTable,
-  Flex,
-  ListItem,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverCloseButton,
-  PopoverContent,
-  PopoverFooter,
-  PopoverHeader,
-  PopoverTrigger,
-  Progress,
-  Skeleton,
-  Text,
-  UnorderedList,
-  useDisclosure,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Progress } from 'components/redpanda-ui/components/progress';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import React, { Component, type FC, type JSX, useRef, useState } from 'react';
 import { showToast, updateToast } from 'utils/toast.utils';
 
@@ -146,13 +134,14 @@ export class ActiveReassignments extends Component<{
             },
           ]}
           data={currentReassignments}
-          defaultPageSize={10}
           emptyText="No reassignments currently in progress"
+          getRowAriaLabel={(row) => `Show reassignment details for ${row.original.topicName}`}
           onRow={(row) => {
             this.setState({ reassignmentDetails: row.original });
           }}
           pagination
           sorting={false}
+          tableOptions={{ initialState: { pagination: { pageIndex: 0, pageSize: 10 } } }}
         />
 
         <ReassignmentDetailsDialog
@@ -245,47 +234,54 @@ export const ThrottleDialog: FC<{
   };
 
   return (
-    <Modal isOpen={visible} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent minW="3xl">
-        <ModalHeader>Throttle Settings</ModalHeader>
-        <ModalBody>
-          <Flex flexDirection="column" gap={4}>
-            <Box mx={4}>
-              <Text>Using throttling you can limit the network traffic for reassignments.</Text>
-              <UnorderedList mt={2} px={6}>
-                <ListItem>Throttling applies to all replication traffic, not just to active reassignments.</ListItem>
-                <ListItem>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      open={visible}
+    >
+      <DialogContent size="xl">
+        <DialogHeader>
+          <DialogTitle>Throttle Settings</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="flex flex-col gap-4">
+            <div className="mx-4">
+              <div>Using throttling you can limit the network traffic for reassignments.</div>
+              <ul className="mt-2 list-disc px-6">
+                <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
+                <li>
                   Once the reassignment completes you'll have to remove the throttling configuration. <br />
                   Console will show a warning below the "Current Reassignments" table when there are throttled topics
                   that are no longer being reassigned.
-                </ListItem>
-              </UnorderedList>
-            </Box>
+                </li>
+              </ul>
+            </div>
             <BandwidthSlider
               onChange={(x) => {
                 setNewThrottleValue(x);
               }}
               value={throttleValue}
             />
-          </Flex>
-        </ModalBody>
-        <ModalFooter justifyContent="space-between">
+          </div>
+        </DialogBody>
+        <DialogFooter className="justify-between">
           <Button
-            colorScheme="red"
             onClick={() => {
               setNewThrottleValue(null);
               applyBandwidthThrottle().catch(() => {
                 // Error handling managed by API layer
               });
             }}
-            variant="outline"
+            variant="destructive-outline"
           >
             Remove throttle
           </Button>
 
-          <Flex gap={2}>
-            <Button onClick={onClose} style={{ marginLeft: 'auto' }} variant="ghost">
+          <div className="flex gap-2">
+            <Button className="ml-auto" onClick={onClose} variant="ghost">
               Close
             </Button>
             <Button
@@ -295,42 +291,38 @@ export const ThrottleDialog: FC<{
                   // Error handling managed by API layer
                 });
               }}
-              variant="solid"
+              variant="primary"
             >
               Apply
             </Button>
-          </Flex>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
 const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) => {
-  const { isOpen, onToggle, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Popover closeOnBlur={false} isOpen={isOpen} onClose={onClose} returnFocusOnClose={false}>
-      <PopoverTrigger>
-        <Button colorScheme="red" onClick={onToggle} variant="outline">
-          Cancel Reassignment
-        </Button>
-      </PopoverTrigger>
+    <Popover onOpenChange={setIsOpen} open={isOpen}>
+      <PopoverTrigger render={<Button variant="destructive-outline">Cancel Reassignment</Button>} />
       <PopoverContent>
-        <PopoverHeader fontWeight="semibold">Confirmation</PopoverHeader>
-        <PopoverArrow />
-        <PopoverCloseButton />
-        <PopoverBody>Are you sure you want to stop the reassignment?</PopoverBody>
-        <PopoverFooter display="flex" justifyContent="flex-end">
-          <ButtonGroup size="sm">
-            <Button onClick={onClose} variant="ghost">
-              Keep running
-            </Button>
-            <Button onClick={onConfirm} variant="solid">
-              Stop reassignment
-            </Button>
-          </ButtonGroup>
-        </PopoverFooter>
+        <div className="flex flex-col gap-3">
+          <div className="font-semibold">Confirmation</div>
+          <div>Are you sure you want to stop the reassignment?</div>
+          <div className="flex justify-end">
+            <ButtonGroup>
+              <Button onClick={() => setIsOpen(false)} size="sm" variant="ghost">
+                Keep running
+              </Button>
+              <Button onClick={onConfirm} size="sm" variant="primary">
+                Stop reassignment
+              </Button>
+            </ButtonGroup>
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -380,9 +372,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     const removingReplicas = state.partitions.flatMap((p) => p.removingReplicas).distinct();
 
     const modalContent = topicConfig ? (
-      <Flex flexDirection="column" gap={12}>
+      <div className="flex flex-col gap-12">
         {/* Info */}
-        <Flex flexDirection="column" gap={4}>
+        <div className="flex flex-col gap-4">
           <div>
             {QuickTable([
               ['Replicas', replicas],
@@ -390,56 +382,66 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
               ['Removing', removingReplicas],
             ])}
           </div>
-        </Flex>
+        </div>
 
         {/* Throttle */}
-        <Flex gap={4}>
+        <div className="flex gap-4">
           <Checkbox
-            isChecked={this.state.shouldThrottle}
-            onChange={(e) => {
-              this.setState({ shouldThrottle: e.target.checked });
+            checked={this.state.shouldThrottle}
+            id="throttle-reassignment"
+            onCheckedChange={(checked) => {
+              this.setState({ shouldThrottle: checked === true });
             }}
-          >
+          />
+          <Label className="cursor-pointer" htmlFor="throttle-reassignment">
             <span>
               <span>Throttle Reassignment</span>
               <br />
-              <span style={{ fontSize: 'smaller', opacity: '0.6', marginLeft: '2em' }}>
+              <span className="ml-8 text-body-sm opacity-60">
                 Using global throttle limit for all replication traffic
               </span>
             </span>
-          </Checkbox>
-        </Flex>
+          </Label>
+        </div>
 
         {/* Cancel */}
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
-      </Flex>
+      </div>
     ) : (
-      <Skeleton height={4} mt={5} noOfLines={5} />
+      <SkeletonText className="mt-5" lines={5} width="full" />
     );
 
     return (
-      <Modal isOpen={visible} onClose={this.props.onClose}>
-        <ModalOverlay />
-        <ModalContent minW="3xl">
-          <ModalHeader>Reassignment: {state.topicName}</ModalHeader>
-          <ModalBody>{modalContent}</ModalBody>
-          <ModalFooter gap={2}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            this.props.onClose();
+          }
+        }}
+        open={visible}
+      >
+        <DialogContent size="xl">
+          <DialogHeader>
+            <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>{modalContent}</DialogBody>
+          <DialogFooter>
             <Button onClick={this.props.onClose} variant="ghost">
               Close
             </Button>
             <Button
-              isDisabled={!topicConfig}
+              disabled={!topicConfig}
               onClick={() => {
                 this.applyBandwidthThrottle();
                 this.props.onClose();
               }}
-              variant="solid"
+              variant="primary"
             >
               Apply &amp; Close
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -705,13 +707,9 @@ const ProgressBar = (p: {
   const { percent, state, left, right } = p;
   return (
     <>
+      {/* Chakra's colorScheme becomes an indicator class: the Registry indicator paints `bg-primary`. */}
       <Progress
-        colorScheme={
-          {
-            success: 'success',
-            active: 'brand',
-          }[state]
-        }
+        className={state === 'success' ? '[&_[data-slot=progress-indicator]]:bg-success' : undefined}
         value={percent}
       />
       <div
