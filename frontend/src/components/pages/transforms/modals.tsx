@@ -1,15 +1,13 @@
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Box,
-  Button,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Input } from 'components/redpanda-ui/components/input';
 import { type JSX, useState } from 'react';
 
 import { openModal } from '../../../utils/modal-container';
@@ -33,35 +31,37 @@ const ExplicitConfirmModal = (p: {
   const isConfirmEnabled = confirmBoxText === requiredText;
 
   return (
-    <Modal isCentered isOpen onClose={p.closeModal} size="2xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader mr="4">{p.title}</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          p.closeModal();
+        }
+      }}
+      open
+    >
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>{p.title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           {p.body}
 
-          <Box mt="4">
+          <div className="mt-4">
             To confirm, enter "{requiredText}":
-            <Input onChange={(e) => setConfirmBoxText(e.target.value)} />
-          </Box>
-        </ModalBody>
+            <Input onChange={(e) => setConfirmBoxText(e.target.value)} value={confirmBoxText} />
+          </div>
+        </DialogBody>
 
-        <ModalFooter>
+        <DialogFooter>
           <Button onClick={() => p.onSecondaryButton(p.closeModal)} variant="ghost">
             {p.secondaryButtonContent}
           </Button>
-          <Button
-            colorScheme="red"
-            isDisabled={!isConfirmEnabled}
-            ml={3}
-            onClick={() => p.onPrimaryButton(p.closeModal)}
-          >
+          <Button disabled={!isConfirmEnabled} onClick={() => p.onPrimaryButton(p.closeModal)} variant="destructive">
             {p.primaryButtonContent}
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
