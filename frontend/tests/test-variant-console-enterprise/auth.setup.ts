@@ -13,7 +13,7 @@ async function dismissErrorModalIfPresent(page: Page): Promise<void> {
     await errorModal.click();
     // Wait for the modal overlay to disappear
     await page
-      .locator('.chakra-modal__overlay')
+      .locator('[data-slot="dialog-overlay"]')
       .waitFor({ state: 'hidden', timeout: 5000 })
       .catch(() => {
         // no op
