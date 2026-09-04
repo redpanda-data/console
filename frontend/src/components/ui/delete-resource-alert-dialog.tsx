@@ -206,7 +206,9 @@ export const DeleteResourceMenuItem: React.FC<{
   isDeleting?: boolean;
   onSelect: () => void;
   testId?: string;
-}> = ({ isDeleting, onSelect, testId }) => (
+  /** Overrides the "Delete" label, for menus where several things could be deleted. */
+  text?: string;
+}> = ({ isDeleting, onSelect, testId, text = 'Delete' }) => (
   <DropdownMenuItem
     className="text-destructive focus:text-destructive"
     data-testid={testId}
@@ -221,7 +223,7 @@ export const DeleteResourceMenuItem: React.FC<{
       </div>
     ) : (
       <div className="flex items-center gap-4">
-        <Trash2 className="h-4 w-4" /> Delete
+        <Trash2 className="h-4 w-4" /> {text}
       </div>
     )}
   </DropdownMenuItem>

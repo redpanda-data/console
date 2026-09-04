@@ -21,9 +21,50 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { connectQueryWrapper } from 'test-utils';
 
-import { useListPipelinesQuery } from './pipeline';
+import { toNameContainsFilter, useListPipelinesQuery } from './pipeline';
+
+// Module scope: the hook memoizes its request on the input's identity.
+const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
 
 describe('useListPipelinesQuery', () => {
+  /**
+   * The trap behind "after saving a draft the list showed only that draft": the input never reaches the
+   * query key, so two callers asking for different things are one cache entry, and the narrower one wins.
+   *
+   * connect-query omits the `pageParamKey` field from the key, and on the console-layer request that
+   * field — `request` — is the entire input. Asserted rather than commented, because the hook's
+   * signature promises a per-input view that TanStack cannot give it.
+   */
+  test('shares one cache entry across callers, whatever input each asks for', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listPipelines, (req) =>
+        create(ListPipelinesResponseSchema, {
+          response: create(DataPlaneListPipelinesResponseSchema, {
+            pipelines: req.request?.filter?.nameContains
+              ? [create(PipelineSchema, { id: 'draft-1', displayName: 'Untitled pipeline' })]
+              : [
+                  create(PipelineSchema, { id: 'pipeline-1', displayName: 'Pipeline 1' }),
+                  create(PipelineSchema, { id: 'draft-1', displayName: 'Untitled pipeline' }),
+                ],
+            nextPageToken: '',
+          }),
+        })
+      );
+    });
+
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+    const { result } = renderHook(
+      () => ({ all: useListPipelinesQuery(), filtered: useListPipelinesQuery(NAME_FILTERED_INPUT) }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.all.data.pipelines.length).toBeGreaterThan(0));
+
+    // One entry, one result: the filtered caller never gets a view of its own, it replaces everyone's.
+    expect(result.current.filtered.data.pipelines).toEqual(result.current.all.data.pipelines);
+  });
+
   test('fetches all pages and flattens pipelines into a single array', async () => {
     let callCount = 0;
 
@@ -231,5 +272,32 @@ describe('useListPipelinesQuery', () => {
       'pipeline-4',
       'pipeline-5',
     ]);
+  });
+});
+
+// The server validates name_contains against ^[A-Za-z0-9-_ /]+$ and rejects anything
+// else as a malformed request, so a name carrying ordinary punctuation has to be
+// filed down before it goes on the wire rather than 400ing the lookup it belongs to.
+describe('toNameContainsFilter', () => {
+  test('passes a name already inside the server pattern through unchanged', () => {
+    expect(toNameContainsFilter('Untitled pipeline')).toBe('Untitled pipeline');
+    expect(toNameContainsFilter('orders-v2_raw/eu')).toBe('orders-v2_raw/eu');
+  });
+
+  test('drops characters the pattern rejects', () => {
+    expect(toNameContainsFilter('orders (v2).raw')).toBe('orders v2raw');
+    expect(toNameContainsFilter('café')).toBe('caf');
+    expect(toNameContainsFilter('a@b#c')).toBe('abc');
+  });
+
+  // A filter that lost characters matches a superset of what was asked for, which is
+  // what every caller here can live with — they are checking which names are taken.
+  test('returns empty when nothing usable is left, so the filter can be omitted', () => {
+    expect(toNameContainsFilter('日本語')).toBe('');
+    expect(toNameContainsFilter('')).toBe('');
+  });
+
+  test('caps the length at the server maximum', () => {
+    expect(toNameContainsFilter('a'.repeat(200))).toHaveLength(128);
   });
 });

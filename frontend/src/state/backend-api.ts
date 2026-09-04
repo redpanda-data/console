@@ -110,6 +110,7 @@ import {
   type UserData,
   WrappedApiError,
 } from './rest-interfaces';
+import { rpcnEditorAutosave } from './rpcn-editor-autosave';
 import { Features, useSupportedFeaturesStore } from './supported-features';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './ui-state';
@@ -477,6 +478,8 @@ const _apiCreator = (set: any, get: any) => ({
 
   async logout() {
     await appConfig.fetch('./auth/logout');
+    // Recovery buffers hold unsaved configuration verbatim; they must not outlive the session.
+    rpcnEditorAutosave.clearAll();
     set({ userData: null });
   },
   async refreshUserData() {

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import type { StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 /**
@@ -20,15 +21,28 @@ export type IssueLevel = (typeof ISSUE_LEVELS)[number];
 
 /**
  * Human-readable labels for each pipeline state. Single source of truth for
- * state copy across the pipeline UI.
+ * state copy across the pipeline UI. Exhaustive, so a new proto state fails the build here.
  */
-export const PIPELINE_STATE_LABELS: Partial<Record<Pipeline_State, string>> = {
+export const PIPELINE_STATE_LABELS: Record<Pipeline_State, string> = {
+  [Pipeline_State.UNSPECIFIED]: 'Unknown',
   [Pipeline_State.RUNNING]: 'Running',
   [Pipeline_State.STARTING]: 'Starting',
   [Pipeline_State.STOPPING]: 'Stopping',
   [Pipeline_State.STOPPED]: 'Stopped',
   [Pipeline_State.ERROR]: 'Error',
   [Pipeline_State.COMPLETED]: 'Completed',
+  [Pipeline_State.DRAFT]: 'Draft',
+};
+
+export const PIPELINE_STATE_STATUS_VARIANT: Record<Pipeline_State, StatusBadgeVariant> = {
+  [Pipeline_State.COMPLETED]: 'success',
+  [Pipeline_State.STARTING]: 'starting',
+  [Pipeline_State.STOPPING]: 'stopping',
+  [Pipeline_State.STOPPED]: 'disabled',
+  [Pipeline_State.ERROR]: 'destructive',
+  [Pipeline_State.RUNNING]: 'success',
+  [Pipeline_State.UNSPECIFIED]: 'disabled',
+  [Pipeline_State.DRAFT]: 'disabled',
 };
 
 /**
@@ -40,7 +54,7 @@ export const ISSUE_FILTER_OPTIONS = [
 ] as const;
 
 /**
- * States where a pipeline can be started.
+ * States where a pipeline can be started. Drafts are excluded: they start via `use-start-draft`.
  */
 export const STARTABLE_STATES = [Pipeline_State.STOPPED, Pipeline_State.ERROR, Pipeline_State.COMPLETED, Pipeline_State.STOPPING] as const;
 
