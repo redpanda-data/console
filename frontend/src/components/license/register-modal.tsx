@@ -288,8 +288,13 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               <Button onClick={handleClose} variant="ghost">
                 Close
               </Button>
-              {/* isLoading keeps the label in place and sets aria-busy, so the accessible name stays "Register". */}
-              <Button isLoading={isSubmitting || signupMutation.isPending} onClick={handleSubmit(onSubmit)}>
+              {/* isLoading hides the label with `visibility: hidden`, which also removes it from the
+                  accessibility tree — so the name is set explicitly and stays "Register" while busy. */}
+              <Button
+                aria-label="Register"
+                isLoading={isSubmitting || signupMutation.isPending}
+                onClick={handleSubmit(onSubmit)}
+              >
                 Register
               </Button>
             </>
