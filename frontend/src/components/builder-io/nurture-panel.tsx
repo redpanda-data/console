@@ -70,11 +70,7 @@ export default function NurturePanel() {
   }
 
   if (hasError || !(content || isPreviewing())) {
-    return (
-      <div>
-        <div>No updates available</div>
-      </div>
-    );
+    return <p className="text-body">No updates available</p>;
   }
 
   return (

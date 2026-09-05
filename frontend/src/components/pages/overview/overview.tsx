@@ -233,7 +233,6 @@ class Overview extends PageComponent {
                   data={brokers}
                   pagination
                   sorting={false}
-                  tableOptions={{ initialState: { pagination: { pageIndex: 0, pageSize: 10 } } }}
                 />
               </Section>
 
@@ -250,8 +249,8 @@ class Overview extends PageComponent {
             </div>
 
             <div>
-              <Section className="py-4">
-                <h3>Cluster Details</h3>
+              <Section className="py-4" id="clusterDetails">
+                <h3 className="text-heading-md">Cluster Details</h3>
 
                 <ClusterDetails />
               </Section>
@@ -270,7 +269,7 @@ type DetailsBlockProps = { title: string; children?: React.ReactNode };
 const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
   <>
     <div className="col-span-1 lg:col-span-3">
-      <h4 className="mb-1 font-semibold text-[10px] text-subtle uppercase tracking-[0.8px]">{title}</h4>
+      <h4 className="mb-1 font-semibold text-caption text-subtle uppercase">{title}</h4>
     </div>
     {children}
     {/* Hairline between blocks; was a literal #ddd, which vanished in the dark theme. */}
