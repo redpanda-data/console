@@ -10,9 +10,10 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Box, DataTable, Tooltip } from '@redpanda-data/ui';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { DataTable, DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
@@ -145,12 +146,12 @@ class KafkaConnectOverview extends PageComponent<{
       {
         key: ConnectView.RedpandaConnect,
         title: (
-          <Box minWidth="180px">
+          <div className="min-w-[180px]">
             Redpanda Connect{' '}
             <Badge className="ml-2" tone="default" variant="subtle">
               Recommended
             </Badge>
-          </Box>
+          </div>
         ),
         content: (
           <div className="mb-4 flex flex-col gap-4">
@@ -172,7 +173,7 @@ class KafkaConnectOverview extends PageComponent<{
       },
       {
         key: ConnectView.KafkaConnect,
-        title: <Box minWidth="180px">Kafka Connect</Box>,
+        title: <div className="min-w-[180px]">Kafka Connect</div>,
         content: (
           <div className="flex flex-col gap-4">
             <div className="text-body">
@@ -232,9 +233,16 @@ class TabClusters extends Component {
             cell: ({ row: { original: r } }) => {
               if (r.error) {
                 return (
-                  <Tooltip hasArrow={true} label={r.error} placement="top">
-                    <span style={mr05}>{errIcon}</span>
-                    {r.clusterName}
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <span>
+                          <span style={mr05}>{errIcon}</span>
+                          {r.clusterName}
+                        </span>
+                      }
+                    />
+                    <TooltipContent side="top">{r.error}</TooltipContent>
                   </Tooltip>
                 );
               }
@@ -320,7 +328,7 @@ const TabConnectors = () => {
   }, []);
 
   return (
-    <Box>
+    <div>
       <SearchBar<ConnectorType>
         dataSource={dataSource}
         filterText={searchText}
@@ -336,27 +344,32 @@ const TabConnectors = () => {
             accessorKey: 'name',
             size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
-              <Tooltip hasArrow={true} label={original.name} placement="top">
-                <span
-                  className="hoverLink"
-                  onClick={() =>
-                    appGlobal.historyPush(
-                      `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
-                    )
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span
+                      className="hoverLink"
+                      onClick={() =>
+                        appGlobal.historyPush(
+                          `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
+                        )
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          appGlobal.historyPush(
+                            `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
+                          );
+                        }
+                      }}
+                      role="button"
+                      style={{ display: 'inline-block', width: '100%' }}
+                      tabIndex={0}
+                    >
+                      {original.name}
+                    </span>
                   }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      appGlobal.historyPush(
-                        `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
-                      );
-                    }
-                  }}
-                  role="button"
-                  style={{ display: 'inline-block', width: '100%' }}
-                  tabIndex={0}
-                >
-                  {original.name}
-                </span>
+                />
+                <TooltipContent side="top">{original.name}</TooltipContent>
               </Tooltip>
             ),
           },
@@ -390,7 +403,7 @@ const TabConnectors = () => {
         pagination
         sorting={false}
       />
-    </Box>
+    </div>
   );
 };
 
@@ -419,7 +432,9 @@ class TabTasks extends Component {
       <DataTable<TaskType>
         columns={[
           {
-            header: 'Connector',
+            id: 'name',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
               // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
@@ -439,20 +454,29 @@ class TabTasks extends Component {
             size: 300,
           },
           {
-            header: 'Task ID',
+            id: 'taskId',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Task ID" />,
             accessorKey: 'taskId',
-            size: 50,
           },
           {
-            header: 'State',
+            id: 'state',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
             accessorKey: 'state',
             cell: ({ row: { original } }) => <TaskState observable={original} />,
           },
           {
-            header: 'Worker',
+            id: 'workerId',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
             accessorKey: 'workerId',
           },
           {
+            id: 'cluster',
+            // Read off the joined cluster, so there is no accessor to sort on.
+            enableSorting: false,
+            enableHiding: false,
             header: 'Cluster',
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },

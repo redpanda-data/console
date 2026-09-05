@@ -9,27 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  DataTable,
-  Flex,
-  Heading,
-  Link,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalHeader,
-  ModalOverlay,
-  SearchField,
-  Skeleton,
-  Spinner,
-  Tabs,
-  Text,
-  useDisclosure,
-} from '@redpanda-data/ui';
+import { AlertIcon, CloseIcon, FilterIcon, WarningIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import { DataTable } from 'components/redpanda-ui/components/data-table';
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
+import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -47,6 +35,7 @@ import { HiddenRadioList } from '../../misc/hidden-radio-list';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
+import Tabs from '../../misc/tabs/tabs';
 import { Wizard, type WizardStep } from '../../misc/wizard';
 import { PageComponent, type PageInitHelper } from '../page';
 
@@ -113,11 +102,9 @@ const ConnectorType = (p: {
 
   const noResultsBox =
     filteredPlugins?.length > 0 ? null : (
-      <Flex alignItems="center" background="blackAlpha.100" borderRadius="8px" justifyContent="center" p="10">
-        <Text color="gray" fontSize="large">
-          No connectors that match the search filters
-        </Text>
-      </Flex>
+      <div className="flex items-center justify-center rounded-lg bg-surface-subtle p-10">
+        <div className="text-body-lg text-subtle">No connectors that match the search filters</div>
+      </div>
     );
 
   return (
@@ -125,7 +112,7 @@ const ConnectorType = (p: {
       {p.connectClusters.length > 1 && (
         <>
           <h2>Installation Target</h2>
-          <Box maxWidth={400}>
+          <div className="max-w-[400px]">
             <SingleSelect<string | undefined>
               onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
               options={p.connectClusters.map(({ clusterName }) => ({
@@ -134,52 +121,59 @@ const ConnectorType = (p: {
               }))}
               value={p.activeCluster ?? undefined}
             />
-          </Box>
+          </div>
         </>
       )}
 
       {Boolean(p.activeCluster) && (
         <>
-          <Flex direction="column" gap="1em">
-            <Box maxWidth="600px">
-              <Text>
+          <div className="flex flex-col gap-4">
+            <div className="max-w-[600px]">
+              <div className="text-body">
                 Select a managed connector. Connectors simplify importing and exporting data between Redpanda and
                 popular data sources. <Link href={docsLinks.cloud.managedConnectors}>Learn more</Link>
-              </Text>
+              </div>
 
-              <Box marginBlock="4" marginTop="8">
-                <SearchField
-                  icon="filter"
-                  placeholderText="Search"
-                  searchText={textFilter}
-                  setSearchText={setTextFilter}
-                />
-              </Box>
-            </Box>
-          </Flex>
+              <div className="my-4 mt-8">
+                <Input
+                  onChange={(e) => setTextFilter(e.target.value)}
+                  placeholder="Search"
+                  testId="search-field-input"
+                  value={textFilter}
+                >
+                  <InputStart>
+                    <FilterIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
+                  </InputStart>
+                  {/* Always mounted: InputEnd never resets the padding it measured, and unmounting
+                      the button under the click would drop focus to <body>. */}
+                  <InputEnd className="pointer-events-auto">
+                    <Button
+                      aria-label="Clear search"
+                      className={textFilter === '' ? 'invisible' : undefined}
+                      data-testid="search-field-reset-icon"
+                      disabled={textFilter === ''}
+                      onClick={() => setTextFilter('')}
+                      size="icon-xs"
+                      variant="ghost"
+                    >
+                      <CloseIcon />
+                    </Button>
+                  </InputEnd>
+                </Input>
+              </div>
+            </div>
+          </div>
 
+          {/* Filter-only tabs: the panels are empty and the card grid below reacts to the key. */}
           <Tabs
-            items={[
-              {
-                key: 'all',
-                name: 'All',
-                component: <></>,
-              },
-              {
-                key: 'export',
-                name: 'Export to',
-                component: <></>,
-              },
-              {
-                key: 'import',
-                name: 'Import from',
-                component: <></>,
-              },
-            ]}
-            marginBlock="2"
-            onChange={(_, key) => {
+            onChange={(key) => {
               setTabFilter(key as (typeof tabFilterModes)[number]);
             }}
+            tabs={[
+              { key: 'all', title: 'All', content: null },
+              { key: 'export', title: 'Export to', content: null },
+              { key: 'import', title: 'Import from', content: null },
+            ]}
           />
 
           <HiddenRadioList<ConnectorPlugin>
@@ -284,7 +278,9 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   const setLoading = (v: boolean) => setLoadingState((prev) => ({ ...prev, loading: v }));
   const setIsStoreInitialized = (v: boolean) => setLoadingState((prev) => ({ ...prev, isStoreInitialized: v }));
   const [connectClusterStore, setConnectClusterStore] = useState(() => ConnectClusterStore.getInstance(activeCluster));
-  const { isOpen: isCreatingModalOpen, onOpen: openCreatingModal, onClose: closeCreatingModal } = useDisclosure();
+  const [isCreatingModalOpen, setIsCreatingModalOpen] = useState(false);
+  const openCreatingModal = () => setIsCreatingModalOpen(true);
+  const closeCreatingModal = () => setIsCreatingModalOpen(false);
 
   useEffect(() => {
     const init = async () => {
@@ -346,13 +342,13 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
           <CreateConnectorHeading plugin={selectedPlugin} />
 
           {selectedPlugin ? (
-            <Box maxWidth="800px">
+            <div className="max-w-[800px]">
               <ConfigPage
                 // biome-ignore lint/style/noNonNullAssertion: needed as refactoring child components would be very complex
                 connectorStore={connectClusterStore.getConnector(selectedPlugin.class, null, undefined)!}
                 context="CREATE"
               />
-            </Box>
+            </div>
           ) : (
             <div>no cluster or plugin selected</div>
           )}
@@ -508,7 +504,11 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   const isLast = () => currentStep === steps.length - 1;
 
   if (!isStoreInitialized) {
-    return <Skeleton height={4} mt={5} noOfLines={20} />;
+    return (
+      <div className="mt-5">
+        <SkeletonText lines={20} width="full" />
+      </div>
+    );
   }
 
   return (
@@ -550,42 +550,37 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
         }}
       />
 
-      <Modal
-        isCentered
-        isOpen={isCreatingModalOpen}
-        onClose={() => {
-          // no op - modal is not closeable during connector creation
-        }}
-      >
-        <ModalOverlay backdropFilter="blur(5px)" bg="blackAlpha.300" />
-        <ModalContent>
-          <ModalHeader>Creating connector...</ModalHeader>
-          <ModalBody py="8">
-            <Flex alignItems="center" justifyContent="center">
-              <Spinner size="xl" />
-            </Flex>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      {/* Not closeable while the connector is being created: no onOpenChange handler, and the
+          close X has to be suppressed or it would render and do nothing. */}
+      <Dialog open={isCreatingModalOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Creating connector...</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="py-8">
+            <div className="flex items-center justify-center">
+              <Spinner className="size-10" />
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
 
 function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   if (!p.plugin) {
-    return <Heading>Creating Connector</Heading>;
+    return <h1 className="text-heading-xl">Creating Connector</h1>;
   }
 
-  // const { logo } = findConnectorMetadata(p.plugin.class) ?? {};
   const displayName = getConnectorFriendlyName(p.plugin.class);
 
   return (
-    <Heading alignItems="center" as="h1" display="flex" fontSize="2xl" gap=".5ch" mb="8">
+    <h1 className="mb-8 flex items-center gap-[0.5ch] text-heading-lg">
       Create Connector:
       {p.plugin.type === 'source' ? 'import data from ' : 'export data to '}
       {displayName}
-      {/* <Box width="28px" height="28px" mr="1">{logo}</Box> */}
-    </Heading>
+    </h1>
   );
 }
 
@@ -625,50 +620,53 @@ function Review({
       ) : null}
 
       {isCreating ? (
-        <Skeleton height={4} mt={5} noOfLines={6} />
+        <div className="mt-5">
+          <SkeletonText lines={6} width="full" />
+        </div>
       ) : (
         <>
           {invalidValidationResult !== null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
 
           {validationFailure ? (
-            <Alert my={4} status="error" variant="left-accent">
-              <AlertIcon />
-              <AlertDescription>
-                <Box>
-                  <Text as="h3">Validation attempt failed</Text>
-                  <Text>{String(validationFailure)}</Text>
-                </Box>
-              </AlertDescription>
-            </Alert>
+            <div className="my-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">Validation attempt failed</h3>
+                    <div>{String(validationFailure)}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : null}
 
           {creationFailure ? (
-            <Alert my={4} status="error" variant="left-accent">
-              <AlertIcon />
-              <AlertDescription>
-                <Box>
-                  <Text as="h3">Creation attempt failed</Text>
-                  <Text>{String(creationFailure)}</Text>
-                </Box>
-              </AlertDescription>
-            </Alert>
+            <div className="my-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">Creation attempt failed</h3>
+                    <div>{String(creationFailure)}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : null}
 
           {genericFailure ? (
-            <Alert my={4} status="error" variant="left-accent">
-              <AlertIcon />
-              <AlertDescription>
-                <Box>
-                  <Text as="h3">An error occurred</Text>
-                  <Text>{String(genericFailure)}</Text>
-                </Box>
-              </AlertDescription>
-            </Alert>
+            <div className="my-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">An error occurred</h3>
+                    <div>{String(genericFailure)}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : null}
 
-          <Heading as="h2" fontSize="1.4em" fontWeight="500" mt="4">
-            Connector Properties
-          </Heading>
+          <h2 className="mt-4 text-heading-sm">Connector Properties</h2>
           <div style={{ margin: '0 auto 1.5rem' }}>
             <KowlEditor
               height="600px"
@@ -692,12 +690,10 @@ function getDataSource(validationResult: ConnectorValidationResult) {
 
 function ValidationDisplay({ validationResult }: { validationResult: ConnectorValidationResult }) {
   return (
-    <Alert my={4} overflow="auto" status="warning" variant="left-accent">
+    <Alert className="overflow-auto" icon={<WarningIcon />} variant="warning">
       <AlertDescription>
-        <Box>
-          <Text as="h3" mb={4}>
-            Submitted configuration is invalid
-          </Text>
+        <div>
+          <h3 className="mb-4 text-heading-xs">Submitted configuration is invalid</h3>
           <DataTable<{
             name: string;
             value: string | null;
@@ -720,8 +716,10 @@ function ValidationDisplay({ validationResult }: { validationResult: ConnectorVa
               },
             ]}
             data={getDataSource(validationResult)}
+            pagination={false}
+            sorting={false}
           />
-        </Box>
+        </div>
       </AlertDescription>
     </Alert>
   );
