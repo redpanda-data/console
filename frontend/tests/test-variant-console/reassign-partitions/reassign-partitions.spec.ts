@@ -10,6 +10,9 @@ import { expect, test } from '@playwright/test';
  *
  * Deliberately stops before "Start Reassignment" — this suite runs against a live
  * cluster and starting a reassignment is not a smoke test.
+ *
+ * The header stats are scoped: step 1's SelectionInfoBar repeats "Leader Partitions"
+ * and "Total Partitions", so a page-wide exact match trips strict mode.
  */
 const SELECT_TOPIC_LABEL = /^Select topic /;
 const SELECT_PARTITION_LABEL = /^Select partition /;
@@ -18,8 +21,9 @@ test.describe('Reassign partitions', () => {
   test('renders the cluster statistics and the step indicator', async ({ page }) => {
     await page.goto('/reassign-partitions');
 
+    const stats = page.getByTestId('cluster-statistics');
     for (const label of ['Broker Count', 'Leader Partitions', 'Replica Partitions', 'Total Partitions']) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+      await expect(stats.getByText(label, { exact: true })).toBeVisible();
     }
 
     const steps = page.getByRole('list', { name: 'Reassignment steps' });
