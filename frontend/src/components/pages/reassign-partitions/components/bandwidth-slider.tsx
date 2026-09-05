@@ -63,7 +63,9 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   };
 
   const value = getValue() ?? 0;
-  const sliderValue = Math.log10(value);
+  // `maxReplicationTraffic` defaults to 0, so log10 is -Infinity — which would make both the thumb
+  // position and the bubble's `left: …%` invalid. Clamp once and use the clamped value everywhere.
+  const sliderValue = Math.min(Math.max(Math.log10(value), SLIDER_MIN), SLIDER_MAX);
 
   const tipText = (f: number | null) => {
     if (f === null) {
@@ -80,13 +82,15 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   };
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: hover only reveals the value bubble; the Slider itself is the control
     <div
       className="relative mx-4 mt-6 mb-4"
-      onMouseEnter={() => {
+      // Pointer events, not mouse events: `onPointerEnter`/`Leave` are not flagged as
+      // mouse-only interactions on a non-interactive element, and the bubble is decorative —
+      // the Slider below is the control, and it is keyboard-operable on its own.
+      onPointerEnter={() => {
         setIsDragging(true);
       }}
-      onMouseLeave={() => {
+      onPointerLeave={() => {
         setIsDragging(false);
       }}
     >
@@ -115,7 +119,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
           }
         }}
         step={0.1}
-        value={sliderValue}
+        value={[sliderValue]}
       />
 
       <div className="relative mt-1 mb-2 h-5">

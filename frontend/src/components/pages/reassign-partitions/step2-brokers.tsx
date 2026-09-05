@@ -65,7 +65,8 @@ export class StepSelectBrokers extends Component<{
                 return (
                   <Checkbox
                     aria-label="Select all brokers"
-                    checked={allIsSelected ? true : selectedSet.size > 0 ? 'indeterminate' : false}
+                    checked={allIsSelected}
+                    indeterminate={!allIsSelected && selectedSet.size > 0}
                     onCheckedChange={() => {
                       if (allIsSelected) {
                         onSelectionChange([]);
