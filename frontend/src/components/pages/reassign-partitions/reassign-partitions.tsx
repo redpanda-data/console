@@ -207,7 +207,8 @@ class ReassignPartitions extends PageComponent {
 
           {/* Statistics */}
           <Section className="py-4">
-            <div className="flex gap-8">
+            {/* Scoped: step 1's SelectionInfoBar repeats these labels. */}
+            <div className="flex gap-8" data-testid="cluster-statistics">
               <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
               <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
               <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
