@@ -29,7 +29,8 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
       {Boolean(showExpander) && (
         // A real button: it was a clickable Box with no role, name or keyboard path.
         <button
-          className="mt-px inline cursor-pointer select-none border-none bg-transparent px-2 font-semibold"
+          aria-expanded={expanded}
+          className="mt-px inline cursor-pointer select-none px-2 font-semibold"
           onClick={() => setExpanded(!expanded)}
           type="button"
         >

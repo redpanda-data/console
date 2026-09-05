@@ -137,8 +137,20 @@ const App = () => {
         Standalone only. `data-theme` on <html> is what theme.css keys its dark palette on, and in
         embedded and federated mode the Cloud UI host owns that attribute — a second writer there
         would fight it. Outside ChakraProvider so its mount effect lands last while both are up.
+
+        `defaultTheme="light"` deliberately, not the Registry's `system` default: Chakra pinned
+        `initialColorMode: 'light'` with `useSystemColorMode: false`, so `system` here would flip
+        every OS-dark user to the Registry's dark palette while the still-mounted Chakra half stayed
+        light — and the only toggle is dev-only, so they could not get back. Dark mode becomes an
+        opt-in default in its own project, not a side effect of this migration.
+
+        ChakraProvider's own ColorModeProvider is still a second `data-theme` writer one level down.
+        It applies once on mount and this provider's effect lands after it, so the attribute is ours;
+        but Chakra's internal colour mode no longer changes, because ColorModeSwitch was its only
+        caller. Toggling in dev therefore repaints the Registry surface and leaves Chakra components
+        light. That resolves when PR 13 removes ChakraProvider.
       */}
-      <ThemeProvider>
+      <ThemeProvider defaultTheme="light">
         <ChakraProvider resetCSS={false} theme={redpandaTheme}>
           {/* showToast viewport, above the router so the error boundary and login can toast */}
           <BaseUiToaster testId="console-toasts" />

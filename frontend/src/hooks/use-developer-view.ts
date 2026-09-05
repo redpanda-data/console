@@ -42,7 +42,8 @@ const useDeveloperViewDev = (): boolean => {
   return developerView;
 };
 
-const useDeveloperViewProd = (): boolean => readStored();
+// Read once at mount, not on every render of the app root — the value cannot change in prod.
+const useDeveloperViewProd = (): boolean => useState(readStored)[0];
 
 const useDeveloperView = IS_DEV ? useDeveloperViewDev : useDeveloperViewProd;
 

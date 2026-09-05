@@ -10,6 +10,7 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import React from 'react';
 
 import styles from './Wizard.module.scss';
@@ -27,7 +28,7 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
         )}
 
         {state.isFirst() ? null : (
-          <Button className={`px-8 ${styles.prevButton}`} onClick={state.previous} variant="link">
+          <Button className={cn('px-8', styles.prevButton)} onClick={state.previous} variant="link">
             {currentStep.prevButtonLabel ?? 'Back'}
           </Button>
         )}
