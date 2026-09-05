@@ -9,10 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, DataTable, Flex, Text, Tooltip } from '@redpanda-data/ui';
 import { EyeOffIcon, InfoIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { JSX } from 'react';
-import type { LegacyColumnDef } from 'utils/legacy-data-table';
 
 import styles from './ConfigList.module.scss';
 import type { ConfigEntry } from '../../state/rest-interfaces';
@@ -31,21 +33,44 @@ export function ConfigList({
 }) {
   const allTypesUnknown = configEntries.all((x) => equalsIgnoreCase(x.type, 'unknown'));
 
-  const tableColumns: LegacyColumnDef<ConfigEntry>[] = [
+  // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+  const expanderColumn: DataTableColumnDef<ConfigEntry> = {
+    id: 'expander',
+    size: 40,
+    enableSorting: false,
+    cell: ({ row }) =>
+      row.getCanExpand() ? (
+        <Button
+          aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+          onClick={row.getToggleExpandedHandler()}
+          size="icon-xs"
+          variant="ghost"
+        >
+          {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+        </Button>
+      ) : null,
+  };
+
+  const tableColumns: DataTableColumnDef<ConfigEntry>[] = [
     {
       header: 'Configuration',
       accessorKey: 'name',
       cell: ({ row: { original: record } }) => {
-        let name = <Flex className={styles.nameText}>{record.name}</Flex>;
+        let name = <div className={styles.nameText}>{record.name}</div>;
         if (renderTooltip) {
           name = renderTooltip(record, name);
         }
 
         const sensitive = record.isSensitive && (
-          <Tooltip hasArrow label="Value has been redacted because it's sensitive" placement="top">
-            <Box>
-              <EyeOffIcon className="text-brand" />
-            </Box>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <div>
+                  <EyeOffIcon className="text-brand" />
+                </div>
+              }
+            />
+            <TooltipContent side="top">Value has been redacted because it's sensitive</TooltipContent>
           </Tooltip>
         );
 
@@ -62,9 +87,7 @@ export function ConfigList({
       accessorKey: 'value',
       size: Number.POSITIVE_INFINITY,
       cell: ({ row: { original: record } }) => (
-        <Text className={styles.value} whiteSpace="break-spaces" wordBreak="break-all">
-          {formatConfigValue(record.name, record.value, valueDisplay)}
-        </Text>
+        <div className={`break-all ${styles.value}`}>{formatConfigValue(record.name, record.value, valueDisplay)}</div>
       ),
     },
   ];
@@ -87,25 +110,24 @@ export function ConfigList({
     header: () => (
       <span className={styles.sourceHeader}>
         Source
-        <Tooltip
-          hasArrow
-          label={
-            <>
-              <p>
-                Resources can be configured at different levels. Example: A topic config may be inherited from the
-                static broker config.
-              </p>
-              <p>
-                Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger
-                and Default config.
-              </p>
-            </>
-          }
-          placement="left"
-        >
-          <Box>
-            <InfoIcon size={12} />
-          </Box>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <div>
+                <InfoIcon size={12} />
+              </div>
+            }
+          />
+          <TooltipContent side="left">
+            <p>
+              Resources can be configured at different levels. Example: A topic config may be inherited from the static
+              broker config.
+            </p>
+            <p>
+              Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger and
+              Default config.
+            </p>
+          </TooltipContent>
         </Tooltip>
       </span>
     ),
@@ -120,7 +142,7 @@ export function ConfigList({
 
   return (
     <DataTable<ConfigEntry>
-      columns={tableColumns}
+      columns={[expanderColumn, ...tableColumns]}
       data={configEntries}
       getRowCanExpand={(row) =>
         (row.original.synonyms?.filter((x) => x.source !== row.original.source).length ?? 0) > 0
@@ -133,13 +155,15 @@ export function ConfigList({
           return null;
         }
         return (
-          <Box px={10} py={6}>
+          <div className="px-10 py-6">
             <DataTable<ConfigEntry>
               columns={tableColumns}
               // @ts-expect-error TODO - we need to fix types here and find a shared interface
               data={row.original.synonyms.filter((x) => x.source !== row.original.source)}
+              pagination={false}
+              sorting={false}
             />
-          </Box>
+          </div>
         );
       }}
     />

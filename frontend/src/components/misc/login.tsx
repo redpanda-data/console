@@ -10,37 +10,27 @@
  */
 
 import type { ConnectError } from '@connectrpc/connect';
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Avatars,
-  Box,
-  Button,
-  Container,
-  Flex,
-  FormControl,
-  FormLabel,
-  Heading,
-  Image,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Spacer,
-  Spinner,
-  Stack,
-  Text,
-  TextDivider,
-} from '@redpanda-data/ui';
 import { useLocation } from '@tanstack/react-router';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Field, FieldLabel, FieldSeparator } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { CircleAlertIcon, InfoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { SingleSelect } from './select';
+import wavingPanda from '../../assets/redpanda/WavingPanda.svg';
 import { config as appConfig } from '../../config';
 import {
   AuthenticationMethod,
@@ -107,8 +97,7 @@ const NoneAuthComponent = ({ hasMethodsError }: { hasMethodsError: boolean }) =>
   }, [hasError]);
 
   return hasError ? (
-    <Alert status="info">
-      <AlertIcon />
+    <Alert icon={<InfoIcon />} variant="informative">
       <AlertDescription>No authentication is configured. Refresh the page to try again.</AlertDescription>
     </Alert>
   ) : null;
@@ -140,29 +129,31 @@ const BasicAuthComponent = () => {
   };
 
   return (
-    <Flex flexDirection="column" gap={3}>
-      <FormControl>
-        <FormLabel>Username</FormLabel>
+    <div className="flex flex-col gap-3">
+      <Field>
+        <FieldLabel htmlFor="auth-username">Username</FieldLabel>
         <Input
-          data-testid="auth-username-input"
           disabled={isLoading}
+          id="auth-username"
           onChange={(e) => setUsername(e.target.value)}
+          testId="auth-username-input"
           value={username}
         />
-      </FormControl>
-      <FormControl>
-        <FormLabel>Password</FormLabel>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="auth-password">Password</FieldLabel>
         <Input
-          data-testid="auth-password-input"
           disabled={isLoading}
+          id="auth-password"
           onChange={(e) => setPassword(e.target.value)}
+          testId="auth-password-input"
           type="password"
           value={password}
         />
-      </FormControl>
+      </Field>
 
-      <FormControl id="sasl-mechanism">
-        <FormLabel>SASL Mechanism</FormLabel>
+      <Field>
+        <FieldLabel htmlFor="sasl-mechanism">SASL Mechanism</FieldLabel>
         <SingleSelect<SASLMechanism>
           id="sasl-mechanism"
           onChange={(value) => {
@@ -180,26 +171,29 @@ const BasicAuthComponent = () => {
           ]}
           value={mechanism}
         />
-      </FormControl>
+      </Field>
       {Boolean(error) && (
-        <Alert status="error">
-          <AlertIcon />
+        <Alert icon={<CircleAlertIcon />} variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button data-testid="auth-submit" onClick={handleSubmit} variant="brand">
-        {Boolean(isLoading) && <Spinner mr="1" size="sm" />}
+      <Button data-testid="auth-submit" disabled={isLoading} onClick={handleSubmit} variant="brand">
+        {Boolean(isLoading) && <Spinner className="mr-1" />}
         Log in
       </Button>
-    </Flex>
+    </div>
   );
 };
 
 const OidcAuthComponent = () => (
   <div>
-    <Button as="a" href={`${appConfig.grpcBasePath}/auth/login/oidc`} variant="brand" width="full">
+    {/* An anchor, not a Button: this navigates to the backend's OIDC entry point. */}
+    <a
+      className={cn(buttonVariants({ variant: 'brand' }), 'w-full')}
+      href={`${appConfig.grpcBasePath}/auth/login/oidc`}
+    >
       Log in with OIDC
-    </Button>
+    </a>
   </div>
 );
 
@@ -219,20 +213,23 @@ const LoginPage = () => {
   }, []);
 
   return (
-    <Flex minHeight="100vh" width="full">
-      <Modal
-        isOpen={loginError !== null}
-        onClose={() => {
-          setLoginError(null);
+    <div className="flex min-h-screen w-full">
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setLoginError(null);
+          }
         }}
+        open={loginError !== null}
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Access Denied</ModalHeader>
-          <ModalBody>
-            <Text whiteSpace="pre-wrap">{loginError}</Text>
-          </ModalBody>
-          <ModalFooter gap={2}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Access Denied</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <div className="whitespace-pre-wrap">{loginError}</div>
+          </DialogBody>
+          <DialogFooter>
             <Button
               data-testid="login-error__ok-button"
               onClick={() => {
@@ -241,20 +238,18 @@ const LoginPage = () => {
             >
               OK
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-      <Box flex="8" minWidth="400px">
-        <Container maxWidth="350px" mt={50}>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="min-w-[400px] flex-[8]">
+        <div className="mx-auto mt-[50px] w-full max-w-[350px] px-4">
+          {/* The logo art is a fixed-ink asset, exempt from the token migration. */}
           <RedpandaLogo style={{ color: '#121827', height: '30px' }} />
-          <Spacer height={10} />
-          <Heading as="h1" size="lg">
-            Log in
-          </Heading>
+          <div className="h-10" />
+          <h1 className="text-heading-lg">Log in</h1>
           {searchParams.has('error_code') && (
-            <Box py={4}>
-              <Alert status="error">
-                <AlertIcon />
+            <div className="py-4">
+              <Alert icon={<CircleAlertIcon />} variant="destructive">
                 <AlertDescription>
                   {{
                     token_exchange_failed: 'OIDC authentication failed. Check backend logs for details.',
@@ -265,12 +260,11 @@ const LoginPage = () => {
                   }[searchParams.get('error_code') as string] || 'An unexpected error occurred. Check backend logs.'}
                 </AlertDescription>
               </Alert>
-            </Box>
+            </div>
           )}
-          <Stack my={5}>
+          <div className="my-5 flex flex-col gap-2">
             {methodsError ? (
-              <Alert status="error">
-                <AlertIcon />
+              <Alert icon={<CircleAlertIcon />} variant="destructive">
                 <AlertDescription>Failed to fetch authentication methods: {methodsError.message}</AlertDescription>
               </Alert>
             ) : null}
@@ -285,27 +279,30 @@ const LoginPage = () => {
               }
               if (authComponent) {
                 if (index > 0) {
-                  acc.push(<TextDivider key={`divider-${method}`} my={3} text="OR" />);
+                  // Chakra's TextDivider was a rule with a centred label — FieldSeparator already is.
+                  acc.push(
+                    <div className="py-3" key={`divider-${method}`}>
+                      <FieldSeparator className="uppercase">OR</FieldSeparator>
+                    </div>
+                  );
                 }
                 acc.push(<div key={method}>{authComponent}</div>);
               }
               return acc;
             }, [] as React.ReactNode[])}
-          </Stack>
-        </Container>
-      </Box>
-      <Flex
-        alignItems="center"
-        background="linear-gradient(170deg, rgba(237,127,102,1) 58%, rgba(226,64,27,1) 58.2%);"
-        backgroundColor="brand.400"
-        flex="5"
-        hideBelow="md"
-        justifyContent="center"
-        paddingTop="10%"
+          </div>
+        </div>
+      </div>
+      {/* Brand panel. The gradient is fixed art, like the logo — it does not follow the theme. */}
+      <div
+        className="hidden flex-[5] items-center justify-center pt-[10%] md:flex"
+        style={{
+          background: 'linear-gradient(170deg, rgba(237,127,102,1) 58%, rgba(226,64,27,1) 58.2%)',
+        }}
       >
-        <Image alt="Waving Panda" height="300px" src={Avatars.wavingPandaSvg} />
-      </Flex>
-    </Flex>
+        <img alt="Waving Panda" className="h-[300px]" src={wavingPanda} />
+      </div>
+    </div>
   );
 };
 

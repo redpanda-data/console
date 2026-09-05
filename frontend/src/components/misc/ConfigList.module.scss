@@ -31,9 +31,10 @@
         display: inline-block;
         padding: 0px 4px;
 
-        border: solid thin #d1d1d1;
+        // Was #d1d1d1/#f5f5f5, which left the name unreadable in the dark theme.
+        border: solid thin var(--color-border);
         border-radius: 3px;
-        background-color: #f5f5f5;
+        background-color: var(--color-surface-subtle);
 
         font-family: monospace;
 
@@ -56,7 +57,10 @@
     display: flex;
     gap: 6px;
 
-    white-space: pre-line;
+    // `break-spaces`, not `pre-line`: this rule is unlayered so it beats any Tailwind
+    // utility, and Chakra's emotion class (injected after the bundle) used to win with
+    // break-spaces — so pre-line here would silently start collapsing runs of spaces.
+    white-space: break-spaces;
 }
 
 .type {
