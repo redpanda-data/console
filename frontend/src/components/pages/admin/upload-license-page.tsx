@@ -27,6 +27,7 @@ const UploadLicenseForm: FC<{
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async () => {
+    setErrorMessage('');
     const content = (showFileUpload ? licenseFile : license) as string;
     await onUploadLicense(content)
       .then(() => {
@@ -44,17 +45,26 @@ const UploadLicenseForm: FC<{
         {Boolean(showFileUpload) && (
           <div>
             <Dropzone
+              // The Registry Dropzone reports rejections only through onError and then never calls
+              // onDrop — without this a rejected drop would be silent, where Chakra's took the first
+              // file regardless. `maxFiles` is 1, so a multi-file drop lands here.
               onDrop={(acceptedFiles) => {
                 const file = acceptedFiles.at(0);
                 if (!file) {
                   return;
                 }
-                setDroppedFiles(acceptedFiles);
+                setErrorMessage('');
                 file
                   .text()
-                  .then(setLicenseFile)
+                  .then((text) => {
+                    // Only mark the drop accepted once the read succeeded, or the dropzone would
+                    // show the filename while `licenseFile` stayed undefined.
+                    setLicenseFile(text);
+                    setDroppedFiles(acceptedFiles);
+                  })
                   .catch((err: Error) => setErrorMessage(err.message));
               }}
+              onError={(err) => setErrorMessage(err.message)}
               src={droppedFiles}
               testId="license-dropzone"
             >

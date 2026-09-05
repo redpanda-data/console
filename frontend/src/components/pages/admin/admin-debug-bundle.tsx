@@ -30,10 +30,25 @@ import {
 } from 'components/redpanda-ui/components/alert-dialog';
 import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  useFieldContext,
+} from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
-import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectEmpty,
+  MultiSelectList,
+  MultiSelectSearch,
+  MultiSelectTrigger,
+  MultiSelectValue,
+  renderMultiSelectOptions,
+} from 'components/redpanda-ui/components/multi-select';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DateTimeInput } from 'components/ui/date-time-input';
 import { CircleAlertIcon, InfoIcon } from 'lucide-react';
@@ -65,8 +80,96 @@ const TIME_UNITS = [
   { value: 60, label: 'Minutes' },
 ];
 
+/**
+ * A labelled multi-select.
+ *
+ * `SimpleMultiSelect` forwards only `id`, `aria-describedby` and `aria-invalid`, and its trigger is a
+ * `<div>` carrying a hardcoded `aria-label="Multi-select trigger"` — so a `<FieldLabel htmlFor>`
+ * pointing at it associates nothing and the control announces as "Multi-select trigger". Composing the
+ * parts lets `aria-labelledby` through, which wins over that `aria-label`. Chakra's `FormField label`
+ * did associate, so this keeps parity.
+ */
+const LabelledMultiSelect = ({
+  labelId,
+  options,
+  value,
+  onValueChange,
+  invalid,
+}: {
+  labelId: string;
+  options: string[];
+  value: string[];
+  onValueChange: (next: string[]) => void;
+  invalid?: boolean;
+}) => {
+  const { errorId } = useFieldContext();
+
+  return (
+    <MultiSelect onValueChange={onValueChange} value={value}>
+      <MultiSelectTrigger
+        aria-describedby={errorId}
+        aria-invalid={invalid || undefined}
+        aria-labelledby={labelId}
+        className="w-full"
+      >
+        <MultiSelectValue placeholder="Select items..." />
+      </MultiSelectTrigger>
+      <MultiSelectContent>
+        <MultiSelectSearch placeholder="Search..." />
+        <MultiSelectList>{renderMultiSelectOptions(options.map((o) => ({ value: o, label: o })))}</MultiSelectList>
+        <MultiSelectEmpty>No items found</MultiSelectEmpty>
+      </MultiSelectContent>
+    </MultiSelect>
+  );
+};
+
+/**
+ * A number paired with its unit — four fields on this form share the shape exactly.
+ *
+ * `valueAsNumber` is NaN while the field is empty, which is what the pre-migration code stored too;
+ * this only keeps the input from *displaying* "NaN" while the user is retyping.
+ */
+const NumberWithUnitField = ({
+  id,
+  label,
+  description,
+  error,
+  units,
+  value,
+  unit,
+  onValueChange,
+  onUnitChange,
+}: {
+  id: string;
+  label: string;
+  description: string;
+  error?: string;
+  units: { value: number; label: string }[];
+  /** `cpuProfilerWaitSeconds` is optional in form state; the rest are always set. */
+  value: number | undefined;
+  unit: number;
+  onValueChange: (next: number) => void;
+  onUnitChange: (next: number) => void;
+}) => (
+  <Field data-invalid={Boolean(error) || undefined}>
+    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <div className="flex gap-2">
+      <Input
+        id={id}
+        onChange={(e) => onValueChange(e.target.valueAsNumber)}
+        testId={id}
+        type="number"
+        value={value === undefined || Number.isNaN(value) ? '' : value}
+      />
+      <SingleSelect<number> className="min-w-[150px]" onChange={onUnitChange} options={units} value={unit} />
+    </div>
+    <FieldDescription>{description}</FieldDescription>
+    <FieldError>{error}</FieldError>
+  </Field>
+);
+
 const Header: FC<{ mode?: 'default' | 'advanced' }> = ({ mode = 'default' }) => (
-  <div data-testid={`debug-bundle-description-${mode}-mode`}>
+  <div className="text-body" data-testid={`debug-bundle-description-${mode}-mode`}>
     Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine
     it's running on. This will bundle the collected data into a ZIP file.
   </div>
@@ -145,17 +248,23 @@ const AdminDebugBundleContent: FC = () => {
     .find(Boolean);
 
   if (isInProgress) {
+    const jobId = debugBundleStatus?.jobId;
     return (
       <div>
         <Header />
-        {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button. */}
-        <Link
-          className={cn(buttonVariants({ variant: 'link' }), 'mt-4 px-0')}
-          params={{ jobId: debugBundleStatus?.jobId ?? '' }}
-          to="/debug-bundle/progress/$jobId"
-        >
-          Bundle generation in progress...
-        </Link>
+        {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
+            Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
+        {jobId ? (
+          <Link
+            className={cn(buttonVariants({ variant: 'link' }), 'mt-4 px-0')}
+            params={{ jobId }}
+            to="/debug-bundle/progress/$jobId"
+          >
+            Bundle generation in progress...
+          </Link>
+        ) : (
+          <div className="mt-4">Generating bundle...</div>
+        )}
         {debugBundleStatus?.createdAt ? (
           <div>Started {timestampDate(debugBundleStatus.createdAt).toLocaleString()}</div>
         ) : null}
@@ -293,7 +402,10 @@ const NewDebugBundleForm: FC<{
         <div className="mt-4 flex w-full flex-col gap-2 sm:w-[500px]">
           <Alert className="my-2" icon={<InfoIcon />} variant="informative">
             <AlertDescription>
-              This is an advanced feature, best used if you have received direction to do so from Redpanda support.
+              {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
+              <p>
+                This is an advanced feature, best used if you have received direction to do so from Redpanda support.
+              </p>
             </AlertDescription>
           </Alert>
           <Field data-invalid={Boolean(fieldViolationsMap?.['scram.username']) || undefined}>
@@ -364,64 +476,39 @@ const NewDebugBundleForm: FC<{
             <FieldError>{fieldViolationsMap?.['scram.password']}</FieldError>
           </Field>
           <Field>
-            <FieldLabel htmlFor="broker-ids">Broker(s)</FieldLabel>
-            <SimpleMultiSelect
-              id="broker-ids"
+            <FieldLabel id="broker-ids-label">Broker(s)</FieldLabel>
+            <LabelledMultiSelect
+              labelId="broker-ids-label"
               onValueChange={(values) => {
                 setFormState((prev) => ({ ...prev, brokerIds: values.map(Number) }));
               }}
               options={api.brokers?.map((broker) => `${broker.brokerId}`) ?? []}
               value={formState.brokerIds.map(String)}
-              width="full"
             />
             <FieldDescription>Specify broker IDs (or leave blank for all)</FieldDescription>
           </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.controllerLogsSizeLimitBytes) || undefined}>
-            <FieldLabel htmlFor="controller-log-size-input">Controller log size limit</FieldLabel>
-            <div className="flex gap-2">
-              <Input
-                id="controller-log-size-input"
-                onChange={(e) =>
-                  setFormState((prev) => ({ ...prev, controllerLogsSizeLimitBytes: e.target.valueAsNumber }))
-                }
-                testId="controller-log-size-input"
-                type="number"
-                value={formState.controllerLogsSizeLimitBytes}
-              />
-              <SingleSelect<number>
-                className="min-w-[150px]"
-                onChange={(value) => setFormState((prev) => ({ ...prev, controllerLogsSizeLimitUnit: value }))}
-                options={SIZE_UNITS}
-                value={formState.controllerLogsSizeLimitUnit}
-              />
-            </div>
-            <FieldDescription>
-              The size limit of the controller logs that can be stored in the bundle (default "132MB")
-            </FieldDescription>
-            <FieldError>{fieldViolationsMap?.controllerLogsSizeLimitBytes}</FieldError>
-          </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.cpuProfilerWaitSeconds) || undefined}>
-            <FieldLabel htmlFor="cpu-profiler-input">CPU profiler wait</FieldLabel>
-            <div className="flex gap-2">
-              <Input
-                id="cpu-profiler-input"
-                onChange={(e) => setFormState((prev) => ({ ...prev, cpuProfilerWaitSeconds: e.target.valueAsNumber }))}
-                testId="cpu-profiler-input"
-                type="number"
-                value={formState.cpuProfilerWaitSeconds}
-              />
-              <SingleSelect<number>
-                className="min-w-[150px]"
-                onChange={(value) => setFormState((prev) => ({ ...prev, cpuProfilerWaitUnit: value }))}
-                options={TIME_UNITS}
-                value={formState.cpuProfilerWaitUnit}
-              />
-            </div>
-            <FieldDescription>
-              How long to collect samples for the CPU profiler. Must be higher than 15s (default 30s)
-            </FieldDescription>
-            <FieldError>{fieldViolationsMap?.cpuProfilerWaitSeconds}</FieldError>
-          </Field>
+          <NumberWithUnitField
+            description={`The size limit of the controller logs that can be stored in the bundle (default "132MB")`}
+            error={fieldViolationsMap?.controllerLogsSizeLimitBytes}
+            id="controller-log-size-input"
+            label="Controller log size limit"
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, controllerLogsSizeLimitUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, controllerLogsSizeLimitBytes: next }))}
+            unit={formState.controllerLogsSizeLimitUnit}
+            units={SIZE_UNITS}
+            value={formState.controllerLogsSizeLimitBytes}
+          />
+          <NumberWithUnitField
+            description={'How long to collect samples for the CPU profiler. Must be higher than 15s (default 30s)'}
+            error={fieldViolationsMap?.cpuProfilerWaitSeconds}
+            id="cpu-profiler-input"
+            label="CPU profiler wait"
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, cpuProfilerWaitUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, cpuProfilerWaitSeconds: next }))}
+            unit={formState.cpuProfilerWaitUnit}
+            units={TIME_UNITS}
+            value={formState.cpuProfilerWaitSeconds}
+          />
           <Field data-invalid={Boolean(fieldViolationsMap?.logsSince) || undefined}>
             <FieldLabel>Logs since</FieldLabel>
             <DateTimeInput
@@ -445,48 +532,28 @@ const NewDebugBundleForm: FC<{
             </FieldDescription>
             <FieldError>{fieldViolationsMap?.logsUntil}</FieldError>
           </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.logsSizeLimitBytes) || undefined}>
-            <FieldLabel htmlFor="log-size-limit-input">Logs size limit</FieldLabel>
-            <div className="flex gap-2">
-              <Input
-                id="log-size-limit-input"
-                onChange={(e) => setFormState((prev) => ({ ...prev, logsSizeLimitBytes: e.target.valueAsNumber }))}
-                testId="log-size-limit-input"
-                type="number"
-                value={formState.logsSizeLimitBytes}
-              />
-              <SingleSelect<number>
-                className="min-w-[150px]"
-                onChange={(value) => setFormState((prev) => ({ ...prev, logsSizeLimitUnit: value }))}
-                options={SIZE_UNITS}
-                value={formState.logsSizeLimitUnit}
-              />
-            </div>
-            <FieldDescription>
-              Read the logs until the given size is reached (for example, 3MB, 1GB). Default 100MB.
-            </FieldDescription>
-            <FieldError>{fieldViolationsMap?.logsSizeLimitBytes}</FieldError>
-          </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.metricsIntervalSeconds) || undefined}>
-            <FieldLabel htmlFor="metrics-interval-duration-input">Metrics interval duration</FieldLabel>
-            <div className="flex gap-2">
-              <Input
-                id="metrics-interval-duration-input"
-                onChange={(e) => setFormState((prev) => ({ ...prev, metricsIntervalSeconds: e.target.valueAsNumber }))}
-                testId="metrics-interval-duration-input"
-                type="number"
-                value={formState.metricsIntervalSeconds}
-              />
-              <SingleSelect<number>
-                className="min-w-[150px]"
-                onChange={(value) => setFormState((prev) => ({ ...prev, metricsIntervalUnit: value }))}
-                options={TIME_UNITS}
-                value={formState.metricsIntervalUnit}
-              />
-            </div>
-            <FieldDescription>Interval between metrics snapshots (default 10s)</FieldDescription>
-            <FieldError>{fieldViolationsMap?.metricsIntervalSeconds}</FieldError>
-          </Field>
+          <NumberWithUnitField
+            description={'Read the logs until the given size is reached (for example, 3MB, 1GB). Default 100MB.'}
+            error={fieldViolationsMap?.logsSizeLimitBytes}
+            id="log-size-limit-input"
+            label="Logs size limit"
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, logsSizeLimitUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, logsSizeLimitBytes: next }))}
+            unit={formState.logsSizeLimitUnit}
+            units={SIZE_UNITS}
+            value={formState.logsSizeLimitBytes}
+          />
+          <NumberWithUnitField
+            description={'Interval between metrics snapshots (default 10s)'}
+            error={fieldViolationsMap?.metricsIntervalSeconds}
+            id="metrics-interval-duration-input"
+            label="Metrics interval duration"
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, metricsIntervalUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, metricsIntervalSeconds: next }))}
+            unit={formState.metricsIntervalUnit}
+            units={TIME_UNITS}
+            value={formState.metricsIntervalSeconds}
+          />
           <Field data-invalid={Boolean(fieldViolationsMap?.metricsSamples) || undefined}>
             <FieldLabel htmlFor="metrics-samples-input">Metrics samples</FieldLabel>
             <Input
@@ -514,13 +581,13 @@ const NewDebugBundleForm: FC<{
             <FieldError>{fieldViolationsMap?.namespace}</FieldError>
           </Field>
           <Field data-invalid={Boolean(fieldViolationsMap?.partitions) || undefined}>
-            <FieldLabel htmlFor="partitions">Partition(s)</FieldLabel>
-            <SimpleMultiSelect
-              id="partitions"
+            <FieldLabel id="partitions-label">Partition(s)</FieldLabel>
+            <LabelledMultiSelect
+              invalid={Boolean(fieldViolationsMap?.partitions)}
+              labelId="partitions-label"
               onValueChange={(values) => setFormState((prev) => ({ ...prev, partitions: values }))}
               options={api.getTopicPartitionArray}
               value={formState.partitions}
-              width="full"
             />
             <FieldDescription>
               Partition ID. If set, the bundle will include extra information about the requested partitions.

@@ -123,8 +123,10 @@ export const LicenseNotification = () => {
             </>
           )}
 
-          {/* Both CTAs navigate, so they stay anchors and keep the link role; Button would impose role="button". */}
-          <div className="my-2 flex gap-2">
+          {/* Both CTAs navigate, so they stay anchors and keep the link role; Button would impose
+              role="button". AlertDescription puts `[&_a]:link-inline` on every descendant anchor, so
+              the button-styled ones need to opt out. */}
+          <div className="[&_a]:!no-underline my-2 flex gap-2">
             {Boolean(api.isAdminApiConfigured) && (
               <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license">
                 Upload license
