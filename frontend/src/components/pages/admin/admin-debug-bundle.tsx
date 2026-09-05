@@ -15,26 +15,43 @@ import { type FC, useEffect, useState } from 'react';
 import '../../../utils/array-extensions';
 import { create } from '@bufbuild/protobuf';
 import { timestampDate, timestampFromDate } from '@bufbuild/protobuf/wkt';
-import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  Checkbox,
-  ConfirmModal,
-  Flex,
-  FormField,
-  Grid,
-  GridItem,
-  Input,
-  isMultiValue,
-  isSingleValue,
-  PasswordInput,
-  Select,
-  Text,
-} from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from 'components/redpanda-ui/components/alert-dialog';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  useFieldContext,
+} from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectEmpty,
+  MultiSelectList,
+  MultiSelectSearch,
+  MultiSelectTrigger,
+  MultiSelectValue,
+  renderMultiSelectOptions,
+} from 'components/redpanda-ui/components/multi-select';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { DateTimeInput } from 'components/ui/date-time-input';
+import { CircleAlertIcon, InfoIcon } from 'lucide-react';
 
 import {
   type CreateDebugBundleRequest,
@@ -46,7 +63,6 @@ import {
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import type { BrokerWithConfigAndStorage } from '../../../state/rest-interfaces';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
 import { SingleSelect } from '../../misc/select';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -64,18 +80,102 @@ const TIME_UNITS = [
   { value: 60, label: 'Minutes' },
 ];
 
-// Helper functions to get labels from unit values
-const getSizeUnitLabel = (unitValue: number): string =>
-  SIZE_UNITS.find((unit) => unit.value === unitValue)?.label || '';
+/**
+ * A labelled multi-select.
+ *
+ * `SimpleMultiSelect` forwards only `id`, `aria-describedby` and `aria-invalid`, and its trigger is a
+ * `<div>` carrying a hardcoded `aria-label="Multi-select trigger"` — so a `<FieldLabel htmlFor>`
+ * pointing at it associates nothing and the control announces as "Multi-select trigger". Composing the
+ * parts lets `aria-labelledby` through, which wins over that `aria-label`. Chakra's `FormField label`
+ * did associate, so this keeps parity.
+ */
+const LabelledMultiSelect = ({
+  labelId,
+  options,
+  value,
+  onValueChange,
+  invalid,
+}: {
+  labelId: string;
+  options: string[];
+  value: string[];
+  onValueChange: (next: string[]) => void;
+  invalid?: boolean;
+}) => {
+  const { errorId } = useFieldContext();
 
-const getTimeUnitLabel = (unitValue: number): string =>
-  TIME_UNITS.find((unit) => unit.value === unitValue)?.label || '';
+  return (
+    <MultiSelect onValueChange={onValueChange} value={value}>
+      <MultiSelectTrigger
+        aria-describedby={errorId}
+        aria-invalid={invalid || undefined}
+        aria-labelledby={labelId}
+        className="w-full"
+      >
+        <MultiSelectValue placeholder="Select items..." />
+      </MultiSelectTrigger>
+      <MultiSelectContent>
+        <MultiSelectSearch placeholder="Search..." />
+        <MultiSelectList>{renderMultiSelectOptions(options.map((o) => ({ value: o, label: o })))}</MultiSelectList>
+        <MultiSelectEmpty>No items found</MultiSelectEmpty>
+      </MultiSelectContent>
+    </MultiSelect>
+  );
+};
+
+/**
+ * A number paired with its unit — four fields on this form share the shape exactly.
+ *
+ * `valueAsNumber` is NaN while the field is empty, which is what the pre-migration code stored too;
+ * this only keeps the input from *displaying* "NaN" while the user is retyping.
+ */
+const NumberWithUnitField = ({
+  id,
+  label,
+  description,
+  error,
+  units,
+  value,
+  unit,
+  onValueChange,
+  onUnitChange,
+}: {
+  id: string;
+  label: string;
+  description: string;
+  error?: string;
+  units: { value: number; label: string }[];
+  /** `cpuProfilerWaitSeconds` is optional in form state; the rest are always set. */
+  value: number | undefined;
+  unit: number;
+  onValueChange: (next: number) => void;
+  onUnitChange: (next: number) => void;
+}) => (
+  <Field data-invalid={Boolean(error) || undefined}>
+    <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <div className="flex gap-2">
+      <Input
+        id={id}
+        onChange={(e) => onValueChange(e.target.valueAsNumber)}
+        testId={id}
+        type="number"
+        value={value === undefined || Number.isNaN(value) ? '' : value}
+      />
+      <SingleSelect<number> className="min-w-[150px]" onChange={onUnitChange} options={units} value={unit} />
+    </div>
+    <FieldDescription>{description}</FieldDescription>
+    <FieldError>{error}</FieldError>
+  </Field>
+);
+
+/** `data-invalid={false}` would render as the string "false", so the falsy case has to be undefined. */
+const invalidFlag = (violation?: string): true | undefined => (violation ? true : undefined);
 
 const Header: FC<{ mode?: 'default' | 'advanced' }> = ({ mode = 'default' }) => (
-  <Text data-testid={`debug-bundle-description-${mode}-mode`}>
+  <div className="text-body" data-testid={`debug-bundle-description-${mode}-mode`}>
     Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine
     it's running on. This will bundle the collected data into a ZIP file.
-  </Text>
+  </div>
 );
 
 type ErrorDebugInfo = {
@@ -151,32 +251,43 @@ const AdminDebugBundleContent: FC = () => {
     .find(Boolean);
 
   if (isInProgress) {
+    const jobId = debugBundleStatus?.jobId;
     return (
-      <Box>
+      <div>
         <Header />
-        <Button as={Link} mt={4} px={0} to={`/debug-bundle/progress/${debugBundleStatus?.jobId}`} variant="link">
-          Bundle generation in progress...
-        </Button>
+        {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
+            Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
+        {jobId ? (
+          <Link
+            className={cn(buttonVariants({ variant: 'link' }), 'mt-4 px-0')}
+            params={{ jobId }}
+            to="/debug-bundle/progress/$jobId"
+          >
+            Bundle generation in progress...
+          </Link>
+        ) : (
+          <div className="mt-4">Generating bundle...</div>
+        )}
         {debugBundleStatus?.createdAt ? (
-          <Text>Started {timestampDate(debugBundleStatus.createdAt).toLocaleString()}</Text>
+          <div>Started {timestampDate(debugBundleStatus.createdAt).toLocaleString()}</div>
         ) : null}
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Box mt={4}>
-        {Boolean(canDownload || isExpired) && <Text fontWeight="bold">Latest debug bundle:</Text>}
-        {Boolean(isExpired) && <Text>Your previous bundle has expired and cannot be downloaded.</Text>}
-        {Boolean(isError) && <Text fontWeight="bold">Your debug bundle was not generated. Try again.</Text>}
+    <div>
+      <div className="mt-4">
+        {Boolean(canDownload || isExpired) && <div className="font-bold">Latest debug bundle:</div>}
+        {Boolean(isExpired) && <div>Your previous bundle has expired and cannot be downloaded.</div>}
+        {Boolean(isError) && <div className="font-bold">Your debug bundle was not generated. Try again.</div>}
         {Boolean(canDownload) && <DebugBundleLink showDeleteButton statuses={statuses} />}
 
-        {statuses.length === 0 && <Text>No debug bundle available for download.</Text>}
-      </Box>
+        {statuses.length === 0 && <div>No debug bundle available for download.</div>}
+      </div>
 
-      <Box>
-        {Boolean(submitInProgress) && <Box>Generating bundle ...</Box>}
+      <div>
+        {Boolean(submitInProgress) && <div>Generating bundle ...</div>}
 
         <NewDebugBundleForm
           debugBundleExists={hasDebugProcess}
@@ -200,8 +311,8 @@ const AdminDebugBundleContent: FC = () => {
               });
           }}
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -288,35 +399,34 @@ const NewDebugBundleForm: FC<{
   };
 
   return (
-    <Box mt={4}>
+    <div className="mt-4">
       <Header mode={advancedForm ? 'advanced' : 'default'} />
       {Boolean(advancedForm) && (
-        <Flex
-          flexDirection="column"
-          gap={2}
-          mt={4}
-          width={{
-            base: 'full',
-            sm: 500,
-          }}
-        >
-          <Alert my={2} status="info">
-            <AlertIcon />
-            This is an advanced feature, best used if you have received direction to do so from Redpanda support.
+        <div className="mt-4 flex w-full flex-col gap-2 sm:w-[500px]">
+          <Alert className="my-2" icon={<InfoIcon />} variant="informative">
+            <AlertDescription>
+              {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
+              <p>
+                This is an advanced feature, best used if you have received direction to do so from Redpanda support.
+              </p>
+            </AlertDescription>
           </Alert>
-          <FormField
-            errorText={fieldViolationsMap?.['scram.username']}
-            isInvalid={!!fieldViolationsMap?.['scram.username']}
-            label="SCRAM user"
-          >
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.['scram.username'])}>
+            <FieldLabel htmlFor="scram-user-input">SCRAM user</FieldLabel>
             <Input
-              data-testid="scram-user-input"
+              id="scram-user-input"
               onChange={(e) => setFormState((prev) => ({ ...prev, scramUsername: e.target.value }))}
-              value={formState.scramUsername}
+              testId="scram-user-input"
+              value={formState.scramUsername ?? ''}
             />
-          </FormField>
-          <FormField label="SASL Mechanism" showRequiredIndicator>
+            <FieldError>{fieldViolationsMap?.['scram.username']}</FieldError>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="sasl-mechanism" required>
+              SASL Mechanism
+            </FieldLabel>
             <SingleSelect<SCRAMAuth_Mechanism>
+              id="sasl-mechanism"
               onChange={(e) => {
                 setFormState((prev) => ({ ...prev, scramMechanism: e }));
               }}
@@ -332,260 +442,172 @@ const NewDebugBundleForm: FC<{
               ]}
               value={formState.scramMechanism}
             />
-          </FormField>
-          <Checkbox
-            isChecked={formState.tlsEnabled}
-            onChange={(x) => {
-              setFormState((prev) => ({ ...prev, tlsEnabled: x.target.checked }));
-            }}
-          >
-            TLS enabled
-          </Checkbox>
-          <Checkbox
-            isChecked={formState.skipTlsVerification}
-            onChange={(x) => {
-              setFormState((prev) => ({ ...prev, skipTlsVerification: x.target.checked }));
-            }}
-          >
-            Skip TLS verification
-          </Checkbox>
-          <FormField
-            errorText={fieldViolationsMap?.['scram.password']}
-            isInvalid={!!fieldViolationsMap?.['scram.password']}
-            label="Password"
-          >
-            <PasswordInput
-              data-testid="scram-user-password"
-              onChange={(e) => setFormState((prev) => ({ ...prev, scramPassword: e.target.value }))}
-              value={formState.scramPassword}
-            />
-          </FormField>
-          <FormField description="Specify broker IDs (or leave blank for all)" label="Broker(s)">
-            <Select<BrokerWithConfigAndStorage['brokerId']>
-              isMulti
-              onChange={(x) => {
-                if (isMultiValue(x)) {
-                  setFormState((prev) => ({ ...prev, brokerIds: x.map((item) => item.value) }));
-                }
+          </Field>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={formState.tlsEnabled}
+              id="tls-enabled"
+              onCheckedChange={(checked) => {
+                setFormState((prev) => ({ ...prev, tlsEnabled: checked === true }));
               }}
-              options={
-                api.brokers?.map((broker) => ({
-                  value: broker.brokerId,
-                  label: `${broker.brokerId}`,
-                })) ?? []
-              }
             />
-          </FormField>
-          <FormField
-            description='The size limit of the controller logs that can be stored in the bundle (default "132MB")'
-            errorText={fieldViolationsMap?.controllerLogsSizeLimitBytes}
-            isInvalid={!!fieldViolationsMap?.controllerLogsSizeLimitBytes}
+            <Label className="cursor-pointer" htmlFor="tls-enabled">
+              TLS enabled
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={formState.skipTlsVerification}
+              id="skip-tls-verification"
+              onCheckedChange={(checked) => {
+                setFormState((prev) => ({ ...prev, skipTlsVerification: checked === true }));
+              }}
+            />
+            <Label className="cursor-pointer" htmlFor="skip-tls-verification">
+              Skip TLS verification
+            </Label>
+          </div>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.['scram.password'])}>
+            <FieldLabel htmlFor="scram-user-password">Password</FieldLabel>
+            <Input
+              id="scram-user-password"
+              onChange={(e) => setFormState((prev) => ({ ...prev, scramPassword: e.target.value }))}
+              testId="scram-user-password"
+              type="password"
+              value={formState.scramPassword ?? ''}
+            />
+            <FieldError>{fieldViolationsMap?.['scram.password']}</FieldError>
+          </Field>
+          <Field>
+            <FieldLabel id="broker-ids-label">Broker(s)</FieldLabel>
+            <LabelledMultiSelect
+              labelId="broker-ids-label"
+              onValueChange={(values) => {
+                setFormState((prev) => ({ ...prev, brokerIds: values.map(Number) }));
+              }}
+              options={api.brokers?.map((broker) => `${broker.brokerId}`) ?? []}
+              value={formState.brokerIds.map(String)}
+            />
+            <FieldDescription>Specify broker IDs (or leave blank for all)</FieldDescription>
+          </Field>
+          <NumberWithUnitField
+            description={`The size limit of the controller logs that can be stored in the bundle (default "132MB")`}
+            error={fieldViolationsMap?.controllerLogsSizeLimitBytes}
+            id="controller-log-size-input"
             label="Controller log size limit"
-          >
-            <Flex gap={2}>
-              <Input
-                data-testid="controller-log-size-input"
-                onChange={(e) =>
-                  setFormState((prev) => ({ ...prev, controllerLogsSizeLimitBytes: e.target.valueAsNumber }))
-                }
-                type="number"
-                value={formState.controllerLogsSizeLimitBytes}
-              />
-              <Select
-                chakraStyles={{
-                  container: (provided) => ({
-                    ...provided,
-                    minWidth: 150,
-                  }),
-                }}
-                onChange={(value) => {
-                  if (value && isSingleValue(value)) {
-                    setFormState((prev) => ({ ...prev, controllerLogsSizeLimitUnit: value.value }));
-                  }
-                }}
-                options={SIZE_UNITS}
-                value={{
-                  value: formState.controllerLogsSizeLimitUnit,
-                  label: getSizeUnitLabel(formState.controllerLogsSizeLimitUnit),
-                }}
-              />
-            </Flex>
-          </FormField>
-          <FormField
-            description="How long to collect samples for the CPU profiler. Must be higher than 15s (default 30s)"
-            errorText={fieldViolationsMap?.cpuProfilerWaitSeconds}
-            isInvalid={!!fieldViolationsMap?.cpuProfilerWaitSeconds}
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, controllerLogsSizeLimitUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, controllerLogsSizeLimitBytes: next }))}
+            unit={formState.controllerLogsSizeLimitUnit}
+            units={SIZE_UNITS}
+            value={formState.controllerLogsSizeLimitBytes}
+          />
+          <NumberWithUnitField
+            description={'How long to collect samples for the CPU profiler. Must be higher than 15s (default 30s)'}
+            error={fieldViolationsMap?.cpuProfilerWaitSeconds}
+            id="cpu-profiler-input"
             label="CPU profiler wait"
-          >
-            <Flex gap={2}>
-              <Input
-                data-testid="cpu-profiler-input"
-                onChange={(e) => setFormState((prev) => ({ ...prev, cpuProfilerWaitSeconds: e.target.valueAsNumber }))}
-                type="number"
-                value={formState.cpuProfilerWaitSeconds}
-              />
-              <Select
-                chakraStyles={{
-                  container: (provided) => ({
-                    ...provided,
-                    minWidth: 150,
-                  }),
-                }}
-                onChange={(value) => {
-                  if (value && isSingleValue(value)) {
-                    setFormState((prev) => ({ ...prev, cpuProfilerWaitUnit: value.value }));
-                  }
-                }}
-                options={TIME_UNITS}
-                value={{
-                  value: formState.cpuProfilerWaitUnit,
-                  label: getTimeUnitLabel(formState.cpuProfilerWaitUnit),
-                }}
-              />
-            </Flex>
-          </FormField>
-          <FormField
-            description="Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today'). Default 'yesterday'."
-            errorText={fieldViolationsMap?.logsSince}
-            isInvalid={!!fieldViolationsMap?.logsSince}
-            label="Logs since"
-          >
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, cpuProfilerWaitUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, cpuProfilerWaitSeconds: next }))}
+            unit={formState.cpuProfilerWaitUnit}
+            units={TIME_UNITS}
+            value={formState.cpuProfilerWaitSeconds}
+          />
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.logsSince)}>
+            <FieldLabel>Logs since</FieldLabel>
             <DateTimeInput
               onChange={(date) => setFormState((prev) => ({ ...prev, logsSince: date }))}
               value={formState.logsSince}
             />
-          </FormField>
-          <FormField
-            description="Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today')."
-            errorText={fieldViolationsMap?.logsUntil}
-            isInvalid={!!fieldViolationsMap?.logsUntil}
-            label="Logs until"
-          >
+            <FieldDescription>
+              Include logs dated from specified date onward; (journalctl date format: YYYY-MM-DD, 'yesterday', or
+              'today'). Default 'yesterday'.
+            </FieldDescription>
+            <FieldError>{fieldViolationsMap?.logsSince}</FieldError>
+          </Field>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.logsUntil)}>
+            <FieldLabel>Logs until</FieldLabel>
             <DateTimeInput
               onChange={(date) => setFormState((prev) => ({ ...prev, logsUntil: date }))}
               value={formState.logsUntil}
             />
-          </FormField>
-          <FormField
-            description="Read the logs until the given size is reached (for example, 3MB, 1GB). Default 100MB."
-            errorText={fieldViolationsMap?.logsSizeLimitBytes}
-            isInvalid={!!fieldViolationsMap?.logsSizeLimitBytes}
+            <FieldDescription>
+              Include logs older than the specified date; (journalctl date format: YYYY-MM-DD, 'yesterday', or 'today').
+            </FieldDescription>
+            <FieldError>{fieldViolationsMap?.logsUntil}</FieldError>
+          </Field>
+          <NumberWithUnitField
+            description={'Read the logs until the given size is reached (for example, 3MB, 1GB). Default 100MB.'}
+            error={fieldViolationsMap?.logsSizeLimitBytes}
+            id="log-size-limit-input"
             label="Logs size limit"
-          >
-            <Flex gap={2}>
-              <Input
-                data-testid="log-size-limit-input"
-                onChange={(e) => setFormState((prev) => ({ ...prev, logsSizeLimitBytes: e.target.valueAsNumber }))}
-                type="number"
-                value={formState.logsSizeLimitBytes}
-              />
-              <Select
-                chakraStyles={{
-                  container: (provided) => ({
-                    ...provided,
-                    minWidth: 150,
-                  }),
-                }}
-                onChange={(value) => {
-                  if (value && isSingleValue(value)) {
-                    setFormState((prev) => ({ ...prev, logsSizeLimitUnit: value.value }));
-                  }
-                }}
-                options={SIZE_UNITS}
-                value={{
-                  value: formState.logsSizeLimitUnit,
-                  label: getSizeUnitLabel(formState.logsSizeLimitUnit),
-                }}
-              />
-            </Flex>
-          </FormField>
-          <FormField
-            description="Interval between metrics snapshots (default 10s)"
-            errorText={fieldViolationsMap?.metricsIntervalSeconds}
-            isInvalid={!!fieldViolationsMap?.metricsIntervalSeconds}
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, logsSizeLimitUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, logsSizeLimitBytes: next }))}
+            unit={formState.logsSizeLimitUnit}
+            units={SIZE_UNITS}
+            value={formState.logsSizeLimitBytes}
+          />
+          <NumberWithUnitField
+            description={'Interval between metrics snapshots (default 10s)'}
+            error={fieldViolationsMap?.metricsIntervalSeconds}
+            id="metrics-interval-duration-input"
             label="Metrics interval duration"
-          >
-            <Flex gap={2}>
-              <Input
-                data-testid="metrics-interval-duration-input"
-                onChange={(e) => setFormState((prev) => ({ ...prev, metricsIntervalSeconds: e.target.valueAsNumber }))}
-                type="number"
-                value={formState.metricsIntervalSeconds}
-              />
-              <Select
-                chakraStyles={{
-                  container: (provided) => ({
-                    ...provided,
-                    minWidth: 150,
-                  }),
-                }}
-                onChange={(value) => {
-                  if (value && isSingleValue(value)) {
-                    setFormState((prev) => ({ ...prev, metricsIntervalUnit: value.value }));
-                  }
-                }}
-                options={TIME_UNITS}
-                value={{
-                  value: formState.metricsIntervalUnit,
-                  label: getTimeUnitLabel(formState.metricsIntervalUnit),
-                }}
-              />
-            </Flex>
-          </FormField>
-          <FormField
-            description="Number of metrics samples to take (at the interval of 'metrics interval duration'). Must be >= 2"
-            errorText={fieldViolationsMap?.metricsSamples}
-            isInvalid={!!fieldViolationsMap?.metricsSamples}
-            label="Metrics samples"
-          >
+            onUnitChange={(next) => setFormState((prev) => ({ ...prev, metricsIntervalUnit: next }))}
+            onValueChange={(next) => setFormState((prev) => ({ ...prev, metricsIntervalSeconds: next }))}
+            unit={formState.metricsIntervalUnit}
+            units={TIME_UNITS}
+            value={formState.metricsIntervalSeconds}
+          />
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.metricsSamples)}>
+            <FieldLabel htmlFor="metrics-samples-input">Metrics samples</FieldLabel>
             <Input
-              data-testid="metrics-samples-in put"
+              id="metrics-samples-input"
               onChange={(e) => setFormState((prev) => ({ ...prev, metricsSamples: e.target.value }))}
+              testId="metrics-samples-input"
               value={formState.metricsSamples}
             />
-          </FormField>
-          <FormField
-            description='The namespace to use to collect the resources from (k8s only). Default "redpanda".'
-            errorText={fieldViolationsMap?.namespace}
-            isInvalid={!!fieldViolationsMap?.namespace}
-            label="Namespace"
-          >
+            <FieldDescription>
+              Number of metrics samples to take (at the interval of 'metrics interval duration'). Must be &gt;= 2
+            </FieldDescription>
+            <FieldError>{fieldViolationsMap?.metricsSamples}</FieldError>
+          </Field>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.namespace)}>
+            <FieldLabel htmlFor="namespace-input">Namespace</FieldLabel>
             <Input
-              data-testid="namespace-input"
+              id="namespace-input"
               onChange={(e) => setFormState((prev) => ({ ...prev, namespace: e.target.value }))}
+              testId="namespace-input"
               value={formState.namespace}
             />
-          </FormField>
-          <FormField
-            description="Partition ID. If set, the bundle will include extra information about the requested partitions."
-            errorText={fieldViolationsMap?.partitions}
-            isInvalid={!!fieldViolationsMap?.partitions}
-            label="Partition(s)"
-          >
-            <Select<string>
-              isMulti
-              onChange={(x) => {
-                if (isMultiValue(x)) {
-                  setFormState((prev) => ({ ...prev, partitions: x.map((item) => item.value) }));
-                }
-              }}
-              options={api.getTopicPartitionArray.map((partition) => ({
-                value: partition,
-                label: partition,
-              }))}
+            <FieldDescription>
+              The namespace to use to collect the resources from (k8s only). Default "redpanda".
+            </FieldDescription>
+            <FieldError>{fieldViolationsMap?.namespace}</FieldError>
+          </Field>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.partitions)}>
+            <FieldLabel id="partitions-label">Partition(s)</FieldLabel>
+            <LabelledMultiSelect
+              invalid={Boolean(fieldViolationsMap?.partitions)}
+              labelId="partitions-label"
+              onValueChange={(values) => setFormState((prev) => ({ ...prev, partitions: values }))}
+              options={api.getTopicPartitionArray}
+              value={formState.partitions}
             />
-          </FormField>
-          <FormField
-            description="Label selectors to filter your resources."
-            errorText={fieldViolationsMap?.labelSelectors}
-            isInvalid={!!fieldViolationsMap?.labelSelectors}
-            label="Label selectors"
-          >
+            <FieldDescription>
+              Partition ID. If set, the bundle will include extra information about the requested partitions.
+            </FieldDescription>
+            <FieldError>{fieldViolationsMap?.partitions}</FieldError>
+          </Field>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.labelSelectors)}>
+            <FieldLabel>Label selectors</FieldLabel>
             {formState.labelSelectors.map((labelSelector, idx) => (
-              <Grid gap={2} key={`label-${labelSelector.key}-${labelSelector.value}`} templateColumns="1fr 1fr auto">
-                <GridItem>
-                  <Text fontSize="sm">Key</Text>
+              <div
+                className="grid grid-cols-[1fr_1fr_auto] gap-2"
+                key={`label-${labelSelector.key}-${labelSelector.value}`}
+              >
+                <div>
+                  <div className="text-body-sm">Key</div>
                   <Input
+                    aria-label={`Label selector ${idx + 1} key`}
                     onChange={(e) => {
                       setFormState((prev) => ({
                         ...prev,
@@ -596,10 +618,11 @@ const NewDebugBundleForm: FC<{
                     }}
                     value={labelSelector.key}
                   />
-                </GridItem>
-                <GridItem>
-                  <Text fontSize="sm">Value</Text>
+                </div>
+                <div>
+                  <div className="text-body-sm">Value</div>
                   <Input
+                    aria-label={`Label selector ${idx + 1} value`}
                     onChange={(e) => {
                       setFormState((prev) => ({
                         ...prev,
@@ -610,9 +633,10 @@ const NewDebugBundleForm: FC<{
                     }}
                     value={labelSelector.value}
                   />
-                </GridItem>
-                <GridItem alignItems="flex-end" display="flex">
+                </div>
+                <div className="flex items-end">
                   <Button
+                    aria-label={`Remove label selector ${idx + 1}`}
                     onClick={() => {
                       setFormState((prev) => ({
                         ...prev,
@@ -623,12 +647,12 @@ const NewDebugBundleForm: FC<{
                   >
                     <TrashIcon />
                   </Button>
-                </GridItem>
-              </Grid>
+                </div>
+              </div>
             ))}
-            <Box>
+            <div>
               <Button
-                my={2}
+                className="my-2"
                 onClick={() => {
                   setFormState((prev) => ({
                     ...prev,
@@ -639,29 +663,41 @@ const NewDebugBundleForm: FC<{
               >
                 Add
               </Button>
-            </Box>
-          </FormField>
-        </Flex>
+            </div>
+            <FieldDescription>Label selectors to filter your resources.</FieldDescription>
+            <FieldError>{fieldViolationsMap?.labelSelectors}</FieldError>
+          </Field>
+        </div>
       )}
 
       {error ? (
-        <Alert my={4} status="error">
-          <AlertIcon />
-          {error.message}
+        <Alert className="my-4" icon={<CircleAlertIcon />} variant="destructive">
+          <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       ) : null}
 
-      <Flex gap={2} mt={4}>
+      <div className="mt-4 flex gap-2">
         {debugBundleExists && !isExpired && !isError ? (
-          <ConfirmModal
-            heading="Generate new debug bundle"
-            onConfirm={() => {
-              generateNewDebugBundle();
-            }}
-            trigger={advancedForm ? 'Generate' : 'Generate default'}
-          >
-            You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?
-          </ConfirmModal>
+          <AlertDialog>
+            <AlertDialogTrigger render={<Button>{advancedForm ? 'Generate' : 'Generate default'}</Button>} />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Generate new debug bundle</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel render={<Button variant="ghost">Cancel</Button>} />
+                <AlertDialogAction
+                  onClick={() => {
+                    generateNewDebugBundle();
+                  }}
+                  render={<Button>Confirm</Button>}
+                />
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         ) : (
           <Button
             onClick={() => {
@@ -672,19 +708,19 @@ const NewDebugBundleForm: FC<{
           </Button>
         )}
         {advancedForm ? (
-          <Flex alignItems="center" gap={1}>
+          <div className="flex items-center gap-1">
             or
             <Button
+              className="px-0"
               data-testid="switch-to-default-debug-bundle-form"
               onClick={() => {
                 setAdvancedForm(false);
               }}
-              px={0}
               variant="link"
             >
               back to default
             </Button>
-          </Flex>
+          </div>
         ) : (
           <Button
             data-testid="switch-to-custom-debug-bundle-form"
@@ -696,7 +732,7 @@ const NewDebugBundleForm: FC<{
             or create a custom debug bundle
           </Button>
         )}
-      </Flex>
-    </Box>
+      </div>
+    </div>
   );
 };

@@ -1,5 +1,7 @@
-import { Alert, AlertDescription, AlertIcon, Box, Button, Flex } from '@redpanda-data/ui';
 import { Link, useLocation } from '@tanstack/react-router';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { buttonVariants } from 'components/redpanda-ui/components/button';
+import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
 import {
@@ -66,25 +68,23 @@ export const LicenseNotification = () => {
       ? visibleExpiredEnterpriseLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
       : visibleExpiredEnterpriseLicenses;
 
+  const isWarning =
+    visibleExpiredLicenses.length > 0 ||
+    licenseViolation ||
+    soonToExpireLicenses.some((license) => {
+      const WARNING_THRESHOLD_DAYS = 15;
+      const msToExpiration = getMillisecondsToExpiration(license);
+      return msToExpiration > -1 && msToExpiration < WARNING_THRESHOLD_DAYS * MS_IN_DAY;
+    });
+
   return (
-    <Box data-testid="license-notification">
+    <div data-testid="license-notification">
       <Alert
+        className="mb-4"
         data-testid="license-alert"
-        mb={4}
-        status={
-          visibleExpiredLicenses.length > 0 ||
-          licenseViolation ||
-          soonToExpireLicenses.some((license) => {
-            const WARNING_THRESHOLD_DAYS = 15;
-            const msToExpiration = getMillisecondsToExpiration(license);
-            return msToExpiration > -1 && msToExpiration < WARNING_THRESHOLD_DAYS * MS_IN_DAY;
-          })
-            ? 'warning'
-            : 'info'
-        }
-        variant="subtle"
+        icon={isWarning ? <TriangleAlertIcon /> : <InfoIcon />}
+        variant={isWarning ? 'warning' : 'informative'}
       >
-        <AlertIcon />
         <AlertDescription>
           {visibleSoonToExpireLicenses.length > 0 && (
             <>
@@ -123,25 +123,26 @@ export const LicenseNotification = () => {
             </>
           )}
 
-          <Flex gap={2} my={2}>
+          {/* Both CTAs navigate, so they stay anchors and keep the link role; Button would impose
+              role="button". AlertDescription puts `[&_a]:link-inline` on every descendant anchor, so
+              the button-styled ones need to opt out. */}
+          <div className="[&_a]:!no-underline my-2 flex gap-2">
             {Boolean(api.isAdminApiConfigured) && (
-              <Button as={Link} size="sm" to="/upload-license" variant="outline">
+              <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license">
                 Upload license
-              </Button>
+              </Link>
             )}
-            <Button
-              as="a"
+            <a
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
               href="https://support.redpanda.com/"
               rel="noopener noreferrer"
-              size="sm"
               target="_blank"
-              variant="outline"
             >
               Request a license
-            </Button>
-          </Flex>
+            </a>
+          </div>
         </AlertDescription>
       </Alert>
-    </Box>
+    </div>
   );
 };

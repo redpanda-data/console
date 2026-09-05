@@ -1,17 +1,10 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  Button,
-  Dropzone,
-  Flex,
-  FormField,
-  Link,
-  Result,
-  Text,
-  Textarea,
-} from '@redpanda-data/ui';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Dropzone, DropzoneContent, DropzoneEmptyState } from 'components/redpanda-ui/components/dropzone';
+import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { Link } from 'components/redpanda-ui/components/typography';
+import { CheckCircle2Icon, CircleAlertIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
@@ -29,10 +22,12 @@ const UploadLicenseForm: FC<{
 }> = ({ onUploadLicense, onSuccess }) => {
   const [showFileUpload, setShowFileUpload] = useState(true);
   const [licenseFile, setLicenseFile] = useState<string | undefined>(undefined);
+  const [droppedFiles, setDroppedFiles] = useState<File[] | undefined>(undefined);
   const [license, setLicense] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async () => {
+    setErrorMessage('');
     const content = (showFileUpload ? licenseFile : license) as string;
     await onUploadLicense(content)
       .then(() => {
@@ -46,60 +41,83 @@ const UploadLicenseForm: FC<{
 
   return (
     <div>
-      <Flex flexDirection="column" gap={2} my={4}>
+      <div className="my-4 flex flex-col gap-2">
         {Boolean(showFileUpload) && (
-          <Box>
-            <Box border="1px dashed" borderColor="gray.200" borderRadius="md" padding="4">
-              <Dropzone setRawString={setLicenseFile} />
-            </Box>
+          <div>
+            <Dropzone
+              // The Registry Dropzone reports rejections only through onError and then never calls
+              // onDrop — without this a rejected drop would be silent, where Chakra's took the first
+              // file regardless. `maxFiles` is 1, so a multi-file drop lands here.
+              onDrop={(acceptedFiles) => {
+                const file = acceptedFiles.at(0);
+                if (!file) {
+                  return;
+                }
+                setErrorMessage('');
+                file
+                  .text()
+                  .then((text) => {
+                    // Only mark the drop accepted once the read succeeded, or the dropzone would
+                    // show the filename while `licenseFile` stayed undefined.
+                    setLicenseFile(text);
+                    setDroppedFiles(acceptedFiles);
+                  })
+                  .catch((err: Error) => setErrorMessage(err.message));
+              }}
+              onError={(err) => setErrorMessage(err.message)}
+              src={droppedFiles}
+              testId="license-dropzone"
+            >
+              <DropzoneEmptyState />
+              <DropzoneContent />
+            </Dropzone>
             or
             <Button onClick={() => setShowFileUpload(false)} variant="link">
               import text directly
             </Button>
-          </Box>
+          </div>
         )}
 
         {showFileUpload === false && (
-          <Box>
-            <FormField label="License content">
+          <div>
+            <Field>
+              <FieldLabel htmlFor="license">License content</FieldLabel>
               <Textarea
                 autoComplete="off"
-                data-testid="license"
+                id="license"
                 onChange={(e) => setLicense(e.target.value)}
                 rows={10}
                 spellCheck={false}
-              >
-                {license}
-              </Textarea>
-            </FormField>
+                testId="license"
+                value={license}
+              />
+            </Field>
             or
             <Button onClick={() => setShowFileUpload(true)} variant="link">
               upload file
             </Button>
-          </Box>
+          </div>
         )}
 
         {Boolean(errorMessage) && (
-          <Alert status="error" variant="left-accent">
-            <AlertIcon />
+          <Alert icon={<CircleAlertIcon />} variant="destructive">
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
-        <Flex gap={2} mt={2}>
+        <div className="mt-2 flex gap-2">
           <Button data-testid="upload-license" onClick={handleSubmit} type="button">
             Upload
           </Button>
           <Button
             onClick={() => {
-              // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
               appGlobal.historyPush('/overview');
             }}
             variant="outline"
           >
             Back to overview
           </Button>
-        </Flex>
-      </Flex>
+        </div>
+      </div>
     </div>
   );
 };
@@ -121,48 +139,42 @@ const UploadLicensePageContent: FC = () => {
   return (
     <PageContent>
       {success ? (
-        <Box mb={20}>
-          <Result
-            status="success"
-            subTitle={
-              <Flex flexDirection="column" gap={4}>
-                <Box>
-                  <Text fontWeight="normal">
-                    A restart will be needed to use Redpanda Console's enterprise features.
-                  </Text>
-                  <Text fontWeight="normal">
-                    <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
-                      Enterprise features
-                    </Link>{' '}
-                    in your Redpanda cluster will be available right away.
-                  </Text>
-                </Box>
-                <Box>
-                  <Button
-                    onClick={() => {
-                      // TODO fix after https://github.com/redpanda-data/ui/issues/569 is resolved
-                      appGlobal.historyPush('/overview');
-                    }}
-                    variant="solid"
-                  >
-                    Back to overview
-                  </Button>
-                </Box>
-              </Flex>
-            }
-            title="License uploaded"
-          />
-        </Box>
+        <div className="mb-20 flex flex-col items-center gap-4 text-center">
+          <CheckCircle2Icon className="size-[72px] text-success" />
+          {/* license.spec.ts asserts on `h1:has-text("License uploaded")`. */}
+          <h1 className="text-heading-lg">License uploaded</h1>
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-body">A restart will be needed to use Redpanda Console's enterprise features.</p>
+              <p className="text-body">
+                <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
+                  Enterprise features
+                </Link>{' '}
+                in your Redpanda cluster will be available right away.
+              </p>
+            </div>
+            <div>
+              <Button
+                onClick={() => {
+                  appGlobal.historyPush('/overview');
+                }}
+                variant="primary"
+              >
+                Back to overview
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
-          <Text>
+          <p className="text-body">
             If you're interested in Redpanda Enterprise, please{' '}
             <Link href="https://www.redpanda.com/contact" rel="noopener noreferrer" target="_blank">
               contact us
             </Link>
             .
-          </Text>
-          <Text>
+          </p>
+          <p className="text-body">
             If you're an existing customer, get in touch with{' '}
             <Link href="https://support.redpanda.com/hc/en-us" rel="noopener noreferrer" target="_blank">
               our support team
@@ -172,8 +184,8 @@ const UploadLicensePageContent: FC = () => {
               our documentation
             </Link>
             .
-          </Text>
-          <Box width={{ sm: '100%', md: '600px' }}>
+          </p>
+          <div className="w-full md:w-[600px]">
             <UploadLicenseForm
               onSuccess={() => setSuccess(true)}
               onUploadLicense={async (license) =>
@@ -182,7 +194,7 @@ const UploadLicensePageContent: FC = () => {
                 } as SetLicenseRequest)
               }
             />
-          </Box>
+          </div>
         </>
       )}
     </PageContent>

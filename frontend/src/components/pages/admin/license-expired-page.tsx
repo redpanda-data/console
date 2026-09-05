@@ -1,6 +1,6 @@
-import { Avatars, Box, Flex, Image, Text, VStack } from '@redpanda-data/ui';
 import { Link } from 'components/redpanda-ui/components/typography';
 
+import devPandaFrontView from '../../../assets/redpanda/DevPandaFrontView.svg';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/license-utils';
@@ -44,19 +44,18 @@ export default class LicenseExpiredPage extends PageComponent {
     const enabledFeaturesText = formatEnabledFeatures(api.enterpriseFeaturesUsed);
 
     return (
-      <Flex align="center" justify="center" p={4}>
-        <Box bg="white" height="100vh" left={0} opacity={0.5} position="fixed" top={0} width="100vw" zIndex={1000} />
-        <Box maxW="600px" mx="auto" p={8} textAlign="center" zIndex={1001}>
-          <VStack spacing={6}>
-            <Image alt="Dev Redpanda" src={Avatars.devPandaFrontViewSvg} w={300} />
+      <div className="flex items-center justify-center p-4">
+        {/* Scrim over the page underneath; the panel sits one layer above it. */}
+        <div className="fixed top-0 left-0 z-[1000] h-screen w-screen bg-background opacity-50" />
+        <div className="z-[1001] mx-auto max-w-[600px] p-8 text-center">
+          <div className="flex flex-col items-center gap-6">
+            <img alt="Dev Redpanda" className="w-[300px]" src={devPandaFrontView} />
 
             {/* Main Heading */}
-            <Text fontSize="2xl" fontWeight="bold">
-              Your Redpanda Enterprise license has expired.
-            </Text>
+            <p className="text-heading-lg">Your Redpanda Enterprise license has expired.</p>
 
             {/* Subtext */}
-            <Text fontSize="lg">
+            <p className="text-body-lg">
               {enabledFeaturesText
                 ? `You were using ${enabledFeaturesText} and your license has expired. To continue using these features, you will need`
                 : 'Your license has expired. To continue using enterprise features, you will need'}{' '}
@@ -69,10 +68,10 @@ export default class LicenseExpiredPage extends PageComponent {
                 disable
               </Link>{' '}
               the paid features in your configuration file.
-            </Text>
-          </VStack>
-        </Box>
-      </Flex>
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 }
