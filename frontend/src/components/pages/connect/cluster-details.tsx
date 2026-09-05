@@ -10,9 +10,13 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import { buttonVariants } from 'components/redpanda-ui/components/button';
-import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
-import { useCallback, useState } from 'react';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import { useCallback, useMemo, useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 import { isEmbedded } from '../../../config';
@@ -93,18 +97,22 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
 const pluginColumns: DataTableColumnDef<ClusterAdditionalInfo['plugins'][0]>[] = [
   {
-    header: 'Class',
+    id: 'class',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Class" />,
     accessorKey: 'class',
     cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
-    size: 500,
   },
   {
-    header: 'Version',
+    id: 'version',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Version" />,
     accessorKey: 'version',
-    size: 300,
   },
   {
-    header: 'Type',
+    id: 'type',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
     accessorKey: 'type',
   },
 ];
@@ -134,15 +142,67 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
     uiSettings.connectorsList.quickSearch = filterText;
   }, []);
 
+  // Memoised on clusterName: DataTable memoises its column model on `columns` identity, and this
+  // component re-renders on every keystroke in the SearchBar.
+  const connectorColumns = useMemo<DataTableColumnDef<ClusterConnectorInfo>[]>(
+    () => [
+      {
+        id: 'name',
+        enableHiding: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
+        accessorKey: 'name',
+        cell: ({ row: { original } }) => (
+          <Link
+            params={{
+              clusterName,
+              connector: original.name,
+            }}
+            search={{} as never}
+            to="/connect-clusters/$clusterName/$connector"
+          >
+            <span className="whitespace-break-spaces break-words">{original.name}</span>
+          </Link>
+        ),
+      },
+      {
+        id: 'class',
+        enableHiding: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Class" />,
+        accessorKey: 'class',
+        cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
+      },
+      {
+        id: 'type',
+        enableHiding: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+        accessorKey: 'type',
+      },
+      {
+        id: 'state',
+        enableHiding: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+        accessorKey: 'state',
+        cell: ({ row: { original } }) => <TaskState observable={original} />,
+      },
+      {
+        id: 'tasks',
+        // Derived from the task list, so there is nothing to sort on.
+        enableSorting: false,
+        enableHiding: false,
+        header: 'Tasks',
+        cell: ({ row: { original } }) => <TasksColumn observable={original} />,
+      },
+    ],
+    [clusterName]
+  );
+
   return (
     <div>
       <div className="mb-2 flex">
-        <Link
-          className={buttonVariants({ variant: 'primary' })}
-          params={{ clusterName }}
-          to="/connect-clusters/$clusterName/create-connector"
-        >
-          Create connector
+        {/* tests/shared/connector.utils.ts clicks this with getByRole('button'), which this
+            nesting produces — and the Registry Button takes no route `params`. */}
+        <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
+          <Button variant="primary">Create connector</Button>
         </Link>
       </div>
 
@@ -157,52 +217,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         />
       </div>
 
-      <DataTable<ClusterConnectorInfo>
-        columns={[
-          {
-            header: 'Connector',
-            accessorKey: 'name',
-            cell: ({ row: { original } }) => (
-              <Link
-                params={{
-                  clusterName,
-                  connector: original.name,
-                }}
-                search={{} as never}
-                to="/connect-clusters/$clusterName/$connector"
-              >
-                <span className="whitespace-break-spaces break-words">{original.name}</span>
-              </Link>
-            ),
-            size: Number.POSITIVE_INFINITY,
-          },
-          {
-            header: 'Class',
-            accessorKey: 'class',
-            cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
-          },
-          {
-            header: 'Type',
-            accessorKey: 'type',
-            size: 100,
-          },
-          {
-            header: 'State',
-            accessorKey: 'state',
-            size: 120,
-            cell: ({ row: { original } }) => <TaskState observable={original} />,
-          },
-          {
-            header: 'Tasks',
-            size: 120,
-            cell: ({ row: { original } }) => <TasksColumn observable={original} />,
-          },
-        ]}
-        data={filteredResults}
-        pagination
-        sorting
-        tableOptions={{ initialState: { pagination: { pageIndex: 0, pageSize: 10 } } }}
-      />
+      <DataTable<ClusterConnectorInfo> columns={connectorColumns} data={filteredResults} pagination sorting />
     </div>
   );
 };

@@ -12,7 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { DataTable } from 'components/redpanda-ui/components/data-table';
+import { DataTable, DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
@@ -432,7 +432,9 @@ class TabTasks extends Component {
       <DataTable<TaskType>
         columns={[
           {
-            header: 'Connector',
+            id: 'name',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
             accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
             cell: ({ row: { original } }) => (
               // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
@@ -452,20 +454,29 @@ class TabTasks extends Component {
             size: 300,
           },
           {
-            header: 'Task ID',
+            id: 'taskId',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Task ID" />,
             accessorKey: 'taskId',
-            size: 50,
           },
           {
-            header: 'State',
+            id: 'state',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
             accessorKey: 'state',
             cell: ({ row: { original } }) => <TaskState observable={original} />,
           },
           {
-            header: 'Worker',
+            id: 'workerId',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
             accessorKey: 'workerId',
           },
           {
+            id: 'cluster',
+            // Read off the joined cluster, so there is no accessor to sort on.
+            enableSorting: false,
+            enableHiding: false,
             header: 'Cluster',
             cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
           },

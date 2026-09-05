@@ -49,11 +49,11 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
     <div className="flex flex-col">
       <div className="mb-2 size-8">{logo}</div>
 
-      <div className="font-semibold text-[0.85em]">{type === 'source' ? 'Import from' : 'Export to'}</div>
+      <div className="text-label">{type === 'source' ? 'Import from' : 'Export to'}</div>
 
-      <div className="mb-2 font-semibold text-[1.1em]">{displayName}</div>
+      <div className="mb-2 font-semibold text-body-lg">{displayName}</div>
 
-      <p className="line-clamp-3 text-[0.85em] text-subtle">{description}</p>
+      <p className="line-clamp-3 text-body-sm text-subtle">{description}</p>
       {learnMoreLink ? (
         <div className="mt-2">
           <Badge tone="default" variant="subtle">
