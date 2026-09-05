@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Input } from '@redpanda-data/ui';
+import { Input } from 'components/redpanda-ui/components/input';
 import React, { Component } from 'react';
 
 export class SearchTitle extends Component<{
@@ -50,19 +50,14 @@ export class SearchTitle extends Component<{
     return (
       <span>
         {!this.state.filterOpen && <span>{this.props.title}</span>}
-        <Box
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            inset: '0px 0px 0px -8px',
-            display: 'flex',
-            placeContent: 'center',
-            placeItems: 'center',
-          }}
-        >
+        {/* NOTE: this overlay is currently unreachable — `filterOpen` is initialised false and
+            nothing sets it true (see `hideSearchBar`, which only clears it). Kept as-is by the
+            migration; wiring or removing it is a separate change. The absolute positioning also
+            assumed Chakra's `Th` was `position: relative`, which the Registry TableHead is not. */}
+        <div className="absolute inset-y-0 right-0 left-[-8px] flex place-content-center place-items-center">
           <Input
+            // The clicks must not reach the sortable column header; the input is the interactive
+            // element, so the handlers live here rather than on the wrapper.
             onBlur={(e) => {
               const inputWrapper = e.target.parentElement;
               const focusInside = inputWrapper?.contains(e.relatedTarget as HTMLElement);
@@ -80,13 +75,16 @@ export class SearchTitle extends Component<{
               props.observableSettings.quickSearch = e.target.value;
               this.setState({ quickSearch: e.target.value });
             }}
+            onClick={(e) => e.stopPropagation()}
             onKeyDown={this.onKeyDown}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
             placeholder="Enter search term/regex"
             ref={this.inputRef}
             spellCheck={false}
             value={this.state.quickSearch}
           />
-        </Box>
+        </div>
       </span>
     );
   }

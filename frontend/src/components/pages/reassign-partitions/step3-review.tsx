@@ -9,7 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, DataTable, Empty } from '@redpanda-data/ui';
+import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { DataTable } from 'components/redpanda-ui/components/data-table';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { InboxIcon } from 'lucide-react';
 import { Component } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
@@ -50,7 +54,19 @@ export class StepReview extends Component<{
       return DefaultSkeleton;
     }
     if (api.topicPartitions.size === 0) {
-      return <Empty />;
+      return (
+        // `border` explicitly: the Empty root sets only `border-dashed`, and Preflight leaves
+        // border-width at 0, so without it the panel is unframed text.
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <InboxIcon />
+            </EmptyMedia>
+            <EmptyTitle>No partitions</EmptyTitle>
+            <EmptyDescription>Partition data has not loaded yet, so there is nothing to review.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      );
     }
 
     return (
@@ -65,6 +81,24 @@ export class StepReview extends Component<{
 
         <DataTable<TopicWithMoves>
           columns={[
+            // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+            {
+              id: 'expander',
+              size: 40,
+              enableSorting: false,
+              cell: ({ row }) =>
+                row.getCanExpand() ? (
+                  <Button
+                    aria-expanded={row.getIsExpanded()}
+                    aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+                    onClick={row.getToggleExpandedHandler()}
+                    size="icon-xs"
+                    variant="ghost"
+                  >
+                    {row.getIsExpanded() ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  </Button>
+                ) : null,
+            },
             {
               header: 'Topic',
               accessorKey: 'topicName',
@@ -109,8 +143,10 @@ export class StepReview extends Component<{
             },
           ]}
           data={this.props.topicsWithMoves}
+          pagination={false}
+          sorting={false}
           subComponent={({ row: { original: topic } }) => (
-            <Box px={10} py={6}>
+            <div className="px-10 py-6">
               {topic.selectedPartitions ? (
                 <ReviewPartitionTable
                   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
@@ -121,7 +157,7 @@ export class StepReview extends Component<{
               ) : (
                 'Error loading partitions'
               )}
-            </Box>
+            </div>
           )}
         />
 
@@ -257,7 +293,7 @@ export class StepReview extends Component<{
 }
 
 const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
-  <Box py={2} width="full">
+  <div className="w-full py-2">
     <DataTable<Partition>
       columns={[
         {
@@ -286,6 +322,8 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
         },
       ]}
       data={props.topicPartitions}
+      pagination={false}
+      sorting={false}
     />
-  </Box>
+  </div>
 );

@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Checkbox, DataTable } from '@redpanda-data/ui';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { DataTable, type DataTableRow } from 'components/redpanda-ui/components/data-table';
 import { Component } from 'react';
-import type { LegacyRow } from 'utils/legacy-data-table';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
@@ -64,9 +64,10 @@ export class StepSelectBrokers extends Component<{
                 const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
                 return (
                   <Checkbox
-                    isChecked={allIsSelected}
-                    isIndeterminate={!allIsSelected && selectedSet.size > 0}
-                    onChange={() => {
+                    aria-label="Select all brokers"
+                    checked={allIsSelected}
+                    indeterminate={!allIsSelected && selectedSet.size > 0}
+                    onCheckedChange={() => {
                       if (allIsSelected) {
                         onSelectionChange([]);
                       } else {
@@ -76,12 +77,13 @@ export class StepSelectBrokers extends Component<{
                   />
                 );
               },
-              cell: ({ row: { original: broker } }: { row: LegacyRow<Broker> }) => {
+              cell: ({ row: { original: broker } }: { row: DataTableRow<Broker> }) => {
                 const checked = selectedBrokerIds.includes(broker.brokerId);
                 return (
                   <Checkbox
-                    isChecked={checked}
-                    onChange={() => {
+                    aria-label={`Select broker ${broker.brokerId}`}
+                    checked={checked}
+                    onCheckedChange={() => {
                       if (checked) {
                         onSelectionChange(selectedBrokerIds.filter((id) => id !== broker.brokerId));
                       } else {
@@ -102,7 +104,8 @@ export class StepSelectBrokers extends Component<{
             },
           ]}
           data={this.brokers}
-          pagination={true}
+          pagination
+          sorting={false}
         />
       </>
     );

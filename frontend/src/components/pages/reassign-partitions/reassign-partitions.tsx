@@ -10,29 +10,21 @@
  */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
-import {
-  Box,
-  Button,
-  Flex,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Step,
-  StepIcon,
-  StepIndicator,
-  StepNumber,
-  Stepper,
-  StepSeparator,
-  StepStatus,
-} from '@redpanda-data/ui';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import { motion } from 'motion/react';
 import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
 import { ActiveReassignments } from './components/active-reassignments';
+import { WizardSteps } from './components/wizard-steps';
 import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';
 import { ReassignmentTracker } from './logic/reassignment-tracker';
 import {
@@ -215,7 +207,8 @@ class ReassignPartitions extends PageComponent {
 
           {/* Statistics */}
           <Section className="py-4">
-            <Flex gap={8}>
+            {/* Scoped: step 1's SelectionInfoBar repeats these labels. */}
+            <div className="flex gap-8" data-testid="cluster-statistics">
               <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
               <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
               <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
@@ -227,7 +220,7 @@ class ReassignPartitions extends PageComponent {
                     : '...'
                 }
               />
-            </Flex>
+            </div>
           </Section>
 
           {/* Active Reassignments */}
@@ -242,17 +235,7 @@ class ReassignPartitions extends PageComponent {
           <Section id="wizard">
             {/* Steps */}
             <div style={{ margin: '.75em 1em 1em 1em' }}>
-              <Stepper colorScheme="brand" index={currentStep}>
-                {steps.map((item) => (
-                  <Step key={item.title} title={item.title}>
-                    <StepIndicator>
-                      <StepStatus active={<StepNumber />} complete={<StepIcon />} incomplete={<StepNumber />} />
-                    </StepIndicator>
-                    <Box>{item.title}</Box>
-                    <StepSeparator />
-                  </Step>
-                ))}
-              </Stepper>
+              <WizardSteps currentStep={currentStep} steps={steps} />
             </div>
 
             {/* Content */}
@@ -306,7 +289,7 @@ class ReassignPartitions extends PageComponent {
               {/* Back */}
               {Boolean(step.backButton) && (
                 <Button
-                  isDisabled={currentStep <= 0 || requestInProgress}
+                  disabled={currentStep <= 0 || requestInProgress}
                   onClick={this.onPreviousPage}
                   style={{ minWidth: '14em' }}
                 >
@@ -321,10 +304,10 @@ class ReassignPartitions extends PageComponent {
               <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
                 <div>{nextButtonHelp}</div>
                 <Button
-                  isDisabled={!nextButtonEnabled || requestInProgress}
+                  disabled={!nextButtonEnabled || requestInProgress}
                   onClick={this.onNextPage}
                   style={{ minWidth: '14em', marginLeft: 'auto' }}
-                  variant="solid"
+                  variant="primary"
                 >
                   <span>{step.nextButton.text}</span>
                   <span>
@@ -335,21 +318,25 @@ class ReassignPartitions extends PageComponent {
             </div>
           </Section>
         </PageContent>
-        <Modal
-          isOpen={this.state.removeThrottleFromTopicsContent !== null}
-          onClose={() => {
-            this.setState({ removeThrottleFromTopicsContent: null });
+        <Dialog
+          onOpenChange={(open) => {
+            if (!open) {
+              this.setState({ removeThrottleFromTopicsContent: null });
+            }
           }}
+          open={this.state.removeThrottleFromTopicsContent !== null}
         >
-          <ModalOverlay />
-          <ModalContent minW="5xl">
-            <ModalHeader>
-              <Flex alignItems="center" gap={2}>
-                <AlertIcon size={18} />
-                Remove throttle config from topics
-              </Flex>
-            </ModalHeader>
-            <ModalBody>
+          {/* Chakra's `minW="5xl"` was 64rem; `xl` (56rem) is the nearest rung — `full` is 90vw. */}
+          <DialogContent size="xl">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="flex items-center gap-2">
+                  <AlertIcon size={18} />
+                  Remove throttle config from topics
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <DialogBody>
               <div>
                 <div>
                   There are {this.state.topicsWithThrottle.length} topics with throttling applied to their replicas.
@@ -381,8 +368,8 @@ class ReassignPartitions extends PageComponent {
                 </div>
                 <div>Do you want to remove the throttle config from those topics?</div>
               </div>
-            </ModalBody>
-            <ModalFooter gap={2}>
+            </DialogBody>
+            <DialogFooter>
               <Button
                 onClick={() => {
                   this.setState({ removeThrottleFromTopicsContent: null });
@@ -392,7 +379,6 @@ class ReassignPartitions extends PageComponent {
                 Cancel
               </Button>
               <Button
-                colorScheme="red"
                 onClick={async () => {
                   if (this.state.removeThrottleFromTopicsContent === null) {
                     return;
@@ -423,12 +409,13 @@ class ReassignPartitions extends PageComponent {
 
                   await this.refreshTopicConfigs();
                 }}
+                variant="destructive"
               >
                 Remove throttle
               </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

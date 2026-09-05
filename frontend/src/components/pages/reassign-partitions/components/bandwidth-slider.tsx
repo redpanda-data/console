@@ -14,7 +14,7 @@ import { useState } from 'react';
 import type { uiSettings } from '../../../../state/ui';
 import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/number-extensions';
-import { Slider, SliderFilledTrack, SliderMark, SliderThumb, SliderTrack, Tooltip } from '@redpanda-data/ui';
+import { Slider } from 'components/redpanda-ui/components/slider';
 
 //
 // BandwidthSlider can work with two kinds of inputs
@@ -30,12 +30,19 @@ type SettingsCallback = {
   onSettingsChange: (x: number | null) => void;
 };
 
-const labelStyles = {
-  mt: '1',
-  mb: '2',
-  ml: '-2',
-  fontSize: 'sm',
-};
+const SLIDER_MIN = 2;
+const SLIDER_MAX = 12.1;
+
+/** Marks are positioned by value, as Chakra's `SliderMark` did. */
+const MARKS: { value: number; label: string }[] = [
+  { value: 2, label: '-' },
+  { value: 3, label: '1kB' },
+  { value: 6, label: '1MB' },
+  { value: 9, label: '1GB' },
+  { value: 12, label: '1TB' },
+];
+
+const percentOf = (value: number) => ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100;
 
 export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback) {
   const [isDragging, setIsDragging] = useState(false);
@@ -56,7 +63,9 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   };
 
   const value = getValue() ?? 0;
-  const sliderValue = Math.log10(value);
+  // `maxReplicationTraffic` defaults to 0, so log10 is -Infinity — which would make both the thumb
+  // position and the bubble's `left: …%` invalid. Clamp once and use the clamped value everywhere.
+  const sliderValue = Math.min(Math.max(Math.log10(value), SLIDER_MIN), SLIDER_MAX);
 
   const tipText = (f: number | null) => {
     if (f === null) {
@@ -73,58 +82,57 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   };
 
   return (
-    <Slider
-      max={12.1}
-      mb="4"
-      min={2}
-      mt="6"
-      mx="4"
-      onChange={(n: number) => {
-        if (n < 2.5) {
-          setValue(null);
-        } else {
-          setValue(Math.round(10 ** n.clamp(3, 12)));
-        }
-      }}
-      onMouseEnter={() => {
+    <div
+      className="relative mx-4 mt-6 mb-4"
+      // Pointer events, not mouse events: `onPointerEnter`/`Leave` are not flagged as
+      // mouse-only interactions on a non-interactive element, and the bubble is decorative —
+      // the Slider below is the control, and it is keyboard-operable on its own.
+      onPointerEnter={() => {
         setIsDragging(true);
       }}
-      onMouseLeave={() => {
+      onPointerLeave={() => {
         setIsDragging(false);
       }}
-      step={0.1}
-      value={sliderValue}
     >
-      <SliderMark value={2} {...labelStyles}>
-        -
-      </SliderMark>
-      <SliderMark value={3} {...labelStyles}>
-        1kB
-      </SliderMark>
-      <SliderMark value={6} {...labelStyles}>
-        1MB
-      </SliderMark>
-      <SliderMark value={9} {...labelStyles}>
-        1GB
-      </SliderMark>
-      <SliderMark value={12} {...labelStyles}>
-        1TB
-      </SliderMark>
+      {/*
+        The Registry Slider renders its own track and thumb and has no mark or thumb-tooltip slot,
+        so the marks and the value bubble are positioned against the same value scale here. The
+        bubble follows the thumb and appears on hover, as Chakra's `isOpen={isDragging}` tooltip did.
+      */}
+      {isDragging && tipText(sliderValue) ? (
+        <div
+          className="pointer-events-none absolute -top-7 -translate-x-1/2 whitespace-nowrap rounded-md bg-inverse px-2 py-1 text-body-sm text-inverse-foreground"
+          style={{ left: `${percentOf(sliderValue)}%` }}
+        >
+          {tipText(sliderValue)}
+        </div>
+      ) : null}
 
-      <SliderTrack>
-        <SliderFilledTrack />
-      </SliderTrack>
+      <Slider
+        max={SLIDER_MAX}
+        min={SLIDER_MIN}
+        onValueChange={([n]) => {
+          if (n < 2.5) {
+            setValue(null);
+          } else {
+            setValue(Math.round(10 ** n.clamp(3, 12)));
+          }
+        }}
+        step={0.1}
+        value={[sliderValue]}
+      />
 
-      <Tooltip
-        bg="var(--color-foreground)"
-        color="white"
-        hasArrow
-        isOpen={isDragging}
-        label={tipText(sliderValue)}
-        placement="top"
-      >
-        <SliderThumb />
-      </Tooltip>
-    </Slider>
+      <div className="relative mt-1 mb-2 h-5">
+        {MARKS.map((mark) => (
+          <span
+            className="absolute -translate-x-1/2 text-body-sm text-subtle"
+            key={mark.value}
+            style={{ left: `${percentOf(mark.value)}%` }}
+          >
+            {mark.label}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
