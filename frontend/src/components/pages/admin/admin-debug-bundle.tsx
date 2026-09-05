@@ -168,6 +168,9 @@ const NumberWithUnitField = ({
   </Field>
 );
 
+/** `data-invalid={false}` would render as the string "false", so the falsy case has to be undefined. */
+const invalidFlag = (violation?: string): true | undefined => (violation ? true : undefined);
+
 const Header: FC<{ mode?: 'default' | 'advanced' }> = ({ mode = 'default' }) => (
   <div className="text-body" data-testid={`debug-bundle-description-${mode}-mode`}>
     Collect environment data that can help debug and diagnose issues with a Redpanda cluster, a broker, or the machine
@@ -408,7 +411,7 @@ const NewDebugBundleForm: FC<{
               </p>
             </AlertDescription>
           </Alert>
-          <Field data-invalid={Boolean(fieldViolationsMap?.['scram.username']) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.['scram.username'])}>
             <FieldLabel htmlFor="scram-user-input">SCRAM user</FieldLabel>
             <Input
               id="scram-user-input"
@@ -464,7 +467,7 @@ const NewDebugBundleForm: FC<{
               Skip TLS verification
             </Label>
           </div>
-          <Field data-invalid={Boolean(fieldViolationsMap?.['scram.password']) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.['scram.password'])}>
             <FieldLabel htmlFor="scram-user-password">Password</FieldLabel>
             <Input
               id="scram-user-password"
@@ -509,7 +512,7 @@ const NewDebugBundleForm: FC<{
             units={TIME_UNITS}
             value={formState.cpuProfilerWaitSeconds}
           />
-          <Field data-invalid={Boolean(fieldViolationsMap?.logsSince) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.logsSince)}>
             <FieldLabel>Logs since</FieldLabel>
             <DateTimeInput
               onChange={(date) => setFormState((prev) => ({ ...prev, logsSince: date }))}
@@ -521,7 +524,7 @@ const NewDebugBundleForm: FC<{
             </FieldDescription>
             <FieldError>{fieldViolationsMap?.logsSince}</FieldError>
           </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.logsUntil) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.logsUntil)}>
             <FieldLabel>Logs until</FieldLabel>
             <DateTimeInput
               onChange={(date) => setFormState((prev) => ({ ...prev, logsUntil: date }))}
@@ -554,7 +557,7 @@ const NewDebugBundleForm: FC<{
             units={TIME_UNITS}
             value={formState.metricsIntervalSeconds}
           />
-          <Field data-invalid={Boolean(fieldViolationsMap?.metricsSamples) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.metricsSamples)}>
             <FieldLabel htmlFor="metrics-samples-input">Metrics samples</FieldLabel>
             <Input
               id="metrics-samples-input"
@@ -567,7 +570,7 @@ const NewDebugBundleForm: FC<{
             </FieldDescription>
             <FieldError>{fieldViolationsMap?.metricsSamples}</FieldError>
           </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.namespace) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.namespace)}>
             <FieldLabel htmlFor="namespace-input">Namespace</FieldLabel>
             <Input
               id="namespace-input"
@@ -580,7 +583,7 @@ const NewDebugBundleForm: FC<{
             </FieldDescription>
             <FieldError>{fieldViolationsMap?.namespace}</FieldError>
           </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.partitions) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.partitions)}>
             <FieldLabel id="partitions-label">Partition(s)</FieldLabel>
             <LabelledMultiSelect
               invalid={Boolean(fieldViolationsMap?.partitions)}
@@ -594,7 +597,7 @@ const NewDebugBundleForm: FC<{
             </FieldDescription>
             <FieldError>{fieldViolationsMap?.partitions}</FieldError>
           </Field>
-          <Field data-invalid={Boolean(fieldViolationsMap?.labelSelectors) || undefined}>
+          <Field data-invalid={invalidFlag(fieldViolationsMap?.labelSelectors)}>
             <FieldLabel>Label selectors</FieldLabel>
             {formState.labelSelectors.map((labelSelector, idx) => (
               <div
