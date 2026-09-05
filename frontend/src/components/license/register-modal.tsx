@@ -199,7 +199,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         },
                       }}
                     />
-                    {givenNameError ? <FieldError>{givenNameError}</FieldError> : null}
+                    <FieldError>{givenNameError}</FieldError>
                   </Field>
 
                   <Field data-invalid={Boolean(familyNameError) || undefined}>
@@ -231,7 +231,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         },
                       }}
                     />
-                    {familyNameError ? <FieldError>{familyNameError}</FieldError> : null}
+                    <FieldError>{familyNameError}</FieldError>
                   </Field>
                 </div>
 
@@ -257,7 +257,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                       },
                     }}
                   />
-                  {emailError ? <FieldError>{emailError}</FieldError> : null}
+                  <FieldError>{emailError}</FieldError>
                 </Field>
 
                 <div className="mb-4 text-body-sm text-subtle">
