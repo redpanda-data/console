@@ -31,7 +31,13 @@ export const NoClipboardPopover: FunctionComponent<{
   ) : (
     // Hover-triggered and informational, so a Tooltip rather than a Popover.
     <Tooltip>
-      <TooltipTrigger render={children} />
+      {/*
+        The trigger is a wrapper span, not the child itself: the child here is a component that
+        forwards no rest props (so ref and pointer handlers would be dropped) and renders a
+        *disabled* button, which dispatches no pointer events at all. Same shape as the disabled
+        buttons in layout/header.tsx.
+      */}
+      <TooltipTrigger render={<span className="inline-flex">{children}</span>} />
       <TooltipContent side={placement}>{popoverContent}</TooltipContent>
     </Tooltip>
   );
