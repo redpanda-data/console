@@ -44,7 +44,11 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
   }
 
   if (connectorStore.initPending) {
-    return <SkeletonText className="mt-5" lines={20} width="full" />;
+    return (
+      <div className="mt-5">
+        <SkeletonText lines={20} width="full" />
+      </div>
+    );
   }
 
   if (connectorStore.allGroups.length === 0) {
@@ -78,7 +82,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
           {(['form', 'json'] as const).map((mode) => (
             <div className="flex items-center gap-2" key={mode}>
               <RadioGroupItem id={`settings-mode-${mode}`} value={mode} />
-              <Label className="mx-4 cursor-pointer" htmlFor={`settings-mode-${mode}`}>
+              <Label className="cursor-pointer" htmlFor={`settings-mode-${mode}`}>
                 {mode === 'form' ? 'Form' : 'JSON'}
               </Label>
             </div>

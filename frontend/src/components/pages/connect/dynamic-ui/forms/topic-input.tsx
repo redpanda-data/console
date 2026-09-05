@@ -14,7 +14,7 @@ import { Field, FieldDescription, FieldError } from 'components/redpanda-ui/comp
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 
 import { api } from '../../../../../state/backend-api';
 import type { Property } from '../../../../../state/connect/state';
@@ -29,6 +29,8 @@ const incrementErrorIndex = (property: Property) => {
 };
 
 export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
+  // A TopicInput is rendered per property group, so a fixed id would collide.
+  const regexCheckboxId = useId();
   const propsMap = useMemo(() => new Map(p.properties.map((prop) => [prop.name, prop])), [p.properties]);
   const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
   const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
@@ -56,6 +58,9 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
     : undefined;
 
   const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
+  // Union, not just `api.topics`: a chip for a topic that has since been deleted (or one rendered
+  // before the topic list resolves) is only removable if its value is among the options.
+  const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
 
   return (
     <div className="grid grid-cols-1 gap-10">
@@ -64,19 +69,19 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           <div className="flex items-center gap-2">
             <Checkbox
               checked={isRegex}
-              id="topics-use-regex"
+              id={regexCheckboxId}
               onCheckedChange={(checked) => {
                 setPropertyValue(property, '');
                 setSelected(checked === true ? 'topics.regex' : 'topics');
               }}
             />
-            <Label className="cursor-pointer" htmlFor="topics-use-regex">
+            <Label className="cursor-pointer" htmlFor={regexCheckboxId}>
               Use regular expressions
             </Label>
           </div>
         )}
 
-        <FieldDescription className="mb-4">
+        <FieldDescription>
           <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
         </FieldDescription>
 
@@ -95,7 +100,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
             onValueChange={(values) => {
               setPropertyValue(property, values.join(','));
             }}
-            options={api.topics?.map((x) => x.topicName) ?? []}
+            options={topicOptions}
             value={selectedTopics}
             width="full"
           />

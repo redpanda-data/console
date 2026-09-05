@@ -49,6 +49,7 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
           render={
             <Input
               className="ghostInput"
+              containerClassName="grow basis-[400px]"
               onBlur={() => {
                 setHasFocus(false);
               }}
@@ -80,7 +81,6 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
               }}
               size="sm"
               spellCheck={false}
-              style={{ flexGrow: 1, flexBasis: '400px' }}
               value={hasFocus ? valuePending : item.id}
             />
           }
@@ -136,6 +136,7 @@ export function CommaSeparatedStringList(props: {
       <div className="createEntryRow">
         <div className={`inputWrapper${newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
           <Input
+            containerClassName="h-full grow basis-[260px]"
             onChange={(e) => {
               const value = e.target.value;
               setNewEntry(value);
@@ -153,7 +154,6 @@ export function CommaSeparatedStringList(props: {
             }}
             placeholder={props.locale?.addInputPlaceholder ?? 'Enter a name...'}
             spellCheck={false}
-            style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
             value={newEntry ?? ''}
           />
 
@@ -161,13 +161,13 @@ export function CommaSeparatedStringList(props: {
         </div>
 
         <Button
+          className="h-full min-w-[120px] px-4"
           disabled={newEntryError !== null || !newEntry || newEntry.trim().length === 0}
           onClick={() => {
             if (!newEntry) return;
             setData((prev) => [...prev, { id: newEntry }]);
             setNewEntry(null);
           }}
-          style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
           variant="primary"
         >
           Add

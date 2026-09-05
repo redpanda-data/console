@@ -1,6 +1,6 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { useRef, useState } from 'react';
 
 export type SecretInputProps = {
@@ -10,16 +10,19 @@ export type SecretInputProps = {
 };
 
 const EditButton = ({ onClick }: { onClick: () => void }) => (
-  <Tooltip>
-    <TooltipTrigger
-      render={
-        <Button onClick={onClick} variant="link">
-          Edit
-        </Button>
-      }
-    />
-    <TooltipContent side="top">Edit secret value</TooltipContent>
-  </Tooltip>
+  // Without a provider the trigger falls back to Base UI's 600ms open delay; the app's is 150ms.
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button onClick={onClick} variant="link">
+            Edit
+          </Button>
+        }
+      />
+      <TooltipContent side="top">Edit secret value</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
 );
 
 const ClearButton = ({ onClick }: { onClick: () => void }) => (
