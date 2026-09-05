@@ -56,7 +56,7 @@ export function ConfigList({
       header: 'Configuration',
       accessorKey: 'name',
       cell: ({ row: { original: record } }) => {
-        let name = <div className={`flex ${styles.nameText}`}>{record.name}</div>;
+        let name = <div className={styles.nameText}>{record.name}</div>;
         if (renderTooltip) {
           name = renderTooltip(record, name);
         }
@@ -87,9 +87,7 @@ export function ConfigList({
       accessorKey: 'value',
       size: Number.POSITIVE_INFINITY,
       cell: ({ row: { original: record } }) => (
-        <div className={`whitespace-break-spaces break-all ${styles.value}`}>
-          {formatConfigValue(record.name, record.value, valueDisplay)}
-        </div>
+        <div className={`break-all ${styles.value}`}>{formatConfigValue(record.name, record.value, valueDisplay)}</div>
       ),
     },
   ];

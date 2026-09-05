@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Field, FieldLabel, FieldSeparator } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -177,7 +177,7 @@ const BasicAuthComponent = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button data-testid="auth-submit" onClick={handleSubmit} variant="brand">
+      <Button data-testid="auth-submit" disabled={isLoading} onClick={handleSubmit} variant="brand">
         {Boolean(isLoading) && <Spinner className="mr-1" />}
         Log in
       </Button>
@@ -194,15 +194,6 @@ const OidcAuthComponent = () => (
     >
       Log in with OIDC
     </a>
-  </div>
-);
-
-/** Chakra's TextDivider: a rule, a centred uppercase label, and a rule. */
-const TextDivider = ({ text }: { text: string }) => (
-  <div className="my-3 grid grid-cols-[1fr_auto_1fr] items-center gap-x-4">
-    <div className="h-0.5 bg-border" />
-    <div className="text-subtle uppercase">{text}</div>
-    <div className="h-0.5 bg-border" />
   </div>
 );
 
@@ -288,7 +279,12 @@ const LoginPage = () => {
               }
               if (authComponent) {
                 if (index > 0) {
-                  acc.push(<TextDivider key={`divider-${method}`} text="OR" />);
+                  // Chakra's TextDivider was a rule with a centred label — FieldSeparator already is.
+                  acc.push(
+                    <div className="py-3" key={`divider-${method}`}>
+                      <FieldSeparator className="uppercase">OR</FieldSeparator>
+                    </div>
+                  );
                 }
                 acc.push(<div key={method}>{authComponent}</div>);
               }

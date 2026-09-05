@@ -32,7 +32,9 @@ const ClusterHealthOverview = () => {
             <div>
               {titleCase(
                 api.clusterHealth?.unhealthyReasons
-                  ?.map((x) => HUMAN_READABLE_UNHEALTHY_REASONS[x].toLowerCase() ?? x)
+                  // `?.` before the call: a reason the map does not cover would otherwise throw
+                  // here and take the whole health panel down.
+                  ?.map((x) => HUMAN_READABLE_UNHEALTHY_REASONS[x]?.toLowerCase() ?? String(x))
                   .join(', ') ?? ''
               )}
             </div>
@@ -88,16 +90,18 @@ const ClusterHealthOverview = () => {
             <div className={ROW_GRID}>
               <div className="font-bold">Debug bundle</div>
               <div className="flex gap-2">
-                {Boolean(api.isDebugBundleInProgress) && (
-                  // debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor.
+                {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor.
+                    `isDebugBundleInProgress` and `debugBundleStatus` are derived separately and can
+                    disagree, and `$jobId` needs a segment — so the link needs an id to exist. */}
+                {Boolean(api.isDebugBundleInProgress) && api.debugBundleStatus?.jobId ? (
                   <Link
                     className={cn(buttonVariants({ variant: 'link' }), 'px-0')}
-                    params={{ jobId: api.debugBundleStatus?.jobId ?? '' }}
+                    params={{ jobId: api.debugBundleStatus.jobId }}
                     to="/debug-bundle/progress/$jobId"
                   >
                     Bundle generation in progress...
                   </Link>
-                )}
+                ) : null}
                 {Boolean(api.canDownloadDebugBundle) && (
                   <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
