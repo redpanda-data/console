@@ -50,14 +50,14 @@ export class SearchTitle extends Component<{
     return (
       <span>
         {!this.state.filterOpen && <span>{this.props.title}</span>}
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: the handlers only stop propagation to the sortable column header */}
-        <div
-          className="absolute inset-y-0 right-0 left-[-8px] flex place-content-center place-items-center"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
-        >
+        {/* NOTE: this overlay is currently unreachable — `filterOpen` is initialised false and
+            nothing sets it true (see `hideSearchBar`, which only clears it). Kept as-is by the
+            migration; wiring or removing it is a separate change. The absolute positioning also
+            assumed Chakra's `Th` was `position: relative`, which the Registry TableHead is not. */}
+        <div className="absolute inset-y-0 right-0 left-[-8px] flex place-content-center place-items-center">
           <Input
+            // The clicks must not reach the sortable column header; the input is the interactive
+            // element, so the handlers live here rather than on the wrapper.
             onBlur={(e) => {
               const inputWrapper = e.target.parentElement;
               const focusInside = inputWrapper?.contains(e.relatedTarget as HTMLElement);
@@ -75,7 +75,10 @@ export class SearchTitle extends Component<{
               props.observableSettings.quickSearch = e.target.value;
               this.setState({ quickSearch: e.target.value });
             }}
+            onClick={(e) => e.stopPropagation()}
             onKeyDown={this.onKeyDown}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
             placeholder="Enter search term/regex"
             ref={this.inputRef}
             spellCheck={false}

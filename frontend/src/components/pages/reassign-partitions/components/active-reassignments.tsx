@@ -141,7 +141,6 @@ export class ActiveReassignments extends Component<{
           }}
           pagination
           sorting={false}
-          tableOptions={{ initialState: { pagination: { pageIndex: 0, pageSize: 10 } } }}
         />
 
         <ReassignmentDetailsDialog
@@ -242,7 +241,8 @@ export const ThrottleDialog: FC<{
       }}
       open={visible}
     >
-      <DialogContent size="xl">
+      {/* Chakra's `minW="3xl"` was 48rem; `lg` (42rem) is the nearest rung. */}
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Throttle Settings</DialogTitle>
         </DialogHeader>
@@ -267,7 +267,7 @@ export const ThrottleDialog: FC<{
             />
           </div>
         </DialogBody>
-        <DialogFooter className="justify-between">
+        <DialogFooter justify="between">
           <Button
             onClick={() => {
               setNewThrottleValue(null);
@@ -281,7 +281,7 @@ export const ThrottleDialog: FC<{
           </Button>
 
           <div className="flex gap-2">
-            <Button className="ml-auto" onClick={onClose} variant="ghost">
+            <Button onClick={onClose} variant="ghost">
               Close
             </Button>
             <Button
@@ -420,7 +420,8 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         }}
         open={visible}
       >
-        <DialogContent size="xl">
+        {/* Chakra's `minW="3xl"` was 48rem; `lg` (42rem) is the nearest rung. */}
+        <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
           </DialogHeader>

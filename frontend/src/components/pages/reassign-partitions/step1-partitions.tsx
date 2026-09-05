@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { WarningIcon } from 'components/icons';
+import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { DataTable, type DataTableRow } from 'components/redpanda-ui/components/data-table';
+import { DataTable, DataTableColumnHeader, type DataTableRow } from 'components/redpanda-ui/components/data-table';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
 
@@ -79,12 +78,13 @@ export class StepSelectPartitions extends Component<{
               cell: ({ row }) =>
                 row.getCanExpand() ? (
                   <Button
+                    aria-expanded={row.getIsExpanded()}
                     aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
                     onClick={row.getToggleExpandedHandler()}
                     size="icon-xs"
                     variant="ghost"
                   >
-                    {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    {row.getIsExpanded() ? <ChevronDownIcon /> : <ChevronRightIcon />}
                   </Button>
                 ) : null,
             },
@@ -108,6 +108,10 @@ export class StepSelectPartitions extends Component<{
                 <SearchTitle observableFilterOpen={this} observableSettings={uiSettings.reassignment} title="Topic" />
               ),
               accessorKey: 'topicName',
+              // This column's header *is* the search control (SearchTitle), so there is nowhere to
+              // put a sort affordance — the model says so rather than enabling sorting with no UI.
+              enableSorting: false,
+              enableHiding: false,
               cell: ({ row: { original: record } }) => {
                 const content = filterActive ? (
                   <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
@@ -129,7 +133,10 @@ export class StepSelectPartitions extends Component<{
               size: Number.POSITIVE_INFINITY,
             },
             {
-              header: 'Partitions',
+              id: 'partitionCount',
+              enableHiding: false,
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Partitions" />,
+              accessorKey: 'partitionCount',
               cell: ({ row: { original: topic } }) => {
                 const errors = topic.partitions.count((p) => p.hasErrors);
                 if (errors === 0) {
@@ -145,10 +152,12 @@ export class StepSelectPartitions extends Component<{
                   </div>
                 );
               },
-              accessorKey: 'partitions',
             },
             {
-              header: 'Replication Factor',
+              id: 'replicationFactor',
+              enableHiding: false,
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Replication Factor" />,
+              accessorKey: 'replicationFactor',
               cell: ({ row: { original: r } }) => {
                 if (r.activeReassignments.length === 0) {
                   return r.replicationFactor;
@@ -162,18 +171,23 @@ export class StepSelectPartitions extends Component<{
                   </InfoText>
                 );
               },
-              accessorKey: 'replicationFactor',
             },
             {
+              // Distinct id: the "Partitions" column above also keyed off `partitions`, so both
+              // resolved to the same TanStack column id.
+              id: 'brokers',
+              enableSorting: false,
+              enableHiding: false,
               header: 'Brokers',
-              accessorKey: 'partitions',
               cell: ({ row: { original: record } }) =>
                 record.partitions?.map((p) => p.leader).distinct().length ?? 'N/A',
             },
             {
-              header: 'Size',
-              cell: ({ row: { original: r } }) => renderLogDirSummary(r.logDirSummary),
+              id: 'totalSizeBytes',
+              enableHiding: false,
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
               accessorKey: 'totalSizeBytes',
+              cell: ({ row: { original: r } }) => renderLogDirSummary(r.logDirSummary),
             },
           ]}
           data={this.topicPartitions}
@@ -311,6 +325,9 @@ export class SelectPartitionTable extends Component<{
       <DataTable<Partition>
         columns={[
           {
+            id: 'check',
+            enableSorting: false,
+            enableHiding: false,
             header: 'Check',
             cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) => {
               const isSelected = this.props.getSelectedPartitions().includes(partition.id);
@@ -326,11 +343,15 @@ export class SelectPartitionTable extends Component<{
             },
           },
           {
-            header: 'Partition',
+            id: 'id',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
             accessorKey: 'id',
-            size: Number.POSITIVE_INFINITY,
           },
           {
+            id: 'replicas',
+            enableSorting: false,
+            enableHiding: false,
             header: 'Brokers',
             cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) =>
               partition.replicas ? (
@@ -340,9 +361,11 @@ export class SelectPartitionTable extends Component<{
               ),
           },
           {
-            header: 'Size',
+            id: 'replicaSize',
+            enableHiding: false,
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
+            accessorKey: 'replicaSize',
             cell: ({ row: { original: partition } }) => prettyBytesOrNA(partition.replicaSize),
-            size: Number.POSITIVE_INFINITY,
           },
         ]}
         data={this.props.topicPartitions}

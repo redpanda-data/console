@@ -325,7 +325,8 @@ class ReassignPartitions extends PageComponent {
           }}
           open={this.state.removeThrottleFromTopicsContent !== null}
         >
-          <DialogContent size="full">
+          {/* Chakra's `minW="5xl"` was 64rem; `xl` (56rem) is the nearest rung — `full` is 90vw. */}
+          <DialogContent size="xl">
             <DialogHeader>
               <DialogTitle>
                 <span className="flex items-center gap-2">

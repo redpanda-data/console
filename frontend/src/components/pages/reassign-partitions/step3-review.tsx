@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable } from 'components/redpanda-ui/components/data-table';
-import { Empty, EmptyDescription, EmptyHeader } from 'components/redpanda-ui/components/empty';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { InboxIcon } from 'lucide-react';
 import { Component } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
@@ -54,9 +55,15 @@ export class StepReview extends Component<{
     }
     if (api.topicPartitions.size === 0) {
       return (
-        <Empty>
+        // `border` explicitly: the Empty root sets only `border-dashed`, and Preflight leaves
+        // border-width at 0, so without it the panel is unframed text.
+        <Empty className="border">
           <EmptyHeader>
-            <EmptyDescription>No partitions</EmptyDescription>
+            <EmptyMedia variant="icon">
+              <InboxIcon />
+            </EmptyMedia>
+            <EmptyTitle>No partitions</EmptyTitle>
+            <EmptyDescription>Partition data has not loaded yet, so there is nothing to review.</EmptyDescription>
           </EmptyHeader>
         </Empty>
       );
@@ -82,12 +89,13 @@ export class StepReview extends Component<{
               cell: ({ row }) =>
                 row.getCanExpand() ? (
                   <Button
+                    aria-expanded={row.getIsExpanded()}
                     aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
                     onClick={row.getToggleExpandedHandler()}
                     size="icon-xs"
                     variant="ghost"
                   >
-                    {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    {row.getIsExpanded() ? <ChevronDownIcon /> : <ChevronRightIcon />}
                   </Button>
                 ) : null,
             },
