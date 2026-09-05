@@ -10,9 +10,11 @@
  */
 
 import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from '@hello-pangea/dnd';
-import { Button, Input, Tooltip } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { type JSX, useEffect, useRef, useState } from 'react';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
@@ -41,44 +43,49 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
 
   return (
     <>
-      {/* Input */}
-      <Tooltip hasArrow={true} isOpen={hasFocus} label="[Enter] confirm, [ESC] cancel" placement="top">
-        <Input
-          className="ghostInput"
-          onBlur={() => {
-            setHasFocus(false);
-          }}
-          onChange={(e) => setValuePending(e.target.value)}
-          onFocus={() => {
-            setValuePending(item.id);
-            setHasFocus(true);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              // can we rename that entry?
-              if (allItems.some((x) => x.id === valuePending)) {
-                // no, already exists
-                e.stopPropagation();
-                return;
-              }
+      {/* Input. The hint is shown while the field has focus, not on hover, so the Tooltip is controlled. */}
+      <Tooltip open={hasFocus}>
+        <TooltipTrigger
+          render={
+            <Input
+              className="ghostInput"
+              containerClassName="grow basis-[400px]"
+              onBlur={() => {
+                setHasFocus(false);
+              }}
+              onChange={(e) => setValuePending(e.target.value)}
+              onFocus={() => {
+                setValuePending(item.id);
+                setHasFocus(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  // can we rename that entry?
+                  if (allItems.some((x) => x.id === valuePending)) {
+                    // no, already exists
+                    e.stopPropagation();
+                    return;
+                  }
 
-              if (VALID_NAME_REGEX.test(valuePending) === false) {
-                // no, invalid characters
-                e.stopPropagation();
-                return;
-              }
+                  if (VALID_NAME_REGEX.test(valuePending) === false) {
+                    // no, invalid characters
+                    e.stopPropagation();
+                    return;
+                  }
 
-              onUpdate(valuePending);
-              (e.target as HTMLElement).blur();
-            } else if (e.key === 'Escape') {
-              (e.target as HTMLElement).blur();
-            }
-          }}
-          size="sm"
-          spellCheck={false}
-          style={{ flexGrow: 1, flexBasis: '400px' }}
-          value={hasFocus ? valuePending : item.id}
+                  onUpdate(valuePending);
+                  (e.target as HTMLElement).blur();
+                } else if (e.key === 'Escape') {
+                  (e.target as HTMLElement).blur();
+                }
+              }}
+              size="sm"
+              spellCheck={false}
+              value={hasFocus ? valuePending : item.id}
+            />
+          }
         />
+        <TooltipContent side="top">[Enter] confirm, [ESC] cancel</TooltipContent>
       </Tooltip>
 
       {/* Delete */}
@@ -129,6 +136,7 @@ export function CommaSeparatedStringList(props: {
       <div className="createEntryRow">
         <div className={`inputWrapper${newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
           <Input
+            containerClassName="h-full grow basis-[260px]"
             onChange={(e) => {
               const value = e.target.value;
               setNewEntry(value);
@@ -146,7 +154,6 @@ export function CommaSeparatedStringList(props: {
             }}
             placeholder={props.locale?.addInputPlaceholder ?? 'Enter a name...'}
             spellCheck={false}
-            style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
             value={newEntry ?? ''}
           />
 
@@ -154,14 +161,14 @@ export function CommaSeparatedStringList(props: {
         </div>
 
         <Button
+          className="h-full min-w-[120px] px-4"
           disabled={newEntryError !== null || !newEntry || newEntry.trim().length === 0}
           onClick={() => {
             if (!newEntry) return;
             setData((prev) => [...prev, { id: newEntry }]);
             setNewEntry(null);
           }}
-          style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
-          variant="solid"
+          variant="primary"
         >
           Add
         </Button>
