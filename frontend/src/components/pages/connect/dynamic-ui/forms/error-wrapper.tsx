@@ -29,7 +29,6 @@ export const ErrorWrapper = (props: PropsWithoutRef<{ property: Property; input:
         `onClick` on the field, as before: a property can carry several validation errors and the
         only way to see the rest is to click the field, which advances `currentErrorIndex`.
       */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: cycling errors is a shortcut, not the only path — every error is reachable by fixing the field */}
       <Field data-invalid={isInvalid || undefined} onClick={cycleError}>
         <FieldLabel required={isRequired}>{property.entry.definition.display_name}</FieldLabel>
         {input}

@@ -101,7 +101,6 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           />
         )}
 
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: cycling errors is a shortcut, not the only path */}
         {Boolean(showErrors) && <FieldError onClick={cycleError}>{errorToShow}</FieldError>}
       </Field>
     </div>
