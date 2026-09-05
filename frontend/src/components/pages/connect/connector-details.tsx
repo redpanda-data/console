@@ -26,10 +26,15 @@ import {
 import { Code, TimestampDisplay } from '../../../utils/tsx-utils';
 import { PageComponent, type PageInitHelper } from '../page';
 import './helper';
+import { AlertIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, WarningIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
-import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
 import {
   Dialog,
   DialogBody,
@@ -41,7 +46,8 @@ import {
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ChevronDown, ChevronRight, CircleAlertIcon, SearchIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { SearchIcon } from 'lucide-react';
 
 import { getConnectorFriendlyName } from './connector-box-card';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
@@ -99,7 +105,11 @@ const KafkaConnectorMain = ({
   const setS = (patch: Partial<LocalConnectorState>) => setStateInternal((prev) => ({ ...prev, ...patch }));
 
   if (!connectClusterStore.isInitialized) {
-    return <SkeletonText className="mt-5" lines={20} width="full" />;
+    return (
+      <div className="mt-5">
+        <SkeletonText lines={20} width="full" />
+      </div>
+    );
   }
 
   const connectorStore = connectClusterStore.getConnectorStore(connectorName);
@@ -214,7 +224,9 @@ const KafkaConnectorMain = ({
               'Logs'
             ) : (
               <Tooltip>
-                <TooltipTrigger render={<span>Logs</span>} />
+                {/* The disabled trigger sets `aria-disabled:pointer-events-none`, which cascades —
+                    without re-enabling them here the tooltip could never open. */}
+                <TooltipTrigger render={<span className="pointer-events-auto">Logs</span>} />
                 <TooltipContent side="top">{`Logs topic '${LOGS_TOPIC_NAME}' does not exist.`}</TooltipContent>
               </Tooltip>
             ),
@@ -380,7 +392,7 @@ const ConfigOverviewTab = (p: {
 
       <Section style={{ gridArea: 'health' }}>
         <div className="m-1 flex flex-row gap-4">
-          <div className="w-[5px] rounded-[3px]" style={{ background: statusColors[connector.status] }} />
+          <div className={cn('w-[5px] rounded-[3px]', statusColors[connector.status])} />
 
           <div className="flex flex-col">
             <div className="font-semibold text-heading-lg">{titleCase(connector.status)}</div>
@@ -391,7 +403,7 @@ const ConfigOverviewTab = (p: {
 
       <Section className="min-w-[500px] py-4" style={{ gridArea: 'tasks' }}>
         <div className="mt-2 mb-6 flex items-center gap-2">
-          <h3 className="font-semibold text-[1rem] text-strong uppercase">Tasks</h3>
+          <h3 className="font-semibold text-body-lg text-strong uppercase">Tasks</h3>
           <div className="font-normal opacity-50">
             ({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})
           </div>
@@ -401,12 +413,11 @@ const ConfigOverviewTab = (p: {
           data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
           pagination
           sorting
-          tableOptions={{ initialState: { pagination: { pageIndex: 0, pageSize: 10 } } }}
         />
       </Section>
 
       <Section className="py-4" style={{ gridArea: 'details' }}>
-        <h3 className="mt-2 mb-6 font-semibold text-[1rem] text-strong uppercase">Connector Details</h3>
+        <h3 className="mt-2 mb-6 font-semibold text-body-lg text-strong uppercase">Connector Details</h3>
 
         <ConnectorDetails clusterName={p.clusterName} connectClusterStore={connectClusterStore} connector={connector} />
       </Section>
@@ -416,9 +427,10 @@ const ConfigOverviewTab = (p: {
 
 const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
   {
-    header: 'Task',
+    id: 'taskId',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
     accessorKey: 'taskId',
-    size: 200,
     cell: ({
       row: {
         original: { taskId },
@@ -426,12 +438,16 @@ const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
     }) => <Code nowrap>Task-{taskId}</Code>,
   },
   {
-    header: 'Status',
+    id: 'state',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     accessorKey: 'state',
     cell: ({ row: { original } }) => <TaskState observable={original} />,
   },
   {
-    header: 'Worker',
+    id: 'workerId',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
     accessorKey: 'workerId',
     cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
   },
@@ -449,7 +465,7 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
       {/* The whole banner opens the detail dialog; "View details" is the visible affordance for it. */}
       <Alert
         className="cursor-pointer items-center"
-        icon={isError ? <CircleAlertIcon /> : <TriangleAlertIcon />}
+        icon={isError ? <AlertIcon /> : <WarningIcon />}
         onClick={() => setIsOpen(true)}
         variant={isError ? 'destructive' : 'warning'}
       >
@@ -474,15 +490,13 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
             <DialogTitle>{p.error.title}</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <CodeBlock maxHeight="none" width="full">
-              <Pre>{p.error.content}</Pre>
-            </CodeBlock>
+            <SimpleCodeBlock code={p.error.content} language="json" maxHeight="none" width="full" />
           </DialogBody>
           <DialogFooter>
             {Boolean(hasConnectorLogs) && (
-              <Button className="mr-auto" onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)}>
-                Show Logs
-              </Button>
+              <div className="mr-auto">
+                <Button onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)}>Show Logs</Button>
+              </div>
             )}
             <Button onClick={() => setIsOpen(false)}>Close</Button>
           </DialogFooter>
@@ -745,12 +759,14 @@ const LogsTab = (p: {
             size="icon-xs"
             variant="ghost"
           >
-            {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
           </Button>
         ) : null,
     },
     {
-      header: 'Timestamp',
+      id: 'timestamp',
+      enableHiding: false,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
       accessorKey: 'timestamp',
       cell: ({
         row: {
@@ -796,23 +812,27 @@ const LogsTab = (p: {
             <InputStart>
               <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
             </InputStart>
-            {logsQuickSearch !== '' && (
-              <InputEnd className="pointer-events-auto">
-                <Button
-                  aria-label="Clear search"
-                  data-testid="search-field-reset-icon"
-                  onClick={() => setLogsQuickSearch('')}
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <XIcon />
-                </Button>
-              </InputEnd>
-            )}
+            {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
+                button under the click would drop focus to <body>. */}
+            <InputEnd className="pointer-events-auto">
+              <Button
+                aria-label="Clear search"
+                className={logsQuickSearch === '' ? 'invisible' : undefined}
+                data-testid="search-field-reset-icon"
+                disabled={logsQuickSearch === ''}
+                onClick={() => setLogsQuickSearch('')}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <CloseIcon />
+              </Button>
+            </InputEnd>
           </Input>
-          <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
-            Refresh logs
-          </Button>
+          <div className="ml-auto">
+            <Button onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
+              Refresh logs
+            </Button>
+          </div>
         </div>
 
         <DataTable<TopicMessage>

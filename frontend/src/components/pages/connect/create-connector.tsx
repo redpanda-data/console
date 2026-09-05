@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { AlertIcon, CloseIcon, FilterIcon, WarningIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable } from 'components/redpanda-ui/components/data-table';
@@ -17,7 +18,6 @@ import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/i
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { CircleAlertIcon, FilterIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -144,19 +144,21 @@ const ConnectorType = (p: {
                   <InputStart>
                     <FilterIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
                   </InputStart>
-                  {textFilter !== '' && (
-                    <InputEnd className="pointer-events-auto">
-                      <Button
-                        aria-label="Clear search"
-                        data-testid="search-field-reset-icon"
-                        onClick={() => setTextFilter('')}
-                        size="icon-xs"
-                        variant="ghost"
-                      >
-                        <XIcon />
-                      </Button>
-                    </InputEnd>
-                  )}
+                  {/* Always mounted: InputEnd never resets the padding it measured, and unmounting
+                      the button under the click would drop focus to <body>. */}
+                  <InputEnd className="pointer-events-auto">
+                    <Button
+                      aria-label="Clear search"
+                      className={textFilter === '' ? 'invisible' : undefined}
+                      data-testid="search-field-reset-icon"
+                      disabled={textFilter === ''}
+                      onClick={() => setTextFilter('')}
+                      size="icon-xs"
+                      variant="ghost"
+                    >
+                      <CloseIcon />
+                    </Button>
+                  </InputEnd>
                 </Input>
               </div>
             </div>
@@ -502,7 +504,11 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   const isLast = () => currentStep === steps.length - 1;
 
   if (!isStoreInitialized) {
-    return <SkeletonText className="mt-5" lines={20} width="full" />;
+    return (
+      <div className="mt-5">
+        <SkeletonText lines={20} width="full" />
+      </div>
+    );
   }
 
   return (
@@ -544,9 +550,10 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
         }}
       />
 
-      {/* Not closeable while the connector is being created, so no onOpenChange handler. */}
+      {/* Not closeable while the connector is being created: no onOpenChange handler, and the
+          close X has to be suppressed or it would render and do nothing. */}
       <Dialog open={isCreatingModalOpen}>
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Creating connector...</DialogTitle>
           </DialogHeader>
@@ -613,45 +620,53 @@ function Review({
       ) : null}
 
       {isCreating ? (
-        <SkeletonText className="mt-5" lines={6} width="full" />
+        <div className="mt-5">
+          <SkeletonText lines={6} width="full" />
+        </div>
       ) : (
         <>
           {invalidValidationResult !== null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
 
           {validationFailure ? (
-            <Alert className="my-4" icon={<CircleAlertIcon />} variant="destructive">
-              <AlertDescription>
-                <div>
-                  <h3 className="text-heading-xs">Validation attempt failed</h3>
-                  <div>{String(validationFailure)}</div>
-                </div>
-              </AlertDescription>
-            </Alert>
+            <div className="my-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">Validation attempt failed</h3>
+                    <div>{String(validationFailure)}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : null}
 
           {creationFailure ? (
-            <Alert className="my-4" icon={<CircleAlertIcon />} variant="destructive">
-              <AlertDescription>
-                <div>
-                  <h3 className="text-heading-xs">Creation attempt failed</h3>
-                  <div>{String(creationFailure)}</div>
-                </div>
-              </AlertDescription>
-            </Alert>
+            <div className="my-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">Creation attempt failed</h3>
+                    <div>{String(creationFailure)}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : null}
 
           {genericFailure ? (
-            <Alert className="my-4" icon={<CircleAlertIcon />} variant="destructive">
-              <AlertDescription>
-                <div>
-                  <h3 className="text-heading-xs">An error occurred</h3>
-                  <div>{String(genericFailure)}</div>
-                </div>
-              </AlertDescription>
-            </Alert>
+            <div className="my-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertDescription>
+                  <div>
+                    <h3 className="text-heading-xs">An error occurred</h3>
+                    <div>{String(genericFailure)}</div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            </div>
           ) : null}
 
-          <h2 className="mt-4 font-medium text-[1.4em]">Connector Properties</h2>
+          <h2 className="mt-4 text-heading-sm">Connector Properties</h2>
           <div style={{ margin: '0 auto 1.5rem' }}>
             <KowlEditor
               height="600px"
@@ -675,7 +690,7 @@ function getDataSource(validationResult: ConnectorValidationResult) {
 
 function ValidationDisplay({ validationResult }: { validationResult: ConnectorValidationResult }) {
   return (
-    <Alert className="my-4 overflow-auto" icon={<TriangleAlertIcon />} variant="warning">
+    <Alert className="overflow-auto" icon={<WarningIcon />} variant="warning">
       <AlertDescription>
         <div>
           <h3 className="mb-4 text-heading-xs">Submitted configuration is invalid</h3>

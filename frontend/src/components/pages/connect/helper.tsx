@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import {
   AlertDialog,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -27,10 +28,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Empty, EmptyDescription, EmptyHeader } from 'components/redpanda-ui/components/empty';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
-import { CircleAlertIcon } from 'lucide-react';
 import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -441,8 +447,9 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
 
       <Popover>
         <PopoverTrigger render={<button type="button">{displayName}</button>} />
-        <PopoverContent side="right">
-          <div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>
+        {/* PopoverContent is a fixed `w-72`; Chakra's `size="stretch"` sized to content. */}
+        <PopoverContent className="w-auto max-w-[500px]" side="right">
+          <div className="whitespace-pre-wrap">{c}</div>
         </PopoverContent>
       </Popover>
     </div>
@@ -522,27 +529,26 @@ export function NotConfigured() {
   return (
     <PageContent key="b">
       <Section>
-        <div className="flex flex-col items-center gap-4">
-          <Empty>
-            <EmptyHeader>
-              <EmptyDescription>Not Configured</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-          <p className="text-center text-body">
-            Kafka Connect is not configured in Redpanda Console.
-            <br />
-            Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and
-            control all your connectors and tasks.
-          </p>
-          <a
-            className={buttonVariants({ variant: 'primary' })}
-            href={docsLinks.selfManaged.console}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Redpanda Console Config Documentation
-          </a>
-        </div>
+        {/* Same shape as the already-migrated SchemaNotConfiguredPage. */}
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Not configured</EmptyTitle>
+            <EmptyDescription>
+              Kafka Connect is not configured in Redpanda Console. Set up the connection details to your Kafka Connect
+              cluster in your Redpanda Console config, to view and control all your connectors and tasks.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <a
+              className={buttonVariants({ variant: 'primary' })}
+              href={docsLinks.selfManaged.console}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Redpanda Console Config Documentation
+            </a>
+          </EmptyContent>
+        </Empty>
       </Section>
     </PageContent>
   );
@@ -645,11 +651,13 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm</AlertDialogTitle>
         </AlertDialogHeader>
-        <div className="flex flex-col gap-2">
+        {/* min-h-0 + overflow-y-auto: AlertDialogContent is `overflow-hidden max-h-[85vh]`, so a
+            long API error would otherwise be clipped with no way to scroll to the footer. */}
+        <AlertDialogDescription className="flex min-h-0 flex-col gap-2 overflow-y-auto">
           {content}
           {err ? (
             <div className="mt-4">
-              <Alert icon={<CircleAlertIcon />} variant="destructive">
+              <Alert icon={<AlertIcon />} variant="destructive">
                 <AlertDescription>
                   <div>
                     <h3 className="text-heading-xs">{err.title}</h3>
@@ -659,7 +667,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
               </Alert>
             </div>
           ) : null}
-        </div>
+        </AlertDialogDescription>
         <AlertDialogFooter>
           {/* Cancel first, as `leastDestructiveRef` made it the initial focus. */}
           <Button onClick={cancel} variant="outline">
@@ -843,14 +851,19 @@ const pauseIcon = (
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
 
-// Mapping from health status to chakra color variables
+/**
+ * Health status to a background utility.
+ *
+ * These were Chakra theme tokens (`green.500`), which only resolved through a Chakra style prop —
+ * as raw CSS they are invalid and the declaration is dropped, so the status stripe painted nothing.
+ */
 export const statusColors = {
-  HEALTHY: 'green.500',
-  UNHEALTHY: 'red.500',
-  DEGRADED: 'orange.500',
-  PAUSED: 'gray.500',
-  RESTARTING: 'blue.500',
-  UNASSIGNED: 'gray.500',
-  DESTROYED: 'red.500',
-  UNKNOWN: 'gray.500',
+  HEALTHY: 'bg-success-strong',
+  UNHEALTHY: 'bg-destructive-strong',
+  DEGRADED: 'bg-warning-strong',
+  PAUSED: 'bg-surface-disabled',
+  RESTARTING: 'bg-informative-strong',
+  UNASSIGNED: 'bg-surface-disabled',
+  DESTROYED: 'bg-destructive-strong',
+  UNKNOWN: 'bg-surface-disabled',
 } as Record<ConnectorStatus, string>;
