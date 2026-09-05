@@ -81,7 +81,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
         >
           {(['form', 'json'] as const).map((mode) => (
             <div className="flex items-center gap-2" key={mode}>
-              <RadioGroupItem id={`settings-mode-${mode}`} value={mode} />
+              <RadioGroupItem id={`settings-mode-${mode}`} testId={`${mode}_field`} value={mode} />
               <Label className="cursor-pointer" htmlFor={`settings-mode-${mode}`}>
                 {mode === 'form' ? 'Form' : 'JSON'}
               </Label>
