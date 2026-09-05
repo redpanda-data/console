@@ -1776,7 +1776,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 
       // Normal
       .ghostInput:not(:focus-within) {
-        border-color: transparent;
+        // `!important` to match: the Registry Input sets `!border-input`, so a plain declaration
+        // here loses and the "ghost" input renders permanently bordered.
+        border-color: transparent !important;
         background-color: transparent;
 
         transition: border-color 350ms ease-out, background-color 100ms ease-out;

@@ -50,6 +50,10 @@ export const PropertyComponent = (props: { property: Property }) => {
   );
 
   const v = p.value;
+  // Chakra's FormControl generated an id and wired the label to it; the Registry Field does not,
+  // so the id is derived here and handed to both the control and the label.
+  const fieldId = `property-${p.name}`;
+  const isInlineControl = def.type === 'BOOLEAN' || metadata?.component_type === 'RADIO_GROUP';
 
   switch (def.type) {
     case 'STRING':
@@ -63,6 +67,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <RadioGroup
             className="flex flex-wrap gap-4"
+            id={fieldId}
             name={p.name}
             onValueChange={(next) => {
               updatePropertyValue(p, next as Property['value']);
@@ -92,6 +97,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <div className="max-w-[260px]">
             <SingleSelect
+              id={fieldId}
               onChange={(e) => {
                 updatePropertyValue(p, e);
               }}
@@ -106,6 +112,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           <Input
             defaultValue={def.default_value ?? undefined}
             disabled={props.property.isDisabled}
+            id={fieldId}
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
@@ -134,13 +141,23 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'DOUBLE':
     case 'FLOAT':
       inputComp = (
-        // Chakra's NumberInput emitted a number; a native number input emits a string, so coerce
-        // here or the config would carry `"3"` where the connector expects `3`.
         <Input
+          id={fieldId}
           onChange={(e) => {
-            updatePropertyValue(p, e.target.valueAsNumber);
+            // The *string*, not `valueAsNumber`: Chakra's NumberInput handed `onChange` its
+            // `valueAsString`, and `getConfigObject` both sends `p.value` as-is and compares it
+            // `===` against `default_value` to suppress untouched defaults. Storing a number here
+            // would change which properties get sent — and `sanitizeDefaultValue` only numbers the
+            // INT/LONG/SHORT defaults, so it would not even be consistent across the numeric types.
+            updatePropertyValue(p, e.target.value);
           }}
+          // Chakra's NumberInput shipped its steppers by default and the Registry Input needs
+          // asking. `step="any"` for the float types, which the Registry otherwise pins to 1 and
+          // the browser then marks non-integer values invalid.
+          showStepControls
+          step={def.type === 'DOUBLE' || def.type === 'FLOAT' ? 'any' : 1}
           type="number"
+          // Guarded only so a mid-edit empty field does not render the string "NaN".
           value={Number.isNaN(Number(v)) ? '' : Number(v)}
         />
       );
@@ -150,6 +167,7 @@ export const PropertyComponent = (props: { property: Property }) => {
       inputComp = (
         <Switch
           checked={Boolean(v)}
+          id={fieldId}
           onCheckedChange={(checked) => {
             updatePropertyValue(p, checked);
           }}
@@ -171,6 +189,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <Input
             defaultValue={def.default_value ?? undefined}
+            id={fieldId}
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
@@ -184,6 +203,7 @@ export const PropertyComponent = (props: { property: Property }) => {
       inputComp = (
         <Input
           defaultValue={def.default_value ?? undefined}
+          id={fieldId}
           onChange={(e) => {
             updatePropertyValue(p, e.target.value);
           }}
@@ -193,7 +213,16 @@ export const PropertyComponent = (props: { property: Property }) => {
       break;
   }
 
-  inputComp = <ErrorWrapper input={inputComp} property={p} />;
+  inputComp = (
+    <ErrorWrapper
+      input={inputComp}
+      inputId={fieldId}
+      // BOOLEAN and RADIO_GROUP sat inline with their label under Chakra's FormField, which
+      // special-cased a Switch child.
+      orientation={isInlineControl ? 'horizontal' : 'vertical'}
+      property={p}
+    />
+  );
   // Wrap name and input element
   return (
     <div className={`mt-6 ${inputSizeToClass[def.width]}`} data-testid={`property-${p.name}`}>

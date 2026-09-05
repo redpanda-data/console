@@ -112,7 +112,9 @@ export const PropertyGroupComponent = (props: {
             return <PropertyComponent key={p.name} property={p} />;
           })}
       </div>
-      <Separator className="my-10" />
+      <div className="my-10">
+        <Separator />
+      </div>
     </div>
   );
 };
