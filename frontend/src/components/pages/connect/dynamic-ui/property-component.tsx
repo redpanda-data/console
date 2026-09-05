@@ -79,7 +79,7 @@ export const PropertyComponent = (props: { property: Property }) => {
               const id = `${p.name}-${option.value}`;
               return (
                 <div className="flex items-center gap-2" key={String(option.value)}>
-                  <RadioGroupItem id={id} value={String(option.value)} />
+                  <RadioGroupItem id={id} testId={`${option.value}_field`} value={String(option.value)} />
                   <Label className="cursor-pointer" htmlFor={id}>
                     {option.label}
                   </Label>
