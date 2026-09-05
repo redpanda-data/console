@@ -9,8 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from '@redpanda-data/ui';
 import { AlertIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import React, { type JSX, type PropsWithChildren, useState } from 'react';
 
 import type { TopicLogDirSummary } from '../../state/rest-interfaces';
@@ -92,18 +100,19 @@ export const UpdatePopup = () => {
   }
 
   return (
-    <Modal isOpen={isUpdateDialogOpen} onClose={() => setUpdateDialogOpen(false)}>
-      <ModalOverlay />
-      <ModalContent minW="xl">
-        <ModalHeader>Redpanda Console has been updated</ModalHeader>
-        <ModalBody>The page must be reloaded to apply the newest version of the frontend.</ModalBody>
-        <ModalFooter gap={2}>
+    <Dialog onOpenChange={setUpdateDialogOpen} open={isUpdateDialogOpen}>
+      {/* Chakra's `minW="xl"` was 36rem; `size="lg"` (max-w-2xl, 42rem) is the nearest rung. */}
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Redpanda Console has been updated</DialogTitle>
+        </DialogHeader>
+        <DialogBody>The page must be reloaded to apply the newest version of the frontend.</DialogBody>
+        <DialogFooter>
           <Button
-            colorScheme="red"
             onClick={() => {
               setUpdateDialogOpen(false);
             }}
-            variant="outline"
+            variant="destructive-outline"
           >
             Cancel
           </Button>
@@ -112,13 +121,13 @@ export const UpdatePopup = () => {
               setUpdateDialogOpen(false);
               window.location.reload();
             }}
-            variant="solid"
+            variant="primary"
           >
             Reload
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
