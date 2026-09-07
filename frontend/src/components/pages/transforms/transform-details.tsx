@@ -128,14 +128,26 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 export default TransformDetails;
 
 const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
-  { header: 'Partition', accessorKey: 'partitionId' },
-  { header: 'Node', accessorKey: 'brokerId' },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
+    accessorKey: 'partitionId',
+    enableHiding: false,
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Node" />,
+    accessorKey: 'brokerId',
+    enableHiding: false,
+  },
   {
     id: 'status',
     header: 'Status',
     cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
   },
-  { header: 'Lag', accessorKey: 'lag' },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Lag" />,
+    accessorKey: 'lag',
+    enableHiding: false,
+  },
 ];
 
 const OverviewTab = (p: { transform: TransformMetadata }) => {
@@ -184,7 +196,7 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
           columns={partitionStatusColumns}
           data={p.transform.statuses}
           pagination={false}
-          sorting={false}
+          sorting
         />
       </div>
     </>
