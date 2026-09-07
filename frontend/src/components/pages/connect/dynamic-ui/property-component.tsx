@@ -127,6 +127,7 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'PASSWORD':
       inputComp = (
         <SecretInput
+          id={fieldId}
           onChange={(e) => {
             updatePropertyValue(p, e);
           }}
@@ -151,11 +152,10 @@ export const PropertyComponent = (props: { property: Property }) => {
             // INT/LONG/SHORT defaults, so it would not even be consistent across the numeric types.
             updatePropertyValue(p, e.target.value);
           }}
-          // Chakra's NumberInput shipped its steppers by default and the Registry Input needs
-          // asking. `step="any"` for the float types, which the Registry otherwise pins to 1 and
-          // the browser then marks non-integer values invalid.
+          // Match Chakra's default increment, including fractional starting values. Registry Input
+          // requires a finite numeric step: it coerces "any" to NaN before stepping.
           showStepControls
-          step={def.type === 'DOUBLE' || def.type === 'FLOAT' ? 'any' : 1}
+          step={1}
           type="number"
           // Guarded only so a mid-edit empty field does not render the string "NaN".
           value={Number.isNaN(Number(v)) ? '' : Number(v)}

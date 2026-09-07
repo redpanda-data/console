@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { useRef, useState } from 'react';
 
 export type SecretInputProps = {
+  id: string;
   value: string;
   onChange: (v: string) => void;
   updating: boolean;
@@ -31,7 +32,7 @@ const ClearButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-export const SecretInput = ({ value, onChange, updating = false }: SecretInputProps) => {
+export const SecretInput = ({ id, value, onChange, updating = false }: SecretInputProps) => {
   const initialValueRef = useRef(value);
   const [canEdit, setCanEdit] = useState(!updating);
   // Intentionally seeded from prop: localValue is edited independently during user interaction
@@ -65,6 +66,7 @@ export const SecretInput = ({ value, onChange, updating = false }: SecretInputPr
         editing has to remount it or Undo would leave the restored secret in plain text.
       */}
       <Input
+        id={id}
         key={canEdit ? 'editing' : 'masked'}
         onChange={(e) => {
           setLocalValue(e.target.value);
