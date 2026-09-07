@@ -9,8 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { type PlacementWithLogical, RadioGroup, Skeleton, Tooltip } from '@redpanda-data/ui';
 import { CopyIcon, DownloadIcon, InfoIcon } from 'components/icons';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
 import React, { Component, type CSSProperties, type JSX, useEffect, useState } from 'react';
 
@@ -244,7 +246,7 @@ export const InfoText = (p: {
 
   maxWidth?: string;
   align?: 'center' | 'left';
-  placement?: PlacementWithLogical;
+  placement?: 'top' | 'bottom' | 'left' | 'right';
 
   gap?: string;
   transform?: string;
@@ -256,7 +258,6 @@ export const InfoText = (p: {
   const gap = p.gap ?? '4px';
 
   const gray = 'var(--color-subtle)';
-  // const blue = 'hsl(209deg, 100%, 55%)';
   const color = p.iconColor ?? gray;
   const placement = p.placement ?? 'top';
 
@@ -276,23 +277,24 @@ export const InfoText = (p: {
     </span>
   );
 
+  const tooltip = (
+    <Tooltip>
+      <TooltipTrigger render={<span style={{ display: 'inline-flex', alignItems: 'center' }} />}>
+        {p.tooltipOverText === true ? p.children : null}
+        {icon}
+      </TooltipTrigger>
+      <TooltipContent side={placement}>{overlay}</TooltipContent>
+    </Tooltip>
+  );
+
   if (p.tooltipOverText === true) {
-    return (
-      <Tooltip hasArrow label={overlay} placement={placement}>
-        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-          {p.children}
-          {icon}
-        </span>
-      </Tooltip>
-    );
+    return tooltip;
   }
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
       {p.children}
-      <Tooltip hasArrow label={overlay} placement={placement}>
-        {icon}
-      </Tooltip>
+      {tooltip}
     </span>
   );
 };
@@ -310,17 +312,22 @@ export class OptionGroup<T extends string> extends Component<{
 
     return (
       <Label text={p.label}>
-        <RadioGroup
-          name={p.label}
-          onChange={(val) => {
-            p.onChange(val);
+        <ToggleGroup
+          aria-label={p.label}
+          onValueChange={([next]) => {
+            // Single-select: ignore the deselect that toggling the active segment reports.
+            if (next !== undefined && next !== p.value) {
+              p.onChange(next as T);
+            }
           }}
-          options={ObjToKv(p.options).map((kv) => ({
-            value: String(kv.value),
-            label: kv.key,
-          }))}
-          value={p.value}
-        />
+          value={[p.value]}
+        >
+          {ObjToKv(p.options).map((kv) => (
+            <ToggleGroupItem key={kv.key} value={String(kv.value)}>
+              {kv.key}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </Label>
     );
   }
@@ -494,10 +501,9 @@ export class ZeroSizeWrapper extends Component<{
 }
 
 const defaultSkeletonStyle = { margin: '2rem' };
-const innerSkeleton = <Skeleton height={4} noOfLines={8} />;
 export const DefaultSkeleton = (
   <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
-    {innerSkeleton}
+    <SkeletonText lines={8} width="full" />
   </motion.div>
 );
 

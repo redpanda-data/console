@@ -471,8 +471,8 @@ export const OverviewStatisticsCard = () => {
   const totalConnectors = api.connectConnectors?.clusters?.sum((c) => c.totalConnectors) ?? '...';
 
   return (
-    <Section py={4}>
-      <div style={{ display: 'flex', gap: '1em' }}>
+    <Section className="py-4">
+      <div className="flex gap-8">
         <Statistic title="Connect Clusters" value={totalClusters} />
         <Statistic title="Total Connectors" value={totalConnectors} />
       </div>
@@ -494,8 +494,8 @@ export const ClusterStatisticsCard = (p: { clusterName: string }) => {
   const version = cluster?.clusterInfo.version ?? '...';
 
   return (
-    <Section py={4}>
-      <div style={{ display: 'flex', gap: '1em' }}>
+    <Section className="py-4">
+      <div className="flex gap-8">
         <Statistic title="Cluster" value={cluster?.clusterName} />
 
         <Statistic title="Connectors" value={`${runningConnectors} / ${totalConnectors}`} />
@@ -511,8 +511,8 @@ export const ConnectorStatisticsCard = (p: { clusterName: string; connectorName:
   const connector = cluster?.connectors.first((x) => x.name === p.connectorName);
 
   return (
-    <Section py={4}>
-      <div style={{ display: 'flex', gap: '1em' }}>
+    <Section className="py-4">
+      <div className="flex gap-8">
         <Statistic title="Cluster" value={cluster?.clusterName} />
         <Statistic title="Connector" value={connector?.name} />
 

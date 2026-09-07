@@ -247,7 +247,7 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; variant?: 'ghost' | 'card' }) => {
+export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
@@ -374,7 +374,7 @@ export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; va
     <>
       <Box my="1rem">The logs below are for the last five hours.</Box>
 
-      <Section borderColor={variant === 'ghost' ? 'transparent' : undefined} minWidth="800px" overflowY="auto">
+      <Section className="min-w-[800px] overflow-y-auto">
         <div className="mb-6 flex items-center justify-between gap-2">
           <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
           <RegistryButton onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">
