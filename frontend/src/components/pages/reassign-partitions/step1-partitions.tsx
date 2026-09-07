@@ -26,7 +26,6 @@ import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsx-u
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { BrokerList } from '../../misc/broker-list';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
-import { SearchTitle } from '../../misc/kowl-table';
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];
@@ -104,13 +103,8 @@ export class StepSelectPartitions extends Component<{
             },
             {
               id: 'topicName',
-              header: () => (
-                <SearchTitle observableFilterOpen={this} observableSettings={uiSettings.reassignment} title="Topic" />
-              ),
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
               accessorKey: 'topicName',
-              // This column's header *is* the search control (SearchTitle), so there is nowhere to
-              // put a sort affordance — the model says so rather than enabling sorting with no UI.
-              enableSorting: false,
               enableHiding: false,
               cell: ({ row: { original: record } }) => {
                 const content = filterActive ? (

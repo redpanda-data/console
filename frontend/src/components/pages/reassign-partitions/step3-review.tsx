@@ -11,7 +11,7 @@
 
 import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTable } from 'components/redpanda-ui/components/data-table';
+import { DataTable, DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { InboxIcon } from 'lucide-react';
 import { Component } from 'react';
@@ -100,7 +100,8 @@ export class StepReview extends Component<{
                 ) : null,
             },
             {
-              header: 'Topic',
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
+              enableHiding: false,
               accessorKey: 'topicName',
             },
             {
@@ -144,7 +145,7 @@ export class StepReview extends Component<{
           ]}
           data={this.props.topicsWithMoves}
           pagination={false}
-          sorting={false}
+          sorting
           subComponent={({ row: { original: topic } }) => (
             <div className="px-10 py-6">
               {topic.selectedPartitions ? (
@@ -297,7 +298,8 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
     <DataTable<Partition>
       columns={[
         {
-          header: 'Partition',
+          header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
+          enableHiding: false,
           accessorKey: 'id',
         },
         {
@@ -323,7 +325,7 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
       ]}
       data={props.topicPartitions}
       pagination={false}
-      sorting={false}
+      sorting
     />
   </div>
 );

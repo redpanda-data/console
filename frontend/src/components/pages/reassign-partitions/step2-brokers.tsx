@@ -10,7 +10,7 @@
  */
 
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { DataTable, type DataTableRow } from 'components/redpanda-ui/components/data-table';
+import { DataTable, DataTableColumnHeader, type DataTableRow } from 'components/redpanda-ui/components/data-table';
 import { Component } from 'react';
 
 import { SelectionInfoBar } from './components/statistics-bar';
@@ -94,18 +94,32 @@ export class StepSelectBrokers extends Component<{
                 );
               },
             },
-            { header: 'ID', accessorKey: 'brokerId' },
-            { header: 'Broker Address', size: Number.POSITIVE_INFINITY, accessorKey: 'address' },
-            { header: 'Rack', accessorKey: 'rack' },
             {
-              header: 'Used Space',
+              header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+              enableHiding: false,
+              accessorKey: 'brokerId',
+            },
+            {
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Broker Address" />,
+              enableHiding: false,
+              size: Number.POSITIVE_INFINITY,
+              accessorKey: 'address',
+            },
+            {
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Rack" />,
+              enableHiding: false,
+              accessorKey: 'rack',
+            },
+            {
+              header: ({ column }) => <DataTableColumnHeader column={column} title="Used Space" />,
+              enableHiding: false,
               accessorKey: 'logDirSize',
               cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
             },
           ]}
           data={this.brokers}
           pagination
-          sorting={false}
+          sorting
         />
       </>
     );
