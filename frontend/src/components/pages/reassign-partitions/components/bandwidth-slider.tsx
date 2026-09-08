@@ -31,7 +31,7 @@ type SettingsCallback = {
 };
 
 const SLIDER_MIN = 2;
-const SLIDER_MAX = 12.1;
+const SLIDER_MAX = 12;
 
 /** Marks are positioned by value, as Chakra's `SliderMark` did. */
 const MARKS: { value: number; label: string }[] = [
@@ -74,9 +74,6 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
     if (f < 3) {
       return 'No change';
     }
-    if (f > 12) {
-      return 'Unlimited';
-    }
     const v = Math.round(10 ** f.clamp(3, 12));
     return `${prettyNumber(v).toUpperCase()}B/s`;
   };
@@ -101,7 +98,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
       */}
       {isDragging && tipText(sliderValue) ? (
         <div
-          className="pointer-events-none absolute -top-7 -translate-x-1/2 whitespace-nowrap rounded-md bg-inverse px-2 py-1 text-body-sm text-inverse-foreground"
+          className="pointer-events-none absolute -top-7 -translate-x-1/2 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-body-sm text-primary-foreground shadow-md"
           style={{ left: `${percentOf(sliderValue)}%` }}
         >
           {tipText(sliderValue)}

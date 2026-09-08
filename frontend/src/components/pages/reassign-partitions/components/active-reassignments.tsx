@@ -10,7 +10,6 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { ButtonGroup } from 'components/redpanda-ui/components/button-group';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { DataTable } from 'components/redpanda-ui/components/data-table';
 import {
@@ -22,7 +21,7 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Label } from 'components/redpanda-ui/components/label';
-import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Progress } from 'components/redpanda-ui/components/progress';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import React, { Component, type FC, type JSX, useRef, useState } from 'react';
@@ -118,7 +117,12 @@ export class ActiveReassignments extends Component<{
             },
             {
               header: 'Progress',
-              cell: ({ row: { original } }) => <ProgressCol state={original} />,
+              // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+              cell: ({ row: { original } }) => (
+                <div className="w-screen max-w-full">
+                  <ProgressCol state={original} />
+                </div>
+              ),
             },
             {
               header: 'ETA',
@@ -183,7 +187,8 @@ export const ThrottleDialog: FC<{
   const throttleValue = newThrottleValue ?? 0;
   const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;
 
-  const applyBandwidthThrottle = async () => {
+  // Takes the value explicitly: 'Remove throttle' clears state and applies in the same tick.
+  const applyBandwidthThrottle = async (value: number | null) => {
     toastRef.current = showToast({
       status: 'loading',
       description: 'Setting throttle rate...',
@@ -199,10 +204,10 @@ export const ThrottleDialog: FC<{
       return;
     }
 
-    const shouldSet = newThrottleValue !== null && newThrottleValue > 0;
+    const shouldSet = value !== null && value > 0;
     try {
       if (shouldSet) {
-        await api.setReplicationThrottleRate(allBrokers, newThrottleValue as number);
+        await api.setReplicationThrottleRate(allBrokers, value);
       } else {
         await api.resetReplicationThrottleRate(allBrokers);
       }
@@ -268,7 +273,7 @@ export const ThrottleDialog: FC<{
           <Button
             onClick={() => {
               setNewThrottleValue(null);
-              applyBandwidthThrottle().catch(() => {
+              applyBandwidthThrottle(null).catch(() => {
                 // Error handling managed by API layer
               });
             }}
@@ -284,7 +289,7 @@ export const ThrottleDialog: FC<{
             <Button
               disabled={noChange}
               onClick={() => {
-                applyBandwidthThrottle().catch(() => {
+                applyBandwidthThrottle(newThrottleValue).catch(() => {
                   // Error handling managed by API layer
                 });
               }}
@@ -307,17 +312,15 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
       <PopoverTrigger render={<Button variant="destructive-outline">Cancel Reassignment</Button>} />
       <PopoverContent>
         <div className="flex flex-col gap-3">
-          <div className="font-semibold">Confirmation</div>
+          <PopoverTitle>Confirmation</PopoverTitle>
           <div>Are you sure you want to stop the reassignment?</div>
-          <div className="flex justify-end">
-            <ButtonGroup>
-              <Button onClick={() => setIsOpen(false)} size="sm" variant="ghost">
-                Keep running
-              </Button>
-              <Button onClick={onConfirm} size="sm" variant="primary">
-                Stop reassignment
-              </Button>
-            </ButtonGroup>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setIsOpen(false)} size="sm" variant="ghost">
+              Keep running
+            </Button>
+            <Button onClick={onConfirm} size="sm" variant="primary">
+              Stop reassignment
+            </Button>
           </div>
         </div>
       </PopoverContent>
@@ -707,7 +710,11 @@ const ProgressBar = (p: {
     <>
       {/* Chakra's colorScheme becomes an indicator class: the Registry indicator paints `bg-primary`. */}
       <Progress
-        className={state === 'success' ? '[&_[data-slot=progress-indicator]]:bg-success' : undefined}
+        className={
+          state === 'success'
+            ? '[&_[data-slot=progress-indicator]]:bg-success'
+            : '[&_[data-slot=progress-indicator]]:bg-brand'
+        }
         value={percent}
       />
       <div

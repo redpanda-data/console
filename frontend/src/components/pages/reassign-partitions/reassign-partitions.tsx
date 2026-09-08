@@ -409,6 +409,7 @@ class ReassignPartitions extends PageComponent {
                   }
 
                   await this.refreshTopicConfigs();
+                  this.setState({ removeThrottleFromTopicsContent: null });
                 }}
                 variant="destructive"
               >

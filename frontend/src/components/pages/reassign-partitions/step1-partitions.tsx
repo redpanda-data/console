@@ -13,7 +13,7 @@ import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { DataTable, DataTableColumnHeader, type DataTableRow } from 'components/redpanda-ui/components/data-table';
-import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Component } from 'react';
 import Highlighter from 'react-highlight-words';
 
@@ -180,7 +180,7 @@ export class StepSelectPartitions extends Component<{
               id: 'totalSizeBytes',
               enableHiding: false,
               header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
-              accessorKey: 'totalSizeBytes',
+              accessorFn: (topic) => topic.logDirSummary?.totalSizeBytes ?? 0,
               cell: ({ row: { original: r } }) => renderLogDirSummary(r.logDirSummary),
             },
           ]}
@@ -381,7 +381,10 @@ function renderPartitionError(partition: Partition) {
 
   return (
     <Popover>
+      {/* Hover-to-open, as the Chakra popover was. */}
       <PopoverTrigger
+        delay={200}
+        openOnHover
         render={
           <button aria-label="Partition error" type="button">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
@@ -390,9 +393,10 @@ function renderPartitionError(partition: Partition) {
           </button>
         }
       />
-      <PopoverContent align="start" side="right">
-        <div className="font-semibold">Partition Error</div>
-        <div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>{txt}</div>
+      {/* PopoverContent is a fixed w-72; the error text needs the room. */}
+      <PopoverContent align="start" className="w-auto max-w-[500px]" side="right">
+        <PopoverTitle>Partition Error</PopoverTitle>
+        <div className="whitespace-pre-wrap">{txt}</div>
       </PopoverContent>
     </Popover>
   );
@@ -401,7 +405,10 @@ function renderPartitionError(partition: Partition) {
 function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
     <Popover>
+      {/* Hover-to-open, as the Chakra popover was. */}
       <PopoverTrigger
+        delay={200}
+        openOnHover
         render={
           <button aria-label="Partition error" type="button">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
@@ -410,9 +417,10 @@ function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
           </button>
         }
       />
-      <PopoverContent align="start" side="right">
-        <div className="font-semibold">Partition Error</div>
-        <div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+      {/* PopoverContent is a fixed w-72; the error text needs the room. */}
+      <PopoverContent align="start" className="w-auto max-w-[500px]" side="right">
+        <PopoverTitle>Partition Error</PopoverTitle>
+        <div className="whitespace-pre-wrap">
           Some partitions could not be retreived.
           <br />
           Expand the topic to see which partitions are affected.
