@@ -13,7 +13,7 @@ import { Link } from '@tanstack/react-router';
 
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import '../../../utils/array-extensions';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect } from 'react';
 
 import DebugBundleOverview from './debug-bundle-overview';
@@ -121,13 +121,14 @@ const AdminPageDebugBundleProgressContent: FC = () => {
                 Stop
               </Button>
             ) : (
-              <Link
-                className={buttonVariants({ variant: 'outline' })}
-                data-testid={isError ? 'debug-bundle-try-again-button' : 'debug-bundle-done-button'}
+              <Button
+                as={Link}
+                testId={isError ? 'debug-bundle-try-again-button' : 'debug-bundle-done-button'}
                 to="/debug-bundle"
+                variant="outline"
               >
                 {isError ? 'Try again' : 'Done'}
-              </Link>
+              </Button>
             )}
           </div>
         </div>

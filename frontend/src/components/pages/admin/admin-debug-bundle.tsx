@@ -10,7 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useEffect, useRef, useState } from 'react';
 
 import '../../../utils/array-extensions';
 import { create } from '@bufbuild/protobuf';
@@ -360,8 +360,10 @@ const NewDebugBundleForm: FC<{
     metricsSamples: '2' as string, // Default 2 samples
     namespace: 'redpanda' as string, // Default "redpanda"
     partitions: [] as string[],
-    labelSelectors: [] as Array<{ key: string; value: string }>,
+    labelSelectors: [] as Array<{ id: number; key: string; value: string }>,
   });
+  // Row identity for React keys; keying by key/value remounted the row (and dropped focus) per keystroke.
+  const nextLabelSelectorId = useRef(0);
 
   const generateNewDebugBundle = () => {
     onSubmit(
@@ -391,7 +393,9 @@ const NewDebugBundleForm: FC<{
             tlsEnabled: formState.tlsEnabled,
             tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
             namespace: formState.namespace,
-            labelSelector: formState.labelSelectors.map((x) => create(LabelSelectorSchema, x)),
+            labelSelector: formState.labelSelectors.map(({ key, value }) =>
+              create(LabelSelectorSchema, { key, value })
+            ),
             partitions: formState.partitions,
           })
         : create(CreateDebugBundleRequestSchema)
@@ -600,10 +604,7 @@ const NewDebugBundleForm: FC<{
           <Field data-invalid={invalidFlag(fieldViolationsMap?.labelSelectors)}>
             <FieldLabel>Label selectors</FieldLabel>
             {formState.labelSelectors.map((labelSelector, idx) => (
-              <div
-                className="grid grid-cols-[1fr_1fr_auto] gap-2"
-                key={`label-${labelSelector.key}-${labelSelector.value}`}
-              >
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2" key={labelSelector.id}>
                 <div>
                   <div className="text-body-sm">Key</div>
                   <Input
@@ -654,9 +655,11 @@ const NewDebugBundleForm: FC<{
               <Button
                 className="my-2"
                 onClick={() => {
+                  nextLabelSelectorId.current += 1;
+                  const id = nextLabelSelectorId.current;
                   setFormState((prev) => ({
                     ...prev,
-                    labelSelectors: [...prev.labelSelectors, { key: '', value: '' }],
+                    labelSelectors: [...prev.labelSelectors, { id, key: '', value: '' }],
                   }));
                 }}
                 variant="outline"

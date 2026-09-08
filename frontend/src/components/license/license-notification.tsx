@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { buttonVariants } from 'components/redpanda-ui/components/button';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -125,15 +126,19 @@ export const LicenseNotification = () => {
 
           {/* Both CTAs navigate, so they stay anchors and keep the link role; Button would impose
               role="button". AlertDescription puts `[&_a]:link-inline` on every descendant anchor, so
-              the button-styled ones need to opt out. */}
+              the button-styled ones need to opt out. `rounded-md` because the radius lives on the
+              Button component, not in `buttonVariants`. */}
           <div className="[&_a]:!no-underline my-2 flex gap-2">
             {Boolean(api.isAdminApiConfigured) && (
-              <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license">
+              <Link
+                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-md')}
+                to="/upload-license"
+              >
                 Upload license
               </Link>
             )}
             <a
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-md')}
               href="https://support.redpanda.com/"
               rel="noopener noreferrer"
               target="_blank"
