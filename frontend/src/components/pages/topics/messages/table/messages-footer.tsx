@@ -12,8 +12,7 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, DownloadIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-
-import { prettyBytes } from '../../../../../utils/utils';
+import { prettyBytes } from 'utils/utils';
 
 export type MessagesFooterProps = {
   totalLoaded: number;

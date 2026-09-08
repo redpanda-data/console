@@ -69,4 +69,18 @@ describe('useHotKey', () => {
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
+
+  it('does not trigger from typing targets when ignoreWhenTyping is set', () => {
+    const onTrigger = rs.fn();
+    renderHook(() => useHotKey({ key: 'Escape', ignoreWhenTyping: true, onTrigger }));
+
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(onTrigger).not.toHaveBeenCalled();
+    input.remove();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(onTrigger).toHaveBeenCalledTimes(1);
+  });
 });

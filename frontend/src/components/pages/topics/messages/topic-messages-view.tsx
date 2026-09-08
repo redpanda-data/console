@@ -540,7 +540,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         )}
       </ResizablePanelGroup>
 
-      {/* Expanded presentation replaces the docked slot entirely (sheet portals to body) */}
+      {/* Expanded presentation replaces the docked slot entirely (fixed full-viewport overlay) */}
       {selectedMessage && detailExpanded && (
         <MessageDetailPanel
           expanded

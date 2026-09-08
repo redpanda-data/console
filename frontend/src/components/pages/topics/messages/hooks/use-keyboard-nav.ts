@@ -9,13 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { useCopyToClipboard } from 'components/redpanda-ui/lib/use-copy-to-clipboard';
+import { isTypingTarget } from 'hooks/use-hot-key';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-
-const isTypingTarget = (target: EventTarget | null): boolean => {
-  const el = target as HTMLElement | null;
-  return el !== null && (/^(input|textarea|select)$/i.test(el.tagName) || el.isContentEditable);
-};
 
 export type KeyboardNavOptions = {
   /** Row keys in on-screen (sorted, paginated) order. */
@@ -33,6 +30,7 @@ export type KeyboardNavOptions = {
  * the detail panel itself.
  */
 export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText, enabled }: KeyboardNavOptions) {
+  const { copyToClipboard } = useCopyToClipboard({ onCopy: () => toast.success('Value copied to clipboard') });
   useEffect(() => {
     if (!enabled) {
       return;
@@ -63,14 +61,11 @@ export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText
       if (e.key === 'c' && selectedKey && !(e.metaKey || e.ctrlKey || e.altKey)) {
         const text = getCopyText(selectedKey);
         if (text !== undefined) {
-          navigator.clipboard
-            .writeText(text)
-            .then(() => toast.success('Value copied to clipboard'))
-            .catch(() => toast.error('Could not copy to clipboard'));
+          copyToClipboard(text);
         }
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enabled, visibleKeys, selectedKey, onSelect, getCopyText]);
+  }, [enabled, visibleKeys, selectedKey, onSelect, getCopyText, copyToClipboard]);
 }

@@ -9,16 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
+import { Accordion } from 'components/redpanda-ui/components/accordion';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
+import { useHotKey } from 'hooks/use-hot-key';
 import { DownloadIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import type { PanelSize } from 'react-resizable-panels';
+import type { TopicMessage } from 'state/rest-interfaces';
+import { toJson } from 'utils/json-utils';
 
 import { HeadersSection, KeySection, MetadataSection, ValueSection } from './detail-sections';
 import { type DetailSectionKey, patchDetailViewState, readDetailViewState } from './detail-view-state';
-import type { TopicMessage } from '../../../../../state/rest-interfaces';
-import { toJson } from '../../../../../utils/json-utils';
 
 export type MessageDetailPanelProps = {
   msg: TopicMessage;
@@ -52,37 +54,34 @@ export const downloadRecord = (msg: TopicMessage) => {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 };
 
+const SECTION_KEYS: readonly DetailSectionKey[] = ['metadata', 'key', 'headers', 'value'];
+
 const DetailBody = ({
   msg,
   loadLargeMessage,
   fillValue,
   sections,
-  onSectionOpenChange,
+  onOpenSectionsChange,
 }: {
   msg: TopicMessage;
   loadLargeMessage: () => Promise<void>;
   /** Expanded sheet: the value section stretches to use the full remaining height. */
   fillValue?: boolean;
   sections: Record<DetailSectionKey, boolean>;
-  onSectionOpenChange: (section: DetailSectionKey, open: boolean) => void;
+  onOpenSectionsChange: (openSections: DetailSectionKey[]) => void;
 }) => (
   <>
-    <div className={cn('min-h-0 flex-1 overflow-y-auto', fillValue && 'flex flex-col')}>
-      <MetadataSection
-        msg={msg}
-        onOpenChange={(open) => onSectionOpenChange('metadata', open)}
-        open={sections.metadata}
-      />
-      <KeySection msg={msg} onOpenChange={(open) => onSectionOpenChange('key', open)} open={sections.key} />
-      <HeadersSection msg={msg} onOpenChange={(open) => onSectionOpenChange('headers', open)} open={sections.headers} />
-      <ValueSection
-        fill={fillValue}
-        loadLargeMessage={loadLargeMessage}
-        msg={msg}
-        onOpenChange={(open) => onSectionOpenChange('value', open)}
-        open={sections.value}
-      />
-    </div>
+    <Accordion
+      className="min-h-0 flex-1 overflow-y-auto"
+      multiple
+      onValueChange={(value) => onOpenSectionsChange(value as DetailSectionKey[])}
+      value={SECTION_KEYS.filter((key) => sections[key])}
+    >
+      <MetadataSection msg={msg} />
+      <KeySection msg={msg} />
+      <HeadersSection msg={msg} />
+      <ValueSection fill={fillValue} loadLargeMessage={loadLargeMessage} msg={msg} open={sections.value} />
+    </Accordion>
     <div className="flex shrink-0 justify-end border-t px-3 py-2">
       <Button onClick={() => downloadRecord(msg)} size="sm" testId="detail-download-record" variant="outline">
         <DownloadIcon className="size-4" />
@@ -94,8 +93,8 @@ const DetailBody = ({
 
 /**
  * Message inspector: docked next to the table, or (controlled via `expanded`)
- * a full-height sheet. Only one presentation renders at a time — the page
- * unmounts the docked resizable slot while the sheet is open.
+ * a full-height resizable overlay. Only one presentation renders at a time —
+ * the page unmounts the docked resizable slot while the overlay is open.
  */
 export const MessageDetailPanel = ({
   msg,
@@ -104,97 +103,76 @@ export const MessageDetailPanel = ({
   expanded,
   onExpandedChange,
 }: MessageDetailPanelProps) => {
-  const [sheetWidth, setSheetWidth] = useState(() =>
-    Math.min(Math.max(480, readDetailViewState().sheetWidth), window.innerWidth - 80)
-  );
+  // Initial width for the expanded surface; live width is owned by the
+  // resizable group and persisted from onResize.
+  const [initialSheetWidth] = useState(() => readDetailViewState().sheetWidth);
+  const handleSheetResize = (size: PanelSize) => patchDetailViewState({ sheetWidth: size.inPixels });
 
   // Section expansion is shared across messages and both presentations; every
   // toggle persists into the consolidated detail view state.
   const [sections, setSections] = useState(() => readDetailViewState().sections);
-  const handleSectionOpenChange = (section: DetailSectionKey, open: boolean) => {
-    setSections((prev) => {
-      const next = { ...prev, [section]: open };
-      patchDetailViewState({ sections: next });
-      return next;
-    });
+  const handleOpenSectionsChange = (openSections: DetailSectionKey[]) => {
+    const next = {
+      metadata: openSections.includes('metadata'),
+      key: openSections.includes('key'),
+      headers: openSections.includes('headers'),
+      value: openSections.includes('value'),
+    };
+    patchDetailViewState({ sections: next });
+    setSections(next);
   };
 
-  const startSheetResize = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = sheetWidth;
-    let latestWidth = startWidth;
-    const onMove = (event: PointerEvent) => {
-      latestWidth = Math.min(Math.max(480, startWidth + (startX - event.clientX)), window.innerWidth - 80);
-      setSheetWidth(latestWidth);
-    };
-    const onUp = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-      patchDetailViewState({ sheetWidth: latestWidth });
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
-  };
-
-  // Esc closes the panel (unless typing in an input; the sheet handles its own Esc)
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (e.key === 'Escape' && !expanded && !/^(input|textarea|select)$/i.test(target.tagName)) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [expanded, onClose]);
+  // Esc: expanded collapses back to the docked panel, docked closes (unless typing in an input)
+  useHotKey({
+    key: 'Escape',
+    ignoreWhenTyping: true,
+    onTrigger: () => (expanded ? onExpandedChange(false) : onClose()),
+  });
 
   if (expanded) {
     return (
-      // Non-modal + no pointer dismissal: the table stays interactive while
-      // expanded, so clicking another row swaps the record shown in place.
-      <Sheet disablePointerDismissal modal={false} onOpenChange={onExpandedChange} open>
-        <SheetContent
-          className="flex max-w-[95vw] flex-col gap-0 p-0 sm:max-w-[95vw]"
-          showCloseButton={false}
-          showOverlay={false}
-          side="right"
-          style={{ width: sheetWidth }}
-        >
-          <div
-            className="absolute inset-y-0 left-0 z-10 w-1.5 cursor-col-resize transition-colors hover:bg-primary/40"
-            data-testid="detail-sheet-resize"
-            onPointerDown={startSheetResize}
-            title="Drag to resize"
-          />
-          <SheetHeader className="shrink-0 flex-row items-center gap-1 border-b px-4 py-2.5">
-            <SheetTitle className="min-w-0 flex-1 font-semibold text-label">Message</SheetTitle>
-            <Button
-              onClick={() => onExpandedChange(false)}
-              size="icon-xs"
-              testId="detail-collapse"
-              title="Collapse back to panel"
-              variant="ghost"
-            >
-              <Minimize2Icon />
-            </Button>
-            <Button onClick={onClose} size="icon-xs" testId="detail-sheet-close" title="Close" variant="ghost">
-              <XIcon />
-            </Button>
-          </SheetHeader>
-          <DetailBody
-            fillValue
-            loadLargeMessage={loadLargeMessage}
-            msg={msg}
-            onSectionOpenChange={handleSectionOpenChange}
-            sections={sections}
-          />
-        </SheetContent>
-      </Sheet>
+      // Full-viewport overlay hosting a resizable split. The left panel is a
+      // click-through spacer so the table underneath stays interactive
+      // (clicking another row swaps the record shown in place); the right
+      // panel is the detail surface, resized via the registry handle.
+      <div className="pointer-events-none fixed inset-0 z-50">
+        <ResizablePanelGroup>
+          <ResizablePanel />
+          <ResizableHandle className="pointer-events-auto" data-testid="detail-sheet-resize" withHandle />
+          <ResizablePanel
+            className="pointer-events-auto"
+            defaultSize={initialSheetWidth}
+            maxSize="95%"
+            minSize="480px"
+            onResize={handleSheetResize}
+          >
+            <div className="flex h-full min-h-0 flex-col bg-background shadow-lg" data-testid="message-detail-sheet">
+              <div className="flex shrink-0 items-center gap-1 border-b px-4 py-2.5">
+                <span className="min-w-0 flex-1 font-semibold text-label">Message</span>
+                <Button
+                  onClick={() => onExpandedChange(false)}
+                  size="icon-xs"
+                  testId="detail-collapse"
+                  title="Collapse back to panel"
+                  variant="ghost"
+                >
+                  <Minimize2Icon />
+                </Button>
+                <Button onClick={onClose} size="icon-xs" testId="detail-sheet-close" title="Close" variant="ghost">
+                  <XIcon />
+                </Button>
+              </div>
+              <DetailBody
+                fillValue
+                loadLargeMessage={loadLargeMessage}
+                msg={msg}
+                onOpenSectionsChange={handleOpenSectionsChange}
+                sections={sections}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
     );
   }
 
@@ -218,7 +196,7 @@ export const MessageDetailPanel = ({
       <DetailBody
         loadLargeMessage={loadLargeMessage}
         msg={msg}
-        onSectionOpenChange={handleSectionOpenChange}
+        onOpenSectionsChange={handleOpenSectionsChange}
         sections={sections}
       />
     </div>
