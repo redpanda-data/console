@@ -19,7 +19,8 @@ import {
   ModalHeader,
   ModalOverlay,
 } from '@redpanda-data/ui';
-import type { FC } from 'react';
+import { PortalContainerProvider } from 'components/redpanda-ui/lib/use-portal-container';
+import { type FC, useState } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { PreviewSettings } from '../preview-settings';
@@ -29,30 +30,37 @@ export const PreviewFieldsModal: FC<{
   setShowDialog: (val: boolean) => void;
   messages: TopicMessage[];
   topicName: string;
-}> = ({ getShowDialog, setShowDialog, messages, topicName }) => (
-  <Modal
-    isOpen={getShowDialog()}
-    onClose={() => {
-      setShowDialog(false);
-    }}
-  >
-    <ModalOverlay />
-    <ModalContent minW="4xl">
-      <ModalHeader>Preview fields</ModalHeader>
-      <ModalCloseButton />
-      <ModalBody>
-        <PreviewSettings messages={messages} topicName={topicName} />
-      </ModalBody>
-      <ModalFooter gap={2}>
-        <Button
-          colorScheme="red"
-          onClick={() => {
-            setShowDialog(false);
-          }}
-        >
-          Close
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-);
+}> = ({ getShowDialog, setShowDialog, messages, topicName }) => {
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+
+  return (
+    <Modal
+      isOpen={getShowDialog()}
+      onClose={() => {
+        setShowDialog(false);
+      }}
+    >
+      <ModalOverlay />
+      <ModalContent minW="4xl" ref={setContainer}>
+        {/* Registry popups portal into the modal, inside its focus and scroll lock */}
+        <PortalContainerProvider value={container ?? undefined}>
+          <ModalHeader>Preview fields</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <PreviewSettings messages={messages} topicName={topicName} />
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button
+              colorScheme="red"
+              onClick={() => {
+                setShowDialog(false);
+              }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </PortalContainerProvider>
+      </ModalContent>
+    </Modal>
+  );
+};

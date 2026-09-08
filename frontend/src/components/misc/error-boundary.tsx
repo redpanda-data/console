@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Flex, Icon } from '@redpanda-data/ui';
 import { CloseIcon, CopyAllIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import React, { type CSSProperties, type FC } from 'react';
 import StackTrace from 'stacktrace-js';
 
@@ -209,7 +209,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     }
 
     return (
-      <Box style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
+      <div style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
         <div>
           <h1>Rendering Error!</h1>
           <p>
@@ -221,9 +221,9 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
               our GitHub Repo
             </a>
           </p>
-          <Box mb={2} mt={0}>
-            <Button onClick={this.dismiss} size="large" style={{ width: '16rem' }} variant="primary">
-              <Icon as={CloseIcon} />
+          <div className="mb-2">
+            <Button onClick={this.dismiss} size="lg" style={{ width: '16rem' }} variant="primary">
+              <CloseIcon />
               Dismiss
             </Button>
             <NoClipboardPopover>
@@ -233,14 +233,14 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
                 message={this.getError()}
               />
             </NoClipboardPopover>
-          </Box>
+          </div>
         </div>
-        <Flex flexDirection="column" width="100%">
+        <div className="flex w-full flex-col">
           {this.state.infoItems.map((e) => (
             <InfoItemDisplay data={e} key={e.name} />
           ))}
-        </Flex>
-      </Box>
+        </div>
+      </div>
     );
   }
 }
@@ -264,10 +264,10 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
         })
         .catch(navigatorClipboardErrorHandler);
     }}
-    size="large"
+    size="lg"
     variant="ghost"
   >
-    <Icon as={CopyAllIcon} />
+    <CopyAllIcon />
     Copy Info
   </Button>
 );
