@@ -26,8 +26,11 @@ import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];
@@ -101,7 +104,6 @@ export class StepSelectPartitions extends Component<{
               id: 'topicName',
               header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
               accessorKey: 'topicName',
-              enableHiding: false,
               cell: ({ row: { original: record } }) => {
                 const content = record.topicName;
 
@@ -119,7 +121,6 @@ export class StepSelectPartitions extends Component<{
             },
             {
               id: 'partitionCount',
-              enableHiding: false,
               header: ({ column }) => <DataTableColumnHeader column={column} title="Partitions" />,
               accessorKey: 'partitionCount',
               cell: ({ row: { original: topic } }) => {
@@ -140,7 +141,6 @@ export class StepSelectPartitions extends Component<{
             },
             {
               id: 'replicationFactor',
-              enableHiding: false,
               header: ({ column }) => <DataTableColumnHeader column={column} title="Replication Factor" />,
               accessorKey: 'replicationFactor',
               cell: ({ row: { original: r } }) => {
@@ -162,14 +162,12 @@ export class StepSelectPartitions extends Component<{
               // resolved to the same TanStack column id.
               id: 'brokers',
               enableSorting: false,
-              enableHiding: false,
               header: 'Brokers',
               cell: ({ row: { original: record } }) =>
                 record.partitions?.map((p) => p.leader).distinct().length ?? 'N/A',
             },
             {
               id: 'totalSizeBytes',
-              enableHiding: false,
               header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
               accessorFn: (topic) => topic.logDirSummary?.totalSizeBytes ?? 0,
               cell: ({ row: { original: r } }) => renderLogDirSummary(r.logDirSummary),
@@ -312,7 +310,6 @@ export class SelectPartitionTable extends Component<{
           {
             id: 'check',
             enableSorting: false,
-            enableHiding: false,
             header: 'Check',
             cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) => {
               const isSelected = this.props.getSelectedPartitions().includes(partition.id);
@@ -329,14 +326,12 @@ export class SelectPartitionTable extends Component<{
           },
           {
             id: 'id',
-            enableHiding: false,
             header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
             accessorKey: 'id',
           },
           {
             id: 'replicas',
             enableSorting: false,
-            enableHiding: false,
             header: 'Brokers',
             cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) =>
               partition.replicas ? (
@@ -347,7 +342,6 @@ export class SelectPartitionTable extends Component<{
           },
           {
             id: 'replicaSize',
-            enableHiding: false,
             header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
             accessorKey: 'replicaSize',
             cell: ({ row: { original: partition } }) => prettyBytesOrNA(partition.replicaSize),

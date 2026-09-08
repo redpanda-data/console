@@ -27,8 +27,11 @@ import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
@@ -104,7 +107,6 @@ export class StepReview extends Component<{
             },
             {
               header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
-              enableHiding: false,
               accessorKey: 'topicName',
             },
             {
@@ -299,7 +301,6 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
       columns={[
         {
           header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
-          enableHiding: false,
           accessorKey: 'id',
         },
         {

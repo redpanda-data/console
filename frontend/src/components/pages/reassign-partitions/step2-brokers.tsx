@@ -20,8 +20,11 @@ import type { Broker } from '../../../state/rest-interfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 export class StepSelectBrokers extends Component<{
   selectedBrokerIds: number[];
@@ -100,22 +103,18 @@ export class StepSelectBrokers extends Component<{
             },
             {
               header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-              enableHiding: false,
               accessorKey: 'brokerId',
             },
             {
               header: ({ column }) => <DataTableColumnHeader column={column} title="Broker Address" />,
-              enableHiding: false,
               accessorKey: 'address',
             },
             {
               header: ({ column }) => <DataTableColumnHeader column={column} title="Rack" />,
-              enableHiding: false,
               accessorKey: 'rack',
             },
             {
               header: ({ column }) => <DataTableColumnHeader column={column} title="Used Space" />,
-              enableHiding: false,
               accessorKey: 'logDirSize',
               cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
             },
