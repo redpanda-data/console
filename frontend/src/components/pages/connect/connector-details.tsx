@@ -63,9 +63,13 @@ import { MessagePreview } from '../topics/Tab.Messages/message-display/message-p
 
 // Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
+  enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
   getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
+
+// Ten a page (the Registry default) is the legacy page size for this table.
+const TASKS_TABLE_OPTIONS = { enableHiding: false };
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
@@ -418,6 +422,7 @@ const ConfigOverviewTab = (p: {
           // Legacy parity: ten a page, pager only past that.
           pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > 10}
           sorting
+          tableOptions={TASKS_TABLE_OPTIONS}
         />
       </Section>
 
@@ -433,7 +438,6 @@ const ConfigOverviewTab = (p: {
 const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
   {
     id: 'taskId',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
     accessorKey: 'taskId',
     cell: ({
@@ -444,14 +448,12 @@ const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
   },
   {
     id: 'state',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     accessorKey: 'state',
     cell: ({ row: { original } }) => <TaskState observable={original} />,
   },
   {
     id: 'workerId',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
     accessorKey: 'workerId',
     cell: ({ row: { original } }) => <InlineCode className="whitespace-nowrap">{original.workerId}</InlineCode>,
@@ -770,7 +772,6 @@ const LogsTab = (p: {
       },
       {
         id: 'timestamp',
-        enableHiding: false,
         header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
         accessorKey: 'timestamp',
         cell: ({
@@ -789,7 +790,6 @@ const LogsTab = (p: {
         accessorKey: 'value',
         // A decoded preview; sorting the raw value means nothing.
         enableSorting: false,
-        enableHiding: false,
         // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">

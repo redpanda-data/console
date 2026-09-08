@@ -52,8 +52,11 @@ import { PipelineListPage } from '../rp-connect/pipeline/list';
 import RpConnectPipelinesList from '../rp-connect/pipelines-list';
 import { RedpandaConnectIntro } from '../rp-connect/redpanda-connect-intro';
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 const ConnectView = {
   KafkaConnect: 'kafka-connect',
@@ -422,7 +425,6 @@ interface TaskType extends ClusterConnectorTaskInfo {
 const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
   {
     id: 'name',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
     accessorKey: 'connectorName',
     cell: ({ row: { original } }) => (
@@ -443,20 +445,17 @@ const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
   },
   {
     id: 'taskId',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Task ID" />,
     accessorKey: 'taskId',
   },
   {
     id: 'state',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
     accessorKey: 'state',
     cell: ({ row: { original } }) => <TaskState observable={original} />,
   },
   {
     id: 'workerId',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
     accessorKey: 'workerId',
   },
@@ -464,7 +463,6 @@ const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
     id: 'cluster',
     // Read off the joined cluster, so there is no accessor to sort on.
     enableSorting: false,
-    enableHiding: false,
     header: 'Cluster',
     cell: ({ row: { original } }) => (
       <InlineCode className="whitespace-nowrap">{original.cluster.clusterName}</InlineCode>

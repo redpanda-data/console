@@ -31,8 +31,13 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
+// Ten a page (the Registry default) is the legacy page size for this table.
+const CONNECTORS_TABLE_OPTIONS = { enableHiding: false };
 
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   placeholder = 5;
@@ -103,20 +108,17 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 const pluginColumns: DataTableColumnDef<ClusterAdditionalInfo['plugins'][0]>[] = [
   {
     id: 'class',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Class" />,
     accessorKey: 'class',
     cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
   },
   {
     id: 'version',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Version" />,
     accessorKey: 'version',
   },
   {
     id: 'type',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
     accessorKey: 'type',
   },
@@ -153,7 +155,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
     () => [
       {
         id: 'name',
-        enableHiding: false,
         header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
         accessorKey: 'name',
         cell: ({ row: { original } }) => (
@@ -171,20 +172,17 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       },
       {
         id: 'class',
-        enableHiding: false,
         header: ({ column }) => <DataTableColumnHeader column={column} title="Class" />,
         accessorKey: 'class',
         cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
       },
       {
         id: 'type',
-        enableHiding: false,
         header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
         accessorKey: 'type',
       },
       {
         id: 'state',
-        enableHiding: false,
         header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
         accessorKey: 'state',
         cell: ({ row: { original } }) => <TaskState observable={original} />,
@@ -193,7 +191,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         id: 'tasks',
         // Derived from the task list, so there is nothing to sort on.
         enableSorting: false,
-        enableHiding: false,
         header: 'Tasks',
         cell: ({ row: { original } }) => <TasksColumn observable={original} />,
       },
@@ -228,6 +225,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         // Legacy parity: ten a page, pager only past that.
         pagination={filteredResults.length > 10}
         sorting
+        tableOptions={CONNECTORS_TABLE_OPTIONS}
       />
     </div>
   );
