@@ -13,25 +13,50 @@ import { CloseIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { SearchIcon } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef } from 'react';
 
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animation-props';
 
-interface SearchBarProps<TItem> {
+type SearchBarProps<TItem> = {
   dataSource: () => TItem[];
   isFilterMatch: (filter: string, item: TItem) => boolean;
   filterText: string;
   onQueryChanged: (value: string) => void;
   onFilteredDataChanged: (data: TItem[]) => void;
   placeholderText?: string;
-}
+};
 
 function SearchBar<TItem>(props: SearchBarProps<TItem>) {
   const { dataSource, isFilterMatch, filterText, onQueryChanged, onFilteredDataChanged, placeholderText } = props;
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(function subscribeToSearchShortcut() {
+    function focusSearch(event: KeyboardEvent) {
+      if (
+        event.key !== '/' ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        (event.target instanceof HTMLElement &&
+          (event.target.isContentEditable || event.target.closest('input, textarea, select, [role="textbox"]')))
+      ) {
+        return;
+      }
+      event.preventDefault();
+      inputRef.current?.focus();
+    }
+    document.addEventListener('keydown', focusSearch);
+    return () => document.removeEventListener('keydown', focusSearch);
+  }, []);
+
   const source = dataSource();
   const filteredData = useMemo(() => {
-    if (!source) return [];
+    if (!source) {
+      return [];
+    }
     return source.filter((item) => isFilterMatch(filterText, item));
   }, [source, filterText, isFilterMatch]);
 
@@ -78,7 +103,20 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
       <Input
         containerClassName="w-full max-w-[350px]"
         onChange={(e) => onQueryChanged(e.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || event.nativeEvent.isComposing) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          if (filterText) {
+            onQueryChanged('');
+          } else {
+            event.currentTarget.blur();
+          }
+        }}
         placeholder={placeholderText ?? 'Search...'}
+        ref={inputRef}
         testId="search-field-input"
         value={filterText}
       >
