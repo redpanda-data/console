@@ -556,7 +556,7 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   const displayName = getConnectorFriendlyName(p.plugin.class);
 
   return (
-    <h1 className="mb-8 flex items-center gap-[0.5ch] text-heading-lg">
+    <h1 className="flex items-center gap-[0.5ch] pb-8 text-heading-lg">
       Create Connector:
       {p.plugin.type === 'source' ? 'import data from ' : 'export data to '}
       {displayName}

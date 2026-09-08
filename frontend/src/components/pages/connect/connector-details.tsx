@@ -25,14 +25,13 @@ import {
   type TopicMessage,
 } from '../../../state/rest-interfaces';
 import { TimestampDisplay } from '../../../utils/tsx-utils';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
 import './helper';
 import { AlertIcon, ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import {
   DataTable,
   type DataTableColumnDef,
@@ -62,8 +61,6 @@ import Tabs from '../../misc/tabs/tabs';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 // Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
@@ -225,8 +222,7 @@ const KafkaConnectorMain = ({
           },
           {
             key: 'logs',
-            // Chakra's Tabs took the reason as `isDisabled`; the app wrapper takes a boolean, so
-            // the reason moves to a tooltip on the trigger.
+            // The Tabs wrapper takes a boolean; the reason goes in a tooltip on the trigger.
             disabled: !logsTopic,
             title: logsTopic ? (
               'Logs'
@@ -419,14 +415,14 @@ const ConfigOverviewTab = (p: {
         <DataTable<ClusterConnectorTaskInfo>
           columns={taskColumns}
           data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-          pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > DEFAULT_TABLE_PAGE_SIZE}
+          // Legacy parity: ten a page, pager only past that.
+          pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > 10}
           sorting
-          tableOptions={TABLE_OPTIONS}
         />
       </Section>
 
       <Section className="py-4" style={{ gridArea: 'details' }}>
-        <h3 className="mt-2 mb-6 font-semibold text-body-lg text-strong uppercase">Connector Details</h3>
+        <h3 className="mt-2 pb-6 font-semibold text-body-lg text-strong uppercase">Connector Details</h3>
 
         <ConnectorDetails clusterName={p.clusterName} connectClusterStore={connectClusterStore} connector={connector} />
       </Section>
@@ -497,7 +493,7 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
             <DialogTitle>{p.error.title}</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <SimpleCodeBlock code={p.error.content} language="json" maxHeight="none" width="full" />
+            <SyncCodeBlock code={p.error.content} lang="json" />
           </DialogBody>
           <DialogFooter>
             {Boolean(hasConnectorLogs) && (
@@ -755,7 +751,7 @@ const LogsTab = (p: {
   // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
-      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      // The Registry DataTable renders no expander column for `subComponent`.
       {
         id: 'expander',
         enableSorting: false,
@@ -788,8 +784,12 @@ const LogsTab = (p: {
         ),
       },
       {
+        id: 'value',
         header: 'Value',
         accessorKey: 'value',
+        // A decoded preview; sorting the raw value means nothing.
+        enableSorting: false,
+        enableHiding: false,
         // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">

@@ -84,7 +84,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
           {/* Plugin List */}
           <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
-            <h3 className="mb-2.5 ml-1">Connector Types</h3>
+            <h3 className="ml-1 pb-2.5">Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
               columns={pluginColumns}
@@ -222,7 +222,13 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         />
       </div>
 
-      <DataTable<ClusterConnectorInfo> columns={connectorColumns} data={filteredResults} pagination sorting />
+      <DataTable<ClusterConnectorInfo>
+        columns={connectorColumns}
+        data={filteredResults}
+        // Legacy parity: ten a page, pager only past that.
+        pagination={filteredResults.length > 10}
+        sorting
+      />
     </div>
   );
 };

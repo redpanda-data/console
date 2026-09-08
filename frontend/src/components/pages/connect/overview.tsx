@@ -12,7 +12,11 @@
 import { create } from '@bufbuild/protobuf';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { DataTable, DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode, Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
@@ -414,6 +418,60 @@ interface TaskType extends ClusterConnectorTaskInfo {
   connectorName: string;
 }
 
+// Module-level so the sortable headers keep their identity across the tab's re-renders.
+const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
+  {
+    id: 'name',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
+    accessorKey: 'connectorName',
+    cell: ({ row: { original } }) => (
+      // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+      // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+      // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+      <div
+        className="hoverLink whitespace-break-spaces break-words text-body"
+        onClick={() =>
+          appGlobal.historyPush(
+            `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
+          )
+        }
+      >
+        {original.connectorName}
+      </div>
+    ),
+  },
+  {
+    id: 'taskId',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Task ID" />,
+    accessorKey: 'taskId',
+  },
+  {
+    id: 'state',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+    accessorKey: 'state',
+    cell: ({ row: { original } }) => <TaskState observable={original} />,
+  },
+  {
+    id: 'workerId',
+    enableHiding: false,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
+    accessorKey: 'workerId',
+  },
+  {
+    id: 'cluster',
+    // Read off the joined cluster, so there is no accessor to sort on.
+    enableSorting: false,
+    enableHiding: false,
+    header: 'Cluster',
+    cell: ({ row: { original } }) => (
+      <InlineCode className="whitespace-nowrap">{original.cluster.clusterName}</InlineCode>
+    ),
+  },
+];
+
 class TabTasks extends Component {
   render() {
     const clusters = api.connectConnectors?.clusters;
@@ -431,58 +489,7 @@ class TabTasks extends Component {
 
     return (
       <DataTable<TaskType>
-        columns={[
-          {
-            id: 'name',
-            enableHiding: false,
-            header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
-            accessorKey: 'connectorName',
-            cell: ({ row: { original } }) => (
-              // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
-              // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
-              // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
-              <div
-                className="hoverLink whitespace-break-spaces break-words text-body"
-                onClick={() =>
-                  appGlobal.historyPush(
-                    `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`
-                  )
-                }
-              >
-                {original.connectorName}
-              </div>
-            ),
-          },
-          {
-            id: 'taskId',
-            enableHiding: false,
-            header: ({ column }) => <DataTableColumnHeader column={column} title="Task ID" />,
-            accessorKey: 'taskId',
-          },
-          {
-            id: 'state',
-            enableHiding: false,
-            header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
-            accessorKey: 'state',
-            cell: ({ row: { original } }) => <TaskState observable={original} />,
-          },
-          {
-            id: 'workerId',
-            enableHiding: false,
-            header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
-            accessorKey: 'workerId',
-          },
-          {
-            id: 'cluster',
-            // Read off the joined cluster, so there is no accessor to sort on.
-            enableSorting: false,
-            enableHiding: false,
-            header: 'Cluster',
-            cell: ({ row: { original } }) => (
-              <InlineCode className="whitespace-nowrap">{original.cluster.clusterName}</InlineCode>
-            ),
-          },
-        ]}
+        columns={TASK_COLUMNS}
         data={allTasks}
         pagination={allTasks.length > DEFAULT_TABLE_PAGE_SIZE}
         sorting

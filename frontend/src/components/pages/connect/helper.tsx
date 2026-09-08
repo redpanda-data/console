@@ -447,7 +447,7 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
       ) : null}
 
       <Popover>
-        {/* Hover-to-open, as the Chakra popover was. */}
+        {/* Hover-to-open; Base UI defaults to click. */}
         <PopoverTrigger
           openOnHover
           render={
@@ -675,7 +675,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
           ) : null}
         </AlertDialogDescription>
         <AlertDialogFooter>
-          {/* Cancel first, as `leastDestructiveRef` made it the initial focus. */}
+          {/* Cancel first: Base UI focuses the first tabbable. */}
           <Button onClick={cancel} variant="outline">
             No
           </Button>
