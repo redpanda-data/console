@@ -5,6 +5,7 @@ import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 import rocketPanda from '../../assets/redpanda/RocketPanda.svg';
 import { config } from '../../config';
 import { Button, buttonVariants } from '../redpanda-ui/components/button';
+import { cn } from '../redpanda-ui/lib/utils';
 
 export const NotFoundPage = () => {
   const router = useRouter();
@@ -20,7 +21,7 @@ export const NotFoundPage = () => {
           <p className="max-w-xl text-muted-foreground">
             AI agents, MCP servers, knowledge bases, and transcripts are now available in Redpanda AI.
           </p>
-          <a className={buttonVariants()} href={legacyAiDestination}>
+          <a className={cn(buttonVariants(), 'rounded-md')} href={legacyAiDestination}>
             Open Redpanda AI
           </a>
           <Button
