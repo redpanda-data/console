@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { InlineCode, Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { docsLinks } from 'utils/docs-links';
 
@@ -56,7 +56,7 @@ function TabGo(_p: Record<string, never>) {
     <List className="flex flex-col gap-2" ordered>
       <ListItem>
         <p className="mt-3 text-body">Create and initialize a data transforms project:</p>
-        <DynamicCodeBlock code={rpkInitTransform} lang="bash" />
+        <SimpleCodeBlock code={rpkInitTransform} language="bash" width="full" />
 
         <p className="mt-3 text-body">
           If you do not include the <InlineCode>--language</InlineCode> flag, the{' '}
@@ -64,7 +64,7 @@ function TabGo(_p: Record<string, never>) {
         </p>
 
         <p className="mt-3 text-body">A successful command generates project files in your current directory:</p>
-        <DynamicCodeBlock code={exampleDir} lang="text" />
+        <SimpleCodeBlock code={exampleDir} language="text" width="full" />
 
         <p className="mt-3 text-body">
           The <InlineCode>transform.go</InlineCode> file contains the transform logic, and the{' '}

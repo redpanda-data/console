@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { afterEach, expect, rs, test } from '@rstest/core';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import TransformDetails from './transform-details';
@@ -14,7 +14,10 @@ import { useTransformsStore } from '../../../state/backend-api';
 const initialState = useTransformsStore.getState();
 const initialRefresh = appGlobal.onRefresh;
 afterEach(() => {
-  useTransformsStore.setState(initialState, true);
+  // The page is still mounted and subscribed when this runs.
+  act(() => {
+    useTransformsStore.setState(initialState, true);
+  });
   appGlobal.onRefresh = initialRefresh;
 });
 

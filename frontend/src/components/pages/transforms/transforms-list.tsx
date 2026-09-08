@@ -17,9 +17,7 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
-import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { Link as ExternalLink } from 'components/redpanda-ui/components/typography';
-import { SearchIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -34,7 +32,9 @@ import { transformsApi } from '../../../state/backend-api';
 import { useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
+import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
 
@@ -86,6 +86,9 @@ class TransformsList extends PageComponent {
   }
 }
 
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+
 const columns: DataTableColumnDef<TransformMetadata>[] = [
   {
     id: 'name',
@@ -93,7 +96,6 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
     enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     accessorKey: 'name',
-    size: 300,
     cell: ({ row: { original: r } }) => (
       <div className="whitespace-break-spaces break-words">
         <Link
@@ -177,7 +179,6 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
         <TrashIcon />
       </Button>
     ),
-    size: 1,
   },
 ];
 
@@ -231,35 +232,21 @@ const TransformsListContent: FC = () => {
 
       <Section>
         <div className="mb-5">
-          <Input
+          <SearchInput
             containerClassName="max-w-[350px]"
-            onChange={(e) => updateSettings({ transformsList: { quickSearch: e.target.value } })}
+            onChange={(value) => updateSettings({ transformsList: { quickSearch: value } })}
             placeholder="Enter search term / regex..."
-            testId="search-field-input"
             value={quickSearch}
-          >
-            <InputStart>
-              <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
-            </InputStart>
-            {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
-                button under the click would drop focus to <body>. */}
-            <InputEnd className="pointer-events-auto">
-              <Button
-                aria-label="Clear search"
-                className={quickSearch === '' ? 'invisible' : undefined}
-                data-testid="search-field-reset-icon"
-                disabled={quickSearch === ''}
-                onClick={() => updateSettings({ transformsList: { quickSearch: '' } })}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <CloseIcon />
-              </Button>
-            </InputEnd>
-          </Input>
+          />
         </div>
 
-        <DataTable<TransformMetadata> columns={columns} data={filteredTransforms} pagination sorting />
+        <DataTable<TransformMetadata>
+          columns={columns}
+          data={filteredTransforms}
+          pagination={filteredTransforms.length > DEFAULT_TABLE_PAGE_SIZE}
+          sorting
+          tableOptions={TABLE_OPTIONS}
+        />
       </Section>
     </PageContent>
   );

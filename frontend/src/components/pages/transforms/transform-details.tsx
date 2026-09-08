@@ -9,21 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { ChevronDownIcon, ChevronRightIcon, CloseIcon } from 'components/icons';
+import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
-import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
-import { SearchIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PartitionStatus } from './transforms-list';
-import usePaginationParams from '../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type PartitionTransformStatus,
@@ -43,7 +40,9 @@ import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
+import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -127,6 +126,14 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 }
 export default TransformDetails;
 
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
+const LOGS_TABLE_OPTIONS = {
+  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
+};
+
 const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
   {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
@@ -195,8 +202,9 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
         <DataTable<PartitionTransformStatus>
           columns={partitionStatusColumns}
           data={p.transform.statuses}
-          pagination={false}
+          pagination={p.transform.statuses.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
+          tableOptions={TABLE_OPTIONS}
         />
       </div>
     </>
@@ -270,8 +278,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
     }
   };
 
-  const paginationParams = usePaginationParams(messages.length, 10);
-  const logsTableOptions = useMemo(() => ({ initialState: { pagination: paginationParams } }), [paginationParams]);
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
       // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
@@ -302,8 +308,11 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
           row: {
             original: { timestamp },
           },
-        }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-        size: 30,
+        }) => (
+          <span className="whitespace-nowrap">
+            <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />
+          </span>
+        ),
       },
       {
         header: 'Value',
@@ -311,14 +320,16 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
         enableSorting: false,
         enableHiding: false,
         accessorKey: 'value',
+        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
-          <MessagePreview
-            isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-            msg={original}
-            previewFields={() => []}
-          />
+          <div className="w-screen max-w-full">
+            <MessagePreview
+              isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
+              msg={original}
+              previewFields={() => []}
+            />
+          </div>
         ),
-        size: Number.MAX_SAFE_INTEGER,
       },
     ],
     [topic]
@@ -337,32 +348,12 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
       <Section className="min-w-[800px]">
         <div className="mb-6 flex">
-          <Input
-            containerClassName="max-w-[230px]"
-            onChange={(e) => setLogsQuickSearch(e.target.value)}
+          <SearchInput
+            containerClassName="w-[230px]"
+            onChange={setLogsQuickSearch}
             placeholder="Search..."
-            testId="search-field-input"
             value={logsQuickSearch}
-          >
-            <InputStart>
-              <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
-            </InputStart>
-            {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
-                button under the click would drop focus to <body>. */}
-            <InputEnd className="pointer-events-auto">
-              <Button
-                aria-label="Clear search"
-                className={logsQuickSearch === '' ? 'invisible' : undefined}
-                data-testid="search-field-reset-icon"
-                disabled={logsQuickSearch === ''}
-                onClick={() => setLogsQuickSearch('')}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <CloseIcon />
-              </Button>
-            </InputEnd>
-          </Input>
+          />
           <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
             Refresh logs
           </Button>
@@ -388,7 +379,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
               msg={original}
             />
           )}
-          tableOptions={logsTableOptions}
+          tableOptions={LOGS_TABLE_OPTIONS}
         />
       </Section>
     </>
