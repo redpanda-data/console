@@ -362,10 +362,10 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
         <DataTable<TopicMessage>
           columns={messageTableColumns}
           // No pager under the loading or empty row, as the legacy table.
-          pagination={filteredMessages.length > 0}
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}
+          pagination={filteredMessages.length > 0}
           sorting
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
