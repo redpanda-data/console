@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { Stat } from 'components/redpanda-ui/components/stat';
 import { motion } from 'motion/react';
 import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
@@ -55,7 +56,6 @@ import { showErrorModal } from '../../misc/error-modal';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { Statistic } from '../../misc/statistic';
 import { PageComponent, type PageInitHelper } from '../page';
 
 export type PartitionSelection = {
@@ -209,11 +209,12 @@ class ReassignPartitions extends PageComponent {
           <Section className="py-4">
             {/* Scoped: step 1's SelectionInfoBar repeats these labels. */}
             <div className="flex gap-8" data-testid="cluster-statistics">
-              <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
-              <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
-              <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
-              <Statistic
-                title="Total Partitions"
+              <Stat label="Broker Count" size="lg" value={api.clusterInfo?.brokers.length} />
+              <Stat label="Leader Partitions" size="lg" value={partitionCountLeaders ?? '...'} />
+              <Stat label="Replica Partitions" size="lg" value={partitionCountOnlyReplicated ?? '...'} />
+              <Stat
+                label="Total Partitions"
+                size="lg"
                 value={
                   partitionCountLeaders !== null && partitionCountOnlyReplicated !== null
                     ? partitionCountLeaders + partitionCountOnlyReplicated

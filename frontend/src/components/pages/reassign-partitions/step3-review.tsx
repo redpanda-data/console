@@ -24,7 +24,11 @@ import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } 
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
@@ -84,7 +88,6 @@ export class StepReview extends Component<{
             // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
             {
               id: 'expander',
-              size: 40,
               enableSorting: false,
               cell: ({ row }) =>
                 row.getCanExpand() ? (
@@ -106,7 +109,6 @@ export class StepReview extends Component<{
             },
             {
               header: 'Brokers Before',
-              size: 50,
               cell: ({ row: { original: topic } }) => {
                 const brokersBefore = topic.selectedPartitions
                   .flatMap((x) => x.brokersBefore)
@@ -117,7 +119,6 @@ export class StepReview extends Component<{
             },
             {
               accessorKey: 'Brokers After',
-              size: 50,
               cell: ({ row: { original: topic } }) => {
                 const plannedBrokers = topic.selectedPartitions
                   .flatMap((x) => x.brokersAfter)
@@ -128,7 +129,6 @@ export class StepReview extends Component<{
             },
             {
               id: 'numAddedBrokers',
-              size: 100,
               header: () => (
                 <InfoText maxWidth="180px" tooltip="The number of replicas that will be moved to a different broker.">
                   Reassignments
@@ -138,13 +138,12 @@ export class StepReview extends Component<{
             },
             {
               header: 'Estimated Traffic',
-              size: 120,
               cell: ({ row: { original: topic } }) =>
                 prettyBytesOrNA(topic.selectedPartitions.sum((p) => p.numAddedBrokers * p.replicaSize)),
             },
           ]}
           data={this.props.topicsWithMoves}
-          pagination={false}
+          pagination={this.props.topicsWithMoves.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
           subComponent={({ row: { original: topic } }) => (
             <div className="px-10 py-6">
@@ -160,6 +159,7 @@ export class StepReview extends Component<{
               )}
             </div>
           )}
+          tableOptions={TABLE_OPTIONS}
         />
 
         {this.reassignmentOptions()}
@@ -324,8 +324,9 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
         },
       ]}
       data={props.topicPartitions}
-      pagination={false}
+      pagination={props.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
       sorting
+      tableOptions={TABLE_OPTIONS}
     />
   </div>
 );

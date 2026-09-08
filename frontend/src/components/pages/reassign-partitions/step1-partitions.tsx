@@ -24,8 +24,12 @@ import type { Partition, PartitionReassignmentsPartition, Topic } from '../../..
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];
@@ -70,7 +74,6 @@ export class StepSelectPartitions extends Component<{
             // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
             {
               id: 'expander',
-              size: 40,
               enableSorting: false,
               cell: ({ row }) =>
                 row.getCanExpand() ? (
@@ -122,7 +125,6 @@ export class StepSelectPartitions extends Component<{
 
                 return <div className="whitespace-break-spaces break-words">{content}</div>;
               },
-              size: Number.POSITIVE_INFINITY,
             },
             {
               id: 'partitionCount',
@@ -185,7 +187,7 @@ export class StepSelectPartitions extends Component<{
           data={this.topicPartitions}
           // Chakra took a no-op `onRowSelectionChange` plus a placeholder `rowSelection`; selection
           // is done by the `check` column above, so the Registry table simply leaves it off.
-          pagination
+          pagination={this.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
           subComponent={({ row: { original: topic } }) => (
             <SelectPartitionTable
@@ -196,6 +198,7 @@ export class StepSelectPartitions extends Component<{
               topicPartitions={topic.partitions}
             />
           )}
+          tableOptions={TABLE_OPTIONS}
         />
       </div>
     );
@@ -361,8 +364,9 @@ export class SelectPartitionTable extends Component<{
           },
         ]}
         data={this.props.topicPartitions}
-        pagination
+        pagination={this.props.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
         sorting
+        tableOptions={TABLE_OPTIONS}
       />
     );
   }

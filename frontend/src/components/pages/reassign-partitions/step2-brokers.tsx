@@ -18,6 +18,10 @@ import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Broker } from '../../../state/rest-interfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 export class StepSelectBrokers extends Component<{
   selectedBrokerIds: number[];
@@ -102,7 +106,6 @@ export class StepSelectBrokers extends Component<{
             {
               header: ({ column }) => <DataTableColumnHeader column={column} title="Broker Address" />,
               enableHiding: false,
-              size: Number.POSITIVE_INFINITY,
               accessorKey: 'address',
             },
             {
@@ -118,8 +121,9 @@ export class StepSelectBrokers extends Component<{
             },
           ]}
           data={this.brokers}
-          pagination
+          pagination={this.brokers.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
+          tableOptions={TABLE_OPTIONS}
         />
       </>
     );

@@ -114,22 +114,18 @@ export class ActiveReassignments extends Component<{
           columns={[
             {
               header: 'Topic',
-              size: 1,
               cell: ({ row: { original } }) => <TopicNameCol state={original} />,
             },
             {
               header: 'Progress',
-              size: Number.POSITIVE_INFINITY,
               cell: ({ row: { original } }) => <ProgressCol state={original} />,
             },
             {
               header: 'ETA',
-              size: 100,
               cell: ({ row: { original } }) => <ETACol state={original} />,
             },
             {
               header: 'Brokers',
-              size: 1,
               cell: ({ row: { original } }) => <BrokersCol state={original} />,
             },
           ]}
@@ -139,7 +135,8 @@ export class ActiveReassignments extends Component<{
           onRow={(row) => {
             this.setState({ reassignmentDetails: row.original });
           }}
-          pagination
+          // Legacy parity: ten a page, pager only past that.
+          pagination={currentReassignments.length > 10}
           sorting={false}
         />
 
