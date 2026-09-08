@@ -11,7 +11,6 @@
 
 import { isFeatureFlagEnabled } from 'config';
 import { docsLinks } from 'utils/docs-links';
-import type { LegacyRow } from 'utils/legacy-data-table';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -22,21 +21,15 @@ import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
 import './Overview.scss';
-import {
-  Badge,
-  Box,
-  Button,
-  DataTable,
-  Flex,
-  Grid,
-  GridItem,
-  Heading,
-  Skeleton,
-  Text,
-  Tooltip,
-} from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
+import { Badge } from 'components/redpanda-ui/components/badge';
+import { Button } from 'components/redpanda-ui/components/button';
+import { DataTable, type DataTableColumnDef, type DataTableRow } from 'components/redpanda-ui/components/data-table';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { Stat } from 'components/redpanda-ui/components/stat';
+import { StatusDot } from 'components/redpanda-ui/components/status-dot';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import React, { type FC, type ReactNode } from 'react';
 
 import ClusterHealthOverview from './cluster-health-overview';
@@ -50,7 +43,6 @@ import {
 } from '../../license/license-utils';
 import { OverviewLicenseNotification } from '../../license/overview-license-notification';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
-import { Statistic } from '../../misc/statistic';
 
 // Shared placeholder for any metric that isn't available (cluster unreachable,
 // brokers not loaded, or backend simply didn't report a value).
@@ -93,12 +85,12 @@ class Overview extends PageComponent {
 
     const clusterStatus = (() => {
       if (overview.kafka?.status?.status === StatusType.HEALTHY) {
-        return { displayText: 'Running', className: 'status-green' };
+        return { displayText: 'Running', variant: 'success' as const };
       }
       if (overview.kafka?.status?.status === StatusType.DEGRADED) {
-        return { displayText: 'Degraded', className: 'status-yellow' };
+        return { displayText: 'Degraded', variant: 'warning' as const };
       }
-      return { displayText: 'Unhealthy', className: 'status-red' };
+      return { displayText: 'Unhealthy', variant: 'destructive' as const };
     })();
 
     // On an unreachable cluster the brokers request fails and `api.brokers` stays
@@ -112,14 +104,19 @@ class Overview extends PageComponent {
         return text;
       }
       return (
-        <Flex alignItems="flex-start" gap={4}>
+        <div className="flex items-start gap-4">
           {text}
-          <Tooltip hasArrow label="This broker is the current controller of the cluster" placement="right">
-            <Box>
-              <CrownIcon color="#0008" size={16} />
-            </Box>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <div>
+                  <CrownIcon className="text-subtle" size={16} />
+                </div>
+              }
+            />
+            <TooltipContent side="right">This broker is the current controller of the cluster</TooltipContent>
           </Tooltip>
-        </Flex>
+        </div>
       );
     };
 
@@ -133,7 +130,7 @@ class Overview extends PageComponent {
         : `${brokersOnline} of ${brokersExpected}`;
 
     return (
-      <Box>
+      <div>
         <NullFallbackBoundary>
           <OverviewLicenseNotification />
         </NullFallbackBoundary>
@@ -141,47 +138,52 @@ class Overview extends PageComponent {
         <PageContent className="overviewGrid">
           <div className="my-4">
             <Section className="py-5">
-              <Flex gap={8}>
-                <Statistic
-                  className={`status-bar ${clusterStatus.className}`}
-                  title="Cluster Status"
-                  value={clusterStatus.displayText}
+              <div className="flex gap-8">
+                <Stat
+                  label="Cluster Status"
+                  size="lg"
+                  value={
+                    <span className="inline-flex items-center gap-2">
+                      <StatusDot size="sm" variant={clusterStatus.variant} />
+                      {clusterStatus.displayText}
+                    </span>
+                  }
                 />
-                <Statistic title="Cluster Storage Size" value={brokerSize} />
-                <Statistic title="Cluster Version" value={version} />
-                <Statistic title="Brokers Online" value={brokersOnlineText} />
-                <Statistic title="Topics" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
-                <Statistic title="Replicas" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
-              </Flex>
+                <Stat label="Cluster Storage Size" size="lg" value={brokerSize} />
+                <Stat label="Cluster Version" size="lg" value={version} />
+                <Stat label="Brokers Online" size="lg" value={brokersOnlineText} />
+                <Stat label="Topics" size="lg" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
+                <Stat label="Replicas" size="lg" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
+              </div>
             </Section>
           </div>
 
           {/* Shadow Link Overview Section */}
           <ShadowLinkSection />
 
-          <Grid gap={6} gridTemplateColumns={{ base: '1fr', lg: 'fit-content(60%) 1fr' }}>
-            <GridItem display="flex" flexDirection="column" gap={6}>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[fit-content(60%)_1fr]">
+            <div className="flex flex-col gap-6">
               {api.clusterHealth?.isHealthy === false && (
                 <Section className="py-4">
-                  <Heading as="h3">Cluster Health Debug</Heading>
+                  <h3>Cluster Health Debug</h3>
                   <ClusterHealthOverview />
                 </Section>
               )}
 
               <Section className="py-4">
-                <Heading as="h3">Broker Details</Heading>
+                <h3>Broker Details</h3>
                 <DataTable<BrokerWithConfigAndStorage>
                   columns={[
                     {
-                      size: 80,
                       header: 'ID',
                       accessorKey: 'brokerId',
                       cell: ({ row: { original: broker } }) => renderIdColumn(`${broker.brokerId}`, broker),
                     },
                     {
+                      id: 'status',
                       header: 'Status',
                       cell: ({ row: { original: broker } }) => (
-                        <Flex gap={2}>
+                        <div className="flex gap-2">
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
                               <ErrorIcon className="text-destructive" size={18} />
@@ -193,23 +195,20 @@ class Overview extends PageComponent {
                               Running
                             </>
                           )}
-                        </Flex>
+                        </div>
                       ),
-                      size: Number.POSITIVE_INFINITY,
                     },
                     {
-                      size: 120,
                       header: 'Size',
                       accessorKey: 'totalLogDirSizeBytes',
                       cell: ({
                         row: {
                           original: { totalLogDirSizeBytes },
                         },
-                      }) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
+                      }) => (totalLogDirSizeBytes === undefined ? undefined : prettyBytesOrNA(totalLogDirSizeBytes)),
                     },
                     {
                       id: 'view',
-                      size: 100,
                       header: '',
                       cell: ({ row: { original: broker } }) => (
                         <Button
@@ -224,43 +223,43 @@ class Overview extends PageComponent {
                     ...(api.brokers?.sum((b) => (b.rack ? 1 : 0))
                       ? [
                           {
-                            size: 100,
+                            id: 'rack',
                             header: 'Rack',
-                            cell: ({ row: { original: broker } }: { row: LegacyRow<BrokerWithConfigAndStorage> }) =>
+                            cell: ({ row: { original: broker } }: { row: DataTableRow<BrokerWithConfigAndStorage> }) =>
                               broker.rack,
-                          },
+                          } satisfies DataTableColumnDef<BrokerWithConfigAndStorage>,
                         ]
                       : []),
                   ]}
                   data={brokers}
-                  defaultPageSize={10}
-                  pagination
+                  // Legacy parity: ten a page, pager only past that.
+                  pagination={brokers.length > 10}
                   sorting={false}
                 />
               </Section>
 
               <Section>
-                <Heading as="h3">Resources and updates</Heading>
+                <h3>Resources and updates</h3>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr className="mt-4 mb-2" />
-                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-subtle">
+                <div className="mt-4 flex flex-row items-center gap-2 text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
                   <span className="mx-2 text-disabled">|</span>
                   <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
                 </div>
               </Section>
-            </GridItem>
+            </div>
 
-            <GridItem>
-              <Section className="py-4">
+            <div>
+              <Section className="py-4" id="clusterDetails">
                 <h3>Cluster Details</h3>
 
                 <ClusterDetails />
               </Section>
-            </GridItem>
-          </Grid>
+            </div>
+          </div>
         </PageContent>
-      </Box>
+      </div>
     );
   }
 }
@@ -271,21 +270,12 @@ type DetailsBlockProps = { title: string; children?: React.ReactNode };
 
 const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
   <>
-    <GridItem colSpan={{ base: 1, lg: 3 }}>
-      <Heading
-        as="h4"
-        color="gray.500"
-        fontSize={10}
-        fontWeight={600}
-        letterSpacing={0.8}
-        mb={1}
-        textTransform="uppercase"
-      >
-        {title}
-      </Heading>
-    </GridItem>
+    <div className="col-span-1 lg:col-span-3">
+      <h4 className="pb-1 font-semibold text-body-sm text-subtle uppercase">{title}</h4>
+    </div>
     {children}
-    <GridItem bg="#ddd" colSpan={{ base: 1, lg: 3 }} height={0.25} my={4} />
+    {/* Hairline between blocks. */}
+    <div className="col-span-1 my-4 h-px bg-border lg:col-span-3" />
   </>
 );
 
@@ -295,17 +285,17 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
   const [[firstLeft, firstRight] = [], ...rest] = content;
   return (
     <>
-      <GridItem>
-        <Heading as="h5">{title}</Heading>
-      </GridItem>
-      <GridItem>{firstLeft}</GridItem>
-      <GridItem>{firstRight}</GridItem>
+      <div>
+        <h5 className="text-heading-sm">{title}</h5>
+      </div>
+      <div>{firstLeft}</div>
+      <div>{firstRight}</div>
 
       {rest?.map((item) => (
         <React.Fragment key={`${String(item?.[0])}-${String(item?.[1])}`}>
-          <GridItem />
-          <GridItem>{item?.[0]}</GridItem>
-          <GridItem>{item?.[1]}</GridItem>
+          <div />
+          <div>{item?.[0]}</div>
+          <div>{item?.[1]}</div>
         </React.Fragment>
       ))}
     </>
@@ -321,7 +311,7 @@ function ClusterDetails() {
   // unreachable cluster (the request fails and never resolves), so waiting for it
   // would spin this panel forever — render what we have and mark the rest N/A.
   if (!overview) {
-    return <Skeleton height={4} mt={5} noOfLines={13} speed={0} />;
+    return <SkeletonText className="mt-5" lines={13} width="full" />;
   }
 
   const hasBrokers = brokers != null;
@@ -345,8 +335,9 @@ function ClusterDetails() {
     let status = <div>{titleCase(StatusType[overviewStatus.status])}</div>;
     if (overviewStatus.statusReason) {
       status = (
-        <Tooltip hasArrow label={overviewStatus.statusReason}>
-          {status}
+        <Tooltip>
+          <TooltipTrigger render={status} />
+          <TooltipContent>{overviewStatus.statusReason}</TooltipContent>
         </Tooltip>
       );
     }
@@ -361,7 +352,7 @@ function ClusterDetails() {
   }));
 
   return (
-    <Grid alignItems="center" gap={2} templateColumns={{ base: 'auto', lg: 'repeat(3, auto)' }} w="full">
+    <div className="grid w-full grid-cols-[auto] items-center gap-2 lg:grid-cols-[repeat(3,auto)]">
       <DetailsBlock title="Services">
         <Details
           content={hasConnect ? clusterLines.map((c) => [c.name, c.status]) : [['Not configured']]}
@@ -426,18 +417,18 @@ function ClusterDetails() {
           api.licensesLoaded === 'failed'
             ? [
                 [
-                  <Flex alignItems="center" gap={1} key="error">
+                  <div className="flex items-center gap-1" key="error">
                     <AlertIcon className="text-destructive" size={16} /> Failed to load license info
-                  </Flex>,
+                  </div>,
                 ],
               ]
             : [
                 ...licensesToSimplifiedPreview(licenses).map(
                   ({ name, expiresAt, isExpired }) =>
                     [
-                      <Text data-testid="overview-license-name" key={0}>
+                      <div data-testid="overview-license-name" key={0}>
                         {name}
-                      </Text>,
+                      </div>,
                       expiresAt.length > 0 ? `(${isExpired ? 'expired' : 'expiring'} ${expiresAt})` : '',
                     ] as [left: ReactNode, right: ReactNode]
                 ),
@@ -448,25 +439,25 @@ function ClusterDetails() {
 
       {api.licensesLoaded === 'loaded' && !api.licenses.some(isLicenseWithEnterpriseAccess) && (
         <>
-          <GridItem />
-          <GridItem colSpan={{ base: 1, lg: 2 }}>
+          <div />
+          <div className="col-span-1 lg:col-span-2">
             <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
               <Badge tone="informative" variant="solid">
-                <Text textDecoration="underline">Redpanda Enterprise trial available</Text>
+                <span className="underline">Redpanda Enterprise trial available</span>
               </Badge>
             </a>
-          </GridItem>
+          </div>
         </>
       )}
 
       {Boolean(api.isRedpanda && api.isAdminApiConfigured && api.userData?.canManageLicense) && (
         <>
-          <GridItem />
-          <GridItem colSpan={{ base: 1, lg: 2 }}>
+          <div />
+          <div className="col-span-1 lg:col-span-2">
             <Link to="/upload-license">Upload new license</Link>
-          </GridItem>
+          </div>
         </>
       )}
-    </Grid>
+    </div>
   );
 }

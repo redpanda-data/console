@@ -2993,10 +2993,13 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
           (status: any) =>
             status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
         );
-      case 'debugBundleStatus':
-        return s.debugBundleStatuses
+      case 'debugBundleStatus': {
+        // The running job's status when there is one; other brokers can still report an older bundle.
+        const bundleStatuses: DebugBundleStatus[] = s.debugBundleStatuses
           .filter((status: any) => status.value.case === 'bundleStatus')
-          .map((x: any) => x.value.value as DebugBundleStatus)[0];
+          .map((x: any) => x.value.value as DebugBundleStatus);
+        return bundleStatuses.find((x) => x.status === DebugBundleStatus_Status.RUNNING) ?? bundleStatuses[0];
+      }
       default:
         return (s as any)[prop as string];
     }
