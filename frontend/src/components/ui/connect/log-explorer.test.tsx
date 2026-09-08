@@ -5,7 +5,7 @@ import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { TopicMessage } from '../../../state/rest-interfaces';
 
-const mockRefresh = vi.fn();
+const mockRefresh = rs.fn();
 let mockReturn: {
   messages: TopicMessage[];
   phase: string | null;
@@ -14,7 +14,7 @@ let mockReturn: {
   refresh: () => void;
 };
 
-vi.mock('../../../react-query/api/logs', () => ({
+rs.mock('../../../react-query/api/logs', () => ({
   useLogSearch: () => mockReturn,
 }));
 
@@ -52,7 +52,7 @@ function renderExplorer(props?: Partial<React.ComponentProps<typeof LogExplorer>
 
 describe('LogExplorer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockReturn = {
       messages: [],
       phase: null,

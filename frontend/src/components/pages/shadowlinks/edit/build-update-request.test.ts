@@ -12,6 +12,7 @@
 import { ShadowLinkSchema as CpShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create } from '@bufbuild/protobuf';
 import { DurationSchema } from '@bufbuild/protobuf/wkt';
+import { describe, expect, test } from '@rstest/core';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   ACLFilterSchema,
@@ -27,7 +28,6 @@ import {
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
-import { describe, expect, test } from 'vitest';
 
 import { buildControlplaneUpdateRequest, buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';

@@ -14,7 +14,6 @@ import {
   Button,
   ButtonGroup,
   Checkbox,
-  createStandaloneToast,
   DataTable,
   Flex,
   ListItem,
@@ -33,16 +32,13 @@ import {
   PopoverHeader,
   PopoverTrigger,
   Progress,
-  redpandaTheme,
-  redpandaToastOptions,
   Skeleton,
   Text,
-  type ToastId,
   UnorderedList,
   useDisclosure,
-  useToast,
 } from '@redpanda-data/ui';
 import React, { Component, type FC, type JSX, useRef, useState } from 'react';
+import { showToast, updateToast } from 'utils/toast.utils';
 
 import { BandwidthSlider } from './bandwidth-slider';
 import { api } from '../../../../state/backend-api';
@@ -52,16 +48,6 @@ import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { BrokerList } from '../../../misc/broker-list';
 import type { ReassignmentState } from '../logic/reassignment-tracker';
 import { reassignmentTracker } from '../reassign-partitions';
-
-// TODO - once ActiveReassignments is migrated to FC, we could should move this code to use useToast()
-const { ToastContainer, toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: {
-    ...redpandaToastOptions.defaultOptions,
-    isClosable: false,
-    duration: 2000,
-  },
-});
 
 export class ActiveReassignments extends Component<{
   throttledTopics: string[];
@@ -114,7 +100,6 @@ export class ActiveReassignments extends Component<{
 
     return (
       <>
-        <ToastContainer />
         {/* Title */}
         <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
           <span className="title">Current Reassignments</span>
@@ -208,21 +193,20 @@ export const ThrottleDialog: FC<{
 }> = ({ visible, lastKnownMinThrottle, onClose }) => {
   const [newThrottleValue, setNewThrottleValue] = useState<number | null>(lastKnownMinThrottle ?? null);
 
-  const toastFn = useToast();
-  const toastRef = useRef<ToastId>(undefined);
+  const toastRef = useRef<string>(undefined);
 
   const throttleValue = newThrottleValue ?? 0;
   const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;
 
   const applyBandwidthThrottle = async () => {
-    toastRef.current = toastFn({
+    toastRef.current = showToast({
       status: 'loading',
       description: 'Setting throttle rate...',
     });
     const clusterInfo = api.clusterInfo;
     const allBrokers = clusterInfo ? clusterInfo.brokers.map((b) => b.brokerId) : null;
     if (!allBrokers) {
-      toast({
+      updateToast(toastRef.current, {
         status: 'error',
         title: 'Error',
         description: 'Cluster info not available',
@@ -243,14 +227,15 @@ export const ThrottleDialog: FC<{
         api.refreshCluster(true);
       });
 
-      toast.update(toastRef.current, {
+      updateToast(toastRef.current, {
         status: 'success',
         description: 'Setting throttle rate... done',
+        duration: 2000,
       });
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in applyBandwidthThrottle: ${err}`);
-      toast.update(toastRef.current, {
+      updateToast(toastRef.current, {
         status: 'error',
         description: 'Setting throttle rate... error',
       });
@@ -590,7 +575,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
     const partitions = state.partitions.map((p) => p.partitionId);
 
-    const toastRef = toast({
+    const toastRef = showToast({
       status: 'loading',
       description: `Cancelling reassignment of '${state.topicName}'...`,
     });
@@ -612,7 +597,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.log('cancel reassignment result', { request: cancelRequest, response });
 
-      toast.update(toastRef, {
+      updateToast(toastRef, {
         status: 'success',
         description: `Cancelling reassignment of '${state.topicName}': Done`,
         duration: 1000,
@@ -621,7 +606,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`cancel reassignment: ${String(err)}`);
-      toast.update(toastRef, {
+      updateToast(toastRef, {
         status: 'error',
         description: `Cancelling reassignment of '${state.topicName}': Error`,
         duration: 1000,

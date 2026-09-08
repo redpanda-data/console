@@ -1,5 +1,5 @@
 import type { ConnectError } from '@connectrpc/connect';
-import { createStandaloneToast, type ToastId, type UseToastOptions } from '@redpanda-data/ui';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   BadRequestSchema,
   ErrorInfoSchema,
@@ -8,6 +8,7 @@ import {
   QuotaFailureSchema,
   ResourceInfoSchema,
 } from 'protogen/google/rpc/error_details_pb';
+import type { ReactNode } from 'react';
 
 export type ErrorHttpPayload = {
   internalCode: number;
@@ -16,12 +17,28 @@ export type ErrorHttpPayload = {
   description?: string;
 };
 
-interface ShowToastOptions extends Partial<UseToastOptions> {
+export type ToastStatus = 'success' | 'error' | 'warning' | 'info' | 'loading';
+
+export type ShowToastOptions = {
+  /** Showing a toast whose id is already on screen updates it in place. */
+  id?: string;
+  /** Suffixed onto `id`, so one id can be live once per resource. */
   resourceName?: string;
-}
+  status?: ToastStatus;
+  title?: ReactNode;
+  description?: ReactNode;
+  /** Milliseconds until auto-dismiss; `null` keeps the toast until closed. Errors default to `null`. */
+  duration?: number | null;
+  /** Fires when the user closes the toast or it times out. */
+  onClose?: () => void;
+};
+
+export type UpdateToastOptions = Omit<ShowToastOptions, 'id' | 'resourceName'>;
+
+const DEFAULT_TOAST_DURATION = 5000;
 
 type GetToastIdProps = {
-  initialId?: ToastId;
+  initialId?: string;
   resourceName?: string;
 };
 
@@ -30,30 +47,54 @@ const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
     return initialId;
   }
 
-  return `${initialId}_${resourceName}`;
+  return initialId ? `${initialId}_${resourceName}` : resourceName;
 };
 
-export const showToast = (options: ShowToastOptions) => {
-  const { toast } = createStandaloneToast();
+// Base UI: timeout 0 means sticky, and a `loading` toast never times out.
+const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined): number => {
+  if (duration === null) {
+    return 0;
+  }
+  if (duration !== undefined) {
+    return duration;
+  }
+  return status === 'error' ? 0 : DEFAULT_TOAST_DURATION;
+};
 
-  const defaultToastSettings: Partial<UseToastOptions> = {
-    position: 'top',
-    size: 'xs',
-    isClosable: true,
-    duration: 5000,
-  };
-
-  const toastId = getToastId({
-    initialId: options?.id,
-    resourceName: options?.resourceName,
+/** Returns the toast id, for `updateToast` / `closeToast`. */
+export const showToast = ({
+  id,
+  resourceName,
+  status,
+  title,
+  description,
+  duration,
+  onClose,
+}: ShowToastOptions): string =>
+  toast.add({
+    id: getToastId({ initialId: id, resourceName }),
+    type: status,
+    title,
+    description,
+    timeout: toTimeout(status, duration),
+    onClose,
   });
 
-  if (!(toastId && toast.isActive(toastId))) {
-    toast({
-      ...defaultToastSettings,
-      ...options,
-      duration: options.status === 'error' ? null : defaultToastSettings.duration,
-    });
+/** Only the fields given change. A new status re-applies its dismiss default unless `duration` is given. */
+export const updateToast = (id: string, { status, title, description, duration }: UpdateToastOptions) => {
+  const timeout = status !== undefined || duration !== undefined ? toTimeout(status, duration) : undefined;
+  toast.update(id, {
+    ...(status !== undefined && { type: status }),
+    ...(timeout !== undefined && { timeout }),
+    ...(title !== undefined && { title }),
+    ...(description !== undefined && { description }),
+  });
+};
+
+// Base UI closes every toast when the id is missing.
+export const closeToast = (id: string) => {
+  if (id) {
+    toast.close(id);
   }
 };
 

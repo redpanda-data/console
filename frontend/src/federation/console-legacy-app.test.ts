@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 
 import type { ConsoleAppProps } from './types';
 
-const { mockCreateRoot, mockRender, mockUnmount } = vi.hoisted(() => {
-  const render = vi.fn();
-  const unmount = vi.fn();
+const { mockCreateRoot, mockRender, mockUnmount } = rs.hoisted(() => {
+  const render = rs.fn();
+  const unmount = rs.fn();
   return {
-    mockCreateRoot: vi.fn(() => ({
+    mockCreateRoot: rs.fn(() => ({
       render,
       unmount,
     })),
@@ -26,11 +26,11 @@ const { mockCreateRoot, mockRender, mockUnmount } = vi.hoisted(() => {
   };
 });
 
-vi.mock('react-dom/client', () => ({
+rs.mock('react-dom/client', () => ({
   createRoot: mockCreateRoot,
 }));
 
-vi.mock('./console-app', () => ({
+rs.mock('./console-app', () => ({
   default: 'MockConsoleApp',
   ConsoleApp: 'MockConsoleApp',
 }));
@@ -56,7 +56,7 @@ function legacyElement(overrides: Partial<ConsoleAppProps> = {}): LegacyReactEle
 
 describe('Console legacy Module Federation app expose', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('returns a React 18 element shape without calling React hooks', () => {

@@ -9,13 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import type { SortingState } from '@redpanda-data/ui';
+import type { SortingState } from '@tanstack/react-table';
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 
 import { AclRequestDefault, type GetAclsRequest } from './rest-interfaces';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
-import type { ConnectTabKeys } from '../components/pages/connect/overview';
 import type { TopicTabId } from '../components/pages/topics/topic-details';
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { clone } from '../utils/json-utils';
@@ -110,6 +109,8 @@ export const PartitionOffsetOrigin = {
 } as const;
 
 export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typeof PartitionOffsetOrigin];
+
+export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 
 export const DEFAULT_SEARCH_PARAMS = {
   offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
@@ -292,10 +293,6 @@ type UISettings = {
     quickSearch: string;
   };
 
-  rpcnSecretList: {
-    quickSearch: string;
-  };
-
   pipelinesDetails: {
     logsQuickSearch: string;
     sorting: SortingState;
@@ -472,10 +469,6 @@ const defaultUiSettings: UISettings = {
   },
 
   pipelinesList: {
-    quickSearch: '',
-  },
-
-  rpcnSecretList: {
     quickSearch: '',
   },
 
@@ -709,10 +702,17 @@ export const useUISettingsStore = create<UISettingsStore>()(
 );
 
 /**
- * UI-settings side-effects: debounced auto-save on change, immediate save on visibility change, and
- * cross-tab sync via `storage`. Returns a teardown that removes every listener and pending timer.
- * Installed from the app entries inside a `useEffect` so React owns the lifecycle; no-op without
- * `window`.
+ * Installs side-effects for the UI-settings store:
+ *   - debounced auto-save on store change
+ *   - immediate auto-save on visibility change
+ *   - cross-tab settings sync via the `storage` event
+ *
+ * Returns a teardown function that removes all listeners / subscribers and
+ * clears any pending save timer.
+ *
+ * Installed from `app.tsx` / `embedded-app.tsx` inside a `useEffect` so
+ * React owns the lifecycle. No-op when `window` is undefined (SSR and tests
+ * isolate resets before happy-dom installs globals).
  */
 export function installUISettingsSideEffects(): () => void {
   if (typeof window === 'undefined') {

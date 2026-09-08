@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 /**
  * Holds the registry-synced theme.css to scoping the sidebar's `::selection` pair at the sidebar.
  *
@@ -14,12 +16,12 @@
  * components/layout/sidebar.tsx).
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '@rstest/core';
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// From the vitest root (frontend/); `import.meta.url` is a vite URL here, not a file: one.
+// Test commands run from the frontend root.
 const THEME_CSS = readFileSync(resolve(process.cwd(), 'src/components/redpanda-ui/style/theme.css'), 'utf8');
 
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;

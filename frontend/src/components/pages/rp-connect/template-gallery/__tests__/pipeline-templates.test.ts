@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 
 import { TEMPLATE_CATEGORY_ORDER } from '../pipeline-template-types';
 import { getTemplateById, PIPELINE_TEMPLATES } from '../pipeline-templates';

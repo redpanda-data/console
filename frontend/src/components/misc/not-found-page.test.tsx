@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 
-const { mockConfig, mockLocation, mockRouter } = vi.hoisted(() => ({
+const { mockConfig, mockLocation, mockRouter } = rs.hoisted(() => ({
   mockConfig: {
     clusterId: 'cluster-123' as string | undefined,
   },
@@ -9,12 +9,12 @@ const { mockConfig, mockLocation, mockRouter } = vi.hoisted(() => ({
   },
   mockRouter: {
     history: {
-      back: vi.fn(),
+      back: rs.fn(),
     },
   },
 }));
 
-vi.mock('@redpanda-data/ui', () => ({
+rs.mock('@redpanda-data/ui', () => ({
   Center: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Heading: ({ as: Component = 'h2', children }: { as?: 'h1' | 'h2'; children: React.ReactNode }) => (
     <Component>{children}</Component>
@@ -23,7 +23,7 @@ vi.mock('@redpanda-data/ui', () => ({
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('@tanstack/react-router', () => ({
+rs.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, ...props }: { children: React.ReactNode; to: string }) => (
     <a href={to} {...props}>
       {children}
@@ -33,7 +33,7 @@ vi.mock('@tanstack/react-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-vi.mock('../../config', () => ({
+rs.mock('../../config', () => ({
   config: mockConfig,
 }));
 

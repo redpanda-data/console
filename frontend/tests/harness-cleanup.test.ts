@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import { QueryClient } from '@tanstack/react-query';
-import { describe, expect, test, vi } from 'vitest';
 
 import { cleanupTestHarness, trackedQueryClients, trackedRouters, trackedTeardowns } from './harness-cleanup';
 
@@ -18,16 +18,16 @@ describe('cleanupTestHarness', () => {
   test('waits for query cancellation before clearing retained resources', async () => {
     const queryClient = new QueryClient();
     let finishCancellation: (() => void) | undefined;
-    const cancelQueries = vi.spyOn(queryClient, 'cancelQueries').mockImplementation(
+    const cancelQueries = rs.spyOn(queryClient, 'cancelQueries').mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           finishCancellation = resolve;
         })
     );
-    const clear = vi.spyOn(queryClient, 'clear');
-    const unmount = vi.spyOn(queryClient, 'unmount');
-    const destroyHistory = vi.fn();
-    const teardown = vi.fn();
+    const clear = rs.spyOn(queryClient, 'clear');
+    const unmount = rs.spyOn(queryClient, 'unmount');
+    const destroyHistory = rs.fn();
+    const teardown = rs.fn();
 
     trackedQueryClients.add(queryClient);
     trackedRouters.add({ history: { destroy: destroyHistory } });
@@ -54,7 +54,7 @@ describe('cleanupTestHarness', () => {
   test('runs every teardown and reports failures', async () => {
     const firstError = new Error('first teardown failed');
     const secondError = new Error('second teardown failed');
-    const finalTeardown = vi.fn();
+    const finalTeardown = rs.fn();
 
     trackedTeardowns.add(() => {
       throw firstError;

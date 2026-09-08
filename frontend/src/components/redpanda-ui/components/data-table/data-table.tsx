@@ -254,6 +254,7 @@ export function DataTable<TData extends RowData>({
       data,
       columns: allColumns,
       autoResetPageIndex: false,
+      autoResetExpanded: false,
       enableRowSelection: selectable,
       enableSorting: sorting,
       getRowCanExpand: getRowCanExpand ?? (() => Boolean(subComponent)),

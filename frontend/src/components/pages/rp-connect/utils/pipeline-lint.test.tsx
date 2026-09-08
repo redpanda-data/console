@@ -10,7 +10,7 @@
  */
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '@rstest/core';
 
 import { localYamlLintHints, mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from './pipeline-lint';
 

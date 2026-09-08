@@ -1,20 +1,20 @@
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import useDeveloperView from './use-developer-view';
 
 describe('useDeveloperView', () => {
   const store: Record<string, string> = {};
   const localStorageMock = {
-    getItem: vi.fn((key: string) => store[key] ?? null),
-    setItem: vi.fn((key: string, value: string) => {
+    getItem: rs.fn((key: string) => store[key] ?? null),
+    setItem: rs.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: vi.fn((key: string) => {
+    removeItem: rs.fn((key: string) => {
       delete store[key];
     }),
-    clear: vi.fn(() => {
+    clear: rs.fn(() => {
       for (const key of Object.keys(store)) {
         delete store[key];
       }
@@ -22,7 +22,7 @@ describe('useDeveloperView', () => {
     get length() {
       return Object.keys(store).length;
     },
-    key: vi.fn((index: number) => Object.keys(store)[index] ?? null),
+    key: rs.fn((index: number) => Object.keys(store)[index] ?? null),
   };
 
   beforeEach(() => {
@@ -30,11 +30,11 @@ describe('useDeveloperView', () => {
     for (const key of Object.keys(store)) {
       delete store[key];
     }
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    rs.restoreAllMocks();
   });
 
   it('returns false by default when localStorage has no stored value', () => {
@@ -66,7 +66,7 @@ describe('useDeveloperView', () => {
     // The tested fallback path intentionally catches + logs a SyntaxError via
     // @redpanda-data/ui's useLocalStorage (which uses console.log). Scope the
     // mute to this single test so the expected error doesn't pollute CI output.
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {
+    const logSpy = rs.spyOn(console, 'log').mockImplementation(() => {
       // intentionally empty — scoped mute for expected fallback log
     });
     store.dv = 'not-json';

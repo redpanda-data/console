@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+// Copyright 2026 Redpanda Data, Inc.
+
+import { describe, expect, it } from '@rstest/core';
 
 import { classifyGround } from './use-theme-appearance';
 

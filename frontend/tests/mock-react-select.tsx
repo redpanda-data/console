@@ -1,5 +1,5 @@
+import { rs } from '@rstest/core';
 import type { ChangeEvent } from 'react';
-import { vi } from 'vitest';
 
 type ChakraEvent = {
   label: string;
@@ -31,6 +31,6 @@ const MockedReactSelect = ({ options, value, onChange }: MockedReactSelectProps)
   );
 };
 
-vi.mock('react-select', () => ({
+rs.mock('react-select', () => ({
   default: MockedReactSelect,
 }));

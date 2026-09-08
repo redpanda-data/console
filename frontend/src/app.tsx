@@ -39,7 +39,7 @@ import './globals.css';
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
+import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -57,7 +57,9 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
+import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
+import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
 
@@ -73,6 +75,7 @@ const dataplaneTransport = createConnectTransport({
 // Create router instance
 const router = createRouter({
   routeTree,
+  ...routerDefaults,
   context: {
     basePath: getBasePath(),
     queryClient,
@@ -129,7 +132,9 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+      <ChakraProvider resetCSS={false} theme={redpandaTheme}>
+        {/* showToast viewport, above the router so the error boundary and login can toast */}
+        <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />

@@ -22,7 +22,6 @@ import { EditorView, keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
@@ -525,10 +524,8 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             </Button>
             <Button onClick={doRun} size="sm" variant="primary">
               <Play /> Run
-              <KbdGroup>
-                <Kbd size="xs">{isMacOS() ? '⌘' : 'Ctrl'}</Kbd>
-                <Kbd size="xs">↵</Kbd>
-              </KbdGroup>
+              {/* Inline hint, not boxed keys: the registry chip's chrome is for on-surface use. */}
+              <span className="-ml-1 font-mono text-body-sm opacity-70">{isMacOS() ? '⌘↵' : 'Ctrl+↵'}</span>
             </Button>
           </div>
         </div>

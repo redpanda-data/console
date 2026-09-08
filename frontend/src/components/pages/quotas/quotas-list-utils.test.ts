@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import type { SortingState } from '@tanstack/react-table';
 import { Quota_EntityType, type Quota_Value, Quota_ValueType } from 'protogen/redpanda/api/dataplane/v1/quota_pb';
-import { describe, expect, test } from 'vitest';
 
 import {
   clampPageIndex,

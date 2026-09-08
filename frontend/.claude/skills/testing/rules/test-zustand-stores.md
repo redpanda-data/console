@@ -2,7 +2,7 @@
 title: Zustand Store Testing
 impact: HIGH
 impactDescription: Prevents state leakage between tests
-tags: vitest, zustand, state, testing
+tags: rstest, zustand, state, testing
 ---
 
 # Zustand Store Testing (HIGH)
@@ -31,12 +31,12 @@ test('test 2', () => {
 ## Correct
 
 ```typescript
-import { vi } from 'vitest';
+import { rs } from '@rstest/core';
 import { renderHook, act } from '@testing-library/react';
 import { useMyStore } from './store';
 
 // Enable automatic store resets
-vi.mock('zustand');
+rs.mock('zustand');
 
 describe('MyStore', () => {
   beforeEach(() => {

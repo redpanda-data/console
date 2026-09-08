@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 
 import { config, createAuthInjectingFetch } from './config';
 
@@ -27,7 +27,7 @@ describe('createAuthInjectingFetch', () => {
 
   test('attaches the Bearer token from config.jwt when no Authorization header is present', async () => {
     config.jwt = 'token-123';
-    const baseFetch = vi.fn().mockResolvedValue(ok);
+    const baseFetch = rs.fn().mockResolvedValue(ok);
 
     await createAuthInjectingFetch(baseFetch)('/api/schema-registry/subjects/x/versions/latest/validate', {
       method: 'POST',
@@ -48,7 +48,7 @@ describe('createAuthInjectingFetch', () => {
 
   test('does not overwrite an Authorization header a host-provided (V1) fetch already set', async () => {
     config.jwt = 'token-123';
-    const baseFetch = vi.fn().mockResolvedValue(ok);
+    const baseFetch = rs.fn().mockResolvedValue(ok);
 
     await createAuthInjectingFetch(baseFetch)('/api/topics', {
       headers: { Authorization: 'Bearer host-token' },
@@ -60,7 +60,7 @@ describe('createAuthInjectingFetch', () => {
 
   test('adds no Authorization header when config.jwt is unset (standalone OSS)', async () => {
     config.jwt = undefined;
-    const baseFetch = vi.fn().mockResolvedValue(ok);
+    const baseFetch = rs.fn().mockResolvedValue(ok);
 
     await createAuthInjectingFetch(baseFetch)('/api/topics');
 
@@ -70,7 +70,7 @@ describe('createAuthInjectingFetch', () => {
 
   test('reads config.jwt lazily at call time so token refreshes are picked up', async () => {
     config.jwt = 'old-token';
-    const baseFetch = vi.fn().mockResolvedValue(ok);
+    const baseFetch = rs.fn().mockResolvedValue(ok);
     const authFetch = createAuthInjectingFetch(baseFetch);
 
     config.jwt = 'refreshed-token';

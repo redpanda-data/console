@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterAll, beforeAll, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import { SqlResults } from './sql-results';
 import type { QueryRunSuccess, SqlRole } from './sql-types';
@@ -96,7 +96,7 @@ describe('SqlResults cell clamping', () => {
 
 describe('SqlResults create-table hint', () => {
   test('admin create errors can open the add-topic wizard', async () => {
-    const onAddTable = vi.fn();
+    const onAddTable = rs.fn();
     render(
       <SqlResults
         onAddTable={onAddTable}
@@ -120,7 +120,7 @@ describe('SqlResults create-table hint', () => {
   test('viewer create errors do not show the add-topic action', () => {
     render(
       <SqlResults
-        onAddTable={vi.fn()}
+        onAddTable={rs.fn()}
         run={{
           state: 'error',
           token: 2,
@@ -139,7 +139,7 @@ describe('SqlResults create-table hint', () => {
 
 describe('SqlResults run cancellation', () => {
   test('the running state shows a Cancel button that stops the run', async () => {
-    const onCancel = vi.fn();
+    const onCancel = rs.fn();
     render(<SqlResults onCancel={onCancel} run={{ state: 'running', token: 1 }} sqlRole={viewer} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));

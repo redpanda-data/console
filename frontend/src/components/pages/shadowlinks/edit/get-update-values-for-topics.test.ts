@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { describe, expect, test } from '@rstest/core';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   FilterType,
@@ -19,7 +20,6 @@ import {
   ShadowLinkConfigurationsSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
 
 import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
 import type { FormValues } from '../create/model';

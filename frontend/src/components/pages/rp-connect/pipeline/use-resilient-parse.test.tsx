@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 
 import { useResilientParse } from './use-resilient-parse';
 import { isPipelineEmpty } from '../utils/pipeline-flow-parser';

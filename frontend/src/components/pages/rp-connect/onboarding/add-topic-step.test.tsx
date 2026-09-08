@@ -11,22 +11,22 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, it, rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { CreateTopicResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { ComponentProps } from 'react';
 import { useRef } from 'react';
 import { render, screen, waitFor } from 'test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
 
 // 1. Mock config module with a controllable fetch
-const mockFetch = vi.fn();
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+const mockFetch = rs.fn();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: {
@@ -39,21 +39,21 @@ vi.mock('config', async (importOriginal) => {
 });
 
 // 2. Mock backend-api (used by useCreateTopicMutation onSuccess + useTopicConfigQuery)
-vi.mock('state/backend-api', () => ({
+rs.mock('state/backend-api', () => ({
   api: {
-    refreshTopics: vi.fn(() => Promise.resolve()),
-    refreshTopicConfig: vi.fn(() => Promise.resolve()),
+    refreshTopics: rs.fn(() => Promise.resolve()),
+    refreshTopicConfig: rs.fn(() => Promise.resolve()),
     topicConfig: new Map(),
   },
 }));
 
 // 3. Mock AdvancedTopicSettings sub-component (not under test)
-vi.mock('./advanced-topic-settings', () => ({
+rs.mock('./advanced-topic-settings', () => ({
   AdvancedTopicSettings: () => <div data-testid="advanced-topic-settings" />,
 }));
 
 // 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 // Import component after mocks
 import { AddTopicStep } from './add-topic-step';
@@ -76,12 +76,12 @@ function createTopicsResponse(topicNames: string[]) {
   };
 }
 
-function createTransport(overrides?: { createTopicMock?: ReturnType<typeof vi.fn> }) {
+function createTransport(overrides?: { createTopicMock?: ReturnType<typeof rs.fn> }) {
   return createRouterTransport(({ rpc }) => {
     rpc(
       createTopic,
       overrides?.createTopicMock ??
-        vi.fn().mockReturnValue(
+        rs.fn().mockReturnValue(
           create(CreateTopicResponseSchema, {
             topicName: 'new-topic',
             partitionCount: 1,
@@ -172,7 +172,7 @@ describe('AddTopicStep', () => {
 
   it('new topic calls createTopic RPC', async () => {
     const user = userEvent.setup();
-    const createTopicMock = vi.fn().mockReturnValue(
+    const createTopicMock = rs.fn().mockReturnValue(
       create(CreateTopicResponseSchema, {
         topicName: 'new-topic',
         partitionCount: 1,
@@ -328,7 +328,7 @@ describe('AddTopicStep', () => {
 
   it('createTopic error returns failure result', async () => {
     const user = userEvent.setup();
-    const createTopicMock = vi.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
+    const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
     const transport = createTransport({ createTopicMock });
 
     let result: unknown;

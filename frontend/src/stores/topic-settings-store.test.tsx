@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 
 import {
   DEFAULT_MESSAGE_COLUMNS,

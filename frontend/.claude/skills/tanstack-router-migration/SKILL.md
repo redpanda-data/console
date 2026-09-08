@@ -403,27 +403,25 @@ export async function renderRoute(location: string, options?: RenderWithFileRout
 }
 ```
 
-**Configure Vitest:**
+**Configure Rstest:**
 
 ```typescript
-// vitest.config.integration.mts
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
+// rstest.config.integration.ts
+import { pluginReact } from '@rsbuild/plugin-react';
+import { defineProject } from '@rstest/core';
 
-export default defineConfig({
-  plugins: [
-    tanstackRouter({
-      target: 'react',
-      routesDirectory: './src/routes',
-      generatedRouteTree: './src/routeTree.gen.ts',
-    }),
-    react(),
-  ],
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+export default defineProject({
+  plugins: [pluginReact()],
+  include: ['src/**/*.test.tsx'],
+  testEnvironment: {
+    name: 'happy-dom',
+    prebundle: 'auto',
   },
+  setupFiles: './rstest.setup.ts',
 });
 ```
+
+Rstest consumes the generated route tree. Keep route generation in `rsbuild.config.ts`.
 
 ### Phase 7: Integrations
 
@@ -554,7 +552,7 @@ navigate({
 
 ### Testing
 - [ ] `renderWithFileRoutes` utility created
-- [ ] Vitest configured with TanStack Router plugin
+- [ ] Rstest integration project configured for route tests
 - [ ] Existing tests updated to use new utilities
 
 ### Integrations

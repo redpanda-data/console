@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, it, rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import type { editor } from 'monaco-editor';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
@@ -21,12 +22,11 @@ import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicServic
 import { ListUsersResponse_UserSchema, ListUsersResponseSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { render, screen, waitFor } from 'test-utils';
-import { describe, expect, it, vi } from 'vitest';
 
 import { PipelineCommandMenu } from './pipeline-command-menu';
 
 // cmdk calls scrollIntoView on selected items — JSDOM does not implement it
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 // ---------------------------------------------------------------------------
 // Mock editor factory
@@ -34,18 +34,18 @@ Element.prototype.scrollIntoView = vi.fn();
 
 function createMockEditor() {
   return {
-    getPosition: vi.fn(() => ({ lineNumber: 1, column: 1 })),
-    getModel: vi.fn(() => ({
-      getLineContent: vi.fn(() => ''),
-      getLineMaxColumn: vi.fn(() => 1),
-      getValue: vi.fn(() => ''),
+    getPosition: rs.fn(() => ({ lineNumber: 1, column: 1 })),
+    getModel: rs.fn(() => ({
+      getLineContent: rs.fn(() => ''),
+      getLineMaxColumn: rs.fn(() => 1),
+      getValue: rs.fn(() => ''),
     })),
-    executeEdits: vi.fn(),
-    setPosition: vi.fn(),
-    focus: vi.fn(),
-    getDomNode: vi.fn(() => null),
-    getScrolledVisiblePosition: vi.fn(() => null),
-    onDidScrollChange: vi.fn(() => ({ dispose: vi.fn() })),
+    executeEdits: rs.fn(),
+    setPosition: rs.fn(),
+    focus: rs.fn(),
+    getDomNode: rs.fn(() => null),
+    getScrolledVisiblePosition: rs.fn(() => null),
+    onDidScrollChange: rs.fn(() => ({ dispose: rs.fn() })),
   } as unknown as editor.IStandaloneCodeEditor;
 }
 
@@ -101,7 +101,7 @@ describe('PipelineCommandMenu', () => {
   it('dialog variant renders all category group headings', async () => {
     const transport = createTestTransport();
 
-    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
       transport,
     });
 
@@ -116,7 +116,7 @@ describe('PipelineCommandMenu', () => {
   it('secret items appear in the list with correct syntax', async () => {
     const transport = createTestTransport({ secretNames: ['MY_API_KEY', 'DB_PASSWORD'] });
 
-    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
       transport,
     });
 
@@ -130,7 +130,7 @@ describe('PipelineCommandMenu', () => {
     const user = userEvent.setup();
     const transport = createTestTransport();
     const mockEditor = createMockEditor();
-    const onOpenChange = vi.fn();
+    const onOpenChange = rs.fn();
 
     render(<PipelineCommandMenu editorInstance={mockEditor} onOpenChange={onOpenChange} open variant="dialog" />, {
       transport,
@@ -155,7 +155,7 @@ describe('PipelineCommandMenu', () => {
     const user = userEvent.setup();
     const transport = createTestTransport({ secretNames: ['SECRET_ONE'] });
 
-    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
       transport,
     });
 
@@ -180,8 +180,8 @@ describe('PipelineCommandMenu', () => {
     render(
       <PipelineCommandMenu
         editorInstance={createMockEditor()}
-        onOpenChange={vi.fn()}
-        onSlashSelect={vi.fn()}
+        onOpenChange={rs.fn()}
+        onSlashSelect={rs.fn()}
         open
         slashPosition={{ lineNumber: 1, column: 1 }}
         variant="popover"
@@ -196,12 +196,12 @@ describe('PipelineCommandMenu', () => {
   it('popover selection calls onSlashSelect with variable text', async () => {
     const user = userEvent.setup();
     const transport = createTestTransport();
-    const onSlashSelect = vi.fn();
+    const onSlashSelect = rs.fn();
 
     render(
       <PipelineCommandMenu
         editorInstance={createMockEditor()}
-        onOpenChange={vi.fn()}
+        onOpenChange={rs.fn()}
         onSlashSelect={onSlashSelect}
         open
         slashPosition={{ lineNumber: 1, column: 1 }}
@@ -220,7 +220,7 @@ describe('PipelineCommandMenu', () => {
   it('topic items from API appear in list', async () => {
     const transport = createTestTransport({ topicNames: ['my-topic', 'orders'] });
 
-    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
       transport,
     });
 
@@ -233,7 +233,7 @@ describe('PipelineCommandMenu', () => {
   it('"Create secret" button opens AddSecretsDialog', async () => {
     const user = userEvent.setup();
     const transport = createTestTransport({ secretNames: ['EXISTING_KEY'] });
-    const onOpenChange = vi.fn();
+    const onOpenChange = rs.fn();
 
     render(
       <PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={onOpenChange} open variant="dialog" />,
@@ -258,7 +258,7 @@ describe('PipelineCommandMenu', () => {
     it('"All" tab shows all three create buttons', async () => {
       const transport = createTestTransport();
 
-      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
         transport,
       });
 
@@ -273,7 +273,7 @@ describe('PipelineCommandMenu', () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
-      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
         transport,
       });
 
@@ -292,7 +292,7 @@ describe('PipelineCommandMenu', () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
-      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
         transport,
       });
 
@@ -311,7 +311,7 @@ describe('PipelineCommandMenu', () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
-      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
         transport,
       });
 
@@ -330,7 +330,7 @@ describe('PipelineCommandMenu', () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
-      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={vi.fn()} open variant="dialog" />, {
+      render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
         transport,
       });
 
@@ -351,8 +351,8 @@ describe('PipelineCommandMenu', () => {
       render(
         <PipelineCommandMenu
           editorInstance={createMockEditor()}
-          onOpenChange={vi.fn()}
-          onSlashSelect={vi.fn()}
+          onOpenChange={rs.fn()}
+          onSlashSelect={rs.fn()}
           open
           slashPosition={{ lineNumber: 1, column: 1 }}
           variant="popover"

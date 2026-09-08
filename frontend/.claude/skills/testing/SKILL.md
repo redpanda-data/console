@@ -1,11 +1,11 @@
 ---
 name: testing
-description: Write and maintain tests with Vitest v4 dual configuration, mock utilities, and Zustand store testing patterns.
+description: Write and maintain tests with Rstest dual projects, mock utilities, and Zustand store testing patterns.
 ---
 
 # Testing
 
-Write reliable tests with Vitest v4 dual configuration.
+Write reliable tests with Rstest dual projects.
 
 ## Activation Conditions
 
@@ -31,14 +31,13 @@ bun run test              # All tests (CI default)
 bun run test:ci           # Sequential for CI
 bun run test:unit         # Unit tests only
 bun run test:integration  # Integration tests only
-bun run test:ui           # Interactive UI
 bun run test:watch        # Watch mode
 bun run test:coverage     # Coverage report
 ```
 
 ## Key Points
 
-- `.test.ts` = unit (Node.js), `.test.tsx` = integration (JSDOM)
+- `.test.ts` = unit (Node.js), `.test.tsx` = integration (happy-dom)
 - Always use `test-utils/test-utils.tsx` for React component tests
 - Test that features are fully wired: UI elements must connect to actual functionality
 

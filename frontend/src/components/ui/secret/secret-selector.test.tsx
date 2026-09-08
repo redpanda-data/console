@@ -11,14 +11,14 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi } from 'vitest';
+import { describe, expect, test, rs } from '@rstest/core';
 
 import { SecretSelector, type SecretSelectorCustomText } from './secret-selector';
 
-const mockCreateSecret = vi.fn().mockResolvedValue({});
+const mockCreateSecret = rs.fn().mockResolvedValue({});
 
 // Mock the secret mutation hook - SecretSelector uses it for the "Create secret" dialog
-vi.mock('react-query/api/secret', () => ({
+rs.mock('react-query/api/secret', () => ({
   useCreateSecretMutation: () => ({
     mutateAsync: mockCreateSecret,
     isPending: false,
@@ -39,7 +39,7 @@ const customText: SecretSelectorCustomText = {
 };
 
 const defaultProps = {
-  onChange: vi.fn(),
+  onChange: rs.fn(),
   availableSecrets,
   scopes: [],
   customText,
@@ -71,7 +71,7 @@ describe('SecretSelector', () => {
 
   test('shows newly created secret in dropdown after creation from empty state', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = rs.fn();
 
     const { rerender } = render(
       <SecretSelector {...defaultProps} availableSecrets={[]} onChange={onChange} value="" />,
@@ -127,7 +127,7 @@ describe('SecretSelector', () => {
 
   test('accepts short values when minValueLength allows them (e.g. Basic passwords)', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = rs.fn();
 
     render(<SecretSelector {...defaultProps} availableSecrets={[]} minValueLength={1} onChange={onChange} value="" />);
     await user.click(screen.getByRole('button', { name: /create secret/i }));

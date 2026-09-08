@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 import { render, screen } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { CatalogTree } from './catalog-tree';
 import type { Catalog, TableRef } from './sql-types';
 
-vi.mock('react-query/api/sql', () => ({
-  useListTablesQuery: vi.fn(),
-  useDescribeTableQuery: vi.fn(),
-  useTopicIcebergQuery: vi.fn(),
+rs.mock('react-query/api/sql', () => ({
+  useListTablesQuery: rs.fn(),
+  useDescribeTableQuery: rs.fn(),
+  useTopicIcebergQuery: rs.fn(),
 }));
 
 const tableRef = (name: string, overrides: Partial<TableRef> = {}): TableRef => ({
@@ -50,14 +50,14 @@ const PAGED_TABLE_RE = /t\d\d/;
 const LOAD_MORE_RE = /Load more · 5 remaining/;
 
 beforeEach(() => {
-  vi.mocked(useListTablesQuery).mockReturnValue(noTables as never);
-  vi.mocked(useDescribeTableQuery).mockReturnValue({ data: undefined, isLoading: false } as never);
-  vi.mocked(useTopicIcebergQuery).mockReturnValue({ isIceberg: false } as never);
+  rs.mocked(useListTablesQuery).mockReturnValue(noTables as never);
+  rs.mocked(useDescribeTableQuery).mockReturnValue({ data: undefined, isLoading: false } as never);
+  rs.mocked(useTopicIcebergQuery).mockReturnValue({ isIceberg: false } as never);
 });
 
 describe('CatalogTree', () => {
   test('renders an ARIA tree with catalogs, namespaces and tables expanded by default', () => {
-    render(<CatalogTree catalogs={[catalog()]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
     expect(screen.getByRole('tree', { name: 'Catalogs' })).toBeInTheDocument();
     const items = screen.getAllByRole('treeitem');
@@ -67,7 +67,7 @@ describe('CatalogTree', () => {
   });
 
   test('collapsing a catalog hides its namespaces and tables', async () => {
-    render(<CatalogTree catalogs={[catalog()]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
     await userEvent.click(screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE }));
 
@@ -77,7 +77,7 @@ describe('CatalogTree', () => {
   });
 
   test('search filters tables', async () => {
-    render(<CatalogTree catalogs={[catalog()]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
     await userEvent.type(screen.getByPlaceholderText('Search tables'), 'ord');
 
@@ -86,7 +86,7 @@ describe('CatalogTree', () => {
   });
 
   test('clicking the query action calls onQueryTable with the catalog and table', async () => {
-    const onQueryTable = vi.fn();
+    const onQueryTable = rs.fn();
     render(<CatalogTree catalogs={[catalog()]} onQueryTable={onQueryTable} sqlRole="viewer" />);
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Query this table' })[0]);
@@ -100,7 +100,7 @@ describe('CatalogTree', () => {
   test('expanding a table lists its columns with type labels', async () => {
     // Types arrive lower-cased from the backend; composite columns as "record"
     // with their nested fields parsed server-side.
-    vi.mocked(useDescribeTableQuery).mockReturnValue({
+    rs.mocked(useDescribeTableQuery).mockReturnValue({
       data: {
         columns: [
           { name: 'id', type: 'bigint' },
@@ -111,7 +111,7 @@ describe('CatalogTree', () => {
       },
       isLoading: false,
     } as never);
-    render(<CatalogTree catalogs={[catalog()]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
     await userEvent.click(screen.getByRole('treeitem', { name: ORDERS_RE }));
 
@@ -131,21 +131,21 @@ describe('CatalogTree', () => {
     const locked = catalog({
       namespaces: [{ id: 'rp.public', name: 'public', tables: [tableRef('secret', { allowed: false })] }],
     });
-    render(<CatalogTree catalogs={[locked]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[locked]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
     expect(screen.getByRole('treeitem', { name: SECRET_RE })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Query this table' })).toBeNull();
   });
 
   test('admin sees the catalog-level add action; viewer does not', () => {
-    const onAddTable = vi.fn();
+    const onAddTable = rs.fn();
     const { rerender } = render(
-      <CatalogTree catalogs={[catalog()]} onAddTable={onAddTable} onQueryTable={vi.fn()} sqlRole="admin" />
+      <CatalogTree catalogs={[catalog()]} onAddTable={onAddTable} onQueryTable={rs.fn()} sqlRole="admin" />
     );
     expect(screen.getByRole('button', { name: 'Add a topic to this catalog' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add a topic' })).toBeInTheDocument();
 
-    rerender(<CatalogTree catalogs={[catalog()]} onAddTable={onAddTable} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    rerender(<CatalogTree catalogs={[catalog()]} onAddTable={onAddTable} onQueryTable={rs.fn()} sqlRole="viewer" />);
     expect(screen.queryByRole('button', { name: 'Add a topic to this catalog' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add a topic' })).toBeNull();
   });
@@ -153,7 +153,7 @@ describe('CatalogTree', () => {
   test('namespaces past the page limit paginate with a load-more row', async () => {
     const tables = Array.from({ length: 25 }, (_, i) => tableRef(`t${String(i).padStart(2, '0')}`));
     const big = catalog({ namespaces: [{ id: 'rp.public', name: 'public', tables }] });
-    render(<CatalogTree catalogs={[big]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[big]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
     expect(screen.getAllByRole('treeitem', { name: PAGED_TABLE_RE })).toHaveLength(20);
     await userEvent.click(screen.getByRole('button', { name: LOAD_MORE_RE }));
@@ -161,7 +161,7 @@ describe('CatalogTree', () => {
   });
 
   test('arrow keys move focus through visible rows; left collapses', async () => {
-    render(<CatalogTree catalogs={[catalog()]} onQueryTable={vi.fn()} sqlRole="viewer" />);
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
     const catalogRow = screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE });
     const namespaceRow = screen.getByRole('treeitem', { name: PUBLIC_RE });
 

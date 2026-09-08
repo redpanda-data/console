@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { UnsupportedSchemaFeaturePolicy } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
 
 import { initialValues, SCHEMA_REGISTRY_MODE, type SchemaRegistryFormValues, SR_AUTH_METHOD } from './model';
 import {

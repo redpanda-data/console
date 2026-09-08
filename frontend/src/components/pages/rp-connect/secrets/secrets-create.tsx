@@ -1,17 +1,16 @@
 import { create } from '@bufbuild/protobuf';
-import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
+import { Button, ButtonGroup, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
 import { useState } from 'react';
 
 import { CreateSecretRequestSchema, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backend-api';
+import { showToast } from '../../../../utils/toast.utils';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import PageContent from '../../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 const returnToListTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
 const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -78,20 +77,17 @@ const RpConnectSecretCreateContent = () => {
         })
       )
       .then(() => {
-        toast({
+        showToast({
           status: 'success',
           duration: 4000,
-          isClosable: false,
           title: 'Secret created',
         });
         pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(returnToListTab);
       })
       .catch((err) => {
-        toast({
+        showToast({
           status: 'error',
-          duration: null,
-          isClosable: true,
           title: 'Failed to create secret',
           description: formatPipelineError(err),
         });
@@ -106,7 +102,6 @@ const RpConnectSecretCreateContent = () => {
 
   return (
     <PageContent>
-      <ToastContainer />
       <Flex flexDirection="column" gap={5}>
         <FormField
           description={'This secret name will be stored in upper case.'}

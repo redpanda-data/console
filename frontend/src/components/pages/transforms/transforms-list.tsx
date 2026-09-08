@@ -9,21 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Box,
-  Button,
-  Link as ChakraLink,
-  createStandaloneToast,
-  DataTable,
-  Flex,
-  SearchField,
-  Stack,
-  Text,
-} from '@redpanda-data/ui';
+import { Box, Button, Link as ChakraLink, DataTable, Flex, SearchField, Stack, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, TrashIcon } from 'components/icons';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import {
@@ -38,8 +29,6 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionStatus }) => {
   switch (p.status) {
@@ -115,7 +104,6 @@ const TransformsListContent: FC = () => {
 
   return (
     <PageContent>
-      <ToastContainer />
       <Text maxWidth="600px">
         Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
         Redpanda.{' '}
@@ -219,26 +207,22 @@ const TransformsListContent: FC = () => {
                       transformsApi
                         .deleteTransform(r.name)
                         .then(() => {
-                          toast({
+                          showToast({
                             status: 'success',
                             duration: 4000,
-                            isClosable: false,
                             title: 'Transform deleted',
                           });
                           transformsApi.refreshTransforms(true);
                         })
                         .catch((err) => {
-                          toast({
+                          showToast({
                             status: 'error',
-                            duration: null,
-                            isClosable: true,
                             title: 'Failed to delete transform',
                             description: String(err),
                           });
                         });
                     });
                   }}
-                  // disabledReason={api.userData?.canDeleteTransforms === false ? 'You don\'t have the \'canDeleteTransforms\' permission' : undefined}
                   variant="icon"
                 >
                   <TrashIcon />

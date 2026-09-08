@@ -8,6 +8,7 @@
  * use of this software will be governed by the Apache License, Version 2.0
  */
 
+import { beforeAll, describe, expect, it } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -20,7 +21,6 @@ import {
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
 import { useControllableState } from 'components/redpanda-ui/lib/use-controllable-state';
-import { beforeAll, describe, expect, it } from 'vitest';
 
 import { SCOPE_OPTIONS } from './secret-form-shared';
 

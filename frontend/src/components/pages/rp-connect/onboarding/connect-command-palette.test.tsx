@@ -1,7 +1,7 @@
+import { beforeEach, describe, expect, it, rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { render, screen, waitFor } from 'test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
@@ -30,7 +30,7 @@ const renderPalette = (props: Partial<Parameters<typeof ConnectCommandPalette>[0
     <ConnectCommandPalette
       additionalComponents={INPUT_COMPONENTS}
       allowedTypes={['input']}
-      onSelect={vi.fn()}
+      onSelect={rs.fn()}
       {...props}
     />
   );
@@ -74,7 +74,7 @@ describe('ConnectCommandPalette', () => {
 
   it('commits the highlighted component and records it under Recent', async () => {
     const user = userEvent.setup();
-    const onSelect = vi.fn();
+    const onSelect = rs.fn();
     renderPalette({ onSelect });
 
     await user.dblClick(await screen.findByRole('option', { name: GENERATE_OPTION }));

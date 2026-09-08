@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 import { parseDocument } from 'yaml';
 
 import type { PipelineTemplate } from '../pipeline-template-types';

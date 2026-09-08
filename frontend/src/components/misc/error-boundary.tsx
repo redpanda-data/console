@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, Flex, Icon, useToast } from '@redpanda-data/ui';
+import { Box, Button, Flex, Icon } from '@redpanda-data/ui';
 import { CloseIcon, CopyAllIcon } from 'components/icons';
 import React, { type CSSProperties, type FC } from 'react';
 import StackTrace from 'stacktrace-js';
@@ -18,6 +18,7 @@ import { NoClipboardPopover } from './no-clipboard-popover';
 import { envVarDebugAr } from '../../utils/env';
 import { isClipboardAvailable } from '../../utils/feature-detection';
 import { toJson } from '../../utils/json-utils';
+import { showToast } from '../../utils/toast.utils';
 import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsx-utils';
 
 // background       rgb(35, 35, 35)
@@ -248,32 +249,28 @@ const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading:
   message,
   disabled,
   isLoading,
-}) => {
-  const toast = useToast();
-
-  return (
-    <Button
-      disabled={disabled}
-      isLoading={isLoading}
-      onClick={() => {
-        navigator.clipboard
-          .writeText(message)
-          .then(() => {
-            toast({
-              status: 'success',
-              description: 'All info copied to clipboard',
-            });
-          })
-          .catch(navigatorClipboardErrorHandler);
-      }}
-      size="large"
-      variant="ghost"
-    >
-      <Icon as={CopyAllIcon} />
-      Copy Info
-    </Button>
-  );
-};
+}) => (
+  <Button
+    disabled={disabled}
+    isLoading={isLoading}
+    onClick={() => {
+      navigator.clipboard
+        .writeText(message)
+        .then(() => {
+          showToast({
+            status: 'success',
+            description: 'All info copied to clipboard',
+          });
+        })
+        .catch(navigatorClipboardErrorHandler);
+    }}
+    size="large"
+    variant="ghost"
+  >
+    <Icon as={CopyAllIcon} />
+    Copy Info
+  </Button>
+);
 
 function InfoItemDisplay({ data }: { data: InfoItem }) {
   const title = data.name;

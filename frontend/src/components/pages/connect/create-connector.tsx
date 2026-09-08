@@ -29,10 +29,10 @@ import {
   Tabs,
   Text,
   useDisclosure,
-  useToast,
 } from '@redpanda-data/ui';
 import { useEffect, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './connector-box-card';
 import { ConfigPage } from './dynamic-ui/components';
@@ -227,12 +227,6 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
     return (
       <PageContent>
         <ConnectorWizard activeCluster={clusterName} connectClusters={clusters} />
-        {/*
-                <Section>
-                    <div className={styles.wizardView}>
-
-                    </div>
-                </Section> */}
       </PageContent>
     );
   }
@@ -244,7 +238,6 @@ type ConnectorWizardProps = {
 };
 
 const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProps) => {
-  const toast = useToast();
   const [wizardState, setWizardState] = useState<{
     currentStep: number;
     selectedPlugin: ConnectorPlugin | null;
@@ -484,7 +477,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
 
             await delay(intervalSec);
           }
-          toast({
+          showToast({
             status: 'success',
             description: `Connector ${connectorName} created`,
           });

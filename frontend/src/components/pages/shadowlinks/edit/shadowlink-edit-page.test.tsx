@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
@@ -28,17 +29,16 @@ import {
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkEditPage } from './shadowlink-edit-page';
 
 // Mock the hooks
-vi.mock('react-query/api/shadowlink', () => ({
-  useEditShadowLink: vi.fn(),
+rs.mock('react-query/api/shadowlink', () => ({
+  useEditShadowLink: rs.fn(),
 }));
 
 // Mock ui-state
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -46,29 +46,29 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock config
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: {
       jwt: 'test-jwt-token',
     },
-    isFeatureFlagEnabled: vi.fn(() => false),
+    isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
 
 // Mock toast notifications
-vi.mock('sonner', () => ({
+rs.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: rs.fn(),
+    error: rs.fn(),
   },
 }));
 
 const SHADOW_LINK_NAME = 'test-shadow-link';
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     useParams: () => ({ name: SHADOW_LINK_NAME }),
@@ -198,7 +198,7 @@ type TestCase = {
   description: string;
   actions: Action[];
   expectedFieldMaskPaths: string[];
-  verify: (updateRequest: any, exp: typeof import('vitest').expect) => void;
+  verify: (updateRequest: any, exp: typeof import('@rstest/core').expect) => void;
 };
 
 /**
@@ -283,8 +283,8 @@ const testCases: TestCase[] = [
   },
 ];
 
-const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof vi.fn>, mockShadowLink: ShadowLink) => {
-  vi.mocked(useEditShadowLink).mockReturnValue({
+const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadowLink: ShadowLink) => {
+  rs.mocked(useEditShadowLink).mockReturnValue({
     formValues: buildDefaultFormValues(mockShadowLink),
     isLoading: false,
     error: null,
@@ -296,23 +296,23 @@ const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof vi.fn>, mockShadow
       isSuccess: false,
       isError: false,
       error: null,
-      reset: vi.fn(),
+      reset: rs.fn(),
     } as any,
     controlplaneUpdate: {
       isPending: false,
       isSuccess: false,
       isError: false,
       error: null,
-      reset: vi.fn(),
+      reset: rs.fn(),
     } as any,
   });
 };
 
 describe('ShadowLinkEditPage', () => {
-  const mockUpdateShadowLink = vi.fn();
+  const mockUpdateShadowLink = rs.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockUpdateShadowLink.mockImplementation((_request) => Promise.resolve({}));
     // The SR and role sync feature gates default to closed; api-mode tests seed SR open.
     useSupportedFeaturesStore.setState({

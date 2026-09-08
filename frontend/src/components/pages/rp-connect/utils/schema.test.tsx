@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { ComponentStatus, FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { rpcnWizardStore } from 'state/rpcn-wizard-store';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { mockComponents } from './__fixtures__/component-schemas';
 import { groundTruthComponents, groundTruthConfigSchema } from './__fixtures__/ground-truth';
@@ -21,7 +21,7 @@ import {
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
-vi.mock('zustand');
+rs.mock('zustand');
 
 describe('generateDefaultValue', () => {
   beforeEach(() => {

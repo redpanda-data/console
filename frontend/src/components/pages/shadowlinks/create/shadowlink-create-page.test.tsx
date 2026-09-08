@@ -9,45 +9,45 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
 
 // Mock the hooks
-vi.mock('react-query/api/shadowlink', () => ({
-  useCreateShadowLinkMutation: vi.fn(),
+rs.mock('react-query/api/shadowlink', () => ({
+  useCreateShadowLinkMutation: rs.fn(),
 }));
 
 // Mock config module
-vi.mock('../../../../config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../config')>();
+rs.mock('../../../../config', () => {
+  const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
   return {
     ...actual,
-    isEmbedded: vi.fn(() => false),
+    isEmbedded: rs.fn(() => false),
   };
 });
 
 // Mock env module
-vi.mock('../../../../utils/env', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../utils/env')>();
+rs.mock('../../../../utils/env', () => {
+  const actual = rs.requireActual<typeof import('../../../../utils/env')>('../../../../utils/env');
   return {
     ...actual,
-    getBasePath: vi.fn(() => '/console'),
+    getBasePath: rs.fn(() => '/console'),
   };
 });
 
 // Mock hookform devtools
-vi.mock('@hookform/devtools', () => ({
+rs.mock('@hookform/devtools', () => ({
   DevTool: () => null,
 }));
 
 // Mock ui-state
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -55,10 +55,10 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // Mock toast notifications
-vi.mock('sonner', () => ({
+rs.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: rs.fn(),
+    error: rs.fn(),
   },
 }));
 
@@ -261,7 +261,7 @@ const performCreateAction = async (
 type CreateTestCase = {
   description: string;
   actions: CreateAction[];
-  verify: (createRequest: any, exp: typeof import('vitest').expect) => void;
+  verify: (createRequest: any, exp: typeof import('@rstest/core').expect) => void;
 };
 
 /**
@@ -463,10 +463,10 @@ const testCases: CreateTestCase[] = [
 ];
 
 describe('ShadowLinkCreatePage', () => {
-  const mockMutateAsync = vi.fn();
+  const mockMutateAsync = rs.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
 
     // SR gate closed: these cases exercise the legacy Schema Registry switch.
     // Role gate open: the roles card and its default-all payload need >= 26.2.0.
@@ -475,7 +475,7 @@ describe('ShadowLinkCreatePage', () => {
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
 
     // Mock create mutation - must return the mutation hook properly
-    vi.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
+    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
       // Wrap mutateAsync to call onSuccess callback
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);
@@ -490,8 +490,8 @@ describe('ShadowLinkCreatePage', () => {
         isSuccess: false,
         error: null,
         data: undefined,
-        mutate: vi.fn(),
-        reset: vi.fn(),
+        mutate: rs.fn(),
+        reset: rs.fn(),
         status: 'idle',
         variables: undefined,
         context: undefined,
@@ -592,17 +592,17 @@ describe('ShadowLinkCreatePage', () => {
 });
 
 describe('ShadowLinkCreatePage - Schema Registry sync over API', () => {
-  const mockMutateAsync = vi.fn();
+  const mockMutateAsync = rs.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
 
     // Gate open: the redesigned Schema Registry section renders.
     seedSchemaRegistrySyncGate(true);
 
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
 
-    vi.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
+    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);
         options?.onSuccess?.(result, request, undefined, {} as any);
@@ -616,8 +616,8 @@ describe('ShadowLinkCreatePage - Schema Registry sync over API', () => {
         isSuccess: false,
         error: null,
         data: undefined,
-        mutate: vi.fn(),
-        reset: vi.fn(),
+        mutate: rs.fn(),
+        reset: rs.fn(),
         status: 'idle',
         variables: undefined,
         context: undefined,
@@ -737,14 +737,14 @@ describe('ShadowLinkCreatePage - Schema Registry sync over API', () => {
 });
 
 describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
-  const mockMutateAsync = vi.fn();
+  const mockMutateAsync = rs.fn();
   const originalLocation = window.location;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockMutateAsync.mockImplementation(() => Promise.resolve({}));
 
-    vi.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
+    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);
         options?.onSuccess?.(result, request, undefined, {} as any);
@@ -758,8 +758,8 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
         isSuccess: false,
         error: null,
         data: undefined,
-        mutate: vi.fn(),
-        reset: vi.fn(),
+        mutate: rs.fn(),
+        reset: rs.fn(),
         status: 'idle',
         variables: undefined,
         context: undefined,
@@ -786,7 +786,7 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
 
   test('redirects to correct path when in embedded mode', async () => {
     // happy-dom blocks `window.location.href` assignment when
-    // disableMainFrameNavigation is on (see vitest.setup.integration.ts), so
+    // disableMainFrameNavigation is on (see rstest.setup.ts), so
     // replace window.location with a plain object whose href we can inspect.
     const originalLocation = window.location;
     const locationStub = { href: '' };
@@ -796,8 +796,8 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
       value: locationStub,
     });
 
-    vi.mocked(isEmbedded).mockReturnValue(true);
-    vi.mocked(getBasePath).mockReturnValue('/console');
+    rs.mocked(isEmbedded).mockReturnValue(true);
+    rs.mocked(getBasePath).mockReturnValue('/console');
 
     try {
       renderWithFileRoutes(<ShadowLinkCreatePage />);
@@ -815,7 +815,7 @@ describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
   });
 
   test('does not redirect when not in embedded mode', async () => {
-    vi.mocked(isEmbedded).mockReturnValue(false);
+    rs.mocked(isEmbedded).mockReturnValue(false);
 
     renderWithFileRoutes(<ShadowLinkCreatePage />);
 

@@ -11,8 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
-import { describe, expect, test } from 'vitest';
 
 import { arrayElementPgType, columnKindForPgType, hintFromError, isArrayPgType } from './sql-types';
 

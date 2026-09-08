@@ -9,14 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { describe, expect, test, vi } from 'vitest';
 
 import { NodeConfigForm } from './node-config-form';
 
 // Cluster topics offered by topic-field pickers.
-vi.mock('react-query/api/topic', () => ({
+rs.mock('react-query/api/topic', () => ({
   useListTopicsQuery: () => ({ data: { topics: [{ name: 'orders' }, { name: 'events' }] }, isLoading: false }),
 }));
 
@@ -27,15 +27,18 @@ const spec = mockKafkaOutput as unknown as ConnectComponentSpec;
 
 // The form has no Apply button: it REPORTS the assembled config via onConfigChange (null when
 // clean) and the inspector auto-commits on leave/save. Tests assert the latest reported config.
-function renderForm(value: Record<string, unknown>, onConfigChange = vi.fn()) {
+function renderForm(value: Record<string, unknown>, onConfigChange = rs.fn()) {
   render(<NodeConfigForm componentName="kafka" onConfigChange={onConfigChange} spec={spec} value={value} />);
   return onConfigChange;
 }
 
 const CREATE_NEW_TOPIC_RE = /create new topic/i;
+const KAFKA_OUTPUT_DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/kafka/';
+const TOPIC_DOCS_RE = /topic documentation/i;
+const BATCHING_COUNT_DOCS_RE = /count documentation/i;
 
 // The most recent config reported by the form (undefined if never called, null when clean).
-function lastReported(onConfigChange: ReturnType<typeof vi.fn>): unknown {
+function lastReported(onConfigChange: ReturnType<typeof rs.fn>): unknown {
   return onConfigChange.mock.calls.at(-1)?.[0];
 }
 
@@ -73,6 +76,20 @@ describe('NodeConfigForm — full schema', () => {
     const mechRow = screen.getByText('mechanism').closest('div');
     expect(mechRow).not.toBeNull();
     expect(mechRow?.querySelector('[title="Required"]')).toBeNull();
+  });
+
+  test('deep-links every field to its own heading on the connector docs page', async () => {
+    const user = userEvent.setup();
+    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+
+    expect(screen.getByRole('link', { name: TOPIC_DOCS_RE })).toHaveAttribute('href', `${KAFKA_OUTPUT_DOCS}#topic`);
+
+    // A nested field is anchored by its whole path, as the docs generator ids it.
+    await user.click(screen.getByText('batching'));
+    expect(screen.getByRole('link', { name: BATCHING_COUNT_DOCS_RE })).toHaveAttribute(
+      'href',
+      `${KAFKA_OUTPUT_DOCS}#batching-count`
+    );
   });
 
   test('shows the schema default as a hint for optional fields', () => {
@@ -179,7 +196,7 @@ describe('NodeConfigForm — full schema', () => {
     render(
       <NodeConfigForm
         componentName="gcp_pubsub"
-        onConfigChange={vi.fn()}
+        onConfigChange={rs.fn()}
         spec={secretSpec}
         value={{ gcp_pubsub: { credentials_json: 'top-secret', project: 'p1' } }}
       />
@@ -203,7 +220,7 @@ describe('NodeConfigForm — full schema', () => {
     render(
       <NodeConfigForm
         componentName="kafka"
-        onConfigChange={vi.fn()}
+        onConfigChange={rs.fn()}
         spec={deprecatedSpec}
         value={{ kafka: { topic: 't', round_robin_partitions: 'legacy' } }}
       />
@@ -217,7 +234,7 @@ describe('NodeConfigForm — full schema', () => {
 
   test('keeps the saved label when a resource label field is cleared (references depend on it)', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -269,7 +286,7 @@ describe('NodeConfigForm — full schema', () => {
         ],
       },
     } as unknown as ConnectComponentSpec;
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     render(
       <NodeConfigForm
         componentName="branch"
@@ -331,7 +348,7 @@ describe('NodeConfigForm — list-valued components (switch/try/…)', () => {
 
   test('editing the label preserves the array of cases (no data loss)', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     const value = switchValue();
     render(<NodeConfigForm componentName="switch" onConfigChange={onConfigChange} spec={switchSpec} value={value} />);
 
@@ -455,8 +472,8 @@ describe('NodeConfigForm — field-anchored lint errors', () => {
 describe('NodeConfigForm — field-level commit', () => {
   test('commits on field blur and marks the form clean on success', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
-    const onCommitField = vi.fn(() => true);
+    const onConfigChange = rs.fn();
+    const onCommitField = rs.fn(() => true);
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -480,8 +497,8 @@ describe('NodeConfigForm — field-level commit', () => {
 
   test('a blur commit does not silently revert an uncommitted malformed edit', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
-    const onCommitField = vi.fn(() => true);
+    const onConfigChange = rs.fn();
+    const onCommitField = rs.fn(() => true);
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -508,8 +525,8 @@ describe('NodeConfigForm — field-level commit', () => {
 
   test('keeps the draft pending when the commit fails', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
-    const onCommitField = vi.fn(() => false);
+    const onConfigChange = rs.fn();
+    const onCommitField = rs.fn(() => false);
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -529,7 +546,7 @@ describe('NodeConfigForm — field-level commit', () => {
 
   test('shows an Apply affordance while dirty and commits through it', async () => {
     const user = userEvent.setup();
-    const onCommitField = vi.fn(() => true);
+    const onCommitField = rs.fn(() => true);
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -569,7 +586,7 @@ describe('NodeConfigForm — field-level commit', () => {
 describe('NodeConfigForm — topic fields', () => {
   test('a topic scalar offers existing cluster topics; selecting one reports it', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -588,7 +605,7 @@ describe('NodeConfigForm — topic fields', () => {
 
   test('the create-topic affordance opens the Add-topic flow', async () => {
     const user = userEvent.setup();
-    const onCreateTopic = vi.fn();
+    const onCreateTopic = rs.fn();
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -604,7 +621,7 @@ describe('NodeConfigForm — topic fields', () => {
 
   test('typing a custom topic reports it without needing Enter or a selection', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     render(
       <NodeConfigForm
         componentName="kafka"
@@ -624,7 +641,7 @@ describe('NodeConfigForm — topic fields', () => {
   });
 
   test('topic fields on non-Redpanda connectors stay plain inputs', () => {
-    const onCreateTopic = vi.fn();
+    const onCreateTopic = rs.fn();
     const mqttSpec = {
       name: 'mqtt',
       type: 'output',
@@ -652,7 +669,7 @@ describe('NodeConfigForm — topic fields', () => {
 
   test('a topics list keeps free text but can append an existing cluster topic', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     const topicsSpec = {
       name: 'redpanda',
       type: 'input',
@@ -704,7 +721,7 @@ describe('NodeConfigForm — enum (select) fields', () => {
 
   test('a set enum value can be unset, removing the key from the config', async () => {
     const user = userEvent.setup();
-    const onConfigChange = vi.fn();
+    const onConfigChange = rs.fn();
     render(
       <NodeConfigForm
         componentName="redpanda"

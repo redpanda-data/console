@@ -71,7 +71,7 @@ describe('Tabs', () => {
 
   test('executes onChange callback when active tab changes', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = rs.fn();
 
     render(<Tabs onChange={onChange} tabs={testTabs.slice(0, 2)} />);
 

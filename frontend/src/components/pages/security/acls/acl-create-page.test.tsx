@@ -14,24 +14,26 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 // Mock getRouteApi to return controlled search params
 let mockSearch: Record<string, string | undefined> = {};
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     getRouteApi: () => ({
       useSearch: () => mockSearch,
     }),
-    useNavigate: () => vi.fn(),
+    useNavigate: () => rs.fn(),
   };
 });
 
-vi.mock('state/backend-api', () => ({
+rs.mock('state/backend-api', () => ({
   useApiStoreHook: <T,>(selector: (s: { enterpriseFeaturesUsed: { name: string; enabled: boolean }[] }) => T) =>
     selector({ enterpriseFeaturesUsed: [] }),
 }));
 
-vi.mock('../../../../state/supported-features', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../state/supported-features')>();
+rs.mock('../../../../state/supported-features', () => {
+  const actual = rs.requireActual<typeof import('../../../../state/supported-features')>(
+    '../../../../state/supported-features'
+  );
   return {
     ...actual,
     useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) =>
@@ -45,14 +47,14 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
 // Import after mocks
 import AclCreatePage from './acl-create-page';
 
 describe('AclCreatePage — search param → form population', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockSearch = {};
   });
 

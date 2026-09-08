@@ -10,7 +10,7 @@
  */
 
 import { ConnectError } from '@connectrpc/connect';
-import { Alert, AlertIcon, Box, Button, createStandaloneToast, DataTable, Flex, SearchField } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import type { SortingState } from '@tanstack/react-table';
 import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
@@ -18,7 +18,7 @@ import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import type { LegacyColumnDef } from 'utils/legacy-data-table';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PipelineStatus } from './pipelines-list';
@@ -51,8 +51,6 @@ import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   initPage(p: PageInitHelper): void {
@@ -97,8 +95,6 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
 
   return (
     <PageContent>
-      <ToastContainer />
-
       <Box my="4">
         {QuickTable(
           [
@@ -153,10 +149,9 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
 
             changePromise
               .then(() => {
-                toast({
+                showToast({
                   status: 'success',
                   duration: 4000,
-                  isClosable: false,
                   title: `Pipeline ${isStopped ? 'started' : 'stopped'}`,
                 });
 
@@ -164,10 +159,8 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
                 watchPipelineUpdates().catch(console.error);
               })
               .catch((err) => {
-                toast({
+                showToast({
                   status: 'error',
-                  duration: null,
-                  isClosable: true,
                   title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
                   description: String(err),
                 });
@@ -186,20 +179,17 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
               pipelinesApi
                 .deletePipeline(pipeline.id)
                 .then(() => {
-                  toast({
+                  showToast({
                     status: 'success',
                     duration: 4000,
-                    isClosable: false,
                     title: 'Pipeline deleted',
                   });
                   pipelinesApi.refreshPipelines(true);
                   appGlobal.historyPush('/connect-clusters');
                 })
                 .catch((err) => {
-                  toast({
+                  showToast({
                     status: 'error',
-                    duration: null,
-                    isClosable: true,
                     title: 'Failed to delete pipeline',
                     description: String(err),
                   });
@@ -257,7 +247,7 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; variant?: 'ghost' | 'card' }) => {
+export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const topicName = '__redpanda.connect.logs';
   const topic = api.topics?.first((x) => x.topicName === topicName);
 
@@ -384,7 +374,7 @@ export const LogsTab = ({ pipeline, variant = 'card' }: { pipeline: Pipeline; va
     <>
       <Box my="1rem">The logs below are for the last five hours.</Box>
 
-      <Section borderColor={variant === 'ghost' ? 'transparent' : undefined} minWidth="800px" overflowY="auto">
+      <Section className="min-w-[800px] overflow-y-auto">
         <div className="mb-6 flex items-center justify-between gap-2">
           <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
           <RegistryButton onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">

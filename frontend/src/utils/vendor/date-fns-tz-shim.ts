@@ -2,7 +2,7 @@
 // at module top-level; date-fns v4 no longer exports the private subpaths v2
 // reaches into, so we satisfy the link with an unreachable shim. The only
 // caller (`<DateTimeInput>`) was replaced by `components/ui/date-time-input`.
-// Drop this (and the rsbuild + vitest aliases) once @redpanda-data/ui is gone.
+// Drop this (and the rsbuild + test-runner aliases) once @redpanda-data/ui is gone.
 
 const unreachable = () => {
   throw new Error('date-fns-tz shim: unreachable — DateTimeInput was replaced.');

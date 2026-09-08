@@ -1,8 +1,8 @@
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
 import { render, screen, waitForElementToBeRemoved } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { PipelineEditorProvider, usePipelineEditorStore } from './use-pipeline-editor-store';
 import { VisualEditorPanel } from './visual-editor-panel';
@@ -10,7 +10,7 @@ import { mockComponents } from '../utils/__fixtures__/component-schemas';
 
 // Surface the visual-editor callbacks as buttons so we can drive the panel
 // without React Flow's DOM measurement (which doesn't run under jsdom).
-vi.mock('./pipeline-flow-canvas', () => ({
+rs.mock('./pipeline-flow-canvas', () => ({
   PipelineFlowCanvas: (props: {
     configYaml: string;
     onSelectNode?: (id: string, t: unknown) => void;
@@ -46,7 +46,7 @@ vi.mock('./pipeline-flow-canvas', () => ({
   ),
 }));
 
-vi.mock('../onboarding/add-connector-dialog', () => ({
+rs.mock('../onboarding/add-connector-dialog', () => ({
   AddConnectorDialog: (props: { isOpen: boolean; onAddConnector?: (name: string, type: string) => void }) =>
     props.isOpen ? (
       <button data-testid="select-cache" onClick={() => props.onAddConnector?.('memory', 'cache')} type="button">
@@ -55,7 +55,8 @@ vi.mock('../onboarding/add-connector-dialog', () => ({
     ) : null,
 }));
 
-vi.mock('components/ui/yaml/yaml-editor', () => ({
+rs.mock('components/ui/yaml/yaml-editor', () => ({
+  ...rs.requireActual<typeof import('components/ui/yaml/yaml-editor')>('components/ui/yaml/yaml-editor'),
   YamlEditor: (props: { value?: string; onChange?: (v: string) => void }) => (
     <textarea data-testid="node-yaml" onChange={(e) => props.onChange?.(e.target.value)} value={props.value || ''} />
   ),
@@ -63,11 +64,11 @@ vi.mock('components/ui/yaml/yaml-editor', () => ({
 
 // Controllable secrets-store contents for the missing-secrets banner tests.
 let mockSecretsData: { secrets: { id: string }[] } | undefined;
-vi.mock('react-query/api/secret', () => ({
+rs.mock('react-query/api/secret', () => ({
   useListSecretsQuery: () => ({ data: mockSecretsData }),
 }));
 
-vi.mock('../onboarding/add-secrets-dialog', () => ({
+rs.mock('../onboarding/add-secrets-dialog', () => ({
   AddSecretsDialog: (props: { isOpen: boolean; missingSecrets: string[] }) =>
     props.isOpen ? <div data-testid="add-secrets-dialog">{props.missingSecrets.join(',')}</div> : null,
 }));
@@ -85,7 +86,7 @@ output:
 const EMPTY_STATE_TEXT = /select a node/i;
 
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
-  const onYamlChange = vi.fn();
+  const onYamlChange = rs.fn();
   const utils = render(
     <PipelineEditorProvider>
       <VisualEditorPanel
@@ -103,7 +104,7 @@ const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]>
 
 describe('VisualEditorPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockSecretsData = undefined;
   });
 
@@ -367,7 +368,7 @@ output:
           components={mockComponents.generateInput ? [mockComponents.generateInput] : []}
           lintHints={[{ line: 2, column: 1, hint: 'field mapping is required', lintType: 'config' }] as never}
           mode="view"
-          onYamlChange={vi.fn()}
+          onYamlChange={rs.fn()}
           yamlContent={sampleYaml}
         />
       </PipelineEditorProvider>
@@ -512,7 +513,7 @@ output:
       componentList: {} as ComponentList,
       components: [],
       mode: 'edit' as const,
-      onYamlChange: vi.fn(),
+      onYamlChange: rs.fn(),
     };
     const { rerender } = render(
       <PipelineEditorProvider>
@@ -553,14 +554,14 @@ output:
   });
 
   test('offers the template entry point for a genuinely blank config', () => {
-    renderPanel({ onBrowseTemplates: vi.fn(), yamlContent: '   \n# just a comment\n' });
+    renderPanel({ onBrowseTemplates: rs.fn(), yamlContent: '   \n# just a comment\n' });
     expect(screen.getByTestId('browse-templates-cta')).toBeInTheDocument();
   });
 
   test('does not offer a template when the config has content but parses to no pipeline', () => {
     // Valid YAML that lost its input/output/pipeline sections (e.g. from one bad edit): full of text,
     // so the template offer would clobber it. Guard on raw content, not just the empty parse.
-    renderPanel({ onBrowseTemplates: vi.fn(), yamlContent: 'not-a-pipeline: true\nother: value' });
+    renderPanel({ onBrowseTemplates: rs.fn(), yamlContent: 'not-a-pipeline: true\nother: value' });
     expect(screen.queryByTestId('browse-templates-cta')).not.toBeInTheDocument();
   });
 });

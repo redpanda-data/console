@@ -119,6 +119,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run unit tests
         run: bun run test:unit
+      - name: Run Module Federation tests
+        run: bun run test:federation -- --bail=1
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

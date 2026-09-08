@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { describe, expect, test, vi } from 'vitest';
 
 import { SqlWizard, type SqlWizardProps, type WizardTopic } from './sql-wizard';
 
-vi.mock('components/redpanda-ui/components/code-block-dynamic', () => ({
+rs.mock('components/redpanda-ui/components/code-block-dynamic', () => ({
   SyncCodeBlock: ({ code }: { code: string }) => <div data-testid="sql-preview">{code}</div>,
 }));
 
@@ -33,8 +33,8 @@ const BRIDGED_RE = /bridged/;
 const renderWizard = (overrides: Partial<SqlWizardProps> = {}) => {
   const props: SqlWizardProps = {
     topics: TOPICS,
-    onClose: vi.fn(),
-    onCreate: vi.fn(),
+    onClose: rs.fn(),
+    onCreate: rs.fn(),
     ...overrides,
   };
   render(<SqlWizard {...props} />);

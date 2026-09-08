@@ -24,8 +24,8 @@ type DisabledReasonButtonProps = Pick<ButtonProps, 'variant' | 'size' | 'classNa
 
 /**
  * Renders a button that is disabled with an explanatory tooltip when `reason` is set.
- * For `iconOnly` (table/heading action) buttons the disabled state renders as a `<span>`
- * (matching the legacy IconButton behavior the tests rely on); otherwise a disabled Button.
+ * For `iconOnly` (table/heading action) buttons the disabled state renders as a `<span>`, which
+ * keeps the tooltip's hover target and is what the tests query; otherwise a disabled Button.
  */
 export const DisabledReasonButton = ({
   reason,
