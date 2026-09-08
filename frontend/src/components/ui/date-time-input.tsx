@@ -162,11 +162,10 @@ const DateTimePickerPanel = ({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      {/* Scoped override: the registry's `--color-selected` token (indigo-800) reads as a
-      disconnected dark navy next to this panel's other indigo-600 selection affordances —
-      repaint the selected day with the same shade instead of touching the shared Calendar
-      component. `p-0` strips Calendar's own built-in padding, which otherwise stacks on top
-      of this panel's own spacing and insets the grid from its siblings. */}
+      {/* Scoped override: `--color-selected` and `--color-primary` are different shades, and this
+      panel's other affordances (the "Now" button) paint `primary` — repaint the selected day to
+      match without touching the shared Calendar. `p-0` strips Calendar's built-in padding, which
+      otherwise stacks on this panel's own spacing. */}
       <div className="[--color-selected-foreground:var(--color-primary-foreground)] [--color-selected:var(--color-primary)]">
         <Calendar className="p-0" mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
       </div>
@@ -263,7 +262,7 @@ export const DateTimeInput = ({
       <div className="flex flex-col gap-3">
         {panel}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-[11px] uppercase tracking-wide">Unix timestamp</Label>
+          <Label className="text-caption uppercase tracking-wide">Unix timestamp</Label>
           <Input {...numberInputProps}>
             <InputEnd>
               <CalendarIcon className="size-4 text-muted-foreground" />

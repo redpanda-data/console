@@ -83,7 +83,7 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                       {CONFIGURABLE.has(column.id) && (
                         <button
                           className={cn(
-                            'flex items-center gap-1.5 rounded-md px-1.5 py-1 text-muted-foreground text-xs hover:bg-muted',
+                            'flex items-center gap-1.5 rounded-md px-1.5 py-1 text-body-sm text-muted-foreground hover:bg-muted',
                             expanded === column.id && 'bg-muted text-foreground'
                           )}
                           data-testid={`column-config-${column.id}`}

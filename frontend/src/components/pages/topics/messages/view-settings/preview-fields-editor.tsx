@@ -32,7 +32,7 @@ const OptionRow = ({
   onChange: (value: string) => void;
 }) => (
   <div className="flex flex-col gap-1">
-    <div className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
+    <div className="font-semibold text-caption text-muted-foreground uppercase tracking-wide">{label}</div>
     <ToggleGroup
       className="w-full"
       onValueChange={(next: string[]) => {
@@ -44,7 +44,7 @@ const OptionRow = ({
       value={[value]}
     >
       {options.map((option) => (
-        <ToggleGroupItem className="flex-1 text-xs" key={option.value} value={option.value}>
+        <ToggleGroupItem className="flex-1 text-body-sm" key={option.value} value={option.value}>
           {option.label}
         </ToggleGroupItem>
       ))}
@@ -82,10 +82,10 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <div className="mb-1 font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">
+        <div className="mb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
           Preview fields
         </div>
-        <p className="mb-2 text-muted-foreground text-xs leading-relaxed">
+        <p className="mb-2 text-body-sm text-muted-foreground leading-relaxed">
           Show only chosen fields from the value. Add glob patterns like{' '}
           <span className="font-mono text-foreground">address.*</span>.
         </p>

@@ -126,7 +126,7 @@ export const ViewSettingsPanel = ({
       case 'timestamp':
         return (
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[10px] uppercase tracking-wide">Display format</Label>
+            <Label className="text-caption uppercase tracking-wide">Display format</Label>
             <Select
               onValueChange={(v) => setTopicSettings(topicName, { previewTimestamps: v as TimestampDisplayFormat })}
               value={tsFormat}
@@ -147,14 +147,14 @@ export const ViewSettingsPanel = ({
       case 'key':
         return (
           <div className="flex flex-col gap-1.5">
-            <Label className="text-[10px] uppercase tracking-wide">Deserializer</Label>
+            <Label className="text-caption uppercase tracking-wide">Deserializer</Label>
             <DeserializerSelect
               disabled={liveTail}
               id="view-settings-key-deser"
               onChange={onKeyDeserializerChange}
               value={keyDeserializer}
             />
-            <p className="text-muted-foreground text-xs leading-relaxed">
+            <p className="text-body-sm text-muted-foreground leading-relaxed">
               How key bytes are decoded for display. <span className="font-mono">Automatic</span> detects the format.
             </p>
           </div>
@@ -163,7 +163,7 @@ export const ViewSettingsPanel = ({
         return (
           <div className="flex flex-col gap-3.5">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[10px] uppercase tracking-wide">Deserializer</Label>
+              <Label className="text-caption uppercase tracking-wide">Deserializer</Label>
               <DeserializerSelect
                 disabled={liveTail}
                 id="view-settings-value-deser"
@@ -183,17 +183,17 @@ export const ViewSettingsPanel = ({
     <div className="flex h-full min-h-0 flex-col bg-card" data-testid="view-settings-panel">
       <div className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-[15px]">View settings</div>
-          <div className="text-muted-foreground text-xs">Changes apply to the table instantly</div>
+          <div className="font-semibold text-label">View settings</div>
+          <div className="text-body-sm text-muted-foreground">Changes apply to the table instantly</div>
         </div>
-        <Button className="size-7" onClick={onClose} size="icon" testId="view-settings-close" variant="ghost">
-          <XIcon className="size-4" />
+        <Button onClick={onClose} size="icon-sm" testId="view-settings-close" variant="ghost">
+          <XIcon />
         </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="border-b px-4 py-3.5">
-          <div className="mb-2 font-semibold text-sm">Row density</div>
+          <div className="mb-2 font-semibold text-label">Row density</div>
           <ToggleGroup
             className="w-full"
             onValueChange={(next: string[]) => {
@@ -211,19 +211,19 @@ export const ViewSettingsPanel = ({
               Detailed
             </ToggleGroupItem>
           </ToggleGroup>
-          <p className="mt-2 text-muted-foreground text-xs leading-relaxed">
+          <p className="mt-2 text-body-sm text-muted-foreground leading-relaxed">
             Detailed shows the decoder badge and byte size inline. Compact hides them for a denser table.
           </p>
         </div>
 
         <div className="px-4 py-3.5">
           <div className="mb-1 flex items-baseline justify-between">
-            <div className="font-semibold text-sm">Columns</div>
-            <span className="text-muted-foreground text-xs">
+            <div className="font-semibold text-label">Columns</div>
+            <span className="text-body-sm text-muted-foreground">
               {columns.filter((c) => c.visible).length} of {columns.length}
             </span>
           </div>
-          <p className="mb-2.5 text-muted-foreground text-xs leading-relaxed">
+          <p className="mb-2.5 text-body-sm text-muted-foreground leading-relaxed">
             Drag to reorder · toggle to show or hide. Configurable columns expose their decoder and display options.
           </p>
           <ColumnList

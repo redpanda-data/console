@@ -69,7 +69,7 @@ const HighlightedInput = forwardRef<HTMLInputElement, HighlightedInputProps>(
               {seg.text}
             </span>
           ))}
-          {ghostText ? <span className="text-muted-foreground/60">{ghostText}</span> : null}
+          {ghostText ? <span className="text-placeholder">{ghostText}</span> : null}
         </div>
         <input
           className={cn('relative w-full bg-transparent outline-none', textClassName)}

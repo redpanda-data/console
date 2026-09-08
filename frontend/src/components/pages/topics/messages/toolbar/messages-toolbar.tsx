@@ -40,15 +40,17 @@ export const MessagesToolbar = ({
     <ReadScopePopover {...scopeProps} />
     <div className="min-w-0 flex-1">{filterSlot}</div>
     {actionsSlot}
+    {/* icon-lg matches the filter bar's min-h-10; the svg override keeps the glyph at the
+        16px the toolbar's other icons use rather than icon-lg's 24px default. */}
     <Button
-      className="size-10 shrink-0 [&_svg]:size-4"
+      className="shrink-0 [&_svg]:size-4"
       onClick={onRefresh}
-      size="icon"
+      size="icon-lg"
       testId="messages-refresh"
       title={isLive ? 'Streaming live…' : 'Reload records'}
       variant="outline"
     >
-      <RefreshCwIcon className={cn('size-4', (isRefreshing || isLive) && 'animate-spin')} />
+      <RefreshCwIcon className={cn((isRefreshing || isLive) && 'animate-spin')} />
     </Button>
   </div>
 );

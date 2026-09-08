@@ -2,7 +2,7 @@ import { XIcon } from 'lucide-react';
 import type React from 'react';
 import type { MouseEventHandler } from 'react';
 
-import { cn, type SharedProps } from '../lib/utils';
+import { cn, type SharedProps } from 'components/redpanda-ui/lib/utils';
 
 export type ChipProps = React.ComponentProps<'span'> &
   SharedProps & {
@@ -37,7 +37,7 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
   return (
     <span
       className={cn(
-        'flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border/60 py-0.5 pr-0.5 pl-1.5 text-foreground/90',
+        'flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border py-0.5 pr-0.5 pl-1.5 text-foreground',
         className
       )}
       data-slot="chip"
@@ -62,7 +62,7 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
       {onRemove ? (
         <button
           aria-label={removeLabel}
-          className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring"
+          className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive-wash hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring"
           onClick={handleRemove}
           title={removeLabel}
           type="button"

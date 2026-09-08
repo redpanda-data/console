@@ -10,10 +10,10 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { Chip } from 'components/redpanda-ui/components/chip';
 import { HighlightedInput } from 'components/redpanda-ui/components/highlighted-input';
 import { Listbox, ListboxGroupLabel, ListboxOption } from 'components/redpanda-ui/components/listbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { Chip } from 'components/ui/chip';
 import { SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
