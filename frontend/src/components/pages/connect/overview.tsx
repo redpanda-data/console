@@ -243,7 +243,7 @@ class TabClusters extends Component {
             cell: ({ row: { original: r } }) => {
               if (r.error) {
                 return (
-                  <Tooltip>
+                  <Tooltip delayDuration={150}>
                     <TooltipTrigger
                       render={
                         <span>
@@ -352,7 +352,7 @@ const TabConnectors = () => {
             header: 'Connector',
             accessorKey: 'name',
             cell: ({ row: { original } }) => (
-              <Tooltip>
+              <Tooltip delayDuration={150}>
                 <TooltipTrigger
                   render={
                     <span

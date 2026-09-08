@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   Dialog,
@@ -39,6 +39,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { Stat } from 'components/redpanda-ui/components/stat';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -548,15 +549,14 @@ export function NotConfigured() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button
-              as="a"
+            <a
+              className={cn(buttonVariants({ variant: 'primary' }), 'rounded-md')}
               href={docsLinks.selfManaged.console}
               rel="noopener noreferrer"
               target="_blank"
-              variant="primary"
             >
               Redpanda Console Config Documentation
-            </Button>
+            </a>
           </EmptyContent>
         </Empty>
       </Section>
@@ -679,7 +679,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
           <Button onClick={cancel} variant="outline">
             No
           </Button>
-          <Button isLoading={isPending} onClick={onOk}>
+          <Button aria-label={error ? 'Retry' : 'Yes'} isLoading={isPending} onClick={onOk}>
             {error ? 'Retry' : 'Yes'}
           </Button>
         </AlertDialogFooter>

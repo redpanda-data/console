@@ -231,7 +231,7 @@ const KafkaConnectorMain = ({
             title: logsTopic ? (
               'Logs'
             ) : (
-              <Tooltip>
+              <Tooltip delayDuration={150}>
                 {/* The disabled trigger sets `aria-disabled:pointer-events-none`, which cascades —
                     without re-enabling them here the tooltip could never open. */}
                 <TooltipTrigger render={<span className="pointer-events-auto">Logs</span>} />
@@ -403,7 +403,7 @@ const ConfigOverviewTab = (p: {
           <div className={cn('w-[5px] rounded-full', statusColors[connector.status])} />
 
           <div className="flex flex-col">
-            <div className="font-semibold text-heading-lg">{titleCase(connector.status)}</div>
+            <div className="font-semibold text-heading-xl">{titleCase(connector.status)}</div>
             <div className="opacity-50">Status</div>
           </div>
         </div>
@@ -662,7 +662,7 @@ const NoEditPermissionTooltip = ({
   }
 
   return (
-    <Tooltip>
+    <Tooltip delayDuration={150}>
       {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper. */}
       <TooltipTrigger render={<span className="inline-flex">{children}</span>} />
       <TooltipContent side="top">
@@ -836,6 +836,7 @@ const LogsTab = (p: {
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete}
+          pagination={filteredMessages.length > 0}
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
               loadLargeMessage={() =>

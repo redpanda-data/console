@@ -556,7 +556,7 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   const displayName = getConnectorFriendlyName(p.plugin.class);
 
   return (
-    <h1 className="flex items-center gap-[0.5ch] pb-8 text-heading-lg">
+    <h1 className="flex items-center gap-[0.5ch] pb-8 text-heading-xl">
       Create Connector:
       {p.plugin.type === 'source' ? 'import data from ' : 'export data to '}
       {displayName}
@@ -605,7 +605,11 @@ function Review({
         </div>
       ) : (
         <>
-          {invalidValidationResult !== null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
+          {invalidValidationResult !== null ? (
+            <div className="my-4">
+              <ValidationDisplay validationResult={invalidValidationResult} />
+            </div>
+          ) : null}
 
           {validationFailure ? (
             <div className="my-4">
@@ -634,7 +638,7 @@ function Review({
             </div>
           ) : null}
 
-          <h2 className="mt-4 text-heading-sm">Connector Properties</h2>
+          <h2 className="mt-4 text-heading-lg">Connector Properties</h2>
           <div style={{ margin: '0 auto 1.5rem' }}>
             <KowlEditor
               height="600px"
