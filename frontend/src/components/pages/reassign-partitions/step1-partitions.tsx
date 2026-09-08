@@ -15,13 +15,11 @@ import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { DataTable, DataTableColumnHeader, type DataTableRow } from 'components/redpanda-ui/components/data-table';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Component } from 'react';
-import Highlighter from 'react-highlight-words';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/rest-interfaces';
-import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
@@ -60,9 +58,6 @@ export class StepSelectPartitions extends Component<{
     if (!api.topics) {
       return DefaultSkeleton;
     }
-
-    const query = uiSettings.reassignment.quickSearch ?? '';
-    const filterActive = query.length > 1;
 
     return (
       <div style={{ margin: '1em 1em 2em 1em' }}>
@@ -108,11 +103,7 @@ export class StepSelectPartitions extends Component<{
               accessorKey: 'topicName',
               enableHiding: false,
               cell: ({ row: { original: record } }) => {
-                const content = filterActive ? (
-                  <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
-                ) : (
-                  record.topicName
-                );
+                const content = record.topicName;
 
                 if (this.props.throttledTopics.includes(record.topicName)) {
                   return (
@@ -185,8 +176,7 @@ export class StepSelectPartitions extends Component<{
             },
           ]}
           data={this.topicPartitions}
-          // Chakra took a no-op `onRowSelectionChange` plus a placeholder `rowSelection`; selection
-          // is done by the `check` column above, so the Registry table simply leaves it off.
+          // Selection is done by the `check` column; no table-level row selection.
           pagination={this.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
           subComponent={({ row: { original: topic } }) => (

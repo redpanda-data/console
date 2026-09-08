@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Stat } from 'components/redpanda-ui/components/stat';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
 import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
@@ -327,7 +328,7 @@ class ReassignPartitions extends PageComponent {
           }}
           open={this.state.removeThrottleFromTopicsContent !== null}
         >
-          {/* Chakra's `minW="5xl"` was 64rem; `xl` (56rem) is the nearest rung — `full` is 90vw. */}
+          {/* Nearest rung to the old 64rem minimum. */}
           <DialogContent size="xl">
             <DialogHeader>
               <DialogTitle>
@@ -343,17 +344,19 @@ class ReassignPartitions extends PageComponent {
                   There are {this.state.topicsWithThrottle.length} topics with throttling applied to their replicas.
                   <br />
                   Kowl implements throttling of reassignments by setting{' '}
-                  <span className="tooltip" style={{ textDecoration: 'dotted underline' }}>
-                    two configuration values
-                    <span className="tooltiptext" style={{ textAlign: 'left', width: '500px' }}>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={<span className="cursor-help underline decoration-dotted">two configuration values</span>}
+                    />
+                    <TooltipContent className="max-w-[500px] text-left">
                       Kowl sets those two configuration entries when throttling a topic reassignment:
-                      <div style={{ marginTop: '.5em' }}>
+                      <div className="mt-2">
                         <code>leader.replication.throttled.replicas</code>
                         <br />
                         <code>follower.replication.throttled.replicas</code>
                       </div>
-                    </span>
-                  </span>{' '}
+                    </TooltipContent>
+                  </Tooltip>{' '}
                   in a topics configuration.
                   <br />
                   So if you previously used Kowl to reassign any of the partitions of the following topics, the

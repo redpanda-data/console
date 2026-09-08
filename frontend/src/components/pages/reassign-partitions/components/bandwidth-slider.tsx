@@ -33,7 +33,7 @@ type SettingsCallback = {
 const SLIDER_MIN = 2;
 const SLIDER_MAX = 12;
 
-/** Marks are positioned by value, as Chakra's `SliderMark` did. */
+/** Marks are positioned by value. */
 const MARKS: { value: number; label: string }[] = [
   { value: 2, label: '-' },
   { value: 3, label: '1kB' },

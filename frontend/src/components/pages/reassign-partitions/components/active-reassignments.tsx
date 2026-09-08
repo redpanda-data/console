@@ -243,7 +243,7 @@ export const ThrottleDialog: FC<{
       }}
       open={visible}
     >
-      {/* Chakra's `minW="3xl"` was 48rem; `lg` (42rem) is the nearest rung. */}
+      {/* Nearest rung to the old 48rem minimum. */}
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Throttle Settings</DialogTitle>
@@ -420,7 +420,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         }}
         open={visible}
       >
-        {/* Chakra's `minW="3xl"` was 48rem; `lg` (42rem) is the nearest rung. */}
+        {/* Nearest rung to the old 48rem minimum. */}
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
@@ -708,7 +708,7 @@ const ProgressBar = (p: {
   const { percent, state, left, right } = p;
   return (
     <>
-      {/* Chakra's colorScheme becomes an indicator class: the Registry indicator paints `bg-primary`. */}
+      {/* The indicator paints bg-primary by default; the tone goes through the slot class. */}
       <Progress
         className={
           state === 'success'

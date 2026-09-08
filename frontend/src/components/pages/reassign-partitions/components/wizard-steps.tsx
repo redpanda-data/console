@@ -13,11 +13,8 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { Check } from 'lucide-react';
 
 /**
- * Presentational step indicator, replacing Chakra's `<Stepper index={…}>`.
- *
- * The Registry ships `defineStepper`, but that owns navigation through its own `methods`. This
- * wizard keeps `currentStep` in `ReassignPartitions`'s own state and every guard reads it, so the
- * indicator stays a pure function of that index — nothing here can move the wizard.
+ * Presentational step indicator. The wizard owns `currentStep`; the Registry `Stepper` would need a
+ * re-keyed Provider to follow external state, so this stays a pure function of the index.
  */
 export const WizardSteps = ({ steps, currentStep }: { steps: { title: string }[]; currentStep: number }) => (
   <ol aria-label="Reassignment steps" className="flex items-center">
