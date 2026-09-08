@@ -63,7 +63,7 @@ func TestService_GetAvroSchemaByID(t *testing.T) {
 		})
 
 	actual, err := s.GetAvroSchemaByID(context.Background(), 1000)
-	expectedSchemaString := "{\"name\":\"parent.schema\",\"type\":\"record\",\"fields\":[{\"name\":\"reference\",\"type\":{\"name\":\"referenced.schema\",\"type\":\"enum\",\"symbols\":[\"FOO\"]}}]}"
+	expectedSchemaString := "{\"fields\":[{\"name\":\"reference\",\"type\":{\"name\":\"schema\",\"namespace\":\"referenced\",\"symbols\":[\"FOO\"],\"type\":\"enum\"}}],\"name\":\"parent.schema\",\"type\":\"record\"}"
 	assert.NoError(t, err, "expected no error when fetching avro schema by id")
 	assert.Equal(t, actual.String(), expectedSchemaString)
 }
@@ -125,4 +125,49 @@ func TestService_GetProtoDescriptors_ShouldContinueWithValidSchemasWhenSomeHaveB
 	assert.Len(t, descriptors, 1, "should have 1 valid descriptor (broken ones skipped)")
 	assert.Contains(t, descriptors, 100, "should contain the valid UserEvent schema")
 	// Schema 200 (order-events-value) should be skipped due to broken reference
+}
+
+func TestService_ParseAvroSchemaWithReferences_DiamondReferences(t *testing.T) {
+	baseURL := testSchemaRegistryBaseURL
+	logger, _ := zap.NewProduction()
+	s, _ := NewService(config.Schema{
+		Enabled: true,
+		URLs:    []string{baseURL},
+	}, logger)
+
+	httpClient := (*s.registryClient.client).GetClient()
+	httpmock.ActivateNonDefault(httpClient)
+	defer httpmock.DeactivateAndReset()
+
+	// Left and Right both reference Leaf; Root references Left and Right.
+	// Parsing must tolerate Leaf being resolved twice via different paths.
+	registerSubject := func(subject, schema string, references []map[string]any) {
+		httpmock.RegisterResponder("GET", baseURL+"/subjects/"+subject+"/versions/1",
+			func(*http.Request) (*http.Response, error) {
+				return httpmock.NewJsonResponse(http.StatusOK, map[string]any{
+					"schema":     schema,
+					"subject":    subject,
+					"version":    1,
+					"schemaType": "AVRO",
+					"references": references,
+				})
+			})
+	}
+
+	leafRef := []map[string]any{{"name": "Leaf", "subject": "leaf-schema", "version": 1}}
+	registerSubject("leaf-schema", `{"type": "record", "name": "Leaf", "fields": [{"name": "value", "type": "string"}]}`, nil)
+	registerSubject("left-schema", `{"type": "record", "name": "Left", "fields": [{"name": "leaf", "type": "Leaf"}]}`, leafRef)
+	registerSubject("right-schema", `{"type": "record", "name": "Right", "fields": [{"name": "leaf", "type": "Leaf"}]}`, leafRef)
+
+	rootSchema := &SchemaResponse{
+		Schema: `{"type": "record", "name": "Root", "fields": [{"name": "left", "type": "Left"}, {"name": "right", "type": "Right"}]}`,
+		References: []SchemaReference{
+			{Name: "Left", Subject: "left-schema", Version: 1},
+			{Name: "Right", Subject: "right-schema", Version: 1},
+		},
+	}
+
+	result, err := s.ParseAvroSchemaWithReferences(context.Background(), rootSchema)
+	require.NoError(t, err)
+	require.NotNil(t, result)
 }

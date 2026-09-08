@@ -19,10 +19,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hamba/avro/v2"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/twmb/avro"
 	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -43,7 +43,7 @@ type Service struct {
 	// schemaBySubjectVersion caches schema response by subject and version. Caching schemas
 	// by subjects is needed to lookup references in avro schemas.
 	schemaBySubjectVersion *cache.Cache[string, *SchemaVersionedResponse]
-	avroSchemaByID         *cache.Cache[uint32, avro.Schema]
+	avroSchemaByID         *cache.Cache[uint32, *avro.Schema]
 	jsonSchemaByID         *cache.Cache[uint32, *jsonschema.Schema]
 
 	// for protobuf schema refreshing and compiling
@@ -64,7 +64,7 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 		logger:                 logger,
 		requestGroup:           singleflight.Group{},
 		registryClient:         client,
-		avroSchemaByID:         cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
+		avroSchemaByID:         cache.New[uint32, *avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 		schemaBySubjectVersion: cache.New[string, *SchemaVersionedResponse](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 		jsonSchemaByID:         cache.New[uint32, *jsonschema.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
@@ -236,15 +236,15 @@ func (s *Service) IsEnabled() bool {
 
 // GetAvroSchemaByID loads the schema by the given schemaID and tries to parse the schema
 // contents to an avro.Schema, so that it can be used for decoding Avro encoded messages.
-func (s *Service) GetAvroSchemaByID(ctx context.Context, schemaID uint32) (avro.Schema, error) {
-	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (avro.Schema, error) {
+func (s *Service) GetAvroSchemaByID(ctx context.Context, schemaID uint32) (*avro.Schema, error) {
+	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (*avro.Schema, error) {
 		schemaRes, err := s.registryClient.GetSchemaByID(ctx, schemaID)
 		if err != nil {
 			s.logger.Warn("failed to fetch avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
-		codec, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes, avro.DefaultSchemaCache)
+		codec, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
 		}
@@ -336,45 +336,57 @@ func (s *Service) GetSchemaByID(ctx context.Context, id uint32) (*SchemaResponse
 // to other schemas. References will be resolved by requesting and parsing them
 // recursively. If any of the referenced schemas can't be fetched or parsed an
 // error will be returned.
-func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *SchemaResponse, schemaCache *avro.SchemaCache) (avro.Schema, error) {
-	if len(schema.References) == 0 {
-		return avro.Parse(schema.Schema)
+func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *SchemaResponse) (*avro.Schema, error) {
+	// Parse into a cache scoped to this operation so that named types from one
+	// schema can never leak into the parsing of an unrelated schema.
+	var cache avro.SchemaCache
+	if err := s.parseAvroReferences(ctx, &cache, schema, make(map[string]bool)); err != nil {
+		return nil, err
 	}
+	return cache.Parse(schema.Schema)
+}
 
-	// Fetch and parse all schema references recursively. All schemas that have
-	// been parsed successfully will be cached by the avro library.
+// parseAvroReferences recursively fetches and parses all schema references
+// into the cache so they are available when parsing the parent schema.
+// The stack only guards against reference cycles; duplicate parses across
+// shared subgraphs are handled by the avro.SchemaCache itself.
+func (s *Service) parseAvroReferences(ctx context.Context, cache *avro.SchemaCache, schema *SchemaResponse, stack map[string]bool) error {
 	for _, reference := range schema.References {
+		refKey := fmt.Sprintf("%s:%d", reference.Subject, reference.Version)
+		if stack[refKey] {
+			return fmt.Errorf("circular avro schema reference detected for subject %q version %d", reference.Subject, reference.Version)
+		}
+		stack[refKey] = true
+
 		schemaRef, err := s.GetSchemaBySubjectAndVersion(ctx, reference.Subject, strconv.Itoa(reference.Version))
 		if err != nil {
-			return nil, err
+			delete(stack, refKey)
+			return err
 		}
-
-		if _, err := s.ParseAvroSchemaWithReferences(
-			ctx,
-			&SchemaResponse{
-				Schema:     schemaRef.Schema,
-				References: schemaRef.References,
-			},
-			schemaCache,
-		); err != nil {
-			return nil, fmt.Errorf(
-				"failed to parse schema reference (subject: %q, version %d): %w",
-				reference.Subject, reference.Version, err,
-			)
+		if len(schemaRef.References) > 0 {
+			refRes := &SchemaResponse{Schema: schemaRef.Schema, References: schemaRef.References}
+			if err := s.parseAvroReferences(ctx, cache, refRes, stack); err != nil {
+				delete(stack, refKey)
+				return fmt.Errorf("failed to parse schema reference (subject: %q, version %d): %w",
+					reference.Subject, reference.Version, err)
+			}
 		}
+		if _, err := cache.Parse(schemaRef.Schema); err != nil {
+			delete(stack, refKey)
+			return fmt.Errorf("failed to parse schema reference (subject: %q, version %d): %w",
+				reference.Subject, reference.Version, err)
+		}
+		delete(stack, refKey)
 	}
-
-	// Parse the main schema in the end after solving all references
-	return avro.Parse(schema.Schema)
+	return nil
 }
 
 // ValidateAvroSchema tries to parse the given avro schema with the avro library.
 // If there's an issue with the given schema, it will be returned to the user
 // so that they can fix the schema string.
 func (s *Service) ValidateAvroSchema(ctx context.Context, sch Schema) error {
-	tempCache := avro.SchemaCache{}
 	schemaRes := &SchemaResponse{Schema: sch.Schema, References: sch.References}
-	_, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes, &tempCache)
+	_, err := s.ParseAvroSchemaWithReferences(ctx, schemaRes)
 	return err
 }
 

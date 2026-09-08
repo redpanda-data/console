@@ -12,12 +12,9 @@ package serde
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/hamba/avro/v2"
-	"github.com/linkedin/goavro"
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -58,12 +55,12 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 	}
 
 	var obj any
-	err = avro.Unmarshal(schema, payload[5:], &obj)
+	_, err = schema.Decode(payload[5:], &obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
 	}
 
-	jsonBytes, err := json.Marshal(obj)
+	jsonBytes, err := schema.EncodeJSON(obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
 	}
@@ -102,15 +99,11 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 		}
 
 		if startsWithJSON {
-			codec, err := goavro.NewCodec(schema.String())
-			if err != nil {
-				return nil, fmt.Errorf("parsing avro schema: %w", err)
+			var native any
+			if err := schema.DecodeJSON(trimmed, &native); err != nil {
+				return nil, fmt.Errorf("deserializing: %w", err)
 			}
-
-			obj, _, err = codec.NativeFromTextual(trimmed)
-			if err != nil {
-				return nil, fmt.Errorf("deserializing avro json: %w", err)
-			}
+			obj = native
 		}
 	case string:
 		trimmed, startsWithJSON, err := trimJSONInputString(v)
@@ -119,19 +112,15 @@ func (d AvroSerde) SerializeObject(ctx context.Context, obj any, _ PayloadType, 
 		}
 
 		if startsWithJSON {
-			codec, err := goavro.NewCodec(schema.String())
-			if err != nil {
-				return nil, fmt.Errorf("parsing avro schema: %w", err)
+			var native any
+			if err := schema.DecodeJSON([]byte(trimmed), &native); err != nil {
+				return nil, fmt.Errorf("deserializing: %w", err)
 			}
-
-			obj, _, err = codec.NativeFromTextual([]byte(trimmed))
-			if err != nil {
-				return nil, fmt.Errorf("deserializing avro json: %w", err)
-			}
+			obj = native
 		}
 	}
 
-	b, err := avro.Marshal(schema, obj)
+	b, err := schema.Encode(obj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize avro: %w", err)
 	}

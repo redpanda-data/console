@@ -1733,7 +1733,10 @@ const PayloadComponent = observer(
         );
       }
 
-      return <KowlJsonView srcObj={val} />;
+      // Avro JSON encodes bytes fields as \u00XX escape sequences. Re-escape
+      // Latin-1 code points in the viewer so copy-paste yields the original
+      // bytes rather than their UTF-8 encoding.
+      return <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={val} />;
     } catch (e) {
       return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {(e as Error).message ?? String(e)}</span>;
     }
