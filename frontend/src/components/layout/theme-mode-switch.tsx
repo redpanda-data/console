@@ -13,17 +13,8 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { useTheme } from 'components/redpanda-ui/components/theme-provider';
 import { Moon, Sun } from 'lucide-react';
 
-/**
- * Dev-only theme toggle, replacing Chakra's `ColorModeSwitch`.
- *
- * It drives the Registry `ThemeProvider`, which is what stamps `data-theme` on `<html>` — the
- * selector `theme.css` keys its dark palette on, and the attribute `use-theme-appearance` watches
- * to tell Monaco, CodeMirror, react-flow and sonner which ground they are painting on. Same
- * `data-testid` as the Chakra control it replaces.
- *
- * `resolvedTheme`, not `theme`: the stored preference can be `system`, and the label has to name
- * the theme the click will produce.
- */
+/** Dev-only theme toggle on the Registry ThemeProvider. `resolvedTheme`, not `theme`: the stored
+ * preference can be `system`, and the label names the theme the click produces. */
 export const ThemeModeSwitch = () => {
   const { resolvedTheme, setTheme } = useTheme();
   const next = resolvedTheme === 'dark' ? 'light' : 'dark';

@@ -9,12 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { CloseIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
-import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
-import { SearchIcon } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo, useRef } from 'react';
+import { type ReactNode, useEffect, useMemo } from 'react';
 
+import { SearchInput } from './search-input';
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animation-props';
 
 type SearchBarProps<TItem> = {
@@ -28,29 +25,6 @@ type SearchBarProps<TItem> = {
 
 function SearchBar<TItem>(props: SearchBarProps<TItem>) {
   const { dataSource, isFilterMatch, filterText, onQueryChanged, onFilteredDataChanged, placeholderText } = props;
-
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(function subscribeToSearchShortcut() {
-    function focusSearch(event: KeyboardEvent) {
-      if (
-        event.key !== '/' ||
-        event.defaultPrevented ||
-        event.isComposing ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.altKey ||
-        (event.target instanceof HTMLElement &&
-          (event.target.isContentEditable || event.target.closest('input, textarea, select, [role="textbox"]')))
-      ) {
-        return;
-      }
-      event.preventDefault();
-      inputRef.current?.focus();
-    }
-    document.addEventListener('keydown', focusSearch);
-    return () => document.removeEventListener('keydown', focusSearch);
-  }, []);
 
   const source = dataSource();
   const filteredData = useMemo(() => {
@@ -84,66 +58,25 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
       identity: 'r',
       node: (
         <span>
-          <span style={{ fontWeight: 600 }}>{filteredData.length}</span> results
+          <span className="font-semibold">{filteredData.length}</span> results
         </span>
       ),
     };
   }, [source, filterText, filteredData]);
 
   return (
-    <div
-      style={{
-        marginBottom: '.5rem',
-        padding: '0',
-        whiteSpace: 'nowrap',
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
-      <Input
+    <div className="mb-2 flex items-center whitespace-nowrap">
+      <SearchInput
         containerClassName="w-full max-w-[350px]"
-        onChange={(e) => onQueryChanged(e.target.value)}
-        onKeyDown={(event) => {
-          if (event.key !== 'Escape' || event.nativeEvent.isComposing) {
-            return;
-          }
-          event.preventDefault();
-          event.stopPropagation();
-          if (filterText) {
-            onQueryChanged('');
-          } else {
-            event.currentTarget.blur();
-          }
-        }}
+        onChange={onQueryChanged}
         placeholder={placeholderText ?? 'Search...'}
-        ref={inputRef}
-        testId="search-field-input"
         value={filterText}
-      >
-        <InputStart>
-          <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
-        </InputStart>
-        {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
-            button under the click would drop focus to <body>. */}
-        <InputEnd className="pointer-events-auto">
-          <Button
-            aria-label="Clear search"
-            className={filterText === '' ? 'invisible' : undefined}
-            data-testid="search-field-reset-icon"
-            disabled={filterText === ''}
-            onClick={() => onQueryChanged('')}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <CloseIcon />
-          </Button>
-        </InputEnd>
-      </Input>
+      />
 
       <AnimatePresence>
         {Boolean(filterSummary) && (
           <MotionSpan identityKey={filterSummary?.identity ?? 'null'} overrideAnimProps={animProps_span_searchResult}>
-            <span style={{ opacity: 0.8, paddingLeft: '1em' }}>{filterSummary?.node}</span>
+            <span className="pl-4 opacity-80">{filterSummary?.node}</span>
           </MotionSpan>
         )}
       </AnimatePresence>

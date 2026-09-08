@@ -1965,17 +1965,20 @@ nav.chakra-breadcrumb {
   }
 }
 
-p,
-dl,
-dd,
-ol,
-ul,
-h1,
-h2,
-h3,
-h4,
-h5 {
-  margin-bottom: 0;
+// In @layer base so spacing utilities on these elements still apply.
+@layer base {
+  p,
+  dl,
+  dd,
+  ol,
+  ul,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    margin-bottom: 0;
+  }
 }
 
 .BreadcrumbHeading,

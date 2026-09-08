@@ -64,6 +64,14 @@ import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
 
+// Chakra must not resurrect a stored colour mode: the Registry ThemeProvider owns the theme now.
+const LIGHT_ONLY_COLOR_MODE = {
+  type: 'localStorage',
+  ssr: false,
+  get: (): 'light' => 'light',
+  set: () => undefined,
+} as const;
+
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
   baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
@@ -133,25 +141,11 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      {/*
-        Standalone only. `data-theme` on <html> is what theme.css keys its dark palette on, and in
-        embedded and federated mode the Cloud UI host owns that attribute — a second writer there
-        would fight it. Outside ChakraProvider so its mount effect lands last while both are up.
-
-        `defaultTheme="light"` deliberately, not the Registry's `system` default: Chakra pinned
-        `initialColorMode: 'light'` with `useSystemColorMode: false`, so `system` here would flip
-        every OS-dark user to the Registry's dark palette while the still-mounted Chakra half stayed
-        light — and the only toggle is dev-only, so they could not get back. Dark mode becomes an
-        opt-in default in its own project, not a side effect of this migration.
-
-        ChakraProvider's own ColorModeProvider is still a second `data-theme` writer one level down.
-        It applies once on mount and this provider's effect lands after it, so the attribute is ours;
-        but Chakra's internal colour mode no longer changes, because ColorModeSwitch was its only
-        caller. Toggling in dev therefore repaints the Registry surface and leaves Chakra components
-        light. That resolves when PR 13 removes ChakraProvider.
-      */}
+      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. Outside
+          ChakraProvider so its mount effect lands last. defaultTheme="light" matches Chakra's pinned
+          light mode until PR 13 removes ChakraProvider. */}
       <ThemeProvider defaultTheme="light">
-        <ChakraProvider resetCSS={false} theme={redpandaTheme}>
+        <ChakraProvider colorModeManager={LIGHT_ONLY_COLOR_MODE} resetCSS={false} theme={redpandaTheme}>
           {/* showToast viewport, above the router so the error boundary and login can toast */}
           <BaseUiToaster testId="console-toasts" />
           <TransportProvider transport={dataplaneTransport}>

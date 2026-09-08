@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 
 const IS_DEV = process.env.NODE_ENV !== 'production';
 const STORAGE_KEY = 'dv';
+// Where `?` is a character being typed, not a shortcut.
+const TYPING_TARGET = 'input, textarea, select, [contenteditable], [role="textbox"], [role="combobox"]';
 
 const readStored = (): boolean => {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : false;
+    return stored === 'true';
   } catch {
     return false;
   }
@@ -18,10 +20,19 @@ const useDeveloperViewDev = (): boolean => {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      // Not while typing, and not as part of a shortcut.
-      const target = event.target as HTMLElement | null;
-      const isEditable = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '');
-      if (event.key !== '?' || isEditable || event.ctrlKey || event.metaKey || event.altKey) {
+      // Not while typing, not on key repeat, and not as part of a shortcut.
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const isEditable = Boolean(target?.isContentEditable || target?.closest(TYPING_TARGET));
+      if (
+        event.key !== '?' ||
+        event.repeat ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        isEditable ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      ) {
         return;
       }
       setDeveloperView((previous) => {

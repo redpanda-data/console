@@ -199,7 +199,7 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     }
 
     return (
-      <div className="min-h-screen overflow-visible px-16 py-8">
+      <div className="min-h-screen px-16 py-8">
         <div>
           <h1>Rendering Error!</h1>
           <p>

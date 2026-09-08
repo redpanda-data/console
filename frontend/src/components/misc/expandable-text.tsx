@@ -10,6 +10,7 @@
  */
 
 import { ChevronDownIcon, ChevronUpIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import { useState } from 'react';
 
 export function ExpandableText(p: { children: string; maxChars: number }) {
@@ -20,19 +21,20 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
   const isTruncated = showExpander && !expanded;
   const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
 
+  // A span: callers render this inside <p> description slots.
   return (
-    <div>
+    <span>
       {text}
 
       {Boolean(isTruncated) && '...'}
 
       {Boolean(showExpander) && (
         // A real button: it was a clickable Box with no role, name or keyboard path.
-        <button
+        <Button
           aria-expanded={expanded}
-          className="mt-px inline cursor-pointer select-none px-2 font-semibold"
+          className="h-auto px-2 align-baseline"
           onClick={() => setExpanded(!expanded)}
-          type="button"
+          variant="link"
         >
           {expanded ? (
             <span className="whitespace-nowrap">
@@ -43,8 +45,8 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
               more <ChevronDownIcon className="inline size-4" />
             </span>
           )}
-        </button>
+        </Button>
       )}
-    </div>
+    </span>
   );
 }

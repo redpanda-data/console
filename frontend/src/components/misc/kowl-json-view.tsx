@@ -142,8 +142,8 @@ export const KowlJsonView = (props: {
   }, [scheduleLayout]);
 
   return (
-    <div className="relative block h-96" style={{ minHeight: '10rem', maxHeight: '45rem', ...props.style }}>
-      <div className="absolute h-full w-full" ref={containerRef}>
+    <div className="relative h-96 max-h-180 min-h-40" style={props.style}>
+      <div className="absolute inset-0" ref={containerRef}>
         <KowlEditor language="json" onMount={handleMount} options={READ_ONLY_EDITOR_OPTIONS} value={str} />
       </div>
     </div>

@@ -112,7 +112,7 @@ export const UpdatePopup = () => {
             onClick={() => {
               setUpdateDialogOpen(false);
             }}
-            variant="destructive-outline"
+            variant="outline"
           >
             Cancel
           </Button>
