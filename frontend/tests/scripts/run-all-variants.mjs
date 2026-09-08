@@ -57,47 +57,31 @@ async function runVariant(variant, playwrightArgs = []) {
       const status = code === 0 ? 'PASSED' : 'FAILED';
       console.log(`[${variant.name}] ${status} (${elapsed}s)`);
       if (logStream) logStream.end();
-      resolve({ variant: variant.name, code, skipped: false });
+      resolve({ variant: variant.name, code });
     });
     child.on('error', (error) => {
       console.error(`[${variant.name}] Error: ${error.message}`);
       if (logStream) logStream.end();
-      resolve({ variant: variant.name, code: 1, skipped: false });
+      resolve({ variant: variant.name, code: 1 });
     });
   });
 }
 
 async function runAllVariants(playwrightArgs = []) {
-  // Get all variants including unrunnable ones for display
-  const allVariants = discoverVariants({ includeUnrunnable: true });
+  const variants = discoverVariants();
 
-  if (allVariants.length === 0) {
+  if (variants.length === 0) {
     console.error('No variants found. Make sure test-variant-* directories exist with config/variant.json');
     process.exit(1);
   }
 
-  const runnableVariants = allVariants.filter((v) => v.canRun);
-  const skippedVariants = allVariants.filter((v) => !v.canRun);
-
-  console.log(`Found ${allVariants.length} variant(s): ${allVariants.map((v) => v.name).join(', ')}`);
-
-  if (skippedVariants.length > 0) {
-    console.log(`\nSkipping ${skippedVariants.length} variant(s) due to missing requirements:`);
-    for (const variant of skippedVariants) {
-      console.log(`  - ${variant.name}: ${variant.skipReason}`);
-    }
-  }
-
-  if (runnableVariants.length === 0) {
-    console.error('\nNo runnable variants found');
-    process.exit(1);
-  }
+  console.log(`Found ${variants.length} variant(s): ${variants.map((v) => v.name).join(', ')}`);
 
   // Pre-build backend Docker images once before launching variants in parallel.
   // This avoids race conditions where multiple variants try to copy frontend assets
   // and build the same Docker image concurrently.
   console.log('\nPre-building backend Docker image(s)...');
-  const needsEnterprise = runnableVariants.some((v) => v.config.isEnterprise);
+  const needsEnterprise = variants.some((v) => v.config.isEnterprise);
   const ossImageTag = await buildBackendImage(false);
   process.env.E2E_PREBUILT_IMAGE_TAG = ossImageTag;
 
@@ -106,15 +90,10 @@ async function runAllVariants(playwrightArgs = []) {
     process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE = enterpriseImageTag;
   }
 
-  console.log(`\nRunning ${runnableVariants.length} variant(s) in parallel...`);
+  console.log(`\nRunning ${variants.length} variant(s) in parallel...`);
 
   // Run all variants in parallel — each uses different ports and Docker networks
-  const results = await Promise.all(runnableVariants.map((variant) => runVariant(variant, playwrightArgs)));
-
-  // Add skipped variants to results
-  for (const variant of skippedVariants) {
-    results.push({ variant: variant.name, code: 0, skipped: true, skipReason: variant.skipReason });
-  }
+  const results = await Promise.all(variants.map((variant) => runVariant(variant, playwrightArgs)));
 
   // Summary
   console.log(`\n${'='.repeat(60)}`);
@@ -123,15 +102,11 @@ async function runAllVariants(playwrightArgs = []) {
 
   let hasFailures = false;
   for (const result of results) {
-    if (result.skipped) {
-      console.log(`  \u23ED ${result.variant}: SKIPPED`);
-    } else {
-      const status = result.code === 0 ? 'PASSED' : 'FAILED';
-      const icon = result.code === 0 ? '\u2714' : '\u2718';
-      console.log(`  ${icon} ${result.variant}: ${status}`);
-      if (result.code !== 0) {
-        hasFailures = true;
-      }
+    const status = result.code === 0 ? 'PASSED' : 'FAILED';
+    const icon = result.code === 0 ? '\u2714' : '\u2718';
+    console.log(`  ${icon} ${result.variant}: ${status}`);
+    if (result.code !== 0) {
+      hasFailures = true;
     }
   }
 
@@ -140,7 +115,7 @@ async function runAllVariants(playwrightArgs = []) {
   // On failure in CI, dump the log files for failed variants
   if (hasFailures && process.env.CI) {
     for (const result of results) {
-      if (!result.skipped && result.code !== 0) {
+      if (result.code !== 0) {
         const logPath = join(reportsDir, `${result.variant}.log`);
         console.log(`\n${'='.repeat(60)}`);
         console.log(`Logs for failed variant: ${result.variant}`);
@@ -167,7 +142,7 @@ async function runAllVariants(playwrightArgs = []) {
     process.exit(1);
   }
 
-  console.log('All runnable variants passed');
+  console.log('All variants passed');
 }
 
 // CLI

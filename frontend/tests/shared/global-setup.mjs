@@ -589,6 +589,34 @@ export async function buildBackendImage(isEnterprise) {
   return imageTag;
 }
 
+/**
+ * Resolves the environment for the Console Enterprise backend container.
+ *
+ * By default the enterprise backend runs without a Console license. Its config
+ * has no `licenseFilepath`, so Console asks the Redpanda cluster for its license
+ * and picks up the built-in 30-day trial that every fresh cluster starts with
+ * (Redpanda >= 24.3). The e2e clusters are created from scratch on every run,
+ * so that trial is always valid and CI needs no license secret.
+ *
+ * Set REDPANDA_LICENSE_PATH to a license file to run against a real license
+ * instead, e.g. for license-specific tests. Its contents are passed to Console
+ * through the REDPANDA_LICENSE environment variable the backend reads at startup.
+ *
+ * @returns {Record<string, string>} Environment variables for the backend container
+ */
+function resolveEnterpriseLicenseEnv() {
+  const licensePath = process.env.REDPANDA_LICENSE_PATH;
+  if (!licensePath) {
+    console.log("No REDPANDA_LICENSE_PATH set, Console will use the Redpanda cluster's built-in trial license");
+    return {};
+  }
+  if (!existsSync(licensePath)) {
+    throw new Error(`REDPANDA_LICENSE_PATH is set but no file exists at: ${licensePath}`);
+  }
+  console.log(`Using Console Enterprise license from REDPANDA_LICENSE_PATH: ${licensePath}`);
+  return { REDPANDA_LICENSE: readFileSync(licensePath, 'utf-8').trim() };
+}
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: (21) nested test environment setup with multiple configuration checks
 async function startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports) {
   console.log('Starting backend server container...');
@@ -607,44 +635,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
     },
   ];
 
-  // Mount license file for enterprise mode
-  if (isEnterprise) {
-    let licensePath;
-    const fs = await import('node:fs');
-
-    // Check if license is provided as GitHub secret (environment variable)
-    if (process.env.ENTERPRISE_LICENSE_CONTENT) {
-      console.log('Using ENTERPRISE_LICENSE_CONTENT from environment variable (GitHub secret)');
-      // Write the license content to a temporary file
-      const { mkdtempSync, writeFileSync } = await import('node:fs');
-      const { tmpdir } = await import('node:os');
-      const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
-      licensePath = `${tempDir}/redpanda.license`;
-      writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
-      state.tempPaths.push(tempDir);
-      console.log(`✓ License written to temporary file: ${licensePath}`);
-    } else {
-      // Default to relative path based on backend directory
-      const backendDir = process.env.ENTERPRISE_BACKEND_DIR
-        ? resolve(process.env.ENTERPRISE_BACKEND_DIR)
-        : resolve(__dirname, '../../../../console-enterprise/backend');
-
-      const defaultLicensePath = resolve(backendDir, '../frontend/tests/config/redpanda.license');
-      licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
-      console.log(`Enterprise license path: ${licensePath}`);
-
-      if (!fs.existsSync(licensePath)) {
-        throw new Error(`License file not found at: ${licensePath}`);
-      }
-      console.log('✓ License file found');
-    }
-
-    bindMounts.push({
-      source: licensePath,
-      target: '/etc/console/redpanda.license',
-      mode: 'ro',
-    });
-  }
+  const environment = isEnterprise ? resolveEnterpriseLicenseEnv() : {};
 
   console.log('Creating container with bind mounts:');
   bindMounts.forEach((mount, i) => {
@@ -668,6 +659,7 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
       .withNetworkMode(network.getName())
       .withExposedPorts({ container: 3000, host: ports.backend })
       .withBindMounts(bindMounts)
+      .withEnvironment(environment)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
       // Testcontainers 12 prefers an image healthcheck when present. Preserve
       // the backend's established port-readiness contract across the upgrade.
@@ -923,35 +915,7 @@ async function startBackendServerWithConfig({
     },
   ];
 
-  if (isEnterprise) {
-    let licensePath;
-    const fs = await import('node:fs');
-
-    if (process.env.ENTERPRISE_LICENSE_CONTENT) {
-      const { mkdtempSync, writeFileSync } = await import('node:fs');
-      const { tmpdir } = await import('node:os');
-      const tempDir = mkdtempSync(`${tmpdir()}/redpanda-license-`);
-      licensePath = `${tempDir}/redpanda.license`;
-      writeFileSync(licensePath, process.env.ENTERPRISE_LICENSE_CONTENT);
-      state.tempPaths.push(tempDir);
-    } else {
-      const defaultLicensePath = resolve(
-        __dirname,
-        '../../../../console-enterprise/frontend/tests/config/redpanda.license'
-      );
-      licensePath = process.env.REDPANDA_LICENSE_PATH || defaultLicensePath;
-
-      if (!fs.existsSync(licensePath)) {
-        throw new Error(`License file not found at: ${licensePath}`);
-      }
-    }
-
-    bindMounts.push({
-      source: licensePath,
-      target: '/etc/console/redpanda.license',
-      mode: 'ro',
-    });
-  }
+  const environment = isEnterprise ? resolveEnterpriseLicenseEnv() : {};
 
   let containerId;
   try {
@@ -960,6 +924,7 @@ async function startBackendServerWithConfig({
       .withNetworkAliases(networkAlias)
       .withExposedPorts({ container: 3000, host: externalPort })
       .withBindMounts(bindMounts)
+      .withEnvironment(environment)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
       .withWaitStrategy(Wait.forListeningPorts())
       .start();
