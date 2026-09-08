@@ -172,7 +172,7 @@ const BasicAuthComponent = () => {
         />
       </Field>
       {Boolean(error) && (
-        <Alert icon={<CircleAlertIcon />} variant="destructive">
+        <Alert icon={<CircleAlertIcon />} testId="auth-error" variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

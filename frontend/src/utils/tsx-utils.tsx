@@ -321,6 +321,7 @@ export class OptionGroup<T extends string> extends Component<{
             }
           }}
           value={[p.value]}
+          variant="outline"
         >
           {ObjToKv(p.options).map((kv) => (
             <ToggleGroupItem key={kv.key} value={String(kv.value)}>

@@ -28,6 +28,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable, type DataTableColumnDef, type DataTableRow } from 'components/redpanda-ui/components/data-table';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Stat } from 'components/redpanda-ui/components/stat';
+import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import React, { type FC, type ReactNode } from 'react';
 
@@ -84,12 +85,12 @@ class Overview extends PageComponent {
 
     const clusterStatus = (() => {
       if (overview.kafka?.status?.status === StatusType.HEALTHY) {
-        return { displayText: 'Running', className: 'status-green' };
+        return { displayText: 'Running', variant: 'success' as const };
       }
       if (overview.kafka?.status?.status === StatusType.DEGRADED) {
-        return { displayText: 'Degraded', className: 'status-yellow' };
+        return { displayText: 'Degraded', variant: 'warning' as const };
       }
-      return { displayText: 'Unhealthy', className: 'status-red' };
+      return { displayText: 'Unhealthy', variant: 'destructive' as const };
     })();
 
     // On an unreachable cluster the brokers request fails and `api.brokers` stays
@@ -139,10 +140,14 @@ class Overview extends PageComponent {
             <Section className="py-5">
               <div className="flex gap-8">
                 <Stat
-                  className={`status-bar ${clusterStatus.className}`}
                   label="Cluster Status"
                   size="lg"
-                  value={clusterStatus.displayText}
+                  value={
+                    <span className="inline-flex items-center gap-2">
+                      <StatusDot size="sm" variant={clusterStatus.variant} />
+                      {clusterStatus.displayText}
+                    </span>
+                  }
                 />
                 <Stat label="Cluster Storage Size" size="lg" value={brokerSize} />
                 <Stat label="Cluster Version" size="lg" value={version} />
