@@ -67,6 +67,8 @@ describe('connector property controls', () => {
     render(<Form property={makeProperty('PASSWORD', 'update')} />);
     expect(screen.getByLabelText('Example')).toHaveValue('secret');
     await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(screen.getByLabelText('Example')).toHaveAttribute('type', 'text');
     await user.click(screen.getByText('Example', { selector: 'label' }));
     expect(screen.getByLabelText('Example')).toHaveFocus();
     await user.type(screen.getByLabelText('Example'), 'replacement');

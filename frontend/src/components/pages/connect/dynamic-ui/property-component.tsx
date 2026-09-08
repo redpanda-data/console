@@ -52,6 +52,7 @@ export const PropertyComponent = (props: { property: Property }) => {
   const v = p.value;
   // Field generates no ids; the label and the control share this one.
   const fieldId = `property-${p.name}`;
+  const isRequired = def.required;
 
   switch (def.type) {
     case 'STRING':
@@ -65,6 +66,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <RadioGroup
             aria-labelledby={`${fieldId}-label`}
+            aria-required={isRequired || undefined}
             // A radiogroup div is not labelable; it takes its name from the label instead of htmlFor.
             className="flex flex-wrap gap-4"
             name={p.name}
@@ -115,6 +117,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
+            required={isRequired}
             spellCheck={false}
             value={String(v)}
           />
@@ -130,6 +133,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           onChange={(e) => {
             updatePropertyValue(p, e);
           }}
+          required={isRequired}
           updating={p.crud === 'update'}
           value={String(v ?? '')}
         />
@@ -147,6 +151,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             // Store the string: getConfigObject sends p.value as-is and ===-compares it to default_value.
             updatePropertyValue(p, e.target.value);
           }}
+          required={isRequired}
           // Registry Input coerces step with Number(); "any" would become NaN.
           showStepControls
           step={1}
@@ -160,6 +165,7 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'BOOLEAN':
       inputComp = (
         <Switch
+          aria-required={isRequired || undefined}
           checked={Boolean(v)}
           id={fieldId}
           onCheckedChange={(checked) => {
@@ -174,6 +180,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <CommaSeparatedStringList
             defaultValue={String(v)}
+            id={fieldId}
             onChange={(x) => {
               updatePropertyValue(p, x);
             }}
@@ -187,6 +194,7 @@ export const PropertyComponent = (props: { property: Property }) => {
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
+            required={isRequired}
             value={String(v)}
           />
         );
@@ -201,6 +209,7 @@ export const PropertyComponent = (props: { property: Property }) => {
           onChange={(e) => {
             updatePropertyValue(p, e.target.value);
           }}
+          required={isRequired}
           value={String(v)}
         />
       );

@@ -82,10 +82,10 @@ export const PropertyGroupComponent = (props: {
   // Normal group
   return (
     <div>
-      {Boolean(g.group.name) && <h3 className="mt-8 mb-4 text-heading-md">{g.group.name}</h3>}
+      {Boolean(g.group.name) && <h3 className="mt-8 text-heading-md">{g.group.name}</h3>}
 
       {Boolean(g.group.description) && (
-        <p className="text-body">
+        <p className="mt-4 text-body">
           {g.group.description}
           {g.group.documentation_link ? (
             <>

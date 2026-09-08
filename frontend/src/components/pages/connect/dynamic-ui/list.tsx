@@ -99,6 +99,7 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
 
 export function CommaSeparatedStringList(props: {
   defaultValue: string;
+  id?: string;
   onChange: (list: string) => void;
   locale?: {
     addInputPlaceholder?: string;
@@ -139,6 +140,7 @@ export function CommaSeparatedStringList(props: {
           <Input
             className="h-full"
             containerClassName="h-full grow basis-[260px]"
+            id={props.id}
             onChange={(e) => {
               const value = e.target.value;
               setNewEntry(value);

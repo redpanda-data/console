@@ -7,6 +7,7 @@ export type SecretInputProps = {
   id: string;
   value: string;
   onChange: (v: string) => void;
+  required?: boolean;
   updating: boolean;
 };
 
@@ -32,7 +33,7 @@ const ClearButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
-export const SecretInput = ({ id, value, onChange, updating = false }: SecretInputProps) => {
+export const SecretInput = ({ id, value, onChange, required, updating = false }: SecretInputProps) => {
   const initialValueRef = useRef(value);
   const [canEdit, setCanEdit] = useState(!updating);
   // Intentionally seeded from prop: localValue is edited independently during user interaction
@@ -75,6 +76,7 @@ export const SecretInput = ({ id, value, onChange, updating = false }: SecretInp
           }
         }}
         readOnly={!canEdit}
+        required={required}
         type="password"
         value={localValue}
       />

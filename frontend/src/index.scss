@@ -1747,7 +1747,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       align-items: center;
       gap: 4px;
 
-      background: hsl(0deg, 0%, 97%);
+      background: var(--color-surface-recess);
 
       height: 32px;
       // padding: 0px 4px;
@@ -1764,7 +1764,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         width: 28px;
         margin-left: 2px;
         padding-top: 1px;
-        color: hsl(0deg, 0%, 70%);
+        color: var(--color-subtle);
 
         transform: scale(0.8);
       }
@@ -1801,7 +1801,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         // margin-right: 4px;
         padding-right: 2px;
 
-        color: hsl(0deg, 0%, 70%);
+        color: var(--color-subtle);
         cursor: pointer;
 
         opacity: 0; // only visible on hover
@@ -1812,8 +1812,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         }
 
         &:hover {
-          color: hsl(0, 0%, 45%);
-          background: hsl(0, 0%, 95%);
+          color: var(--color-foreground);
+          background: var(--color-surface-subtle);
         }
       }
 

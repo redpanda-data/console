@@ -32,9 +32,9 @@ export const ConnectorStepComponent = (props: {
 
   return (
     <div>
-      <h3 className="mt-8 mb-4 text-heading-md">{step.name}</h3>
+      <h3 className="mt-8 text-heading-md">{step.name}</h3>
 
-      {Boolean(step.description) && <p className="mb-4 text-body-sm">{step.description}</p>}
+      {Boolean(step.description) && <p className="mt-4 text-body-sm">{step.description}</p>}
 
       {groups.map((g) => (
         <PropertyGroupComponent
