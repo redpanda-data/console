@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi } from 'vitest';
 
 import { MessagesTable, type MessagesTableProps } from './messages-table';
 import { DEFAULT_MESSAGE_COLUMNS } from '../../../../../stores/topic-settings-store';
@@ -22,15 +22,15 @@ const baseProps: MessagesTableProps = {
   density: 'compact',
   timestampFormat: 'default',
   sorting: [],
-  onSortingChange: vi.fn(),
+  onSortingChange: rs.fn(),
   sortingDisabled: false,
   pagination: { pageIndex: 0, pageSize: 10 },
-  onPaginationChange: vi.fn(),
+  onPaginationChange: rs.fn(),
   isLoading: false,
   isLiveWaiting: false,
   hasActiveFilter: false,
   selectedKey: null,
-  onRowClick: vi.fn(),
+  onRowClick: rs.fn(),
   newKeys: new Set(),
 };
 
@@ -49,7 +49,7 @@ describe('MessagesTable — error state', () => {
   });
 
   test('clicking Retry calls onRetry', async () => {
-    const onRetry = vi.fn();
+    const onRetry = rs.fn();
     render(<MessagesTable {...baseProps} error="network error" onRetry={onRetry} />);
     await userEvent.click(screen.getByTestId('messages-error-retry'));
     expect(onRetry).toHaveBeenCalledTimes(1);
@@ -69,7 +69,7 @@ describe('MessagesTable — column sorting is keyboard-accessible', () => {
   });
 
   test('tabbing to the Timestamp header and pressing Enter toggles sorting', async () => {
-    const onSortingChange = vi.fn();
+    const onSortingChange = rs.fn();
     render(<MessagesTable {...baseProps} onSortingChange={onSortingChange} />);
     const header = screen.getByRole('button', { name: 'Timestamp' });
     header.focus();

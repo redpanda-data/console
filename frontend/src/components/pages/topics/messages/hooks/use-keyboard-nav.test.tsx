@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { useKeyboardNav } from './use-keyboard-nav';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
 const renderNav = (overrides: Partial<Parameters<typeof useKeyboardNav>[0]> = {}) => {
-  const onSelect = vi.fn();
-  const getCopyText = vi.fn((key: string) => `copy-text-for-${key}`);
+  const onSelect = rs.fn();
+  const getCopyText = rs.fn((key: string) => `copy-text-for-${key}`);
   renderHook(() =>
     useKeyboardNav({
       visibleKeys: ['a', 'b', 'c'],
@@ -34,15 +34,15 @@ const renderNav = (overrides: Partial<Parameters<typeof useKeyboardNav>[0]> = {}
 };
 
 describe('useKeyboardNav', () => {
-  let writeText: ReturnType<typeof vi.fn>;
+  let writeText: ReturnType<typeof rs.fn>;
 
   beforeEach(() => {
-    writeText = vi.fn().mockResolvedValue(undefined);
+    writeText = rs.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    rs.restoreAllMocks();
   });
 
   test('plain "c" copies the selected row\'s value', async () => {

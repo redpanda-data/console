@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useRef, useState } from 'react';
-import { describe, expect, test, vi } from 'vitest';
 
 import { FilterBar, type FilterBarProps } from './filter-bar';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
@@ -113,14 +113,14 @@ const renderBar = (overrides: Partial<FilterBarProps> = {}) => {
   const spies: FilterBarProps = {
     messages,
     quickSearch: '',
-    onQuickSearchChange: vi.fn(),
+    onQuickSearchChange: rs.fn(),
     fieldTokens: [],
-    onFieldTokensChange: vi.fn(),
+    onFieldTokensChange: rs.fn(),
     partitionId: -1,
-    onPartitionIdChange: vi.fn(),
+    onPartitionIdChange: rs.fn(),
     jsFilters: [],
-    onEditJsFilter: vi.fn(),
-    onRemoveJsFilter: vi.fn(),
+    onEditJsFilter: rs.fn(),
+    onRemoveJsFilter: rs.fn(),
     canUseJsFilters: true,
   };
   render(<StatefulBar {...overrides} spies={spies} />);
@@ -441,14 +441,14 @@ describe('FilterBar', () => {
     const spies: FilterBarProps = {
       messages,
       quickSearch: '',
-      onQuickSearchChange: vi.fn(),
+      onQuickSearchChange: rs.fn(),
       fieldTokens: [],
-      onFieldTokensChange: vi.fn(),
+      onFieldTokensChange: rs.fn(),
       partitionId: -1,
-      onPartitionIdChange: vi.fn(),
+      onPartitionIdChange: rs.fn(),
       jsFilters: [],
-      onEditJsFilter: vi.fn(),
-      onRemoveJsFilter: vi.fn(),
+      onEditJsFilter: rs.fn(),
+      onRemoveJsFilter: rs.fn(),
       canUseJsFilters: true,
     };
     const { rerender } = render(<StaggeredBar flushSignal={0} spies={spies} />);

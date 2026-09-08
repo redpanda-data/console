@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ViewSettingsPanel, type ViewSettingsPanelProps } from './view-settings-panel';
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -22,12 +22,12 @@ const TOPIC = 'view-settings-test-topic';
 const renderPanel = (overrides: Partial<ViewSettingsPanelProps> = {}) => {
   const props: ViewSettingsPanelProps = {
     topicName: TOPIC,
-    onClose: vi.fn(),
+    onClose: rs.fn(),
     keyDeserializer: PayloadEncoding.UNSPECIFIED,
-    onKeyDeserializerChange: vi.fn(),
+    onKeyDeserializerChange: rs.fn(),
     valueDeserializer: PayloadEncoding.UNSPECIFIED,
-    onValueDeserializerChange: vi.fn(),
-    onResetDeserializers: vi.fn(),
+    onValueDeserializerChange: rs.fn(),
+    onResetDeserializers: rs.fn(),
     valuePathHints: ['address', 'address.city'],
     liveTail: false,
     ...overrides,

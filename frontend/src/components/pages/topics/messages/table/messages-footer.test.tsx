@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { MessagesFooter, type MessagesFooterProps } from './messages-footer';
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = [];
   callback: IntersectionObserverCallback;
-  observe = vi.fn();
-  disconnect = vi.fn();
-  unobserve = vi.fn();
+  observe = rs.fn();
+  disconnect = rs.fn();
+  unobserve = rs.fn();
 
   constructor(callback: IntersectionObserverCallback) {
     this.callback = callback;
@@ -36,7 +36,7 @@ const baseProps: MessagesFooterProps = {
   totalLoaded: 50,
   pageIndex: 0,
   pageSize: 10,
-  onPageChange: vi.fn(),
+  onPageChange: rs.fn(),
   continuousMode: true,
   windowSize: 50,
   windowCap: 5000,
@@ -44,7 +44,7 @@ const baseProps: MessagesFooterProps = {
   canLoadMore: true,
   isLoadingMore: false,
   loadMoreCount: 50,
-  onLoadMore: vi.fn(),
+  onLoadMore: rs.fn(),
   showStats: false,
   bytesConsumed: 0,
   elapsedMs: null,
@@ -53,15 +53,15 @@ const baseProps: MessagesFooterProps = {
 describe('MessagesFooter — scroll-triggered pagination', () => {
   beforeEach(() => {
     MockIntersectionObserver.instances = [];
-    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+    rs.stubGlobal('IntersectionObserver', MockIntersectionObserver);
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    rs.unstubAllGlobals();
   });
 
   test('scrolling the bottom sentinel into view loads more, matching the "loads as you scroll" claim', () => {
-    const onLoadMore = vi.fn();
+    const onLoadMore = rs.fn();
     render(<MessagesFooter {...baseProps} onLoadMore={onLoadMore} />);
     expect(MockIntersectionObserver.instances).toHaveLength(1);
     MockIntersectionObserver.instances[0].trigger(true);
@@ -69,7 +69,7 @@ describe('MessagesFooter — scroll-triggered pagination', () => {
   });
 
   test('does not load more while a load is already in flight', () => {
-    const onLoadMore = vi.fn();
+    const onLoadMore = rs.fn();
     render(<MessagesFooter {...baseProps} isLoadingMore onLoadMore={onLoadMore} />);
     MockIntersectionObserver.instances[0].trigger(true);
     expect(onLoadMore).not.toHaveBeenCalled();
@@ -81,7 +81,7 @@ describe('MessagesFooter — scroll-triggered pagination', () => {
   });
 
   test('the manual "Load more" button still works alongside the sentinel', async () => {
-    const onLoadMore = vi.fn();
+    const onLoadMore = rs.fn();
     render(<MessagesFooter {...baseProps} onLoadMore={onLoadMore} />);
     await userEvent.click(screen.getByTestId('messages-load-more'));
     expect(onLoadMore).toHaveBeenCalledTimes(1);
@@ -104,8 +104,8 @@ describe('MessagesFooter — scroll-triggered pagination', () => {
   });
 
   test('the sentinel invokes whichever onLoadMore was passed most recently, even without an observer rebuild', () => {
-    const firstOnLoadMore = vi.fn();
-    const secondOnLoadMore = vi.fn();
+    const firstOnLoadMore = rs.fn();
+    const secondOnLoadMore = rs.fn();
     const { rerender } = render(<MessagesFooter {...baseProps} onLoadMore={firstOnLoadMore} />);
     rerender(<MessagesFooter {...baseProps} onLoadMore={secondOnLoadMore} />);
     expect(MockIntersectionObserver.instances).toHaveLength(1);

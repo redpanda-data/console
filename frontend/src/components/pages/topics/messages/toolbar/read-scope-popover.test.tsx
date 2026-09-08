@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi } from 'vitest';
 
 import { ReadScopePopover, type ReadScopePopoverProps } from './read-scope-popover';
 
@@ -19,21 +19,21 @@ const renderPopover = (overrides: Partial<ReadScopePopoverProps> = {}) => {
   const props: ReadScopePopoverProps = {
     topicName: 'test-topic',
     mode: 'newest',
-    onModeChange: vi.fn(),
+    onModeChange: rs.fn(),
     customOffset: -1,
-    onCustomOffsetChange: vi.fn(),
+    onCustomOffsetChange: rs.fn(),
     startTimestamp: -1,
-    onStartTimestampChange: vi.fn(),
+    onStartTimestampChange: rs.fn(),
     maxResults: 50,
-    onMaxResultsChange: vi.fn(),
+    onMaxResultsChange: rs.fn(),
     continuousMode: false,
-    onContinuousModeChange: vi.fn(),
+    onContinuousModeChange: rs.fn(),
     partitionId: -1,
-    onPartitionIdChange: vi.fn(),
+    onPartitionIdChange: rs.fn(),
     partitionCount: 3,
     liveTail: false,
-    onLiveTailChange: vi.fn(),
-    onOpenDocs: vi.fn(),
+    onLiveTailChange: rs.fn(),
+    onOpenDocs: rs.fn(),
     ...overrides,
   };
   render(<ReadScopePopover {...props} />);
@@ -114,7 +114,7 @@ describe('ReadScopePopover', () => {
   });
 
   test('onOpenChange reports open/closed so a caller can gate other keyboard shortcuts on it', async () => {
-    const onOpenChange = vi.fn();
+    const onOpenChange = rs.fn();
     renderPopover({ onOpenChange });
     await userEvent.click(screen.getByTestId('read-scope-button'));
     expect(onOpenChange).toHaveBeenLastCalledWith(true);

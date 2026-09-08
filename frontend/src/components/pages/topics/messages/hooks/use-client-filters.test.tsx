@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
 
 import { matchesQuickSearch, useClientFilters } from './use-client-filters';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';

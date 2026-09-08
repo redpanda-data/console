@@ -9,20 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { type MessageSearchParams, useMessageSearch } from './use-message-search';
 import { messageKey } from '../utils/message-key';
 
 // The hook feeds raw data frames through convertListMessageData; identity-mock it so
 // tests can use plain {partitionID, offset} stubs without building full proto payloads.
-vi.mock('../../../../../utils/message-converters', () => ({
+rs.mock('../../../../../utils/message-converters', () => ({
   convertListMessageData: (value: unknown) => value,
 }));
 
-vi.mock('sonner', () => ({
-  toast: { error: vi.fn() },
+rs.mock('sonner', () => ({
+  toast: { error: rs.fn() },
 }));
 
 type Frame =
@@ -32,9 +32,9 @@ type Frame =
   | { case: 'error'; value: { message: string } }
   | { case: 'data'; value: { partitionID: number; offset: number } };
 
-const listMessagesMock = vi.fn();
+const listMessagesMock = rs.fn();
 
-vi.mock('../../../../../config', () => ({
+rs.mock('../../../../../config', () => ({
   config: {
     get consoleClient() {
       return { listMessages: listMessagesMock };
