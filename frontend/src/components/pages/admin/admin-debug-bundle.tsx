@@ -81,13 +81,8 @@ const TIME_UNITS = [
 ];
 
 /**
- * A labelled multi-select.
- *
- * `SimpleMultiSelect` forwards only `id`, `aria-describedby` and `aria-invalid`, and its trigger is a
- * `<div>` carrying a hardcoded `aria-label="Multi-select trigger"` — so a `<FieldLabel htmlFor>`
- * pointing at it associates nothing and the control announces as "Multi-select trigger". Composing the
- * parts lets `aria-labelledby` through, which wins over that `aria-label`. Chakra's `FormField label`
- * did associate, so this keeps parity.
+ * A labelled multi-select: the trigger is a div with a hardcoded aria-label, so the visible label
+ * reaches it through aria-labelledby (which wins). Click-to-focus is not wired.
  */
 const LabelledMultiSelect = ({
   labelId,
@@ -123,12 +118,7 @@ const LabelledMultiSelect = ({
   );
 };
 
-/**
- * A number paired with its unit — four fields on this form share the shape exactly.
- *
- * `valueAsNumber` is NaN while the field is empty, which is what the pre-migration code stored too;
- * this only keeps the input from *displaying* "NaN" while the user is retyping.
- */
+/** A number paired with its unit. An empty field reads NaN; the input renders '' to stay controlled. */
 const NumberWithUnitField = ({
   id,
   label,
@@ -369,7 +359,7 @@ const NewDebugBundleForm: FC<{
     partitions: [] as string[],
     labelSelectors: [] as Array<{ id: number; key: string; value: string }>,
   });
-  // Row identity for React keys; keying by key/value remounted the row (and dropped focus) per keystroke.
+  // Stable row identity for keys.
   const nextLabelSelectorId = useRef(0);
 
   const generateNewDebugBundle = () => {

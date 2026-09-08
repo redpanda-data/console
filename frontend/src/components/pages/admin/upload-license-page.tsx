@@ -45,9 +45,7 @@ const UploadLicenseForm: FC<{
         {Boolean(showFileUpload) && (
           <div>
             <Dropzone
-              // The Registry Dropzone reports rejections only through onError and then never calls
-              // onDrop — without this a rejected drop would be silent, where Chakra's took the first
-              // file regardless. `maxFiles` is 1, so a multi-file drop lands here.
+              // Rejections arrive only via onError (maxFiles is 1); onDrop is skipped for them.
               onDrop={(acceptedFiles) => {
                 const file = acceptedFiles.at(0);
                 if (!file) {
