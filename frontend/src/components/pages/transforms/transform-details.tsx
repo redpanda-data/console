@@ -361,6 +361,8 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
+          // No pager under the loading or empty row, as the legacy table.
+          pagination={filteredMessages.length > 0}
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}
