@@ -281,7 +281,7 @@ export const MessagesTable = ({
                 <TableRow
                   className={cn(
                     'cursor-pointer',
-                    selectedKey === key && 'bg-accent/60',
+                    selectedKey === key && 'bg-selected-wash',
                     newKeys.has(key) && 'animate-message-flash'
                   )}
                   data-state={selectedKey === key ? 'selected' : undefined}

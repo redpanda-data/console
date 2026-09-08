@@ -26,6 +26,17 @@ import { messageKey } from '../utils/message-key';
 const LIVE_BUFFER_MAX = 50_000;
 const LIVE_BUFFER_SLACK = 1024;
 
+/**
+ * Memory bound for the paged (continuous "Load more") buffer. The display window renders at
+ * most DISPLAY_WINDOW_CAP rows, but the backing buffer feeds client filters and path hints,
+ * so it keeps a healthy multiple — bounded, though: every appended page retains decoded AND
+ * raw payloads, and an unbounded buffer grows past browser memory on a large topic while the
+ * UI claims a bounded window. Trimming drops the front, which in both continuous scopes is
+ * the end the display window has already trimmed away.
+ */
+const PAGED_BUFFER_MAX = 5000;
+const PAGED_BUFFER_SLACK = 256;
+
 /** How often buffered stream data is flushed into React state. */
 const FLUSH_INTERVAL_MS = 200;
 
@@ -245,7 +256,7 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
               if (isLongLived) {
                 appendWithSlackCap(bufferRef.current, message, LIVE_BUFFER_MAX, LIVE_BUFFER_SLACK);
               } else {
-                bufferRef.current.push(message);
+                appendWithSlackCap(bufferRef.current, message, PAGED_BUFFER_MAX, PAGED_BUFFER_SLACK);
               }
               if (trackNewRef.current) {
                 pendingNewKeysRef.current.add(messageKey(message));

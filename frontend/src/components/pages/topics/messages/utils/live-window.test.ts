@@ -33,18 +33,16 @@ describe('applyDisplayWindow', () => {
     expect(applyDisplayWindow(rows, 2)).toEqual({ rows, trimmed: 0 });
   });
 
-  test('newestFirst trims the tail instead of the front, keeping the newest rows at the front', () => {
+  // Regression: continuous + "Newest" orders newest-first, and "Load more" pages sort to the
+  // tail. Keeping the head instead (the earlier behavior) pinned the window to the first
+  // `cap` rows forever — every fetched page was silently discarded and pagination was stuck.
+  test('newest-first ordering: keeps the tail so newly loaded older pages become visible', () => {
     // Sorted newest-first, as continuous + "Newest" ordering produces before windowing.
-    const rows = Array.from({ length: 10 }, (_, i) => 9 - i);
-    const result = applyDisplayWindow(rows, 4, { newestFirst: true });
-    expect(result.rows).toEqual([9, 8, 7, 6]);
-    expect(result.trimmed).toBe(6);
-  });
-
-  test('regression: trimming the front of a newest-first array (the pre-fix behavior) would keep the oldest rows instead', () => {
-    const rows = Array.from({ length: 10 }, (_, i) => 9 - i);
-    const wrongWay = applyDisplayWindow(rows, 4);
-    expect(wrongWay.rows).not.toEqual([9, 8, 7, 6]);
-    expect(wrongWay.rows).toEqual([3, 2, 1, 0]);
+    const firstThreePages = Array.from({ length: 10 }, (_, i) => 9 - i);
+    const withOlderPage = [...firstThreePages, ...Array.from({ length: 4 }, (_, i) => -1 - i)];
+    const result = applyDisplayWindow(withOlderPage, 4);
+    // The freshly fetched older page is what the window shows — the frontier advanced.
+    expect(result.rows).toEqual([-1, -2, -3, -4]);
+    expect(result.trimmed).toBe(10);
   });
 });

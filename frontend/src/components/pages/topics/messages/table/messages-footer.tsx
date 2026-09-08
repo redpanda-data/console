@@ -24,6 +24,9 @@ export type MessagesFooterProps = {
   windowSize: number;
   windowCap: number;
   trimmedCount: number;
+  /** Which side of the log the display window dropped: continuous+"Newest" pages backward
+   * through older rows and trims the newest, every other scope trims the oldest. */
+  trimmedSide?: 'older' | 'newer';
   canLoadMore: boolean;
   isLoadingMore: boolean;
   loadMoreCount: number;
@@ -41,9 +44,10 @@ const RangeLabel = ({
   pageIndex,
   pageSize,
   trimmedCount,
+  trimmedSide = 'older',
 }: Pick<
   MessagesFooterProps,
-  'continuousMode' | 'windowSize' | 'totalLoaded' | 'pageIndex' | 'pageSize' | 'trimmedCount'
+  'continuousMode' | 'windowSize' | 'totalLoaded' | 'pageIndex' | 'pageSize' | 'trimmedCount' | 'trimmedSide'
 >) => {
   if (continuousMode) {
     return (
@@ -52,7 +56,7 @@ const RangeLabel = ({
         {trimmedCount > 0 && (
           <span className="flex items-center gap-1.5 text-xs">
             <Trash2Icon className="size-3.5" />
-            {trimmedCount} older trimmed
+            {trimmedCount} {trimmedSide} trimmed
           </span>
         )}
       </span>
@@ -79,6 +83,7 @@ export const MessagesFooter = ({
   windowSize,
   windowCap,
   trimmedCount,
+  trimmedSide,
   canLoadMore,
   isLoadingMore,
   loadMoreCount,
@@ -133,6 +138,7 @@ export const MessagesFooter = ({
           pageSize={pageSize}
           totalLoaded={totalLoaded}
           trimmedCount={trimmedCount}
+          trimmedSide={trimmedSide}
           windowSize={windowSize}
         />
         {continuousMode ? (

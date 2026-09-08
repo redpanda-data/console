@@ -10,23 +10,25 @@
  */
 
 /**
- * Bound the rows shown during live tail / continuous mode to the newest `cap`
- * entries. Callers must order `rows` (oldest→newest, or newest→oldest) *before*
- * windowing and say which end holds the newest row via `newestFirst` — trimming
- * on raw arrival order is only valid for the oldest→newest case; continuous
- * "Newest" arrives newest→oldest per partition batch, so trimming the front
- * there would drop the newest rows instead of the oldest ones. Returns the
- * input array unchanged when it already fits, so referential equality holds
- * for memoized consumers.
+ * Bound the rows shown during live tail / continuous mode to the last `cap`
+ * entries of the *ordered* array. Callers must order `rows` before windowing.
+ *
+ * Keeping the tail makes the window follow the loading frontier in every scope:
+ * oldest→newest orderings (live tail, continuous "Oldest") append newly arrived
+ * rows at the tail, and continuous "Newest" fetches ever-older pages that sort
+ * to the tail of its newest-first ordering. Keeping the head instead would pin
+ * continuous "Newest" to its first `cap` rows forever — every "Load more" page
+ * would be fetched and then silently discarded. Which side got trimmed therefore
+ * depends on the scope (oldest rows everywhere, the *newest* rows once
+ * continuous "Newest" pages past the cap) — the footer states which.
+ *
+ * Returns the input array unchanged when it already fits, so referential
+ * equality holds for memoized consumers.
  */
-export function applyDisplayWindow<T>(
-  rows: readonly T[],
-  cap: number,
-  options?: { newestFirst?: boolean }
-): { rows: readonly T[]; trimmed: number } {
+export function applyDisplayWindow<T>(rows: readonly T[], cap: number): { rows: readonly T[]; trimmed: number } {
   if (rows.length <= cap) {
     return { rows, trimmed: 0 };
   }
   const trimmed = rows.length - cap;
-  return { rows: options?.newestFirst ? rows.slice(0, cap) : rows.slice(trimmed), trimmed };
+  return { rows: rows.slice(trimmed), trimmed };
 }

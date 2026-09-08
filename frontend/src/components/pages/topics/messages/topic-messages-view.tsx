@@ -239,8 +239,10 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
   // Stream from the log's end for as long as live tail is on; restarts on every clean
   // completion (the backend bounds a "from newest" consume to maxResults per partition and
   // then completes — list_messages.go — it isn't an actually-endless stream), and backs off
-  // instead of hammering the backend when the stream keeps failing.
-  useLiveTailLoop({ active: urlState.liveTail, start: startLiveTail, stop: search.stop });
+  // instead of hammering the backend when the stream keeps failing. `status` (not the URL
+  // toggle) drives the "streaming" UI, and `restart` is the recovery path once the loop's
+  // retry budget is exhausted.
+  const liveTailLoop = useLiveTailLoop({ active: urlState.liveTail, start: startLiveTail, stop: search.stop });
 
   const filteredMessages = useClientFilters(search.messages, urlState.quickSearch, fieldTokens, topic.partitionCount);
 
@@ -278,15 +280,16 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
 
   const continuousNewest = continuousActive && urlState.readScopeMode === 'newest';
 
-  // In continuous or live mode only the newest DISPLAY_WINDOW_CAP rows stay rendered. Once
-  // ordered above, continuous+"Newest" holds its newest row first, so its window trims the
-  // tail instead of the front that every other (oldest→newest) scope trims.
+  // In continuous or live mode only DISPLAY_WINDOW_CAP rows stay rendered. The window keeps
+  // the tail of the ordered array — the loading frontier — so "Load more" always reveals the
+  // page it just fetched: continuous+"Newest" pages backward through ever-older rows (trimming
+  // the newest once past the cap — the footer says so), every other scope trims the oldest.
   const { rows: windowedMessages, trimmed } = useMemo(
     () =>
       continuousActive || urlState.liveTail
-        ? applyDisplayWindow(orderedMessages, DISPLAY_WINDOW_CAP, { newestFirst: continuousNewest })
+        ? applyDisplayWindow(orderedMessages, DISPLAY_WINDOW_CAP)
         : { rows: orderedMessages, trimmed: 0 },
-    [orderedMessages, continuousActive, urlState.liveTail, continuousNewest]
+    [orderedMessages, continuousActive, urlState.liveTail]
   );
 
   // Stable mutable copy for consumers typed as TopicMessage[] — a fresh array on
@@ -345,12 +348,16 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
     return search.loadLargeMessage(selectedMessage.partitionID, selectedMessage.offset);
   }, [selectedMessage, search.loadLargeMessage]);
 
+  // In live mode "refresh" (and the error state's Retry) restarts the tail loop with a fresh
+  // failure budget — the only way back once its retries are exhausted, since the paged
+  // auto-search is inert while the toggle is on.
   const handleRefresh = useCallback(() => {
     if (urlState.liveTail) {
+      liveTailLoop.restart();
       return;
     }
     setRefreshCounter((c) => c + 1);
-  }, [urlState.liveTail]);
+  }, [urlState.liveTail, liveTailLoop.restart]);
 
   // DeleteRecordsModal (and other page-level actions) re-trigger the search through this global
   useEffect(() => {
@@ -415,7 +422,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             quickSearch={urlState.quickSearch}
           />
         }
-        isLive={urlState.liveTail}
+        isLive={urlState.liveTail && liveTailLoop.status !== 'exhausted'}
         isRefreshing={isSearching}
         onRefresh={handleRefresh}
         scopeProps={{
@@ -569,6 +576,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         showStats={!(urlState.liveTail || isSearching)}
         totalLoaded={filteredMessages.length}
         trimmedCount={trimmed}
+        trimmedSide={continuousNewest ? 'newer' : 'older'}
         windowCap={DISPLAY_WINDOW_CAP}
         windowSize={windowedMessages.length}
       />

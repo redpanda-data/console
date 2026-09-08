@@ -112,19 +112,24 @@ describe('orderForContinuousNewest composed with applyDisplayWindow (topic-messa
     ...Array.from({ length: 5 }, (_, i) => msg(1, i, i * 10)),
   ];
 
-  test('windowing after ordering keeps the newest page even once an older page pushes the buffer over cap', () => {
+  // Regression: keeping the head of the newest-first ordering pinned the window to the first
+  // `cap` rows forever — "Load more" fetched older pages that were then silently discarded, so
+  // continuous pagination was functionally stuck at the cap. The window keeps the tail (the
+  // loading frontier) instead: the page just fetched is what becomes visible.
+  test('windowing after ordering reveals the freshly loaded older page once past the cap', () => {
     const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
-    const { rows } = applyDisplayWindow(ordered, 4, { newestFirst: true });
+    const { rows, trimmed } = applyDisplayWindow(ordered, 4);
 
-    expect(rows.map((m) => m.timestamp)).toEqual([140, 130, 120, 110]);
+    expect(rows.map((m) => m.timestamp)).toEqual([30, 20, 10, 0]);
+    // What got trimmed is the newest side — the footer reports "newer trimmed" for this scope.
+    expect(trimmed).toBe(6);
   });
 
-  test('windowing before ordering (the pre-fix composition) drops the newest page instead', () => {
-    const { rows: windowedFirst } = applyDisplayWindow(newestPageFirst, 4);
-    const wrongResult = orderForContinuousNewest(windowedFirst, true, 'newest');
+  test('within the cap, ordering alone yields newest-first with nothing trimmed', () => {
+    const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
+    const { rows, trimmed } = applyDisplayWindow(ordered, 20);
 
-    // The bug: the front-trim (correct only for oldest→newest arrival) removes page 1 — the
-    // newest page — and keeps the older page 2 instead.
-    expect(wrongResult.map((m) => m.timestamp)).toEqual([40, 30, 20, 10]);
+    expect(rows.map((m) => m.timestamp)).toEqual([140, 130, 120, 110, 100, 40, 30, 20, 10, 0]);
+    expect(trimmed).toBe(0);
   });
 });

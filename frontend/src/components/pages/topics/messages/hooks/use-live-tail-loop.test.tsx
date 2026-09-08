@@ -25,6 +25,9 @@ describe('liveTailRetryDelayMs', () => {
 });
 
 describe('useLiveTailLoop', () => {
+  // Hoisted: the hook re-renders on its own status updates now, so an inline rs.fn()
+  // would be a new `stop` identity every render and re-trigger the effect in a loop.
+  const noopStop = rs.fn();
   beforeEach(() => {
     rs.useFakeTimers();
   });
@@ -35,7 +38,7 @@ describe('useLiveTailLoop', () => {
 
   test('inactive: never starts', () => {
     const start = rs.fn().mockResolvedValue(undefined);
-    renderHook(() => useLiveTailLoop({ active: false, start, stop: rs.fn() }));
+    renderHook(() => useLiveTailLoop({ active: false, start, stop: noopStop }));
     expect(start).not.toHaveBeenCalled();
   });
 
@@ -50,7 +53,7 @@ describe('useLiveTailLoop', () => {
       calls += 1;
       return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
     });
-    renderHook(() => useLiveTailLoop({ active: true, start, stop: rs.fn() }));
+    renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
 
     await act(async () => {
       await rs.advanceTimersByTimeAsync(0);
@@ -67,7 +70,7 @@ describe('useLiveTailLoop', () => {
   // behind a fast reset loop. It must back off instead.
   test('a hard failure backs off instead of restarting immediately', async () => {
     const start = rs.fn().mockRejectedValue(new Error('boom'));
-    renderHook(() => useLiveTailLoop({ active: true, start, stop: rs.fn() }));
+    renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
 
     await act(async () => {
       await rs.advanceTimersByTimeAsync(0);
@@ -88,7 +91,7 @@ describe('useLiveTailLoop', () => {
 
   test('gives up after maxRetries consecutive failures instead of retrying forever', async () => {
     const start = rs.fn().mockRejectedValue(new Error('boom'));
-    renderHook(() => useLiveTailLoop({ active: true, start, stop: rs.fn(), maxRetries: 2 }));
+    renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop, maxRetries: 2 }));
 
     for (let i = 0; i < 5; i++) {
       // eslint-disable-next-line no-await-in-loop
@@ -115,7 +118,7 @@ describe('useLiveTailLoop', () => {
       // Hang from the 2nd success onward so the immediate-restart chain has somewhere to stop.
       return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
     });
-    renderHook(() => useLiveTailLoop({ active: true, start, stop: rs.fn() }));
+    renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
 
     await act(async () => {
       await rs.advanceTimersByTimeAsync(0);
@@ -147,5 +150,52 @@ describe('useLiveTailLoop', () => {
       await rs.advanceTimersByTimeAsync(60_000);
     });
     expect(start).toHaveBeenCalledTimes(1);
+  });
+
+  test('status reports exhausted after the retry budget, not running', async () => {
+    const start = rs.fn().mockRejectedValue(new Error('boom'));
+    const { result } = renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop, maxRetries: 1 }));
+
+    await act(async () => {
+      await rs.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.status).toBe('retrying');
+
+    await act(async () => {
+      await rs.advanceTimersByTimeAsync(60_000);
+    });
+    expect(result.current.status).toBe('exhausted');
+  });
+
+  // Regression: with retries exhausted, the page's Retry action was a no-op — nothing could
+  // re-arm the loop while the live toggle stayed on. restart() must start over with a fresh
+  // failure budget.
+  test('restart() re-arms an exhausted loop with a fresh failure budget', async () => {
+    const start = rs.fn().mockRejectedValue(new Error('boom'));
+    const stop = rs.fn();
+    const { result } = renderHook(() => useLiveTailLoop({ active: true, start, stop, maxRetries: 1 }));
+
+    await act(async () => {
+      await rs.advanceTimersByTimeAsync(60_000);
+    });
+    expect(result.current.status).toBe('exhausted');
+    expect(start).toHaveBeenCalledTimes(2); // 1 initial + 1 retry
+
+    start.mockImplementation(() => new Promise<void>(() => {})); // recovers: stream stays open
+    act(() => {
+      result.current.restart();
+    });
+    await act(async () => {
+      await rs.advanceTimersByTimeAsync(0);
+    });
+
+    expect(start).toHaveBeenCalledTimes(3);
+    expect(start.mock.calls[2][0]).toBe(false); // fresh start, not an append
+    expect(result.current.status).toBe('running');
+  });
+
+  test('inactive loop reports idle', () => {
+    const { result } = renderHook(() => useLiveTailLoop({ active: false, start: rs.fn(), stop: noopStop }));
+    expect(result.current.status).toBe('idle');
   });
 });
