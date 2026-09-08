@@ -101,7 +101,7 @@ export const UpdatePopup = () => {
 
   return (
     <Dialog onOpenChange={setUpdateDialogOpen} open={isUpdateDialogOpen}>
-      {/* Chakra's `minW="xl"` was 36rem; `size="lg"` (max-w-2xl, 42rem) is the nearest rung. */}
+      {/* Nearest rung above the old 36rem minimum. */}
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Redpanda Console has been updated</DialogTitle>

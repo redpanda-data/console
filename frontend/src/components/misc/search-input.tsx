@@ -88,6 +88,7 @@ export function SearchInput({
 
   return (
     <Input
+      aria-keyshortcuts="/"
       aria-label={ariaLabel}
       className={className}
       containerClassName={containerClassName}
@@ -123,6 +124,7 @@ export function SearchInput({
           disabled={isEmpty}
           onClick={clear}
           size="icon-xs"
+          title="Clear (Esc)"
           variant="ghost"
         >
           <CloseIcon />

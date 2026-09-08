@@ -21,7 +21,7 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
   const isTruncated = showExpander && !expanded;
   const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
 
-  // A span: callers render this inside <p> description slots.
+  // A span: valid in inline and <p> slots alike.
   return (
     <span>
       {text}
@@ -29,7 +29,6 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
       {Boolean(isTruncated) && '...'}
 
       {Boolean(showExpander) && (
-        // A real button: it was a clickable Box with no role, name or keyboard path.
         <Button
           aria-expanded={expanded}
           className="h-auto px-2 align-baseline"
