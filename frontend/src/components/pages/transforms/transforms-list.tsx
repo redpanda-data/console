@@ -86,14 +86,15 @@ class TransformsList extends PageComponent {
   }
 }
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 const columns: DataTableColumnDef<TransformMetadata>[] = [
   {
     id: 'name',
-    // No DataTableViewOptions on this page, so a hidden column could not be brought back.
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     accessorKey: 'name',
     cell: ({ row: { original: r } }) => (
@@ -126,7 +127,6 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
   },
   {
     id: 'inputTopicName',
-    enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Input topic" />,
     accessorKey: 'inputTopicName',
   },

@@ -126,10 +126,14 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 }
 export default TransformDetails;
 
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 // Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
+  enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
   getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
@@ -138,12 +142,10 @@ const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
   {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
     accessorKey: 'partitionId',
-    enableHiding: false,
   },
   {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Node" />,
     accessorKey: 'brokerId',
-    enableHiding: false,
   },
   {
     id: 'status',
@@ -153,7 +155,6 @@ const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
   {
     header: ({ column }) => <DataTableColumnHeader column={column} title="Lag" />,
     accessorKey: 'lag',
-    enableHiding: false,
   },
 ];
 
@@ -284,7 +285,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
       // The Registry only sets aria-expanded on the row, and only for `expandRowByClick`, so it goes here.
       {
         id: 'expander',
-        enableHiding: false,
         enableSorting: false,
         cell: ({ row }) =>
           row.getCanExpand() ? (
@@ -301,7 +301,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
       },
       {
         id: 'timestamp',
-        enableHiding: false,
         header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
         accessorKey: 'timestamp',
         cell: ({
@@ -318,7 +317,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
         header: 'Value',
         // The cell renders a decoded preview; sorting the raw value was never meaningful.
         enableSorting: false,
-        enableHiding: false,
         accessorKey: 'value',
         // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
