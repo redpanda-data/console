@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { CheckIcon } from 'components/icons';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { Check } from 'lucide-react';
 
 /**
  * Presentational step indicator. The wizard owns `currentStep`; the Registry `Stepper` would need a
@@ -36,7 +36,7 @@ export const WizardSteps = ({ steps, currentStep }: { steps: { title: string }[]
               !(isComplete || isActive) && 'text-subtle'
             )}
           >
-            {isComplete ? <Check className="size-4" /> : index + 1}
+            {isComplete ? <CheckIcon className="size-4" /> : index + 1}
           </span>
           <span className={cn('whitespace-nowrap', isActive ? 'text-strong' : 'text-subtle')}>{step.title}</span>
           {index < steps.length - 1 && <span className="mx-3 h-px flex-1 bg-border" />}

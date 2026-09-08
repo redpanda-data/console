@@ -98,8 +98,7 @@ export class ActiveReassignments extends Component<{
                 onClick={() => {
                   this.setState({ showThrottleDialog: true });
                 }}
-                size="sm"
-                style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                size="xs"
                 variant="link"
               >
                 {throttleText}
@@ -159,12 +158,7 @@ export class ActiveReassignments extends Component<{
         />
 
         {this.props.throttledTopics.length > 0 && (
-          <Button
-            onClick={this.props.onRemoveThrottleFromTopics}
-            size="sm"
-            style={{ fontSize: 'smaller', padding: '0px 8px' }}
-            variant="link"
-          >
+          <Button onClick={this.props.onRemoveThrottleFromTopics} size="xs" variant="link">
             <span>
               There are <b>{this.props.throttledTopics.length}</b> throttled topics - click here to fix
             </span>
@@ -408,7 +402,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
       </div>
     ) : (
-      <SkeletonText className="mt-5" lines={5} width="full" />
+      <div className="mt-5">
+        <SkeletonText lines={5} width="full" />
+      </div>
     );
 
     return (

@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Stat } from 'components/redpanda-ui/components/stat';
-import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
 import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
@@ -291,9 +291,9 @@ class ReassignPartitions extends PageComponent {
               {/* Back */}
               {Boolean(step.backButton) && (
                 <Button
+                  className="min-w-56"
                   disabled={currentStep <= 0 || requestInProgress}
                   onClick={this.onPreviousPage}
-                  style={{ minWidth: '14em' }}
                 >
                   <span>
                     <ChevronLeftIcon />
@@ -303,12 +303,12 @@ class ReassignPartitions extends PageComponent {
               )}
 
               {/* Next */}
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
+              <div className="ml-auto flex items-center gap-8">
                 <div>{nextButtonHelp}</div>
                 <Button
+                  className="min-w-56"
                   disabled={!nextButtonEnabled || requestInProgress}
                   onClick={this.onNextPage}
-                  style={{ minWidth: '14em', marginLeft: 'auto' }}
                   variant="primary"
                 >
                   <span>{step.nextButton.text}</span>
@@ -344,19 +344,25 @@ class ReassignPartitions extends PageComponent {
                   There are {this.state.topicsWithThrottle.length} topics with throttling applied to their replicas.
                   <br />
                   Kowl implements throttling of reassignments by setting{' '}
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={<span className="cursor-help underline decoration-dotted">two configuration values</span>}
-                    />
-                    <TooltipContent className="max-w-[500px] text-left">
-                      Kowl sets those two configuration entries when throttling a topic reassignment:
-                      <div className="mt-2">
-                        <code>leader.replication.throttled.replicas</code>
-                        <br />
-                        <code>follower.replication.throttled.replicas</code>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>{' '}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <span className="cursor-help underline decoration-dotted" tabIndex={0}>
+                            two configuration values
+                          </span>
+                        }
+                      />
+                      <TooltipContent className="max-w-[500px] text-left">
+                        Kowl sets those two configuration entries when throttling a topic reassignment:
+                        <div className="mt-2">
+                          <code>leader.replication.throttled.replicas</code>
+                          <br />
+                          <code>follower.replication.throttled.replicas</code>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>{' '}
                   in a topics configuration.
                   <br />
                   So if you previously used Kowl to reassign any of the partitions of the following topics, the

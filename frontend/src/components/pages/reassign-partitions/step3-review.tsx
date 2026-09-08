@@ -9,11 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
+import { ChevronDownIcon, ChevronRightIcon, InboxIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable, DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
-import { InboxIcon } from 'lucide-react';
 import { Component } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
