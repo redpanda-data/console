@@ -50,10 +50,8 @@ export const PropertyComponent = (props: { property: Property }) => {
   );
 
   const v = p.value;
-  // Chakra's FormControl generated an id and wired the label to it; the Registry Field does not,
-  // so the id is derived here and handed to both the control and the label.
+  // Field generates no ids; the label and the control share this one.
   const fieldId = `property-${p.name}`;
-  const isInlineControl = def.type === 'BOOLEAN' || metadata?.component_type === 'RADIO_GROUP';
 
   switch (def.type) {
     case 'STRING':
@@ -66,8 +64,9 @@ export const PropertyComponent = (props: { property: Property }) => {
             : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
         inputComp = (
           <RadioGroup
+            aria-labelledby={`${fieldId}-label`}
+            // A radiogroup div is not labelable; it takes its name from the label instead of htmlFor.
             className="flex flex-wrap gap-4"
-            id={fieldId}
             name={p.name}
             onValueChange={(next) => {
               updatePropertyValue(p, next as Property['value']);
@@ -145,19 +144,14 @@ export const PropertyComponent = (props: { property: Property }) => {
         <Input
           id={fieldId}
           onChange={(e) => {
-            // The *string*, not `valueAsNumber`: Chakra's NumberInput handed `onChange` its
-            // `valueAsString`, and `getConfigObject` both sends `p.value` as-is and compares it
-            // `===` against `default_value` to suppress untouched defaults. Storing a number here
-            // would change which properties get sent — and `sanitizeDefaultValue` only numbers the
-            // INT/LONG/SHORT defaults, so it would not even be consistent across the numeric types.
+            // Store the string: getConfigObject sends p.value as-is and ===-compares it to default_value.
             updatePropertyValue(p, e.target.value);
           }}
-          // Match Chakra's default increment, including fractional starting values. Registry Input
-          // requires a finite numeric step: it coerces "any" to NaN before stepping.
+          // Registry Input coerces step with Number(); "any" would become NaN.
           showStepControls
           step={1}
           type="number"
-          // Guarded only so a mid-edit empty field does not render the string "NaN".
+          // Keep the input controlled with '' when the stored value is not numeric.
           value={Number.isNaN(Number(v)) ? '' : Number(v)}
         />
       );
@@ -213,16 +207,7 @@ export const PropertyComponent = (props: { property: Property }) => {
       break;
   }
 
-  inputComp = (
-    <ErrorWrapper
-      input={inputComp}
-      inputId={fieldId}
-      // BOOLEAN and RADIO_GROUP sat inline with their label under Chakra's FormField, which
-      // special-cased a Switch child.
-      orientation={isInlineControl ? 'horizontal' : 'vertical'}
-      property={p}
-    />
-  );
+  inputComp = <ErrorWrapper input={inputComp} inputId={fieldId} property={p} />;
   // Wrap name and input element
   return (
     <div className={`mt-6 ${inputSizeToClass[def.width]}`} data-testid={`property-${p.name}`}>

@@ -12,13 +12,11 @@ export const ErrorWrapper = (
   props: PropsWithoutRef<{
     property: Property;
     input: JSX.Element;
-    /** id of the control `input` renders, so the label can point at it as Chakra's FormControl did. */
+    /** id of the control `input` renders; the label points at it and is `${inputId}-label` for aria-labelledby. */
     inputId?: string;
-    /** BOOLEAN/RADIO_GROUP properties sat inline with their label under Chakra's FormField. */
-    orientation?: 'vertical' | 'horizontal';
   }>
 ) => {
-  const { property, input, inputId, orientation = 'vertical' } = props;
+  const { property, input, inputId } = props;
   const [currentErrorIndex, setCurrentErrorIndex] = useState(0);
   const isRequired = property.entry.definition.required;
   const showErrors = property.errors.length > 0;
@@ -38,11 +36,11 @@ export const ErrorWrapper = (
         `onClick` on the field, as before: a property can carry several validation errors and the
         only way to see the rest is to click the field, which advances `currentErrorIndex`.
       */}
-      <Field data-invalid={isInvalid || undefined} onClick={cycleError} orientation={orientation}>
-        <FieldLabel htmlFor={inputId} required={isRequired}>
+      <Field data-invalid={isInvalid || undefined} onClick={cycleError}>
+        <FieldLabel htmlFor={inputId} id={inputId ? `${inputId}-label` : undefined} required={isRequired}>
           {property.entry.definition.display_name}
         </FieldLabel>
-        {/* Documentation between label and control, where Chakra's FormField put it. */}
+        {/* Documentation sits between label and control. */}
         <FieldDescription>
           <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
         </FieldDescription>
