@@ -37,6 +37,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -540,7 +541,7 @@ export function NotConfigured() {
           </EmptyHeader>
           <EmptyContent>
             <a
-              className={buttonVariants({ variant: 'primary' })}
+              className={cn(buttonVariants({ variant: 'primary' }), 'rounded-md')}
               href={docsLinks.selfManaged.console}
               rel="noopener noreferrer"
               target="_blank"

@@ -392,7 +392,7 @@ const ConfigOverviewTab = (p: {
 
       <Section style={{ gridArea: 'health' }}>
         <div className="m-1 flex flex-row gap-4">
-          <div className={cn('w-[5px] rounded-[3px]', statusColors[connector.status])} />
+          <div className={cn('w-[5px] rounded-full', statusColors[connector.status])} />
 
           <div className="flex flex-col">
             <div className="font-semibold text-heading-lg">{titleCase(connector.status)}</div>
