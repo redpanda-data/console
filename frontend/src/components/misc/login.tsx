@@ -187,9 +187,10 @@ const BasicAuthComponent = () => {
 
 const OidcAuthComponent = () => (
   <div>
-    {/* An anchor, not a Button: this navigates to the backend's OIDC entry point. */}
+    {/* An anchor, not a Button: this navigates to the backend's OIDC entry point. `rounded-md`
+        because the radius lives on the Button component, not in `buttonVariants`. */}
     <a
-      className={cn(buttonVariants({ variant: 'brand' }), 'w-full')}
+      className={cn(buttonVariants({ variant: 'brand' }), 'w-full rounded-md')}
       href={`${appConfig.grpcBasePath}/auth/login/oidc`}
     >
       Log in with OIDC

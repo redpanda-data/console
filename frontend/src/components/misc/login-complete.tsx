@@ -78,7 +78,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
     return (
       <div className="flex h-screen place-content-center bg-page">
         <div className="flex flex-col place-content-center place-items-center">
-          <span className="text-[1.5em] text-foreground">Completing login...</span>
+          <span className="text-foreground text-heading-lg">Completing login...</span>
           <br />
           <Spinner className="size-8" />
         </div>
