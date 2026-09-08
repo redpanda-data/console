@@ -33,10 +33,9 @@ export function ConfigList({
 }) {
   const allTypesUnknown = configEntries.all((x) => equalsIgnoreCase(x.type, 'unknown'));
 
-  // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+  // The Registry DataTable renders no expander column for `subComponent`.
   const expanderColumn: DataTableColumnDef<ConfigEntry> = {
     id: 'expander',
-    size: 40,
     enableSorting: false,
     cell: ({ row }) =>
       row.getCanExpand() ? (
@@ -46,7 +45,7 @@ export function ConfigList({
           size="icon-xs"
           variant="ghost"
         >
-          {row.getIsExpanded() ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
         </Button>
       ) : null,
   };
@@ -85,7 +84,6 @@ export function ConfigList({
     {
       header: 'Value',
       accessorKey: 'value',
-      size: Number.POSITIVE_INFINITY,
       cell: ({ row: { original: record } }) => (
         <div className={`break-all ${styles.value}`}>{formatConfigValue(record.name, record.value, valueDisplay)}</div>
       ),
@@ -95,7 +93,6 @@ export function ConfigList({
   if (!allTypesUnknown) {
     tableColumns.push({
       header: 'Type',
-      size: 120,
       accessorKey: 'type',
       cell: ({
         row: {
@@ -131,7 +128,6 @@ export function ConfigList({
         </Tooltip>
       </span>
     ),
-    size: 180,
     accessorKey: 'source',
     cell: ({
       row: {

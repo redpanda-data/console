@@ -242,7 +242,7 @@ const LoginPage = () => {
       </Dialog>
       <div className="min-w-[400px] flex-[8]">
         <div className="mx-auto mt-[50px] w-full max-w-[350px] px-4">
-          {/* The logo art is a fixed-ink asset, exempt from the token migration. */}
+          {/* The wordmark is currentColor; the mark keeps its brand red. */}
           <RedpandaLogo className="h-8 w-auto text-foreground" />
           <div className="h-10" />
           <h1 className="text-heading-xl">Log in</h1>

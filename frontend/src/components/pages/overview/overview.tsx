@@ -35,7 +35,6 @@ import ClusterHealthOverview from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/nurture-panel';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
@@ -43,9 +42,6 @@ import {
 } from '../../license/license-utils';
 import { OverviewLicenseNotification } from '../../license/overview-license-notification';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
-
-// Legacy table parity: 50 rows a page, pager only past that.
-const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 // Shared placeholder for any metric that isn't available (cluster unreachable,
 // brokers not loaded, or backend simply didn't report a value).
@@ -231,9 +227,9 @@ class Overview extends PageComponent {
                       : []),
                   ]}
                   data={brokers}
-                  pagination={brokers.length > DEFAULT_TABLE_PAGE_SIZE}
+                  // Legacy parity: ten a page, pager only past that.
+                  pagination={brokers.length > 10}
                   sorting={false}
-                  tableOptions={TABLE_OPTIONS}
                 />
               </Section>
 
@@ -241,7 +237,7 @@ class Overview extends PageComponent {
                 <h3>Resources and updates</h3>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr className="mt-4 mb-2" />
-                <div className="mt-4 flex flex-row items-center gap-2 text-body-sm text-subtle">
+                <div className="mt-4 flex flex-row items-center gap-2 text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
                   <span className="mx-2 text-disabled">|</span>
                   <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
@@ -270,10 +266,10 @@ type DetailsBlockProps = { title: string; children?: React.ReactNode };
 const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
   <>
     <div className="col-span-1 lg:col-span-3">
-      <h4 className="mb-1 font-semibold text-caption text-subtle uppercase">{title}</h4>
+      <h4 className="pb-1 font-semibold text-body-sm text-subtle uppercase">{title}</h4>
     </div>
     {children}
-    {/* Hairline between blocks; was a literal #ddd, which vanished in the dark theme. */}
+    {/* Hairline between blocks. */}
     <div className="col-span-1 my-4 h-px bg-border lg:col-span-3" />
   </>
 );
@@ -285,7 +281,7 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
   return (
     <>
       <div>
-        <h5 className="text-heading-xs">{title}</h5>
+        <h5 className="text-heading-sm">{title}</h5>
       </div>
       <div>{firstLeft}</div>
       <div>{firstRight}</div>
