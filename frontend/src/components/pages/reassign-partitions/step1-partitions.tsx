@@ -37,8 +37,6 @@ export class StepSelectPartitions extends Component<{
   onPartitionSelectionChange: (newSelection: PartitionSelection) => void;
   throttledTopics: string[];
 }> {
-  filterOpen = false; // topic name searchbar
-
   constructor(props: {
     selectedTopicPartitions: PartitionSelection;
     partitionSelection: PartitionSelection;
