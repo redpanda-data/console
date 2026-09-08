@@ -64,7 +64,12 @@ const UploadLicenseForm: FC<{
                   })
                   .catch((err: Error) => setErrorMessage(err.message));
               }}
-              onError={(err) => setErrorMessage(err.message)}
+              onError={(err) => {
+                // A rejected drop replaces nothing; drop the previous file so the error is about what is shown.
+                setErrorMessage(err.message);
+                setLicenseFile(undefined);
+                setDroppedFiles(undefined);
+              }}
               src={droppedFiles}
               testId="license-dropzone"
             >
@@ -86,6 +91,8 @@ const UploadLicenseForm: FC<{
                 autoComplete="off"
                 id="license"
                 onChange={(e) => setLicense(e.target.value)}
+                // `rows` only applies without content sizing.
+                resize="vertical"
                 rows={10}
                 spellCheck={false}
                 testId="license"

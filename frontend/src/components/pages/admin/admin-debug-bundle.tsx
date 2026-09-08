@@ -155,13 +155,14 @@ const NumberWithUnitField = ({
     <FieldLabel htmlFor={id}>{label}</FieldLabel>
     <div className="flex gap-2">
       <Input
+        containerClassName="min-w-0 flex-1"
         id={id}
         onChange={(e) => onValueChange(e.target.valueAsNumber)}
         testId={id}
         type="number"
         value={value === undefined || Number.isNaN(value) ? '' : value}
       />
-      <SingleSelect<number> className="min-w-[150px]" onChange={onUnitChange} options={units} value={unit} />
+      <SingleSelect<number> className="w-auto min-w-[150px]" onChange={onUnitChange} options={units} value={unit} />
     </div>
     <FieldDescription>{description}</FieldDescription>
     <FieldError>{error}</FieldError>
@@ -170,6 +171,13 @@ const NumberWithUnitField = ({
 
 /** `data-invalid={false}` would render as the string "false", so the falsy case has to be undefined. */
 const invalidFlag = (violation?: string): true | undefined => (violation ? true : undefined);
+
+// The running job's status when there is one; brokers can also report a finished or failed bundle.
+const pickCurrentStatus = <T extends { status: DebugBundleStatus_Status }>(bundleStatuses: T[]) =>
+  bundleStatuses.find((s) => s.status === DebugBundleStatus_Status.RUNNING) ?? bundleStatuses.at(0);
+
+// Blank or non-numeric text leaves the field unset rather than sending 0.
+const optionalNumber = (text: string) => Number(text) || undefined;
 
 const Header: FC<{ mode?: 'default' | 'advanced' }> = ({ mode = 'default' }) => (
   <div className="text-body" data-testid={`debug-bundle-description-${mode}-mode`}>
@@ -246,9 +254,9 @@ const AdminDebugBundleContent: FC = () => {
     !isInProgress &&
     statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.SUCCESS);
 
-  const debugBundleStatus = statuses
-    .map((s) => (s.value.case === 'bundleStatus' ? s.value.value : undefined))
-    .find(Boolean);
+  const debugBundleStatus = pickCurrentStatus(
+    statuses.flatMap((s) => (s.value.case === 'bundleStatus' ? [s.value.value] : []))
+  );
 
   if (isInProgress) {
     const jobId = debugBundleStatus?.jobId;
@@ -346,7 +354,6 @@ const NewDebugBundleForm: FC<{
     skipTlsVerification: false,
     brokerIds: [] as number[],
     tlsEnabled: false,
-    tlsInsecureSkipVerify: false,
     controllerLogsSizeLimitBytes: 132 as number, // Default 132MB
     controllerLogsSizeLimitUnit: 1024 * 1024, // Default to MB
     cpuProfilerWaitSeconds: 30 as number | undefined, // Default 30s
@@ -391,7 +398,8 @@ const NewDebugBundleForm: FC<{
             logsUntil: formState.logsUntil ? timestampFromDate(new Date(formState.logsUntil)) : undefined,
             metricsIntervalSeconds: formState.metricsIntervalSeconds * formState.metricsIntervalUnit,
             tlsEnabled: formState.tlsEnabled,
-            tlsInsecureSkipVerify: formState.tlsInsecureSkipVerify,
+            tlsInsecureSkipVerify: formState.skipTlsVerification,
+            metricsSamples: optionalNumber(formState.metricsSamples),
             namespace: formState.namespace,
             labelSelector: formState.labelSelectors.map(({ key, value }) =>
               create(LabelSelectorSchema, { key, value })
@@ -691,13 +699,14 @@ const NewDebugBundleForm: FC<{
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel render={<Button variant="ghost">Cancel</Button>} />
+                <AlertDialogCancel variant="ghost">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
                     generateNewDebugBundle();
                   }}
-                  render={<Button>Confirm</Button>}
-                />
+                >
+                  Confirm
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

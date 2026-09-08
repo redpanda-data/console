@@ -292,7 +292,8 @@ export const OverviewLicenseNotification: FC = () => {
   return (
     <div>
       <Alert className="mb-4" icon={status === 'warning' ? <TriangleAlertIcon /> : <InfoIcon />} variant={status}>
-        <AlertDescription>{message}</AlertDescription>
+        {/* AlertDescription underlines every descendant anchor; the button-styled CTAs opt out. */}
+        <AlertDescription className="[&_a[data-slot=button]]:!no-underline">{message}</AlertDescription>
       </Alert>
 
       <RegisterModal isOpen={registerModalOpen} onClose={() => setIsRegisterModalOpen(false)} />

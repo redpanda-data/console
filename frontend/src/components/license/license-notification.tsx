@@ -87,42 +87,45 @@ export const LicenseNotification = () => {
         variant={isWarning ? 'warning' : 'informative'}
       >
         <AlertDescription>
-          {visibleSoonToExpireLicenses.length > 0 && (
-            <>
-              {capitalizeFirst(
-                visibleSoonToExpireLicenses
-                  .map(
-                    (license) =>
-                      `your ${prettyLicenseType(license, true)} license will expire in ${getPrettyTimeToExpiration(license)}`
-                  )
-                  .join(' and ')
-              )}
-              .{' '}
-            </>
-          )}
+          {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
+          <p>
+            {visibleSoonToExpireLicenses.length > 0 && (
+              <>
+                {capitalizeFirst(
+                  visibleSoonToExpireLicenses
+                    .map(
+                      (license) =>
+                        `your ${prettyLicenseType(license, true)} license will expire in ${getPrettyTimeToExpiration(license)}`
+                    )
+                    .join(' and ')
+                )}
+                .{' '}
+              </>
+            )}
 
-          {visibleExpiredLicenses.length > 0 && licenseViolation && (
-            <>
-              {capitalizeFirst(
-                visibleExpiredLicenses
-                  .map((license) => `your ${prettyLicenseType(license, true)} license has expired`)
-                  .join(' and ')
-              )}
-              .{' '}
-            </>
-          )}
+            {visibleExpiredLicenses.length > 0 && licenseViolation && (
+              <>
+                {capitalizeFirst(
+                  visibleExpiredLicenses
+                    .map((license) => `your ${prettyLicenseType(license, true)} license has expired`)
+                    .join(' and ')
+                )}
+                .{' '}
+              </>
+            )}
 
-          {coreHasEnterpriseFeatures(enterpriseFeaturesUsed) && (
-            <>
-              You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
-              <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
-              cluster.{' '}
-              {Boolean(licenseViolation) &&
-                (activeEnterpriseFeatures.length === 1
-                  ? 'This feature requires a license.'
-                  : 'These features require a license.')}
-            </>
-          )}
+            {coreHasEnterpriseFeatures(enterpriseFeaturesUsed) && (
+              <>
+                You're using {activeEnterpriseFeatures.length === 1 ? 'an enterprise feature' : 'enterprise features'}{' '}
+                <strong>{activeEnterpriseFeatures.map((x) => x.name).join(', ')}</strong> in your connected Redpanda
+                cluster.{' '}
+                {Boolean(licenseViolation) &&
+                  (activeEnterpriseFeatures.length === 1
+                    ? 'This feature requires a license.'
+                    : 'These features require a license.')}
+              </>
+            )}
+          </p>
 
           {/* Both CTAs navigate, so they stay anchors and keep the link role; Button would impose
               role="button". AlertDescription puts `[&_a]:link-inline` on every descendant anchor, so
