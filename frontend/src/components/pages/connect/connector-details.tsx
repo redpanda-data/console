@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';
 import { appGlobal } from '../../../state/app-global';
@@ -23,10 +24,12 @@ import {
   PropertyImportance,
   type TopicMessage,
 } from '../../../state/rest-interfaces';
-import { Code, TimestampDisplay } from '../../../utils/tsx-utils';
+import { TimestampDisplay } from '../../../utils/tsx-utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
+import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
 import './helper';
-import { AlertIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, WarningIcon } from 'components/icons';
+import { AlertIcon, ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
@@ -43,15 +46,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { SearchIcon } from 'lucide-react';
 
 import { getConnectorFriendlyName } from './connector-box-card';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
-import usePaginationParams from '../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
@@ -61,6 +61,14 @@ import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
+// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
+const LOGS_TABLE_OPTIONS = {
+  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
+};
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
@@ -411,8 +419,9 @@ const ConfigOverviewTab = (p: {
         <DataTable<ClusterConnectorTaskInfo>
           columns={taskColumns}
           data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-          pagination
+          pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > DEFAULT_TABLE_PAGE_SIZE}
           sorting
+          tableOptions={TABLE_OPTIONS}
         />
       </Section>
 
@@ -435,7 +444,7 @@ const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
       row: {
         original: { taskId },
       },
-    }) => <Code nowrap>Task-{taskId}</Code>,
+    }) => <InlineCode className="whitespace-nowrap">Task-{taskId}</InlineCode>,
   },
   {
     id: 'state',
@@ -449,7 +458,7 @@ const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
     enableHiding: false,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
     accessorKey: 'workerId',
-    cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
+    cell: ({ row: { original } }) => <InlineCode className="whitespace-nowrap">{original.workerId}</InlineCode>,
   },
 ];
 
@@ -462,16 +471,14 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
 
   return (
     <>
-      {/* The whole banner opens the detail dialog; "View details" is the visible affordance for it. */}
       <Alert
-        className="cursor-pointer items-center"
+        className="items-center"
         icon={isError ? <AlertIcon /> : <WarningIcon />}
-        onClick={() => setIsOpen(true)}
         variant={isError ? 'destructive' : 'warning'}
       >
         <AlertDescription className="w-full grid-flow-col items-center justify-between">
           <div className="whitespace-break-spaces break-all">{p.error.title}</div>
-          <Button size="sm" variant="ghost">
+          <Button onClick={() => setIsOpen(true)} size="sm" variant="ghost">
             View details
           </Button>
         </AlertDescription>
@@ -744,50 +751,59 @@ const LogsTab = (p: {
     }
   };
 
-  const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = [
-    // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
-    {
-      id: 'expander',
-      size: 40,
-      enableSorting: false,
-      cell: ({ row }) =>
-        row.getCanExpand() ? (
-          <Button
-            aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
-            onClick={row.getToggleExpandedHandler()}
-            size="icon-xs"
-            variant="ghost"
-          >
-            {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
-          </Button>
-        ) : null,
-    },
-    {
-      id: 'timestamp',
-      enableHiding: false,
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 30,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          msg={original}
-          previewFields={() => []}
-        />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  // Memoised: a new columns array per render makes the table re-create every header and cell, which
+  // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
+  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      {
+        id: 'expander',
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.getCanExpand() ? (
+            <Button
+              aria-expanded={row.getIsExpanded()}
+              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              onClick={row.getToggleExpandedHandler()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
+            </Button>
+          ) : null,
+      },
+      {
+        id: 'timestamp',
+        enableHiding: false,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => (
+          <span className="whitespace-nowrap">
+            <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />
+          </span>
+        ),
+      },
+      {
+        header: 'Value',
+        accessorKey: 'value',
+        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+        cell: ({ row: { original } }) => (
+          <div className="w-screen max-w-full">
+            <MessagePreview
+              isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
+              msg={original}
+              previewFields={() => []}
+            />
+          </div>
+        ),
+      },
+    ],
+    [topic]
+  );
 
   const filteredMessages = messages.filter((x) => {
     if (!logsQuickSearch) {
@@ -802,32 +818,12 @@ const LogsTab = (p: {
 
       <Section className="min-w-[800px]">
         <div className="mb-6 flex">
-          <Input
-            containerClassName="max-w-[230px]"
-            onChange={(e) => setLogsQuickSearch(e.target.value)}
+          <SearchInput
+            containerClassName="w-[230px]"
+            onChange={setLogsQuickSearch}
             placeholder="Search..."
-            testId="search-field-input"
             value={logsQuickSearch}
-          >
-            <InputStart>
-              <SearchIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
-            </InputStart>
-            {/* Always mounted: InputEnd never resets the padding it measured, and unmounting the
-                button under the click would drop focus to <body>. */}
-            <InputEnd className="pointer-events-auto">
-              <Button
-                aria-label="Clear search"
-                className={logsQuickSearch === '' ? 'invisible' : undefined}
-                data-testid="search-field-reset-icon"
-                disabled={logsQuickSearch === ''}
-                onClick={() => setLogsQuickSearch('')}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <CloseIcon />
-              </Button>
-            </InputEnd>
-          </Input>
+          />
           <div className="ml-auto">
             <Button onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
               Refresh logs
@@ -852,7 +848,7 @@ const LogsTab = (p: {
               msg={original}
             />
           )}
-          tableOptions={{ initialState: { pagination: paginationParams } }}
+          tableOptions={LOGS_TABLE_OPTIONS}
         />
       </Section>
     </>

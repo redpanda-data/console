@@ -25,10 +25,14 @@ import { api } from '../../../state/backend-api';
 import type { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   placeholder = 5;
@@ -80,13 +84,14 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
           {/* Plugin List */}
           <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
-            <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Connector Types</h3>
+            <h3 className="mb-2.5 ml-1">Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
               columns={pluginColumns}
               data={additionalInfo?.plugins ?? []}
-              pagination
+              pagination={(additionalInfo?.plugins?.length ?? 0) > DEFAULT_TABLE_PAGE_SIZE}
               sorting
+              tableOptions={TABLE_OPTIONS}
             />
           </div>
         </Section>

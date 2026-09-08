@@ -14,7 +14,7 @@ import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { DataTable, DataTableColumnHeader } from 'components/redpanda-ui/components/data-table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Link } from 'components/redpanda-ui/components/typography';
+import { InlineCode, Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
@@ -37,7 +37,8 @@ import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
 import { Features, useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
-import { Code, DefaultSkeleton } from '../../../utils/tsx-utils';
+import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
@@ -46,6 +47,9 @@ import { PageComponent, type PageInitHelper } from '../page';
 import { PipelineListPage } from '../rp-connect/pipeline/list';
 import RpConnectPipelinesList from '../rp-connect/pipelines-list';
 import { RedpandaConnectIntro } from '../rp-connect/redpanda-connect-intro';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 const ConnectView = {
   KafkaConnect: 'kafka-connect',
@@ -229,7 +233,6 @@ class TabClusters extends Component {
           {
             header: 'Cluster',
             accessorKey: 'clusterName',
-            size: Number.POSITIVE_INFINITY,
             cell: ({ row: { original: r } }) => {
               if (r.error) {
                 return (
@@ -272,21 +275,20 @@ class TabClusters extends Component {
           },
           {
             accessorKey: 'connectors',
-            size: 150,
             header: 'Connectors',
             cell: ({ row: { original } }) => <ConnectorsColumn observable={original} />,
           },
           {
             id: 'tasks',
             accessorKey: 'connectors',
-            size: 150,
             header: 'Tasks',
             cell: ({ row: { original } }) => <TasksColumn observable={original} />,
           },
         ]}
         data={clusters}
-        pagination
+        pagination={clusters.length > DEFAULT_TABLE_PAGE_SIZE}
         sorting={false}
+        tableOptions={TABLE_OPTIONS}
       />
     );
   }
@@ -342,7 +344,6 @@ const TabConnectors = () => {
           {
             header: 'Connector',
             accessorKey: 'name',
-            size: 35, // Assuming '35%' is approximated to '35'
             cell: ({ row: { original } }) => (
               <Tooltip>
                 <TooltipTrigger
@@ -381,27 +382,27 @@ const TabConnectors = () => {
           {
             header: 'Type',
             accessorKey: 'type',
-            size: 100,
           },
           {
             header: 'State',
             accessorKey: 'state',
-            size: 120,
             cell: ({ row: { original } }) => <TaskState observable={original} />,
           },
           {
             header: 'Tasks',
-            size: 120,
             cell: ({ row: { original } }) => <TasksColumn observable={original} />,
           },
           {
             header: 'Cluster',
-            cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
+            cell: ({ row: { original } }) => (
+              <InlineCode className="whitespace-nowrap">{original.cluster.clusterName}</InlineCode>
+            ),
           },
         ]}
         data={filteredResults}
-        pagination
+        pagination={filteredResults.length > DEFAULT_TABLE_PAGE_SIZE}
         sorting={false}
+        tableOptions={TABLE_OPTIONS}
       />
     </div>
   );
@@ -435,7 +436,7 @@ class TabTasks extends Component {
             id: 'name',
             enableHiding: false,
             header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
-            accessorKey: 'name', // Assuming 'name' is correct based on your initial dataIndex
+            accessorKey: 'connectorName',
             cell: ({ row: { original } }) => (
               // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
               // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
@@ -451,7 +452,6 @@ class TabTasks extends Component {
                 {original.connectorName}
               </div>
             ),
-            size: 300,
           },
           {
             id: 'taskId',
@@ -478,12 +478,15 @@ class TabTasks extends Component {
             enableSorting: false,
             enableHiding: false,
             header: 'Cluster',
-            cell: ({ row: { original } }) => <Code nowrap>{original.cluster.clusterName}</Code>,
+            cell: ({ row: { original } }) => (
+              <InlineCode className="whitespace-nowrap">{original.cluster.clusterName}</InlineCode>
+            ),
           },
         ]}
         data={allTasks}
-        pagination
+        pagination={allTasks.length > DEFAULT_TABLE_PAGE_SIZE}
         sorting
+        tableOptions={TABLE_OPTIONS}
       />
     );
   }

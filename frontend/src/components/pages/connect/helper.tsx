@@ -10,7 +10,7 @@
  */
 
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -19,7 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   Dialog,
   DialogBody,
@@ -37,7 +38,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
-import { cn } from 'components/redpanda-ui/lib/utils';
+import { Stat } from 'components/redpanda-ui/components/stat';
 import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
@@ -78,7 +79,6 @@ import {
 import { ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { Statistic } from '../../misc/statistic';
 
 type ConnectorMetadata = {
   readonly className?: string; // match by exact match
@@ -447,7 +447,15 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
       ) : null}
 
       <Popover>
-        <PopoverTrigger render={<button type="button">{displayName}</button>} />
+        {/* Hover-to-open, as the Chakra popover was. */}
+        <PopoverTrigger
+          openOnHover
+          render={
+            <button className="cursor-help" type="button">
+              {displayName}
+            </button>
+          }
+        />
         {/* PopoverContent is a fixed `w-72`; Chakra's `size="stretch"` sized to content. */}
         <PopoverContent className="w-auto max-w-[500px]" side="right">
           <div className="whitespace-pre-wrap">{c}</div>
@@ -477,8 +485,8 @@ export const OverviewStatisticsCard = () => {
   return (
     <Section className="py-4">
       <div className="flex gap-8">
-        <Statistic title="Connect Clusters" value={totalClusters} />
-        <Statistic title="Total Connectors" value={totalConnectors} />
+        <Stat label="Connect Clusters" size="lg" value={totalClusters} />
+        <Stat label="Total Connectors" size="lg" value={totalConnectors} />
       </div>
     </Section>
   );
@@ -500,11 +508,11 @@ export const ClusterStatisticsCard = (p: { clusterName: string }) => {
   return (
     <Section className="py-4">
       <div className="flex gap-8">
-        <Statistic title="Cluster" value={cluster?.clusterName} />
+        <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
 
-        <Statistic title="Connectors" value={`${runningConnectors} / ${totalConnectors}`} />
-        <Statistic title="Address" value={addr} />
-        <Statistic title="Version" value={version} />
+        <Stat label="Connectors" size="lg" value={`${runningConnectors} / ${totalConnectors}`} />
+        <Stat label="Address" size="lg" value={addr} />
+        <Stat label="Version" size="lg" value={version} />
       </div>
     </Section>
   );
@@ -517,10 +525,10 @@ export const ConnectorStatisticsCard = (p: { clusterName: string; connectorName:
   return (
     <Section className="py-4">
       <div className="flex gap-8">
-        <Statistic title="Cluster" value={cluster?.clusterName} />
-        <Statistic title="Connector" value={connector?.name} />
+        <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
+        <Stat label="Connector" size="lg" value={connector?.name} />
 
-        <Statistic title="Tasks" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
+        <Stat label="Tasks" size="lg" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
       </div>
     </Section>
   );
@@ -540,14 +548,15 @@ export function NotConfigured() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <a
-              className={cn(buttonVariants({ variant: 'primary' }), 'rounded-md')}
+            <Button
+              as="a"
               href={docsLinks.selfManaged.console}
               rel="noopener noreferrer"
               target="_blank"
+              variant="primary"
             >
               Redpanda Console Config Documentation
-            </a>
+            </Button>
           </EmptyContent>
         </Empty>
       </Section>
@@ -654,17 +663,13 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
         </AlertDialogHeader>
         {/* min-h-0 + overflow-y-auto: AlertDialogContent is `overflow-hidden max-h-[85vh]`, so a
             long API error would otherwise be clipped with no way to scroll to the footer. */}
-        <AlertDialogDescription className="flex min-h-0 flex-col gap-2 overflow-y-auto">
+        <AlertDialogDescription className="min-h-0 overflow-y-auto text-foreground">
           {content}
           {err ? (
             <div className="mt-4">
               <Alert icon={<AlertIcon />} variant="destructive">
-                <AlertDescription>
-                  <div>
-                    <h3 className="text-heading-xs">{err.title}</h3>
-                    <div>{err.content}</div>
-                  </div>
-                </AlertDescription>
+                <AlertTitle>{err.title}</AlertTitle>
+                <AlertDescription>{err.content}</AlertDescription>
               </Alert>
             </div>
           ) : null}
@@ -815,11 +820,11 @@ export const TaskState = (p: {
         <DialogContent size="full">
           <DialogHeader>
             <DialogTitle>
-              {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
+              {task.taskId === undefined ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
             </DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <div className="codeBox w-full overflow-scroll whitespace-pre px-2 py-3">{err}</div>
+            <SimpleCodeBlock code={err ?? ''} language="text" maxHeight="none" width="full" />
           </DialogBody>
           <DialogFooter>
             <Button onClick={close}>Close</Button>
@@ -852,19 +857,15 @@ const pauseIcon = (
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
 
-/**
- * Health status to a background utility.
- *
- * These were Chakra theme tokens (`green.500`), which only resolved through a Chakra style prop —
- * as raw CSS they are invalid and the declaration is dropped, so the status stripe painted nothing.
- */
+/** Health status to a background utility; the backend also reports STOPPED. */
 export const statusColors = {
   HEALTHY: 'bg-success-strong',
   UNHEALTHY: 'bg-destructive-strong',
   DEGRADED: 'bg-warning-strong',
-  PAUSED: 'bg-surface-disabled',
+  PAUSED: 'bg-disabled',
+  STOPPED: 'bg-disabled',
   RESTARTING: 'bg-informative-strong',
-  UNASSIGNED: 'bg-surface-disabled',
+  UNASSIGNED: 'bg-disabled',
   DESTROYED: 'bg-destructive-strong',
-  UNKNOWN: 'bg-surface-disabled',
+  UNKNOWN: 'bg-disabled',
 } as Record<ConnectorStatus, string>;

@@ -9,12 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { AlertIcon, CloseIcon, FilterIcon, WarningIcon } from 'components/icons';
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
+import { AlertIcon, FilterIcon, WarningIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { DataTable } from 'components/redpanda-ui/components/data-table';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
-import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link } from 'components/redpanda-ui/components/typography';
@@ -34,6 +32,7 @@ import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
 import { HiddenRadioList } from '../../misc/hidden-radio-list';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
+import { SearchInput } from '../../misc/search-input';
 import { SingleSelect } from '../../misc/select';
 import Tabs from '../../misc/tabs/tabs';
 import { Wizard, type WizardStep } from '../../misc/wizard';
@@ -135,31 +134,12 @@ const ConnectorType = (p: {
               </div>
 
               <div className="my-4 mt-8">
-                <Input
-                  onChange={(e) => setTextFilter(e.target.value)}
+                <SearchInput
+                  icon={<FilterIcon className="size-4" />}
+                  onChange={setTextFilter}
                   placeholder="Search"
-                  testId="search-field-input"
                   value={textFilter}
-                >
-                  <InputStart>
-                    <FilterIcon className="size-4 text-muted-foreground" data-testid="search-field-search-icon" />
-                  </InputStart>
-                  {/* Always mounted: InputEnd never resets the padding it measured, and unmounting
-                      the button under the click would drop focus to <body>. */}
-                  <InputEnd className="pointer-events-auto">
-                    <Button
-                      aria-label="Clear search"
-                      className={textFilter === '' ? 'invisible' : undefined}
-                      data-testid="search-field-reset-icon"
-                      disabled={textFilter === ''}
-                      onClick={() => setTextFilter('')}
-                      size="icon-xs"
-                      variant="ghost"
-                    >
-                      <CloseIcon />
-                    </Button>
-                  </InputEnd>
-                </Input>
+                />
               </div>
             </div>
           </div>
@@ -630,12 +610,8 @@ function Review({
           {validationFailure ? (
             <div className="my-4">
               <Alert icon={<AlertIcon />} variant="destructive">
-                <AlertDescription>
-                  <div>
-                    <h3 className="text-heading-xs">Validation attempt failed</h3>
-                    <div>{String(validationFailure)}</div>
-                  </div>
-                </AlertDescription>
+                <AlertTitle>Validation attempt failed</AlertTitle>
+                <AlertDescription>{String(validationFailure)}</AlertDescription>
               </Alert>
             </div>
           ) : null}
@@ -643,12 +619,8 @@ function Review({
           {creationFailure ? (
             <div className="my-4">
               <Alert icon={<AlertIcon />} variant="destructive">
-                <AlertDescription>
-                  <div>
-                    <h3 className="text-heading-xs">Creation attempt failed</h3>
-                    <div>{String(creationFailure)}</div>
-                  </div>
-                </AlertDescription>
+                <AlertTitle>Creation attempt failed</AlertTitle>
+                <AlertDescription>{String(creationFailure)}</AlertDescription>
               </Alert>
             </div>
           ) : null}
@@ -656,12 +628,8 @@ function Review({
           {genericFailure ? (
             <div className="my-4">
               <Alert icon={<AlertIcon />} variant="destructive">
-                <AlertDescription>
-                  <div>
-                    <h3 className="text-heading-xs">An error occurred</h3>
-                    <div>{String(genericFailure)}</div>
-                  </div>
-                </AlertDescription>
+                <AlertTitle>An error occurred</AlertTitle>
+                <AlertDescription>{String(genericFailure)}</AlertDescription>
               </Alert>
             </div>
           ) : null}
@@ -691,9 +659,9 @@ function getDataSource(validationResult: ConnectorValidationResult) {
 function ValidationDisplay({ validationResult }: { validationResult: ConnectorValidationResult }) {
   return (
     <Alert className="overflow-auto" icon={<WarningIcon />} variant="warning">
+      <AlertTitle>Submitted configuration is invalid</AlertTitle>
       <AlertDescription>
         <div>
-          <h3 className="mb-4 text-heading-xs">Submitted configuration is invalid</h3>
           <DataTable<{
             name: string;
             value: string | null;
