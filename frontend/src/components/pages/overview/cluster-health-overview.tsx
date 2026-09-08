@@ -32,9 +32,13 @@ const ClusterHealthOverview = () => {
             <div>
               {titleCase(
                 api.clusterHealth?.unhealthyReasons
-                  // `?.` before the call: a reason the map does not cover would otherwise throw
-                  // here and take the whole health panel down.
-                  ?.map((x) => HUMAN_READABLE_UNHEALTHY_REASONS[x]?.toLowerCase() ?? String(x))
+                  // A reason a newer backend adds is not in the map; read it as unknown rather than throw.
+                  ?.map((x) =>
+                    (
+                      HUMAN_READABLE_UNHEALTHY_REASONS[x] ??
+                      HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.UNSPECIFIED]
+                    ).toLowerCase()
+                  )
                   .join(', ') ?? ''
               )}
             </div>
@@ -90,12 +94,11 @@ const ClusterHealthOverview = () => {
             <div className={ROW_GRID}>
               <div className="font-bold">Debug bundle</div>
               <div className="flex gap-2">
-                {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor.
-                    `isDebugBundleInProgress` and `debugBundleStatus` are derived separately and can
-                    disagree, and `$jobId` needs a segment — so the link needs an id to exist. */}
+                {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor;
+                    `$jobId` needs a segment. */}
                 {Boolean(api.isDebugBundleInProgress) && api.debugBundleStatus?.jobId ? (
                   <Link
-                    className={cn(buttonVariants({ variant: 'link' }), 'px-0')}
+                    className={cn(buttonVariants({ variant: 'link' }), 'h-auto px-0')}
                     params={{ jobId: api.debugBundleStatus.jobId }}
                     to="/debug-bundle/progress/$jobId"
                   >
@@ -106,7 +109,7 @@ const ClusterHealthOverview = () => {
                   <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
                 {!api.isDebugBundleInProgress && (
-                  <Link className={cn(buttonVariants({ variant: 'link' }), 'px-0')} to="/debug-bundle">
+                  <Link className={cn(buttonVariants({ variant: 'link' }), 'h-auto px-0')} to="/debug-bundle">
                     Generate new
                   </Link>
                 )}

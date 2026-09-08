@@ -6,52 +6,37 @@
         font-weight: 600;
         font-size: 14px;
         text-transform: uppercase;
-        color: hsl(0deg 0% 20%);
+        color: var(--color-foreground);
     }
 
 }
 
-.ant-statistic {
-    display: flex;
-    flex-direction: column-reverse;
+// Status stripe on the Cluster Status stat (the Registry Stat root carries data-slot="stat").
+[data-slot='stat'].status-bar {
+    position: relative;
+    padding-left: 5px;
+    margin-left: 8px;
 
-    &.status-bar {
-        position: relative;
-        padding-left: 5px;
-        margin-left: 8px;
-
-        :before {
-            content: ' ';
-            display: block;
-            position: absolute;
-            top: 6px;
-            bottom: 5px;
-            width: 4px;
-            left: -6px;
-            border-radius: 2px;
-            background: red;
-            margin: 1px;
-        }
+    &::before {
+        content: ' ';
+        display: block;
+        position: absolute;
+        top: 6px;
+        bottom: 5px;
+        width: 4px;
+        left: -6px;
+        border-radius: 2px;
+        background: var(--color-destructive-strong);
+        margin: 1px;
     }
 
-    &.status-bar.status-red {
-        :before {
-            background: red;
-        }
+    &.status-yellow::before {
+        background: var(--color-warning-strong);
     }
 
-    &.status-bar.status-yellow {
-        :before {
-            background: orange;
-        }
+    &.status-green::before {
+        background: var(--color-success-strong);
     }
-
-    &.status-bar.status-green {
-        :before {
-            background: #3ba26b;
-        }
-    }
-
 }
 
 .resource-list {

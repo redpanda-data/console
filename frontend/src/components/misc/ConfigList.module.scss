@@ -10,11 +10,11 @@
  */
 
 .default {
-    color: #bfbfbf;
+    color: var(--color-subtle);
 }
 
 .overidden {
-    color: #696969;
+    color: var(--color-foreground);
 
     .type {
         font-weight: 600;
@@ -64,7 +64,7 @@
 }
 
 .type {
-    color: #cb398f;
+    color: var(--color-informative);
     font-family: monospace;
 }
 

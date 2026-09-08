@@ -27,6 +27,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable, type DataTableColumnDef, type DataTableRow } from 'components/redpanda-ui/components/data-table';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import React, { type FC, type ReactNode } from 'react';
 
@@ -34,6 +35,7 @@ import ClusterHealthOverview from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
 import NurturePanel from '../../builder-io/nurture-panel';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
@@ -41,7 +43,9 @@ import {
 } from '../../license/license-utils';
 import { OverviewLicenseNotification } from '../../license/overview-license-notification';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
-import { Statistic } from '../../misc/statistic';
+
+// Legacy table parity: 50 rows a page, pager only past that.
+const TABLE_OPTIONS = { initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } } };
 
 // Shared placeholder for any metric that isn't available (cluster unreachable,
 // brokers not loaded, or backend simply didn't report a value).
@@ -138,16 +142,17 @@ class Overview extends PageComponent {
           <div className="my-4">
             <Section className="py-5">
               <div className="flex gap-8">
-                <Statistic
+                <Stat
                   className={`status-bar ${clusterStatus.className}`}
-                  title="Cluster Status"
+                  label="Cluster Status"
+                  size="lg"
                   value={clusterStatus.displayText}
                 />
-                <Statistic title="Cluster Storage Size" value={brokerSize} />
-                <Statistic title="Cluster Version" value={version} />
-                <Statistic title="Brokers Online" value={brokersOnlineText} />
-                <Statistic title="Topics" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
-                <Statistic title="Replicas" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
+                <Stat label="Cluster Storage Size" size="lg" value={brokerSize} />
+                <Stat label="Cluster Version" size="lg" value={version} />
+                <Stat label="Brokers Online" size="lg" value={brokersOnlineText} />
+                <Stat label="Topics" size="lg" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
+                <Stat label="Replicas" size="lg" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
               </div>
             </Section>
           </div>
@@ -159,17 +164,16 @@ class Overview extends PageComponent {
             <div className="flex flex-col gap-6">
               {api.clusterHealth?.isHealthy === false && (
                 <Section className="py-4">
-                  <h3 className="text-heading-md">Cluster Health Debug</h3>
+                  <h3>Cluster Health Debug</h3>
                   <ClusterHealthOverview />
                 </Section>
               )}
 
               <Section className="py-4">
-                <h3 className="text-heading-md">Broker Details</h3>
+                <h3>Broker Details</h3>
                 <DataTable<BrokerWithConfigAndStorage>
                   columns={[
                     {
-                      size: 80,
                       header: 'ID',
                       accessorKey: 'brokerId',
                       cell: ({ row: { original: broker } }) => renderIdColumn(`${broker.brokerId}`, broker),
@@ -192,21 +196,18 @@ class Overview extends PageComponent {
                           )}
                         </div>
                       ),
-                      size: Number.POSITIVE_INFINITY,
                     },
                     {
-                      size: 120,
                       header: 'Size',
                       accessorKey: 'totalLogDirSizeBytes',
                       cell: ({
                         row: {
                           original: { totalLogDirSizeBytes },
                         },
-                      }) => totalLogDirSizeBytes && prettyBytesOrNA(totalLogDirSizeBytes),
+                      }) => (totalLogDirSizeBytes === undefined ? undefined : prettyBytesOrNA(totalLogDirSizeBytes)),
                     },
                     {
                       id: 'view',
-                      size: 100,
                       header: '',
                       cell: ({ row: { original: broker } }) => (
                         <Button
@@ -222,7 +223,6 @@ class Overview extends PageComponent {
                       ? [
                           {
                             id: 'rack',
-                            size: 100,
                             header: 'Rack',
                             cell: ({ row: { original: broker } }: { row: DataTableRow<BrokerWithConfigAndStorage> }) =>
                               broker.rack,
@@ -231,16 +231,17 @@ class Overview extends PageComponent {
                       : []),
                   ]}
                   data={brokers}
-                  pagination
+                  pagination={brokers.length > DEFAULT_TABLE_PAGE_SIZE}
                   sorting={false}
+                  tableOptions={TABLE_OPTIONS}
                 />
               </Section>
 
               <Section>
-                <h3 className="text-heading-md">Resources and updates</h3>
+                <h3>Resources and updates</h3>
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr className="mt-4 mb-2" />
-                <div className="mt-4 flex flex-row items-center gap-2 font-sm text-subtle">
+                <div className="mt-4 flex flex-row items-center gap-2 text-body-sm text-subtle">
                   <a href={docsLinks.selfManaged.home}>Documentation</a>
                   <span className="mx-2 text-disabled">|</span>
                   <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
@@ -250,7 +251,7 @@ class Overview extends PageComponent {
 
             <div>
               <Section className="py-4" id="clusterDetails">
-                <h3 className="text-heading-md">Cluster Details</h3>
+                <h3>Cluster Details</h3>
 
                 <ClusterDetails />
               </Section>

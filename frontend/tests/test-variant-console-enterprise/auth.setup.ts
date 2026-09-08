@@ -11,13 +11,8 @@ async function dismissErrorModalIfPresent(page: Page): Promise<void> {
   // Check if modal button is visible (give it reasonable time to appear)
   if (await errorModal.isVisible({ timeout: 2000 }).catch(() => false)) {
     await errorModal.click();
-    // Wait for the modal overlay to disappear
-    await page
-      .locator('[data-slot="dialog-overlay"]')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {
-        // no op
-      });
+    // The dialog unmounts on close, so its own button going away is the signal.
+    await errorModal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 }
 

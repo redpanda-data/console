@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Stat } from 'components/redpanda-ui/components/stat';
 import type { FC } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
@@ -20,7 +21,6 @@ import { prettyBytesOrNA } from '../../../utils/utils';
 import { ConfigList } from '../../misc/config-list';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { Statistic } from '../../misc/statistic';
 import { PageComponent, type PageInitHelper } from '../page';
 
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
@@ -75,12 +75,12 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
     <PageContent>
       <Section className="py-4">
         <div className="flex gap-8">
-          <Statistic title="Broker ID" value={brokerId} />
-          <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
+          <Stat label="Broker ID" size="lg" value={brokerId} />
+          <Stat label="Role" size="lg" value={broker.isController ? 'Controller' : 'Follower'} />
           {/* biome-ignore lint/style/noNonNullAssertion: not touching MobX observables */}
-          <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
-          <Statistic title="IP address" value={broker.address} />
-          {Boolean(broker.rack) && <Statistic title="Rack" value={broker.rack} />}
+          <Stat label="Storage" size="lg" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
+          <Stat label="IP address" size="lg" value={broker.address} />
+          {Boolean(broker.rack) && <Stat label="Rack" size="lg" value={broker.rack} />}
         </div>
       </Section>
       <Section className="py-4">

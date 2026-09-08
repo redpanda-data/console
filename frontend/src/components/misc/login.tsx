@@ -24,7 +24,6 @@ import {
 import { Field, FieldLabel, FieldSeparator } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
-import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CircleAlertIcon, InfoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -177,8 +176,7 @@ const BasicAuthComponent = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button data-testid="auth-submit" disabled={isLoading} onClick={handleSubmit} variant="brand">
-        {Boolean(isLoading) && <Spinner className="mr-1" />}
+      <Button data-testid="auth-submit" isLoading={isLoading} onClick={handleSubmit} variant="brand">
         Log in
       </Button>
     </div>
@@ -245,9 +243,9 @@ const LoginPage = () => {
       <div className="min-w-[400px] flex-[8]">
         <div className="mx-auto mt-[50px] w-full max-w-[350px] px-4">
           {/* The logo art is a fixed-ink asset, exempt from the token migration. */}
-          <RedpandaLogo style={{ color: '#121827', height: '30px' }} />
+          <RedpandaLogo className="h-8 w-auto text-foreground" />
           <div className="h-10" />
-          <h1 className="text-heading-lg">Log in</h1>
+          <h1 className="text-heading-xl">Log in</h1>
           {searchParams.has('error_code') && (
             <div className="py-4">
               <Alert icon={<CircleAlertIcon />} variant="destructive">
@@ -280,10 +278,12 @@ const LoginPage = () => {
               }
               if (authComponent) {
                 if (index > 0) {
-                  // Chakra's TextDivider was a rule with a centred label — FieldSeparator already is.
+                  // The label chip masks the rule with bg-background; this page sits on bg-page.
                   acc.push(
                     <div className="py-3" key={`divider-${method}`}>
-                      <FieldSeparator className="uppercase">OR</FieldSeparator>
+                      <FieldSeparator className="uppercase [&>[data-slot=field-separator-content]]:bg-page">
+                        OR
+                      </FieldSeparator>
                     </div>
                   );
                 }
