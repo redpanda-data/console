@@ -9,15 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
-import type { SortingState } from '@tanstack/react-table';
-import { Fragment, useEffect, useRef, useState } from 'react';
-import type { LegacyColumnDef } from 'utils/legacy-data-table';
+import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PartitionStatus } from './transforms-list';
-import usePaginationParams from '../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type PartitionTransformStatus,
@@ -37,7 +40,9 @@ import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
+import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -79,10 +84,9 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
 
     return (
       <PageContent>
-        <Box>
-          {/* <Heading as="h2">{transformName}</Heading> */}
+        <div>
           <Button
-            mt="2"
+            className="mt-2"
             onClick={() =>
               openDeleteModal(transformName, () => {
                 transformsApi
@@ -104,11 +108,11 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
                   });
               })
             }
-            variant="outline-delete"
+            variant="destructive-outline"
           >
             Delete
           </Button>
-        </Box>
+        </div>
 
         <Tabs
           tabs={[
@@ -121,6 +125,38 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 }
 export default TransformDetails;
+
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
+// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
+const LOGS_TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
+};
+
+const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
+    accessorKey: 'partitionId',
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Node" />,
+    accessorKey: 'brokerId',
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Lag" />,
+    accessorKey: 'lag',
+  },
+];
 
 const OverviewTab = (p: { transform: TransformMetadata }) => {
   let overallStatus = <></>;
@@ -136,7 +172,7 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
 
   return (
     <>
-      <Box my="6">
+      <div className="my-6">
         {QuickTable(
           [
             { key: 'Status', value: overallStatus },
@@ -162,21 +198,16 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
             gapWidth: '4rem',
           }
         )}
-      </Box>
-      <Box maxWidth="35rem">
+      </div>
+      <div className="max-w-[35rem]">
         <DataTable<PartitionTransformStatus>
-          columns={[
-            { header: 'Partition', accessorKey: 'partitionId' },
-            { header: 'Node', accessorKey: 'brokerId' },
-            {
-              header: 'Status',
-              cell: ({ row: { original: r } }) => <PartitionStatus status={r.status} />,
-            },
-            { header: 'Lag', accessorKey: 'lag' },
-          ]}
+          columns={partitionStatusColumns}
           data={p.transform.statuses}
+          pagination={p.transform.statuses.length > DEFAULT_TABLE_PAGE_SIZE}
+          sorting
+          tableOptions={TABLE_OPTIONS}
         />
-      </Box>
+      </div>
     </>
   );
 };
@@ -191,7 +222,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
   });
   const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
-  const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -249,31 +279,59 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
     }
   };
 
-  const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: LegacyColumnDef<TopicMessage>[] = [
-    {
-      header: 'Timestamp',
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 30,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          msg={original}
-          previewFields={() => []}
-        />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      // The Registry only sets aria-expanded on the row, and only for `expandRowByClick`, so it goes here.
+      {
+        id: 'expander',
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.getCanExpand() ? (
+            <Button
+              aria-expanded={row.getIsExpanded()}
+              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              onClick={row.getToggleExpandedHandler()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
+            </Button>
+          ) : null,
+      },
+      {
+        id: 'timestamp',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => (
+          <span className="whitespace-nowrap">
+            <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />
+          </span>
+        ),
+      },
+      {
+        header: 'Value',
+        // The cell renders a decoded preview; sorting the raw value was never meaningful.
+        enableSorting: false,
+        accessorKey: 'value',
+        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+        cell: ({ row: { original } }) => (
+          <div className="w-screen max-w-full">
+            <MessagePreview
+              isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
+              msg={original}
+              previewFields={() => []}
+            />
+          </div>
+        ),
+      },
+    ],
+    [topic]
+  );
 
   const filteredMessages = messages.filter((x) => {
     if (!logsQuickSearch) {
@@ -284,24 +342,29 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
   return (
     <>
-      <Box my="1rem">The logs below are for the last five hours.</Box>
+      <div className="my-4">The logs below are for the last five hours.</div>
 
       <Section className="min-w-[800px]">
-        <Flex mb="6">
-          <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
-          <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
+        <div className="mb-6 flex">
+          <SearchInput
+            containerClassName="w-[230px]"
+            onChange={setLogsQuickSearch}
+            placeholder="Search..."
+            value={logsQuickSearch}
+          />
+          <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
             Refresh logs
           </Button>
-        </Flex>
+        </div>
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
+          // No pager under the loading or empty row, as the legacy table.
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}
-          onSortingChange={setSorting}
-          pagination={paginationParams}
-          sorting={sorting}
+          pagination={filteredMessages.length > 0}
+          sorting
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
@@ -316,6 +379,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
               msg={original}
             />
           )}
+          tableOptions={LOGS_TABLE_OPTIONS}
         />
       </Section>
     </>
