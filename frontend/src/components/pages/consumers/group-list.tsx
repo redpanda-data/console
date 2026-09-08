@@ -197,6 +197,8 @@ const GroupList: FC = () => {
   const table = useDataTable({
     data: consumerGroups,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination, columnFilters },
     onSortingChange: handleSortingChange,
     onPaginationChange: handlePaginationChange,
