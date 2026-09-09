@@ -23,7 +23,6 @@ import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { appGlobal } from '../../../state/app-global';
 import type { GroupDescription } from '../../../state/rest-interfaces';
 import { setPageHeader } from '../../../state/ui-state';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { ShortNum } from '../../misc/short-num';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
@@ -60,6 +59,8 @@ const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string,
   }
 };
 
+const DEFAULT_PAGE_SIZE = 10;
+
 const stateFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValues: string[]) => {
   if (!filterValues?.length) {
     return true;
@@ -84,7 +85,7 @@ const GroupList: FC = () => {
   const [searchValue, setSearchValue] = useQueryState('q', parseAsString.withDefault(''));
   const [stateFilter, setStateFilter] = useQueryState('state', parseAsArrayOf(parseAsString).withDefault([]));
   const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
-  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE));
+  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(DEFAULT_PAGE_SIZE));
   const [sortId, setSortId] = useQueryState('sortId', parseAsString.withDefault(''));
   const [sortDesc, setSortDesc] = useQueryState('sortDesc', parseAsString.withDefault(''));
 

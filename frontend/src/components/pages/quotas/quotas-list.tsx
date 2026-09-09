@@ -48,7 +48,7 @@ import { Quota_EntityType, Quota_ValueType } from '../../../protogen/redpanda/ap
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 
-const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 10;
 
 type QuotaRow = {
   entityType: QuotaEntityDisplay;

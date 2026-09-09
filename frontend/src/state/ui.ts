@@ -230,10 +230,6 @@ type UISettings = {
       pageSize: number;
     };
 
-    // Select
-    quickSearch: string;
-    pageSizeSelect: number;
-
     // Brokers
     pageSizeBrokers: number;
 
@@ -408,10 +404,6 @@ const defaultUiSettings: UISettings = {
       quickSearch: '',
       pageSize: 5,
     },
-
-    // Select
-    quickSearch: '',
-    pageSizeSelect: 10,
 
     // Brokers
     pageSizeBrokers: 10,

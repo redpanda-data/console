@@ -9,34 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { DataTable } from 'components/redpanda-ui/components/data-table';
 import {
-  Box,
-  Button,
-  ButtonGroup,
-  Checkbox,
-  DataTable,
-  Flex,
-  ListItem,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverCloseButton,
-  PopoverContent,
-  PopoverFooter,
-  PopoverHeader,
-  PopoverTrigger,
-  Progress,
-  Skeleton,
-  Text,
-  UnorderedList,
-  useDisclosure,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Label } from 'components/redpanda-ui/components/label';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { Progress } from 'components/redpanda-ui/components/progress';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import React, { Component, type FC, type JSX, useRef, useState } from 'react';
 import { showToast, updateToast } from 'utils/toast.utils';
 
@@ -111,8 +98,7 @@ export class ActiveReassignments extends Component<{
                 onClick={() => {
                   this.setState({ showThrottleDialog: true });
                 }}
-                size="sm"
-                style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                size="xs"
                 variant="link"
               >
                 {throttleText}
@@ -126,32 +112,34 @@ export class ActiveReassignments extends Component<{
           columns={[
             {
               header: 'Topic',
-              size: 1,
               cell: ({ row: { original } }) => <TopicNameCol state={original} />,
             },
             {
               header: 'Progress',
-              size: Number.POSITIVE_INFINITY,
-              cell: ({ row: { original } }) => <ProgressCol state={original} />,
+              // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+              cell: ({ row: { original } }) => (
+                <div className="w-screen max-w-full">
+                  <ProgressCol state={original} />
+                </div>
+              ),
             },
             {
               header: 'ETA',
-              size: 100,
               cell: ({ row: { original } }) => <ETACol state={original} />,
             },
             {
               header: 'Brokers',
-              size: 1,
               cell: ({ row: { original } }) => <BrokersCol state={original} />,
             },
           ]}
           data={currentReassignments}
-          defaultPageSize={10}
           emptyText="No reassignments currently in progress"
+          getRowAriaLabel={(row) => `Show reassignment details for ${row.original.topicName}`}
           onRow={(row) => {
             this.setState({ reassignmentDetails: row.original });
           }}
-          pagination
+          // Legacy parity: ten a page, pager only past that.
+          pagination={currentReassignments.length > 10}
           sorting={false}
         />
 
@@ -170,12 +158,7 @@ export class ActiveReassignments extends Component<{
         />
 
         {this.props.throttledTopics.length > 0 && (
-          <Button
-            onClick={this.props.onRemoveThrottleFromTopics}
-            size="sm"
-            style={{ fontSize: 'smaller', padding: '0px 8px' }}
-            variant="link"
-          >
+          <Button onClick={this.props.onRemoveThrottleFromTopics} size="xs" variant="link">
             <span>
               There are <b>{this.props.throttledTopics.length}</b> throttled topics - click here to fix
             </span>
@@ -198,7 +181,8 @@ export const ThrottleDialog: FC<{
   const throttleValue = newThrottleValue ?? 0;
   const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;
 
-  const applyBandwidthThrottle = async () => {
+  // Takes the value explicitly: 'Remove throttle' clears state and applies in the same tick.
+  const applyBandwidthThrottle = async (value: number | null) => {
     toastRef.current = showToast({
       status: 'loading',
       description: 'Setting throttle rate...',
@@ -214,10 +198,10 @@ export const ThrottleDialog: FC<{
       return;
     }
 
-    const shouldSet = newThrottleValue !== null && newThrottleValue > 0;
+    const shouldSet = value !== null && value > 0;
     try {
       if (shouldSet) {
-        await api.setReplicationThrottleRate(allBrokers, newThrottleValue as number);
+        await api.setReplicationThrottleRate(allBrokers, value);
       } else {
         await api.resetReplicationThrottleRate(allBrokers);
       }
@@ -245,92 +229,94 @@ export const ThrottleDialog: FC<{
   };
 
   return (
-    <Modal isOpen={visible} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent minW="3xl">
-        <ModalHeader>Throttle Settings</ModalHeader>
-        <ModalBody>
-          <Flex flexDirection="column" gap={4}>
-            <Box mx={4}>
-              <Text>Using throttling you can limit the network traffic for reassignments.</Text>
-              <UnorderedList mt={2} px={6}>
-                <ListItem>Throttling applies to all replication traffic, not just to active reassignments.</ListItem>
-                <ListItem>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      open={visible}
+    >
+      {/* Nearest rung to the old 48rem minimum. */}
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Throttle Settings</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="flex flex-col gap-4">
+            <div className="mx-4">
+              <div>Using throttling you can limit the network traffic for reassignments.</div>
+              <ul className="mt-2 list-disc px-6">
+                <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
+                <li>
                   Once the reassignment completes you'll have to remove the throttling configuration. <br />
                   Console will show a warning below the "Current Reassignments" table when there are throttled topics
                   that are no longer being reassigned.
-                </ListItem>
-              </UnorderedList>
-            </Box>
+                </li>
+              </ul>
+            </div>
             <BandwidthSlider
               onChange={(x) => {
                 setNewThrottleValue(x);
               }}
               value={throttleValue}
             />
-          </Flex>
-        </ModalBody>
-        <ModalFooter justifyContent="space-between">
+          </div>
+        </DialogBody>
+        <DialogFooter justify="between">
           <Button
-            colorScheme="red"
             onClick={() => {
               setNewThrottleValue(null);
-              applyBandwidthThrottle().catch(() => {
+              applyBandwidthThrottle(null).catch(() => {
                 // Error handling managed by API layer
               });
             }}
-            variant="outline"
+            variant="destructive-outline"
           >
             Remove throttle
           </Button>
 
-          <Flex gap={2}>
-            <Button onClick={onClose} style={{ marginLeft: 'auto' }} variant="ghost">
+          <div className="flex gap-2">
+            <Button onClick={onClose} variant="ghost">
               Close
             </Button>
             <Button
               disabled={noChange}
               onClick={() => {
-                applyBandwidthThrottle().catch(() => {
+                applyBandwidthThrottle(newThrottleValue).catch(() => {
                   // Error handling managed by API layer
                 });
               }}
-              variant="solid"
+              variant="primary"
             >
               Apply
             </Button>
-          </Flex>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
 const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) => {
-  const { isOpen, onToggle, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Popover closeOnBlur={false} isOpen={isOpen} onClose={onClose} returnFocusOnClose={false}>
-      <PopoverTrigger>
-        <Button colorScheme="red" onClick={onToggle} variant="outline">
-          Cancel Reassignment
-        </Button>
-      </PopoverTrigger>
+    <Popover onOpenChange={setIsOpen} open={isOpen}>
+      <PopoverTrigger render={<Button variant="destructive-outline">Cancel Reassignment</Button>} />
       <PopoverContent>
-        <PopoverHeader fontWeight="semibold">Confirmation</PopoverHeader>
-        <PopoverArrow />
-        <PopoverCloseButton />
-        <PopoverBody>Are you sure you want to stop the reassignment?</PopoverBody>
-        <PopoverFooter display="flex" justifyContent="flex-end">
-          <ButtonGroup size="sm">
-            <Button onClick={onClose} variant="ghost">
+        <div className="flex flex-col gap-3">
+          <PopoverTitle>Confirmation</PopoverTitle>
+          <div>Are you sure you want to stop the reassignment?</div>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setIsOpen(false)} size="sm" variant="ghost">
               Keep running
             </Button>
-            <Button onClick={onConfirm} variant="solid">
+            <Button onClick={onConfirm} size="sm" variant="primary">
               Stop reassignment
             </Button>
-          </ButtonGroup>
-        </PopoverFooter>
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -380,9 +366,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     const removingReplicas = state.partitions.flatMap((p) => p.removingReplicas).distinct();
 
     const modalContent = topicConfig ? (
-      <Flex flexDirection="column" gap={12}>
+      <div className="flex flex-col gap-12">
         {/* Info */}
-        <Flex flexDirection="column" gap={4}>
+        <div className="flex flex-col gap-4">
           <div>
             {QuickTable([
               ['Replicas', replicas],
@@ -390,56 +376,69 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
               ['Removing', removingReplicas],
             ])}
           </div>
-        </Flex>
+        </div>
 
         {/* Throttle */}
-        <Flex gap={4}>
+        <div className="flex gap-4">
           <Checkbox
-            isChecked={this.state.shouldThrottle}
-            onChange={(e) => {
-              this.setState({ shouldThrottle: e.target.checked });
+            checked={this.state.shouldThrottle}
+            id="throttle-reassignment"
+            onCheckedChange={(checked) => {
+              this.setState({ shouldThrottle: checked === true });
             }}
-          >
+          />
+          <Label className="cursor-pointer" htmlFor="throttle-reassignment">
             <span>
               <span>Throttle Reassignment</span>
               <br />
-              <span style={{ fontSize: 'smaller', opacity: '0.6', marginLeft: '2em' }}>
+              <span className="ml-8 text-body-sm opacity-60">
                 Using global throttle limit for all replication traffic
               </span>
             </span>
-          </Checkbox>
-        </Flex>
+          </Label>
+        </div>
 
         {/* Cancel */}
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
-      </Flex>
+      </div>
     ) : (
-      <Skeleton height={4} mt={5} noOfLines={5} />
+      <div className="mt-5">
+        <SkeletonText lines={5} width="full" />
+      </div>
     );
 
     return (
-      <Modal isOpen={visible} onClose={this.props.onClose}>
-        <ModalOverlay />
-        <ModalContent minW="3xl">
-          <ModalHeader>Reassignment: {state.topicName}</ModalHeader>
-          <ModalBody>{modalContent}</ModalBody>
-          <ModalFooter gap={2}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            this.props.onClose();
+          }
+        }}
+        open={visible}
+      >
+        {/* Nearest rung to the old 48rem minimum. */}
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>{modalContent}</DialogBody>
+          <DialogFooter>
             <Button onClick={this.props.onClose} variant="ghost">
               Close
             </Button>
             <Button
-              isDisabled={!topicConfig}
+              disabled={!topicConfig}
               onClick={() => {
                 this.applyBandwidthThrottle();
                 this.props.onClose();
               }}
-              variant="solid"
+              variant="primary"
             >
               Apply &amp; Close
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -705,12 +704,12 @@ const ProgressBar = (p: {
   const { percent, state, left, right } = p;
   return (
     <>
+      {/* The indicator paints bg-primary by default; the tone goes through the slot class. */}
       <Progress
-        colorScheme={
-          {
-            success: 'success',
-            active: 'brand',
-          }[state]
+        className={
+          state === 'success'
+            ? '[&_[data-slot=progress-indicator]]:bg-success'
+            : '[&_[data-slot=progress-indicator]]:bg-brand'
         }
         value={percent}
       />
