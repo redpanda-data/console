@@ -9,31 +9,38 @@
  * by the Apache License, Version 2.0
  */
 
+import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import {
-  Alert,
-  AlertDescription,
   AlertDialog,
-  AlertDialogBody,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogOverlay,
-  Box,
-  Button,
+  AlertDialogTitle,
+} from 'components/redpanda-ui/components/alert-dialog';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import {
   Empty,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Popover,
-  Text,
-  VStack,
-} from '@redpanda-data/ui';
-import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
-import { type CSSProperties, type JSX, useRef, useState } from 'react';
+import { Stat } from 'components/redpanda-ui/components/stat';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
 
@@ -73,7 +80,6 @@ import {
 import { ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { Statistic } from '../../misc/statistic';
 
 type ConnectorMetadata = {
   readonly className?: string; // match by exact match
@@ -441,13 +447,20 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
         </span>
       ) : null}
 
-      <Popover
-        content={<div style={{ maxWidth: '500px', minWidth: 'max-content', whiteSpace: 'pre-wrap' }}>{c}</div>}
-        hideCloseButton={true}
-        placement="right"
-        size="stretch"
-      >
-        {displayName}
+      <Popover>
+        {/* Hover-to-open; Base UI defaults to click. */}
+        <PopoverTrigger
+          openOnHover
+          render={
+            <button className="cursor-help" type="button">
+              {displayName}
+            </button>
+          }
+        />
+        {/* PopoverContent is a fixed `w-72`; Chakra's `size="stretch"` sized to content. */}
+        <PopoverContent className="w-auto max-w-[500px]" side="right">
+          <div className="whitespace-pre-wrap">{c}</div>
+        </PopoverContent>
       </Popover>
     </div>
   );
@@ -473,8 +486,8 @@ export const OverviewStatisticsCard = () => {
   return (
     <Section className="py-4">
       <div className="flex gap-8">
-        <Statistic title="Connect Clusters" value={totalClusters} />
-        <Statistic title="Total Connectors" value={totalConnectors} />
+        <Stat label="Connect Clusters" size="lg" value={totalClusters} />
+        <Stat label="Total Connectors" size="lg" value={totalConnectors} />
       </div>
     </Section>
   );
@@ -496,11 +509,11 @@ export const ClusterStatisticsCard = (p: { clusterName: string }) => {
   return (
     <Section className="py-4">
       <div className="flex gap-8">
-        <Statistic title="Cluster" value={cluster?.clusterName} />
+        <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
 
-        <Statistic title="Connectors" value={`${runningConnectors} / ${totalConnectors}`} />
-        <Statistic title="Address" value={addr} />
-        <Statistic title="Version" value={version} />
+        <Stat label="Connectors" size="lg" value={`${runningConnectors} / ${totalConnectors}`} />
+        <Stat label="Address" size="lg" value={addr} />
+        <Stat label="Version" size="lg" value={version} />
       </div>
     </Section>
   );
@@ -513,10 +526,10 @@ export const ConnectorStatisticsCard = (p: { clusterName: string; connectorName:
   return (
     <Section className="py-4">
       <div className="flex gap-8">
-        <Statistic title="Cluster" value={cluster?.clusterName} />
-        <Statistic title="Connector" value={connector?.name} />
+        <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
+        <Stat label="Connector" size="lg" value={connector?.name} />
 
-        <Statistic title="Tasks" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
+        <Stat label="Tasks" size="lg" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
       </div>
     </Section>
   );
@@ -526,18 +539,26 @@ export function NotConfigured() {
   return (
     <PageContent key="b">
       <Section>
-        <VStack gap={4}>
-          <Empty description="Not Configured" />
-          <Text textAlign="center">
-            Kafka Connect is not configured in Redpanda Console.
-            <br />
-            Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and
-            control all your connectors and tasks.
-          </Text>
-          <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
-            <Button variant="solid">Redpanda Console Config Documentation</Button>
-          </a>
-        </VStack>
+        {/* Same shape as the already-migrated SchemaNotConfiguredPage. */}
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Not configured</EmptyTitle>
+            <EmptyDescription>
+              Kafka Connect is not configured in Redpanda Console. Set up the connection details to your Kafka Connect
+              cluster in your Redpanda Console config, to view and control all your connectors and tasks.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <a
+              className={cn(buttonVariants({ variant: 'primary' }), 'rounded-md')}
+              href={docsLinks.selfManaged.console}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Redpanda Console Config Documentation
+            </a>
+          </EmptyContent>
+        </Empty>
       </Section>
     </PageContent>
   );
@@ -557,7 +578,6 @@ type ConfirmModalProps<T> = {
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
-  const cancelRef = useRef<HTMLButtonElement | null>(null);
 
   const renderError = (): { title: string; content: string } | undefined => {
     if (!error) {
@@ -629,36 +649,41 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const content = target && props.content(target);
 
   return (
-    <AlertDialog isOpen={target !== null} leastDestructiveRef={cancelRef} onClose={cancel}>
-      <AlertDialogOverlay>
-        <AlertDialogContent>
-          <AlertDialogHeader>Confirm</AlertDialogHeader>
-          <AlertDialogBody>
-            {content}
-            {err ? (
-              <Box mt={4}>
-                <Alert status="error" variant="left-accent">
-                  <AlertIcon />
-                  <AlertDescription>
-                    <Box>
-                      <Text as="h3">{err.title}</Text>
-                      <Text>{err.content}</Text>
-                    </Box>
-                  </AlertDescription>
-                </Alert>
-              </Box>
-            ) : null}
-          </AlertDialogBody>
-          <AlertDialogFooter gap={2}>
-            <Button onClick={cancel} ref={cancelRef} variant="outline">
-              No
-            </Button>
-            <Button isLoading={isPending} onClick={onOk}>
-              {error ? 'Retry' : 'Yes'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
+    <AlertDialog
+      onOpenChange={(open) => {
+        if (!open) {
+          cancel();
+        }
+      }}
+      open={target !== null}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm</AlertDialogTitle>
+        </AlertDialogHeader>
+        {/* min-h-0 + overflow-y-auto: AlertDialogContent is `overflow-hidden max-h-[85vh]`, so a
+            long API error would otherwise be clipped with no way to scroll to the footer. */}
+        <AlertDialogDescription className="min-h-0 overflow-y-auto text-foreground">
+          {content}
+          {err ? (
+            <div className="mt-4">
+              <Alert icon={<AlertIcon />} variant="destructive">
+                <AlertTitle>{err.title}</AlertTitle>
+                <AlertDescription>{err.content}</AlertDescription>
+              </Alert>
+            </div>
+          ) : null}
+        </AlertDialogDescription>
+        <AlertDialogFooter>
+          {/* Cancel first: Base UI focuses the first tabbable. */}
+          <Button onClick={cancel} variant="outline">
+            No
+          </Button>
+          <Button aria-label={error ? 'Retry' : 'Yes'} isLoading={isPending} onClick={onOk}>
+            {error ? 'Retry' : 'Yes'}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
     </AlertDialog>
   );
 };
@@ -767,7 +792,6 @@ export const TaskState = (p: {
   if (task.trace) {
     errBtn = (
       <Button
-        colorScheme="red"
         onClick={() => showErr(task.trace)}
         style={{
           padding: '0px 12px',
@@ -776,7 +800,7 @@ export const TaskState = (p: {
           height: '30px',
           gap: '5px',
         }}
-        variant="outline"
+        variant="destructive-outline"
       >
         {stateContent}
         <span>(Show Error)</span>
@@ -785,22 +809,28 @@ export const TaskState = (p: {
 
     const close = () => showErr(undefined);
     errModal = (
-      <Modal isOpen={err !== null && err !== undefined} onClose={close}>
-        <ModalOverlay />
-        <ModalContent minW="5xl">
-          <ModalHeader>
-            {task.taskId === null ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
-          </ModalHeader>
-          <ModalBody>
-            <Box className="codeBox" px={2} py={3} style={{ whiteSpace: 'pre', overflow: 'scroll' }} w="full">
-              {err}
-            </Box>
-          </ModalBody>
-          <ModalFooter gap={2}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+          }
+        }}
+        open={err !== null && err !== undefined}
+      >
+        <DialogContent size="full">
+          <DialogHeader>
+            <DialogTitle>
+              {task.taskId === undefined ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <SimpleCodeBlock code={err ?? ''} language="text" maxHeight="none" width="full" />
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={close}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     );
 
     stateContent = errBtn;
@@ -827,14 +857,15 @@ const pauseIcon = (
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
 
-// Mapping from health status to chakra color variables
+/** Health status to a background utility; the backend also reports STOPPED. */
 export const statusColors = {
-  HEALTHY: 'green.500',
-  UNHEALTHY: 'red.500',
-  DEGRADED: 'orange.500',
-  PAUSED: 'gray.500',
-  RESTARTING: 'blue.500',
-  UNASSIGNED: 'gray.500',
-  DESTROYED: 'red.500',
-  UNKNOWN: 'gray.500',
+  HEALTHY: 'bg-success-strong',
+  UNHEALTHY: 'bg-destructive-strong',
+  DEGRADED: 'bg-warning-strong',
+  PAUSED: 'bg-disabled',
+  STOPPED: 'bg-disabled',
+  RESTARTING: 'bg-informative-strong',
+  UNASSIGNED: 'bg-disabled',
+  DESTROYED: 'bg-destructive-strong',
+  UNKNOWN: 'bg-disabled',
 } as Record<ConnectorStatus, string>;

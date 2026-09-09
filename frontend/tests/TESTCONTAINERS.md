@@ -78,9 +78,9 @@ All containers run on a shared Docker network created by testcontainers:
 **`tests/config/console.enterprise.config.yaml`** - Enterprise backend configuration:
 - Same as OSS config, plus:
   - `authentication.basic.enabled: true` - Basic auth for enterprise features
-  - `licenseFilepath: /etc/console/redpanda.license` - License file path in container
+  - No `licenseFilepath`: Console asks the Redpanda cluster for its license and runs on the built-in 30-day trial every fresh cluster starts with
   - `authorization.roleBindings` - Role-based access control
-- License file sourced from: `console-enterprise/frontend/tests/config/redpanda.license`
+- Optional: set `REDPANDA_LICENSE_PATH` to a license file to run against a real license instead (passed to Console as `REDPANDA_LICENSE`)
 
 ### Setup Script
 **`tests/shared/global-setup.mjs`**:
@@ -105,7 +105,7 @@ All containers run on a shared Docker network created by testcontainers:
    - Mounts appropriate config file:
      - OSS: `console.config.yaml`
      - Enterprise: `console.enterprise.config.yaml`
-   - For Enterprise mode: Mounts `redpanda.license` from `console-enterprise/`
+   - For Enterprise mode: passes the `REDPANDA_LICENSE_PATH` license (if set) to the container; otherwise Console uses the cluster's built-in trial license
    - Waits for port 3000 to be ready
    - Waits for frontend to serve HTML
 4. **State Management**:
@@ -114,7 +114,7 @@ All containers run on a shared Docker network created by testcontainers:
 ### Teardown
 **`tests/shared/global-setup.mjs`** returns the normal teardown:
 - Stops every tracked container in parallel through live Testcontainers handles
-- Removes the Docker network and temporary license directories
+- Removes the Docker network
 - Cleans up the state file
 
 **`tests/shared/global-teardown.mjs`** is the manual crash-recovery fallback. It

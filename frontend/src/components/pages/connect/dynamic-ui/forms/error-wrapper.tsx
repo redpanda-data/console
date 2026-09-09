@@ -1,4 +1,4 @@
-import { FormField } from '@redpanda-data/ui';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import type { JSX, PropsWithoutRef } from 'react';
 import { useState } from 'react';
 
@@ -8,8 +8,15 @@ import { ExpandableText } from '../../../../misc/expandable-text';
 const isRequiredError = (name: string) => `Required configuration "${name}" must be provided`;
 const isEmpty = (property: Property) => property.value === '' || property.value === null;
 
-export const ErrorWrapper = (props: PropsWithoutRef<{ property: Property; input: JSX.Element }>) => {
-  const { property, input } = props;
+export const ErrorWrapper = (
+  props: PropsWithoutRef<{
+    property: Property;
+    input: JSX.Element;
+    /** id of the control `input` renders; the label points at it and is `${inputId}-label` for aria-labelledby. */
+    inputId?: string;
+  }>
+) => {
+  const { property, input, inputId } = props;
   const [currentErrorIndex, setCurrentErrorIndex] = useState(0);
   const isRequired = property.entry.definition.required;
   const showErrors = property.errors.length > 0;
@@ -20,18 +27,27 @@ export const ErrorWrapper = (props: PropsWithoutRef<{ property: Property; input:
 
   const cycleError = showErrors ? () => setCurrentErrorIndex((i) => i + 1) : undefined;
 
+  const errorText = isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow;
+  const isInvalid = Boolean(errorToShow) || (isEmpty(property) && isRequired);
+
   return (
     <div>
-      <FormField
-        description={<ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>}
-        errorText={isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow}
-        isInvalid={!!errorToShow || (isEmpty(property) && isRequired)}
-        isRequired={isRequired}
-        label={property.entry.definition.display_name}
-        onClick={cycleError}
-      >
-        {input}
-      </FormField>
+      {/*
+        `onClick` on the field, as before: a property can carry several validation errors and the
+        only way to see the rest is to click the field, which advances `currentErrorIndex`.
+      */}
+      <Field data-invalid={isInvalid || undefined} onClick={cycleError}>
+        <FieldLabel htmlFor={inputId} id={inputId ? `${inputId}-label` : undefined} required={isRequired}>
+          {property.entry.definition.display_name}
+        </FieldLabel>
+        {/* Documentation sits between label and control. */}
+        <FieldDescription>
+          <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
+        </FieldDescription>
+        {/* Wrapped so `Field`'s vertical `[&>*]:w-full` lands here and not on a Switch. */}
+        <div>{input}</div>
+        {errorText ? <FieldError>{errorText}</FieldError> : null}
+      </Field>
     </div>
   );
 };
