@@ -102,3 +102,15 @@ test('sorts review topics and expanded partitions', async () => {
   }
   expect(within(within(table).getAllByRole('row')[1]).getAllByRole('cell')[0]).toHaveTextContent('1');
 });
+
+test('keeps the sort menu open when the page re-renders', async () => {
+  seed();
+  const user = userEvent.setup();
+  const props = { onPartitionSelectionChange: rs.fn(), partitionSelection: {}, throttledTopics: [] };
+  const { rerender } = render(<StepSelectPartitions {...props} />);
+  await user.click(screen.getByRole('button', { name: 'Size' }));
+  expect(screen.getByRole('menuitem', { name: 'Asc' })).toBeVisible();
+  // PageComponent forceUpdates the whole page on every store poll — three seconds here.
+  rerender(<StepSelectPartitions {...props} />);
+  expect(screen.getByRole('menuitem', { name: 'Asc' })).toBeVisible();
+});

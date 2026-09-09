@@ -10,7 +10,12 @@
  */
 
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import { DataTable, DataTableColumnHeader, type DataTableRow } from 'components/redpanda-ui/components/data-table';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  type DataTableRow,
+} from 'components/redpanda-ui/components/data-table';
 import { Component } from 'react';
 
 import { SelectionInfoBar } from './components/statistics-bar';
@@ -32,6 +37,9 @@ export class StepSelectBrokers extends Component<{
   partitionSelection: PartitionSelection;
 }> {
   brokers: Broker[];
+  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
+  // remounts the header's sort menu out from under the pointer.
+  private readonly columns: DataTableColumnDef<Broker>[];
 
   constructor(props: {
     selectedBrokerIds: number[];
@@ -40,14 +48,69 @@ export class StepSelectBrokers extends Component<{
   }) {
     super(props);
     this.brokers = api.clusterInfo?.brokers ?? [];
+    this.columns = [
+      {
+        id: 'check',
+        header: () => {
+          const selectedSet = new Set<number>(this.props.selectedBrokerIds);
+          const allIdsSet = new Set<number>(this.brokers.map(({ brokerId }) => brokerId));
+          const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
+          return (
+            <Checkbox
+              aria-label="Select all brokers"
+              checked={allIsSelected}
+              indeterminate={!allIsSelected && selectedSet.size > 0}
+              onCheckedChange={() => {
+                if (allIsSelected) {
+                  this.props.onSelectionChange([]);
+                } else {
+                  this.props.onSelectionChange(this.brokers.map((b) => b.brokerId));
+                }
+              }}
+            />
+          );
+        },
+        cell: ({ row: { original: broker } }: { row: DataTableRow<Broker> }) => {
+          const checked = this.props.selectedBrokerIds.includes(broker.brokerId);
+          return (
+            <Checkbox
+              aria-label={`Select broker ${broker.brokerId}`}
+              checked={checked}
+              onCheckedChange={() => {
+                if (checked) {
+                  this.props.onSelectionChange(this.props.selectedBrokerIds.filter((id) => id !== broker.brokerId));
+                } else {
+                  this.props.onSelectionChange([...this.props.selectedBrokerIds, broker.brokerId]);
+                }
+              }}
+            />
+          );
+        },
+      },
+      {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+        accessorKey: 'brokerId',
+      },
+      {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Broker Address" />,
+        accessorKey: 'address',
+      },
+      {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Rack" />,
+        accessorKey: 'rack',
+      },
+      {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Used Space" />,
+        accessorKey: 'logDirSize',
+        cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
+      },
+    ];
   }
 
   render() {
     if (!this.brokers || this.brokers.length === 0) {
       return <div>Error: no brokers available</div>;
     }
-
-    const { selectedBrokerIds, onSelectionChange } = this.props;
 
     return (
       <>
@@ -62,63 +125,7 @@ export class StepSelectBrokers extends Component<{
         <SelectionInfoBar margin="1em" partitionSelection={this.props.partitionSelection} />
 
         <DataTable<Broker>
-          columns={[
-            {
-              id: 'check',
-              header: () => {
-                const selectedSet = new Set<number>(selectedBrokerIds);
-                const allIdsSet = new Set<number>(this.brokers.map(({ brokerId }) => brokerId));
-                const allIsSelected = eqSet<number>(selectedSet, allIdsSet);
-                return (
-                  <Checkbox
-                    aria-label="Select all brokers"
-                    checked={allIsSelected}
-                    indeterminate={!allIsSelected && selectedSet.size > 0}
-                    onCheckedChange={() => {
-                      if (allIsSelected) {
-                        onSelectionChange([]);
-                      } else {
-                        onSelectionChange(this.brokers.map((b) => b.brokerId));
-                      }
-                    }}
-                  />
-                );
-              },
-              cell: ({ row: { original: broker } }: { row: DataTableRow<Broker> }) => {
-                const checked = selectedBrokerIds.includes(broker.brokerId);
-                return (
-                  <Checkbox
-                    aria-label={`Select broker ${broker.brokerId}`}
-                    checked={checked}
-                    onCheckedChange={() => {
-                      if (checked) {
-                        onSelectionChange(selectedBrokerIds.filter((id) => id !== broker.brokerId));
-                      } else {
-                        onSelectionChange([...selectedBrokerIds, broker.brokerId]);
-                      }
-                    }}
-                  />
-                );
-              },
-            },
-            {
-              header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-              accessorKey: 'brokerId',
-            },
-            {
-              header: ({ column }) => <DataTableColumnHeader column={column} title="Broker Address" />,
-              accessorKey: 'address',
-            },
-            {
-              header: ({ column }) => <DataTableColumnHeader column={column} title="Rack" />,
-              accessorKey: 'rack',
-            },
-            {
-              header: ({ column }) => <DataTableColumnHeader column={column} title="Used Space" />,
-              accessorKey: 'logDirSize',
-              cell: ({ row: { original } }) => prettyBytesOrNA(original.logDirSize),
-            },
-          ]}
+          columns={this.columns}
           data={this.brokers}
           pagination={this.brokers.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
