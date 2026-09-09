@@ -15,7 +15,19 @@ import { Button } from 'components/redpanda-ui/components/button';
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 
 type RouteErrorProps = {
-  error: Error;
+  error: unknown;
+};
+
+// Router error boundaries can receive a rejection/throw that isn't a proper Error
+// (e.g. an aborted request during navigation), so never assume `error.message` exists.
+const getRouteErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error) {
+    return error;
+  }
+  return 'An unexpected error occurred.';
 };
 
 /**
@@ -29,7 +41,7 @@ export const RouteError = ({ error }: RouteErrorProps) => {
     <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
       <img alt="Error" className="h-[140px]" src={errorBananaSlip} />
       <h2 className="font-semibold text-heading-xl">Something went wrong</h2>
-      <p className="max-w-md text-center text-body text-muted-foreground">{error.message}</p>
+      <p className="max-w-md text-center text-body text-muted-foreground">{getRouteErrorMessage(error)}</p>
       <Button onClick={() => router.invalidate()} variant="outline">
         Try again
       </Button>
