@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { createClientIdQuota, deleteClientIdQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
-const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 10;
 
 // Regex patterns for pagination tests
 const ENTITY_TYPE_REGEX = /client-id|user|ip/;
@@ -20,7 +20,7 @@ test.describe('Quotas - Pagination', () => {
       // Check if table has rows but pagination is not present
       const rowCount = await page.locator('tr').filter({ hasText: ENTITY_TYPE_REGEX }).count();
 
-      // If there are less than 50 items, pagination should not be visible
+      // If there are fewer than a page of items, pagination should not be visible
       if (rowCount < DEFAULT_PAGE_SIZE) {
         const pagination = page.locator('[aria-label="pagination"]');
         await expect(pagination).not.toBeVisible();
