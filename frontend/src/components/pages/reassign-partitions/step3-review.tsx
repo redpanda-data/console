@@ -119,7 +119,11 @@ export class StepReview extends Component<{
               },
             },
             {
-              accessorKey: 'Brokers After',
+              // Derived from the plan, so there is nothing to sort on — and table-level `sorting`
+              // would otherwise mark it sortable with no header affordance to trigger it.
+              enableSorting: false,
+              header: 'Brokers After',
+              id: 'brokersAfter',
               cell: ({ row: { original: topic } }) => {
                 const plannedBrokers = topic.selectedPartitions
                   .flatMap((x) => x.brokersAfter)
