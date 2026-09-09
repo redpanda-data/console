@@ -57,11 +57,20 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
+import { ThemeProvider } from './components/redpanda-ui/components/theme-provider';
 import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
+
+// Chakra must not resurrect a stored colour mode: the Registry ThemeProvider owns the theme now.
+const LIGHT_ONLY_COLOR_MODE = {
+  type: 'localStorage',
+  ssr: false,
+  get: (): 'light' => 'light',
+  set: () => undefined,
+} as const;
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
@@ -132,16 +141,21 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      <ChakraProvider resetCSS={false} theme={redpandaTheme}>
-        {/* showToast viewport, above the router so the error boundary and login can toast */}
-        <BaseUiToaster testId="console-toasts" />
-        <TransportProvider transport={dataplaneTransport}>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
-          </QueryClientProvider>
-        </TransportProvider>
-      </ChakraProvider>
+      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. Outside
+          ChakraProvider so its mount effect lands last. defaultTheme="light" matches Chakra's pinned
+          light mode until PR 13 removes ChakraProvider. */}
+      <ThemeProvider defaultTheme="light">
+        <ChakraProvider colorModeManager={LIGHT_ONLY_COLOR_MODE} resetCSS={false} theme={redpandaTheme}>
+          {/* showToast viewport, above the router so the error boundary and login can toast */}
+          <BaseUiToaster testId="console-toasts" />
+          <TransportProvider transport={dataplaneTransport}>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+              <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
+            </QueryClientProvider>
+          </TransportProvider>
+        </ChakraProvider>
+      </ThemeProvider>
     </CustomFeatureFlagProvider>
   );
 };

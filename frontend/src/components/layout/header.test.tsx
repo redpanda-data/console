@@ -24,10 +24,8 @@ rs.mock('@tanstack/react-router', () => ({
   useRouter: () => ({ getMatchedRoutes }),
 }));
 
-rs.mock('@redpanda-data/ui', () => ({
-  Button: () => null,
-  ColorModeSwitch: () => null,
-  CopyButton: () => null,
+rs.mock('./theme-mode-switch', () => ({
+  ThemeModeSwitch: () => null,
 }));
 
 rs.mock('components/redpanda-ui/lib/utils', () => ({

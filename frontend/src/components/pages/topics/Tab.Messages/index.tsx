@@ -1243,6 +1243,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const table = useDataTable({
     data: filteredMessages,
     columns: [expanderColumn, ...columns],
+    enableRowSelection: false,
     state: {
       pagination: paginationParams,
       sorting,

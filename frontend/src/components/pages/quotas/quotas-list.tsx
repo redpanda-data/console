@@ -218,6 +218,8 @@ const QuotasList = () => {
   const table = useDataTable({
     data: quotasData,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { pagination, sorting },
     onPaginationChange: handlePaginationChange,
     onSortingChange: handleSortingChange,

@@ -110,6 +110,8 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const table = useDataTable({
     data: partitions,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination },
     onSortingChange,
     onPaginationChange,
