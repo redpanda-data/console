@@ -6,21 +6,12 @@ import { TopicPage } from '../utils/topic-page';
 
 const GLOB_PATTERNS_LINK = /glob patterns/;
 const SHEET_CONTENT = '[data-slot="sheet-content"]';
-// Not `getByRole('dialog')`: Base UI's Toast.Root is a role=dialog too, so that matches the
-// messages tab's own "Searching..." toast whenever it is still up — a coin-flip strict-mode
-// violation. The Sheet is Base UI's Dialog as well, so it would match that once open.
+// Not `getByRole('dialog')`: Base UI's Toast.Root is one too, so it matches the messages tab's
+// own "Searching..." toast — and the Sheet, which is Base UI's Dialog.
 const DIALOG_CONTENT = '[data-slot="dialog-content"]';
 
-/**
- * Smoke coverage for the three settings surfaces on the messages tab.
- *
- * `enableNewTopicMessagesPage` defaults to false, so this exercises the legacy `Tab.Messages`
- * view — which four existing specs already cover for filtering, production and timestamps, but
- * none of them opens these three. They are the riskiest part of the Chakra swap: two Chakra
- * `Modal`s became Registry `Dialog`s and a Chakra `Drawer` became a `Sheet`, and a dialog that
- * fails to open, or a nested popover that portals outside its focus lock, is invisible to the
- * type checker and to every other spec.
- */
+// The legacy `Tab.Messages` settings surfaces — `enableNewTopicMessagesPage` defaults to false.
+// Two Modals became Dialogs and a Drawer became a Sheet; no other spec opens any of them.
 test.describe('Topic messages settings dialogs', () => {
   test('opens and closes the column settings dialog', async ({ page }) => {
     const topicName = `column-settings-${Date.now()}`;
@@ -36,13 +27,11 @@ test.describe('Topic messages settings dialogs', () => {
     await expect(dialog.getByText('Column Settings')).toBeVisible();
     await expect(dialog.getByText('Columns shown')).toBeVisible();
 
-    // Each column is a checkbox with its own label. Chakra's Checkbox took the label as a child
-    // and wired it; the Registry's does not, so a bad swap leaves the boxes unnamed.
+    // Chakra's Checkbox took its label as a child and wired it; the Registry's does not.
     await expect(dialog.getByRole('checkbox', { name: 'Offset' })).toBeVisible();
     await expect(dialog.getByRole('checkbox', { name: 'Timestamp' })).toBeVisible();
 
-    // `DialogContent` renders its own close X with an aria-label of "Close", so a role query by
-    // name matches two buttons. Only the footer button carries the text.
+    // DialogContent's own close X is also named "Close"; only the footer button has the text.
     await dialog.locator('button', { hasText: 'Close' }).click();
     await expect(dialog).toBeHidden();
 
@@ -66,9 +55,8 @@ test.describe('Topic messages settings dialogs', () => {
     await dialog.getByRole('button', { name: GLOB_PATTERNS_LINK }).click();
     await expect(page.getByText('Glob Pattern Examples')).toBeVisible();
 
-    // It has to portal to the body, not into the dialog. DialogContent is transformed and
-    // overflow-hidden, so a nested fixed panel is sized and clipped against the dialog box
-    // instead of the viewport — which `toBeVisible` above cannot see.
+    // It has to portal to the body: DialogContent is transformed and overflow-hidden, so a
+    // nested fixed panel is sized and clipped against it. `toBeVisible` cannot see that.
     await expect(page.locator(SHEET_CONTENT)).toBeVisible();
     await expect(dialog.locator(SHEET_CONTENT)).toHaveCount(0);
 

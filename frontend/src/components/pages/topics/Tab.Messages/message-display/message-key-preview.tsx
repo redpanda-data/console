@@ -70,7 +70,7 @@ export const MessageKeyPreview = ({
   if (key.troubleshootReport && key.troubleshootReport.length > 0) {
     return (
       <div className="flex items-center gap-2 text-destructive">
-        {/* Chakra's fontSize was inert on these lucide icons, so master rendered them at 24. */}
+        {/* fontSize was inert on these lucide icons: master rendered them at 24. */}
         <WarningIcon size={24} />
         There were issues deserializing the key
       </div>

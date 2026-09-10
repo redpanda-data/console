@@ -127,13 +127,10 @@ export const PatternHelpDrawer = () => {
         &nbsp;glob patterns
       </button>
       <Sheet onOpenChange={setIsOpen} open={isOpen}>
-        {/* SheetContent is not a flex column of its own, so header and footer only stay
-            pinned — as the Chakra Drawer's were — once it is made one and the body scrolls.
-            `container` opts out of the enclosing dialog's PortalContainerProvider: DialogContent is
-            transformed and `overflow-hidden`, so it would be both the containing block and the
-            clipping ancestor for this fixed panel, where the Chakra Drawer covered the viewport.
-            The width is set here because Chakra's drawer `size="xl"` was 56rem and the Sheet's
-            is 36rem; `size="full"` drops the variant's own cap so this one is the only source. */}
+        {/* SheetContent is not a flex column, so the header and footer only stay pinned once it is.
+            `container` opts out of the dialog's PortalContainerProvider — DialogContent is
+            transformed and `overflow-hidden`, so it would clip this fixed panel.
+            `size="full"` drops the variant's 36rem cap; Chakra's drawer `xl` was 56rem. */}
         <SheetContent
           className="flex flex-col overflow-hidden sm:max-w-4xl"
           container={document.body}
