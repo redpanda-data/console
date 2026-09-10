@@ -15,10 +15,13 @@ import { expect, test } from '@playwright/test';
  * `toContainText` on the `<pre>`, because the block is syntax-highlighted asynchronously and the
  * text arrives split across spans.
  */
+const RP_CONNECT_TAB = /Redpanda Connect/;
+const HINT_TEXT = /show the full menu of components available/;
+
 test.describe('Redpanda Connect intro', () => {
   test('renders the install steps, the walkthrough and the hint', async ({ page }) => {
     await page.goto('/connect-clusters');
-    await page.getByRole('tab', { name: /Redpanda Connect/ }).click();
+    await page.getByRole('tab', { name: RP_CONNECT_TAB }).click();
 
     await expect(page.getByRole('heading', { name: 'Using Redpanda Connect' })).toBeVisible();
 
@@ -29,12 +32,12 @@ test.describe('Redpanda Connect intro', () => {
 
     // The hint sits in an Alert, whose description is a grid of block children.
     await expect(page.getByText('Hint', { exact: true })).toBeVisible();
-    await expect(page.getByText(/show the full menu of components available/)).toBeVisible();
+    await expect(page.getByText(HINT_TEXT)).toBeVisible();
   });
 
   test('swaps the install snippet when the method changes', async ({ page }) => {
     await page.goto('/connect-clusters');
-    await page.getByRole('tab', { name: /Redpanda Connect/ }).click();
+    await page.getByRole('tab', { name: RP_CONNECT_TAB }).click();
 
     const installPicker = page.getByRole('combobox').first();
     await expect(installPicker).toBeVisible();

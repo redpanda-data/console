@@ -18,6 +18,8 @@ import { rpcnSecretManagerApi } from '../../../../state/backend-api';
  *   - the submit button stays disabled until both fields are valid.
  */
 const existingSecret = { id: 'EXISTING_SECRET' };
+const SECRET_NAME_LABEL = /Secret name/;
+const SECRET_VALUE_LABEL = /Secret value/;
 
 afterEach(() => {
   rpcnSecretManagerApi.secrets = undefined;
@@ -34,8 +36,8 @@ const renderCreatePage = () => {
 test('labels both fields and marks them required', () => {
   renderCreatePage();
 
-  const name = screen.getByLabelText(/Secret name/);
-  const value = screen.getByLabelText(/Secret value/);
+  const name = screen.getByLabelText(SECRET_NAME_LABEL);
+  const value = screen.getByLabelText(SECRET_VALUE_LABEL);
 
   expect(name).toBeRequired();
   expect(value).toBeRequired();
@@ -50,11 +52,11 @@ test('keeps submit disabled until a valid name and a value are present', async (
   const submit = screen.getByTestId('submit-create-rpcn-secret');
   expect(submit).toBeDisabled();
 
-  await user.type(screen.getByLabelText(/Secret name/), 'NEW_SECRET');
+  await user.type(screen.getByLabelText(SECRET_NAME_LABEL), 'NEW_SECRET');
   // Still no value, so still disabled.
   expect(submit).toBeDisabled();
 
-  await user.type(screen.getByLabelText(/Secret value/), 'hunter2');
+  await user.type(screen.getByLabelText(SECRET_VALUE_LABEL), 'hunter2');
   expect(submit).toBeEnabled();
 });
 
@@ -62,8 +64,8 @@ test('reports a name already in use and blocks submit', async () => {
   const user = userEvent.setup();
   renderCreatePage();
 
-  await user.type(screen.getByLabelText(/Secret name/), existingSecret.id);
-  await user.type(screen.getByLabelText(/Secret value/), 'hunter2');
+  await user.type(screen.getByLabelText(SECRET_NAME_LABEL), existingSecret.id);
+  await user.type(screen.getByLabelText(SECRET_VALUE_LABEL), 'hunter2');
 
   expect(screen.getByRole('alert')).toHaveTextContent('Secret name is already in use');
   expect(screen.getByTestId('submit-create-rpcn-secret')).toBeDisabled();
@@ -73,7 +75,7 @@ test('reports an invalid name', async () => {
   const user = userEvent.setup();
   renderCreatePage();
 
-  await user.type(screen.getByLabelText(/Secret name/), '1_LEADING_DIGIT');
+  await user.type(screen.getByLabelText(SECRET_NAME_LABEL), '1_LEADING_DIGIT');
 
   expect(screen.getByRole('alert')).toHaveTextContent('The name you entered is invalid');
 });
