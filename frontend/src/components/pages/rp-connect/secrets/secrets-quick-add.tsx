@@ -1,27 +1,20 @@
 import { create } from '@bufbuild/protobuf';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Combobox } from 'components/redpanda-ui/components/combobox';
 import {
-  Button,
-  Flex,
-  FormField,
-  isSingleValue,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  PasswordInput,
-  Select,
-  Text,
-  useDisclosure,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
-import {
-  CreateSecretRequestSchema,
-  Scope,
-  type Secret,
-} from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
+import { CreateSecretRequestSchema, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
 import { showToast } from '../../../../utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
@@ -29,6 +22,7 @@ import { formatPipelineError } from '../errors';
 
 // Regex for validating secret ID format
 const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
+const SECRET_NAME_MAX_LENGTH = 255;
 
 type SecretsQuickAddProps = {
   isOpen: boolean;
@@ -37,17 +31,19 @@ type SecretsQuickAddProps = {
 };
 
 const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddProps) => {
-  const [searchValue, setSearchValue] = useState('');
   const [secret, setSecret] = useState('');
   const [id, setId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const { isOpen: isNewSecret, onClose: disableNewSecret, onOpen: enableNewSecret } = useDisclosure();
+  const [isNewSecret, setIsNewSecret] = useState(false);
 
+  // Read on every render rather than memoised: `secrets` is a MobX observable that refreshes underneath us.
+  const existingSecrets = (rpcnSecretManagerApi.secrets ?? []).map((s) => ({
+    label: s.id,
+    value: s.id,
+  }));
+  // A just-created name is not in the secret list yet, so add it or the Combobox cannot label the selection.
   const availableSecrets =
-    rpcnSecretManagerApi.secrets?.map((s) => ({
-      label: s.id,
-      value: s,
-    })) ?? [];
+    isNewSecret && id ? [...existingSecrets, { label: id, value: id }] : existingSecrets;
 
   const addSecret = async (secretId: string) => {
     const normalizedId = secretId.toUpperCase();
@@ -92,8 +88,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
   };
 
   const closeModal = () => {
-    disableNewSecret();
-    setSearchValue('');
+    setIsNewSecret(false);
     setSecret('');
     setId('');
     setIsCreating(false);
@@ -107,72 +102,80 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     if (!SECRET_NAME_REGEX.test(secretName)) {
       return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain alphanumeric and underscores (_).';
     }
-    if (secretName.length > 255) {
+    if (secretName.length > SECRET_NAME_MAX_LENGTH) {
       return 'The secret name must be fewer than 255 characters.';
     }
     return '';
   };
 
+  const nameError = isNameValid(id);
+  const hasNameError = Boolean(nameError);
+
   return (
-    <Modal isCentered={true} isOpen={isOpen} onClose={closeModal} size={'md'}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Select or add secret</ModalHeader>
-        <ModalBody>
-          <Flex flexDirection="column" gap={5} w={300}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          closeModal();
+        }
+      }}
+      open={isOpen}
+    >
+      <DialogContent size="md">
+        {/* Room for DialogContent's absolute close button. */}
+        <DialogHeader className="pr-10">
+          <DialogTitle>Select or add secret</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="flex w-[300px] flex-col gap-5">
             <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
-            <FormField
-              description={
-                isNewSecret
-                  ? 'Creating new secret (stored in upper case)'
-                  : 'Select existing or type new name to create'
-              }
-              errorText={isNameValid(id)}
-              isInvalid={!!isNameValid(id)}
-              label="Secret name"
-            >
-              <Select<Secret>
-                creatable={true}
-                inputValue={searchValue}
-                isMulti={false}
-                onChange={(val, meta) => {
-                  if (val && isSingleValue(val) && val.value) {
-                    if (meta.action === 'create-option') {
-                      enableNewSecret();
-                      // @ts-expect-error when creating a new secret, the value is a string
-                      setId(meta.option.value);
-                      return;
-                    }
-                    disableNewSecret();
-                    setSecret('');
-                    setSearchValue('');
-                    setId(val.value.id);
-                  }
+            {/* The Combobox exposes no `id`, so this label cannot be wired with `htmlFor`. */}
+            <Field data-invalid={hasNameError}>
+              <FieldLabel>Secret name</FieldLabel>
+              <Combobox
+                creatable
+                createLabel="secret"
+                inputTestId="secret-name"
+                onChange={(value) => {
+                  // Combobox emits '' when it clears; mirror that into our own state.
+                  setIsNewSecret(false);
+                  setSecret('');
+                  setId(value);
                 }}
-                onInputChange={setSearchValue}
+                onCreateOption={(value) => {
+                  setIsNewSecret(true);
+                  setId(value);
+                }}
                 options={availableSecrets}
                 placeholder="Select or create secret"
+                value={id}
               />
-            </FormField>
+              <FieldDescription>
+                {isNewSecret
+                  ? 'Creating new secret (stored in upper case)'
+                  : 'Select existing or type new name to create'}
+              </FieldDescription>
+              {hasNameError && <FieldError errors={[{ message: nameError }]} />}
+            </Field>
             {Boolean(isNewSecret) && (
-              <FormField label="Secret value">
-                <Flex alignItems="center">
-                  <PasswordInput
-                    data-testid="secretValue"
-                    isDisabled={false}
-                    isRequired
-                    onChange={(x) => setSecret(x.target.value)}
-                    placeholder="Enter a secret value..."
-                    type="password"
-                    value={secret}
-                  />
-                </Flex>
-              </FormField>
+              <Field>
+                <FieldLabel htmlFor="secretValue" required>
+                  Secret value
+                </FieldLabel>
+                <Input
+                  id="secretValue"
+                  onChange={(x) => setSecret(x.target.value)}
+                  placeholder="Enter a secret value..."
+                  required
+                  testId="secretValue"
+                  type="password"
+                  value={secret}
+                />
+              </Field>
             )}
-          </Flex>
-        </ModalBody>
-        <ModalFooter gap={2}>
-          <Button isDisabled={isCreating} onClick={() => closeModal()} variant="ghost">
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button disabled={isCreating} onClick={() => closeModal()} variant="ghost">
             Cancel
           </Button>
           <Button
@@ -185,9 +188,9 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           >
             Select
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 

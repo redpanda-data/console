@@ -1,5 +1,7 @@
 import { create } from '@bufbuild/protobuf';
-import { Button, ButtonGroup, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
 import { useState } from 'react';
 
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -83,52 +85,57 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
 
   return (
     <PageContent>
-      <Flex flexDirection="column" gap={5}>
-        <FormField label="Secret name">
-          <Flex alignItems="center" gap="2">
-            <Input
-              data-testid="secretId"
-              disabled={true}
-              isRequired
-              pattern="^[A-Z][A-Z0-9_]*$"
-              placeholder="Enter a secret name..."
-              value={secretId}
-              width={500}
-            />
-          </Flex>
-        </FormField>
+      <div className="flex flex-col gap-5">
+        <Field>
+          <FieldLabel htmlFor="secretId" required>
+            Secret name
+          </FieldLabel>
+          <Input
+            className="w-[500px]"
+            disabled={true}
+            id="secretId"
+            pattern="^[A-Z][A-Z0-9_]*$"
+            placeholder="Enter a secret name..."
+            required
+            testId="secretId"
+            value={secretId}
+          />
+        </Field>
 
-        <FormField label="Secret value">
-          <Flex alignItems="center" gap="2" width={500}>
-            <PasswordInput
-              data-testid="secretValue"
-              isDisabled={isUpdating}
-              isRequired
-              onChange={(x) => {
-                setSecret(x.target.value);
-              }}
-              placeholder="Enter a new secret value..."
-              type="password"
-              value={secret}
-              width={500}
-            />
-          </Flex>
-        </FormField>
+        <Field>
+          <FieldLabel htmlFor="secretValue" required>
+            Secret value
+          </FieldLabel>
+          <Input
+            className="w-[500px]"
+            disabled={isUpdating}
+            id="secretValue"
+            onChange={(x) => {
+              setSecret(x.target.value);
+            }}
+            placeholder="Enter a new secret value..."
+            required
+            testId="secretValue"
+            type="password"
+            value={secret}
+          />
+        </Field>
 
-        <ButtonGroup>
+        {/* Chakra's ButtonGroup spaced its children; the Registry's attaches them. */}
+        <div className="flex gap-2">
           <Button
-            data-testid="submit-update-secret"
-            isDisabled={isSecretEmpty}
+            disabled={isSecretEmpty}
             isLoading={isUpdating}
             onClick={updateSecret}
+            testId="submit-update-secret"
           >
             Update secret
           </Button>
           <Button disabled={isUpdating} onClick={cancel} variant="link">
             Cancel
           </Button>
-        </ButtonGroup>
-      </Flex>
+        </div>
+      </div>
     </PageContent>
   );
 };
