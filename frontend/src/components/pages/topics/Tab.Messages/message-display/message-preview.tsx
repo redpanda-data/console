@@ -36,7 +36,8 @@ export const MessagePreview = ({
   if (value.troubleshootReport && value.troubleshootReport.length > 0) {
     return (
       <div className="flex items-center gap-2 text-destructive">
-        <WarningIcon size={16} />
+        {/* Chakra's fontSize was inert on these lucide icons, so master rendered them at 24. */}
+        <WarningIcon size={24} />
         There were issues deserializing the value
       </div>
     );
@@ -45,7 +46,7 @@ export const MessagePreview = ({
   if (value.isPayloadTooLarge) {
     return (
       <div className="flex items-center gap-2 text-informative">
-        <InfoIcon size={16} />
+        <InfoIcon size={24} />
         Message size exceeds the display limit.
       </div>
     );

@@ -169,7 +169,7 @@ function renderDocuError(title: string, body: JSX.Element) {
         </Empty>
         {body}
         <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
-          <Button>Redpanda Console Documentation</Button>
+          <Button variant="primary">Redpanda Console Documentation</Button>
         </a>
       </div>
     </motion.div>
