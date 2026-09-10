@@ -10,8 +10,11 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Button, Flex, FormField, Input, NumberInput } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
+import { LoaderIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import {
   type Pipeline,
@@ -153,46 +156,57 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         </div>
       </div>
 
-      <FormField errorText="Name cannot be empty" isInvalid={isNameEmpty} label="Pipeline name">
-        <Flex alignItems="center" gap="2">
-          <Input
-            data-testid="pipelineName"
-            isRequired
-            onChange={(x) => {
-              setDisplayName(x.target.value);
-            }}
-            pattern="[a-zA-Z0-9_\-]+"
-            placeholder="Enter a config name..."
-            value={displayName}
-            width={500}
-          />
-        </Flex>
-      </FormField>
-      <FormField label="Description">
+      <Field data-invalid={isNameEmpty}>
+        <FieldLabel htmlFor="pipelineName" required>
+          Pipeline name
+        </FieldLabel>
         <Input
-          data-testid="pipelineDescription"
+          className="w-[500px]"
+          id="pipelineName"
+          onChange={(x) => {
+            setDisplayName(x.target.value);
+          }}
+          pattern="[a-zA-Z0-9_\-]+"
+          placeholder="Enter a config name..."
+          required
+          testId="pipelineName"
+          value={displayName}
+        />
+        {isNameEmpty && <FieldError errors={[{ message: 'Name cannot be empty' }]} />}
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="pipelineDescription">Description</FieldLabel>
+        <Input
+          className="w-[500px]"
+          id="pipelineDescription"
           onChange={(x) => {
             setDescription(x.target.value);
           }}
+          testId="pipelineDescription"
           value={description}
-          width={500}
         />
-      </FormField>
-      <FormField
-        description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
-        label="Compute Units"
-        w={500}
-      >
-        <NumberInput
+      </Field>
+
+      <Field className="w-[500px]">
+        <FieldLabel htmlFor="pipelineTasks">Compute Units</FieldLabel>
+        <Input
+          className="max-w-[150px]"
+          id="pipelineTasks"
           max={MAX_TASKS}
-          maxWidth={150}
           min={MIN_TASKS}
           onChange={(e) => {
-            setTasks(Number(e ?? MIN_TASKS));
+            setTasks(Number(e.target.value ?? MIN_TASKS));
           }}
+          showStepControls
+          type="number"
           value={tasks}
         />
-      </FormField>
+        <FieldDescription>
+          One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume
+          pipelines.
+        </FieldDescription>
+      </Field>
 
       <div className="mt-4">
         <PipelineEditor
@@ -204,20 +218,22 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         />
       </div>
 
-      <Flex alignItems="center" gap="4">
-        <Button
-          isDisabled={isNameEmpty || isUpdating}
-          isLoading={isUpdating}
-          loadingText="Updating..."
-          onClick={updatePipeline}
-          variant="solid"
-        >
-          Update
+      <div className="flex items-center gap-4">
+        {/* The Registry Button's `isLoading` hides its label, so the pending text is rendered as a child. */}
+        <Button disabled={isNameEmpty || isUpdating} onClick={updatePipeline}>
+          {isUpdating ? (
+            <>
+              <LoaderIcon className="size-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            'Update'
+          )}
         </Button>
         <Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
           <Button variant="link">Cancel</Button>
         </Link>
-      </Flex>
+      </div>
     </PageContent>
   );
 };

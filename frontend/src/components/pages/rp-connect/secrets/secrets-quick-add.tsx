@@ -42,8 +42,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     value: s.id,
   }));
   // A just-created name is not in the secret list yet, so add it or the Combobox cannot label the selection.
-  const availableSecrets =
-    isNewSecret && id ? [...existingSecrets, { label: id, value: id }] : existingSecrets;
+  const availableSecrets = isNewSecret && id ? [...existingSecrets, { label: id, value: id }] : existingSecrets;
 
   const addSecret = async (secretId: string) => {
     const normalizedId = secretId.toUpperCase();
