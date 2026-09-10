@@ -459,9 +459,9 @@ export const PipelineEditor = (p: {
                 )}
               </div>
 
+              {/* The Registry Alert renders its own icon; an icon child would paint two. */}
               {isKafkaConnectPipeline(p.yaml) && (
-                <Alert variant="destructive">
-                  <AlertCircle size={16} />
+                <Alert icon={<AlertCircle size={16} />} variant="destructive">
                   <AlertDescription>
                     <div className="text-body">
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}
