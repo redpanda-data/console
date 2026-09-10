@@ -124,15 +124,14 @@ export const PipelineThroughput = (p: { pipeline: Pipeline }) => {
   );
 };
 
-// This page keeps the 10-a-page default it had under Chakra, and always shows the pager.
 // No column-visibility UI, so hiding is off at table level.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
 };
 
-// Hoisted: `PageComponent` force-updates on every api-store write, and a fresh columns array
-// would re-create every header and cell on each of those renders.
+// Hoisted: `PageComponent` force-updates on every api-store write, and a fresh array would
+// re-create every header and cell.
 const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'ID',
@@ -154,7 +153,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     id: 'pipeline',
     // No DataTableColumnHeader, so there is nothing to trigger a sort with.
     enableSorting: false,
-    // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+    // The Registry DataTable ignores column sizes.
     cell: ({ row: { original } }) => (
       <div className="w-screen max-w-full">
         <Link
@@ -259,8 +258,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   }
 }
 
-// A function wrapper so the quick-search setting can be both written through `updateSettings`
-// and subscribed to: a nested write on the `uiSettings` proxy notifies nobody.
+// A nested write on the `uiSettings` proxy notifies nobody, so this subscribes to the store.
 const RpConnectPipelinesListContent: FC = () => {
   const { pipelinesList, updateSettings } = useUISettingsStore();
 
@@ -293,8 +291,6 @@ const RpConnectPipelinesListContent: FC = () => {
 
   return (
     <PageContent>
-      {/* Pipeline List */}
-
       {pipelinesApi.pipelines.length !== 0 && (
         <div className="my-5 flex flex-col gap-2">
           <LegacyCreatePipelineButton />

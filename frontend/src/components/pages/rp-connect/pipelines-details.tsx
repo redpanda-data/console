@@ -119,7 +119,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
         </Link>
 
         <Button
-          // `isLoading` hides the label, as Chakra's did; the aria-label keeps the accessible name.
+          // `isLoading` hides the label, so the button needs its own name.
           aria-label={isStopped ? 'Start' : 'Stop'}
           disabled={isChangingPauseState || isTransitioningState}
           isLoading={isChangingPauseState}
@@ -208,7 +208,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
         </Button>
       </div>
 
-      {/* The Registry Alert renders its own icon, and AlertDescription is a grid: one block child. */}
+      {/* The Registry Alert renders its own icon; AlertDescription is a grid. */}
       {Boolean(error) && (
         <Alert icon={<AlertIcon />} variant="destructive">
           <AlertDescription>
@@ -255,9 +255,8 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-// The legacy table seeded page and pageSize from the URL and then owned paging itself; the Registry
-// pager owns both, so only the 10-a-page default carries over. No column-visibility UI, so hiding is off.
-// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
+// The Registry pager owns page and pageSize, where the legacy table seeded them from the URL.
+// No column-visibility UI, so hiding is off. `getRowId` keeps an expanded row on its message.
 const LOGS_TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
@@ -340,8 +339,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
-      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
-      // The Registry only sets aria-expanded on the row, and only for `expandRowByClick`, so it goes here.
+      // Chakra's DataTable injected this column with `subComponent`; the Registry renders no affordance.
       {
         id: 'expander',
         enableSorting: false,
@@ -372,9 +370,9 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
         id: 'value',
         header: 'Value',
         accessorKey: 'value',
-        // The cell renders a decoded preview; sorting the raw value was never meaningful.
+        // The cell renders a decoded preview, so the raw value is not worth sorting.
         enableSorting: false,
-        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+        // The Registry DataTable ignores column sizes.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">
             <MessagePreview isCompactTopic={isCompactTopic} msg={original} previewFields={() => []} />

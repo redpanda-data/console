@@ -149,10 +149,10 @@ const RpConnectSecretCreateContent = () => {
           />
         </Field>
 
-        {/* Chakra's ButtonGroup spaced its children; the Registry's attaches them. */}
+        {/* The Registry ButtonGroup attaches its children, where Chakra's spaced them. */}
         <div className="flex gap-2">
           <Button
-            // `isLoading` hides the label, so the button needs a name of its own while busy.
+            // `isLoading` hides the label, so the button needs its own name.
             aria-label="Create secret"
             disabled={isIdEmpty || isSecretEmpty || hasNameError}
             isLoading={isCreating}

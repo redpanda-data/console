@@ -1,20 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-/**
- * Smoke coverage for the Redpanda Connect intro page — 15 distinct Chakra symbols (Grid, Stack,
- * OrderedList, CodeBlock, Alert…) and no Playwright spec until now.
- *
- * This is the only rp-connect surface reachable in a test variant: the OSS Console config declares
- * no pipelines API and no `SecretService`, so `Features.pipelinesApi` is false and
- * `pages/connect/overview.tsx` renders `RedpandaConnectIntro` instead of the pipelines list. The
- * pipeline and secret pages need a dataplane, which no variant provides — their coverage is the
- * integration test beside `secrets-create.tsx`.
- *
- * What a re-skin breaks invisibly here is structure rather than data: the ordered walkthrough, the
- * install-method select driving the code block, and the hint alert. Code assertions go through
- * `toContainText` on the `<pre>`, because the block is syntax-highlighted asynchronously and the
- * text arrives split across spans.
- */
+// The only rp-connect surface reachable in a test variant: the OSS config declares no pipelines
+// API, so `/connect-clusters` renders the intro instead of the list. The pipeline and secret
+// pages need a dataplane no variant provides — see the integration test beside `secrets-create`.
+// Code assertions use `toContainText`: the block highlights asynchronously, splitting the text.
 const RP_CONNECT_TAB = /Redpanda Connect/;
 const HINT_TEXT = /show the full menu of components available/;
 

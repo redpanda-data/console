@@ -5,18 +5,8 @@ import { userEvent } from '@testing-library/user-event';
 import RpConnectSecretCreate from './secrets-create';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
 
-/**
- * The rp-connect secrets form has no Playwright coverage: the OSS test variant configures no
- * `SecretService`, so `/rp-connect/secrets/create` cannot be exercised live in any variant.
- *
- * What the Registry swap can break here is invisible to the type checker, so this covers the
- * three contracts that changed shape:
- *   - Chakra's `FormField` generated an id and wired the label; the Registry `Field` does not,
- *     so both inputs are resolved by their label text.
- *   - Chakra's `isRequired` stamped `required` on the control; `FieldLabel required` only paints
- *     an asterisk, so `required` is passed explicitly.
- *   - the submit button stays disabled until both fields are valid.
- */
+// No Playwright coverage is possible: the OSS test variant configures no `SecretService`.
+// Registry `Field` wires neither the label nor `required`, so both are asserted here.
 const existingSecret = { id: 'EXISTING_SECRET' };
 const SECRET_NAME_LABEL = /Secret name/;
 const SECRET_VALUE_LABEL = /Secret value/;
@@ -27,7 +17,6 @@ afterEach(() => {
 });
 
 const renderCreatePage = () => {
-  // Seeded so the page renders its form rather than the loading skeleton.
   rpcnSecretManagerApi.secrets = [existingSecret] as never;
   rs.spyOn(RpConnectSecretCreate.prototype, 'refreshData').mockImplementation(() => undefined);
   render(<RpConnectSecretCreate matchedPath="/rp-connect/secrets/create" />);
@@ -41,7 +30,6 @@ test('labels both fields and marks them required', () => {
 
   expect(name).toBeRequired();
   expect(value).toBeRequired();
-  // The reveal toggle the Registry Input adds only exists for a password field.
   expect(value).toHaveAttribute('type', 'password');
 });
 
@@ -53,7 +41,6 @@ test('keeps submit disabled until a valid name and a value are present', async (
   expect(submit).toBeDisabled();
 
   await user.type(screen.getByLabelText(SECRET_NAME_LABEL), 'NEW_SECRET');
-  // Still no value, so still disabled.
   expect(submit).toBeDisabled();
 
   await user.type(screen.getByLabelText(SECRET_VALUE_LABEL), 'hunter2');

@@ -41,7 +41,7 @@ export const ExplicitConfirmModal = (p: {
     >
       {/* `lg` is `sm:max-w-2xl`, matching the Chakra modal's `size="2xl"`. */}
       <DialogContent size="lg">
-        {/* Room for DialogContent's absolute close button. */}
+        {/* Room for DialogContent's close button. */}
         <DialogHeader className="pr-10">
           <DialogTitle>{p.title}</DialogTitle>
         </DialogHeader>

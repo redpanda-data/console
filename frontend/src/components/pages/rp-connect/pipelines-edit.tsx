@@ -78,7 +78,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   const setDisplayName = (v: string) => setFormState((prev) => ({ ...prev, displayName: v }));
   const setDescription = (v: string) => setFormState((prev) => ({ ...prev, description: v }));
   const setTasks = (v: number) => setFormState((prev) => ({ ...prev, tasks: v }));
-  // The field holds what was typed; `tasks` stays clamped. See the Input's onChange.
+  // The field holds what was typed; `tasks` stays clamped.
   const [tasksDraft, setTasksDraft] = useState(String(tasks));
   const setEditorContent = (v: string) => setFormState((prev) => ({ ...prev, editorContent: v }));
   const [isUpdating, setIsUpdating] = useState(false);
@@ -201,9 +201,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
             setTasksDraft(String(clampTasks(tasksDraft)));
           }}
           onChange={(e) => {
-            // Chakra's NumberInput allowed a transient empty or out-of-range value and clamped on
-            // blur; the Registry Input clamps neither, so clamping here would make the field
-            // unclearable — a cleared value would snap back to MIN and the next digit append to it.
+            // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
             setTasksDraft(e.target.value);
             setTasks(clampTasks(e.target.value));
           }}
@@ -228,7 +226,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
       </div>
 
       <div className="flex items-center gap-4">
-        {/* The Registry Button's `isLoading` hides its label, so the pending text is rendered as a child. */}
+        {/* `isLoading` hides the label, so the pending text is a child. */}
         <Button disabled={isNameEmpty || isUpdating} onClick={updatePipeline} variant="primary">
           {isUpdating ? (
             <>

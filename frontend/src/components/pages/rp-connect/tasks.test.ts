@@ -2,11 +2,6 @@ import { describe, expect, test } from '@rstest/core';
 
 import { clampTasks, MAX_TASKS, MIN_TASKS } from './tasks';
 
-/**
- * The compute-units field is a Registry `Input type="number"` with `showStepControls`, which sets
- * the value outright: three clicks of the decrement stepper from 1 reach -2, and a typed value is
- * never clamped. Chakra's `NumberInput` enforced both bounds, so the guard lives here now.
- */
 describe('clampTasks', () => {
   test('holds the minimum against a stepper walking below it', () => {
     expect(clampTasks(-2)).toBe(MIN_TASKS);

@@ -161,7 +161,7 @@ redpanda:
       <div className="mt-12 flex flex-col gap-8">
         <img alt="redpanda bot icon" src={RedpandaConnectLogo} />
 
-        {/* The Registry Alert renders its own icon; AlertDescription is a grid, so each line is a block child. */}
+        {/* The Registry Alert renders its own icon; AlertDescription is a grid. */}
         <Alert variant="informative">
           <AlertTitle>Hint</AlertTitle>
           <AlertDescription>
