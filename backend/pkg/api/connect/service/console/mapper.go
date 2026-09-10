@@ -52,6 +52,11 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 		encoding = serde.PayloadEncodingCbor
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_BSR:
 		encoding = serde.PayloadEncodingProtobufBSR
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO_GLUE:
+		// Publishing is not supported for the AWS Glue wire format. Mapping it
+		// through anyway lets the serde return a descriptive error instead of
+		// silently producing a binary payload.
+		encoding = serde.PayloadEncodingAvroGlue
 	}
 
 	// When the client picks Protobuf together with a schema ID, route through the schema-registry
@@ -138,6 +143,8 @@ func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncodin
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_CBOR
 	case serde.PayloadEncodingProtobufBSR:
 		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_BSR
+	case serde.PayloadEncodingAvroGlue:
+		encoding = v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO_GLUE
 	}
 
 	return encoding
@@ -181,6 +188,8 @@ func fromProtoEncoding(protoEncoding v1alpha.PayloadEncoding) serde.PayloadEncod
 		encoding = serde.PayloadEncodingCbor
 	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_PROTOBUF_BSR:
 		encoding = serde.PayloadEncodingProtobufBSR
+	case v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO_GLUE:
+		encoding = serde.PayloadEncodingAvroGlue
 	}
 
 	return encoding

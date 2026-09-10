@@ -19,6 +19,8 @@ const (
 	PayloadEncodingNull PayloadEncoding = "null"
 	// PayloadEncodingAvro is the enum of Avro encoded types.
 	PayloadEncodingAvro PayloadEncoding = "avro"
+	// PayloadEncodingAvroGlue is the enum of Avro encoded types using the AWS Glue Schema Registry.
+	PayloadEncodingAvroGlue PayloadEncoding = "avroGlue"
 	// PayloadEncodingProtobuf is the enum of protobuf encoded types.
 	PayloadEncodingProtobuf PayloadEncoding = "protobuf"
 	// PayloadEncodingProtobufSchema is the enum of protobuf encoded types using schema registry.
