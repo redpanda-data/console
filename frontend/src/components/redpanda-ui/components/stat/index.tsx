@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ArrowDown, ArrowUp, ArrowUpRight, Minus } from 'lucide-react';
 import React from 'react';
 
-import { cn, type SharedProps } from '../lib/utils';
+import { cn, type SharedProps } from '../../lib/utils';
 
 export const statValueVariants = cva('leading-none', {
   variants: {

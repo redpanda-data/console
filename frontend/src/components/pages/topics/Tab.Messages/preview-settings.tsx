@@ -339,7 +339,7 @@ export function getPreviewTags(
     const displayName = tag.customName && tag.customName.length > 0 ? tag.customName : r.fullPath;
 
     ar.push(
-      <span className="previewTag">
+      <span className="previewTag" key={`${tag.id}-${r.fullPath}-${ar.length}`}>
         <span className="path">{displayName}</span>
         <span>{toSafeString(r.prop.value)}</span>
       </span>

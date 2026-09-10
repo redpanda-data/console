@@ -101,33 +101,7 @@ import {
 import { encodeBase64, prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import RemovableFilter from '../../../misc/removable-filter';
-
-const payloadEncodingPairs = [
-  { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
-  { value: PayloadEncoding.NULL, label: 'None (Null)' },
-  { value: PayloadEncoding.AVRO, label: 'AVRO' },
-  { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
-  { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
-  { value: PayloadEncoding.JSON, label: 'JSON' },
-  { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
-  { value: PayloadEncoding.XML, label: 'XML' },
-  { value: PayloadEncoding.TEXT, label: 'Plain Text' },
-  { value: PayloadEncoding.UTF8, label: 'UTF-8' },
-  { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
-  { value: PayloadEncoding.SMILE, label: 'Smile' },
-  { value: PayloadEncoding.BINARY, label: 'Binary' },
-  { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
-  { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
-  { value: PayloadEncoding.CBOR, label: 'CBOR' },
-];
-
-const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
-);
+import { PAYLOAD_ENCODING_LABELS } from '../messages/constants';
 
 type TopicMessageViewProps = {
   topic: Topic;

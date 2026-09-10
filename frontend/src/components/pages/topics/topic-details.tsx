@@ -32,9 +32,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
+import { TopicMessagesTab } from './messages';
 import { TopicQuickInfoStatistic } from './quick-info';
 import AclList from './Tab.Acl/acl-list';
-import { TopicMessageView } from './Tab.Messages';
 import { DeleteRecordsMenuItem } from './Tab.Messages/common/delete-records-menu-item';
 import { TopicConfiguration } from './tab-config';
 import { TopicConsumers } from './tab-consumers';
@@ -271,7 +271,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
     <>
       <TopicTab id="messages" requiredPermission="viewMessages" titleText="Messages" topic={topic}>
         {(t) => (
-          <TopicMessageView refreshTopicData={(force: boolean) => refreshTopicData(topicName, force)} topic={t} />
+          <TopicMessagesTab refreshTopicData={(force: boolean) => refreshTopicData(topicName, force)} topic={t} />
         )}
       </TopicTab>
       <TopicTab id="consumers" requiredPermission="viewConsumers" titleText="Consumers" topic={topic}>
