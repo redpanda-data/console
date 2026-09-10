@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Flex, Text } from '@redpanda-data/ui';
 import { InfoIcon, WarningIcon } from 'components/icons';
 import React, { type ReactNode } from 'react';
 
@@ -36,19 +35,19 @@ export const MessagePreview = ({
 
   if (value.troubleshootReport && value.troubleshootReport.length > 0) {
     return (
-      <Flex alignItems="center" color="red.600" gap="2">
-        <WarningIcon fontSize="1.25em" />
+      <div className="flex items-center gap-2 text-destructive">
+        <WarningIcon size={16} />
         There were issues deserializing the value
-      </Flex>
+      </div>
     );
   }
 
   if (value.isPayloadTooLarge) {
     return (
-      <Flex alignItems="center" color="blue.500" gap="2">
-        <InfoIcon fontSize="1.25em" />
+      <div className="flex items-center gap-2 text-informative">
+        <InfoIcon size={16} />
         Message size exceeds the display limit.
-      </Flex>
+      </div>
     );
   }
 
@@ -94,16 +93,16 @@ export const MessagePreview = ({
     }
 
     return (
-      <Flex style={{ flexDirection: 'column' }}>
+      <div className="flex flex-col">
         <code>
           <span className="cellDiv" style={{ fontSize: '95%' }}>
             {text}
           </span>
         </code>
-        <Text color="gray.500">
+        <span className="text-muted-foreground">
           {value.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(value.size)}
-        </Text>
-      </Flex>
+        </span>
+      </div>
     );
   } catch (e) {
     return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;

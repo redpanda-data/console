@@ -14,7 +14,8 @@ import { docsLinks } from 'utils/docs-links';
 
 import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
-import { Button, Empty, VStack } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Empty, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { motion } from 'motion/react';
 import ReactMarkdown, { defaultUrlTransform as baseUriTransformer } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -159,13 +160,18 @@ const errorEmpty = renderDocuError(
 function renderDocuError(title: string, body: JSX.Element) {
   return (
     <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
-      <VStack gap={4}>
-        <Empty description={title} />
+      {/* Chakra's VStack centred its children; the Registry Empty root has no width of its own. */}
+      <div className="flex flex-col items-center gap-4">
+        <Empty className="w-full">
+          <EmptyHeader>
+            <EmptyTitle>{title}</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
         {body}
         <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
-          <Button variant="solid">Redpanda Console Documentation</Button>
+          <Button>Redpanda Console Documentation</Button>
         </a>
-      </VStack>
+      </div>
     </motion.div>
   );
 }
