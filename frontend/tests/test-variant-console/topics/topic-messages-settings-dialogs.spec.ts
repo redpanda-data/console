@@ -34,7 +34,9 @@ test.describe('Topic messages settings dialogs', () => {
     await expect(dialog.getByRole('checkbox', { name: 'Offset' })).toBeVisible();
     await expect(dialog.getByRole('checkbox', { name: 'Timestamp' })).toBeVisible();
 
-    await dialog.getByRole('button', { name: 'Close' }).click();
+    // `DialogContent` renders its own close X with an aria-label of "Close", so a role query by
+    // name matches two buttons. Only the footer button carries the text.
+    await dialog.locator('button', { hasText: 'Close' }).click();
     await expect(dialog).toBeHidden();
   });
 
