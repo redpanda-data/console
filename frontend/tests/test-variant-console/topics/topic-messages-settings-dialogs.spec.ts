@@ -4,6 +4,8 @@ import { expect, test } from '@playwright/test';
 
 import { TopicPage } from '../utils/topic-page';
 
+const GLOB_PATTERNS_LINK = /glob patterns/;
+
 /**
  * Smoke coverage for the three settings surfaces on the messages tab.
  *
@@ -54,7 +56,7 @@ test.describe('Topic messages settings dialogs', () => {
     await expect(dialog.getByText('Preview fields')).toBeVisible();
 
     // The glob-pattern help was a Chakra Drawer and is now a Sheet, opened from inside the dialog.
-    await dialog.getByRole('button', { name: /glob patterns/ }).click();
+    await dialog.getByRole('button', { name: GLOB_PATTERNS_LINK }).click();
     await expect(page.getByText('Glob Pattern Examples')).toBeVisible();
   });
 });
