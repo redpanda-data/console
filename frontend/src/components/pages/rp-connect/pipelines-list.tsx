@@ -137,6 +137,8 @@ const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'ID',
     id: 'id',
+    // No DataTableColumnHeader, so there is nothing to trigger a sort with.
+    enableSorting: false,
     cell: ({ row: { original } }) => (
       <Link
         params={{ pipelineId: encodeURIComponentPercents(original.id) }}
@@ -150,6 +152,8 @@ const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'Pipeline',
     id: 'pipeline',
+    // No DataTableColumnHeader, so there is nothing to trigger a sort with.
+    enableSorting: false,
     // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
     cell: ({ row: { original } }) => (
       <div className="w-screen max-w-full">
@@ -174,6 +178,8 @@ const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'State',
     id: 'state',
+    // No DataTableColumnHeader, so there is nothing to trigger a sort with.
+    enableSorting: false,
     cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
   },
   {

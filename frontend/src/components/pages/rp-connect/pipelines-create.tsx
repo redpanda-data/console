@@ -31,7 +31,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { clampTasks, cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import { appGlobal } from '../../../state/app-global';
@@ -159,7 +159,7 @@ const RpConnectPipelinesCreateContent = () => {
             testId="pipelineName"
             value={fileName}
           />
-          {alreadyExists && <FieldError errors={[{ message: 'Pipeline name is already in use' }]} />}
+          {alreadyExists ? <FieldError errors={[{ message: 'Pipeline name is already in use' }]} /> : null}
         </Field>
         <Field>
           <FieldLabel htmlFor="pipelineDescription">Description</FieldLabel>
@@ -181,7 +181,7 @@ const RpConnectPipelinesCreateContent = () => {
             max={MAX_TASKS}
             min={MIN_TASKS}
             onChange={(e) => {
-              setTasks(Number(e.target.value ?? MIN_TASKS));
+              setTasks(clampTasks(e.target.value));
             }}
             showStepControls
             type="number"

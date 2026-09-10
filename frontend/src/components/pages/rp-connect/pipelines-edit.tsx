@@ -27,7 +27,7 @@ import { showToast } from 'utils/toast.utils';
 
 import { formatPipelineError } from './errors';
 import { PipelineEditor } from './pipelines-create';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { clampTasks, cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
@@ -172,7 +172,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           testId="pipelineName"
           value={displayName}
         />
-        {isNameEmpty && <FieldError errors={[{ message: 'Name cannot be empty' }]} />}
+        {isNameEmpty ? <FieldError errors={[{ message: 'Name cannot be empty' }]} /> : null}
       </Field>
 
       <Field>
@@ -196,7 +196,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           max={MAX_TASKS}
           min={MIN_TASKS}
           onChange={(e) => {
-            setTasks(Number(e.target.value ?? MIN_TASKS));
+            setTasks(clampTasks(e.target.value));
           }}
           showStepControls
           type="number"

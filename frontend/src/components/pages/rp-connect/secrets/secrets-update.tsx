@@ -123,7 +123,14 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
 
         {/* Chakra's ButtonGroup spaced its children; the Registry's attaches them. */}
         <div className="flex gap-2">
-          <Button disabled={isSecretEmpty} isLoading={isUpdating} onClick={updateSecret} testId="submit-update-secret">
+          <Button
+            // `isLoading` hides the label, so the button needs a name of its own while busy.
+            aria-label="Update secret"
+            disabled={isSecretEmpty}
+            isLoading={isUpdating}
+            onClick={updateSecret}
+            testId="submit-update-secret"
+          >
             Update secret
           </Button>
           <Button disabled={isUpdating} onClick={cancel} variant="link">

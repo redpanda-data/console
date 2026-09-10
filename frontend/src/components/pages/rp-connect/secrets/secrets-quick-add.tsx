@@ -153,7 +153,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                   ? 'Creating new secret (stored in upper case)'
                   : 'Select existing or type new name to create'}
               </FieldDescription>
-              {hasNameError && <FieldError errors={[{ message: nameError }]} />}
+              {hasNameError ? <FieldError errors={[{ message: nameError }]} /> : null}
             </Field>
             {Boolean(isNewSecret) && (
               <Field>

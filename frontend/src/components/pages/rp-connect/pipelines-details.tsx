@@ -11,7 +11,7 @@
 
 import { ConnectError } from '@connectrpc/connect';
 import { Link } from '@tanstack/react-router';
-import { ChevronDownIcon, ChevronRightIcon } from 'components/icons';
+import { AlertIcon, ChevronDownIcon, ChevronRightIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -210,7 +210,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
 
       {/* The Registry Alert renders its own icon, and AlertDescription is a grid: one block child. */}
       {Boolean(error) && (
-        <Alert variant="destructive">
+        <Alert icon={<AlertIcon />} variant="destructive">
           <AlertDescription>
             <div>{error}</div>
           </AlertDescription>

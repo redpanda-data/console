@@ -127,7 +127,7 @@ const RpConnectSecretCreateContent = () => {
             value={id}
           />
           <FieldDescription>This secret name will be stored in upper case.</FieldDescription>
-          {hasNameError && <FieldError errors={[{ message: nameError }]} />}
+          {hasNameError ? <FieldError errors={[{ message: nameError }]} /> : null}
         </Field>
 
         <Field>
@@ -152,6 +152,8 @@ const RpConnectSecretCreateContent = () => {
         {/* Chakra's ButtonGroup spaced its children; the Registry's attaches them. */}
         <div className="flex gap-2">
           <Button
+            // `isLoading` hides the label, so the button needs a name of its own while busy.
+            aria-label="Create secret"
             disabled={isIdEmpty || isSecretEmpty || hasNameError}
             isLoading={isCreating}
             onClick={createSecret}
