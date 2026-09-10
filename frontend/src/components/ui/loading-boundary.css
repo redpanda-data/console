@@ -1,0 +1,11 @@
+@media (prefers-reduced-motion: reduce) {
+  /* The browser also creates a root snapshot alongside React's named boundary. */
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(.console-content-reveal),
+  ::view-transition-old(.console-content-reveal),
+  ::view-transition-new(.console-content-reveal) {
+    animation: none;
+  }
+}
