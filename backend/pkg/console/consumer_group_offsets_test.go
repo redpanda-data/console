@@ -19,8 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -204,4 +206,114 @@ func TestGetConsumerGroupOffsets_NonExistentTopicInMetadata(t *testing.T) {
 	}
 
 	ass.Equal(expected, result, "Result should match expected (deleted topic skipped)")
+}
+
+func TestGetConsumerGroupOffsets_PartialListEndOffsetsFailure(t *testing.T) {
+	testCases := []struct {
+		name         string
+		offsetError  *kerr.Error
+		errorMessage string
+	}{
+		{
+			name:         "listener not found",
+			offsetError:  kerr.ListenerNotFound,
+			errorMessage: "LISTENER_NOT_FOUND",
+		},
+		{
+			name:         "leader not available",
+			offsetError:  kerr.LeaderNotAvailable,
+			errorMessage: "LEADER_NOT_AVAILABLE",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			req := require.New(t)
+			ass := assert.New(t)
+
+			fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(2))
+			req.NoError(err)
+			defer fakeCluster.Close()
+
+			client, adminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
+			defer client.Close()
+
+			topicName := "test-partial-list-offsets-failure"
+			_, err = adminClient.CreateTopics(ctx, 2, 1, nil, topicName)
+			req.NoError(err)
+			// Keep one partition on each broker so one ListOffsets request can succeed while the other returns partition-level errors.
+			req.NoError(fakeCluster.MoveTopicPartition(topicName, 0, 0))
+			req.NoError(fakeCluster.MoveTopicPartition(topicName, 1, 1))
+
+			produceResults := client.ProduceSync(ctx,
+				&kgo.Record{Topic: topicName, Partition: 0, Value: []byte("p0")},
+				&kgo.Record{Topic: topicName, Partition: 1, Value: []byte("p1")},
+			)
+			req.NoError(produceResults.FirstErr())
+
+			groupID := "test-partial-list-offsets-group"
+			offsets := kadm.OffsetsList{
+				{Topic: topicName, Partition: 0, At: 1, LeaderEpoch: -1},
+				{Topic: topicName, Partition: 1, At: 1, LeaderEpoch: -1},
+			}.Offsets()
+			commitResponses, err := adminClient.CommitOffsets(ctx, groupID, offsets)
+			req.NoError(err)
+			req.True(commitResponses.Ok())
+
+			// Simulate a broker that is reachable for metadata, but cannot return end offsets for partitions it leads.
+			fakeCluster.ControlKey(int16(kmsg.ListOffsets), func(kreq kmsg.Request) (kmsg.Response, error, bool) {
+				fakeCluster.KeepControl()
+				if fakeCluster.CurrentNode() != 1 {
+					return nil, nil, false
+				}
+
+				listOffsetsReq := kreq.(*kmsg.ListOffsetsRequest)
+				resp := listOffsetsReq.ResponseKind().(*kmsg.ListOffsetsResponse)
+				for _, reqTopic := range listOffsetsReq.Topics {
+					respTopic := kmsg.NewListOffsetsResponseTopic()
+					respTopic.Topic = reqTopic.Topic
+					for _, reqPartition := range reqTopic.Partitions {
+						respPartition := kmsg.NewListOffsetsResponseTopicPartition()
+						respPartition.Partition = reqPartition.Partition
+						respPartition.ErrorCode = tc.offsetError.Code
+						respTopic.Partitions = append(respTopic.Partitions, respPartition)
+					}
+					resp.Topics = append(resp.Topics, respTopic)
+				}
+
+				return resp, nil, true
+			})
+
+			consoleSvc := &Service{
+				cfg:    &config.Config{},
+				logger: slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})),
+			}
+
+			result, err := consoleSvc.getConsumerGroupOffsets(ctx, adminClient, []string{groupID})
+
+			req.NoError(err)
+			groupOffsets := result[groupID]
+			req.Len(groupOffsets, 1)
+			ass.Equal(topicName, groupOffsets[0].Topic)
+
+			partitionsByID := make(map[int32]PartitionOffsets)
+			for _, partition := range groupOffsets[0].PartitionOffsets {
+				partitionsByID[partition.PartitionID] = partition
+			}
+
+			partition0, exists := partitionsByID[0]
+			req.True(exists)
+			req.NotNil(partition0.GroupOffset)
+			// Partition 0 is served by the healthy broker, so lag data should still be available even though partition 1 fails.
+			ass.Empty(partition0.Error)
+			ass.Equal(int64(1), *partition0.GroupOffset)
+			ass.NotEqual(int64(-1), partition0.HighWaterMark)
+
+			partition1, exists := partitionsByID[1]
+			req.True(exists)
+			// The failed partition should be represented as a partition error, not as an error for the whole consumer group response.
+			ass.Contains(partition1.Error, tc.errorMessage)
+		})
+	}
 }
