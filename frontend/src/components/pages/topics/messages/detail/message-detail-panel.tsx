@@ -14,7 +14,7 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { useHotKey } from 'hooks/use-hot-key';
 import { DownloadIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Fragment, type FragmentInstance, useEffect, useRef, useState } from 'react';
 import type { PanelSize } from 'react-resizable-panels';
 import type { TopicMessage } from 'state/rest-interfaces';
 import { toJson } from 'utils/json-utils';
@@ -55,6 +55,38 @@ export const downloadRecord = (msg: TopicMessage) => {
 };
 
 const SECTION_KEYS: readonly DetailSectionKey[] = ['metadata', 'key', 'headers', 'value'];
+
+function ExpandedMessageActions({ onCollapse, onClose }: { onCollapse: () => void; onClose: () => void }) {
+  const actionsRef = useRef<FragmentInstance>(null);
+  useEffect(function focusExpandedActions() {
+    actionsRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  return (
+    <Fragment ref={actionsRef}>
+      <Button
+        aria-label="Collapse back to panel"
+        onClick={onCollapse}
+        size="icon-xs"
+        testId="detail-collapse"
+        title="Collapse back to panel"
+        variant="ghost"
+      >
+        <Minimize2Icon />
+      </Button>
+      <Button
+        aria-label="Close"
+        onClick={onClose}
+        size="icon-xs"
+        testId="detail-sheet-close"
+        title="Close"
+        variant="ghost"
+      >
+        <XIcon />
+      </Button>
+    </Fragment>
+  );
+}
 
 const DetailBody = ({
   msg,
@@ -149,18 +181,7 @@ export const MessageDetailPanel = ({
             <div className="flex h-full min-h-0 flex-col bg-background shadow-lg" data-testid="message-detail-sheet">
               <div className="flex shrink-0 items-center gap-1 border-b px-4 py-2.5">
                 <span className="min-w-0 flex-1 font-semibold text-label">Message</span>
-                <Button
-                  onClick={() => onExpandedChange(false)}
-                  size="icon-xs"
-                  testId="detail-collapse"
-                  title="Collapse back to panel"
-                  variant="ghost"
-                >
-                  <Minimize2Icon />
-                </Button>
-                <Button onClick={onClose} size="icon-xs" testId="detail-sheet-close" title="Close" variant="ghost">
-                  <XIcon />
-                </Button>
+                <ExpandedMessageActions onClose={onClose} onCollapse={() => onExpandedChange(false)} />
               </div>
               <DetailBody
                 fillValue
@@ -181,6 +202,7 @@ export const MessageDetailPanel = ({
       <div className="flex shrink-0 items-center gap-1 border-b px-3 py-2">
         <span className="min-w-0 flex-1 font-semibold text-label">Message</span>
         <Button
+          aria-label="Expand"
           onClick={() => onExpandedChange(true)}
           size="icon-xs"
           testId="detail-expand"
@@ -189,7 +211,7 @@ export const MessageDetailPanel = ({
         >
           <Maximize2Icon />
         </Button>
-        <Button onClick={onClose} size="icon-xs" testId="detail-close" title="Close" variant="ghost">
+        <Button aria-label="Close" onClick={onClose} size="icon-xs" testId="detail-close" title="Close" variant="ghost">
           <XIcon />
         </Button>
       </div>
