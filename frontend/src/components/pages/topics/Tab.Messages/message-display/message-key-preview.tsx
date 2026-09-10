@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Flex, Text } from '@redpanda-data/ui';
 import { WarningIcon } from 'components/icons';
 import type { ReactNode } from 'react';
 
@@ -70,10 +69,10 @@ export const MessageKeyPreview = ({
 
   if (key.troubleshootReport && key.troubleshootReport.length > 0) {
     return (
-      <Flex alignItems="center" color="red.600" gap="2">
-        <WarningIcon fontSize="1.25em" />
+      <div className="flex items-center gap-2 text-destructive">
+        <WarningIcon size={16} />
         There were issues deserializing the key
-      </Flex>
+      </div>
     );
   }
 
@@ -115,14 +114,14 @@ export const MessageKeyPreview = ({
     }
 
     return (
-      <Flex style={{ flexDirection: 'column' }}>
+      <div className="flex flex-col">
         <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
           <code style={{ fontSize: '95%' }}>{text}</code>
         </span>
-        <Text color="gray.500">
+        <span className="text-muted-foreground">
           {key.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(key.size)}
-        </Text>
-      </Flex>
+        </span>
+      </div>
     );
   } catch (e) {
     return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;

@@ -9,16 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
 import { PortalContainerProvider } from 'components/redpanda-ui/lib/use-portal-container';
 import { type FC, useState } from 'react';
 
@@ -34,33 +33,40 @@ export const PreviewFieldsModal: FC<{
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
   return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          setShowDialog(false);
+        }
       }}
+      open={getShowDialog()}
     >
-      <ModalOverlay />
-      <ModalContent minW="4xl" ref={setContainer}>
-        {/* Registry popups portal into the modal, inside its focus and scroll lock */}
-        <PortalContainerProvider value={container ?? undefined}>
-          <ModalHeader>Preview fields</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <PreviewSettings messages={messages} topicName={topicName} />
-          </ModalBody>
-          <ModalFooter gap={2}>
-            <Button
-              colorScheme="red"
-              onClick={() => {
-                setShowDialog(false);
-              }}
-            >
-              Close
-            </Button>
-          </ModalFooter>
-        </PortalContainerProvider>
-      </ModalContent>
-    </Modal>
+      {/* `xl` is `sm:max-w-4xl`, matching the Chakra modal's `minW="4xl"`. */}
+      <DialogContent size="xl">
+        {/* Kept from the Chakra original: the PreviewSettings popover portals in here, inside the
+            dialog's focus and scroll lock, rather than to the document body. */}
+        <div ref={setContainer}>
+          <PortalContainerProvider value={container ?? undefined}>
+            {/* Room for DialogContent's absolute close button. */}
+            <DialogHeader className="pr-10">
+              <DialogTitle>Preview fields</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <PreviewSettings messages={messages} topicName={topicName} />
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  setShowDialog(false);
+                }}
+                variant="destructive"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </PortalContainerProvider>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

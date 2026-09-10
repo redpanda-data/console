@@ -1,16 +1,7 @@
-import {
-  Button,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerOverlay,
-  Flex,
-  useDisclosure,
-} from '@redpanda-data/ui';
 import { InfoIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
+import { useState } from 'react';
 
 import globExampleImg from '../../../../../assets/globExample.png';
 import { Code } from '../../../../../utils/tsx-utils';
@@ -18,8 +9,8 @@ import { Code } from '../../../../../utils/tsx-utils';
 export const globHelp = (
   <div>
     {/* Examples + Image */}
-    <Flex gap={2}>
-      <Flex grow={1}>
+    <div className="flex gap-2">
+      <div className="flex grow">
         <div className="globHelpGrid">
           <div className="h">Pattern</div>
           <div className="h">Result</div>
@@ -83,12 +74,12 @@ export const globHelp = (
           </div>
           <div className="rowSeparator" />
         </div>
-      </Flex>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
         <img alt="Examples for glob patterns" src={globExampleImg} />
       </div>
-    </Flex>
+    </div>
 
     {/* Details */}
     <div>
@@ -117,7 +108,9 @@ export const globHelp = (
 );
 
 export const PatternHelpDrawer = () => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
 
   return (
     <>
@@ -133,21 +126,21 @@ export const PatternHelpDrawer = () => {
         <InfoIcon size={15} />
         &nbsp;glob patterns
       </button>
-      <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="xl">
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader>Glob Pattern Examples</DrawerHeader>
+      <Sheet onOpenChange={setIsOpen} open={isOpen}>
+        <SheetContent className="overflow-y-auto" side="right" size="xl">
+          <SheetHeader>
+            <SheetTitle>Glob Pattern Examples</SheetTitle>
+          </SheetHeader>
 
-          <DrawerBody>{globHelp}</DrawerBody>
+          <div className="flex-1 px-4">{globHelp}</div>
 
-          <DrawerFooter>
-            <Button mr={3} onClick={onClose} variant="outline">
+          <SheetFooter>
+            <Button className="mr-3" onClick={onClose} variant="outline">
               Close
             </Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
