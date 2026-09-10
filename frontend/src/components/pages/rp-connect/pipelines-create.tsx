@@ -75,6 +75,8 @@ const RpConnectPipelinesCreateContent = () => {
   const [fileName, setFileName] = useState('');
   const [description, setDescription] = useState('');
   const [tasks, setTasks] = useState(MIN_TASKS);
+  // The field holds what was typed; `tasks` stays clamped. See the Input's onChange.
+  const [tasksDraft, setTasksDraft] = useState(String(MIN_TASKS));
   const [editorContent, setEditorContent] = useState(exampleContent);
   const [isCreating, setIsCreating] = useState(false);
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
@@ -180,12 +182,19 @@ const RpConnectPipelinesCreateContent = () => {
             id="pipelineTasks"
             max={MAX_TASKS}
             min={MIN_TASKS}
+            onBlur={() => {
+              setTasksDraft(String(clampTasks(tasksDraft)));
+            }}
             onChange={(e) => {
+              // Chakra's NumberInput allowed a transient empty or out-of-range value and clamped on
+              // blur; the Registry Input clamps neither, so clamping here would make the field
+              // unclearable — a cleared value would snap back to MIN and the next digit append to it.
+              setTasksDraft(e.target.value);
               setTasks(clampTasks(e.target.value));
             }}
             showStepControls
             type="number"
-            value={tasks}
+            value={tasksDraft}
           />
           <FieldDescription>
             One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume

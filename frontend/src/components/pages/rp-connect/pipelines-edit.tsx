@@ -78,6 +78,8 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   const setDisplayName = (v: string) => setFormState((prev) => ({ ...prev, displayName: v }));
   const setDescription = (v: string) => setFormState((prev) => ({ ...prev, description: v }));
   const setTasks = (v: number) => setFormState((prev) => ({ ...prev, tasks: v }));
+  // The field holds what was typed; `tasks` stays clamped. See the Input's onChange.
+  const [tasksDraft, setTasksDraft] = useState(String(tasks));
   const setEditorContent = (v: string) => setFormState((prev) => ({ ...prev, editorContent: v }));
   const [isUpdating, setIsUpdating] = useState(false);
   const tags = pipeline.tags;
@@ -195,12 +197,19 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           id="pipelineTasks"
           max={MAX_TASKS}
           min={MIN_TASKS}
+          onBlur={() => {
+            setTasksDraft(String(clampTasks(tasksDraft)));
+          }}
           onChange={(e) => {
+            // Chakra's NumberInput allowed a transient empty or out-of-range value and clamped on
+            // blur; the Registry Input clamps neither, so clamping here would make the field
+            // unclearable — a cleared value would snap back to MIN and the next digit append to it.
+            setTasksDraft(e.target.value);
             setTasks(clampTasks(e.target.value));
           }}
           showStepControls
           type="number"
-          value={tasks}
+          value={tasksDraft}
         />
         <FieldDescription>
           One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume
@@ -220,7 +229,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
 
       <div className="flex items-center gap-4">
         {/* The Registry Button's `isLoading` hides its label, so the pending text is rendered as a child. */}
-        <Button disabled={isNameEmpty || isUpdating} onClick={updatePipeline}>
+        <Button disabled={isNameEmpty || isUpdating} onClick={updatePipeline} variant="primary">
           {isUpdating ? (
             <>
               <LoaderIcon className="size-4 animate-spin" />

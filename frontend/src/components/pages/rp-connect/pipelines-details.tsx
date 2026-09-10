@@ -115,7 +115,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
 
       <div className="mb-4 flex gap-4">
         <Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit">
-          <Button>Edit</Button>
+          <Button variant="primary">Edit</Button>
         </Link>
 
         <Button
@@ -257,9 +257,11 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
 
 // The legacy table seeded page and pageSize from the URL and then owned paging itself; the Registry
 // pager owns both, so only the 10-a-page default carries over. No column-visibility UI, so hiding is off.
+// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
 
 export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
