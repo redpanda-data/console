@@ -127,15 +127,18 @@ export const PatternHelpDrawer = () => {
         &nbsp;glob patterns
       </button>
       <Sheet onOpenChange={setIsOpen} open={isOpen}>
-        <SheetContent className="overflow-y-auto" side="right" size="xl">
+        {/* SheetContent is not a flex column of its own, so header and footer only stay
+            pinned — as the Chakra Drawer's were — once it is made one and the body scrolls. */}
+        <SheetContent className="flex flex-col overflow-hidden" side="right" size="xl">
           <SheetHeader>
             <SheetTitle>Glob Pattern Examples</SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 px-4">{globHelp}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{globHelp}</div>
 
-          <SheetFooter>
-            <Button className="mr-3" onClick={onClose} variant="outline">
+          {/* SheetFooter is a flex column, which would stretch a lone button across the panel. */}
+          <SheetFooter className="flex-row justify-end">
+            <Button onClick={onClose} variant="outline">
               Close
             </Button>
           </SheetFooter>

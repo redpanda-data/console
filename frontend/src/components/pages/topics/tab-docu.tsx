@@ -160,9 +160,9 @@ const errorEmpty = renderDocuError(
 function renderDocuError(title: string, body: JSX.Element) {
   return (
     <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
-      {/* Chakra's VStack centred its children; the Registry Empty root has no width of its own. */}
+      {/* Chakra's VStack centred its children. */}
       <div className="flex flex-col items-center gap-4">
-        <Empty className="w-full">
+        <Empty>
           <EmptyHeader>
             <EmptyTitle>{title}</EmptyTitle>
           </EmptyHeader>

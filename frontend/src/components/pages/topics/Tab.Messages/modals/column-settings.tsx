@@ -63,7 +63,8 @@ export const ColumnSettings: FC<{
       <DialogContent size="xl">
         {/* Kept from the Chakra original: the timestamp select portals in here, inside the
             dialog's focus and scroll lock, rather than to the document body. */}
-        <div ref={setContainer}>
+        {/* A flex column, so DialogBody keeps its `flex-1` and scrolls instead of overflowing the popup. */}
+        <div className="flex min-h-0 flex-col" ref={setContainer}>
           <PortalContainerProvider value={container ?? undefined}>
             {/* Room for DialogContent's absolute close button. */}
             <DialogHeader className="pr-10">
