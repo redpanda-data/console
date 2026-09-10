@@ -624,9 +624,9 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
       )}
       {saveDialogOpen && (
         <SaveMessagesDialog
-          messages={tableData}
+          messages={filteredMessages}
           onClose={() => setSaveDialogOpen(false)}
-          onRequireRawPayload={() => Promise.resolve(tableData)}
+          onRequireRawPayload={() => Promise.resolve(filteredMessages)}
         />
       )}
     </div>

@@ -11,6 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { toast } from 'sonner';
 
 import { type MessageSearchParams, useMessageSearch } from './use-message-search';
 import { messageKey } from '../utils/message-key';
@@ -230,8 +231,26 @@ describe('useMessageSearch', () => {
     expect(result.current.phase).toBe('done');
   });
 
-  test('start() rejects on a backend `error` control frame too, and surfaces it as the error state', async () => {
-    scriptStream({ case: 'error', value: { message: 'permission denied' } }, doneFrame());
+  // A backend `error` frame doesn't necessarily mean the request failed (e.g. "N partitions
+  // offline") — same rule the legacy engine applies. When `done` still follows, it's toasted
+  // but must not reject or leave the error state set, otherwise a single offline partition
+  // breaks live tail's retry budget and shows a false error alongside real rows in paged mode.
+  test('start() does not reject on a backend `error` frame when `done` still follows', async () => {
+    scriptStream({ case: 'error', value: { message: 'N partitions offline' } }, doneFrame());
+
+    const { result } = renderHook(() => useMessageSearch('test-topic'));
+    await act(async () => {
+      await expect(result.current.start(baseParams)).resolves.toBeUndefined();
+    });
+    expect(result.current.error).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('Backend error', { description: 'N partitions offline' });
+  });
+
+  // Without a following `done`, the error frame was the last thing the stream said before
+  // ending — that's the genuinely fatal case, and callers that auto-restart on completion
+  // (live tail) must still be able to tell it apart from a clean finish.
+  test('start() rejects on a backend `error` control frame when the stream ends without `done`', async () => {
+    scriptStream({ case: 'error', value: { message: 'permission denied' } });
 
     const { result } = renderHook(() => useMessageSearch('test-topic'));
     await act(async () => {

@@ -188,12 +188,33 @@ export function useMessagesUrlState(topicName: string) {
 
   const readScopeMode = readScopeModeFromOffset(startOffset);
 
+  // A deep link (`?o=-4` with no `t`) or a topic left over from the legacy tab (which clears
+  // startTimestamp when switching away) can land here already in timestamp mode with no
+  // timestamp set. The picker itself only seeds Date.now() once mounted, which requires the
+  // read-scope popover to be open — so cover the gap here too, same default as legacy's
+  // mode-change handler used.
+  useEffect(() => {
+    if (readScopeMode === 'timestamp' && startTimestamp < 0) {
+      setStartTimestamp(Date.now());
+    }
+  }, [readScopeMode, startTimestamp, setStartTimestamp]);
+
   const setReadScopeMode = useCallback(
     (mode: ReadScopeMode, customOffset = 0) => {
       setStartOffset(offsetForReadScopeMode(mode, customOffset));
       setPageIndex(0);
+      // Mirrors legacy's offset-origin select handler: seed "now" switching into timestamp
+      // mode (unless a real value is already set), and drop it switching away so a later
+      // return to timestamp mode starts fresh instead of an ancient sticky value.
+      if (mode === 'timestamp') {
+        if (startTimestamp < 0) {
+          setStartTimestamp(Date.now());
+        }
+      } else {
+        setStartTimestamp(-1);
+      }
     },
-    [setStartOffset, setPageIndex]
+    [setStartOffset, setPageIndex, setStartTimestamp, startTimestamp]
   );
 
   return {

@@ -387,7 +387,7 @@ export const FilterBar = ({
     <div className="relative" data-testid="messages-filter-bar" ref={containerRef}>
       <div
         className={cn(
-          'flex min-h-10 cursor-text flex-wrap items-center gap-1.5 rounded-lg border bg-background py-1 pr-2 pl-3 shadow-xs',
+          'flex min-h-10 cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-border bg-background py-1 pr-2 pl-3 shadow-xs',
           open && 'border-primary'
         )}
         onClick={() => inputRef.current?.focus()}

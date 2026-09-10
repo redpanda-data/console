@@ -112,7 +112,6 @@ type StreamStats = {
  * incrementally (throttled to ~5 flushes/s), which the live-tail UX needs to
  * insert rows and drive the flash animation while the stream is open.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: stream lifecycle is inherently stateful; split further only if it grows
 export function useMessageSearch(topicName: string): MessageSearchResult {
   const [messages, setMessages] = useState<TopicMessage[]>([]);
   const [phase, setPhase] = useState<MessageSearchPhase>('idle');
@@ -208,9 +207,13 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
 
       // Tracks whether this run actually failed, as opposed to completing (or being
       // aborted) cleanly — callers that auto-restart (live tail) must only do so on a
-      // clean completion, never in response to a real failure. A backend `error` control
-      // frame is as much a failure as a thrown/rejected stream: both make `start()` reject.
+      // clean completion, never in response to a real failure.
       let streamError: Error | null = null;
+      // A backend `error` control frame (e.g. "N partitions offline") doesn't necessarily
+      // mean the whole request failed — same rule the legacy engine applies. Only promote it
+      // to a real failure if the stream ends without a `done` frame following it.
+      let pendingBackendError: Error | null = null;
+      let sawDone = false;
 
       // Live tail and push-down filters keep the stream open (backend semantics),
       // so those runs get the long timeout — same rule as the legacy engine.
@@ -239,6 +242,7 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
               break;
             }
             case 'done': {
+              sawDone = true;
               const done = controlMessage.value;
               const bytesConsumed = Number(done.bytesConsumed);
               const elapsedMs = Number(done.elapsedMs) || Date.now() - startTime;
@@ -247,9 +251,10 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
               break;
             }
             case 'error':
+              // Doesn't necessarily mean the whole request failed (e.g. "N partitions
+              // offline") — the stream can still reach `done` normally afterwards.
               toast.error('Backend error', { description: controlMessage.value.message });
-              streamError = new Error(controlMessage.value.message);
-              setError(streamError);
+              pendingBackendError = new Error(controlMessage.value.message);
               break;
             case 'data': {
               const message = convertListMessageData(controlMessage.value);
@@ -268,6 +273,13 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
             default:
               break;
           }
+        }
+        // The stream ended without ever reaching `done` after a backend error frame —
+        // that's the fatal case (e.g. every partition failed); promote it so callers that
+        // auto-restart (live tail) can tell it apart from a clean finish.
+        if (pendingBackendError && !sawDone) {
+          streamError = pendingBackendError;
+          setError(streamError);
         }
       } catch (err) {
         if (!signal.aborted) {
