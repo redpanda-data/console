@@ -125,6 +125,6 @@ export const MessageKeyPreview = ({
       </div>
     );
   } catch (e) {
-    return <span style={{ color: 'red' }}>Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
+    return <span className="text-destructive">Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
   }
 };

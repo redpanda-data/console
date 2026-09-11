@@ -6,7 +6,7 @@ import { useState } from 'react';
 import globExampleImg from '../../../../../assets/globExample.png';
 import { Code } from '../../../../../utils/tsx-utils';
 
-export const globHelp = (
+const globHelp = (
   <div>
     {/* Examples + Image */}
     <div className="flex gap-2">
