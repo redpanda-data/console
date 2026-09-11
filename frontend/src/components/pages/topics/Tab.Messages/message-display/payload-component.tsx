@@ -188,5 +188,5 @@ export const PayloadComponent = (p: {
       <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} style={p.viewerStyle} />
     );
   }
-  return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {renderData.content}</span>;
+  return <span className="text-destructive">Error in RenderExpandedMessage: {renderData.content}</span>;
 };
