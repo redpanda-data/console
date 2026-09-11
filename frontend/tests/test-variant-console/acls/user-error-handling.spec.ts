@@ -5,25 +5,26 @@
  * Exercises the Connect error-mapping path added when UserService.CreateUser replaced
  * REST /api/users. Without these, a regression in formatToastErrorMessageGRPC or the
  * ConnectError detail extraction would go unnoticed.
+ *
+ * Uses the full-page /security/users/create form (rather than the tab's create-user
+ * dialog) since it exercises the same fields/testids without depending on how the
+ * dialog is triggered.
  */
 
-import { expect, test } from '../fixtures';
-
-test.use({ featureFlags: { enableNewSecurityPage: false } });
+import { expect, test } from '@playwright/test';
 
 import { mockConnectError, mockConnectNetworkFailure, rpcUrl } from '../../shared/connect-mock';
 
 const USER_SERVICE = 'redpanda.api.dataplane.v1.UserService';
+const CREATE_USER_FAILURE_TOAST_PREFIX = /^Failed to create user/;
 
 test.describe('User creation - Connect RPC error handling', () => {
   test('network failure on CreateUser shows error toast and preserves form state', async ({ page }) => {
     await mockConnectNetworkFailure({ page, urlGlob: rpcUrl(USER_SERVICE, 'CreateUser') });
 
     const username = `net-fail-${Date.now()}`;
-    await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
-    await page.getByTestId('create-user-button').click();
-    await expect(page).toHaveURL('/security/users/create');
+    await page.goto('/security/users/create', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('create-user-name')).toBeVisible();
 
     await page.getByTestId('create-user-name').fill(username);
     await page.getByTestId('create-user-submit').click();
@@ -40,7 +41,7 @@ test.describe('User creation - Connect RPC error handling', () => {
     // Toast copy: formatToastErrorMessageGRPC prefixes every error with "Failed to {action} {entity}".
     // The exact rawMessage from a fetch-level abort is browser-dependent ("Failed to fetch",
     // "TypeError: Failed to fetch", etc.), so we anchor on the deterministic prefix.
-    await expect(page.getByText(/^Failed to create user/).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(CREATE_USER_FAILURE_TOAST_PREFIX).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('CreateUser ALREADY_EXISTS surfaces a user-friendly error', async ({ page }) => {
@@ -52,9 +53,9 @@ test.describe('User creation - Connect RPC error handling', () => {
     });
 
     const username = `dup-${Date.now()}`;
-    await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
-    await page.getByTestId('create-user-button').click();
+    await page.goto('/security/users/create', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('create-user-name')).toBeVisible();
+
     await page.getByTestId('create-user-name').fill(username);
     await page.getByTestId('create-user-submit').click();
 
@@ -66,5 +67,16 @@ test.describe('User creation - Connect RPC error handling', () => {
     await expect(page.getByText('Failed to create user: user "existing-user" already exists').first()).toBeVisible({
       timeout: 10_000,
     });
+  });
+
+  test('create-user-button on the Users tab opens the create-user dialog in place', async ({ page }) => {
+    await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
+
+    await page.getByTestId('create-user-button').click();
+
+    // Structural: dialog opens without navigating away from the list.
+    await expect(page.getByTestId('create-user-name')).toBeVisible();
+    await expect(page).toHaveURL('/security/users');
   });
 });

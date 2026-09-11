@@ -11,7 +11,7 @@
 
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
-import { isFeatureFlagEnabled, isServerless } from 'config';
+import { isServerless } from 'config';
 
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -60,17 +60,6 @@ function buildTabs(
         : rolesDisabledByFeature
           ? 'Roles are not supported by your cluster.'
           : undefined,
-    });
-  }
-
-  if (!isFeatureFlagEnabled('enableNewSecurityPage')) {
-    result.push({
-      key: 'acls',
-      label: 'ACLs',
-      path: '/security/acls',
-      disabled: userData?.canListAcls === false,
-      disabledReason:
-        userData?.canListAcls === false ? 'You need the LIST_ACLS permission to access this tab.' : undefined,
     });
   }
 

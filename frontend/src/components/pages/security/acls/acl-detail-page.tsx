@@ -13,7 +13,6 @@ import { getRouteApi } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/security/acls/$aclName/details');
 
-import { isFeatureFlagEnabled } from 'config';
 import { useLayoutEffect } from 'react';
 
 import { HostSelector } from './host-selector';
@@ -33,17 +32,13 @@ const AclDetailPage = () => {
 
   const [acls, ...hosts] = data || [];
 
-  const permissionsPath = isFeatureFlagEnabled('enableNewSecurityPage')
-    ? '/security/permissions'
-    : '/security/permissions-list';
-
   useLayoutEffect(() => {
     setPageHeader(principalName, [
       { title: 'Security', linkTo: '/security/users' },
-      { title: 'Permissions', linkTo: permissionsPath },
+      { title: 'Permissions', linkTo: '/security/permissions' },
       { title: principalName, linkTo: `/security/acls/${aclName}/details` },
     ]);
-  }, [principalName, aclName, permissionsPath]);
+  }, [principalName, aclName]);
 
   if (isLoading) {
     return <div>Loading...</div>;
