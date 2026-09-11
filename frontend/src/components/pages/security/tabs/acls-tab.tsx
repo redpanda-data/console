@@ -31,7 +31,7 @@ import { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
-import { useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
+import { type SimpleAcl, useDeleteAclMutation, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
 import { api } from '../../../../state/backend-api';
@@ -54,29 +54,30 @@ import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
-type AclPrincipalRow = {
-  principal: string;
-  host: string;
-  principalType: string;
-  principalName: string;
-};
+/** Every ACL bound to this principal on this host, whatever the resource or operation. */
+const allAclsFor = (principal: string, host: string): DeleteACLsRequest =>
+  create(DeleteACLsRequestSchema, {
+    filter: {
+      principal,
+      resourceType: ACL_ResourceType.ANY,
+      resourceName: undefined,
+      host,
+      operation: ACL_Operation.ANY,
+      permissionType: ACL_PermissionType.ANY,
+      resourcePatternType: ACL_ResourcePatternType.ANY,
+    },
+  });
 
 // Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
-// is off at table level. `getRowId` keeps a row's open action menu on its own principal when the
-// list refetches and the order shifts.
+// is off at table level. `getRowId` keeps an open row menu on its own principal across a refetch.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
-  getRowId: (row: AclPrincipalRow) => `${row.principal}:${row.host}`,
+  getRowId: (row: SimpleAcl) => `${row.principal}:${row.host}`,
 };
 
-/**
- * The row actions read their data from context rather than props so the columns array closes over
- * nothing and can live at module scope: `DataTableColumnHeader` is a dropdown trigger, and a new
- * header-function identity remounts it, tearing an open sort menu down. Queries stay in the parent
- * — `useListUsersQuery` auto-fetches every page from an effect, so one instance per row would fire
- * a `fetchNextPage()` per row.
- */
+// Context, not props, so `columns` closes over nothing and lives at module scope. Queries stay in
+// the parent: `useListUsersQuery` auto-fetches every page from an effect, so one per row would too.
 type AclRowActionsContextValue = {
   users: { name: string }[];
   canDeleteUsers: boolean;
@@ -88,15 +89,14 @@ type AclRowActionsContextValue = {
 
 const AclRowActionsContext = createContext<AclRowActionsContextValue | null>(null);
 
-const AclRowActions: FC<{ record: AclPrincipalRow }> = ({ record }) => {
+const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
   const ctx = useContext(AclRowActionsContext);
   if (!ctx) {
     return null;
   }
   const { users, canDeleteUsers, deleteAclsForPrincipal, deleteUser, invalidateUsers, onFailure } = ctx;
 
-  // A Group principal never has a SASL account, so only a User row may offer the user deletes —
-  // a same-named group would otherwise delete an unrelated user.
+  // Only a User row may offer the user deletes; a same-named Group would delete an unrelated user.
   const hasAccount = record.principalType === 'User' && users.some((u) => u.name === record.principalName);
   const canDeleteUser = hasAccount && canDeleteUsers;
 
@@ -155,12 +155,11 @@ const AclRowActions: FC<{ record: AclPrincipalRow }> = ({ record }) => {
   );
 };
 
-const columns: DataTableColumnDef<AclPrincipalRow>[] = [
+const columns: DataTableColumnDef<SimpleAcl>[] = [
   {
     id: 'principal',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Principal" />,
-    // The cell shows `principalName`; sorting on the `User:`-prefixed `principal` would order
-    // the column differently from what is on screen.
+    // Sort on what the cell renders, not the `User:`-prefixed `principal`.
     accessorFn: (row) => row.principalName,
     cell: ({ row: { original: record } }) => (
       <Link
@@ -230,24 +229,11 @@ const AclsTabContent: FC = () => {
     principalGroups?.filter((g) => g.principalType === 'User' || g.principalType === 'Group') || [];
   const groups = filterByName(aclPrincipalGroups, searchQuery, (g) => g.principalName);
 
-  // Not memoised: the consumers are the row action cells, which re-render with the parent anyway.
-  // What has to stay stable is `columns`, and that is a module constant.
   const rowActions: AclRowActionsContextValue = {
     users: usersData?.users ?? [],
     canDeleteUsers: Boolean(featureDeleteUser),
     deleteAclsForPrincipal: async (principal, host) => {
-      const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
-        filter: {
-          principal,
-          resourceType: ACL_ResourceType.ANY,
-          resourceName: undefined,
-          host,
-          operation: ACL_Operation.ANY,
-          permissionType: ACL_PermissionType.ANY,
-          resourcePatternType: ACL_ResourcePatternType.ANY,
-        },
-      });
-      await deleteACLMutation(deleteRequest);
+      await deleteACLMutation(allAclsFor(principal, host));
       toast.success(
         <span>
           Deleted ACLs for <CodeEl>{principal}</CodeEl>
@@ -313,7 +299,7 @@ const AclsTabContent: FC = () => {
 
         <div className="py-4">
           <AclRowActionsContext.Provider value={rowActions}>
-            <DataTable<AclPrincipalRow>
+            <DataTable<SimpleAcl>
               columns={columns}
               data={groups}
               pagination={groups.length > DEFAULT_TABLE_PAGE_SIZE}

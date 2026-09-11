@@ -14,11 +14,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 
-/**
- * The row-actions menu moved into its own component during the Registry swap, so the delete
- * options and their enablement are what needs guarding: the Playwright spec covers the table
- * chrome, but a fresh cluster has no ACLs, so no row menu exists there to click.
- */
+// The Playwright spec cannot reach the row menu — a fresh cluster has no ACLs — so it is covered
+// here, along with the delete-option enablement.
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -65,7 +62,7 @@ rs.mock('../../../../react-query/api/cluster-status', () => ({
 rs.mock('../../../../react-query/api/user', () => ({
   useInvalidateUsersCache: () => rs.fn(),
   useDeleteUserMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
-  // `scram-admin` and `shadowed` are real SASL users; `acl-only` has ACLs but no account.
+  // `acl-only` has ACLs but no account.
   useListUsersQuery: () => ({ data: { users: [{ name: 'scram-admin' }, { name: 'shadowed' }] }, isLoading: false }),
 }));
 
@@ -76,7 +73,7 @@ rs.mock('../../../../react-query/api/acl', () => ({
       { principal: 'User:scram-admin', principalType: 'User', principalName: 'scram-admin', host: '*' },
       { principal: 'User:acl-only', principalType: 'User', principalName: 'acl-only', host: '10.0.0.1' },
       { principal: 'Group:engineering', principalType: 'Group', principalName: 'engineering', host: '*' },
-      // Name deliberately collides with the `shadowed` SASL user, to pin the principalType guard.
+      // Name collides with the `shadowed` SASL user, to pin the principalType guard.
       { principal: 'Group:shadowed', principalType: 'Group', principalName: 'shadowed', host: '10.0.0.9' },
     ],
     isLoading: false,
@@ -132,7 +129,6 @@ describe('AclsTab', () => {
 
   test('never offers user deletes on a Group row, even when a user shares its name', async () => {
     render(<AclsTab />);
-    // Same `principalName` as a SASL user, but a Group has no account to delete.
     const { menu } = await openRowMenu('shadowed');
 
     expect(within(menu).getByRole('menuitem', { name: 'Delete (User and ACLs)' })).toHaveAttribute('data-disabled');

@@ -6,11 +6,9 @@ const PRINCIPAL_HEADER = /^Principal$/;
 const HOST_HEADER = /^Host$/;
 const SORT_ASC = /Asc/;
 
-// The ACLs tab is the last security surface still on the old design, and it had no spec of its
-// own — only an enterprise authorization test navigates here. What the Registry swap risked is
-// the filter field and the table: Chakra painted a sort affordance on every header, while the
-// Registry sorts only through `DataTableColumnHeader`, so a swap can leave sorting unreachable
-// with nothing failing. A fresh cluster has no ACLs, so this asserts the chrome, not rows.
+// The Registry sorts only through `DataTableColumnHeader`, where Chakra painted an affordance on
+// every header, so a swap can leave sorting unreachable with nothing failing. A fresh cluster has
+// no ACLs, so this asserts the chrome rather than rows.
 test.describe('Security ACLs tab', () => {
   test('renders the filter, the table and reachable sorting', async ({ page }) => {
     await page.goto('/security/acls');
@@ -23,8 +21,7 @@ test.describe('Security ACLs tab', () => {
     await expect(table.getByRole('button', { name: PRINCIPAL_HEADER })).toBeVisible();
     await expect(table.getByRole('button', { name: HOST_HEADER })).toBeVisible();
 
-    // `DataTableColumnHeader` is a dropdown trigger, so the header opens a menu rather than
-    // sorting on a single click.
+    // The header is a dropdown trigger, not a one-click sort.
     await table.getByRole('button', { name: PRINCIPAL_HEADER }).click();
     await expect(page.getByRole('menuitem', { name: SORT_ASC })).toBeVisible();
     await page.keyboard.press('Escape');
