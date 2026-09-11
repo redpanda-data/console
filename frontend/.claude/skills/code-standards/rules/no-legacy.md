@@ -100,7 +100,8 @@ When converting observables to React state, automatic behaviors must become expl
 ## Legacy Locations
 
 - MobX stores: `src/state/` (do not add new files)
-- Chakra components: throughout codebase (migrate on touch)
+- Chakra: none left. `@redpanda-data/ui` and `@chakra-ui/*` are uninstalled, so an import fails
+  `type:check` with TS2307 rather than lint.
 
 ## See Also
 

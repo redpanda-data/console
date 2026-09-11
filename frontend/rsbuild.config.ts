@@ -118,13 +118,6 @@ export default defineConfig({
     // while adding 13 requests; 512 KiB added 127 with no further reduction.
     maxAsyncSize: 4 * 1024 * 1024,
     cacheGroups: {
-      legacyUi: {
-        test: /[\\/]node_modules[\\/]@redpanda-data[\\/]ui[\\/]/,
-        name: 'lib-redpanda-ui',
-        priority: 40,
-        enforce: true,
-        reuseExistingChunk: true,
-      },
       monaco: {
         test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
         name: 'lib-monaco-editor',

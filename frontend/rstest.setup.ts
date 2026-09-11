@@ -4,7 +4,6 @@
 import { afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
-import _rawUserEvent from '@testing-library/user-event';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 
@@ -25,43 +24,6 @@ Object.defineProperty(globalThis, 'localStorage', {
 Object.defineProperty(window, 'localStorage', {
   configurable: true,
   value: testLocalStorage,
-});
-
-// ── Chakra + userEvent compatibility ─────────────────────────────────
-// userEvent.setup() patches HTMLElement.prototype.focus as a getter-only
-// property. Chakra UI's @zag-js/focus-visible later tries to override it
-// via simple assignment, causing "Cannot set property focus of [object
-// Object] which has only a getter". Wrapping setup() makes the patched
-// focus descriptor accept assignment after the patch.
-function makeFocusPatchWritable() {
-  const desc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'focus');
-  if (desc?.get && !desc.set && desc.configurable) {
-    const getter = desc.get;
-    let override: ((...args: unknown[]) => void) | null = null;
-    Object.defineProperty(HTMLElement.prototype, 'focus', {
-      configurable: true,
-      get() {
-        return override ?? getter();
-      },
-      set(fn: (...args: unknown[]) => void) {
-        override = fn;
-      },
-    });
-  }
-}
-
-// Monkey-patch userEvent.setup globally so every test file gets the fix
-// without migrating imports. Any `import userEvent from '@testing-library/user-event'`
-// call receives the patched setup transparently.
-const _rawSetup = _rawUserEvent.setup.bind(_rawUserEvent);
-const patchedSetup = ((...args: Parameters<typeof _rawUserEvent.setup>) => {
-  const instance = _rawSetup(...args);
-  makeFocusPatchWritable();
-  return instance;
-}) as typeof _rawUserEvent.setup;
-Object.defineProperty(_rawUserEvent, 'setup', {
-  configurable: true,
-  value: patchedSetup,
 });
 
 // ── happy-dom network / resource isolation ───────────────────────────
@@ -128,9 +90,9 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
 }
 
 // ── Mocks ────────────────────────────────────────────────────────────
-// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively,
-// but Chakra components still expect matchMedia to be an rs.fn so their
-// colorMode polling sees deterministic breakpoint results.
+// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
+// matchMedia must be an rs.fn so media-query reads (the theme provider's
+// prefers-color-scheme, responsive hooks) return a deterministic `matches: false`.
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
