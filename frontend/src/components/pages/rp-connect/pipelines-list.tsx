@@ -30,6 +30,7 @@ import { Features } from '../../../state/supported-features';
 import { useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -124,10 +125,11 @@ export const PipelineThroughput = (p: { pipeline: Pipeline }) => {
   );
 };
 
-// No column-visibility UI, so hiding is off at table level.
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
+// is off at table level.
 const TABLE_OPTIONS = {
   enableHiding: false,
-  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
 };
 
 // Hoisted: `PageComponent` force-updates on every api-store write, and a fresh array would
@@ -310,7 +312,7 @@ const RpConnectPipelinesListContent: FC = () => {
           columns={columns}
           data={filteredPipelines}
           emptyText=""
-          pagination
+          pagination={filteredPipelines.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
           tableOptions={TABLE_OPTIONS}
         />
