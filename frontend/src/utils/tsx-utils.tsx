@@ -218,11 +218,6 @@ export const Label = (p: {
     labelClasses.push('required');
   }
 
-  // <label className="label">
-  //     <span className="title">{p.text}</span>
-  //     {p.children}
-  // </label>
-
   return (
     <div className={p.className} style={divStyle}>
       <div className={labelClasses.join(' ')}>

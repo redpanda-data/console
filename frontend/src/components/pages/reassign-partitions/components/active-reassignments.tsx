@@ -88,7 +88,7 @@ export class ActiveReassignments extends Component<{
     return (
       <>
         {/* Title */}
-        <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
+        <div className="currentReassignments">
           <span className="title">Current Reassignments</span>
 
           {
@@ -618,7 +618,6 @@ export class TopicNameCol extends Component<{ state: ReassignmentState }> {
   render() {
     const { state } = this.props;
     return <span style={{ paddingRight: '2em' }}>{state.topicName}</span>;
-    // return <><span className='partitionReassignmentSpinner' style={{ marginRight: '6px' }} />{state.topicName}</>;
   }
 }
 

@@ -635,7 +635,6 @@ describe('NodeConfigForm — topic fields', () => {
     await user.clear(input);
     await user.type(input, 'custom:0');
 
-    // A blur-commit must see the typed text — the combobox alone only fires onChange on Enter/selection.
     // onConfigChange is reported from an effect, so the last keystroke can land after `type` resolves.
     await waitFor(() => {
       const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };

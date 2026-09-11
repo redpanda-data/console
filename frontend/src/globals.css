@@ -12,35 +12,21 @@
   opacity: 1;
 }
 
-/* Tailwind v4 Preflight sets `border: 0 solid`, so border-color defaults to currentColor. Legacy
-   Chakra components were authored against v3's transparent default and would otherwise paint any
-   border they set a width for. Scoped to Chakra's own prefix so Registry components are unaffected. */
-@layer base {
-  [class*="chakra-"],
-  [class*="chakra-"]::before,
-  [class*="chakra-"]::after {
-    border-color: transparent;
-  }
-}
-
-/* Chakra injects an UNLAYERED `*, ::before, ::after { border-color:
+/* The host's Chakra injects an UNLAYERED `*, ::before, ::after { border-color:
    var(--chakra-colors-chakra-border-color) }`, which outranks every `@layer` rule regardless of
-   specificity — so every border in the app silently came out Chakra's #E2E8F0. We can't edit
-   emotion's output, so we repoint what its var computes to. Scoping by element is impossible:
-   ChakraProvider classes <body> and this is a custom property, so it inherits from there down; the
-   real fix is upstream, wrapping that reset in @layer base. Doubled attribute (0,3,0) beats Chakra's
-   own `:root[data-theme="light"]` without relying on source order. Lives here, not in
-   registry-synced theme.css, so it survives a re-sync. (UX-1259) */
+   specificity, so we repoint the var instead of fighting the reset. It can't be scoped to a
+   subtree: ChakraProvider classes <body> and custom properties inherit from there down. Doubled
+   attribute (0,3,0) beats Chakra's own `:root[data-theme="light"]` without relying on source order.
+   Not in registry-synced theme.css so it survives a re-sync; cloud-ui ships a value-identical copy
+   — change both or neither. (UX-1259) */
 :root[data-theme][data-theme] {
   --chakra-colors-chakra-border-color: var(--color-border);
 }
 
-/* …and this is what makes `border-<tone>-line` paint again: `revert-layer` hands the property back to
-   the cascade layers — `@layer utilities` when the element carries a colour utility, else
-   `@layer base`'s --color-border. Keyed on the substring every Tailwind border utility shares, which
-   is also why it leaves Chakra alone: emotion only emits `chakra-*` and `css-<hash>` class names,
-   never one containing `border-`. Until the upstream fix lands, explicit `border-<tone>-line`
-   utilities stay inert on Chakra nodes — convey tone with fill + ink instead. */
+/* …and this hands border-color back to the cascade layers, so Tailwind's border utilities paint
+   under that reset. Keyed on the substring every Tailwind border utility shares, which is also why
+   it leaves emotion's `chakra-*`/`css-<hash>` classes alone. Duplicated value-identically in
+   cloud-ui — change both or neither. */
 [class*="border-"] {
   border-color: revert-layer;
 }

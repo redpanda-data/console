@@ -98,47 +98,6 @@
   }
 }
 
-/*
-    Fixes for react-json-view
-*/
-.react-json-view {
-  padding-left: 1em;
-  font-size: 22px;
-
-  .icon-container {
-    position: absolute;
-    width: auto;
-    transform: translateX(-80%) translateY(-1px);
-
-    .expanded-icon {
-      display: inline-block;
-      transform: translateX(-1px);
-    }
-
-    .collapsed-icon {
-      display: inline-block;
-      transform: translateX(1px);
-    }
-  }
-
-  span > .icon-container ~ span {
-    display: inline !important;
-  }
-
-  .node-ellipsis {
-    line-height: 0px !important;
-  }
-
-  .object-meta-data {
-    user-select: none;
-  }
-
-  .variable-value,
-  .string-value {
-    cursor: pointer !important;
-  }
-}
-
 .dataRefreshButton {
   height: 32px;
   display: inline-flex;
@@ -242,32 +201,9 @@
   }
 }
 
-.menu-divider-group-title {
-  color: transparent;
-  height: 1px;
-  background: #fff2;
-  /* margin    : 1em; */
-  text-overflow: clip;
-  /* font-size : 0; */
-  transition: all 0.3s ease-out 0s;
-}
-
-.menu-divider {
-  color: transparent;
-  height: 1px;
-  background: #fff2;
-  text-overflow: clip;
-  transition: all 0.3s ease-out 0s;
-  margin: 1em 1em;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
 .hoverLink:hover {
   cursor: pointer;
-  color: var(--ant-primary-color);
+  color: var(--color-action-primary);
 }
 
 .pureDisplayRow {
@@ -290,21 +226,6 @@
   transition: all 0.1s ease-out;
 }
 
-.query-form {
-  margin-bottom: 1em;
-}
-
-.error-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7em;
-
-  padding: 2em;
-  margin: 1em 0;
-  background: hsla(205, 15%, 90%, 1);
-  border-radius: 6px;
-}
-
 .codeBox {
   display: inline-block;
   margin: 0;
@@ -322,67 +243,6 @@
 
 .w100 {
   width: 100%;
-}
-
-.sider {
-  box-shadow: 0px 0px 6px 0px #00000024;
-  transition-timing-function: ease-out;
-}
-
-.sideBar {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  height: 100vh;
-  background: white;
-
-  img[alt="logo"] {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    height: 80px;
-    margin: auto;
-    // padding: 25px;
-    padding: 27px 50px 27px 0px;
-    transition: all 200ms;
-  }
-
-  .titleText {
-    position: absolute;
-    transition: all 200ms;
-    width: 100%;
-    font-family: "Kumbh Sans", sans-serif;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 6px;
-    transform: translateX(4px);
-    font-size: 1.8rem;
-    text-align: center;
-    color: hsl(14deg 1% 55% / 55%);
-  }
-}
-
-.sideBarToggle {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0;
-  height: 40px;
-  background: hsla(0, 0%, 50%, 0.07);
-  cursor: pointer;
-
-  .icon {
-    font-size: 20px;
-    color: hsl(0deg 0% 60%);
-    transition: color 100ms;
-  }
-
-  &:hover .icon {
-    color: hsl(0deg 0% 30%);
-  }
-}
-
-.versionTitle {
 }
 
 .hoverBorder {
@@ -434,23 +294,15 @@
   border-radius: 6px;
 }
 
-tr.tombstone {
-  /* background: rgba(200, 200, 200, 0.09); */
-  color: rgba(0, 0, 0, 0.25);
-}
-
 .noSelect {
   user-select: none;
 }
 
 .iconButton {
-  // svg[width] {
-  //     transform: scale(1);
-  // }
   transition-duration: 100ms;
   transition-timing-function: ease-out;
   transition-delay: 0ms;
-  color: hsl(0, 0%, 45%);
+  color: var(--color-muted-foreground);
 
   &:hover {
     z-index: 1;
@@ -495,21 +347,27 @@ tr > td.msgTableActionColumn {
   height: 100%;
 }
 
-tr.consumerGroupNoMemberAssigned {
-  color: rgba(0, 0, 0, 0.3);
-}
-
 .labelText {
+  width: 100%;
+  position: relative;
   margin-bottom: 3px;
   margin-left: 1px;
   line-height: 1.5;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--color-muted-foreground);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
-    background-size: 100% 1px; */
   user-select: none;
+
+  &.required label::before {
+    @include beforeAfter();
+    content: "*";
+    width: 5px;
+    font-size: 16px;
+    color: var(--color-destructive);
+    top: -2px;
+    left: -9px;
+  }
 }
 
 .messagesSpecialIconButton {
@@ -562,13 +420,6 @@ tr.consumerGroupNoMemberAssigned {
 
 .marginTop05em {
   margin-top: 0.5em;
-}
-
-.h3 {
-  font-weight: 500;
-  padding-right: 0.5em;
-  color: rgba(0, 0, 0, 0.85);
-  font-size: 1.17em;
 }
 
 .inlineFlex {
@@ -658,7 +509,7 @@ tr.consumerGroupNoMemberAssigned {
 }
 
 .messageHeaders {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .noPadding {
@@ -698,8 +549,8 @@ tr.consumerGroupNoMemberAssigned {
     font-family: monospace;
     font-size: 14px;
     line-height: 1.45;
-    color: #333;
-    background-color: #f5f8fb;
+    color: var(--color-foreground);
+    background-color: var(--color-surface-recess);
     border-radius: 3px;
     overflow: auto;
   }
@@ -710,7 +561,7 @@ tr.consumerGroupNoMemberAssigned {
     td,
     th {
       padding: 6px 13px;
-      border: 1px solid hsl(210deg, 7%, 86%);
+      border: 1px solid var(--color-border);
     }
 
     th {
@@ -719,7 +570,7 @@ tr.consumerGroupNoMemberAssigned {
 
     th,
     tr:nth-child(2n) {
-      background-color: #f5f8fb;
+      background-color: var(--color-surface-recess);
     }
   }
 }
@@ -774,64 +625,19 @@ tr.consumerGroupNoMemberAssigned {
   }
 }
 
-.reassignPartitions {
-  .ant-steps-item-custom {
-    user-select: none;
+// Heading row above the active-reassignments table.
+.reassignPartitions .currentReassignments {
+  display: flex;
+  place-items: center;
+  margin-bottom: 0.5em;
+  gap: 0.5em;
 
-    .ant-steps-item-icon > .ant-steps-icon {
-      font-size: 20px;
-    }
-  }
-
-  .ant-table-expanded-row th {
-    cursor: default;
-  }
-
-  .ant-table-expanded-row > td {
-    &::before {
-      content: " ";
-      display: block;
-      position: absolute;
-      box-shadow: 0px 0px 3px 0px #000000;
-      top: 1px;
-      left: 2px;
-      right: 2px;
-      bottom: 0px;
-      z-index: -1;
-      border-radius: 2px;
-    }
-    & {
-      border-radius: 1px;
-    }
-  }
-
-    // section
-    .currentReassignments {
-    display: flex;
-    place-items: center;
-    margin-bottom: 0.5em;
-    gap: 0.5em;
-
-    .title {
-      font-size: 1.17em;
-      font-weight: 500;
-      color: hsla(0deg, 0%, 0%, 85%);
-      margin-left: 0.2em;
-      padding-bottom: 2px;
-    }
-
-    button {
-      background: hsla(210deg, 100%, 56%, 0.05);
-
-      &:hover {
-        background: hsl(210deg, 80%, 95%);
-      }
-    }
-  }
-
-  .errorPartition td {
-    background: #ff8d002e !important;
-    color: #0005;
+  .title {
+    font-size: 1.17em;
+    font-weight: 500;
+    color: var(--color-strong);
+    margin-left: 0.2em;
+    padding-bottom: 2px;
   }
 }
 
@@ -839,7 +645,7 @@ tr.consumerGroupNoMemberAssigned {
   display: inline-flex;
   gap: 1px;
   border-radius: 4px;
-  background: hsl(0deg, 0%, 85%);
+  background: var(--color-surface-subtle);
 
   .broker-tag {
     display: inline-flex;
@@ -853,8 +659,8 @@ tr.consumerGroupNoMemberAssigned {
     margin: 0;
     padding: 1px 12px;
     border-radius: 0;
-    background: hsl(207deg, 10%, 95%);
-    color: hsl(0deg, 0%, 45%);
+    background: var(--color-surface-recess);
+    color: var(--color-muted-foreground);
 
     &.leader {
       &::after {
@@ -949,47 +755,9 @@ mark {
   background-color: hsl(54deg, 100%, 50%);
 }
 
-.partitionReassignmentSpinner {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  border-radius: 100%;
-
-  vertical-align: text-bottom;
-  margin-bottom: 1px;
-
-  border: 2px solid hsl(0, 0%, 85%);
-  border-bottom-color: var(--ant-primary-color);
-  border-top-color: var(--ant-primary-color);
-  animation: rotate 1.5s linear 0s infinite;
-
-  @keyframes rotate {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
-  }
-}
-
 .devOnly {
   padding: 1em;
   background: hsl(53deg, 100%, 80%);
-}
-
-// table
-.activeReassignments {
-  // make rows appear clickable
-  tr {
-    cursor: pointer;
-
-    &:hover {
-      color: var(--ant-primary-color);
-      background: hsl(205, 100%, 98%);
-    }
-  }
 }
 
 // Container for text that has the tooltip
@@ -1061,7 +829,7 @@ mark {
   .iconButton {
     position: relative;
     display: inline-block;
-    color: #9ea6b2;
+    color: var(--color-muted-foreground);
     width: 20px;
     height: 20px;
 
@@ -1076,17 +844,17 @@ mark {
     &:not(.disabled) {
       // darker color on hover
       &:hover {
-        color: #6d727a;
+        color: var(--color-foreground);
 
         &::after {
-          background-color: #0001;
+          background-color: var(--color-surface-recess);
         }
       }
 
       // slight background when pressed
       &:active {
         &::after {
-          background-color: #0002;
+          background-color: var(--color-surface-subtle);
         }
       }
     }
@@ -1183,7 +951,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   padding-bottom: 16px;
   margin-top: auto;
 
-  color: hsl(216deg, 11%, 66%);
+  color: var(--color-muted-foreground);
 
   .links {
     display: flex;
@@ -1370,8 +1138,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       margin-top: 2px;
 
       border-radius: 10px;
-      background: hsl(0deg, 0%, 90%);
-      color: hsl(0deg, 0%, 30%);
+      background: var(--color-surface-subtle);
+      color: var(--color-foreground);
     }
   }
 
@@ -1493,21 +1261,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.linkBtn {
-  cursor: pointer;
-  color: var(--ant-primary-color);
-
-  &:hover {
-    text-decoration: solid underline;
-  }
-
-  &.disabled {
-    opacity: 0.5;
-    color: black;
-    pointer-events: none;
-  }
-}
-
 .inlineSeparator {
   display: inline-block;
 
@@ -1547,10 +1300,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
     width: 100%;
     height: 100%;
   }
-}
-
-.capitalize {
-  text-transform: capitalize;
 }
 
 .dynamicInputs {
@@ -1872,7 +1621,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   font-weight: 600;
   font-size: 1.4em;
   color: transparent;
-  background: #00000008;
+  background: var(--color-surface-recess);
   animation: 0.5s ease-out 0.1s fadein;
 }
 
@@ -1903,24 +1652,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.labelText {
-  width: 100%;
-  // display: inline-block;
-  // padding-bottom: 3px;
-  // padding-left: 1px;
-  position: relative;
-
-  &.required label::before {
-    @include beforeAfter();
-    content: "*";
-    width: 5px;
-    font-size: 16px;
-    color: red;
-    top: -2px;
-    left: -9px;
-  }
-}
-
 .iconSelectOption {
   display: flex;
   align-items: center;
@@ -1938,23 +1669,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 
 body {
   font-family: "Inter" !important;
-}
-
-// Console adjustments to be removed later - Dan added the below
-nav.chakra-stack {
-  a:hover {
-    color: white;
-  }
-}
-
-nav.chakra-breadcrumb {
-  a:hover {
-    color: rgba(0, 0, 0, 0.85);
-  }
-
-  svg {
-    display: block;
-  }
 }
 
 .inputWrapper.hasError {
@@ -2006,10 +1720,10 @@ $borderRadius: 8px;
   user-select: none;
 }
 
-// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above Chakra's
-// modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below mirrors
-// toast.tsx with the vertical signs flipped; it goes once the registry has a position prop. Keyed
-// on the console test id so it cannot reach a host app's viewport.
+// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above the host's
+// Chakra modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below
+// mirrors toast.tsx with the vertical signs flipped; it goes once the registry has a position prop.
+// Keyed on the console test id so it cannot reach a host app's viewport.
 [data-slot='toast-viewport'][data-testid='console-toasts'] {
   top: 1rem;
   bottom: auto;

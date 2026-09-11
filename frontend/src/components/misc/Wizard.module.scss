@@ -9,28 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-//.wizard {
-//  :global(.ant-steps-item-custom.ant-steps-item-process .ant-steps-item-icon) > :global(.ant-steps-icon),
-//  :global(.ant-steps-item-finish .ant-steps-item-icon) > :global(.ant-steps-icon) {
-//    color: #5850EC;
-//  }
-//
-//  :global(.ant-steps-item-finish) > :global(.ant-steps-item-container) > :global(.ant-steps-item-content) > :global(.ant-steps-item-title::after),
-//    background-color: #5850EC;
-//  }
-//}
-
-.steps {
-    margin-bottom: 35px;
-
-    display: none;
-
-}
-
-.step {
-    cursor: default;
-}
-
 .content {
     margin-bottom: 35px;
 }

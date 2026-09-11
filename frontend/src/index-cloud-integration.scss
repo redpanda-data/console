@@ -1,18 +1,11 @@
-// Dan's overrides for console integration
-// - this file is intended to be TEMPORARY
-// - these rules can be removed when ant design is removed
+// Layout overrides for #mainLayout, Console's scroll container (routes/__root.tsx,
+// federation/federated-routes.tsx). Named for the cloud integration but imported by app.tsx too,
+// so they apply standalone as well.
 
-// Background color
 #mainLayout {
   background: transparent !important;
 }
 
 #mainLayout > div {
   margin: 0 !important;
-}
-
-body.chakra-ui-dark {
-  .statisticsBar {
-    background: linear-gradient(to right, transparent, var(--chakra-colors-gray-800));
-  }
 }
