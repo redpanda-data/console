@@ -200,8 +200,6 @@ afterEach(async () => {
 const originalWarn = console.warn;
 // biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalError = console.error;
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for info suppression
-const originalInfo = console.info;
 
 const SUPPRESSED_PATTERNS = [
   // Radix UI ref-forwarding — fixed in React 19, not actionable in React 18
@@ -246,10 +244,5 @@ console.warn = (...args: unknown[]) => {
 console.error = (...args: unknown[]) => {
   if (!isSuppressed(args)) {
     originalError(...args);
-  }
-};
-console.info = (...args: unknown[]) => {
-  if (!isSuppressed(args)) {
-    originalInfo(...args);
   }
 };

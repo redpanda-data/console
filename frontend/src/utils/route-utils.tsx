@@ -16,7 +16,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Database } from 'lucide-react';
-import type { JSX, ReactNode } from 'react';
+import type { JSX, ReactNode, SVGProps } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
 import {
@@ -44,16 +44,15 @@ const SidebarSection = {
 
 type SidebarSectionName = (typeof SidebarSection)[keyof typeof SidebarSection];
 
-type SidebarItemIcon = LucideIcon | ((props: React.SVGProps<SVGSVGElement>) => JSX.Element);
+type SidebarItemIcon = LucideIcon | ((props: SVGProps<SVGSVGElement>) => JSX.Element);
 
-// Shape the sidebar renders each nav link from.
+// Shape the sidebar renders each nav link from. Grouping lives on SidebarGroupedItems, not here.
 type NavLinkProps = {
   title: string;
   to: string;
   icon: SidebarItemIcon;
   isDisabled?: boolean;
   disabledText?: string;
-  group?: string;
 };
 
 // Sidebar item definition
@@ -320,9 +319,7 @@ const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 // Routes that should be hidden in serverless mode
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
-/**
- * Process a single sidebar item for legacy sidebar display.
- */
+/** Nav link for one sidebar item, or null when it has no icon or is not visible. */
 function processSidebarItem(item: SidebarItem): NavLinkProps | null {
   if (!item.icon) {
     return null;

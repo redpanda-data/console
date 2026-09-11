@@ -91,7 +91,7 @@ survive via Tailwind's defaults, but check rather than assume.
 - **Federated apps share one document.** Console is embedded in cloud-ui, so both apps' `@theme`
   blocks land on the same `:root`. Upgrading one and not the other means the host's tokens win and
   the embedded app renders with the wrong palette. **Upgrade them together.**
-- **Emotion is unlayered.** Chakra (via `@redpanda-data/ui`) injects
+- **Emotion is unlayered.** The cloud-ui host's Chakra injects
   `*, ::before, ::after { border-color: … }` with no `@layer`, which outranks every Tailwind border
   utility. `src/globals.css` neutralises it with `[class*="border-"] { border-color: revert-layer }`;
   keep that rule identical in console and cloud-ui.

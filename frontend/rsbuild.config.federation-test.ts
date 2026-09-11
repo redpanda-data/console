@@ -50,9 +50,7 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      ...sharedAliases,
-    },
+    alias: sharedAliases,
   },
   output: {
     cleanDistPath: true,
