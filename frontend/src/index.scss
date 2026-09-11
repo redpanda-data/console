@@ -267,7 +267,7 @@
 
 .hoverLink:hover {
   cursor: pointer;
-  color: var(--ant-primary-color);
+  color: var(--color-action-primary);
 }
 
 .pureDisplayRow {
@@ -434,11 +434,6 @@
   border-radius: 6px;
 }
 
-tr.tombstone {
-  /* background: rgba(200, 200, 200, 0.09); */
-  color: rgba(0, 0, 0, 0.25);
-}
-
 .noSelect {
   user-select: none;
 }
@@ -495,20 +490,14 @@ tr > td.msgTableActionColumn {
   height: 100%;
 }
 
-tr.consumerGroupNoMemberAssigned {
-  color: rgba(0, 0, 0, 0.3);
-}
-
 .labelText {
   margin-bottom: 3px;
   margin-left: 1px;
   line-height: 1.5;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--color-muted-foreground);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
-    background-size: 100% 1px; */
   user-select: none;
 }
 
@@ -562,13 +551,6 @@ tr.consumerGroupNoMemberAssigned {
 
 .marginTop05em {
   margin-top: 0.5em;
-}
-
-.h3 {
-  font-weight: 500;
-  padding-right: 0.5em;
-  color: rgba(0, 0, 0, 0.85);
-  font-size: 1.17em;
 }
 
 .inlineFlex {
@@ -698,8 +680,8 @@ tr.consumerGroupNoMemberAssigned {
     font-family: monospace;
     font-size: 14px;
     line-height: 1.45;
-    color: #333;
-    background-color: #f5f8fb;
+    color: var(--color-foreground);
+    background-color: var(--color-surface-recess);
     border-radius: 3px;
     overflow: auto;
   }
@@ -710,7 +692,7 @@ tr.consumerGroupNoMemberAssigned {
     td,
     th {
       padding: 6px 13px;
-      border: 1px solid hsl(210deg, 7%, 86%);
+      border: 1px solid var(--color-border);
     }
 
     th {
@@ -719,7 +701,7 @@ tr.consumerGroupNoMemberAssigned {
 
     th,
     tr:nth-child(2n) {
-      background-color: #f5f8fb;
+      background-color: var(--color-surface-recess);
     }
   }
 }
@@ -799,10 +781,6 @@ tr.consumerGroupNoMemberAssigned {
     }
   }
 
-  .errorPartition td {
-    background: #ff8d002e !important;
-    color: #0005;
-  }
 }
 
 .brokerTagList {
@@ -919,47 +897,9 @@ mark {
   background-color: hsl(54deg, 100%, 50%);
 }
 
-.partitionReassignmentSpinner {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  border-radius: 100%;
-
-  vertical-align: text-bottom;
-  margin-bottom: 1px;
-
-  border: 2px solid hsl(0, 0%, 85%);
-  border-bottom-color: var(--ant-primary-color);
-  border-top-color: var(--ant-primary-color);
-  animation: rotate 1.5s linear 0s infinite;
-
-  @keyframes rotate {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
-  }
-}
-
 .devOnly {
   padding: 1em;
   background: hsl(53deg, 100%, 80%);
-}
-
-// table
-.activeReassignments {
-  // make rows appear clickable
-  tr {
-    cursor: pointer;
-
-    &:hover {
-      color: var(--ant-primary-color);
-      background: hsl(205, 100%, 98%);
-    }
-  }
 }
 
 // Container for text that has the tooltip
@@ -1463,21 +1403,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.linkBtn {
-  cursor: pointer;
-  color: var(--ant-primary-color);
-
-  &:hover {
-    text-decoration: solid underline;
-  }
-
-  &.disabled {
-    opacity: 0.5;
-    color: black;
-    pointer-events: none;
-  }
-}
-
 .inlineSeparator {
   display: inline-block;
 
@@ -1875,9 +1800,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 
 .labelText {
   width: 100%;
-  // display: inline-block;
-  // padding-bottom: 3px;
-  // padding-left: 1px;
   position: relative;
 
   &.required label::before {
