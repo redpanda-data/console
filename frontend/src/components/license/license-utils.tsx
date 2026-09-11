@@ -199,6 +199,15 @@ export const licenseCanExpire = (license: License): boolean => license.type !== 
 export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
   license.type === License_Type.TRIAL || license.type === License_Type.ENTERPRISE;
 
+/** True when the Redpanda cluster itself holds an unexpired Enterprise licence. */
+export const coreHasActiveEnterpriseLicense = (licenses: License[]): boolean =>
+  licenses.some(
+    (license) =>
+      license.source === License_Source.REDPANDA_CORE &&
+      license.type === License_Type.ENTERPRISE &&
+      !licenseIsExpired(license)
+  );
+
 /**
  * Gets the license with the latest expiration time from a list of licenses.
  *

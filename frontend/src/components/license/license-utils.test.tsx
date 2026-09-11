@@ -7,6 +7,7 @@ import {
   ListEnterpriseFeaturesResponse_FeatureSchema,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import {
+  coreHasActiveEnterpriseLicense,
   coreHasEnterpriseFeatures,
   getPrettyTimeToExpiration,
   licenseIsExpired,
@@ -22,9 +23,11 @@ import { rs } from '@rstest/core';
 import { api } from '../../state/backend-api';
 import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './license-notification';
+import { OverviewLicenseNotification } from './overview-license-notification';
 
 const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
 const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 27 days/;
+const TRIAL_NOTICE_REGEX = /This cluster is on an Enterprise trial/;
 const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overview' } }));
 
 /**
@@ -52,6 +55,9 @@ rs.mock('../../state/backend-api', () => {
       return true;
     },
     listLicenses: () => Promise.resolve(),
+    refreshClusterOverview: () => Promise.resolve(),
+    isRedpanda: true,
+    clusterOverview: {},
     enterpriseFeaturesUsed: [
       { name: 'rbac', enabled: true },
       { name: 'datalake_iceberg', enabled: false },
@@ -193,6 +199,41 @@ describe('licenseUtils', () => {
 
     test('should return false for a community license', () => {
       expect(licenseSoonToExpire(mockLicenseCommunity)).toBe(false);
+    });
+  });
+
+  describe('coreHasActiveEnterpriseLicense', () => {
+    const coreEnterprise = (daysOffset: number) =>
+      create(LicenseSchema, {
+        source: License_Source.REDPANDA_CORE,
+        type: License_Type.ENTERPRISE,
+        expiresAt: BigInt(getUnixTimestampWithExpiration(daysOffset)),
+      });
+
+    test('should return true for an unexpired enterprise license on the cluster', () => {
+      expect(coreHasActiveEnterpriseLicense([mockLicenseCommunity, coreEnterprise(90)])).toBe(true);
+    });
+
+    test('should return false when the cluster enterprise license has expired', () => {
+      expect(coreHasActiveEnterpriseLicense([coreEnterprise(-1)])).toBe(false);
+    });
+
+    test('should return false when only Console holds an enterprise license', () => {
+      const consoleEnterprise = create(LicenseSchema, {
+        source: License_Source.REDPANDA_CONSOLE,
+        type: License_Type.ENTERPRISE,
+        expiresAt: BigInt(getUnixTimestampWithExpiration(90)),
+      });
+      expect(coreHasActiveEnterpriseLicense([consoleEnterprise])).toBe(false);
+    });
+
+    test('should return false for a trial on the cluster', () => {
+      const coreTrial = create(LicenseSchema, {
+        source: License_Source.REDPANDA_CORE,
+        type: License_Type.TRIAL,
+        expiresAt: BigInt(getUnixTimestampWithExpiration(30)),
+      });
+      expect(coreHasActiveEnterpriseLicense([coreTrial])).toBe(false);
     });
   });
 
@@ -394,6 +435,48 @@ describe('licenseUtils', () => {
         'href',
         '/upload-license'
       );
+    });
+  });
+
+  describe('OverviewLicenseNotification Banner', () => {
+    const bakedInTrial = (source: License_Source, daysOffset = 30) =>
+      create(LicenseSchema, {
+        source,
+        type: License_Type.TRIAL,
+        organization: 'Redpanda Built-In Evaluation Period',
+        expiresAt: BigInt(getUnixTimestampWithExpiration(daysOffset)),
+      });
+
+    const enterprise = (source: License_Source, daysOffset: number) =>
+      create(LicenseSchema, {
+        source,
+        type: License_Type.ENTERPRISE,
+        expiresAt: BigInt(getUnixTimestampWithExpiration(daysOffset)),
+      });
+
+    test('shows the trial notice while the cluster is on its built-in trial', () => {
+      api.licenses = [bakedInTrial(License_Source.REDPANDA_CONSOLE), bakedInTrial(License_Source.REDPANDA_CORE)];
+      const screen = renderWithRouter(<OverviewLicenseNotification />, { route: '/overview' });
+      expect(screen.getByRole('alert')).toHaveTextContent(TRIAL_NOTICE_REGEX);
+    });
+
+    test('hides the trial notice once the cluster holds an active enterprise license', () => {
+      // Console keeps the trial it copied from the cluster at boot; the cluster has since been licensed.
+      api.licenses = [bakedInTrial(License_Source.REDPANDA_CONSOLE), enterprise(License_Source.REDPANDA_CORE, 90)];
+      const screen = renderWithRouter(<OverviewLicenseNotification />, { route: '/overview' });
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    test('keeps the trial notice when the cluster enterprise license has expired', () => {
+      api.licenses = [bakedInTrial(License_Source.REDPANDA_CONSOLE), enterprise(License_Source.REDPANDA_CORE, -1)];
+      const screen = renderWithRouter(<OverviewLicenseNotification />, { route: '/overview' });
+      expect(screen.getByRole('alert')).toHaveTextContent(TRIAL_NOTICE_REGEX);
+    });
+
+    test('keeps the trial notice when only Console holds an enterprise license', () => {
+      api.licenses = [enterprise(License_Source.REDPANDA_CONSOLE, 90), bakedInTrial(License_Source.REDPANDA_CORE)];
+      const screen = renderWithRouter(<OverviewLicenseNotification />, { route: '/overview' });
+      expect(screen.getByRole('alert')).toHaveTextContent(TRIAL_NOTICE_REGEX);
     });
   });
 });
