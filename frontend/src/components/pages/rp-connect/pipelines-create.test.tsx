@@ -7,8 +7,7 @@ import { MAX_TASKS, MIN_TASKS } from './tasks';
 import { config } from '../../../config';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 
-// The compute-units field clamps on blur, not in onChange. `clampTasks`'s unit tests cannot see
-// the difference; clamping per keystroke makes the field unclearable.
+// The compute-units field clamps on blur: clamping per keystroke makes it unclearable.
 const COMPUTE_UNITS_LABEL = /Compute units/;
 
 afterEach(() => {
@@ -41,7 +40,6 @@ test('clearing the compute units then typing replaces the value rather than appe
   const field = screen.getByLabelText(COMPUTE_UNITS_LABEL);
 
   await user.clear(field);
-  // The empty value has to survive until blur.
   expect(field).toHaveValue(null);
 
   await user.type(field, '5');

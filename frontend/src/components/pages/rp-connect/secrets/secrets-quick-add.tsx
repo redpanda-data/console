@@ -36,9 +36,9 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
   const [isCreating, setIsCreating] = useState(false);
   const [isNewSecret, setIsNewSecret] = useState(false);
 
-  // Read on every render: `secrets` is a MobX observable that refreshes underneath us.
-  // A pending new name is deliberately absent — an option matching the selection makes
-  // re-clicking it a deselect, and suppresses the Combobox's own Create item.
+  // Read on every render: `secrets` is a MobX observable that refreshes underneath us. A pending
+  // new name is deliberately absent — an option matching the selection makes re-clicking it a
+  // deselect.
   const availableSecrets = (rpcnSecretManagerApi.secrets ?? []).map((s) => ({
     label: s.id,
     value: s.id,

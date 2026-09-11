@@ -138,7 +138,6 @@ const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'ID',
     id: 'id',
-    // No DataTableColumnHeader, so there is nothing to trigger a sort with.
     enableSorting: false,
     cell: ({ row: { original } }) => (
       <Link
@@ -153,7 +152,6 @@ const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'Pipeline',
     id: 'pipeline',
-    // No DataTableColumnHeader, so there is nothing to trigger a sort with.
     enableSorting: false,
     // The Registry DataTable ignores column sizes.
     cell: ({ row: { original } }) => (
@@ -179,7 +177,6 @@ const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'State',
     id: 'state',
-    // No DataTableColumnHeader, so there is nothing to trigger a sort with.
     enableSorting: false,
     cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
   },
@@ -311,7 +308,6 @@ const RpConnectPipelinesListContent: FC = () => {
         <DataTable<Pipeline>
           columns={columns}
           data={filteredPipelines}
-          emptyText=""
           pagination={filteredPipelines.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
           tableOptions={TABLE_OPTIONS}

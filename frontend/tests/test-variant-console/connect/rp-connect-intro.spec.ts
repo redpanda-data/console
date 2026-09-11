@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-// The only rp-connect surface reachable in a test variant: the OSS config declares no pipelines
-// API, so `/connect-clusters` renders the intro instead of the list. The pipeline and secret
-// pages need a dataplane no variant provides — see the integration test beside `secrets-create`.
-// Code assertions use `toContainText`: the block highlights asynchronously, splitting the text.
+// The only rp-connect surface a test variant can reach: the OSS config declares no pipelines API,
+// so `/connect-clusters` renders the intro. Code assertions use `toContainText` — the block
+// highlights asynchronously, splitting the text across spans.
 const RP_CONNECT_TAB = /Redpanda Connect/;
 const HINT_TEXT = /show the full menu of components available/;
 
