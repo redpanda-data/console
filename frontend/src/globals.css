@@ -12,12 +12,10 @@
   opacity: 1;
 }
 
-/* EMBEDDED ONLY, and the only copy in the document. Console itself is Chakra-free since PR 13, but
-   cloud-ui still mounts its own ChakraProvider and its globals.css has no equivalent of this rule —
-   so when Console is embedded, this is what stops the HOST's Chakra components painting stray
-   borders: Tailwind v4 Preflight sets `border: 0 solid`, leaving border-color at currentColor, while
-   those components were authored against v3's transparent default. Delete this only together with
-   cloud-ui's Chakra exit. Scoped to Chakra's prefix, so Registry components are unaffected. */
+/* Matches only the host's Chakra components — Console renders none, and cloud-ui's globals.css has
+   no copy of this. Layered, so the host's own unlayered Chakra border reset outranks it: it is the
+   fallback for a host that drops that reset while keeping the components, where Preflight's
+   `border: 0 solid` leaves border-color at currentColor. Goes with cloud-ui's Chakra exit. */
 @layer base {
   [class*="chakra-"],
   [class*="chakra-"]::before,
@@ -26,13 +24,12 @@
   }
 }
 
-/* EMBEDDED ONLY since PR 13. The host's emotion injects an UNLAYERED `*, ::before, ::after {
-   border-color: var(--chakra-colors-chakra-border-color) }`, which outranks every `@layer` rule
-   regardless of specificity — so every border came out Chakra's #E2E8F0. We can't edit emotion's
-   output, so we repoint what its var computes to. Scoping by element is impossible: ChakraProvider
-   classes <body> and this is a custom property, so it inherits from there down. cloud-ui carries a
-   value-identical copy and its comment requires the two stay in step — so change both or neither,
-   and delete both with cloud-ui's Chakra exit. Doubled attribute (0,3,0) beats Chakra's own
+/* The host's Chakra GlobalStyle injects an UNLAYERED `*, ::before, ::after { border-color:
+   var(--chakra-colors-chakra-border-color) }`, which outranks every `@layer` rule regardless of
+   specificity — so every border came out Chakra's #E2E8F0. We can't edit emotion's output, so we
+   repoint what its var computes to. Scoping by element is impossible: ChakraProvider classes <body>
+   and this is a custom property, so it inherits from there down. cloud-ui ships a value-identical
+   copy — change both or neither. Doubled attribute (0,3,0) beats Chakra's own
    `:root[data-theme="light"]` without relying on source order. Lives here, not in registry-synced
    theme.css, so it survives a re-sync. (UX-1259) */
 :root[data-theme][data-theme] {
@@ -41,11 +38,10 @@
 
 /* …and this is what makes `border-<tone>-line` paint again under that reset: `revert-layer` hands
    the property back to the cascade layers — `@layer utilities` when the element carries a colour
-   utility, else `@layer base`'s --color-border. Also EMBEDDED ONLY now, and also duplicated
-   value-identically in cloud-ui; it is inert standalone, where nothing unlayered outranks the
-   layers. Keyed on the substring every Tailwind border utility shares, which is also why it leaves
-   Chakra alone: emotion only emits `chakra-*` and `css-<hash>` class names, never one containing
-   `border-`. Goes with cloud-ui's Chakra exit. */
+   utility, else `@layer base`'s --color-border. Keyed on the substring every Tailwind border
+   utility shares, which is also why it leaves Chakra alone: emotion only emits `chakra-*` and
+   `css-<hash>` class names, never one containing `border-`. Duplicated value-identically in
+   cloud-ui — change both or neither. */
 [class*="border-"] {
   border-color: revert-layer;
 }

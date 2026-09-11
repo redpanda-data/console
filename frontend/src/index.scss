@@ -775,8 +775,8 @@ tr.consumerGroupNoMemberAssigned {
 }
 
 .reassignPartitions {
-    // section
-    .currentReassignments {
+  // section
+  .currentReassignments {
     display: flex;
     place-items: center;
     margin-bottom: 0.5em;
@@ -1959,10 +1959,10 @@ $borderRadius: 8px;
   user-select: none;
 }
 
-// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above Chakra's
-// modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below mirrors
-// toast.tsx with the vertical signs flipped; it goes once the registry has a position prop. Keyed
-// on the console test id so it cannot reach a host app's viewport.
+// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above the host's
+// Chakra modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below
+// mirrors toast.tsx with the vertical signs flipped; it goes once the registry has a position prop.
+// Keyed on the console test id so it cannot reach a host app's viewport.
 [data-slot='toast-viewport'][data-testid='console-toasts'] {
   top: 1rem;
   bottom: auto;

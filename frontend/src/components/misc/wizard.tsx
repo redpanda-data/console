@@ -17,7 +17,7 @@ import styles from './Wizard.module.scss';
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();
   return (
-    <div className={styles.wizard}>
+    <div>
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
