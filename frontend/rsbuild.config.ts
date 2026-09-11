@@ -16,7 +16,6 @@ import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
 import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from './tanstack-router.config';
-import path from 'node:path';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
@@ -119,13 +118,6 @@ export default defineConfig({
     // while adding 13 requests; 512 KiB added 127 with no further reduction.
     maxAsyncSize: 4 * 1024 * 1024,
     cacheGroups: {
-      legacyUi: {
-        test: /[\\/]node_modules[\\/]@redpanda-data[\\/]ui[\\/]/,
-        name: 'lib-redpanda-ui',
-        priority: 40,
-        enforce: true,
-        reuseExistingChunk: true,
-      },
       monaco: {
         test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
         name: 'lib-monaco-editor',
@@ -158,32 +150,9 @@ export default defineConfig({
         pureFunctions: isProd,
       };
       config.resolve ||= {};
-      config.resolve.alias ||= {};
       config.output ||= {};
       /* resolve symlinks so the proto generate code can be built. */
       config.resolve.symlinks = false;
-
-      // Stub `date-fns-tz` v2 imports from `@redpanda-data/ui` — see
-      // `src/utils/vendor/date-fns-tz-shim.ts` for context.
-      //
-      // react-onclickoutside (transitive via `@redpanda-data/ui`'s react-datepicker)
-      // statically imports `findDOMNode`, which React 19 removed — this breaks the
-      // bundle's ESM linking. Console renders no datepicker, so redirect it to an
-      // identity-HOC shim. See `src/shims/react-onclickoutside-shim.ts`.
-      //
-      // `@module-federation/bridge-react` auto-installs a webpack-plugin that aliases
-      // `react-router-dom$` to its own router shim. Because Console declares no direct
-      // react-router-dom dependency, that plugin falls back to its v6 shim (only
-      // exports BrowserRouter/RouterProvider) and breaks `@redpanda-data/ui`, which
-      // imports NavLink/Link from the real react-router-dom@7. Console does not federate
-      // routing (it uses @tanstack/react-router), so point react-router-dom back at the
-      // real package — the plugin spreads the user alias last, so this override wins.
-      Object.assign(config.resolve.alias as Record<string, string>, {
-        'date-fns-tz$': path.resolve(__dirname, 'src/utils/vendor/date-fns-tz-shim.ts'),
-        'date-fns-tz/zonedTimeToUtc$': path.resolve(__dirname, 'src/utils/vendor/zonedTimeToUtc.ts'),
-        'react-onclickoutside': path.resolve(__dirname, 'src/shims/react-onclickoutside-shim.ts'),
-        'react-router-dom$': path.resolve(__dirname, 'node_modules/react-router-dom'),
-      });
 
       config.output.publicPath = 'auto';
 

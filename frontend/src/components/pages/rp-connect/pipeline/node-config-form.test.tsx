@@ -11,7 +11,7 @@
 
 import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 import { NodeConfigForm } from './node-config-form';
 
@@ -636,8 +636,11 @@ describe('NodeConfigForm — topic fields', () => {
     await user.type(input, 'custom:0');
 
     // A blur-commit must see the typed text — the combobox alone only fires onChange on Enter/selection.
-    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-    expect(next.kafka.topic).toBe('custom:0');
+    // onConfigChange is reported from an effect, so the last keystroke can land after `type` resolves.
+    await waitFor(() => {
+      const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
+      expect(next.kafka.topic).toBe('custom:0');
+    });
   });
 
   test('topic fields on non-Redpanda connectors stay plain inputs', () => {

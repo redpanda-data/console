@@ -16,7 +16,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import { Database } from 'lucide-react';
-import type { JSX, ReactNode } from 'react';
+import type { JSX, ReactNode, SVGProps } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
 import {
@@ -44,22 +44,22 @@ const SidebarSection = {
 
 type SidebarSectionName = (typeof SidebarSection)[keyof typeof SidebarSection];
 
-// NavLinkProps type compatible with @redpanda-data/ui Sidebar
+type SidebarItemIcon = LucideIcon | ((props: SVGProps<SVGSVGElement>) => JSX.Element);
+
+// Shape the sidebar renders each nav link from. Grouping lives on SidebarGroupedItems, not here.
 type NavLinkProps = {
   title: string;
   to: string;
-  // biome-ignore lint/suspicious/noExplicitAny: matches @redpanda-data/ui type
-  icon: any;
+  icon: SidebarItemIcon;
   isDisabled?: boolean;
   disabledText?: string;
-  group?: string;
 };
 
 // Sidebar item definition
 export type SidebarItem = {
   path: string;
   title: string | ReactNode;
-  icon?: LucideIcon | ((props: React.SVGProps<SVGSVGElement>) => JSX.Element);
+  icon?: SidebarItemIcon;
   visibilityCheck?: () => MenuItemState;
   group: SidebarSectionName;
 };
@@ -319,9 +319,7 @@ const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 // Routes that should be hidden in serverless mode
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
-/**
- * Process a single sidebar item for legacy sidebar display.
- */
+/** Nav link for one sidebar item, or null when it has no icon or is not visible. */
 function processSidebarItem(item: SidebarItem): NavLinkProps | null {
   if (!item.icon) {
     return null;
@@ -360,13 +358,6 @@ function getDisabledText(reasons: DisabledReason[]): string {
     [DisabledReasons.notSupportedServerless]: 'This feature is not yet supported for Serverless.',
   };
   return textMap[firstReason];
-}
-
-/**
- * Creates visible sidebar items for the legacy @redpanda-data/ui Sidebar.
- */
-export function createVisibleSidebarItems(): NavLinkProps[] {
-  return SIDEBAR_ITEMS.map(processSidebarItem).filter((item): item is NavLinkProps => item !== null);
 }
 
 export type SidebarGroupedItems = { group: string; items: NavLinkProps[] };
