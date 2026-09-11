@@ -10,8 +10,9 @@
  */
 
 import type { DiffEditorProps, EditorProps } from '@monaco-editor/react';
+import { LoadingBoundary } from 'components/ui/loading-boundary';
 import type { editor } from 'monaco-editor';
-import { type ComponentType, lazy, Suspense } from 'react';
+import { type ComponentType, lazy } from 'react';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
@@ -61,7 +62,7 @@ export default function KowlEditor(props: KowlEditorProps) {
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
-    <Suspense fallback={<LoadingPlaceholder />}>
+    <LoadingBoundary fallback={<LoadingPlaceholder />}>
       <LazyEditor
         defaultValue={''}
         loading={<LoadingPlaceholder />}
@@ -69,7 +70,7 @@ export default function KowlEditor(props: KowlEditorProps) {
         wrapperProps={{ className: 'kowlEditor' }}
         {...rest}
       />
-    </Suspense>
+    </LoadingBoundary>
   );
 }
 
@@ -78,14 +79,14 @@ export function KowlDiffEditor(props: KowlDiffEditorProps) {
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
 
   return (
-    <Suspense fallback={<LoadingPlaceholder />}>
+    <LoadingBoundary fallback={<LoadingPlaceholder />}>
       <LazyDiffEditor
         loading={<LoadingPlaceholder />}
         options={options}
         wrapperProps={{ className: 'kowlEditor' }}
         {...rest}
       />
-    </Suspense>
+    </LoadingBoundary>
   );
 }
 
