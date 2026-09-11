@@ -10,20 +10,23 @@
  */
 
 import { ConnectError } from '@connectrpc/connect';
-import { Alert, AlertIcon, Box, Button, DataTable, Flex, SearchField } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import type { SortingState } from '@tanstack/react-table';
-import { Button as RegistryButton } from 'components/redpanda-ui/components/button';
+import { AlertIcon, ChevronDownIcon, ChevronRightIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
-import type { LegacyColumnDef } from 'utils/legacy-data-table';
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PipelineStatus } from './pipelines-list';
 import { cpuToTasks } from './tasks';
-import usePaginationParams from '../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type Pipeline,
@@ -46,6 +49,7 @@ import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/ts
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
+import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
 import Tabs from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -95,7 +99,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
 
   return (
     <PageContent>
-      <Box my="4">
+      <div className="my-4">
         {QuickTable(
           [
             { key: 'ID', value: pipeline.id },
@@ -107,15 +111,17 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
           ],
           { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
         )}
-      </Box>
+      </div>
 
-      <Flex gap="4" mb="4">
+      <div className="mb-4 flex gap-4">
         <Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit">
-          <Button variant="solid">Edit</Button>
+          <Button variant="primary">Edit</Button>
         </Link>
 
         <Button
-          isDisabled={isChangingPauseState || isTransitioningState}
+          // `isLoading` hides the label, so the button needs its own name.
+          aria-label={isStopped ? 'Start' : 'Stop'}
+          disabled={isChangingPauseState || isTransitioningState}
           isLoading={isChangingPauseState}
           onClick={() => {
             setIsChangingPauseState(true);
@@ -196,16 +202,18 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
                 });
             });
           }}
-          variant="outline-delete"
+          variant="destructive-outline"
         >
           Delete
         </Button>
-      </Flex>
+      </div>
 
+      {/* The Registry Alert renders its own icon; AlertDescription is a grid. */}
       {Boolean(error) && (
-        <Alert status="error" variant="left-accent">
-          <AlertIcon />
-          {error}
+        <Alert icon={<AlertIcon />} variant="destructive">
+          <AlertDescription>
+            <div>{error}</div>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -231,8 +239,8 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   const { pipeline } = p;
 
   return (
-    <Box>
-      <Flex height="400px" mt="4">
+    <div>
+      <div className="mt-4 flex h-[400px]">
         <PipelinesYamlEditor
           defaultPath="config.yaml"
           language="yaml"
@@ -242,9 +250,17 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
           path="config.yaml"
           value={pipeline.configYaml}
         />
-      </Flex>
-    </Box>
+      </div>
+    </div>
   );
+};
+
+// The Registry pager owns page and pageSize, where the legacy table seeded them from the URL.
+// No column-visibility UI, so hiding is off. `getRowId` keeps an expanded row on its message.
+const LOGS_TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
 
 export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
@@ -257,7 +273,6 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   });
   const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
-  const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -321,27 +336,48 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
     }
   }, []);
 
-  const paginationParams = usePaginationParams(messages.length, 10);
   const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
-  const messageTableColumns: LegacyColumnDef<TopicMessage>[] = useMemo(
+  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
+      // Chakra's DataTable injected this column with `subComponent`; the Registry renders no affordance.
       {
-        header: 'Timestamp',
+        id: 'expander',
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.getCanExpand() ? (
+            <Button
+              aria-expanded={row.getIsExpanded()}
+              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              onClick={row.getToggleExpandedHandler()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
+            </Button>
+          ) : null,
+      },
+      {
+        id: 'timestamp',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
         accessorKey: 'timestamp',
         cell: ({
           row: {
             original: { timestamp },
           },
         }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-        size: 30,
       },
       {
+        id: 'value',
         header: 'Value',
         accessorKey: 'value',
+        // The cell renders a decoded preview, so the raw value is not worth sorting.
+        enableSorting: false,
+        // The Registry DataTable ignores column sizes.
         cell: ({ row: { original } }) => (
-          <MessagePreview isCompactTopic={isCompactTopic} msg={original} previewFields={() => []} />
+          <div className="w-screen max-w-full">
+            <MessagePreview isCompactTopic={isCompactTopic} msg={original} previewFields={() => []} />
+          </div>
         ),
-        size: Number.MAX_SAFE_INTEGER,
       },
     ],
     [isCompactTopic]
@@ -372,27 +408,34 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
 
   return (
     <>
-      <Box my="1rem">The logs below are for the last five hours.</Box>
+      <div className="my-4">The logs below are for the last five hours.</div>
 
       <Section className="min-w-[800px] overflow-y-auto">
         <div className="mb-6 flex items-center justify-between gap-2">
-          <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
-          <RegistryButton onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">
+          <SearchInput
+            containerClassName="w-[230px]"
+            onChange={setLogsQuickSearch}
+            placeholder="Search..."
+            value={logsQuickSearch}
+          />
+          <Button onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">
             <RefreshCcw />
-          </RegistryButton>
+          </Button>
         </div>
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
+          // No pager under the loading or empty row, as the legacy table.
           data={filteredMessages}
           emptyText="No messages"
+          getRowCanExpand={() => true}
           isLoading={!isComplete && messages.length === 0}
-          onSortingChange={setSorting}
-          pagination={paginationParams}
-          sorting={sorting}
+          pagination={filteredMessages.length > 0}
+          sorting
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={renderSubComponent}
+          tableOptions={LOGS_TABLE_OPTIONS}
         />
       </Section>
     </>
@@ -437,8 +480,8 @@ export const PipelineResources = (p: { resources?: Pipeline_Resources }) => {
   }
   const tasks = cpuToTasks(r.cpuShares);
   return (
-    <Flex gap="4">
+    <div className="flex gap-4">
       {tasks || '-'} Compute Units ({r.cpuShares} CPU / {r.memoryShares} Memory)
-    </Flex>
+    </div>
   );
 };
