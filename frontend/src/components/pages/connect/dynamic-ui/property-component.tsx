@@ -9,7 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label } from 'components/redpanda-ui/components/label';
+import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
+import { Switch } from 'components/redpanda-ui/components/switch';
 
 import { ErrorWrapper } from './forms/error-wrapper';
 import { SecretInput } from './forms/secret-input';
@@ -47,6 +50,9 @@ export const PropertyComponent = (props: { property: Property }) => {
   );
 
   const v = p.value;
+  // Field generates no ids; the label and the control share this one.
+  const fieldId = `property-${p.name}`;
+  const isRequired = def.required;
 
   switch (def.type) {
     case 'STRING':
@@ -59,13 +65,29 @@ export const PropertyComponent = (props: { property: Property }) => {
             : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
         inputComp = (
           <RadioGroup
+            aria-labelledby={`${fieldId}-label`}
+            aria-required={isRequired || undefined}
+            // A radiogroup div is not labelable; it takes its name from the label instead of htmlFor.
+            className="flex flex-wrap gap-4"
             name={p.name}
-            onChange={(e) => {
-              updatePropertyValue(p, e);
+            onValueChange={(next) => {
+              updatePropertyValue(p, next as Property['value']);
             }}
-            options={options}
+            orientation="horizontal"
             value={String(v || def.default_value)}
-          />
+          >
+            {options.map((option) => {
+              const id = `${p.name}-${option.value}`;
+              return (
+                <div className="flex items-center gap-2" key={String(option.value)}>
+                  <RadioGroupItem id={id} testId={`${option.value}_field`} value={String(option.value)} />
+                  <Label className="cursor-pointer" htmlFor={id}>
+                    {option.label}
+                  </Label>
+                </div>
+              );
+            })}
+          </RadioGroup>
         );
         break;
       }
@@ -74,25 +96,28 @@ export const PropertyComponent = (props: { property: Property }) => {
         // Enum (recommended_values)
         const options = recValues.map((x: string) => ({ label: x, value: x }));
         inputComp = (
-          <Box maxWidth={260}>
+          <div className="max-w-[260px]">
             <SingleSelect
+              id={fieldId}
               onChange={(e) => {
                 updatePropertyValue(p, e);
               }}
               options={options}
               value={v}
             />
-          </Box>
+          </div>
         );
       } else {
         // Input
         inputComp = (
           <Input
             defaultValue={def.default_value ?? undefined}
-            isDisabled={props.property.isDisabled}
+            disabled={props.property.isDisabled}
+            id={fieldId}
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
+            required={isRequired}
             spellCheck={false}
             value={String(v)}
           />
@@ -104,9 +129,11 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'PASSWORD':
       inputComp = (
         <SecretInput
+          id={fieldId}
           onChange={(e) => {
             updatePropertyValue(p, e);
           }}
+          required={isRequired}
           updating={p.crud === 'update'}
           value={String(v ?? '')}
         />
@@ -118,11 +145,19 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'DOUBLE':
     case 'FLOAT':
       inputComp = (
-        <NumberInput
+        <Input
+          id={fieldId}
           onChange={(e) => {
-            updatePropertyValue(p, e);
+            // Store the string: getConfigObject sends p.value as-is and ===-compares it to default_value.
+            updatePropertyValue(p, e.target.value);
           }}
-          value={Number(v)}
+          required={isRequired}
+          // Registry Input coerces step with Number(); "any" would become NaN.
+          showStepControls
+          step={1}
+          type="number"
+          // Keep the input controlled with '' when the stored value is not numeric.
+          value={Number.isNaN(Number(v)) ? '' : Number(v)}
         />
       );
       break;
@@ -130,9 +165,11 @@ export const PropertyComponent = (props: { property: Property }) => {
     case 'BOOLEAN':
       inputComp = (
         <Switch
-          isChecked={Boolean(v)}
-          onChange={(e) => {
-            updatePropertyValue(p, e.target.checked);
+          aria-required={isRequired || undefined}
+          checked={Boolean(v)}
+          id={fieldId}
+          onCheckedChange={(checked) => {
+            updatePropertyValue(p, checked);
           }}
         />
       );
@@ -143,6 +180,7 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <CommaSeparatedStringList
             defaultValue={String(v)}
+            id={fieldId}
             onChange={(x) => {
               updatePropertyValue(p, x);
             }}
@@ -152,9 +190,11 @@ export const PropertyComponent = (props: { property: Property }) => {
         inputComp = (
           <Input
             defaultValue={def.default_value ?? undefined}
+            id={fieldId}
             onChange={(e) => {
               updatePropertyValue(p, e.target.value);
             }}
+            required={isRequired}
             value={String(v)}
           />
         );
@@ -165,21 +205,23 @@ export const PropertyComponent = (props: { property: Property }) => {
       inputComp = (
         <Input
           defaultValue={def.default_value ?? undefined}
+          id={fieldId}
           onChange={(e) => {
             updatePropertyValue(p, e.target.value);
           }}
+          required={isRequired}
           value={String(v)}
         />
       );
       break;
   }
 
-  inputComp = <ErrorWrapper input={inputComp} property={p} />;
+  inputComp = <ErrorWrapper input={inputComp} inputId={fieldId} property={p} />;
   // Wrap name and input element
   return (
-    <Box className={inputSizeToClass[def.width]} data-testid={`property-${p.name}`} mt="6">
+    <div className={`mt-6 ${inputSizeToClass[def.width]}`} data-testid={`property-${p.name}`}>
       {inputComp}
-    </Box>
+    </div>
   );
 };
 

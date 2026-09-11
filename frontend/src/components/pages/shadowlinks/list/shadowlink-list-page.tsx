@@ -13,8 +13,8 @@
 
 import { Code } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
-import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
+import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Loader2, Plus, RefreshCw } from 'lucide-react';
@@ -44,8 +44,8 @@ const ShadowLinkTableRows = ({
   handleRowClick,
 }: {
   isLoading: boolean;
-  table: ReturnType<typeof useReactTable<ListShadowLinksResponse_ShadowLink>>;
-  columns: ColumnDef<ListShadowLinksResponse_ShadowLink>[];
+  table: ReturnType<typeof useDataTable<ListShadowLinksResponse_ShadowLink>>;
+  columns: DataTableColumnDef<ListShadowLinksResponse_ShadowLink>[];
   handleRowClick: (name: string, event: React.MouseEvent) => void;
 }) => {
   if (isLoading) {
@@ -71,7 +71,7 @@ const ShadowLinkTableRows = ({
           onClick={(event) => handleRowClick(row.original.name, event)}
         >
           {row.getVisibleCells().map((cell) => (
-            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+            <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
           ))}
         </TableRow>
       ))}
@@ -79,7 +79,7 @@ const ShadowLinkTableRows = ({
   );
 };
 
-export const createColumns: ColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
+export const createColumns: DataTableColumnDef<ListShadowLinksResponse_ShadowLink>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
@@ -140,10 +140,9 @@ export const ShadowLinkListPage = () => {
 
   const columns = React.useMemo(() => createColumns, []);
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: shadowLinks,
     columns,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   // Admin API unavailable
@@ -224,12 +223,7 @@ export const ShadowLinkListPage = () => {
             <TooltipTrigger
               render={
                 <span className="inline-block">
-                  <Button
-                    disabled={hasShadowLink}
-                    onClick={() => navigate({ to: '/shadowlinks/create' })}
-                    size="sm"
-                    variant="primary"
-                  >
+                  <Button disabled={hasShadowLink} onClick={() => navigate({ to: '/shadowlinks/create' })} size="sm">
                     <Plus className="h-4 w-4" />
                     Create shadow link
                   </Button>
@@ -249,7 +243,7 @@ export const ShadowLinkListPage = () => {
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</TableHead>
+                <TableHead key={header.id}>{<table.FlexRender header={header} />}</TableHead>
               ))}
             </TableRow>
           ))}

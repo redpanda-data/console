@@ -21,7 +21,7 @@ The codebase is actively migrating away from legacy libraries. Using them in new
 | Class components | Functional components + hooks |
 | Yup validation | Zod |
 | `any` type | `unknown` or specific types |
-| Jest | Vitest |
+| Jest | Rstest |
 
 ## Common Violations
 
@@ -38,7 +38,7 @@ import { useDisclosure, useToast } from "@chakra-ui/react";
 import { Button } from "components/redpanda-ui/components/button";
 import { Dialog } from "components/redpanda-ui/components/dialog";
 // Use useState instead of useDisclosure
-// Use toast from sonner instead of useToast
+// Use showToast from utils/toast.utils instead of useToast
 ```
 
 **MobX:**

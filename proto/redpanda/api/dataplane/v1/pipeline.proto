@@ -757,6 +757,11 @@ message FieldSpec {
   repeated AnnotatedOption annotated_options = 11;
   repeated string interpolated = 12;
   string version = 13 [(buf.validate.field).string.pattern = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"];
+  // Short plain-text summary of the field, suitable for inline display in
+  // config editors. Unlike description, it contains no markup and is capped
+  // at roughly 140 characters. Empty when the Redpanda Connect version that
+  // produced the schema does not emit short descriptions.
+  string short_description = 14;
 }
 
 // AnnotatedOption represents an annotated option

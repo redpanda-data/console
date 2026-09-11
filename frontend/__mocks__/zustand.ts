@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 /**
  * Testing Zustand Stores
  *
@@ -5,9 +7,9 @@
  * of your test file (after imports):
  *
  * ```typescript
- * import { vi } from 'vitest';
+ * import { rs } from '@rstest/core';
  *
- * vi.mock('zustand');
+ * rs.mock('zustand');
  *
  * describe('My Test', () => {
  *   // Store resets happen automatically in afterEach from the mock
@@ -18,11 +20,11 @@
  * This enables the mock in `__mocks__/zustand.ts` which tracks all store instances
  * and resets them to their initial state after each test.
  *
- * Note: Tests without `vi.mock('zustand')` will use the real Zustand implementation.
+ * Note: Tests without `rs.mock('zustand')` will use the real Zustand implementation.
  */
 
+import { afterEach, rs } from '@rstest/core';
 import { act } from '@testing-library/react';
-import { afterEach, vi } from 'vitest';
 import type * as ZustandExportedTypes from 'zustand';
 
 // Re-export everything from zustand
@@ -30,7 +32,7 @@ import type * as ZustandExportedTypes from 'zustand';
 export * from 'zustand';
 
 const { create: actualCreate, createStore: actualCreateStore } =
-  await vi.importActual<typeof ZustandExportedTypes>('zustand');
+  rs.requireActual<typeof ZustandExportedTypes>('zustand');
 
 // A variable to hold reset functions for all stores declared in the app
 export const storeResetFns = new Set<() => void>();

@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it, rs } from '@rstest/core';
 import type { Edge, Node } from '@xyflow/react';
-import { describe, expect, it, vi } from 'vitest';
 
 import {
   decorateEdges,
@@ -154,7 +154,7 @@ describe('decorateEdges', () => {
   });
 
   it('wires the insert handler onto spine edges with their processor index', () => {
-    const onInsert = vi.fn();
+    const onInsert = rs.fn();
     const decorated = decorateEdges(edges, { onInsert });
     const spineData = decorated.find((e) => e.type === 'flowGraphEdge')?.data as { onInsert?: () => void };
     spineData.onInsert?.();

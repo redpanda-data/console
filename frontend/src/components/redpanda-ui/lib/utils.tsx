@@ -1,37 +1,43 @@
 import { cva } from 'class-variance-authority';
-import { type ClassValue, clsx, twMerge as twMergeFast } from 'cnfast';
+import { type ClassValue, clsx } from 'clsx';
 import React from 'react';
 import { extendTailwindMerge } from 'tailwind-merge';
 
-// The custom text-* utilities defined in theme.css. Stock tailwind-merge (and
-// cnfast, which is byte-identical) doesn't know them, so it buckets them as
-// text-COLOR classes — `cn('text-body', 'text-muted-foreground')` would
-// silently drop `text-body`. Keep this list in sync with theme.css.
-const THEME_TEXT_UTILITY = /\btext-(?:body(?:-sm)?|label|caption|lead|heading-(?:xl|lg|md|sm|xs))\b/;
+/**
+ * theme.css's custom text-* utilities, by the name after `text-`. tailwind-merge buckets an
+ * unrecognised `text-*` as text-COLOUR, so `cn('text-body', 'text-subtle')` would drop `text-body`;
+ * ones it reads as t-shirt sizes (`2xs`) are left out. `theme-text-scale.test.ts` holds this against
+ * theme.css — a name added there and not here fails as a dropped class rather than an error.
+ */
+export const THEME_TEXT_SCALE = [
+  'body',
+  'body-lg',
+  'body-sm',
+  'label',
+  'caption',
+  'lead',
+  'heading-xl',
+  'heading-lg',
+  'heading-md',
+  'heading-sm',
+  'heading-xs',
+  'overline',
+  'overline-sm',
+] as const;
 
-// tailwind-merge configured to treat the theme's text-* utilities as
-// font-size classes: they conflict with each other and with Tailwind's
-// `text-sm`…`text-9xl`, while weight/leading/color still compose.
 const twMergeTheme = extendTailwindMerge({
-  extend: {
-    classGroups: {
-      'font-size': [
-        { text: ['body', 'body-sm', 'label', 'caption', 'lead', { heading: ['xl', 'lg', 'md', 'sm', 'xs'] }] },
-      ],
-    },
-  },
+  /** Declares them as font-size, so they conflict with `text-sm`…`text-9xl` and each other. */
+  extend: { classGroups: { 'font-size': [{ text: [...THEME_TEXT_SCALE] }] } },
+  /** Cleared, so a `leading-*` survives a font size either side of it, as it does in CSS. */
+  override: { conflictingClassGroups: { 'font-size': [] } },
 });
 
 /**
- * Merge class names. Class lists that reference one of the theme's custom
- * text-* utilities go through a tailwind-merge configured to understand them;
- * everything else keeps cnfast's fast path (see PR #220). Keeps the original
- * `(...inputs: ClassValue[])` signature, so every consumer call site is
- * unaffected.
+ * Merge class names. One merger for every list — a second that cannot be told about the theme's
+ * text-* utilities makes a list's semantics depend on whether it happens to mention one.
  */
 export function cn(...inputs: ClassValue[]) {
-  const joined = clsx(...inputs);
-  return THEME_TEXT_UTILITY.test(joined) ? twMergeTheme(joined) : twMergeFast.mergeString(joined);
+  return twMergeTheme(clsx(...inputs));
 }
 
 export function wrapStringChild(
@@ -52,16 +58,9 @@ export type SharedProps = {
   testId?: string;
 };
 
-// =============================================================================
-// Portal Component Common Types
-// =============================================================================
-// These types provide a single source of truth for portal component props
-// that need to be exposed for visual regression testing.
+/* Portal props, in one place so a visual-regression test can open any of them the same way. */
 
-/**
- * Common props for portal root components that support controlled open state.
- * Components: Dialog, Popover, Sheet, Drawer, etc.
- */
+/** Controlled open state, for Dialog, Popover, Sheet, Drawer and friends. */
 export type PortalRootProps = {
   /** Controlled open state */
   open?: boolean;
@@ -71,79 +70,61 @@ export type PortalRootProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
-/**
- * Extended root props for modal components that need non-modal mode.
- * Components: Dialog, Sheet, Drawer, DropdownMenu
- */
+/** Adds non-modal mode: Dialog, Sheet, Drawer, DropdownMenu. */
 export type ModalRootProps = PortalRootProps & {
   /** When false, prevents body pointer-events:none and focus trapping */
   modal?: boolean;
 };
 
 /**
- * Common props for portal content components that use FocusScope.
- * These props control auto-focus behavior when content opens/closes.
+ * Radix-compat auto-focus hooks. Base UI exposes neither, so everywhere but Drawer these type-check
+ * and then do nothing, silently. Drawer is vaul rather than Base UI and honours `onOpenAutoFocus`.
  */
 export type FocusScopeContentProps = {
   /**
-   * @deprecated Radix-compat shim. Base UI primitives do not expose an
-   * `onOpenAutoFocus` hook; the callback is ignored at runtime and will emit
-   * a dev-mode warning. Use `initialFocus` on the underlying Base UI `Popup`
-   * (or equivalent) instead. Scheduled for removal in a future major.
+   * @deprecated Honoured by Drawer only. On Base UI components use `initialFocus` on the
+   * underlying `Popup`. Scheduled for removal in a future major.
    */
   onOpenAutoFocus?: (event: Event) => void;
   /**
-   * @deprecated Radix-compat shim. Base UI primitives do not expose an
-   * `onCloseAutoFocus` hook; handle close-focus in a `ref` callback or
-   * `onOpenChange` handler instead. Scheduled for removal in a future major.
+   * @deprecated Honoured by nothing. Handle close-focus in a `ref` callback or an `onOpenChange`
+   * handler. Scheduled for removal in a future major.
    */
   onCloseAutoFocus?: (event: Event) => void;
 };
 
-/**
- * Common props for portal content components.
- * Combines container prop with focus scope props.
- */
+/** Content props: the focus hooks plus where to render. */
 export type PortalContentProps = FocusScopeContentProps & {
   /** Container element for inline rendering (no portal to body) */
   container?: HTMLElement;
 };
 
-/**
- * Extended content props for fixed-position modal components.
- * Components: Dialog, Sheet, Drawer, Credenza, AlertDialog
- */
+/** Fixed-position modals: Dialog, Sheet, Drawer, Credenza, AlertDialog. */
 export type FixedPositionContentProps = PortalContentProps & {
   /** When false, hides the overlay/backdrop */
   showOverlay?: boolean;
 };
 
-// =============================================================================
-// Indicator Component Common Types
-// =============================================================================
-// Shared types for StatusDot, CountDot, and StatusBadge components.
+/* Shared by StatusDot, CountDot and StatusBadge. */
 
-export type SemanticVariant = 'success' | 'info' | 'warning' | 'error' | 'disabled';
+export type SemanticVariant = 'success' | 'informative' | 'warning' | 'destructive' | 'disabled';
 export type DotSize = 'xxs' | 'xs' | 'sm' | 'md' | 'lg';
 export type StackableProps = { stacked?: boolean };
-
-// =============================================================================
-// Shared Dot Component Styles
-// =============================================================================
-// Common CVAs used by StatusDot, CountDot, and related indicator components.
 
 export const dotColorVariants = cva('', {
   variants: {
     variant: {
-      success: 'bg-background-success-strong',
-      info: 'bg-background-informative-strong',
-      warning: 'bg-background-warning-strong',
-      error: 'bg-background-error-strong',
-      disabled: 'bg-surface-strong-hover',
+      success: 'bg-success-strong',
+      informative: 'bg-informative-strong',
+      warning: 'bg-warning-strong',
+      destructive: 'bg-destructive-strong',
+      // The `disabled` ink token, not a neutral fill: a hover token as a rest
+      // value reads as a state nothing is in.
+      disabled: 'bg-disabled',
     },
   },
   defaultVariants: {
-    variant: 'info',
+    variant: 'informative',
   },
 });
 

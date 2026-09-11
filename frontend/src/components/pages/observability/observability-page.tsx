@@ -89,7 +89,7 @@ const ObservabilityPage: FC = () => {
           </div>
         </Suspense>
       ) : (
-        <Alert variant="info">
+        <Alert variant="informative">
           <AlertDescription>No metrics queries available at this time.</AlertDescription>
         </Alert>
       )}

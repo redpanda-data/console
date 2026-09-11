@@ -2,6 +2,18 @@
 
 ## Master / Unreleased
 
+## v3.11.0 / 2026-08-24
+- [IMPROVEMENT] Migrate the Consumer Groups pages to the UI registry, with human-readable state and protocol labels, corrected list pagination layout, and a more compact group detail stats bar.
+- [IMPROVEMENT] Add Shadow Link role replication: configure role sync when creating or editing a link and review replicated roles in the details view (requires Redpanda 26.2.0 or later).
+- [IMPROVEMENT] Speed up the Redpanda Connect pipelines listing page, improve its overall UX, and restore the documentation links in the pipeline sidebar.
+- [IMPROVEMENT] Improve the create topic dialog layout.
+- [IMPROVEMENT] Carry inline short descriptions for Redpanda Connect pipeline component fields so editors can show plain-text help per field.
+- [CHANGE] Rename "Shadow Roles" to "Roles" in the Shadow Link UI.
+- [BUGFIX] Fix the blank screen on `/trial-expired` when the license check fails during the initial authentication fetch.
+- [BUGFIX] Refresh the cluster overview when the create topic dialog opens, so the Kafka-only "Min in-sync replicas" field is no longer shown on Redpanda clusters based on stale state.
+- [BUGFIX] Refresh the consumer group list after deleting a group or its offsets instead of serving stale cached data.
+- [SECURITY] Update Go to resolve Snyk findings.
+
 ## v3.10.0 / 2026-08-10
 - [IMPROVEMENT] Cancel a running SQL query directly from the results pane.
 - [IMPROVEMENT] Add a full-screen page mode for the SQL and Redpanda Connect editors.

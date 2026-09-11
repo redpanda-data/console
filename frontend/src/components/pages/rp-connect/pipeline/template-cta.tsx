@@ -50,8 +50,8 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }:
               <Sparkles className="size-3.5" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col leading-tight">
-              <span className="font-medium text-foreground text-sm">Start from a template</span>
-              <span className="text-muted-foreground text-xs">Skip the YAML — fill a short form</span>
+              <span className="font-medium text-body text-foreground">Start from a template</span>
+              <span className="text-body-sm text-muted-foreground">Skip the YAML — fill a short form</span>
             </div>
             <ArrowRight
               aria-hidden
@@ -59,7 +59,7 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }:
             />
           </button>
           {hint ? (
-            <p className="pointer-events-none mt-2 flex items-center justify-center gap-1.5 text-center text-muted-foreground text-xs">
+            <p className="pointer-events-none mt-2 flex items-center justify-center gap-1.5 text-center text-body-sm text-muted-foreground">
               {hint}
             </p>
           ) : null}

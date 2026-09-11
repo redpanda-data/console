@@ -203,7 +203,7 @@ function FormDescription({ className, ...props }: React.ComponentProps<'div'>) {
 
   return (
     <div
-      className={cn('text-body-sm text-muted-foreground', className)}
+      className={cn('text-body-sm text-subtle', className)}
       data-slot="form-description"
       id={formDescriptionId}
       {...props}
@@ -266,7 +266,7 @@ function FormSection({
       {title || description ? (
         <div className="mb-4">
           {title ? <h3 className="text-heading-md">{title}</h3> : null}
-          {description ? <div className="mt-1 text-body text-muted-foreground">{description}</div> : null}
+          {description ? <div className="mt-1 text-body text-subtle">{description}</div> : null}
         </div>
       ) : null}
       {children}

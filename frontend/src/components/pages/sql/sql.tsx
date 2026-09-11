@@ -38,13 +38,10 @@ const WRITE_KEYWORDS = new Set([
   'MERGE',
   'UPSERT',
   'REPLACE',
-  'CREATE',
-  'DROP',
   'ALTER',
   'TRUNCATE',
   'RENAME',
   'COMMENT',
-  'GRANT',
   'REVOKE',
 ]);
 

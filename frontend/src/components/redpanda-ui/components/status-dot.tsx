@@ -51,7 +51,9 @@ function StatusDot({
   }) {
   return (
     <span
-      className={cn('relative inline-flex shrink-0 rounded-full', className)}
+      // `w-fit` so the wrapper keeps the ring's width wherever it is placed: the core is
+      // centred on the wrapper, so a stretched grid or flex item pulls the two apart.
+      className={cn('relative inline-flex w-fit shrink-0 rounded-full', className)}
       data-slot="status-dot"
       data-testid={testId}
       {...props}

@@ -12,8 +12,13 @@ import {
 
 import { cn, type SharedProps } from '../lib/utils';
 
-// Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: '', dark: '.dark' } as const;
+/**
+ * Ancestor prefixes for the per-chart colour rules, one list per theme — `.dark` alongside
+ * `data-theme`, as theme.css accepts both. A list rather than a comma-joined string because each
+ * prefix needs its own `[data-chart]`: `"[data-theme='dark'], .dark [data-chart=x]"` parses as two
+ * selectors and would set the series properties on the root element.
+ */
+const THEMES = { light: [''], dark: ["[data-theme='dark']", '.dark'] } as const;
 
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const;
 
@@ -66,7 +71,7 @@ function ChartContainer({
     <ChartContext.Provider value={{ config }}>
       <div
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden",
+          "flex aspect-video justify-center text-body-sm [&_.recharts-cartesian-axis-tick_text]:fill-subtle [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border-subtle [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-surface-subtle [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-surface-subtle [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-hidden [&_.recharts-surface]:outline-hidden",
           className
         )}
         data-chart={chartId}
@@ -94,8 +99,8 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+            ([theme, prefixes]) => `
+${prefixes.map((prefix) => `${prefix} [data-chart=${id}]`).join(',\n')} {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
@@ -168,7 +173,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        'grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl',
+        'grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border-subtle bg-background px-2.5 py-1.5 text-body-sm shadow-xl',
         className
       )}
     >
@@ -185,7 +190,7 @@ function ChartTooltipContent({
             return (
               <div
                 className={cn(
-                  'flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground',
+                  'flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-subtle',
                   indicator === 'dot' && 'items-center'
                 )}
                 key={`${item.dataKey ?? item.name ?? ''}-${index}`}
@@ -222,7 +227,7 @@ function ChartTooltipContent({
                     >
                       <div className="grid gap-1.5">
                         {nestLabel ? tooltipLabel : null}
-                        <span className="text-muted-foreground">{itemConfig?.label || item.name}</span>
+                        <span className="text-subtle">{itemConfig?.label || item.name}</span>
                       </div>
                       {item.value !== undefined && item.value !== null ? (
                         <span className="font-medium font-mono text-foreground tabular-nums">
@@ -268,7 +273,7 @@ function ChartLegendContent({
 
           return (
             <div
-              className={cn('flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground')}
+              className={cn('flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-subtle')}
               key={`${item.dataKey ?? item.value ?? ''}-${index}`}
             >
               {itemConfig?.icon && !hideIcon ? (

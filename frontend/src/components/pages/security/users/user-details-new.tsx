@@ -108,14 +108,14 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-secondary text-sm">Principal:</span>
+          <span className="text-body text-secondary">Principal:</span>
           <CopyButton content={`User:${userName}`} size="sm" variant="outline">
             User:{userName}
           </CopyButton>
           {mechanismLabel !== null && (
             <div className="flex items-center gap-1.5">
-              <span className="text-secondary text-sm">Mechanism:</span>
-              <Badge size="sm" variant="neutral-outline">
+              <span className="text-body text-secondary">Mechanism:</span>
+              <Badge size="sm" tone="default" variant="outline">
                 {mechanismLabel}
               </Badge>
             </div>

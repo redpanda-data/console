@@ -84,7 +84,7 @@ export function FloatingChipPanel({
       <button
         aria-expanded={open}
         className={cn(
-          'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 font-medium text-xs shadow-sm backdrop-blur-sm transition-colors',
+          'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 font-medium text-body-sm shadow-sm backdrop-blur-sm transition-colors',
           chipClassName
         )}
         data-testid={chipTestId}

@@ -32,7 +32,7 @@ export function KeyValueInput({
   return (
     <Group attached>
       <Input
-        className="max-w-[100px] bg-primary-alpha-default border-r-input border-r font-medium text-primary-foreground"
+        className="max-w-[100px] border-r-input border-r bg-primary-wash font-medium text-primary"
         disabled={disabled}
         onChange={(e) => onChange({ ...value, key: e.target.value })}
         placeholder={keyPlaceholder}

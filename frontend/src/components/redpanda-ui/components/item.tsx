@@ -24,23 +24,23 @@ function ItemSeparator({ className, ...props }: React.ComponentProps<typeof Sepa
 }
 
 const itemVariants = cva(
-  'group/item flex w-full flex-wrap items-center rounded-md border border-transparent text-sm outline-none transition-colors duration-100 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [a]:transition-colors [a]:hover:bg-accent/50',
+  'group/item flex w-full flex-wrap items-center rounded-md border border-transparent text-body outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none [a]:transition-colors [a]:hover:bg-accent [a]:active:bg-accent-pressed',
   {
     variants: {
       variant: {
         default: 'bg-transparent',
         outline: 'border-border',
-        muted: 'bg-muted/50',
+        muted: 'bg-surface-recess',
       },
       size: {
-        default: 'gap-4 p-4',
-        sm: 'gap-2.5 px-4 py-3',
         xs: 'gap-2 px-3 py-2',
+        sm: 'gap-2.5 px-4 py-3',
+        md: 'gap-4 p-4',
       },
     },
     defaultVariants: {
       variant: 'default',
-      size: 'default',
+      size: 'md',
     },
   }
 );
@@ -48,7 +48,7 @@ const itemVariants = cva(
 function Item({
   className,
   variant = 'default',
-  size = 'default',
+  size = 'md',
   testId,
   render,
   ...props
@@ -80,7 +80,7 @@ const itemMediaVariants = cva(
     variants: {
       variant: {
         default: 'bg-transparent',
-        icon: "size-8 rounded-sm border bg-muted [&_svg:not([class*='size-'])]:size-4",
+        icon: "size-8 rounded-sm border bg-surface-subtle [&_svg:not([class*='size-'])]:size-4",
         image: 'size-10 overflow-hidden rounded-sm [&_img]:size-full [&_img]:object-cover',
       },
     },
@@ -129,7 +129,7 @@ function ItemDescription({ className, ...props }: React.ComponentProps<'p'>) {
   return (
     <p
       className={cn(
-        'line-clamp-2 text-balance text-body text-muted-foreground',
+        'line-clamp-2 text-balance text-body text-subtle',
         '[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
         className
       )}

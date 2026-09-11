@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, test, vi } from 'vitest';
 
 import { ShadowLinkMetrics } from './shadow-link-metrics';
 import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
 
 // Mock the useGetShadowMetricsQuery hook
-vi.mock('react-query/api/shadowlink', () => ({
-  useGetShadowMetricsQuery: vi.fn(),
+rs.mock('react-query/api/shadowlink', () => ({
+  useGetShadowMetricsQuery: rs.fn(),
 }));
 
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
@@ -33,7 +33,7 @@ const mockShadowLink: UnifiedShadowLink = {
 
 describe('ShadowLinkMetrics', () => {
   test('should display metrics when data is loaded', () => {
-    vi.mocked(useGetShadowMetricsQuery).mockReturnValue({
+    rs.mocked(useGetShadowMetricsQuery).mockReturnValue({
       data: {
         totalTopicsReplicated: 100n,
         failedOverTopics: 5n,
@@ -52,7 +52,7 @@ describe('ShadowLinkMetrics', () => {
   });
 
   test('should display error state when metrics fail to load', () => {
-    vi.mocked(useGetShadowMetricsQuery).mockReturnValue({
+    rs.mocked(useGetShadowMetricsQuery).mockReturnValue({
       data: null,
       isFetching: false,
       error: new Error('Failed to fetch metrics'),

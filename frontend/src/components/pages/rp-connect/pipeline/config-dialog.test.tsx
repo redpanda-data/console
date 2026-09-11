@@ -10,11 +10,11 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, it } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
-import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { ConfigDialog } from './config-dialog';

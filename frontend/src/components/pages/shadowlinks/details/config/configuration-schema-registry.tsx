@@ -14,7 +14,6 @@
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Separator } from 'components/redpanda-ui/components/separator';
-import { Heading, Text } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { format } from 'date-fns';
 import { UnsupportedSchemaFeaturePolicy } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -82,9 +81,7 @@ const formatRequestRate = (rate?: number): string => {
 
 // Small uppercase label introducing a subsection of the card
 const SectionLabel = ({ children }: { children: string }) => (
-  <Text className="text-muted-foreground uppercase tracking-wider" variant="labelStrongXSmall">
-    {children}
-  </Text>
+  <div className="font-semibold text-body-sm text-muted-foreground uppercase tracking-wider">{children}</div>
 );
 
 // Label/value grid row; `narrow` is for rows nested inside split columns
@@ -102,24 +99,24 @@ const ConfigRow = ({
   value: React.ReactNode;
 }) => (
   <div className={cn('grid items-baseline gap-x-4', narrow ? 'grid-cols-[120px_1fr]' : 'grid-cols-[200px_1fr]')}>
-    <Text className="text-muted-foreground" testId={`${testId}-label`}>
+    <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
       {label}
-    </Text>
-    <Text className={cn('break-all', mono && 'font-mono')} testId={`${testId}-value`}>
+    </div>
+    <div className={cn('text-body', 'break-all', mono && 'font-mono')} data-testid={`${testId}-value`}>
       {value}
-    </Text>
+    </div>
   </div>
 );
 
 // Row of mono pills used for the Schema Registry contexts and subjects lists
 const PillRow = ({ label, testId, values }: { label: string; testId: string; values: string[] }) => (
   <div className="grid grid-cols-[120px_1fr] items-start gap-x-4">
-    <Text className="text-muted-foreground" testId={`${testId}-label`}>
+    <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
       {label}
-    </Text>
+    </div>
     <div className="flex flex-wrap gap-1.5" data-testid={`${testId}-value`}>
       {values.map((value) => (
-        <Badge className="font-mono" key={value} size="sm" tone="neutral" variant="subtle">
+        <Badge className="font-mono" key={value} size="sm" tone="default" variant="subtle">
           {value}
         </Badge>
       ))}
@@ -138,7 +135,7 @@ const SplitColumns = ({ left, right }: { left: React.ReactNode; right: React.Rea
 
 const AuthenticationColumn = ({ basicAuth }: { basicAuth?: UnifiedSchemaRegistryBasicAuth }) => (
   <>
-    <Text variant="labelStrongSmall">Authentication</Text>
+    <div className="font-semibold text-label">Authentication</div>
     {basicAuth ? (
       <div className="flex flex-col gap-1">
         <ConfigRow label="Type" narrow testId="sr-config-auth-type" value="HTTP Basic" />
@@ -146,16 +143,16 @@ const AuthenticationColumn = ({ basicAuth }: { basicAuth?: UnifiedSchemaRegistry
         <ConfigRow label="Password" narrow testId="sr-config-auth-password" value={formatPasswordStatus(basicAuth)} />
       </div>
     ) : (
-      <Text className="text-muted-foreground" testId="sr-config-no-auth">
+      <div className="text-body text-muted-foreground" data-testid="sr-config-no-auth">
         No authentication configured.
-      </Text>
+      </div>
     )}
   </>
 );
 
 const TlsColumn = ({ tlsSettings }: { tlsSettings?: UnifiedTLSSettings }) => (
   <>
-    <Text variant="labelStrongSmall">TLS</Text>
+    <div className="font-semibold text-label">TLS</div>
     <div className="flex flex-col gap-1">
       <ConfigRow
         label="Enabled"
@@ -197,7 +194,7 @@ const DestinationMappingColumn = ({
   destinationMapping: UnifiedSchemaRegistryApiOptions['destinationMapping'];
 }) => (
   <>
-    <Text variant="labelStrongSmall">Destination contexts mapping</Text>
+    <div className="font-semibold text-label">Destination contexts mapping</div>
     {destinationMapping?.case === 'exact' ? (
       <div className="flex flex-col gap-1">
         {destinationMapping.mappings.map((mapping, index) => (
@@ -206,22 +203,16 @@ const DestinationMappingColumn = ({
             data-testid={`sr-config-mapping-${index}`}
             key={`${mapping.source}-${mapping.destination}`}
           >
-            <Text as="span" className="break-all font-mono">
-              {mapping.source}
-            </Text>
-            <Text as="span" className="text-muted-foreground">
-              →
-            </Text>
-            <Text as="span" className="break-all font-mono">
-              {mapping.destination}
-            </Text>
+            <span className="break-all font-mono text-body">{mapping.source}</span>
+            <span className="text-body text-muted-foreground">→</span>
+            <span className="break-all font-mono text-body">{mapping.destination}</span>
           </div>
         ))}
       </div>
     ) : (
-      <Text className="text-muted-foreground" testId="sr-config-mapping-identity">
+      <div className="text-body text-muted-foreground" data-testid="sr-config-mapping-identity">
         No mapping configured. Schemas land in the same context they came from.
-      </Text>
+      </div>
     )}
   </>
 );
@@ -299,9 +290,9 @@ const SyncBehaviorSection = ({ api }: { api: UnifiedSchemaRegistryApiOptions }) 
 
 const ApiModeBody = ({ api }: { api: UnifiedSchemaRegistryApiOptions }) => (
   <div className="flex flex-col gap-4">
-    <Text className="text-muted-foreground" testId="schema-registry-api-description">
+    <div className="text-body text-muted-foreground" data-testid="schema-registry-api-description">
       Schemas replicate from the source Schema Registry over its REST API.
-    </Text>
+    </div>
     <Separator variant="subtle" />
     <ConnectionSection api={api} />
     <Separator variant="subtle" />
@@ -334,7 +325,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
     );
     badges = (
       <>
-        <Badge testId="schema-registry-mode-badge" tone="info" variant="subtle">
+        <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
           Other
         </Badge>
         {statusBadge}
@@ -344,7 +335,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
   } else if (mode?.case === 'shadowSchemaRegistryTopic') {
     badges = (
       <>
-        <Badge testId="schema-registry-mode-badge" tone="info" variant="subtle">
+        <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
           Redpanda
         </Badge>
         <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
@@ -353,20 +344,20 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
       </>
     );
     body = (
-      <Text className="text-muted-foreground" testId="schema-registry-topic-description">
+      <div className="text-body text-muted-foreground" data-testid="schema-registry-topic-description">
         Replicate the source cluster's _schemas topic, which replaces the shadow cluster's Schema Registry.
-      </Text>
+      </div>
     );
   } else {
     badges = (
-      <Badge testId="schema-registry-status-badge" tone="neutral" variant="subtle">
+      <Badge testId="schema-registry-status-badge" tone="default" variant="subtle">
         Disabled
       </Badge>
     );
     body = (
-      <Text className="text-muted-foreground" testId="schema-registry-disabled-description">
+      <div className="text-body text-muted-foreground" data-testid="schema-registry-disabled-description">
         Schema Registry shadowing is off. The shadow cluster keeps its own independent Schema Registry.
-      </Text>
+      </div>
     );
   }
 
@@ -374,7 +365,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
     <Card size="full" testId="schema-registry-card">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <Heading level={3}>Schema Registry</Heading>
+          <h3 className="text-heading-md">Schema Registry</h3>
           <div className="flex items-center gap-2">{badges}</div>
         </div>
       </CardHeader>

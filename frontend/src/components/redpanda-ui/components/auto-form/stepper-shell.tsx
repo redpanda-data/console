@@ -161,7 +161,7 @@ export function AutoFormStepperShell({
                     onClick={methods.prev}
                     testId={buildAutoFormTestId(testIdPrefix, 'previous')}
                     type="button"
-                    variant="secondary"
+                    variant="default"
                   >
                     Previous
                   </Button>

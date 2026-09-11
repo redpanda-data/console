@@ -237,7 +237,7 @@ function EditSchemaMode({
         {contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-mode-context-name">
             <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            <div className="font-bold text-lg">
+            <div className="font-bold text-heading-md">
               Editing mode for context: <span className="text-muted-foreground">{contextName}</span>
             </div>
           </div>
@@ -264,7 +264,7 @@ function EditSchemaMode({
                   <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
                   {option.warning && (
-                    <div className="mt-2 flex items-start gap-2 text-sm text-warning">
+                    <div className="mt-2 flex items-start gap-2 text-body text-warning">
                       <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                       <span>{option.warning}</span>
                     </div>
@@ -292,7 +292,7 @@ function EditSchemaMode({
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
             </Tooltip>
-            <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="secondary-ghost">
+            <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="ghost">
               Cancel
             </Button>
           </div>
@@ -300,10 +300,13 @@ function EditSchemaMode({
       </div>
       {subjectName && schema && (
         <div className="flex-1">
-          <div className="whitespace-pre-wrap break-words font-bold text-lg" data-testid="edit-mode-subject-name">
+          <div
+            className="whitespace-pre-wrap break-words font-bold text-heading-md"
+            data-testid="edit-mode-subject-name"
+          >
             {subjectName}
           </div>
-          <div className="mt-8 mb-4 font-bold text-lg">Schema</div>
+          <div className="mt-8 mb-4 font-bold text-heading-md">Schema</div>
           <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
         </div>
       )}

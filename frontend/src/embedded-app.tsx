@@ -11,6 +11,8 @@
 
 // Array prototype extensions (must be imported early)
 import './utils/array-extensions';
+// Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
+import 'clipboard-polyfill/overwrite-globals';
 
 import { useEffect, useMemo } from 'react';
 
@@ -35,7 +37,7 @@ import './globals.css';
 
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider, redpandaToastOptions } from '@redpanda-data/ui';
+import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
@@ -45,6 +47,7 @@ import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
+import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -52,6 +55,7 @@ import {
   type SetConfigArguments,
   setup,
 } from './config';
+import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
 import { installUISettingsSideEffects } from './state/ui';
@@ -64,16 +68,9 @@ const normalizePath = (path: string) => path.replace(TRAILING_SLASH_REGEX, '') |
 
 export interface EmbeddedProps extends SetConfigArguments {
   /**
-   * This is the base url that is used:
-   * - when making api requests
-   * - to setup the 'basename' in react-router
-   *
-   * In the simplest case this would be the exact url where the host is running,
-   * for example "http://localhost:3001/"
-   *
-   * When running in cloud-ui the base most likely need to include a few more
-   * things like cluster id, etc...
-   * So the base would probably be "https://cloud.redpanda.com/NAMESPACE/CLUSTER/"
+   * Base URL for API requests and the react-router `basename`. Standalone that is just the host
+   * (`http://localhost:3001/`); under cloud-ui it carries the namespace and cluster
+   * (`https://cloud.redpanda.com/NAMESPACE/CLUSTER/`).
    */
   basePath?: string;
   /**
@@ -138,6 +135,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     () =>
       createRouter({
         routeTree,
+        ...routerDefaults,
         context: {
           basePath,
           queryClient,
@@ -156,7 +154,9 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
 
   return (
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
-      <ChakraProvider resetCSS={false} theme={redpandaTheme} toastOptions={redpandaToastOptions}>
+      <ChakraProvider resetCSS={false} theme={redpandaTheme}>
+        {/* showToast viewport, above the router so the error boundary and login can toast */}
+        <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />

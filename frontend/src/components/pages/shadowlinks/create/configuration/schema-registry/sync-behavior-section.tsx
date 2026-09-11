@@ -83,9 +83,9 @@ export const SyncBehaviorSection = () => {
             />
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">Sync behavior</span>
+                <span className="font-medium text-body">Sync behavior</span>
                 {!open && isCustomized && (
-                  <Badge size="sm" testId="sr-sync-behavior-customized-badge" variant="success-inverted">
+                  <Badge size="sm" testId="sr-sync-behavior-customized-badge" tone="success" variant="subtle">
                     Customized
                   </Badge>
                 )}

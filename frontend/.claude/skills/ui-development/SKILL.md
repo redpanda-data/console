@@ -20,6 +20,8 @@ Build user interfaces with the Redpanda UI Registry.
 | Use components | `use-ui-registry.md` |
 | Add spacing | `style-no-margin-on-registry.md` |
 | Customize look | `style-use-variants.md` |
+| Pick a colour or text size | `style-use-tokens.md` |
+| Pull a new registry version | `registry-upgrade.md` |
 | Use icons | `icon-system.md` |
 
 ## Workflow
@@ -52,12 +54,26 @@ ls src/components/redpanda-ui/
 - Use inline `style` prop on registry components
 - Add margin `className` directly to registry components
 
+### NEVER (styling)
+
+- Raw palette classes (`bg-gray-100`, `text-red-600`) or raw hex/`bg-[#…]` — use theme tokens
+- Stock text sizes (`text-sm`, `text-lg`) — use `text-body-*` / `text-heading-*`
+- Retired v2 token names (`text-error`, `bg-surface-default`, `outline-*`, `*-subtle` on a tone) —
+  they compile to nothing. See `style-use-tokens.md`
+
 ### WHEN MODIFYING REGISTRY COMPONENTS
 
-If editing files in `src/components/redpanda-ui/`:
-1. Document the change in a comment with `// UPSTREAM: <reason>`
-2. Keep changes minimal and backwards-compatible
-3. Track for eventual contribution to upstream registry
+Only with explicit sign-off — that directory is synced, so a local edit is lost on the next pull
+unless someone re-applies it. If you do:
+
+1. Mark it `[upstream]` in a comment on the block, saying what it adds and why it isn't upstream yet.
+   `git grep '\[upstream\]'` is how the next upgrade finds these — an unmarked change is a silent
+   regression waiting for the next sync.
+2. Keep it minimal and backwards-compatible.
+3. Cover it with a test in the app, so a dropped local change fails a test rather than a screenshot.
+4. Track it for contribution upstream.
+
+See `registry-upgrade.md` for the pull-and-migrate procedure.
 
 ## Rules
 

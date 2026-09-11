@@ -12,16 +12,16 @@
 import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
+import { beforeEach, describe, expect, it, rs } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { usePipelineLint } from './use-pipeline-lint';
 
 // Deterministic: skip the 500ms debounce so the hook lints the passed YAML immediately.
-vi.mock('hooks/use-debounced-value', () => ({ useDebouncedValue: (v: string) => v }));
+rs.mock('hooks/use-debounced-value', () => ({ useDebouncedValue: (v: string) => v }));
 
-const mockUseLintQuery = vi.fn();
-vi.mock('react-query/api/connect', () => ({
+const mockUseLintQuery = rs.fn();
+rs.mock('react-query/api/connect', () => ({
   useLintPipelineConfigQuery: (...args: unknown[]) => mockUseLintQuery(...args),
 }));
 

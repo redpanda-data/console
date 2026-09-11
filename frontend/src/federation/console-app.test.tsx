@@ -12,21 +12,21 @@
 import { act, render, waitFor } from '@testing-library/react';
 
 // Mock TanStack Router before any imports
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual('@tanstack/react-router');
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
-    createRouter: vi.fn(() => ({
-      subscribe: vi.fn(() => vi.fn()), // Returns unsubscribe function
-      load: vi.fn().mockResolvedValue(undefined),
+    createRouter: rs.fn(() => ({
+      subscribe: rs.fn(() => rs.fn()), // Returns unsubscribe function
+      load: rs.fn().mockResolvedValue(undefined),
       state: { location: { pathname: '/topics', searchStr: '' } },
-      navigate: vi.fn(),
+      navigate: rs.fn(),
     })),
-    createMemoryHistory: vi.fn(() => ({
+    createMemoryHistory: rs.fn(() => ({
       location: { pathname: '/topics' },
-      listen: vi.fn(),
-      push: vi.fn(),
-      replace: vi.fn(),
+      listen: rs.fn(),
+      push: rs.fn(),
+      replace: rs.fn(),
     })),
     RouterProvider: ({ children }: { children?: React.ReactNode }) => (
       <div data-testid="router-provider">{children}</div>
@@ -34,34 +34,34 @@ vi.mock('@tanstack/react-router', async () => {
   };
 });
 
-vi.mock('config', () => ({
+rs.mock('config', () => ({
   config: {
     jwt: undefined as string | undefined,
   },
-  setup: vi.fn(),
-  getGrpcBasePath: vi.fn(() => 'http://localhost:9090'),
-  addBearerTokenInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
-  checkExpiredLicenseInterceptor: vi.fn((next) => async (request: unknown) => await next(request)),
+  setup: rs.fn(),
+  getGrpcBasePath: rs.fn(() => 'http://localhost:9090'),
+  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
+  checkExpiredLicenseInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
 }));
 
-vi.mock('protobuf-registry', () => ({
+rs.mock('protobuf-registry', () => ({
   protobufRegistry: {},
 }));
 
-vi.mock('../routeTree.gen', () => ({
+rs.mock('../routeTree.gen', () => ({
   routeTree: {},
 }));
 
-vi.mock('../components/misc/not-found-page', () => ({
+rs.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: () => <div>Not Found</div>,
 }));
 
-vi.mock('./token-manager', () => ({
+rs.mock('./token-manager', () => ({
   TokenManager: class MockTokenManager {
     private getToken: () => Promise<string>;
-    refresh = vi.fn();
-    reset = vi.fn();
-    setGetAccessToken = vi.fn();
+    refresh = rs.fn();
+    reset = rs.fn();
+    setGetAccessToken = rs.fn();
     isRefreshing = false;
 
     constructor(getToken: () => Promise<string>) {
@@ -79,11 +79,11 @@ import type { ConsoleAppProps } from './types';
 import { config, setup } from '../config';
 
 describe('ConsoleApp', () => {
-  const mockGetAccessToken = vi.fn();
-  const mockOnRouteChange = vi.fn();
-  const mockOnSidebarItemsChange = vi.fn();
-  const mockOnBreadcrumbsChange = vi.fn();
-  const mockOnError = vi.fn();
+  const mockGetAccessToken = rs.fn();
+  const mockOnRouteChange = rs.fn();
+  const mockOnSidebarItemsChange = rs.fn();
+  const mockOnBreadcrumbsChange = rs.fn();
+  const mockOnError = rs.fn();
 
   const defaultProps: ConsoleAppProps = {
     getAccessToken: mockGetAccessToken,
@@ -98,7 +98,7 @@ describe('ConsoleApp', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockGetAccessToken.mockResolvedValue('test-token-123');
     // Reset config.jwt
     config.jwt = undefined;
@@ -287,15 +287,15 @@ describe('ConsoleApp', () => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      const createRouterCallCount = vi.mocked(createRouter).mock.calls.length;
-      const createMemoryHistoryCallCount = vi.mocked(createMemoryHistory).mock.calls.length;
+      const createRouterCallCount = rs.mocked(createRouter).mock.calls.length;
+      const createMemoryHistoryCallCount = rs.mocked(createMemoryHistory).mock.calls.length;
 
       // Rerender with a different initialPath (simulates cloud-ui navigation)
       rerender(<ConsoleApp {...defaultProps} initialPath="/groups" />);
 
       // Router should NOT have been recreated
-      expect(vi.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
-      expect(vi.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
+      expect(rs.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
+      expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
     });
 
     test('uses first initialPath for memory history, ignores subsequent changes', async () => {
@@ -308,15 +308,15 @@ describe('ConsoleApp', () => {
       });
 
       // Verify initial path was used
-      expect(vi.mocked(createMemoryHistory)).toHaveBeenCalledWith(
+      expect(rs.mocked(createMemoryHistory)).toHaveBeenCalledWith(
         expect.objectContaining({ initialEntries: ['/topics'] })
       );
 
-      const callCount = vi.mocked(createMemoryHistory).mock.calls.length;
+      const callCount = rs.mocked(createMemoryHistory).mock.calls.length;
 
       // Changing initialPath should not create a new memory history
       rerender(<ConsoleApp {...defaultProps} initialPath="/schema-registry" />);
-      expect(vi.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
+      expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
     });
   });
 
@@ -326,14 +326,14 @@ describe('ConsoleApp', () => {
       const { createRouter } = await import('@tanstack/react-router');
       let subscribedCallback: ((event: unknown) => void) | undefined;
 
-      vi.mocked(createRouter).mockReturnValueOnce({
-        subscribe: vi.fn((event: string, cb: (event: unknown) => void) => {
+      rs.mocked(createRouter).mockReturnValueOnce({
+        subscribe: rs.fn((event: string, cb: (event: unknown) => void) => {
           subscribedCallback = cb;
-          return vi.fn(); // unsubscribe
+          return rs.fn(); // unsubscribe
         }),
-        load: vi.fn().mockResolvedValue(undefined),
+        load: rs.fn().mockResolvedValue(undefined),
         state: { location: { pathname: '/topics', searchStr: '' } },
-        navigate: vi.fn(),
+        navigate: rs.fn(),
       } as unknown as ReturnType<typeof createRouter>);
 
       render(<ConsoleApp {...defaultProps} />);
@@ -353,11 +353,11 @@ describe('ConsoleApp', () => {
 
     test('navigateTo with search params triggers router navigation', async () => {
       const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = vi.fn();
+      const mockNavigate = rs.fn();
 
-      vi.mocked(createRouter).mockReturnValueOnce({
-        subscribe: vi.fn(() => vi.fn()),
-        load: vi.fn().mockResolvedValue(undefined),
+      rs.mocked(createRouter).mockReturnValueOnce({
+        subscribe: rs.fn(() => rs.fn()),
+        load: rs.fn().mockResolvedValue(undefined),
         state: { location: { pathname: '/topics', searchStr: '' } },
         navigate: mockNavigate,
       } as unknown as ReturnType<typeof createRouter>);
@@ -378,11 +378,11 @@ describe('ConsoleApp', () => {
 
     test('navigateTo without search params still works (backwards compat)', async () => {
       const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = vi.fn();
+      const mockNavigate = rs.fn();
 
-      vi.mocked(createRouter).mockReturnValueOnce({
-        subscribe: vi.fn(() => vi.fn()),
-        load: vi.fn().mockResolvedValue(undefined),
+      rs.mocked(createRouter).mockReturnValueOnce({
+        subscribe: rs.fn(() => rs.fn()),
+        load: rs.fn().mockResolvedValue(undefined),
         state: { location: { pathname: '/topics', searchStr: '' } },
         navigate: mockNavigate,
       } as unknown as ReturnType<typeof createRouter>);
@@ -403,11 +403,11 @@ describe('ConsoleApp', () => {
 
     test('navigateTo matching current path + searchStr is a no-op', async () => {
       const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = vi.fn();
+      const mockNavigate = rs.fn();
 
-      vi.mocked(createRouter).mockReturnValueOnce({
-        subscribe: vi.fn(() => vi.fn()),
-        load: vi.fn().mockResolvedValue(undefined),
+      rs.mocked(createRouter).mockReturnValueOnce({
+        subscribe: rs.fn(() => rs.fn()),
+        load: rs.fn().mockResolvedValue(undefined),
         state: { location: { pathname: '/topics', searchStr: '?tab=messages' } },
         navigate: mockNavigate,
       } as unknown as ReturnType<typeof createRouter>);

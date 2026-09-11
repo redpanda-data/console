@@ -1,9 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as React from 'react';
 
-vi.mock('@redpanda-data/ui', async () => {
-  const React = await import('react');
-
+rs.mock('@redpanda-data/ui', () => {
   const Div = React.forwardRef<HTMLDivElement, Record<string, unknown>>(({ children, ...props }, ref) => (
     <div ref={ref} {...props}>
       {children}
@@ -24,7 +23,7 @@ vi.mock('@redpanda-data/ui', async () => {
       <div>{items[defaultIndex]?.component}</div>
     ),
     useColorModeValue: (light: unknown) => light,
-    useToast: () => vi.fn(),
+    useToast: () => rs.fn(),
   };
 });
 
@@ -33,11 +32,11 @@ import { MessageKeyPreview } from './message-key-preview';
 import { MessagePreview } from './message-preview';
 import { CompressionType, type Payload, type TopicMessage } from '../../../../../state/rest-interfaces';
 
-const { kowlJsonViewSpy } = vi.hoisted(() => ({
-  kowlJsonViewSpy: vi.fn(),
+const { kowlJsonViewSpy } = rs.hoisted(() => ({
+  kowlJsonViewSpy: rs.fn(),
 }));
 
-vi.mock('../../../../../state/ui-state', () => ({
+rs.mock('../../../../../state/ui-state', () => ({
   uiState: {
     topicSettings: {
       previewDisplayMode: 'wrap',
@@ -46,40 +45,40 @@ vi.mock('../../../../../state/ui-state', () => ({
   },
 }));
 
-vi.mock('../../../../../config', () => ({
+rs.mock('../../../../../config', () => ({
   isServerless: () => false,
 }));
 
-vi.mock('../../../../../state/backend-api', () => ({
+rs.mock('../../../../../state/backend-api', () => ({
   api: {},
-  createMessageSearch: vi.fn(),
+  createMessageSearch: rs.fn(),
 }));
 
-vi.mock('components/icons', () => ({
+rs.mock('components/icons', () => ({
   WarningIcon: () => <span data-testid="warning-icon" />,
   InfoIcon: () => <span data-testid="info-icon" />,
 }));
 
-vi.mock('../preview-settings', () => ({
+rs.mock('../preview-settings', () => ({
   getPreviewTags: () => [],
 }));
 
-vi.mock('../../../../misc/kowl-json-view', () => ({
+rs.mock('../../../../misc/kowl-json-view', () => ({
   KowlJsonView: (props: { srcObj: object | string | null | undefined }) => {
     kowlJsonViewSpy(props);
     return <div data-testid="mock-kowl-json-view" />;
   },
 }));
 
-vi.mock('./message-headers', () => ({
+rs.mock('./message-headers', () => ({
   MessageHeaders: () => <div data-testid="message-headers" />,
 }));
 
-vi.mock('./message-meta-data', () => ({
+rs.mock('./message-meta-data', () => ({
   MessageMetaData: () => <div data-testid="message-meta-data" />,
 }));
 
-vi.mock('./troubleshoot-report-viewer', () => ({
+rs.mock('./troubleshoot-report-viewer', () => ({
   TroubleshootReportViewer: () => null,
 }));
 
@@ -126,7 +125,7 @@ describe('topic message rendering', () => {
       keyJson: 'cached key preview',
       valueJson: 'cached value preview',
     });
-    const stringifySpy = vi.spyOn(JSON, 'stringify');
+    const stringifySpy = rs.spyOn(JSON, 'stringify');
 
     render(
       <>
@@ -156,10 +155,10 @@ describe('topic message rendering', () => {
     const props = {
       msg,
       topicName: 'market-data',
-      onLoadLargeMessage: vi.fn().mockResolvedValue(undefined),
-      onSetDownloadMessages: vi.fn(),
-      onCopyKey: vi.fn(),
-      onCopyValue: vi.fn(),
+      onLoadLargeMessage: rs.fn().mockResolvedValue(undefined),
+      onSetDownloadMessages: rs.fn(),
+      onCopyKey: rs.fn(),
+      onCopyValue: rs.fn(),
     };
 
     const { rerender } = render(<ExpandedMessage {...props} />);
@@ -173,7 +172,7 @@ describe('topic message rendering', () => {
 
   test('calls onDownloadRecord when "Download Record" button is clicked', async () => {
     const user = userEvent.setup();
-    const onDownloadRecord = vi.fn();
+    const onDownloadRecord = rs.fn();
     const msg = buildMessage();
 
     render(
@@ -189,10 +188,10 @@ describe('topic message rendering', () => {
   test('rerenders expanded object payloads when the message prop changes', () => {
     const props = {
       topicName: 'market-data',
-      onLoadLargeMessage: vi.fn().mockResolvedValue(undefined),
-      onSetDownloadMessages: vi.fn(),
-      onCopyKey: vi.fn(),
-      onCopyValue: vi.fn(),
+      onLoadLargeMessage: rs.fn().mockResolvedValue(undefined),
+      onSetDownloadMessages: rs.fn(),
+      onCopyKey: rs.fn(),
+      onCopyValue: rs.fn(),
     };
     const firstMessage = buildMessage({
       value: buildPayload({

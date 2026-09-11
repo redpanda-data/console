@@ -9,13 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import type { SortingState } from '@redpanda-data/ui';
+import type { SortingState } from '@tanstack/react-table';
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 
 import { AclRequestDefault, type GetAclsRequest } from './rest-interfaces';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
-import type { ConnectTabKeys } from '../components/pages/connect/overview';
 import type { TopicTabId } from '../components/pages/topics/topic-details';
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { clone } from '../utils/json-utils';
@@ -110,6 +109,8 @@ export const PartitionOffsetOrigin = {
 } as const;
 
 export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typeof PartitionOffsetOrigin];
+
+export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 
 export const DEFAULT_SEARCH_PARAMS = {
   offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
@@ -229,10 +230,6 @@ type UISettings = {
       pageSize: number;
     };
 
-    // Select
-    quickSearch: string;
-    pageSizeSelect: number;
-
     // Brokers
     pageSizeBrokers: number;
 
@@ -289,10 +286,6 @@ type UISettings = {
   };
 
   pipelinesList: {
-    quickSearch: string;
-  };
-
-  rpcnSecretList: {
     quickSearch: string;
   };
 
@@ -412,10 +405,6 @@ const defaultUiSettings: UISettings = {
       pageSize: 5,
     },
 
-    // Select
-    quickSearch: '',
-    pageSizeSelect: 10,
-
     // Brokers
     pageSizeBrokers: 10,
 
@@ -472,10 +461,6 @@ const defaultUiSettings: UISettings = {
   },
 
   pipelinesList: {
-    quickSearch: '',
-  },
-
-  rpcnSecretList: {
     quickSearch: '',
   },
 
@@ -718,7 +703,7 @@ export const useUISettingsStore = create<UISettingsStore>()(
  * clears any pending save timer.
  *
  * Installed from `app.tsx` / `embedded-app.tsx` inside a `useEffect` so
- * React owns the lifecycle. No-op when `window` is undefined (SSR / vitest
+ * React owns the lifecycle. No-op when `window` is undefined (SSR and tests
  * isolate resets before happy-dom installs globals).
  */
 export function installUISettingsSideEffects(): () => void {

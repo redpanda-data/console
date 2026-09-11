@@ -280,18 +280,11 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       if (blocked) {
         let title = 'Statement not allowed';
         let message = `Only read queries are supported in this release. Found "${kw || 'empty statement'}".`;
-        let hint: string | undefined;
-        let hintAction = false;
-        if (kw === 'CREATE') {
-          title = 'Use the wizard to create tables';
-          message = "CREATE TABLE isn't run from the editor in this release.";
-          hint = 'Creating a table from a topic?';
-          hintAction = true;
-        } else if (kw === 'GRANT' || kw === 'REVOKE') {
+        if (kw === 'REVOKE') {
           title = 'Manage access in Security';
           message = 'Grants are managed in Security in this release.';
         }
-        setRun({ state: 'error', token, title, message, hint, hintAction });
+        setRun({ state: 'error', token, title, message });
         return;
       }
 
@@ -414,17 +407,16 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   return (
     <div
       // In-flow page (footer below), viewport-bounded like the RPCN editor
-      // (page-fill-viewport, globals.css). Dark mode re-points the border tokens — the
-      // registry's near-black theme renders borders effectively invisible.
-      className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong dark:[--color-border-strong:var(--color-grey-800)] dark:[--color-border-subtle:var(--color-grey-600)] dark:[--color-border:var(--color-grey-700)]"
+      // (page-fill-viewport, globals.css).
+      className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong"
       ref={expandedModeRef}
     >
       <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', expanded ? 'px-4' : 'mt-3')}>
-        <div className="flex items-center gap-2 font-semibold text-lg text-strong tracking-heading [&_svg]:text-action-primary">
+        <div className="flex items-center gap-2 font-semibold text-heading-md text-strong tracking-heading [&_svg]:text-action-primary">
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Badge size="sm" variant="simple">
+          <Badge size="sm" tone="default" variant="outline">
             {sqlRole === 'admin' ? 'Admin' : 'Viewer · read-only'}
           </Badge>
           <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />
@@ -436,7 +428,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           'flex min-h-0 flex-1 overflow-hidden bg-background transition-[margin,border-radius,border-color,box-shadow] duration-300 ease-in-out',
           // Boxed: rounded card below the studio header. Full: flush sides; top/bottom
           // borders stay so clipped scrollable content keeps a visible edge.
-          expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border pt-3 shadow-sm'
+          expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border shadow-sm'
         )}
       >
         <div className="flex min-h-0 w-[320px] shrink-0 flex-col border-r bg-background">

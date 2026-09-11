@@ -6,119 +6,102 @@ import type React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 const badgeVariants = cva(
-  'group/badge inline-flex max-w-full shrink-0 items-center justify-center overflow-hidden truncate text-ellipsis whitespace-nowrap rounded-full border font-medium transition-[color,box-shadow] selection:bg-selected selection:text-selected-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none',
+  // No `!important` anywhere, so a consumer can restyle the edge: the width lives here and variants
+  // set only a colour. `text-decoration-color` transitions for the `link` variant's underline.
+  'group/badge inline-flex max-w-full shrink-0 items-center justify-center overflow-hidden truncate text-ellipsis whitespace-nowrap rounded-full border font-medium transition-[color,background-color,border-color,box-shadow,text-decoration-color] selection:bg-selection selection:text-selection-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-invalid motion-reduce:transition-none [&>svg]:pointer-events-none',
   {
     variants: {
       variant: {
-        // Flat semantic strings (the `*-inverted` / `*-outline` keys) are marked
-        // deprecated below — prefer the two-axis `tone` + `variant` API.
-        neutral:
-          'border-transparent bg-background-inverse-subtle text-inverse [a&]:hover:bg-background-inverse-subtle-hover',
-        /** @deprecated Prefer `tone` + `variant="subtle"`. */
-        'neutral-inverted': 'border-transparent bg-surface-subtle [a&]:hover:bg-background-subtle-hover',
-        /** @deprecated Prefer `tone` + `variant="outline"`. */
-        'neutral-outline': '!border-outline-inverse border [a&]:hover:bg-background-subtle-hover',
+        // `:is(a, button)` rather than shadcn's `[a&]`, so a Badge rendered as a button reacts too.
+        // No `active:`: the click navigates or removes, which is the feedback.
+        default: 'border-transparent bg-secondary text-secondary-foreground [&:is(a,button)]:hover:bg-secondary-hover',
+        'default-inverted':
+          'border-transparent bg-secondary-wash text-secondary [&:is(a,button)]:hover:bg-secondary-wash-pressed',
+        'default-outline':
+          'border-secondary-line text-secondary [&:is(a,button)]:hover:border-secondary-line-hover [&:is(a,button)]:hover:bg-secondary-wash',
 
-        simple: 'text-secondary [a&]:hover:bg-background-subtle-hover',
-        /** @deprecated Prefer `tone` + `variant="subtle"`. */
-        'simple-inverted': 'text-secondary [a&]:hover:bg-background-subtle-hover',
-        /** @deprecated Prefer `tone` + `variant="outline"`. */
-        'simple-outline': '!border-outline-inverse border text-secondary [a&]:hover:bg-background-subtle-hover',
+        // Transparent at rest, so hover tints in rather than jumping to an opaque ground.
+        simple: 'text-secondary [&:is(a,button)]:hover:bg-accent',
 
-        info: 'border-transparent bg-surface-informative text-inverse [a&]:hover:bg-surface-informative-hover',
-        /** @deprecated Prefer `tone="info"` + `variant="subtle"`. */
-        'info-inverted':
-          'border-transparent bg-background-informative-subtle text-informative [a&]:hover:bg-background-informative-subtle-hover',
-        /** @deprecated Prefer `tone="info"` + `variant="outline"`. */
-        'info-outline':
-          'border-outline-informative bg-transparent text-informative [a&]:hover:bg-background-informative-subtle',
+        informative:
+          'border-transparent bg-surface-informative text-informative-foreground [&:is(a,button)]:hover:bg-surface-informative-hover',
+        'informative-inverted':
+          'border-transparent bg-informative-wash text-informative [&:is(a,button)]:hover:bg-informative-wash-pressed',
+        'informative-outline':
+          'border-informative-line bg-transparent text-informative [&:is(a,button)]:hover:border-informative-line-hover [&:is(a,button)]:hover:bg-informative-wash',
 
-        accent: 'border-transparent bg-brand text-inverse [a&]:hover:bg-surface-brand-hover',
-        /** @deprecated Prefer `tone="accent"` + `variant="subtle"`. */
-        'accent-inverted': 'border-transparent bg-background-brand-subtle text-brand [a&]:hover:bg-brand-alpha-default',
-        /** @deprecated Prefer `tone="accent"` + `variant="outline"`. */
-        'accent-outline': 'border-outline-brand bg-transparent text-brand [a&]:hover:bg-brand-alpha-subtle',
+        brand: 'border-transparent bg-brand text-brand-foreground [&:is(a,button)]:hover:bg-brand-hover',
+        'brand-inverted': 'border-transparent bg-brand-wash text-brand [&:is(a,button)]:hover:bg-brand-wash-pressed',
+        'brand-outline':
+          'border-brand-line bg-transparent text-brand [&:is(a,button)]:hover:border-brand-line-hover [&:is(a,button)]:hover:bg-brand-wash',
 
-        success: 'border-transparent bg-surface-success text-inverse [a&]:hover:bg-surface-success-hover',
-        /** @deprecated Prefer `tone="success"` + `variant="subtle"`. */
+        success:
+          'border-transparent bg-surface-success text-success-foreground [&:is(a,button)]:hover:bg-surface-success-hover',
         'success-inverted':
-          'border-transparent bg-background-success-subtle text-success [a&]:hover:bg-background-success-subtle-hover',
-        /** @deprecated Prefer `tone="success"` + `variant="outline"`. */
-        'success-outline': 'border-outline-success bg-transparent text-success [a&]:hover:bg-background-success-subtle',
+          'border-transparent bg-success-wash text-success [&:is(a,button)]:hover:bg-success-wash-pressed',
+        'success-outline':
+          'border-success-line bg-transparent text-success [&:is(a,button)]:hover:border-success-line-hover [&:is(a,button)]:hover:bg-success-wash',
 
-        // dark:text-inverse-primary on warning-inverted: orange can't pair >~3.6:1 on
-        // orange-900, so white is the only AA-passing dark-mode option.
-        warning: 'border-transparent bg-surface-warning text-warning-foreground [a&]:hover:bg-surface-warning-hover',
-        /** @deprecated Prefer `tone="warning"` + `variant="subtle"`. */
+        warning:
+          'border-transparent bg-surface-warning text-warning-foreground [&:is(a,button)]:hover:bg-surface-warning-hover',
         'warning-inverted':
-          'border-transparent bg-background-warning-subtle text-warning dark:text-inverse-primary [a&]:hover:bg-warning-subtle',
-        /** @deprecated Prefer `tone="warning"` + `variant="outline"`. */
-        'warning-outline': 'border-outline-warning bg-transparent text-warning [a&]:hover:bg-background-warning-subtle',
+          'border-transparent bg-warning-wash text-warning [&:is(a,button)]:hover:bg-warning-wash-pressed',
+        'warning-outline':
+          'border-warning-line bg-transparent text-warning [&:is(a,button)]:hover:border-warning-line-hover [&:is(a,button)]:hover:bg-warning-wash',
 
-        disabled: 'cursor-not-allowed border-transparent bg-background-disabled text-disabled',
-        /** @deprecated Prefer the `disabled` prop. */
+        disabled: 'cursor-not-allowed border-transparent bg-surface-disabled text-disabled',
         'disabled-inverted': 'cursor-not-allowed border-transparent bg-surface-subtle text-disabled',
-        /** @deprecated Prefer the `disabled` prop. */
-        'disabled-outline': 'cursor-not-allowed border-border-strong bg-transparent text-disabled',
+        'disabled-outline': 'cursor-not-allowed border-border bg-transparent text-disabled',
 
         destructive:
-          'border-transparent bg-surface-error text-inverse focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-surface-error-hover',
-        /** @deprecated Prefer `tone="destructive"` + `variant="subtle"`. */
+          'border-transparent bg-surface-destructive text-destructive-foreground focus-visible:ring-destructive/50 [&:is(a,button)]:hover:bg-surface-destructive-hover',
         'destructive-inverted':
-          'border-transparent bg-background-error-subtle text-destructive [a&]:hover:bg-destructive-subtle',
-        /** @deprecated Prefer `tone="destructive"` + `variant="outline"`. */
+          'border-transparent bg-destructive-wash text-destructive [&:is(a,button)]:hover:bg-destructive-wash-pressed',
         'destructive-outline':
-          'border-outline-error bg-transparent text-destructive [a&]:hover:bg-background-error-subtle',
+          'border-destructive-line bg-transparent text-destructive [&:is(a,button)]:hover:border-destructive-line-hover [&:is(a,button)]:hover:bg-destructive-wash',
 
-        secondary: 'border-transparent bg-secondary text-inverse [a&]:hover:bg-secondary/90',
-        /** @deprecated Prefer `tone` + `variant="subtle"`. */
-        'secondary-inverted': 'border-transparent bg-secondary/10 text-secondary [a&]:hover:bg-secondary/20',
-        /** @deprecated Prefer `tone` + `variant="outline"`. */
-        'secondary-outline': 'border-secondary text-secondary [a&]:hover:bg-secondary/10',
+        primary: 'border-transparent bg-primary text-primary-foreground [&:is(a,button)]:hover:bg-primary-hover',
+        'primary-inverted':
+          'border-transparent bg-primary-wash text-primary [&:is(a,button)]:hover:bg-primary-wash-pressed',
+        'primary-outline':
+          'border-primary-line text-primary [&:is(a,button)]:hover:border-primary-line-hover [&:is(a,button)]:hover:bg-primary-wash',
 
-        primary: 'border-transparent bg-primary text-inverse [a&]:hover:bg-primary/90',
-        /** @deprecated Prefer `tone="primary"` + `variant="subtle"`. */
-        'primary-inverted': 'border-transparent bg-primary/10 text-primary [a&]:hover:bg-primary/20',
-        /** @deprecated Prefer `tone="primary"` + `variant="outline"`. */
-        'primary-outline': 'border-primary text-primary [a&]:hover:bg-primary/10',
+        outline:
+          'border-border text-foreground [&:is(a,button)]:hover:bg-accent [&:is(a,button)]:hover:text-accent-foreground',
 
-        outline: 'border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-
-        // shadcn aliases: `default` maps to our `neutral`; `ghost`/`link` mirror the button variants.
-        default:
-          'border-transparent bg-background-inverse-subtle text-inverse [a&]:hover:bg-background-inverse-subtle-hover',
-        ghost: 'border-transparent bg-transparent text-action-primary [a&]:hover:bg-surface-primary-subtle',
-        link: 'border-transparent bg-transparent text-primary underline-offset-4 [a&]:hover:underline',
+        ghost: 'border-transparent bg-transparent text-secondary [&:is(a,button)]:hover:bg-secondary-wash',
+        link: 'link-standalone border-transparent bg-transparent text-action-primary',
       },
       size: {
-        sm: 'h-5 gap-1 px-1.5 py-0 text-[11px] has-[>svg]:px-1 [&_svg]:size-3',
-        md: 'h-6 gap-1 px-2 py-0 text-xs has-[>svg]:px-1.5 [&_svg]:size-3.5',
-        lg: 'h-8 gap-1.5 px-3 py-0 text-sm has-[>svg]:px-2 [&_svg]:size-4',
+        sm: 'h-5 gap-1 px-1.5 py-0 text-2xs has-[>svg]:px-1 [&_svg]:size-3',
+        md: 'h-6 gap-1 px-2 py-0 text-body-sm has-[>svg]:px-1.5 [&_svg]:size-3.5',
+        lg: 'h-8 gap-1.5 px-3 py-0 text-body has-[>svg]:px-2 [&_svg]:size-4',
       },
     },
     defaultVariants: {
-      variant: 'neutral',
+      variant: 'default',
       size: 'md',
     },
   }
 );
 
-/**
- * Recommended semantic color axis. Pair with {@link BadgeEmphasis} via the
- * `tone` and `variant` props: `<Badge tone="success" variant="subtle" />`.
- */
-export type BadgeTone = 'neutral' | 'primary' | 'accent' | 'info' | 'success' | 'warning' | 'destructive';
+/** Recommended colour axis. Pair with {@link BadgeEmphasis}: `<Badge tone="success" variant="subtle" />`. */
+export type BadgeTone = 'default' | 'primary' | 'brand' | 'informative' | 'success' | 'warning' | 'destructive';
 
 /** Recommended emphasis axis. `subtle` is the soft-fill style (formerly `*-inverted`). */
 export type BadgeEmphasis = 'solid' | 'subtle' | 'outline';
 
 /**
- * @deprecated Use the two-axis `tone` + `variant` (solid|subtle|outline) API instead.
- * The flat semantic strings (e.g. `success-inverted`, `primary-outline`) are retained for
- * back-compat and render identically, but will be removed in a future major version.
- * Migration: `variant="success-inverted"` → `tone="success" variant="subtle"`.
+ * The flat strings still worth naming directly. The `<tone>-inverted` / `<tone>-outline` keys the
+ * two-axis API resolves to are deliberately absent: they are the implementation, not the API.
  */
-export type BadgeVariant = VariantProps<typeof badgeVariants>['variant'];
+export type BadgeVariant = 'simple' | 'outline' | 'ghost' | 'link' | 'disabled';
+
+/**
+ * Every key `badgeVariants` declares, including the ones only the resolver names. Exported for
+ * callers of `badgeVariants` itself — it is not the Badge `variant` prop surface, which is narrower.
+ */
+export type BadgeVariantKey = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
 export type BadgeSize = VariantProps<typeof badgeVariants>['size'];
 
 const EMPHASIS_VALUES = new Set<BadgeEmphasis>(['solid', 'subtle', 'outline']);
@@ -126,17 +109,14 @@ const EMPHASIS_VALUES = new Set<BadgeEmphasis>(['solid', 'subtle', 'outline']);
 const isEmphasis = (value: unknown): value is BadgeEmphasis => EMPHASIS_VALUES.has(value as BadgeEmphasis);
 
 /** Map a (tone, emphasis) pair to the underlying flat `badgeVariants` key. */
-function toneToVariant(tone: BadgeTone, emphasis: BadgeEmphasis): BadgeVariant {
+function toneToVariant(tone: BadgeTone, emphasis: BadgeEmphasis): BadgeVariantKey {
   if (emphasis === 'solid') {
     return tone;
   }
-  return `${tone}-${emphasis === 'subtle' ? 'inverted' : 'outline'}` as BadgeVariant;
+  return `${tone}-${emphasis === 'subtle' ? 'inverted' : 'outline'}` as BadgeVariantKey;
 }
 
-/**
- * Resolve the two-axis API (and disabled state) down to a single flat
- * `badgeVariants` key, preserving back-compat for deprecated flat strings.
- */
+/** The two-axis API and disabled state, down to one flat `badgeVariants` key. */
 function resolveBadgeVariant(tone: BadgeTone | undefined, variant: BadgeEmphasis | BadgeVariant, disabled: boolean) {
   if (disabled) {
     if (variant === 'subtle') {
@@ -153,13 +133,13 @@ function resolveBadgeVariant(tone: BadgeTone | undefined, variant: BadgeEmphasis
   }
   // Emphasis shorthand without a tone falls back to the neutral tone.
   if (variant === 'solid') {
-    return 'neutral';
+    return 'default';
   }
   if (variant === 'subtle') {
-    return 'neutral-inverted';
+    return 'default-inverted';
   }
-  // Anything else is a (deprecated) flat variant string — including the generic `outline`.
-  return variant as BadgeVariant;
+  // Anything else is one of the public flat strings — including the generic `outline`.
+  return variant as BadgeVariantKey;
 }
 
 export type BadgeProps = useRender.ComponentProps<'span'> &
@@ -167,10 +147,7 @@ export type BadgeProps = useRender.ComponentProps<'span'> &
     icon?: React.ReactNode;
     /** Semantic color. Recommended; pair with `variant` for emphasis. */
     tone?: BadgeTone;
-    /**
-     * Emphasis (`solid` | `subtle` | `outline`) when `tone` is set. Deprecated flat
-     * strings (e.g. `success-inverted`) are still accepted — see {@link BadgeVariant}.
-     */
+    /** Emphasis when `tone` is set. Deprecated flat strings still work — see {@link BadgeVariant}. */
     variant?: BadgeEmphasis | BadgeVariant;
     size?: BadgeSize;
     /** Renders the disabled appearance regardless of `tone`. */
@@ -190,24 +167,20 @@ function Badge({
   ...props
 }: BadgeProps) {
   const resolvedVariant = resolveBadgeVariant(tone, variant, disabled);
-  // A custom `render` element owns its children (no `icon` composition); the default span composes `icon` + children.
+  // A custom `render` element owns its children (no `icon` composition); the default span composes
+  // `icon` + children, wrapping only string children — others need the badge's own inline-flex layout.
   let content: React.ReactNode = children;
   if (!render) {
-    // Only wrap string children; non-string children need the badge's inline-flex layout.
-    const wrappedChildren = typeof children === 'string' ? <span className="truncate">{children}</span> : children;
-
-    if (icon && children) {
-      content = (
+    const label = typeof children === 'string' ? <span className="truncate">{children}</span> : children;
+    content =
+      icon && children ? (
         <>
           {icon}
-          {wrappedChildren}
+          {label}
         </>
+      ) : (
+        (icon ?? label)
       );
-    } else if (icon) {
-      content = icon;
-    } else {
-      content = wrappedChildren;
-    }
   }
 
   return useRender({

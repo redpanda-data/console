@@ -11,9 +11,9 @@
 
 'use client';
 
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { createDataTableColumnHelper, useDataTable } from 'components/redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { RefreshCw } from 'lucide-react';
 import type { ShadowLinkTaskStatus } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -29,43 +29,43 @@ type TasksTableProps = {
 };
 
 export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProps) => {
-  const columnHelper = createColumnHelper<ShadowLinkTaskStatus>();
+  const columnHelper = createDataTableColumnHelper<ShadowLinkTaskStatus>();
 
   const columns = useMemo(
-    () => [
-      columnHelper.accessor('name', {
-        header: 'Task name',
-        size: 250,
-        cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
-      }),
-      columnHelper.accessor('state', {
-        header: 'State',
-        size: 150,
-        cell: (info) => <TaskStatusBadge state={info.getValue()} taskId={info.row.original.name} />,
-      }),
-      columnHelper.accessor('brokerId', {
-        header: 'Broker ID',
-        size: 100,
-        cell: (info) => <div className="text-body">{info.getValue()}</div>,
-      }),
-      columnHelper.accessor('shard', {
-        header: 'Shard ID',
-        size: 100,
-        cell: (info) => <div className="text-body">{info.getValue()}</div>,
-      }),
-      columnHelper.accessor('reason', {
-        header: 'Reason',
-        size: 300,
-        cell: (info) => <div className="text-body text-muted-foreground">{info.getValue()}</div>,
-      }),
-    ],
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor('name', {
+          header: 'Task name',
+          size: 250,
+          cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('state', {
+          header: 'State',
+          size: 150,
+          cell: (info) => <TaskStatusBadge state={info.getValue()} taskId={info.row.original.name} />,
+        }),
+        columnHelper.accessor('brokerId', {
+          header: 'Broker ID',
+          size: 100,
+          cell: (info) => <div className="text-body">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('shard', {
+          header: 'Shard ID',
+          size: 100,
+          cell: (info) => <div className="text-body">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('reason', {
+          header: 'Reason',
+          size: 300,
+          cell: (info) => <div className="text-body text-muted-foreground">{info.getValue()}</div>,
+        }),
+      ]),
     [columnHelper]
   );
 
-  const table = useReactTable<ShadowLinkTaskStatus>({
+  const table = useDataTable<ShadowLinkTaskStatus>({
     data: tasks ?? [],
     columns,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   return (
@@ -101,7 +101,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id} style={{ width: header.getSize() }}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -111,7 +111,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
               {table.getRowModel().rows.map((row) => (
                 <TableRow data-testid={`task-row-${row.original.name}`} key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
                   ))}
                 </TableRow>
               ))}

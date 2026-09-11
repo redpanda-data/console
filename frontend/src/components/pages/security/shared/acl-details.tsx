@@ -56,23 +56,23 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
               {/* Shared Configuration */}
               <Card className={`${isSimpleView ? 'hidden' : ''}`} size="full">
                 <CardHeader className="pb-4">
-                  <CardTitle className="font-medium text-gray-900 text-lg" data-testid={'share-config-title'}>
+                  <CardTitle className="font-medium text-heading-md text-strong" data-testid={'share-config-title'}>
                     Shared configuration
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <div className="mb-1 font-medium text-gray-700 text-sm">Principal</div>
-                      <div className="text-gray-900 text-sm">
-                        <span className="text-gray-600">{data.principalType}:</span>{' '}
+                      <div className="mb-1 font-medium text-body text-foreground">Principal</div>
+                      <div className="text-body text-strong">
+                        <span className="text-subtle">{data.principalType}:</span>{' '}
                         <span>{parsePrincipal(data.sharedConfig.principal).name}</span>
                       </div>
                     </div>
                     <div>
-                      <div className="mb-1 font-medium text-gray-700 text-sm">Host</div>
-                      <div className="text-gray-900 text-sm">
-                        <span className="text-gray-600">{data.hostType}:</span>{' '}
+                      <div className="mb-1 font-medium text-body text-foreground">Host</div>
+                      <div className="text-body text-strong">
+                        <span className="text-subtle">{data.hostType}:</span>{' '}
                         <span className="font-mono">{data.sharedConfig.host}</span>
                       </div>
                     </div>
@@ -81,9 +81,9 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
               </Card>
 
               {/* Rules */}
-              <Card className="border-gray-200" size="full" variant={isSimpleView ? 'elevated' : undefined}>
+              <Card className="border-border" size="full" variant={isSimpleView ? 'elevated' : undefined}>
                 <CardHeader>
-                  <CardTitle className="font-medium text-gray-900 text-lg" data-testid={'acl-rules-length'}>
+                  <CardTitle className="font-medium text-heading-md text-strong" data-testid={'acl-rules-length'}>
                     {isSimpleView ? (
                       <Button onClick={() => navigate({ to: getGoTo(sharedConfig) })} variant="link">
                         {sharedConfig.principal}
@@ -95,11 +95,11 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {data.rules.length === 0 ? (
-                    <div className="py-8 text-center text-gray-500">No permissions configured</div>
+                    <div className="py-8 text-center text-subtle">No permissions configured</div>
                   ) : (
                     data.rules.map((rule: Rule) => (
                       <div
-                        className="rounded-lg border border-gray-200 p-4"
+                        className="rounded-lg border border-border p-4"
                         data-testid={`summary-card-${getRuleDataTestId(rule)}`}
                         key={rule.id}
                       >

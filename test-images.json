@@ -9,7 +9,7 @@
       "tag": "v0.0.0-20260315git94f368c"
     },
     "kafkaConnect": {
-      "repository": "docker.cloudsmith.io/redpanda/connectors-unsupported/connectors",
+      "repository": "redpandadata/connectors-unsupported",
       "tag": "latest"
     },
     "owlShop": {

@@ -259,7 +259,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
 
           return (
             <Field data-invalid={!!error} key={normalizedSecretName}>
-              <FieldLabel className="font-medium font-mono text-sm" htmlFor={valueId}>
+              <FieldLabel className="font-medium font-mono text-body" htmlFor={valueId}>
                 {normalizedSecretName}
               </FieldLabel>
               <Input
@@ -311,7 +311,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       <div className="flex flex-col gap-2">
         <form className="space-y-3" onSubmit={newSecretForm.handleSubmit(handleCreateNewSecret)}>
           <Field data-invalid={!!newSecretForm.formState.errors.name}>
-            <FieldLabel className="font-medium text-sm" htmlFor="new-secret-name">
+            <FieldLabel className="font-medium text-body" htmlFor="new-secret-name">
               Secret name
             </FieldLabel>
             <Input
@@ -339,7 +339,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
           </Field>
 
           <Field data-invalid={!!newSecretForm.formState.errors.value}>
-            <FieldLabel className="font-medium text-sm" htmlFor="new-secret-value">
+            <FieldLabel className="font-medium text-body" htmlFor="new-secret-value">
               Secret value
             </FieldLabel>
             <Input
@@ -403,7 +403,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                     onClick={() => setShowAddAnotherForm(false)}
                     size="icon-xs"
                     type="button"
-                    variant="secondary-ghost"
+                    variant="ghost"
                   />
                 </div>
               )}
@@ -415,7 +415,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                 className="w-full"
                 onClick={() => setShowAddAnotherForm(true)}
                 type="button"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <Plus className="h-4 w-4" />
                 Add a custom secret

@@ -1,5 +1,7 @@
 import type { Transport } from '@connectrpc/connect';
 import { TransportProvider } from '@connectrpc/connect-query';
+// Copyright 2026 Redpanda Data, Inc.
+
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
@@ -34,9 +36,9 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
 // intra-file heap growth measured during the TDD audit.
 //
 // `cleanupTestHarness` is kept in a separate module so that
-// `vitest.setup.integration.ts` does not transitively import `routeTree.gen`
+// `rstest.setup.ts` does not transitively import `routeTree.gen`
 // (and therefore `config`), which would pin `isEmbedded` live
-// bindings before test files' `vi.mock('config', ...)` hoists can take
+// bindings before test files' `rs.mock('config', ...)` hoists can take
 // effect.
 import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 

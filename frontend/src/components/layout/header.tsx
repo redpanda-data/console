@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { ColorModeSwitch } from '@redpanda-data/ui';
 import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
+import { ThemeModeSwitch } from './theme-mode-switch';
 import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
@@ -25,6 +25,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from '../redpanda-ui/components/breadcrumb';
 import { Button as RegistryButton } from '../redpanda-ui/components/button';
@@ -45,7 +46,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
         {useNewSidebar ? (
           <>
             <SidebarTrigger />
-            <Separator className="mr-2 h-4 self-center" orientation="vertical" />
+            <Separator className="mr-2 h-4" orientation="vertical" />
           </>
         ) : null}
         {isEmbedded() ? null : (
@@ -55,7 +56,14 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
                 <Fragment key={`${index}-${item.linkTo}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
-                    <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
+                    {index === breadcrumbItems.length - 1 ? (
+                      // The current page's crumb isn't a link: it points at the exact URL
+                      // we're already on, and re-navigating to that bare path (no search/hash)
+                      // would drop the page's query params (filters, pagination, active tab).
+                      <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
+                    )}
                   </BreadcrumbItem>
                 </Fragment>
               ))}
@@ -165,7 +173,7 @@ function AppPageHeader() {
                   </Tooltip>
                 </TooltipProvider>
               ))}
-            {IsDev && !isEmbedded() && <ColorModeSwitch m={0} p={0} variant="ghost" />}
+            {IsDev && !isEmbedded() && <ThemeModeSwitch />}
           </div>
         </div>
       )}
@@ -185,9 +193,9 @@ function useRouteOwnsTitleRow() {
   const router = useRouter();
   const { pathname } = useLocation();
 
-  return router
-    .getMatchedRoutes(pathname)
-    .matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
+  const [matchedRoutes] = router.getMatchedRoutes(pathname);
+
+  return matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
 }
 
 /**

@@ -106,13 +106,13 @@ function CertificateDropzone({ certType }: { certType: CertificateType }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline gap-1.5">
-        <span className="font-medium text-sm">{label}</span>
-        <span className="text-muted-foreground text-xs">· optional</span>
+        <span className="font-medium text-body">{label}</span>
+        <span className="text-body-sm text-muted-foreground">· optional</span>
       </div>
       <div className="relative">
         <Dropzone
           accept={CERTIFICATE_ACCEPT}
-          className={cn('justify-start! h-auto! flex-row! gap-2.5! p-2! text-sm', hasCert && 'bg-primary/5!')}
+          className={cn('justify-start! h-auto! flex-row! gap-2.5! p-2! text-body', hasCert && 'bg-primary/5!')}
           maxFiles={1}
           onDrop={handleDrop}
           src={src}
@@ -165,8 +165,8 @@ function CertificateInputField({ certType }: { certType: CertificateType }) {
       render={({ field }) => (
         <FormItem>
           <FormLabel className="flex items-baseline gap-1.5">
-            <span className="font-medium text-sm">{label} path</span>
-            <span className="text-muted-foreground text-xs">· optional</span>
+            <span className="font-medium text-body">{label} path</span>
+            <span className="text-body-sm text-muted-foreground">· optional</span>
           </FormLabel>
           <FormControl>
             <Input
@@ -270,9 +270,9 @@ function DisclosureRow({
             />
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{label}</span>
+                <span className="font-medium text-body">{label}</span>
                 {configured && !open && (
-                  <Badge size="sm" variant="success-inverted">
+                  <Badge size="sm" tone="success" variant="subtle">
                     Configured
                   </Badge>
                 )}

@@ -73,7 +73,7 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
           flexWrap: 'nowrap',
           gap: '3em',
           fontFamily: 'Open Sans',
-          color: 'hsl(0deg, 0%, 30%)',
+          color: 'var(--color-foreground)',
           fontSize: '1.1em',
         }}
       >

@@ -5,10 +5,10 @@
 .rdg.sql-results-grid {
   --rdg-font-size: 12px;
   --rdg-color: var(--color-foreground);
-  --rdg-border-color: var(--color-border-subtle);
+  --rdg-border-color: var(--color-border);
   --rdg-background-color: var(--color-card);
   --rdg-header-background-color: var(--color-muted);
-  --rdg-row-hover-background-color: var(--color-accent-subtle);
+  --rdg-row-hover-background-color: var(--color-accent);
   --rdg-selection-color: var(--color-action-primary);
   border: none;
   block-size: auto;
@@ -20,13 +20,17 @@
   padding-inline: 16px;
 }
 
-/* Zebra stripe, applied per row via rowClass. */
+/* Zebra stripe, applied per row via rowClass. Blended rather than taken straight
+   from `surface-subtle`, which is the header's own tint (`muted` resolves to it) —
+   a stripe that strong stops reading as a stripe. Mixed down against the row base
+   instead of using the translucent `surface-recess`, because the gutter rule below
+   needs this to be opaque. */
 .sql-results-grid .sql-results-row-alt {
-  --rdg-background-color: var(--color-background-subtle);
+  --rdg-background-color: color-mix(in srgb, var(--color-surface-subtle) 45%, var(--color-card));
 }
 
 /* Frozen row-number gutter must stay opaque. rdg's row-hover tint
-   (--color-accent-subtle) is semi-transparent, so without this the first data
+   (--color-accent) is semi-transparent, so without this the first data
    column's text — scrolled horizontally underneath the frozen column — bleeds
    through the hovered row's gutter and overlaps the row number. Paint the
    gutter with the row's opaque base (card, or zebra-subtle on alt rows). */

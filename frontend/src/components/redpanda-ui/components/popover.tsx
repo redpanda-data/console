@@ -107,7 +107,7 @@ function PopoverContent({
       >
         <PopoverPrimitive.Popup
           className={cn(
-            '!border-input w-72 origin-(--transform-origin) rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none transition-[opacity,transform] duration-150 data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+            '!border-input w-72 origin-(--transform-origin) rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none transition-[opacity,transform] data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
             className
           )}
           data-slot="popover-content"
@@ -152,7 +152,7 @@ type PopoverDescriptionProps = PopoverPrimitive.Description.Props & SharedProps;
 function PopoverDescription({ className, testId, ...props }: PopoverDescriptionProps) {
   return (
     <PopoverPrimitive.Description
-      className={cn('text-body text-muted-foreground', className)}
+      className={cn('text-body text-subtle', className)}
       data-slot="popover-description"
       data-testid={testId}
       {...props}

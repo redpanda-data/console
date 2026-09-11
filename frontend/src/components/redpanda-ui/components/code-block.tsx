@@ -8,13 +8,13 @@ import { CopyButton } from './copy-button';
 import { cn, type SharedProps } from '../lib/utils';
 
 const codeBlockVariants = cva(
-  'group fd-codeblock [&.shiki]:!bg-card !border-border relative overflow-hidden rounded-xl border text-sm',
+  'group fd-codeblock [&.shiki]:!bg-card !border-border relative overflow-hidden rounded-xl border text-body',
   {
     variants: {
       size: {
-        sm: 'my-3 text-xs',
-        md: 'my-6 text-sm',
-        lg: 'my-8 text-base',
+        sm: 'my-3 text-body-sm',
+        md: 'my-6 text-body',
+        lg: 'my-8 text-body-lg',
       },
       width: {
         auto: 'w-auto',
@@ -111,10 +111,10 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         className={cn(codeBlockVariants({ size, width, maxHeight }), className)}
       >
         {title ? (
-          <div className="!border-border flex h-10 flex-row items-center gap-2 border-b bg-muted px-4">
+          <div className="!border-border flex h-10 flex-row items-center gap-2 border-b bg-surface-subtle px-4">
             {icon ? (
               <div
-                className="text-muted-foreground [&_svg]:size-3.5"
+                className="text-subtle [&_svg]:size-3.5"
                 // biome-ignore lint/security/noDangerouslySetInnerHtml: no XSS attacks
                 // biome-ignore lint/security/noDangerouslySetInnerHtmlWithChildren: no XSS attacks
                 dangerouslySetInnerHTML={typeof icon === 'string' ? { __html: icon } : undefined}
@@ -122,10 +122,10 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
                 {typeof icon !== 'string' ? icon : null}
               </div>
             ) : null}
-            <figcaption className="flex-1 truncate text-muted-foreground">{title}</figcaption>
+            <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
             {allowCopy ? (
               <CopyButton
-                className="-me-2 bg-transparent selection:bg-selected selection:text-selected-foreground hover:bg-primary/10"
+                className="-me-2 bg-transparent selection:bg-selection selection:text-selection-foreground"
                 isCopied={isCopied}
                 onClick={onCopy}
                 size="sm"
@@ -136,7 +136,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
         ) : (
           allowCopy && (
             <CopyButton
-              className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selected selection:text-selected-foreground hover:bg-primary/10"
+              className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selection selection:text-selection-foreground"
               isCopied={isCopied}
               onClick={onCopy}
               size="sm"
@@ -149,7 +149,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
             ref={areaRef as RefObject<HTMLDivElement | null>}
             {...viewportProps}
             className={cn(
-              'size-full rounded-[inherit] outline-none selection:bg-selected selection:text-selected-foreground focus-visible:outline-1 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'size-full rounded-[inherit] outline-none selection:bg-selection selection:text-selection-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
               viewportProps?.className
             )}
             data-slot="scroll-area-viewport"
@@ -157,7 +157,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
             {props.children}
           </ScrollAreaPrimitive.Viewport>
           <ScrollAreaPrimitive.Scrollbar
-            className="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors"
+            className="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors motion-reduce:transition-none"
             data-slot="scroll-area-scrollbar"
             orientation="horizontal"
           >
@@ -167,7 +167,7 @@ export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
             />
           </ScrollAreaPrimitive.Scrollbar>
           <ScrollAreaPrimitive.Scrollbar
-            className="flex h-full w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors"
+            className="flex h-full w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors motion-reduce:transition-none"
             data-slot="scroll-area-scrollbar"
             orientation="vertical"
           >

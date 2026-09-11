@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: this is a complex component */
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -6,15 +7,15 @@ import React, { createContext, useEffect, useState } from 'react';
 
 import { Button } from './button';
 import { useFieldContext } from './field';
-import { useGroup } from './group';
+import { groupItemClasses, useGroup } from './group';
 import { cn, type SharedProps } from '../lib/utils';
 
 export const inputVariants = cva(
-  'placeholder:!text-muted-foreground !border-input focus-visible:!border-ring aria-invalid:!border-destructive flex w-full min-w-0 border bg-transparent text-base shadow-xs outline-none transition-[color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-foreground file:text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+  'placeholder:!text-placeholder !border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full min-w-0 border bg-input-fill text-body-lg shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-body file:text-foreground hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none md:text-body [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
   {
     variants: {
       size: {
-        sm: 'h-8 px-2.5 py-1 text-sm file:h-6',
+        sm: 'h-8 px-2.5 py-1 text-body file:h-6',
         md: 'h-9 px-3 py-1 file:h-7',
         lg: 'h-10 px-4 py-2 file:h-8',
       },
@@ -132,14 +133,7 @@ function Input({
   // Map input size to a button icon size that fits inside the input (sm → icon-xs, md/lg → icon-sm).
   const passwordToggleSize = size === 'sm' ? ('icon-xs' as const) : ('icon-sm' as const);
 
-  let positionClasses = 'rounded-md';
-  if (attached && groupPosition === 'first') {
-    positionClasses = 'rounded-r-none rounded-l-md border-r-0';
-  } else if (attached && groupPosition === 'last') {
-    positionClasses = 'rounded-r-md rounded-l-none border-l-0';
-  } else if (attached && groupPosition === 'middle') {
-    positionClasses = 'rounded-none border-r-0 border-l-0';
-  }
+  const positionClasses = groupItemClasses(attached, groupPosition);
 
   let inputType = type;
   if (isPasswordInput) {

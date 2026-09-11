@@ -52,16 +52,16 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
   );
 
   return (
-    <div className="rounded-md border border-gray-200 p-4 shadow-sm">
+    <div className="rounded-md border border-border p-4 shadow-sm">
       <div className="flex gap-6">
         <div>
-          <div className="mb-1 text-gray-600 text-xs">TIME RANGE</div>
+          <div className="mb-1 text-body-sm text-subtle">TIME RANGE</div>
           <Select
             items={TIME_RANGES}
             onValueChange={(value) => onTimeRangeChange(value as TimeRange)}
             value={selectedTimeRange}
           >
-            <SelectTrigger className="h-8 w-[145px] text-sm">
+            <SelectTrigger className="h-8 w-[145px] text-body">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -73,20 +73,20 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
             </SelectContent>
           </Select>
         </div>
-        <div className="w-px bg-gray-300" />
+        <div className="w-px bg-border" />
         <div>
-          <div className="mb-1 text-gray-600 text-xs">FROM</div>
-          <div className="font-medium text-sm">{timeRangeDisplay.start}</div>
+          <div className="mb-1 text-body-sm text-subtle">FROM</div>
+          <div className="font-medium text-body">{timeRangeDisplay.start}</div>
         </div>
-        <div className="w-px bg-gray-300" />
+        <div className="w-px bg-border" />
         <div>
-          <div className="mb-1 text-gray-600 text-xs">TO</div>
-          <div className="font-medium text-sm">{timeRangeDisplay.end}</div>
+          <div className="mb-1 text-body-sm text-subtle">TO</div>
+          <div className="font-medium text-body">{timeRangeDisplay.end}</div>
         </div>
-        <div className="w-px bg-gray-300" />
+        <div className="w-px bg-border" />
         <div>
-          <div className="mb-1 text-gray-600 text-xs">TIMEZONE</div>
-          <div className="font-medium text-sm">UTC</div>
+          <div className="mb-1 text-body-sm text-subtle">TIMEZONE</div>
+          <div className="font-medium text-body">UTC</div>
         </div>
       </div>
     </div>

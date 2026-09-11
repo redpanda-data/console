@@ -42,11 +42,11 @@ type Tone = 'success' | 'error' | 'muted';
 // Pill chrome per state: running is a filled green pill, error is red text, everything else
 // (stopped/completed/transitioning) reads as plain muted text.
 const statusPill = cva(
-  'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-sm transition-colors',
+  'inline-flex h-9 items-center gap-2 rounded-full border px-3 font-medium text-body transition-colors',
   {
     variants: {
       tone: {
-        success: 'border-outline-success bg-background-success-subtle text-success',
+        success: 'border-success-line bg-success-wash text-success',
         error: 'border-transparent text-destructive',
         muted: 'border-transparent text-muted-foreground',
       },

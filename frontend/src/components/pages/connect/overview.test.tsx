@@ -11,15 +11,15 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, it, rs } from '@rstest/core';
 import { isEmbedded } from 'config';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
-import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('config', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('config')>()),
-  isEmbedded: vi.fn(),
+rs.mock('config', () => ({
+  ...rs.requireActual<typeof import('config')>('config'),
+  isEmbedded: rs.fn(),
 }));
 
 import KafkaConnectOverview from './overview';
@@ -32,7 +32,7 @@ const transport = createRouterTransport(({ rpc }) => {
 });
 
 const renderPage = (embedded: boolean) => {
-  vi.mocked(isEmbedded).mockReturnValue(embedded);
+  rs.mocked(isEmbedded).mockReturnValue(embedded);
   renderWithFileRoutes(<KafkaConnectOverview matchedPath="/connect-clusters" />, { transport });
 };
 

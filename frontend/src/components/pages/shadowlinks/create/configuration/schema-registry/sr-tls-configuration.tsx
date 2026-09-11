@@ -150,13 +150,13 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline gap-1.5">
-        <span className="font-medium text-sm">{label}</span>
-        {optional && <span className="text-muted-foreground text-xs">· optional</span>}
+        <span className="font-medium text-body">{label}</span>
+        {optional && <span className="text-body-sm text-muted-foreground">· optional</span>}
       </div>
       <div className="relative">
         <Dropzone
           accept={CERTIFICATE_ACCEPT}
-          className={cn('justify-start! h-auto! flex-row! gap-2.5! p-2! text-sm', hasCert && 'bg-primary/5!')}
+          className={cn('justify-start! h-auto! flex-row! gap-2.5! p-2! text-body', hasCert && 'bg-primary/5!')}
           maxFiles={1}
           onDrop={handleDrop}
           onError={handleUploadError}
@@ -192,7 +192,7 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
 }
 
 const ConfiguredBadge = () => (
-  <Badge size="sm" variant="success-inverted">
+  <Badge size="sm" tone="success" variant="subtle">
     Configured
   </Badge>
 );
@@ -235,10 +235,10 @@ const ExistingKeyRow = () => {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="font-medium text-sm">{CERTIFICATE_LABELS.clientKey}</span>
+      <span className="font-medium text-body">{CERTIFICATE_LABELS.clientKey}</span>
       <div className="relative">
         <div
-          className="flex items-center gap-2.5 rounded-lg border bg-primary/5 p-2 text-sm"
+          className="flex items-center gap-2.5 rounded-lg border bg-primary/5 p-2 text-body"
           data-testid="sr-clientKey-existing-status"
         >
           <Check className="h-4 w-4 shrink-0 text-success" />
@@ -251,7 +251,10 @@ const ExistingKeyRow = () => {
         />
       </div>
       {fingerprint && (
-        <div className="truncate font-mono text-muted-foreground text-xs" data-testid="sr-existing-key-fingerprint">
+        <div
+          className="truncate font-mono text-body-sm text-muted-foreground"
+          data-testid="sr-existing-key-fingerprint"
+        >
           SHA-256: {fingerprint}
         </div>
       )}
@@ -329,12 +332,12 @@ const SrTlsFilePathsNotice = ({
   filePaths: NonNullable<SchemaRegistryFormValues['mtls']['filePaths']>;
 }) => (
   <div className="rounded-md border bg-muted/30 p-4" data-testid="sr-tls-file-settings-readonly">
-    <div className="font-medium text-sm">TLS certificate file paths</div>
+    <div className="font-medium text-body">TLS certificate file paths</div>
     <p className="mt-1 text-body-sm text-muted-foreground">
       TLS for this link is configured with certificate file paths (for example via rpk). Console preserves these
       settings as-is; use rpk or the Admin API to change them.
     </p>
-    <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+    <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-body">
       <span className="text-muted-foreground">CA</span>
       <span className="truncate font-mono" data-testid="sr-tls-file-ca-path">
         {filePaths.caPath || '—'}
@@ -386,7 +389,7 @@ function DisclosureRow({
             />
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{label}</span>
+                <span className="font-medium text-body">{label}</span>
                 {!open && badge}
               </div>
               <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>

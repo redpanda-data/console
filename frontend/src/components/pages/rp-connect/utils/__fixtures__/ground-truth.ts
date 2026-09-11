@@ -14,16 +14,13 @@ import groundTruthConfigSchemaJson from './ground-truth-config-schema.json' with
 import type { ConnectComponentSpec, ConnectComponentType } from '../../types/schema';
 
 /**
- * Ground-truth fixtures captured from the Connect Cloud schema (RPCN 4.100.0, benthos v4.73.0),
- * covering: kafka / generate / http_client inputs, aws_s3 output, mapping processor, chunker
- * scanner. Long prose (descriptions, option docs) is stubbed to 'x'; flag/default/kind/type
- * data is verbatim.
+ * Fixtures captured from the Connect Cloud schema (RPCN 4.100.0, benthos v4.73.0): kafka/generate/
+ * http_client inputs, aws_s3 output, mapping processor, chunker scanner. Descriptions are stubbed to
+ * 'x'; flag/default/kind/type data is verbatim.
  *
- * `ground-truth-components.json` mirrors the ListComponents proto path byte-for-byte, including
- * its known losses: only string defaults survive (int/bool/collection defaults arrive as ''),
- * and there is no secret field. `ground-truth-config-schema.json` is the corresponding
- * GetPipelineServiceConfigSchema output (benthos MarshalJSONSchema): per-field
- * is_optional/is_advanced/is_secret/is_deprecated plus `required` arrays, but no defaults.
+ * `ground-truth-components.json` mirrors the ListComponents proto path byte-for-byte, losses
+ * included — only string defaults survive, and there is no secret field. The config-schema JSON is
+ * the matching GetPipelineServiceConfigSchema output: per-field flags plus `required`, no defaults.
  */
 export const groundTruthComponents = groundTruthComponentsJson as unknown as ConnectComponentSpec[];
 

@@ -9,57 +9,58 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithFileRoutes, screen } from 'test-utils';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-const mockNavigate = vi.fn();
-const mockMutateGlobal = vi.fn();
-const mockMutateSubject = vi.fn();
-const mockMutateContext = vi.fn();
+const mockNavigate = rs.fn();
+const mockMutateGlobal = rs.fn();
+const mockMutateSubject = rs.fn();
+const mockMutateContext = rs.fn();
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
   };
 });
 
-vi.mock('react-query/api/schema-registry', () => ({
-  useSchemaModeQuery: vi.fn(() => ({
+rs.mock('react-query/api/schema-registry', () => ({
+  ...rs.requireActual<typeof import('react-query/api/schema-registry')>('react-query/api/schema-registry'),
+  useSchemaModeQuery: rs.fn(() => ({
     data: 'READWRITE',
     isLoading: false,
   })),
-  useSchemaCompatibilityQuery: vi.fn(() => ({
+  useSchemaCompatibilityQuery: rs.fn(() => ({
     data: 'BACKWARD',
     isLoading: false,
   })),
-  useSchemaDetailsQuery: vi.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
+  useSchemaDetailsQuery: rs.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
     data: undefined,
     isLoading: false,
   })),
-  useUpdateGlobalCompatibilityMutation: vi.fn(() => ({
+  useUpdateGlobalCompatibilityMutation: rs.fn(() => ({
     mutate: mockMutateGlobal,
     isPending: false,
   })),
-  useUpdateSubjectCompatibilityMutation: vi.fn(() => ({
+  useUpdateSubjectCompatibilityMutation: rs.fn(() => ({
     mutate: mockMutateSubject,
     isPending: false,
   })),
-  useSchemaRegistryContextsQuery: vi.fn(() => ({
+  useSchemaRegistryContextsQuery: rs.fn(() => ({
     data: [],
     isLoading: false,
   })),
-  useUpdateContextCompatibilityMutation: vi.fn(() => ({
+  useUpdateContextCompatibilityMutation: rs.fn(() => ({
     mutate: mockMutateContext,
     isPending: false,
   })),
 }));
 
-vi.mock('state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('state/backend-api')>();
+rs.mock('state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
   return {
     ...actual,
     api: {
@@ -69,7 +70,7 @@ vi.mock('state/backend-api', async (importOriginal) => {
   };
 });
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -89,11 +90,11 @@ import EditSchemaCompatibilityPage from './edit-compatibility';
 
 describe('EditSchemaCompatibilityPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    rs.restoreAllMocks();
   });
 
   describe('Global compatibility (no subjectName)', () => {
@@ -141,7 +142,7 @@ describe('EditSchemaCompatibilityPage', () => {
     const subjectName = 'my-test-subject';
 
     beforeEach(() => {
-      vi.mocked(useSchemaDetailsQuery).mockReturnValue({
+      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
         data: {
           name: subjectName,
           mode: 'READWRITE',
@@ -221,7 +222,7 @@ describe('EditSchemaCompatibilityPage', () => {
     });
 
     test('shows context name in header when editing context compatibility', async () => {
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
         isLoading: false,
       } as never);
@@ -234,7 +235,7 @@ describe('EditSchemaCompatibilityPage', () => {
     test('calls context mutation on save', async () => {
       const user = userEvent.setup();
 
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
         isLoading: false,
       } as never);
@@ -257,7 +258,7 @@ describe('EditSchemaCompatibilityPage', () => {
     test('defaults to DEFAULT when context compatibility is undefined', async () => {
       const user = userEvent.setup();
 
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.new-ctx', mode: 'READWRITE', compatibility: undefined }],
         isLoading: false,
       } as never);
@@ -278,7 +279,7 @@ describe('EditSchemaCompatibilityPage', () => {
     test('navigates to schema-registry with context search param on cancel', async () => {
       const user = userEvent.setup();
 
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
         isLoading: false,
       } as never);
@@ -296,7 +297,7 @@ describe('EditSchemaCompatibilityPage', () => {
     test('calls onSuccess callback which shows toast and navigates', async () => {
       const user = userEvent.setup();
 
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
         isLoading: false,
       } as never);
@@ -318,7 +319,7 @@ describe('EditSchemaCompatibilityPage', () => {
     test('calls onError callback which shows error toast', async () => {
       const user = userEvent.setup();
 
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
         isLoading: false,
       } as never);
@@ -336,7 +337,7 @@ describe('EditSchemaCompatibilityPage', () => {
 
   describe('Loading and edge cases', () => {
     test('shows skeleton while loading mode', () => {
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as never);
@@ -348,7 +349,7 @@ describe('EditSchemaCompatibilityPage', () => {
     });
 
     test('shows skeleton while loading compatibility', () => {
-      vi.mocked(useSchemaCompatibilityQuery).mockReturnValue({
+      rs.mocked(useSchemaCompatibilityQuery).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as never);
@@ -359,11 +360,11 @@ describe('EditSchemaCompatibilityPage', () => {
     });
 
     test('shows skeleton while loading subject details', () => {
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
         isLoading: false,
       } as never);
-      vi.mocked(useSchemaDetailsQuery).mockReturnValue({
+      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as never);
@@ -376,7 +377,7 @@ describe('EditSchemaCompatibilityPage', () => {
     test('shows skeleton while loading contexts', () => {
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
 
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as never);
@@ -393,11 +394,11 @@ describe('EditSchemaCompatibilityPage', () => {
 
     test('disables save button when user lacks permission', async () => {
       // Ensure mocks are in correct state
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
         isLoading: false,
       } as never);
-      vi.mocked(useSchemaCompatibilityQuery).mockReturnValue({
+      rs.mocked(useSchemaCompatibilityQuery).mockReturnValue({
         data: 'BACKWARD',
         isLoading: false,
       } as never);
@@ -413,7 +414,7 @@ describe('EditSchemaCompatibilityPage', () => {
     });
 
     test('shows not configured page when schema registry is not configured', () => {
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: null,
         isLoading: false,
       } as never);

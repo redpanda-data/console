@@ -4,19 +4,19 @@ import React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 const tableVariants = cva(
-  'relative w-full min-w-0 overflow-x-auto rounded-lg border border-border border-solid bg-card p-0 shadow-shadow-elevated',
+  'relative w-full min-w-0 overflow-x-auto rounded-lg border border-border border-solid bg-card p-0 shadow-elevated',
   {
     variants: {
       variant: {
         standard: '',
-        simple: 'border-0 bg-transparent shadow-none dark:bg-transparent',
+        simple: 'border-0 bg-transparent shadow-none',
         bordered: 'border-2',
         card: 'shadow-lg',
       },
       size: {
-        sm: '[&_table]:text-xs',
-        md: '[&_table]:text-sm',
-        lg: '[&_table]:text-base',
+        sm: '[&_table]:text-body-sm',
+        md: '[&_table]:text-body',
+        lg: '[&_table]:text-body-lg',
       },
     },
     defaultVariants: {
@@ -27,7 +27,7 @@ const tableVariants = cva(
 );
 
 const tableHeadVariants = cva(
-  'h-10 whitespace-nowrap px-4 align-middle font-medium text-foreground selection:bg-selected selection:text-selected-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+  'h-10 whitespace-nowrap px-4 align-middle font-medium text-foreground selection:bg-selection selection:text-selection-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
   {
     variants: {
       align: {
@@ -53,7 +53,7 @@ const tableHeadVariants = cva(
 );
 
 const tableCellVariants = cva(
-  'whitespace-nowrap p-4 align-middle selection:bg-selected selection:text-selected-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+  'whitespace-nowrap p-4 align-middle selection:bg-selection selection:text-selection-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
   {
     variants: {
       align: {
@@ -99,7 +99,13 @@ function TableHeader({ className, testId, ...props }: React.ComponentProps<'thea
 function TableBody({ className, testId, ...props }: React.ComponentProps<'tbody'> & SharedProps) {
   return (
     <tbody
-      className={cn('[&_tr:hover]:bg-muted/50 [&_tr:last-child]:border-0', className)}
+      className={cn(
+        // No `active:` step here, unlike other rows: dragging across a table to
+        // select text holds the pointer down, and a pressed fill would flash
+        // through the whole selection.
+        '[&_tr:last-child]:border-0 [&_tr]:hover:bg-accent',
+        className
+      )}
       data-slot="table-body"
       data-testid={testId}
       {...props}
@@ -110,7 +116,7 @@ function TableBody({ className, testId, ...props }: React.ComponentProps<'tbody'
 function TableFooter({ className, testId, ...props }: React.ComponentProps<'tfoot'> & SharedProps) {
   return (
     <tfoot
-      className={cn('border-t bg-muted/50 font-medium [&>tr]:last:border-b-0', className)}
+      className={cn('border-t bg-surface-recess font-medium [&>tr]:last:border-b-0', className)}
       data-slot="table-footer"
       data-testid={testId}
       {...props}
@@ -122,7 +128,9 @@ function TableRow({ className, testId, ...props }: React.ComponentProps<'tr'> & 
   return (
     <tr
       className={cn(
-        'border-b transition-colors has-aria-expanded:bg-muted/50 data-[state=selected]:bg-primary/20',
+        // `selected-wash`, not a `-pressed` step: selection is a rest state, and a state token as a
+        // rest value moves whenever that ramp is retuned.
+        'border-b transition-colors has-aria-expanded:bg-accent data-[state=selected]:bg-selected-wash motion-reduce:transition-none',
         className
       )}
       data-slot="table-row"
@@ -168,7 +176,7 @@ function TableCaption({ className, testId, ...props }: React.ComponentProps<'cap
   return (
     <caption
       className={cn(
-        'mt-4 mb-4 text-muted-foreground text-sm selection:bg-selected selection:text-selected-foreground',
+        'mt-4 mb-4 text-body text-subtle selection:bg-selection selection:text-selection-foreground',
         className
       )}
       data-slot="table-caption"

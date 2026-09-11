@@ -510,7 +510,7 @@ function YamlViewPanel({
   );
 
   const edge =
-    'pointer-events-none absolute inset-x-0 h-4 from-black/10 to-transparent transition-opacity duration-150 dark:from-black/40';
+    'pointer-events-none absolute inset-x-0 h-4 from-static-dark/10 to-transparent transition-opacity duration-150 dark:from-static-dark/40';
   return (
     <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
       {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
@@ -542,7 +542,9 @@ function YamlViewPanel({
 function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
   if (!pipeline) {
     return (
-      <div className="flex min-h-96 items-center justify-center text-muted-foreground text-sm">Loading pipeline...</div>
+      <div className="flex min-h-96 items-center justify-center text-body text-muted-foreground">
+        Loading pipeline...
+      </div>
     );
   }
   const showThroughput =
@@ -623,7 +625,7 @@ function EditorPanel({
           <div className="mb-3 flex items-center gap-2">
             <h5 className="text-heading-xs text-muted-foreground">Lint issues</h5>
             {Object.keys(lintHints).length > 0 ? (
-              <CountDot count={Object.keys(lintHints).length} variant="error" />
+              <CountDot count={Object.keys(lintHints).length} variant="destructive" />
             ) : null}
           </div>
           <LintHintList isPending={isLintPending} lintHints={lintHints} />
@@ -1170,13 +1172,15 @@ function PipelinePageContent() {
 
   return (
     // Editor lanes are viewport-bounded (page-fill-viewport, globals.css) because Monaco needs a
-    // bounded box. The Monitor lane instead flows with the document, keeping its logs pagination out
-    // from behind an inner fold.
+    // bounded box. The Monitor lane flows with the document, keeping its logs pagination out from
+    // behind an inner fold; it mirrors that measure as a floor so short content still fills the screen.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
     <div
       className={cn(
-        '-ml-3.5 flex min-h-[500px] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
-        !isMonitorLane && 'page-fill-viewport'
+        '-ml-3.5 flex min-w-0 flex-col gap-4 overflow-x-clip pl-3.5',
+        isMonitorLane
+          ? 'min-h-[calc(100dvh_-_var(--console-page-top,7rem)_-_1rem)]'
+          : 'page-fill-viewport min-h-[500px]'
       )}
       ref={expandedModeRef}
     >
@@ -1234,7 +1238,7 @@ function PipelinePageContent() {
                 </TabsList>
               </Tabs>
             ) : (
-              <div className="h-9 border-border! border-b bg-background" />
+              <div className="h-9 border-border! border-b" />
             )}
             <div className="absolute inset-y-0 right-1.5 flex items-center">
               <ExpandedPageToggle expanded={expanded} onToggle={toggleExpanded} />
@@ -1411,7 +1415,7 @@ function PipelinePageContent() {
             <AddTopicStep hideTitle inline ref={topicStepRef} />
           </DialogBody>
           <DialogFooter>
-            <Button onClick={topicDialog.close} variant="secondary-ghost">
+            <Button onClick={topicDialog.close} variant="ghost">
               Cancel
             </Button>
             <Button
@@ -1460,7 +1464,7 @@ function PipelinePageContent() {
             />
           </DialogBody>
           <DialogFooter>
-            <Button onClick={userDialog.close} variant="secondary-ghost">
+            <Button onClick={userDialog.close} variant="ghost">
               Cancel
             </Button>
             <Button

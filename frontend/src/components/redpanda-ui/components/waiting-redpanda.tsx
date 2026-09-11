@@ -78,16 +78,8 @@ const WaitingRedpandaSVG = ({ progress }: { progress?: number }) => {
         fill="#401714"
         fillRule="evenodd"
       />
-      <rect
-        className="dark:fill-base-800"
-        fill="#F4F4F4"
-        height="17"
-        rx="8.5"
-        strokeWidth="0"
-        width="339"
-        x="1"
-        y="52.6934"
-      />
+      {/* The progress track is UI rather than artwork, so it reads from tokens. */}
+      <rect className="fill-surface-subtle" height="17" rx="8.5" strokeWidth="0" width="339" x="1" y="52.6934" />
       <rect
         clipPath="url(#loading-clip)"
         fill="oklch(0.6111 0.2 32.16)"
@@ -103,11 +95,10 @@ const WaitingRedpandaSVG = ({ progress }: { progress?: number }) => {
         )}
       </rect>
       <rect
-        className="dark:stroke-base-300"
+        className="stroke-foreground"
         fill="none"
         height="17"
         rx="8.5"
-        stroke="#161F2E"
         strokeWidth="2"
         width="339"
         x="1"

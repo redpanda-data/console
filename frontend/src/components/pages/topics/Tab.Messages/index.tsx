@@ -23,15 +23,7 @@ import {
 } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
 import '../../../../utils/array-extensions';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import {
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 import {
   CalendarIcon,
   CodeIcon,
@@ -51,7 +43,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DataTablePagination } from 'components/redpanda-ui/components/data-table';
+import {
+  type DataTableColumnDef,
+  DataTablePagination,
+  useDataTable,
+} from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,33 +101,7 @@ import {
 import { encodeBase64, prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import RemovableFilter from '../../../misc/removable-filter';
-
-const payloadEncodingPairs = [
-  { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
-  { value: PayloadEncoding.NULL, label: 'None (Null)' },
-  { value: PayloadEncoding.AVRO, label: 'AVRO' },
-  { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
-  { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
-  { value: PayloadEncoding.JSON, label: 'JSON' },
-  { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
-  { value: PayloadEncoding.XML, label: 'XML' },
-  { value: PayloadEncoding.TEXT, label: 'Plain Text' },
-  { value: PayloadEncoding.UTF8, label: 'UTF-8' },
-  { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
-  { value: PayloadEncoding.SMILE, label: 'Smile' },
-  { value: PayloadEncoding.BINARY, label: 'Binary' },
-  { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
-  { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
-  { value: PayloadEncoding.CBOR, label: 'CBOR' },
-];
-
-const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
-);
+import { PAYLOAD_ENCODING_LABELS } from '../messages/constants';
 
 type TopicMessageViewProps = {
   topic: Topic;
@@ -196,6 +166,22 @@ function onCopyValue(original: TopicMessage) {
       toast.success('Value copied to clipboard');
     })
     .catch(navigatorClipboardErrorHandler);
+}
+
+// A rejection during a search that's being torn down by navigation isn't guaranteed to be a
+// proper Error, so never assume `.message` exists on it.
+function getSearchErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error) {
+    return error;
+  }
+  return 'Unknown error';
+}
+
+function toDisplayError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(getSearchErrorMessage(error));
 }
 
 function onCopyKey(original: TopicMessage) {
@@ -310,7 +296,7 @@ const AddFilterMenuItem: FC<{
           render={
             <span
               aria-disabled
-              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
+              className="relative flex cursor-not-allowed select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body opacity-50 [&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0"
               data-testid={testId}
               role="menuitem"
               tabIndex={-1}
@@ -718,14 +704,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setSearchState((prev) => ({ ...prev, messageSearch: search }));
         const startTime = Date.now();
 
-        const result = await search.startSearch(request, abortSignal).catch((err: Error) => {
-          const msg = err.message ?? String(err);
+        const result = await search.startSearch(request, abortSignal).catch((err: unknown) => {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`error in searchTopicMessages: ${msg}`);
-          setFetchError(err);
-          setSearchPhase(null);
+          console.error(`error in searchTopicMessages: ${getSearchErrorMessage(err)}`);
+          if (isMountedRef.current) {
+            setFetchError(toDisplayError(err));
+            setSearchPhase(null);
+          }
           return [];
         });
+
+        if (!isMountedRef.current) {
+          return result;
+        }
 
         const endTime = Date.now();
         setSearchState((prev) => ({ ...prev, messages: result, windowStartPage: 0 }));
@@ -741,9 +732,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         return result;
       } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-        setFetchError(error as Error);
-        setSearchPhase(null);
+        console.error(`error in searchTopicMessages: ${getSearchErrorMessage(error)}`);
+        if (isMountedRef.current) {
+          setFetchError(toDisplayError(error));
+          setSearchPhase(null);
+        }
         return [];
       }
     },
@@ -908,7 +901,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           (err: unknown) => {
             const shouldReport = isMountedRef.current && !abortController.signal.aborted;
             if (shouldReport) {
-              toast.error('Failed to load more messages', { description: (err as Error).message });
+              toast.error('Failed to load more messages', { description: getSearchErrorMessage(err) });
             }
             return { type: 'error' as const, shouldReport };
           }
@@ -1038,7 +1031,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const isKeyDeserializerActive =
     keyDeserializer !== null && keyDeserializer !== undefined && keyDeserializer !== PayloadEncoding.UNSPECIFIED;
 
-  const dataTableColumns: Record<DataColumnKey, ColumnDef<TopicMessage>> = {
+  const dataTableColumns: Record<DataColumnKey, DataTableColumnDef<TopicMessage>> = {
     offset: {
       header: 'Offset',
       accessorKey: 'offset',
@@ -1146,7 +1139,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
   const columnsVisibleByDefault: DataColumnKey[] = ['timestamp', 'key', 'value'];
 
-  const newColumns: ColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
+  const newColumns: DataTableColumnDef<TopicMessage>[] = columnsVisibleByDefault.map((key) => dataTableColumns[key]);
 
   const previewColumnFields = topicSettings?.previewColumnFields ?? [];
   if (previewColumnFields.length > 0) {
@@ -1169,7 +1162,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     }
   }
 
-  const columns: ColumnDef<TopicMessage>[] = [
+  const columns: DataTableColumnDef<TopicMessage>[] = [
     ...newColumns,
     {
       id: 'action',
@@ -1227,7 +1220,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     },
   ];
 
-  const expanderColumn: ColumnDef<TopicMessage> = {
+  const expanderColumn: DataTableColumnDef<TopicMessage> = {
     id: 'expander',
     size: 40,
     enableSorting: false,
@@ -1244,9 +1237,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       ) : null,
   };
 
-  const table = useReactTable({
+  const table = useDataTable({
     data: filteredMessages,
     columns: [expanderColumn, ...columns],
+    enableRowSelection: false,
     state: {
       pagination: paginationParams,
       sorting,
@@ -1268,12 +1262,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
       setSortingState(newSorting);
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
+    // Expanded rows must survive a data swap: loadLargeMessage replaces the message
+    // array, and v9 resets expanded state on every row-structure change.
+    autoResetExpanded: false,
   });
 
   // Search controls derived state
@@ -1669,7 +1662,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             placeholder="Filter table content ..."
             value={quickSearch}
           />
-          <div className="flex items-end gap-2 whitespace-nowrap text-sm">
+          <div className="flex items-end gap-2 whitespace-nowrap text-body">
             {searchPhase === null || searchPhase === 'Done' ? (
               <>
                 <div className="flex items-center gap-2">
@@ -1713,7 +1706,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <AlertDescription>
             <div>Check and modify the request before resubmitting.</div>
             <div className="mt-4">
-              <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
+              <div className="codeBox">{fetchError.message}</div>
             </div>
             <Button className="mt-4" onClick={() => executeMessageSearch()}>
               Retry Search
@@ -1734,7 +1727,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         onClick={header.column.getToggleSortingHandler()}
                         style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
                       >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                         {header.column.getIsSorted() === 'asc' && ' ↑'}
                         {header.column.getIsSorted() === 'desc' && ' ↓'}
                       </TableHead>
@@ -1773,7 +1766,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                             key={cell.id}
                             style={{ width: cell.column.getSize() !== 150 ? cell.column.getSize() : undefined }}
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {<table.FlexRender cell={cell} />}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -1810,14 +1803,14 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
             <div className="flex items-center justify-end px-2 py-2">
               <div className="flex items-center space-x-6 lg:space-x-8">
                 {/* Page counter */}
-                <div className="flex w-[100px] items-center justify-center font-medium text-sm">
+                <div className="flex w-[100px] items-center justify-center font-medium text-body">
                   Page {pageIndex + 1}
                   {hasMoreData ? '' : ` of ${windowStartPage + loadedPages}`}
                 </div>
 
                 {/* Rows per page selector */}
                 <div className="flex items-center space-x-2">
-                  <p className="font-medium text-sm">Rows per page</p>
+                  <p className="font-medium text-body">Rows per page</p>
                   <Select
                     onValueChange={(value) => {
                       const newSize = Number(value);
@@ -1885,7 +1878,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
 
           {/* Virtual page indicator for continuous pagination mode */}
           {continuousPaginationEnabled && messages.length > 0 && (
-            <div className="mt-2 flex items-center justify-center gap-2 text-muted-foreground text-sm">
+            <div className="mt-2 flex items-center justify-center gap-2 text-body text-muted-foreground">
               <span>
                 Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
                 {` (pages ${windowStartPage + 1}–${windowStartPage + loadedPages} in memory)`}

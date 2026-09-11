@@ -419,16 +419,12 @@ export const SENTINEL_REQUIRED_FIELD = '__REQUIRED_FIELD__';
 /**
  * Whether a field must be set by the user.
  *
- * Preferred signal: `requiredBySchema`, stamped by enrichComponentsWithConfigSchema from the raw
- * config schema's `required` arrays — the backend computes those knowing every default value
- * (benthos: required ⇔ no default and not optional), so they are authoritative.
- *
- * Degraded fallback (unstamped specs — dataplane predating flag serialization, or a call site
- * without the raw schema): trust the proto flags, but stay conservative about defaults. The proto
- * only serializes string defaults, so a non-string field with an empty `defaultValue` is far more
- * likely "default lost in serialization" than "required" (fleet-wide, only 3 scalar non-string
- * fields are truly required). The known cost of this mode: string fields whose real default is ""
- * are indistinguishable from required ones and show as required.
+ * Authoritative signal is `requiredBySchema`, stamped from the raw config schema's `required`
+ * arrays, which the backend computes knowing every default. Without it (dataplane predating flag
+ * serialization, or a call site lacking the raw schema) fall back to the proto flags but stay
+ * conservative: the proto serializes only string defaults, so a non-string field with an empty
+ * `defaultValue` is far more likely a lost default than a required field. Known cost of that mode —
+ * string fields whose real default is "" show as required.
  */
 export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
   // Deprecated fields are being phased out; never force one regardless of signals.

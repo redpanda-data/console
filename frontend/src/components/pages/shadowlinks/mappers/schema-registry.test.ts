@@ -11,11 +11,11 @@
 
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { DurationSchema } from '@bufbuild/protobuf/wkt';
+import { describe, expect, test } from '@rstest/core';
 import {
   SchemaRegistrySyncOptionsSchema,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { describe, expect, test } from 'vitest';
 
 import { formatDurationForInput, mapSchemaRegistrySyncOptionsToFormValues } from './schema-registry';
 import { initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD } from '../create/model';

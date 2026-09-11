@@ -9,27 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const mockMutateAsync = vi.fn();
+const mockMutateAsync = rs.fn();
 
-vi.mock('../../../react-query/api/topic', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../react-query/api/topic')>();
+rs.mock('../../../react-query/api/topic', () => {
+  const actual = rs.requireActual<typeof import('../../../react-query/api/topic')>('../../../react-query/api/topic');
   return {
     ...actual,
-    useCreateTopicMutation: vi.fn(() => ({
+    useCreateTopicMutation: rs.fn(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
     })),
   };
 });
 
-vi.mock('../../../state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../state/backend-api')>();
+rs.mock('../../../state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('../../../state/backend-api')>('../../../state/backend-api');
   return {
     ...actual,
     api: {
@@ -37,18 +37,18 @@ vi.mock('../../../state/backend-api', async (importOriginal) => {
       isRedpanda: false,
       clusterOverview: null,
       clusterInfo: undefined,
-      refreshCluster: vi.fn(),
-      refreshClusterOverview: vi.fn(),
-      refreshClusterHealth: vi.fn().mockResolvedValue(undefined),
+      refreshCluster: rs.fn(),
+      refreshClusterOverview: rs.fn(),
+      refreshClusterHealth: rs.fn().mockResolvedValue(undefined),
     },
   };
 });
 
-vi.mock('../../../config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../config')>();
+rs.mock('../../../config', () => {
+  const actual = rs.requireActual<typeof import('../../../config')>('../../../config');
   return {
     ...actual,
-    isServerless: vi.fn(() => false),
+    isServerless: rs.fn(() => false),
     config: {
       ...actual.config,
       isServerless: false,
@@ -56,10 +56,10 @@ vi.mock('../../../config', async (importOriginal) => {
   };
 });
 
-vi.mock('sonner', () => ({
+rs.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: rs.fn(),
+    error: rs.fn(),
   },
 }));
 
@@ -69,9 +69,9 @@ import { CreateTopicDialog } from './create-topic-dialog';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-Element.prototype.scrollIntoView = vi.fn();
+Element.prototype.scrollIntoView = rs.fn();
 
-function renderDialog(isOpen = true, onClose = vi.fn()) {
+function renderDialog(isOpen = true, onClose = rs.fn()) {
   return renderWithFileRoutes(<CreateTopicDialog isOpen={isOpen} onClose={onClose} />, {
     initialLocation: '/topics',
   });
@@ -81,7 +81,7 @@ function renderDialog(isOpen = true, onClose = vi.fn()) {
 
 describe('CreateTopicDialog', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
     mockMutateAsync.mockResolvedValue({
       topicName: 'my-topic',
       partitionCount: 1,
@@ -210,6 +210,41 @@ describe('CreateTopicDialog', () => {
     expect(screen.getByText('Replication factor')).toBeInTheDocument();
   });
 
+  test('Success state falls back to the requested counts when the broker reports -1', async () => {
+    const user = userEvent.setup();
+    // Brokers on CreateTopics response versions < 5 return -1 even for explicit requests
+    mockMutateAsync.mockResolvedValue({
+      topicName: 'my-new-topic',
+      partitionCount: -1,
+      replicationFactor: -1,
+    });
+
+    renderDialog();
+
+    await user.type(screen.getByTestId('topic-name'), 'my-new-topic');
+    const partitionsInput = screen.getByTestId('topic-partitions');
+    await user.clear(partitionsInput);
+    await user.type(partitionsInput, '5');
+    const replicationFactorInput = screen.getByTestId('topic-replication-factor');
+    await user.clear(replicationFactorInput);
+    await user.type(replicationFactorInput, '3');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
+    });
+
+    await user.click(screen.getByTestId('onOk-button'));
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Topic created').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // The values the user asked for, not the broker's -1 placeholders
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
+
   test('API error shows inline Alert and form stays open', async () => {
     const user = userEvent.setup();
     const apiError = new Error('topic already exists');
@@ -237,6 +272,52 @@ describe('CreateTopicDialog', () => {
     // Form is still visible — not replaced by the success state
     expect(screen.getByTestId('topic-name')).toBeInTheDocument();
     expect(screen.getByTestId('onOk-button')).toBeInTheDocument();
+  });
+
+  test('Shows "Min in-sync replicas" field for Kafka clusters (UX-1460)', async () => {
+    renderDialog();
+
+    expect(screen.getByTestId('topic-min-insync-replicas')).toBeInTheDocument();
+  });
+
+  test('Hides "Min in-sync replicas" field for Redpanda clusters (UX-1460)', async () => {
+    const { api } = await import('../../../state/backend-api');
+    // biome-ignore lint/suspicious/noExplicitAny: test override
+    (api as any).isRedpanda = true;
+    // biome-ignore lint/suspicious/noExplicitAny: test override
+    (api as any).clusterOverview = { kafka: { distribution: 'REDPANDA' } };
+
+    renderDialog();
+
+    expect(screen.queryByTestId('topic-min-insync-replicas')).not.toBeInTheDocument();
+
+    // Restore api defaults so other tests are not affected
+    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
+    (api as any).isRedpanda = false;
+    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
+    (api as any).clusterOverview = null;
+  });
+
+  test('Refreshes cluster overview whenever the dialog opens, so isRedpanda is never stale (UX-1460)', async () => {
+    const { api } = await import('../../../state/backend-api');
+    const onClose = rs.fn();
+
+    // Dialog mounts closed: the unconditional mount effect still fires once.
+    const { rerender } = renderDialog(false, onClose);
+
+    await waitFor(() => {
+      expect(api.refreshClusterOverview).toHaveBeenCalled();
+    });
+
+    (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
+
+    // Reopening the dialog (e.g. after closing it without a page refresh) must
+    // re-fetch the cluster overview rather than relying on a stale cached value.
+    rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
+
+    await waitFor(() => {
+      expect(api.refreshClusterOverview).toHaveBeenCalled();
+    });
   });
 
   test('Additional config rows can be added and removed', async () => {

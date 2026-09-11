@@ -10,8 +10,8 @@
  */
 
 import { Code, ConnectError } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
 import RequireAuth from './require-auth';
 import { config as appConfig } from '../config';

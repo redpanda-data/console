@@ -31,7 +31,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
           <CardTitle>Multiple hosts found</CardTitle>
         </CardHeader>
         <CardContent className={'flex flex-col gap-2'}>
-          <div className="mb-4 text-body text-gray-600" data-testid="host-selector-description">
+          <div className="mb-4 text-body text-subtle" data-testid="host-selector-description">
             This{' '}
             <span className="font-bold text-body" data-testid="host-selector-principal-name">
               {principalName}
@@ -48,7 +48,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
             <TableBody>
               {hosts.map(({ sharedConfig: { host: hostValue } }) => (
                 <TableRow
-                  className="cursor-pointer hover:bg-gray-50"
+                  className="cursor-pointer hover:bg-surface-subtle"
                   key={hostValue}
                   onClick={() => {
                     navigate({ to: baseUrl, search: { host: hostValue } });

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/useSemanticElements: part of tags component */
 'use client';
 
 import { XIcon } from 'lucide-react';
@@ -105,7 +106,7 @@ export const TagsTrigger = ({ className, children, testId, ...props }: TagsTrigg
           aria-expanded={open}
           className={cn(
             buttonVariants({ variant: 'outline' }),
-            'h-auto w-full justify-between p-2 hover:bg-surface-inverse-hover active:bg-surface-default-hover',
+            'h-auto w-full justify-between p-2 hover:bg-accent active:bg-accent-pressed',
             className
           )}
           data-testid={testId}
@@ -115,7 +116,7 @@ export const TagsTrigger = ({ className, children, testId, ...props }: TagsTrigg
         >
           <div className="flex flex-wrap items-center gap-1">
             {children}
-            <span className="px-2 py-px text-muted-foreground">Select a tag...</span>
+            <span className="px-2 py-px text-subtle">Select a tag...</span>
           </div>
         </div>
       }
@@ -138,7 +139,7 @@ export const TagsValue = ({
   return (
     <span
       className={cn(
-        'm-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-sm text-strong transition-colors hover:bg-surface-strong',
+        'm-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-body text-strong transition-colors hover:bg-surface-subtle-hover active:bg-surface-subtle-pressed motion-reduce:transition-none',
         className
       )}
       data-testid={testId}
@@ -148,11 +149,11 @@ export const TagsValue = ({
       {onRemove ? (
         <button
           aria-label="Remove tag"
-          className="size-auto cursor-pointer border-0 bg-transparent p-0 transition-opacity hover:opacity-70"
+          className="size-auto cursor-pointer border-0 bg-transparent p-0 transition-colors hover:text-destructive motion-reduce:transition-none"
           onClick={handleRemove}
           type="button"
         >
-          <XIcon className="text-muted-foreground" size={12} />
+          <XIcon className="text-subtle" size={12} />
         </button>
       ) : null}
     </span>

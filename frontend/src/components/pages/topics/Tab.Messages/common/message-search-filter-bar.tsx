@@ -30,7 +30,7 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
         {filters?.map((e) => (
           <div
             className={cn(
-              'inline-flex select-none items-center rounded-md border bg-card text-sm shadow-sm',
+              'inline-flex select-none items-center rounded-md border bg-card text-body shadow-sm',
               !e.isActive && 'bg-muted text-muted-foreground'
             )}
             data-testid={`message-filter-tag-${e.id}`}

@@ -26,7 +26,7 @@ const ConfigField = ({ label, value, testId }: { label: string; value: React.Rea
 
 const CertificateValue = ({ value, isFilePath }: { value: string; isFilePath: boolean }) => {
   if (isFilePath && value !== '-') {
-    return <code className="rounded bg-muted px-2 py-1 text-sm">{value}</code>;
+    return <code className="rounded bg-muted px-2 py-1 text-body">{value}</code>;
   }
   return <>{value}</>;
 };

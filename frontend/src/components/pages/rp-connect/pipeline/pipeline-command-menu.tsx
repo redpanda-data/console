@@ -195,7 +195,7 @@ function CommandGroupHeading({ children, separator }: { children: React.ReactNod
   return (
     <>
       {separator ? <Separator /> : null}
-      <h5 className="pt-3 pb-3 pl-2 font-semibold text-muted-foreground text-xs uppercase tracking-caption-wide">
+      <h5 className="pt-3 pb-3 pl-2 font-semibold text-body-sm text-muted-foreground uppercase tracking-caption-wide">
         {children}
       </h5>
     </>
@@ -236,7 +236,7 @@ function CommandMenuContent({
   return (
     <>
       {showCategoryFilter ? (
-        <div className="!border-input border-b bg-dark-alpha-subtle px-2 py-1.5">
+        <div className="!border-input border-b bg-surface-recess px-2 py-1.5">
           <ToggleGroup
             attached={false}
             onValueChange={([v]) => {
@@ -300,7 +300,7 @@ function CommandMenuContent({
         )}
       </CommandList>
       {(show('secrets') || show('topics') || show('users')) && (
-        <div className="!border-input flex gap-1 border-t bg-dark-alpha-default px-2 py-1">
+        <div className="!border-input flex gap-1 border-t bg-surface-recess px-2 py-1">
           {show('secrets') && (
             <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsSecretsDialogOpen)} variant="ghost">
               Create secret
@@ -555,7 +555,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
             <AddTopicStep hideTitle inline ref={topicStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
-            <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="secondary-ghost">
+            <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="ghost">
               Cancel
             </Button>
             <Button
@@ -579,7 +579,7 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
             <AddUserStep hideTitle inline ref={userStepRef} selectionMode="new" />
           </DialogBody>
           <DialogFooter>
-            <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="secondary-ghost">
+            <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="ghost">
               Cancel
             </Button>
             <Button className="min-w-[70px]" disabled={isUserSubmitting} onClick={handleCreateUser} variant="primary">

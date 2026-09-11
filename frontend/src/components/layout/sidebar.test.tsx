@@ -1,6 +1,6 @@
+import { afterEach, describe, expect, it } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 import { createGroupedSidebarItems } from 'utils/route-utils';
-import { afterEach, describe, expect, it } from 'vitest';
 
 import type { EndpointCompatibility } from '../../state/rest-interfaces';
 import { Feature, useSupportedFeaturesStore } from '../../state/supported-features';

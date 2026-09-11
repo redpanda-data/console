@@ -9,12 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { type EditorProps } from '@monaco-editor/react';
+import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
 import 'monaco-editor';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { useEffect, useMemo, useRef } from 'react';
+
+import { editorTheme } from 'components/redpanda-ui/lib/editor-theme';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 
 import { normalizePastedWhitespace } from './whitespace';
 
@@ -126,11 +129,32 @@ function buildMonacoYamlOptions(
   };
 }
 
+/**
+ * Monaco's `defineTheme` takes literal colours, so the registry resolves the tokens by painting a
+ * probe (redpanda-ui/lib/editor-theme) and picks its `base` from the ground it reads. A snapshot,
+ * not a binding — `applyTheme` runs again on every theme flip.
+ */
+const THEME_NAME = 'redpanda-yaml';
+
+const applyTheme = (monaco: Monaco, transparentBackground: boolean) => {
+  monaco.editor.defineTheme(THEME_NAME, editorTheme({ transparentBackground }));
+  monaco.editor.setTheme(THEME_NAME);
+};
+
 export const YamlEditor = (props: YamlEditorProps) => {
   const { options: givenOptions, schema, transparentBackground, onEditorMount, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const yamlRef = useRef<MonacoYaml | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
   const hasInitializedRef = useRef(false);
+  const appearance = useThemeAppearance();
+
+  // `defineTheme` is global, so re-resolving on a flip re-themes every mounted editor at once.
+  useEffect(() => {
+    if (monacoRef.current) {
+      applyTheme(monacoRef.current, transparentBackground ?? false);
+    }
+  }, [appearance, transparentBackground]);
 
   const monacoYamlOptions = useMemo<MonacoYamlOptions>(
     () => buildMonacoYamlOptions(schema),
@@ -158,18 +182,9 @@ export const YamlEditor = (props: YamlEditorProps) => {
   return (
     <Editor
       beforeMount={(monaco) => {
+        monacoRef.current = monaco;
         yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
-        if (transparentBackground) {
-          monaco.editor.defineTheme('kowl-transparent', {
-            base: 'vs',
-            inherit: true,
-            colors: {
-              'editor.background': '#00000000',
-              'editorGutter.background': '#00000000',
-            },
-            rules: [],
-          });
-        }
+        applyTheme(monaco, transparentBackground ?? false);
       }}
       defaultLanguage="yaml"
       loading={<LoadingPlaceholder />}
@@ -190,7 +205,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
       }}
       options={options}
       path="pipeline.yaml"
-      theme={transparentBackground ? 'kowl-transparent' : undefined}
+      theme={THEME_NAME}
       wrapperProps={{
         style: {
           minWidth: 0,

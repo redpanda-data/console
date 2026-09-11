@@ -471,13 +471,13 @@ function TopicCreatedPanel({
 }) {
   return (
     <div className="flex flex-col items-center gap-4 py-2 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-background-success-strong/10">
+      <div className="flex size-12 items-center justify-center rounded-full bg-success-strong/10">
         <CheckCircleIcon className="size-6 text-success" />
       </div>
-      <p className="text-muted-foreground text-sm">Your topic is ready to use.</p>
+      <p className="text-body text-muted-foreground">Your topic is ready to use.</p>
       <div className="w-full rounded-lg border bg-muted/30 p-4">
         <div className="flex flex-col items-center gap-0.5">
-          <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">Topic name</p>
+          <p className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Topic name</p>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger
@@ -491,14 +491,14 @@ function TopicCreatedPanel({
             </Tooltip>
           </TooltipProvider>
         </div>
-        <div className="mt-3 flex justify-center gap-10 border-t pt-3 text-sm">
+        <div className="mt-3 flex justify-center gap-10 border-t pt-3 text-body">
           <div className="flex flex-col items-center gap-0.5">
             <span className="font-semibold">{formatCount(partitionCount)}</span>
-            <span className="text-muted-foreground text-xs">Partitions</span>
+            <span className="text-body-sm text-muted-foreground">Partitions</span>
           </div>
           <div className="flex flex-col items-center gap-0.5">
             <span className="font-semibold">{formatCount(replicationFactor)}</span>
-            <span className="text-muted-foreground text-xs">Replication factor</span>
+            <span className="text-body-sm text-muted-foreground">Replication factor</span>
           </div>
         </div>
       </div>
@@ -569,11 +569,13 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
   useEffect(() => {
     api.refreshCluster();
+    api.refreshClusterOverview();
   }, []);
 
   useEffect(() => {
     if (isOpen) {
       api.refreshCluster();
+      api.refreshClusterOverview();
       form.reset();
       setResult(null);
     }
@@ -588,21 +590,26 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     setResult(null);
     setIsLoading(true);
     try {
+      const requestedPartitionCount = values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1');
+      const requestedReplicationFactor =
+        values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1');
       const apiResult = await createTopic({
         topic: {
           name: values.topicName,
-          partitionCount: values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1'),
-          replicationFactor:
-            values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1'),
+          partitionCount: requestedPartitionCount,
+          replicationFactor: requestedReplicationFactor,
           configs: buildTopicConfigs(values),
         },
         validateOnly: false,
       });
 
+      // Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
+      // return -1 even when the request named explicit values, so fall back to what we asked for.
       setResult({
         topicName: apiResult.topicName,
-        partitionCount: apiResult.partitionCount,
-        replicationFactor: apiResult.replicationFactor,
+        partitionCount: apiResult.partitionCount === -1 ? requestedPartitionCount : apiResult.partitionCount,
+        replicationFactor:
+          apiResult.replicationFactor === -1 ? requestedReplicationFactor : apiResult.replicationFactor,
       });
       api.refreshClusterOverview();
       api.refreshClusterHealth().catch(() => {
@@ -637,7 +644,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
             <Alert variant="destructive">
               <AlertTitle>{result.error instanceof Error ? result.error.name : 'Error'}</AlertTitle>
               <AlertDescription>
-                <code className="font-mono text-xs">
+                <code className="font-mono text-body-sm">
                   {result.error instanceof Error ? result.error.message : JSON.stringify(result.error, null, 2)}
                 </code>
               </AlertDescription>

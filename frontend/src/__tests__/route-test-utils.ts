@@ -5,13 +5,14 @@
  * `createFileRoute`, `Link`, and common connect-query helpers without
  * repeating the same boilerplate across every route integration spec.
  *
- * Usage — pass the return value of a factory straight into `vi.mock`:
+ * Usage — pass the return value of a factory straight into `rs.mock`:
  *
- *   vi.mock('@tanstack/react-router', () => mockRouterForListRoute());
- *   vi.mock('@connectrpc/connect-query', () => mockConnectQuery());
+ *   rs.mock('@tanstack/react-router', () => mockRouterForListRoute());
+ *   rs.mock('@connectrpc/connect-query', () => mockConnectQuery());
  */
+
+import { rs } from '@rstest/core';
 import React from 'react';
-import { vi } from 'vitest';
 
 // ── Router mocks ────────────────────────────────────────────────────
 
@@ -39,13 +40,13 @@ export function mockRouterForListRoute() {
  */
 export function mockConnectQuery() {
   return {
-    callUnaryMethod: vi.fn(),
-    createConnectQueryKey: vi.fn(() => ['mock-key']),
+    callUnaryMethod: rs.fn(),
+    createConnectQueryKey: rs.fn(() => ['mock-key']),
   };
 }
 
 /**
- * Extract the component from a mocked TanStack Router route. `vi.mock`
+ * Extract the component from a mocked TanStack Router route. `rs.mock`
  * swaps the real type at runtime, so we reach in defensively and throw
  * a helpful error if the mock shape is wrong.
  */

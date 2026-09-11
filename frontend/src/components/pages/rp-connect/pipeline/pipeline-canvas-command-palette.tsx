@@ -127,9 +127,9 @@ export function CanvasCommandPalette({
                 />
                 <span className="font-medium">{node.label}</span>
                 {node.labelText ? (
-                  <span className="truncate text-muted-foreground text-xs">{node.labelText}</span>
+                  <span className="truncate text-body-sm text-muted-foreground">{node.labelText}</span>
                 ) : null}
-                <span className="ml-auto shrink-0 text-muted-foreground text-xs">
+                <span className="ml-auto shrink-0 text-body-sm text-muted-foreground">
                   {node.section ? SECTION_LABEL[node.section] : ''}
                 </span>
               </CommandItem>

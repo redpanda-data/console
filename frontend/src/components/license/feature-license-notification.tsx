@@ -36,7 +36,7 @@ const getLicenseAlertContentForFeature = (
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; variant: 'destructive' | 'info' } | null => {
+): { message: ReactElement; variant: 'destructive' | 'informative' } | null => {
   if (license === undefined) {
     return null;
   }
@@ -54,7 +54,7 @@ const getLicenseAlertContentForFeature = (
             </div>
           </div>
         ),
-        variant: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'destructive',
+        variant: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'informative' : 'destructive',
       };
     }
     return {
@@ -63,7 +63,7 @@ const getLicenseAlertContentForFeature = (
           <p>This is an enterprise feature.</p>
         </div>
       ),
-      variant: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'info' : 'destructive',
+      variant: msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY ? 'informative' : 'destructive',
     };
   }
 
@@ -84,7 +84,7 @@ const getLicenseAlertContentForFeature = (
             </div>
           </div>
         ),
-        variant: 'info',
+        variant: 'informative',
       };
     }
     if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
@@ -125,7 +125,7 @@ const getLicenseAlertContentForFeature = (
               </div>
             </div>
           ),
-          variant: 'info',
+          variant: 'informative',
         };
       }
       return {
@@ -140,7 +140,7 @@ const getLicenseAlertContentForFeature = (
             </p>
           </div>
         ),
-        variant: 'info',
+        variant: 'informative',
       };
     }
     if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {

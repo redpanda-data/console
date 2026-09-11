@@ -239,22 +239,8 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
 }
 
 /**
- * Recursively parses JSON strings within objects and arrays
- * Attempts to parse string values as JSON, replacing them with parsed values if successful
- * Falls back to original string if parsing fails
- *
- * @param value The value to deep parse (can be any type)
- * @param depth Current recursion depth (internal, used to prevent infinite loops)
- * @param maxDepth Maximum recursion depth (default: 10)
- * @returns The value with nested JSON strings parsed
- *
- * @example
- * // Input: { text: '{"city":"Singapore","temp":28}' }
- * // Output: { text: { city: "Singapore", temp: 28 } }
- *
- * @example
- * // Input: [{ type: "text", text: '{"data":"value"}' }]
- * // Output: [{ type: "text", text: { data: "value" } }]
+ * Walks objects and arrays replacing any string that parses as JSON with the parsed value; strings
+ * that don't parse are left alone. `depth`/`maxDepth` bound the recursion.
  */
 export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown {
   // Prevent infinite recursion

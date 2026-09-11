@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';
 import { appGlobal } from '../../../state/app-global';
@@ -23,46 +24,52 @@ import {
   PropertyImportance,
   type TopicMessage,
 } from '../../../state/rest-interfaces';
-import { Code, TimestampDisplay } from '../../../utils/tsx-utils';
+import { TimestampDisplay } from '../../../utils/tsx-utils';
+import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
 import './helper';
+import { AlertIcon, ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  CodeBlock,
   DataTable,
-  Flex,
-  Grid,
-  Heading,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Modal as RPModal,
-  SearchField,
-  Skeleton,
-  Tabs,
-  Text,
-  Tooltip,
-  useDisclosure,
-} from '@redpanda-data/ui';
-import type { ColumnDef, SortingState } from '@tanstack/react-table';
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { cn } from 'components/redpanda-ui/lib/utils';
 
 import { getConnectorFriendlyName } from './connector-box-card';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
-import usePaginationParams from '../../../hooks/use-pagination-params';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { delay, encodeBase64, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
+import Tabs from '../../misc/tabs/tabs';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
+
+// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
+const LOGS_TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
+  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
+};
+
+// Ten a page (the Registry default) is the legacy page size for this table.
+const TASKS_TABLE_OPTIONS = { enableHiding: false };
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
 
@@ -107,7 +114,11 @@ const KafkaConnectorMain = ({
   const setS = (patch: Partial<LocalConnectorState>) => setStateInternal((prev) => ({ ...prev, ...patch }));
 
   if (!connectClusterStore.isInitialized) {
-    return <Skeleton height={4} mt={5} noOfLines={20} />;
+    return (
+      <div className="mt-5">
+        <SkeletonText lines={20} width="full" />
+      </div>
+    );
   }
 
   const connectorStore = connectClusterStore.getConnectorStore(connectorName);
@@ -122,18 +133,13 @@ const KafkaConnectorMain = ({
   return (
     <>
       {/* [Pause] [Restart] [Delete] */}
-      <Flex alignItems="center" flexDirection="row" gap="3">
+      <div className="flex flex-row items-center gap-3">
         {/* [Pause/Resume] */}
         {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
-          <Tooltip
-            hasArrow={true}
-            isDisabled={canEdit === true}
-            label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-            placement="top"
-          >
+          <NoEditPermissionTooltip canEdit={canEdit}>
             <Button
-              isDisabled={!canEdit}
-              minWidth="32"
+              className="min-w-32"
+              disabled={!canEdit}
               onClick={() => {
                 setS({ pausingConnector: connector });
               }}
@@ -141,19 +147,14 @@ const KafkaConnectorMain = ({
             >
               {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
             </Button>
-          </Tooltip>
+          </NoEditPermissionTooltip>
         ) : null}
 
         {/* [Restart] */}
-        <Tooltip
-          hasArrow={true}
-          isDisabled={canEdit === true}
-          label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-          placement="top"
-        >
+        <NoEditPermissionTooltip canEdit={canEdit}>
           <Button
-            isDisabled={!canEdit}
-            minWidth="32"
+            className="min-w-32"
+            disabled={!canEdit}
             onClick={() => {
               setS({ restartingConnector: connector });
             }}
@@ -161,92 +162,89 @@ const KafkaConnectorMain = ({
           >
             Restart
           </Button>
-        </Tooltip>
+        </NoEditPermissionTooltip>
 
         {/* [Delete] */}
-        <Tooltip
-          hasArrow={true}
-          isDisabled={canEdit === true}
-          label={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
-          placement="top"
-        >
+        <NoEditPermissionTooltip canEdit={canEdit}>
           <Button
-            colorScheme="red"
-            isDisabled={!canEdit}
-            minWidth="32"
+            className="min-w-32"
+            disabled={!canEdit}
             onClick={() => {
               setS({ deletingConnector: connectorName });
             }}
-            variant="outline"
+            variant="destructive-outline"
           >
             Delete
           </Button>
-        </Tooltip>
-      </Flex>
+        </NoEditPermissionTooltip>
+      </div>
 
       <Tabs
-        items={[
+        tabs={[
           {
             key: 'overview',
-            name: 'Overview',
-            component: (
-              <Box mt="8">
+            title: 'Overview',
+            content: (
+              <div className="mt-8">
                 <ConfigOverviewTab
                   clusterName={clusterName}
                   connectClusterStore={connectClusterStore}
                   connector={connector}
                 />
-              </Box>
+              </div>
             ),
           },
           {
             key: 'configuration',
-            name: 'Configuration',
-            component: (
-              <Box mt="8">
-                <Box maxWidth="800px">
+            title: 'Configuration',
+            content: (
+              <div className="mt-8">
+                <div className="max-w-[800px]">
                   {Boolean(connectorStore) && (
                     // biome-ignore lint/style/noNonNullAssertion: checked above with Boolean(connectorStore)
                     <ConfigPage connectorStore={connectorStore!} context="EDIT" />
                   )}
-                </Box>
+                </div>
 
                 {/* Update Config Button */}
-                <Flex m={4} mb={6}>
-                  <Tooltip
-                    hasArrow={true}
-                    isDisabled={!!canEdit}
-                    label="You don't have 'canEditConnectCluster' permissions for this connect cluster"
-                    placement="top"
-                  >
+                <div className="m-4 mb-6 flex">
+                  <NoEditPermissionTooltip canEdit={canEdit}>
                     <Button
-                      isDisabled={!canEdit}
+                      className="w-[200px]"
+                      disabled={!canEdit}
                       onClick={() => {
                         setS({ updatingConnector: { clusterName, connectorName } });
                       }}
-                      style={{ width: '200px' }}
                       variant="outline"
                     >
                       Update Config
                     </Button>
-                  </Tooltip>
-                </Flex>
-              </Box>
+                  </NoEditPermissionTooltip>
+                </div>
+              </div>
             ),
           },
           {
             key: 'logs',
-            name: 'Logs',
-            isDisabled: logsTopic ? false : `Logs topic '${LOGS_TOPIC_NAME}' does not exist.`,
-            component: (
-              <Box mt="8">
+            // The Tabs wrapper takes a boolean; the reason goes in a tooltip on the trigger.
+            disabled: !logsTopic,
+            title: logsTopic ? (
+              'Logs'
+            ) : (
+              <Tooltip delayDuration={150}>
+                {/* The disabled trigger sets `aria-disabled:pointer-events-none`, which cascades —
+                    without re-enabling them here the tooltip could never open. */}
+                <TooltipTrigger render={<span className="pointer-events-auto">Logs</span>} />
+                <TooltipContent side="top">{`Logs topic '${LOGS_TOPIC_NAME}' does not exist.`}</TooltipContent>
+              </Tooltip>
+            ),
+            content: (
+              <div className="mt-8">
                 <LogsTab clusterName={clusterName} connectClusterStore={connectClusterStore} connector={connector} />
-              </Box>
+              </div>
             ),
           },
         ]}
-        marginBlock="2"
-        size="lg"
       />
 
       {/* Pause/Resume Modal */}
@@ -386,130 +384,129 @@ const ConfigOverviewTab = (p: {
   const connectorName = connector.name;
 
   return (
-    <Grid
-      alignItems="start"
-      gap="6"
-      gridTemplateRows="auto"
-      templateAreas={`
-              "errors errors"
-              "health details"
-              "tasks details"
-          `}
+    <div
+      // The template areas are inline: Tailwind has no arbitrary grid-template-areas utility.
+      className="grid items-start gap-6"
+      style={{
+        gridTemplateAreas: '"errors errors" "health details" "tasks details"',
+        gridTemplateRows: 'auto',
+      }}
     >
-      <Flex flexDirection="column" gap="2" gridArea="errors">
+      <div className="flex flex-col gap-2" style={{ gridArea: 'errors' }}>
         {connector.errors.map((e) => (
           <ConnectorErrorModal error={e} key={e.title} />
         ))}
-      </Flex>
+      </div>
 
-      <Section gridArea="health">
-        <Flex flexDirection="row" gap="4" m="1">
-          <Box background={statusColors[connector.status]} borderRadius="3px" width="5px" />
+      <Section style={{ gridArea: 'health' }}>
+        <div className="m-1 flex flex-row gap-4">
+          <div className={cn('w-[5px] rounded-full', statusColors[connector.status])} />
 
-          <Flex flexDirection="column">
-            <Text fontSize="3xl" fontWeight="semibold">
-              {titleCase(connector.status)}
-            </Text>
-            <Text opacity=".5">Status</Text>
-          </Flex>
-        </Flex>
+          <div className="flex flex-col">
+            <div className="font-semibold text-heading-xl">{titleCase(connector.status)}</div>
+            <div className="opacity-50">Status</div>
+          </div>
+        </div>
       </Section>
 
-      <Section gridArea="tasks" minWidth="500px" py={4}>
-        <Flex alignItems="center" gap="2" mb="6" mt="2">
-          <Heading as="h3" color="blackAlpha.800" fontSize="1rem" fontWeight="semibold" textTransform="uppercase">
-            Tasks
-          </Heading>
-          <Text fontWeight="normal" opacity=".5">
+      <Section className="min-w-[500px] py-4" style={{ gridArea: 'tasks' }}>
+        <div className="mt-2 mb-6 flex items-center gap-2">
+          <h3 className="font-semibold text-body-lg text-strong uppercase">Tasks</h3>
+          <div className="font-normal opacity-50">
             ({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})
-          </Text>
-        </Flex>
+          </div>
+        </div>
         <DataTable<ClusterConnectorTaskInfo>
-          columns={[
-            {
-              header: 'Task',
-              accessorKey: 'taskId',
-              size: 200,
-              cell: ({
-                row: {
-                  original: { taskId },
-                },
-              }) => <Code nowrap>Task-{taskId}</Code>,
-            },
-            {
-              header: 'Status',
-              accessorKey: 'state',
-              cell: ({ row: { original } }) => <TaskState observable={original} />,
-            },
-            {
-              header: 'Worker',
-              accessorKey: 'workerId',
-              cell: ({ row: { original } }) => <Code nowrap>{original.workerId}</Code>,
-            },
-          ]}
+          columns={taskColumns}
           data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-          defaultPageSize={10}
-          pagination
+          // Legacy parity: ten a page, pager only past that.
+          pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > 10}
           sorting
+          tableOptions={TASKS_TABLE_OPTIONS}
         />
       </Section>
 
-      <Section gridArea="details" py={4}>
-        <Heading
-          as="h3"
-          color="blackAlpha.800"
-          fontSize="1rem"
-          fontWeight="semibold"
-          mb="6"
-          mt="2"
-          textTransform="uppercase"
-        >
-          Connector Details
-        </Heading>
+      <Section className="py-4" style={{ gridArea: 'details' }}>
+        <h3 className="mt-2 pb-6 font-semibold text-body-lg text-strong uppercase">Connector Details</h3>
 
         <ConnectorDetails clusterName={p.clusterName} connectClusterStore={connectClusterStore} connector={connector} />
       </Section>
-    </Grid>
+    </div>
   );
 };
 
-const ConnectorErrorModal = (p: { error: ConnectorError }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+const taskColumns: DataTableColumnDef<ClusterConnectorTaskInfo>[] = [
+  {
+    id: 'taskId',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
+    accessorKey: 'taskId',
+    cell: ({
+      row: {
+        original: { taskId },
+      },
+    }) => <InlineCode className="whitespace-nowrap">Task-{taskId}</InlineCode>,
+  },
+  {
+    id: 'state',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    accessorKey: 'state',
+    cell: ({ row: { original } }) => <TaskState observable={original} />,
+  },
+  {
+    id: 'workerId',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Worker" />,
+    accessorKey: 'workerId',
+    cell: ({ row: { original } }) => <InlineCode className="whitespace-nowrap">{original.workerId}</InlineCode>,
+  },
+];
 
-  const errorType = p.error.type === 'ERROR' ? 'error' : 'warning';
+const ConnectorErrorModal = (p: { error: ConnectorError }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const isError = p.error.type === 'ERROR';
 
   const hasConnectorLogs = api.topics?.any((x) => x.topicName === LOGS_TOPIC_NAME);
 
   return (
     <>
-      <Alert borderRadius="8px" height="12" onClick={onOpen} status={errorType} variant="solid">
-        <AlertIcon />
-        <Box whiteSpace="break-spaces" wordBreak="break-all">
-          {p.error.title}
-        </Box>
-        <Button colorScheme="gray" ml="auto" mt="1px" size="sm" variant="ghost">
-          View details
-        </Button>
+      <Alert
+        className="items-center"
+        icon={isError ? <AlertIcon /> : <WarningIcon />}
+        variant={isError ? 'destructive' : 'warning'}
+      >
+        <AlertDescription className="w-full grid-flow-col items-center justify-between">
+          <div className="whitespace-break-spaces break-all">{p.error.title}</div>
+          <Button onClick={() => setIsOpen(true)} size="sm" variant="ghost">
+            View details
+          </Button>
+        </AlertDescription>
       </Alert>
 
-      <RPModal isOpen={isOpen} onClose={onClose} size="6xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{p.error.title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <CodeBlock codeString={p.error.content} language="json" showScroll={false} />
-          </ModalBody>
-          <ModalFooter gap={2}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsOpen(false);
+          }
+        }}
+        open={isOpen}
+      >
+        <DialogContent size="full">
+          <DialogHeader>
+            <DialogTitle>{p.error.title}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <SyncCodeBlock code={p.error.content} lang="json" />
+          </DialogBody>
+          <DialogFooter>
             {Boolean(hasConnectorLogs) && (
-              <Button mr="auto" onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)}>
-                Show Logs
-              </Button>
+              <div className="mr-auto">
+                <Button onClick={() => appGlobal.historyPush(`/topics/${LOGS_TOPIC_NAME}`)}>Show Logs</Button>
+              </div>
             )}
-            <Button onClick={onClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </RPModal>
+            <Button onClick={() => setIsOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -635,18 +632,43 @@ const ConnectorDetails = (p: {
   });
 
   return (
-    <Grid columnGap="10" rowGap="3" templateColumns="auto 1fr">
+    <div className="grid grid-cols-[auto_1fr] gap-x-10 gap-y-3">
       {displayEntries.map((x) => (
         <React.Fragment key={x.name}>
-          <Text fontWeight="semibold" whiteSpace="nowrap">
-            {x.name}
-          </Text>
-          <Text overflow="hidden" textOverflow="ellipsis" title={x.value} whiteSpace="nowrap">
+          <div className="whitespace-nowrap font-semibold">{x.name}</div>
+          <div className="overflow-hidden text-ellipsis whitespace-nowrap" title={x.value}>
             {x.value}
-          </Text>
+          </div>
         </React.Fragment>
       ))}
-    </Grid>
+    </div>
+  );
+};
+
+/**
+ * Wraps a control that is disabled without `canEditConnectCluster`, explaining why. Chakra's
+ * Tooltip took `isDisabled` to suppress itself; Base UI has no such prop, so the wrapper renders
+ * the child bare when the permission is present.
+ */
+const NoEditPermissionTooltip = ({
+  canEdit,
+  children,
+}: {
+  canEdit: boolean | null | undefined;
+  children: React.ReactElement;
+}) => {
+  if (canEdit) {
+    return children;
+  }
+
+  return (
+    <Tooltip delayDuration={150}>
+      {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper. */}
+      <TooltipTrigger render={<span className="inline-flex">{children}</span>} />
+      <TooltipContent side="top">
+        You don't have 'canEditConnectCluster' permissions for this connect cluster
+      </TooltipContent>
+    </Tooltip>
   );
 };
 
@@ -666,7 +688,6 @@ const LogsTab = (p: {
   });
   const { messages, isComplete } = logState;
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
-  const [sorting, setSorting] = useState<SortingState>([]);
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -728,31 +749,61 @@ const LogsTab = (p: {
     }
   };
 
-  const paginationParams = usePaginationParams(messages.length, 10);
-  const messageTableColumns: ColumnDef<TopicMessage>[] = [
-    {
-      header: 'Timestamp',
-      accessorKey: 'timestamp',
-      cell: ({
-        row: {
-          original: { timestamp },
-        },
-      }) => <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />,
-      size: 30,
-    },
-    {
-      header: 'Value',
-      accessorKey: 'value',
-      cell: ({ row: { original } }) => (
-        <MessagePreview
-          isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-          msg={original}
-          previewFields={() => []}
-        />
-      ),
-      size: Number.MAX_SAFE_INTEGER,
-    },
-  ];
+  // Memoised: a new columns array per render makes the table re-create every header and cell, which
+  // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
+  const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
+    () => [
+      // The Registry DataTable renders no expander column for `subComponent`.
+      {
+        id: 'expander',
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.getCanExpand() ? (
+            <Button
+              aria-expanded={row.getIsExpanded()}
+              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              onClick={row.getToggleExpandedHandler()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
+            </Button>
+          ) : null,
+      },
+      {
+        id: 'timestamp',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
+        accessorKey: 'timestamp',
+        cell: ({
+          row: {
+            original: { timestamp },
+          },
+        }) => (
+          <span className="whitespace-nowrap">
+            <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />
+          </span>
+        ),
+      },
+      {
+        id: 'value',
+        header: 'Value',
+        accessorKey: 'value',
+        // A decoded preview; sorting the raw value means nothing.
+        enableSorting: false,
+        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
+        cell: ({ row: { original } }) => (
+          <div className="w-screen max-w-full">
+            <MessagePreview
+              isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
+              msg={original}
+              previewFields={() => []}
+            />
+          </div>
+        ),
+      },
+    ],
+    [topic]
+  );
 
   const filteredMessages = messages.filter((x) => {
     if (!logsQuickSearch) {
@@ -763,24 +814,29 @@ const LogsTab = (p: {
 
   return (
     <>
-      <Box my="1rem">The logs below are for the last three hours.</Box>
+      <div className="my-4">The logs below are for the last three hours.</div>
 
-      <Section minWidth="800px">
-        <Flex mb="6">
-          <SearchField searchText={logsQuickSearch} setSearchText={setLogsQuickSearch} width="230px" />
-          <Button ml="auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
-            Refresh logs
-          </Button>
-        </Flex>
+      <Section className="min-w-[800px]">
+        <div className="mb-6 flex">
+          <SearchInput
+            containerClassName="w-[230px]"
+            onChange={setLogsQuickSearch}
+            placeholder="Search..."
+            value={logsQuickSearch}
+          />
+          <div className="ml-auto">
+            <Button onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
+              Refresh logs
+            </Button>
+          </div>
+        </div>
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete}
-          onSortingChange={setSorting}
-          pagination={paginationParams}
-          sorting={sorting}
+          pagination={filteredMessages.length > 0}
           subComponent={({ row: { original } }) => (
             <ExpandedMessage
               loadLargeMessage={() =>
@@ -793,6 +849,7 @@ const LogsTab = (p: {
               msg={original}
             />
           )}
+          tableOptions={LOGS_TABLE_OPTIONS}
         />
       </Section>
     </>

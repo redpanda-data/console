@@ -134,7 +134,7 @@ export const SecretEditPage = () => {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-12 w-12 text-error" />
+          <AlertCircle className="h-12 w-12 text-destructive" />
           <div className="text-center text-body">Secret not found or could not be loaded.</div>
           <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
             Go Back to Secrets
@@ -148,7 +148,6 @@ export const SecretEditPage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <h1 className="text-heading-xl">Update Secret</h1>
         <div className="text-body text-muted-foreground">
           Update the secret value, scopes, or labels. Leave the value empty to keep the existing secret.
         </div>
@@ -243,7 +242,7 @@ export const SecretEditPage = () => {
             data-testid="secret-edit-cancel-button"
             onClick={() => navigate({ to: '/secrets' })}
             type="button"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Cancel
           </Button>

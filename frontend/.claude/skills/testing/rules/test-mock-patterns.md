@@ -2,20 +2,20 @@
 title: Mock Patterns
 impact: HIGH
 impactDescription: Proper mocking prevents test pollution and enables isolated testing
-tags: vitest, mocking, vi.mock, vi.mocked
+tags: rstest, mocking, rs.mock, rs.mocked
 ---
 
 # Mock Patterns (HIGH)
 
 ## Explanation
 
-Proper mocking isolates tests from external dependencies. Use `vi.mock()` for module mocking and `vi.mocked()` for type-safe mock references. Mock utilities in `src/test-utils/` handle common external libraries.
+Proper mocking isolates tests from external dependencies. Use `rs.mock()` for module mocking and `rs.mocked()` for type-safe mock references. Mock utilities in `src/test-utils/` handle common external libraries.
 
 ## Incorrect
 
 ```typescript
 // Manual mock without type safety
-vi.mock('hooks/use-data');
+rs.mock('hooks/use-data');
 import { useData } from 'hooks/use-data';
 
 test('test', () => {
@@ -25,7 +25,7 @@ test('test', () => {
 
 ```typescript
 // Missing mock reset between tests
-vi.mock('hooks/use-data');
+rs.mock('hooks/use-data');
 
 test('test 1', () => {
   useData.mockReturnValue({ data: [1] });
@@ -40,21 +40,23 @@ test('test 2', () => {
 
 ```typescript
 // Type-safe module mocking
-vi.mock('hooks/use-data', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('hooks/use-data')>();
+import { rs } from '@rstest/core';
+
+rs.mock('hooks/use-data', () => {
+  const actual = rs.requireActual<typeof import('hooks/use-data')>('hooks/use-data');
   return {
     ...actual,
-    useData: vi.fn(),
+    useData: rs.fn(),
   };
 });
 
 import { useData } from 'hooks/use-data';
 
-const mockUseData = vi.mocked(useData);
+const mockUseData = rs.mocked(useData);
 
 describe('Component', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('renders with data', () => {
@@ -80,4 +82,4 @@ Located in `src/test-utils/`:
 
 ## Reference
 
-- [Vitest Mocking Guide](https://vitest.dev/guide/mocking.html)
+- [Rstest module mocking](https://rstest.rs/guide/features/mock-modules)

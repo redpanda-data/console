@@ -14,15 +14,7 @@ import { appGlobal } from '../state/app-global';
 /**
  * Converts a URL search string to an object.
  *
- * @deprecated Use TanStack Router's `useSearch()` hook with route-level `validateSearch` instead.
- * This provides type-safe search params with Zod validation.
- *
- * @example
- * // Instead of:
- * const params = queryToObj(window.location.search);
- *
- * // Use:
- * const search = useSearch({ from: '/your-route' });
+ * @deprecated Prefer `useSearch()` with route-level `validateSearch` for Zod-validated params.
  */
 export const queryToObj = (str: string) => {
   const query = new URLSearchParams(str);
@@ -37,15 +29,7 @@ export const queryToObj = (str: string) => {
 /**
  * Converts an object to a URL query string.
  *
- * @deprecated Use TanStack Router's `navigate({ search: ... })` instead.
- * This provides type-safe navigation with search params.
- *
- * @example
- * // Instead of:
- * const queryStr = objToQuery({ page: 1, filter: 'active' });
- *
- * // Use:
- * navigate({ search: { page: 1, filter: 'active' } });
+ * @deprecated Prefer `navigate({ search: { … } })` for type-safe search params.
  */
 export const objToQuery = (obj: { [key: string]: unknown }) => {
   // '?' + queryString.stringify(obj, stringifyOptions)
@@ -63,21 +47,8 @@ export const objToQuery = (obj: { [key: string]: unknown }) => {
 /**
  * Edit the current search query.
  *
- * @deprecated Use TanStack Router's `navigate({ search: (prev) => ... })` instead.
- * This provides type-safe search param updates with proper React integration.
- *
- * @example
- * // Instead of:
- * editQuery((query) => {
- *   query.filter = 'active';
- * });
- *
- * // Use:
- * const navigate = useNavigate({ from: '/your-route' });
- * navigate({
- *   search: (prev) => ({ ...prev, filter: 'active' }),
- *   replace: true,
- * });
+ * @deprecated Prefer `navigate({ search: (prev) => ({ ...prev, … }), replace: true })` — type-safe
+ * and properly integrated with React.
  */
 export function editQuery(editFunction: (queryObject: Record<string, string | null | undefined>) => void) {
   try {

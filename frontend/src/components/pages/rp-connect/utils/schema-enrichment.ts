@@ -12,19 +12,15 @@
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 /**
- * Enriches proto-derived component specs with per-field signals only present in the raw config
- * schema JSON served by GetPipelineServiceConfigSchema (benthos MarshalJSONSchema output):
+ * Adds per-field signals that only the raw config-schema JSON carries, not the proto: `required`
+ * arrays (the proto FieldSpec serializes only string defaults, so a dropped int/bool/collection
+ * default looks identical to a genuinely required field) and `is_secret` (absent from the proto
+ * entirely).
  *
- * - `required` arrays: benthos computes required-ness knowing every default value, while the proto
- *   FieldSpec only serializes string defaults — so a field whose int/bool/collection/empty-string
- *   default was dropped is indistinguishable from a truly required field on the proto side.
- * - `is_secret`: the proto FieldSpec has no secret field at all.
- *
- * The JSON-Schema shape walked here (per benthos internal/docs/json_schema.go):
- *   definitions.<componentType>.allOf[].anyOf[].properties.<componentName> — an object node per
- *   component; object nodes carry `properties` + `required`; array/2darray fields wrap their
- *   element under `items` (twice for 2darray); map fields wrap under `patternProperties["."]`;
- *   component-typed fields are `$ref`s (no children on the proto side either).
+ * Shape walked, per benthos internal/docs/json_schema.go:
+ * `definitions.<type>.allOf[].anyOf[].properties.<name>` — object nodes carry `properties` +
+ * `required`; array/2darray wrap under `items` (twice for 2darray); maps under
+ * `patternProperties["."]`; component-typed fields are `$ref`s.
  */
 
 type JsonSchemaNode = {

@@ -1117,6 +1117,13 @@ components:
           type: string
         optional:
           type: boolean
+        short_description:
+          description: |-
+            Short plain-text summary of the field, suitable for inline display in
+            config editors. Unlike description, it contains no markup and is capped
+            at roughly 140 characters. Empty when the Redpanda Connect version that
+            produced the schema does not emit short descriptions.
+          type: string
         type:
           type: string
         version:
@@ -8018,7 +8025,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'

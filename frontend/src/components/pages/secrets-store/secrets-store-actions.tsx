@@ -68,7 +68,7 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
         />
         <DropdownMenuContent align="end" className="w-[200px]">
           <CopyButton
-            className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-sm hover:bg-accent [&]:scale-100! [&_svg]:size-4"
+            className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-body hover:bg-accent [&]:scale-100! [&_svg]:size-4"
             content={secret.id}
             data-testid="secret-copy-id-button"
             onCopy={handleCopySuccess}

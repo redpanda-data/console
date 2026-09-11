@@ -94,7 +94,6 @@ export const SecretCreatePage = () => {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <h1 className="text-heading-xl">Create Secret</h1>
         <div className="text-body text-muted-foreground">
           Create a new secret that can be securely accessed by your services.
         </div>
@@ -198,7 +197,7 @@ export const SecretCreatePage = () => {
             data-testid="secret-create-cancel-button"
             onClick={() => navigate({ to: '/secrets' })}
             type="button"
-            variant="secondary-ghost"
+            variant="ghost"
           >
             Cancel
           </Button>

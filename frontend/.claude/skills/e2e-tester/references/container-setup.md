@@ -114,6 +114,8 @@ e2e-test:
   steps:
     - uses: actions/checkout@v5
     - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 1.4.0
 
     - name: Install dependencies
       run: bun install --frozen-lockfile

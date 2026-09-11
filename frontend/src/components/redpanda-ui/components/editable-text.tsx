@@ -120,7 +120,9 @@ function EditableText({
           style={{ width: textWidth }}
           value={draft}
         />
-        {error && !!errorMessage && <p className="absolute top-full mt-1 text-destructive text-xs">{errorMessage}</p>}
+        {error && !!errorMessage && (
+          <p className="absolute top-full mt-1 text-body-sm text-destructive">{errorMessage}</p>
+        )}
       </div>
     );
   }
@@ -130,9 +132,12 @@ function EditableText({
       <button
         className={cn(
           typographyClasses,
-          'cursor-text border-transparent border-b text-left',
+          'cursor-text border-transparent border-b text-left transition-colors motion-reduce:transition-none',
+          // The underline is the edit affordance; it appears on hover rather than
+          // sitting there permanently underlining every value on the page.
+          'hover:not-disabled:border-input-hover',
           'line-clamp-1 min-w-[100px] max-w-full overflow-hidden text-ellipsis',
-          !value && 'text-muted-foreground',
+          !value && 'text-subtle',
           errorClasses,
           className
         )}
@@ -143,7 +148,9 @@ function EditableText({
       >
         {value || placeholder}
       </button>
-      {error && !!errorMessage && <p className="absolute top-full mt-1 text-destructive text-xs">{errorMessage}</p>}
+      {error && !!errorMessage && (
+        <p className="absolute top-full mt-1 text-body-sm text-destructive">{errorMessage}</p>
+      )}
     </div>
   );
 }

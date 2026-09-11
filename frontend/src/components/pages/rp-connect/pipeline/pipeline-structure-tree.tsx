@@ -234,7 +234,7 @@ const NodeRow = ({
         )}
         <span
           className={cn(
-            'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-sm transition-colors',
+            'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-body transition-colors',
             selected ? 'font-medium text-foreground' : 'text-foreground hover:bg-muted/50'
           )}
           style={
@@ -247,7 +247,10 @@ const NodeRow = ({
           <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={node.label as ComponentName} />
           <span className="min-w-0 flex-1 truncate font-medium">{node.label}</span>
           {node.labelText ? (
-            <span className="min-w-0 max-w-[40%] shrink truncate text-muted-foreground text-xs" title={node.labelText}>
+            <span
+              className="min-w-0 max-w-[40%] shrink truncate text-body-sm text-muted-foreground"
+              title={node.labelText}
+            >
               {node.labelText}
             </span>
           ) : null}
@@ -283,7 +286,7 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
     <span aria-hidden className="w-5 shrink-0" />
     <button
-      className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-border border-dashed py-1 pr-2 pl-1.5 text-left text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
+      className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-border border-dashed py-1 pr-2 pl-1.5 text-left text-body text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
       onClick={() => onAdd(section)}
       type="button"
     >
@@ -401,7 +404,7 @@ export function PipelineStructureTree({
     // children, so headers, "empty" notes and Add rows live between trees. Arrows still cross sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
       {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
-      {notice ? <InvalidConfigNotice className="ml-2 px-2.5 py-2 text-xs">{notice}</InvalidConfigNotice> : null}
+      {notice ? <InvalidConfigNotice className="ml-2 px-2.5 py-2 text-body-sm">{notice}</InvalidConfigNotice> : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
         return (
@@ -416,7 +419,7 @@ export function PipelineStructureTree({
               onAddConnector && (section.section === 'input' || section.section === 'output') ? (
                 <AddConnectorRow onAdd={onAddConnector} section={section.section} />
               ) : (
-                <span className="px-2 pl-9 text-muted-foreground/70 text-sm italic">empty</span>
+                <span className="px-2 pl-9 text-body text-muted-foreground/70 italic">empty</span>
               )
             ) : (
               <div aria-label={title} className="flex flex-col" role="tree">

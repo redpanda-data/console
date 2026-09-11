@@ -79,8 +79,7 @@ export const ResourceInUseAlert = ({ resources }: ResourceInUseAlertProps) => {
   const groupedResources = groupResourcesByType(resources);
 
   return (
-    <Alert className="mt-4" testId="resource-in-use-alert" variant="destructive">
-      <AlertCircle />
+    <Alert className="mt-4" icon={<AlertCircle />} testId="resource-in-use-alert" variant="destructive">
       <AlertTitle>Resource is in use</AlertTitle>
       <AlertDescription>
         <div className="text-body">The secret that you are about to delete is still in use by the following:</div>

@@ -34,7 +34,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
   const navigate = useNavigate({ from: '/security/users/$userName/details' });
 
   return [
-    <TableRow className="hover:bg-gray-50" key={`acl-${rowKey}`}>
+    <TableRow className="hover:bg-surface-subtle" key={`acl-${rowKey}`}>
       <TableCell testId={`acl-principal-${rowKey}`}>{acl.sharedConfig.principal}</TableCell>
       <TableCell testId={`acl-host-${acl.sharedConfig.host}`}>{acl.sharedConfig.host}</TableCell>
       <TableCell align="right">
@@ -62,12 +62,12 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
     </TableRow>,
     isExpanded && (
       <TableRow key={`acl-${rowKey}-expanded`}>
-        <TableCell className="bg-gray-50 p-6" colSpan={3}>
+        <TableCell className="bg-surface-subtle p-6" colSpan={3}>
           <div className="space-y-4">
-            <div className="font-semibold text-gray-700 text-sm">ACL Rules ({acl.rules.length})</div>
+            <div className="font-semibold text-body text-foreground">ACL Rules ({acl.rules.length})</div>
             {acl.rules.map((rule) => (
               <div
-                className="rounded-lg border border-gray-200 bg-white p-4"
+                className="rounded-lg border border-border bg-card p-4"
                 data-testid={`rule-${getRuleDataTestId(rule)}`}
                 key={rule.id}
               >

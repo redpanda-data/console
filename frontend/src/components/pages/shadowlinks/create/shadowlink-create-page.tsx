@@ -311,11 +311,11 @@ export const ShadowLinkCreatePage = () => {
                 )}
 
                 {methods.isFirst ? (
-                  <Button onClick={() => navigate({ to: '/shadowlinks' })} type="button" variant="secondary-ghost">
+                  <Button onClick={() => navigate({ to: '/shadowlinks' })} type="button" variant="ghost">
                     Cancel
                   </Button>
                 ) : (
-                  <Button onClick={methods.prev} type="button" variant="secondary-ghost">
+                  <Button onClick={methods.prev} type="button" variant="ghost">
                     Back
                   </Button>
                 )}

@@ -72,7 +72,7 @@ function TrashIcon() {
   return (
     <svg className="shrink-0" fill="none" height="67" width="66" xmlns="http://www.w3.org/2000/svg">
       <title>Trash</title>
-      <circle cx="33" cy="33.6" fill="#F53649" r="33" />
+      <circle cx="33" cy="33.6" fill="var(--color-destructive)" r="33" />
       <path
         d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29"
         stroke="#fff"
@@ -628,7 +628,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                 </DialogBody>
                 <DialogFooter>
                   {hasErrors || methods.isFirst ? null : (
-                    <Button disabled={okButtonLoading} onClick={() => methods.prev()} variant="secondary">
+                    <Button disabled={okButtonLoading} onClick={() => methods.prev()} variant="primary">
                       Back
                     </Button>
                   )}
@@ -646,7 +646,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                       }
                       methods.next();
                     }}
-                    variant={hasErrors ? 'secondary' : 'destructive'}
+                    variant={hasErrors ? 'primary' : 'destructive'}
                   >
                     {getPrimaryLabel(methods.isLast)}
                   </Button>

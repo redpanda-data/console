@@ -26,18 +26,18 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-vi.mock('config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('config')>();
+rs.mock('config', () => {
+  const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
     config: {
       jwt: 'test-jwt-token',
     },
-    isFeatureFlagEnabled: vi.fn(() => false),
+    isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -45,8 +45,8 @@ vi.mock('state/ui-state', () => ({
 }));
 
 // recharts ResponsiveContainer requires measured dimensions; stub to a simple div
-vi.mock('recharts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('recharts')>();
+rs.mock('recharts', () => {
+  const actual = rs.requireActual<typeof import('recharts')>('recharts');
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
@@ -99,8 +99,8 @@ function buildTransport({
   listQueriesMock,
   executeRangeQueryMock,
 }: {
-  listQueriesMock: ReturnType<typeof vi.fn>;
-  executeRangeQueryMock: ReturnType<typeof vi.fn>;
+  listQueriesMock: ReturnType<typeof rs.fn>;
+  executeRangeQueryMock: ReturnType<typeof rs.fn>;
 }) {
   return createRouterTransport(({ rpc }) => {
     rpc(listQueries, listQueriesMock);
@@ -114,11 +114,11 @@ function buildTransport({
 
 describe('PipelineThroughputCard', () => {
   it('shows calm unavailable state with retry when range queries error', async () => {
-    const listQueriesMock = vi
+    const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = vi.fn().mockImplementation(() => {
+    const executeRangeQueryMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('metrics backend unavailable', Code.Internal);
     });
 
@@ -136,10 +136,10 @@ describe('PipelineThroughputCard', () => {
   });
 
   it('shows the unavailable state, not the empty state, when the query catalog fails', async () => {
-    const listQueriesMock = vi.fn().mockImplementation(() => {
+    const listQueriesMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('metrics service unreachable', Code.Internal);
     });
-    const executeRangeQueryMock = vi.fn();
+    const executeRangeQueryMock = rs.fn();
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -157,11 +157,11 @@ describe('PipelineThroughputCard', () => {
   });
 
   it('shows empty state when queries return empty results', async () => {
-    const listQueriesMock = vi
+    const listQueriesMock = rs
       .fn()
       .mockImplementation(() => createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = vi.fn().mockImplementation(() =>
+    const executeRangeQueryMock = rs.fn().mockImplementation(() =>
       create(ExecuteRangeQueryResponseSchema, {
         results: [],
       })
@@ -182,11 +182,11 @@ describe('PipelineThroughputCard', () => {
   it('renders refresh button that is clickable without crashing', async () => {
     const user = userEvent.setup();
 
-    const listQueriesMock = vi
+    const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = vi.fn().mockReturnValue(
+    const executeRangeQueryMock = rs.fn().mockReturnValue(
       create(ExecuteRangeQueryResponseSchema, {
         results: [],
       })
@@ -210,9 +210,9 @@ describe('PipelineThroughputCard', () => {
   it('shows empty state when listQueries returns no matching queries', async () => {
     // When listQueries has no connect queries, range queries are disabled (enabled: false),
     // so they never load and never error -- resulting in empty chart data.
-    const listQueriesMock = vi.fn().mockReturnValue(createListQueriesResponse([]));
+    const listQueriesMock = rs.fn().mockReturnValue(createListQueriesResponse([]));
 
-    const executeRangeQueryMock = vi.fn();
+    const executeRangeQueryMock = rs.fn();
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -230,11 +230,11 @@ describe('PipelineThroughputCard', () => {
     const now = Date.now();
     const fiveMinAgo = now - 5 * 60 * 1000;
 
-    const listQueriesMock = vi
+    const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = vi.fn().mockImplementation((request) => {
+    const executeRangeQueryMock = rs.fn().mockImplementation((request) => {
       if (request.queryName === 'connect_input_received') {
         return createRangeQueryResponse([
           { timestamp: fiveMinAgo, value: 100 },
@@ -263,11 +263,11 @@ describe('PipelineThroughputCard', () => {
   });
 
   it('passes pipeline_id filter in range query params', async () => {
-    const listQueriesMock = vi
+    const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = vi.fn().mockReturnValue(
+    const executeRangeQueryMock = rs.fn().mockReturnValue(
       create(ExecuteRangeQueryResponseSchema, {
         results: [],
       })
@@ -288,11 +288,11 @@ describe('PipelineThroughputCard', () => {
   });
 
   it('calls both ingress and egress range queries', async () => {
-    const listQueriesMock = vi
+    const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = vi.fn().mockReturnValue(
+    const executeRangeQueryMock = rs.fn().mockReturnValue(
       create(ExecuteRangeQueryResponseSchema, {
         results: [],
       })

@@ -9,9 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, DataTable, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
-import { useCallback, useState } from 'react';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import { useCallback, useMemo, useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
 import { isEmbedded } from '../../../config';
@@ -20,10 +25,19 @@ import { api } from '../../../state/backend-api';
 import type { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
+
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
+// Ten a page (the Registry default) is the legacy page size for this table.
+const CONNECTORS_TABLE_OPTIONS = { enableHiding: false };
 
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   placeholder = 5;
@@ -75,29 +89,14 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
           {/* Plugin List */}
           <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
-            <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Connector Types</h3>
+            <h3 className="ml-1 pb-2.5">Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
-              columns={[
-                {
-                  header: 'Class',
-                  accessorKey: 'class',
-                  cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
-                  size: 500,
-                },
-                {
-                  header: 'Version',
-                  accessorKey: 'version',
-                  size: 300,
-                },
-                {
-                  header: 'Type',
-                  accessorKey: 'type',
-                },
-              ]}
+              columns={pluginColumns}
               data={additionalInfo?.plugins ?? []}
-              pagination
+              pagination={(additionalInfo?.plugins?.length ?? 0) > DEFAULT_TABLE_PAGE_SIZE}
               sorting
+              tableOptions={TABLE_OPTIONS}
             />
           </div>
         </Section>
@@ -105,6 +104,25 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     );
   }
 }
+
+const pluginColumns: DataTableColumnDef<ClusterAdditionalInfo['plugins'][0]>[] = [
+  {
+    id: 'class',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Class" />,
+    accessorKey: 'class',
+    cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
+  },
+  {
+    id: 'version',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Version" />,
+    accessorKey: 'version',
+  },
+  {
+    id: 'type',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+    accessorKey: 'type',
+  },
+];
 
 const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; connectors: ClusterConnectorInfo[] }) => {
   const [filteredResults, setFilteredResults] = useState<ClusterConnectorInfo[]>([]);
@@ -131,15 +149,66 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
     uiSettings.connectorsList.quickSearch = filterText;
   }, []);
 
+  // Memoised on clusterName: DataTable memoises its column model on `columns` identity, and this
+  // component re-renders on every keystroke in the SearchBar.
+  const connectorColumns = useMemo<DataTableColumnDef<ClusterConnectorInfo>[]>(
+    () => [
+      {
+        id: 'name',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
+        accessorKey: 'name',
+        cell: ({ row: { original } }) => (
+          <Link
+            params={{
+              clusterName,
+              connector: original.name,
+            }}
+            search={{} as never}
+            to="/connect-clusters/$clusterName/$connector"
+          >
+            <span className="whitespace-break-spaces break-words">{original.name}</span>
+          </Link>
+        ),
+      },
+      {
+        id: 'class',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Class" />,
+        accessorKey: 'class',
+        cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
+      },
+      {
+        id: 'type',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+        accessorKey: 'type',
+      },
+      {
+        id: 'state',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+        accessorKey: 'state',
+        cell: ({ row: { original } }) => <TaskState observable={original} />,
+      },
+      {
+        id: 'tasks',
+        // Derived from the task list, so there is nothing to sort on.
+        enableSorting: false,
+        header: 'Tasks',
+        cell: ({ row: { original } }) => <TasksColumn observable={original} />,
+      },
+    ],
+    [clusterName]
+  );
+
   return (
     <div>
-      <div style={{ display: 'flex', marginBottom: '.5em' }}>
+      <div className="mb-2 flex">
+        {/* tests/shared/connector.utils.ts clicks this with getByRole('button'), which this
+            nesting produces — and the Registry Button takes no route `params`. */}
         <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
-          <Button variant="solid">Create connector</Button>
+          <Button variant="primary">Create connector</Button>
         </Link>
       </div>
 
-      <Box my={5}>
+      <div className="my-5">
         <SearchBar<ClusterConnectorInfo>
           dataSource={dataSource}
           filterText={searchText}
@@ -148,55 +217,15 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
           onQueryChanged={onQueryChanged}
           placeholderText="Enter search term/regex"
         />
-      </Box>
+      </div>
 
       <DataTable<ClusterConnectorInfo>
-        columns={[
-          {
-            header: 'Connector',
-            accessorKey: 'name',
-            cell: ({ row: { original } }) => (
-              <Link
-                params={{
-                  clusterName,
-                  connector: original.name,
-                }}
-                search={{} as never}
-                to="/connect-clusters/$clusterName/$connector"
-              >
-                <Text whiteSpace="break-spaces" wordBreak="break-word">
-                  {original.name}
-                </Text>
-              </Link>
-            ),
-            size: Number.POSITIVE_INFINITY,
-          },
-          {
-            header: 'Class',
-            accessorKey: 'class',
-            cell: ({ row: { original } }) => <ConnectorClass observable={original} />,
-          },
-          {
-            header: 'Type',
-            accessorKey: 'type',
-            size: 100,
-          },
-          {
-            header: 'State',
-            accessorKey: 'state',
-            size: 120,
-            cell: ({ row: { original } }) => <TaskState observable={original} />,
-          },
-          {
-            header: 'Tasks',
-            size: 120,
-            cell: ({ row: { original } }) => <TasksColumn observable={original} />,
-          },
-        ]}
+        columns={connectorColumns}
         data={filteredResults}
-        defaultPageSize={10}
-        pagination
+        // Legacy parity: ten a page, pager only past that.
+        pagination={filteredResults.length > 10}
         sorting
+        tableOptions={CONNECTORS_TABLE_OPTIONS}
       />
     </div>
   );

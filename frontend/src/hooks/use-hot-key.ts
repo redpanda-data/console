@@ -17,7 +17,16 @@ type HotKeyOptions = {
   key: string;
   modifiers?: Modifier[];
   enabled?: boolean;
+  /** Skip the shortcut while the user is typing in an input, textarea, select, or contenteditable. */
+  ignoreWhenTyping?: boolean;
   onTrigger: () => void;
+};
+
+const TYPING_TAG_REGEX = /^(input|textarea|select)$/i;
+
+export const isTypingTarget = (target: EventTarget | null): boolean => {
+  const el = target as HTMLElement | null;
+  return el !== null && (TYPING_TAG_REGEX.test(el.tagName) || el.isContentEditable);
 };
 
 const MODIFIER_CHECKS: Record<Modifier, (e: KeyboardEvent) => boolean> = {
@@ -38,11 +47,11 @@ function modifiersMatch(e: KeyboardEvent, mods: Modifier[]): boolean {
  * Uses the event handler ref pattern so callers can pass inline arrays
  * and arrow functions without causing listener re-registration.
  */
-export function useHotKey({ key, modifiers = [], enabled = true, onTrigger }: HotKeyOptions) {
-  const optionsRef = useRef({ onTrigger, modifiers });
+export function useHotKey({ key, modifiers = [], enabled = true, ignoreWhenTyping = false, onTrigger }: HotKeyOptions) {
+  const optionsRef = useRef({ onTrigger, modifiers, ignoreWhenTyping });
   useEffect(() => {
-    optionsRef.current = { onTrigger, modifiers };
-  }, [onTrigger, modifiers]);
+    optionsRef.current = { onTrigger, modifiers, ignoreWhenTyping };
+  }, [onTrigger, modifiers, ignoreWhenTyping]);
 
   useEffect(() => {
     if (!enabled) {
@@ -50,9 +59,13 @@ export function useHotKey({ key, modifiers = [], enabled = true, onTrigger }: Ho
     }
 
     const handler = (e: KeyboardEvent) => {
-      const { onTrigger: trigger, modifiers: mods } = optionsRef.current;
+      const { onTrigger: trigger, modifiers: mods, ignoreWhenTyping: ignoreTyping } = optionsRef.current;
 
       if (!modifiersMatch(e, mods) || e.key.toLowerCase() !== key.toLowerCase()) {
+        return;
+      }
+
+      if (ignoreTyping && isTypingTarget(e.target)) {
         return;
       }
 

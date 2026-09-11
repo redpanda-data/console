@@ -2,7 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
 // biome-ignore lint/nursery/noDeprecatedImports: BadgeVariant is intentionally re-exposed so the overflow badge keeps accepting deprecated flat strings for back-compat.
-import type { BadgeEmphasis, BadgeSize, BadgeTone, BadgeVariant } from './badge';
+import type { BadgeEmphasis, BadgeProps, BadgeSize, BadgeTone, BadgeVariant } from './badge';
 import { Badge } from './badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 import { cn, type SharedProps } from '../lib/utils';
@@ -65,8 +65,9 @@ const BadgeGroup = React.forwardRef<HTMLDivElement, BadgeGroupProps>(
     const overflowChildren = childArray.slice(maxVisible);
     const hasOverflow = overflowChildren.length > 0;
 
-    const overflowBadge = (
-      <Badge size={size} tone={tone} variant={variant}>
+    /** `+N`, as a plain chip or — given `render` — as the tooltip's trigger. */
+    const overflowBadge = (overrides?: Partial<BadgeProps>) => (
+      <Badge size={size} tone={tone} variant={variant} {...overrides}>
         +{overflowChildren.length}
       </Badge>
     );
@@ -85,27 +86,24 @@ const BadgeGroup = React.forwardRef<HTMLDivElement, BadgeGroupProps>(
           (renderOverflowContent ? (
             <TooltipProvider>
               <Tooltip>
-                {/* Render a real <button> as the trigger: Base UI's Trigger defaults to
-                    nativeButton=true, so a non-button child (a <span>) makes it warn and
-                    drop native button semantics. A <button> keeps semantics and makes the
-                    overflow badge keyboard-focusable, opening the tooltip on focus and not
-                    just hover. */}
+                {/* A real <button>, for two reasons: Base UI's Trigger defaults to
+                    nativeButton=true, so a non-button child warns and drops native button
+                    semantics — which is also what makes the badge keyboard-focusable, opening
+                    the tooltip on focus and not just hover. The Badge *is* that button rather
+                    than sitting inside one, because Badge scopes its hover to `:is(a, button)`:
+                    nested, the selector never matches and the one interactive badge in the
+                    group becomes the only one that doesn't react. */}
                 <TooltipTrigger
-                  render={
-                    <button
-                      aria-label={`Show ${overflowChildren.length} more`}
-                      className="inline-flex cursor-pointer appearance-none rounded-full border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      type="button"
-                    >
-                      {overflowBadge}
-                    </button>
-                  }
+                  render={overflowBadge({
+                    className: 'cursor-pointer appearance-none',
+                    render: <button aria-label={`Show ${overflowChildren.length} more`} type="button" />,
+                  })}
                 />
                 <TooltipContent>{renderOverflowContent(overflowChildren)}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           ) : (
-            overflowBadge
+            overflowBadge()
           ))}
       </div>
     );

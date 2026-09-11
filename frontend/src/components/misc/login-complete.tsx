@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Spinner } from '@redpanda-data/ui';
 import { useParams } from '@tanstack/react-router';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Component } from 'react';
 
 import { appGlobal } from '../../state/app-global';
@@ -71,23 +71,16 @@ class LoginCompletePage extends Component<{ provider: string }> {
 
     // console.log('login complete, user: ' + JSON.stringify(api.userData));
 
-    // const targetUrl = store.urlBeforeLogin;
-    // store.urlBeforeLogin = null;
-    // if(targetUrl){
-    //     navigate(targetUrl);
-    // } else{
-    //     navigate({ to: '/' });
-    // }
     window.location.assign(getBasePath() || '/');
   }
 
   render() {
     return (
-      <div style={{ height: '100vh', display: 'flex', placeContent: 'center', background: '#f3f3f3' }}>
-        <div style={{ display: 'flex', placeContent: 'center', placeItems: 'center', flexFlow: 'column' }}>
-          <span style={{ fontSize: '1.5em', color: 'rgba(0,0,0,0.75)' }}>Completing login...</span>
+      <div className="flex h-screen place-content-center bg-page">
+        <div className="flex flex-col place-content-center place-items-center">
+          <span className="text-foreground text-heading-xl">Completing login...</span>
           <br />
-          <Spinner size="lg" />
+          <Spinner className="size-8" />
         </div>
       </div>
     );

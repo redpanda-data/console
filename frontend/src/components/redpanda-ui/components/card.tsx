@@ -13,18 +13,20 @@ const CARD_HEADING_CLASS = {
 
 const cardVariants = cva('flex min-w-0 flex-col rounded-lg border border-border border-solid bg-card', {
   variants: {
+    // `w-full` alongside each cap, so a size means "fill up to this width" — without it a
+    // card in a centring or shrink-to-fit parent takes its *content* width instead.
     size: {
-      sm: 'max-w-sm gap-2 px-6 py-4',
-      md: 'max-w-md gap-4 px-8 py-6',
-      lg: 'max-w-lg gap-4 px-10 py-8',
-      xl: 'max-w-xl gap-6 px-12 py-10',
+      sm: 'w-full max-w-sm gap-2 px-6 py-4',
+      md: 'w-full max-w-md gap-4 px-8 py-6',
+      lg: 'w-full max-w-lg gap-4 px-10 py-8',
+      xl: 'w-full max-w-xl gap-6 px-12 py-10',
       full: 'w-full gap-4 px-8 py-6',
     },
     variant: {
       standard: '',
       elevated: 'shadow-elevated',
       outlined: 'border-1',
-      ghost: 'border-0 bg-transparent shadow-none dark:bg-transparent',
+      ghost: 'border-0 bg-transparent shadow-none',
     },
   },
   defaultVariants: {
@@ -99,20 +101,27 @@ const CardTitle = React.forwardRef<
   HTMLHeadingElement,
   React.ComponentProps<'div'> & SharedProps & { level?: 1 | 2 | 3 | 4 }
 >(({ className, level = 4, testId, children, ...props }, ref) => {
-  let content: React.ReactNode = null;
-  if (children) {
+  // A string child is the heading itself, so `className` lands on the element the type style is on:
+  // `text-heading-*` declares size, weight, leading and family, and nothing outside can reach past those.
+  if (children && typeof children === 'string') {
     const HeadingTag = `h${level}` as const;
-    content =
-      typeof children === 'string' ? (
-        <HeadingTag className={CARD_HEADING_CLASS[level]}>{children}</HeadingTag>
-      ) : (
-        children
-      );
+    return (
+      <HeadingTag
+        className={cn(CARD_HEADING_CLASS[level], className)}
+        data-slot="card-title"
+        data-testid={testId}
+        ref={ref}
+        {...props}
+      >
+        {children}
+      </HeadingTag>
+    );
   }
 
+  // Any other node keeps the wrapper — a heading holds phrasing content only.
   return (
     <div className={className} data-slot="card-title" data-testid={testId} ref={ref} {...props}>
-      {content}
+      {children || null}
     </div>
   );
 });
@@ -120,24 +129,18 @@ const CardTitle = React.forwardRef<
 CardTitle.displayName = 'CardTitle';
 
 const CardDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & SharedProps>(
-  ({ className, testId, children, ...props }, ref) => {
-    let content: React.ReactNode = null;
-    if (children) {
-      content = typeof children === 'string' ? <div className="text-body">{children}</div> : children;
-    }
-
-    return (
-      <div
-        className={cn('text-muted-foreground text-sm', className)}
-        data-slot="card-description"
-        data-testid={testId}
-        ref={ref}
-        {...props}
-      >
-        {content}
-      </div>
-    );
-  }
+  ({ className, testId, children, ...props }, ref) => (
+    // No inner element: a copy of `text-body` one level down would outrank the call site's own size.
+    <div
+      className={cn('text-body text-subtle', className)}
+      data-slot="card-description"
+      data-testid={testId}
+      ref={ref}
+      {...props}
+    >
+      {children || null}
+    </div>
+  )
 );
 
 CardDescription.displayName = 'CardDescription';

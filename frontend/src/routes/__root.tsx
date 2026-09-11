@@ -32,7 +32,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
-import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -74,7 +74,10 @@ function SelfHostedLayout() {
     <>
       <AnnouncementBar />
       <SidebarLayout>
-        <SidebarInset>
+        {/* min-w-0: the inset is a row-flex item; without it, wide page content
+            (e.g. the messages table) floors its min-width and pushes the page
+            past the viewport, adding a horizontal scrollbar. */}
+        <SidebarInset className="min-w-0">
           {/* Centered page column; `page-expanded-*` release the gutter and cap (globals.css). */}
           <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
@@ -90,7 +93,7 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
-  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const toasterTheme = useThemeAppearance();
 
   return (
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.

@@ -222,7 +222,7 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
                     height: boundsState.height,
                     opacity: 1,
                   }}
-                  className={cn('absolute z-0 bg-muted', className, activeClassNameState)}
+                  className={cn('absolute z-0 bg-surface-subtle', className, activeClassNameState)}
                   data-slot="motion-highlight"
                   exit={{
                     opacity: 0,
@@ -531,7 +531,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
               {isActive && !isDisabled && (
                 <motion.div
                   animate={{ opacity: 1 }}
-                  className={cn('absolute inset-0 z-0 bg-muted', contextClassName, activeClassName)}
+                  className={cn('absolute inset-0 z-0 bg-surface-subtle', contextClassName, activeClassName)}
                   data-slot="motion-highlight"
                   exit={{
                     opacity: 0,
@@ -581,7 +581,7 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
             {isActive && !isDisabled && (
               <motion.div
                 animate={{ opacity: 1, y: 0 }}
-                className={cn('absolute inset-0 z-0 bg-muted', contextClassName, activeClassName)}
+                className={cn('absolute inset-0 z-0 bg-surface-subtle', contextClassName, activeClassName)}
                 data-slot="motion-highlight"
                 exit={{
                   opacity: 0,

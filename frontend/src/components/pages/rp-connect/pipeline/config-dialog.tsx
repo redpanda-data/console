@@ -57,7 +57,7 @@ function TagsField({ readonly }: { readonly?: boolean }) {
             <FormItem>
               <FormLabel>Tags</FormLabel>
               {filtered.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No tags</p>
+                <p className="text-body text-muted-foreground">No tags</p>
               ) : (
                 <BadgeGroup
                   maxVisible={5}
@@ -70,10 +70,11 @@ function TagsField({ readonly }: { readonly?: boolean }) {
                       ))}
                     </List>
                   )}
-                  variant="simple-outline"
+                  tone="default"
+                  variant="outline"
                 >
                   {filtered.map((t) => (
-                    <Badge key={t.key} variant="simple-outline">
+                    <Badge key={t.key} tone="default" variant="outline">
                       {t.key}: {t.value}
                     </Badge>
                   ))}
@@ -112,7 +113,7 @@ function TagsField({ readonly }: { readonly?: boolean }) {
               value={editableValue}
               valueFieldProps={{ placeholder: 'Value' }}
             />
-            {rootError ? <p className="text-destructive text-sm">{rootError}</p> : null}
+            {rootError ? <p className="text-body text-destructive">{rootError}</p> : null}
             <FormMessage />
           </FormItem>
         );
@@ -191,7 +192,7 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
                 />
               </div>
             </FormControl>
-            <FormDescription className="text-muted-foreground text-sm">
+            <FormDescription className="text-body text-muted-foreground">
               One compute unit = 0.1 CPU and 400 MB memory
             </FormDescription>
             <FormMessage />

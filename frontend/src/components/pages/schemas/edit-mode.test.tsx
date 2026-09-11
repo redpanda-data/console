@@ -9,63 +9,63 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithFileRoutes, screen } from 'test-utils';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-const mockNavigate = vi.fn();
-const mockMutateGlobal = vi.fn();
-const mockMutateSubject = vi.fn();
-const mockMutateContext = vi.fn();
-vi.mock('sonner', () => ({
+const mockNavigate = rs.fn();
+const mockMutateGlobal = rs.fn();
+const mockMutateSubject = rs.fn();
+const mockMutateContext = rs.fn();
+rs.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: rs.fn(),
+    error: rs.fn(),
   },
 }));
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
   };
 });
 
-vi.mock('react-query/api/schema-registry', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-query/api/schema-registry')>();
+rs.mock('react-query/api/schema-registry', () => {
+  const actual = rs.requireActual<typeof import('react-query/api/schema-registry')>('react-query/api/schema-registry');
   return {
     ...actual,
-    useSchemaModeQuery: vi.fn(() => ({
+    useSchemaModeQuery: rs.fn(() => ({
       data: 'READWRITE',
       isLoading: false,
     })),
-    useSchemaDetailsQuery: vi.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
+    useSchemaDetailsQuery: rs.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
       data: undefined,
       isLoading: false,
     })),
-    useUpdateGlobalModeMutation: vi.fn(() => ({
+    useUpdateGlobalModeMutation: rs.fn(() => ({
       mutate: mockMutateGlobal,
       isPending: false,
     })),
-    useUpdateSubjectModeMutation: vi.fn(() => ({
+    useUpdateSubjectModeMutation: rs.fn(() => ({
       mutate: mockMutateSubject,
       isPending: false,
     })),
-    useSchemaRegistryContextsQuery: vi.fn(() => ({
+    useSchemaRegistryContextsQuery: rs.fn(() => ({
       data: [],
       isLoading: false,
     })),
-    useUpdateContextModeMutation: vi.fn(() => ({
+    useUpdateContextModeMutation: rs.fn(() => ({
       mutate: mockMutateContext,
       isPending: false,
     })),
   };
 });
 
-vi.mock('state/backend-api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('state/backend-api')>();
+rs.mock('state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
   return {
     ...actual,
     api: {
@@ -75,7 +75,7 @@ vi.mock('state/backend-api', async (importOriginal) => {
   };
 });
 
-vi.mock('state/ui-state', () => ({
+rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
@@ -95,11 +95,11 @@ import EditSchemaModePage from './edit-mode';
 
 describe('EditSchemaModePage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    rs.restoreAllMocks();
   });
 
   describe('Global mode (no subjectName)', () => {
@@ -168,7 +168,7 @@ describe('EditSchemaModePage', () => {
     const subjectName = 'my-test-subject';
 
     beforeEach(() => {
-      vi.mocked(useSchemaDetailsQuery).mockReturnValue({
+      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
         data: {
           name: subjectName,
           mode: 'READWRITE',
@@ -279,7 +279,7 @@ describe('EditSchemaModePage', () => {
     });
 
     test('shows context name in header when editing context mode', async () => {
-      vi.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
+      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
         data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
         isLoading: false,
       } as never);
@@ -292,7 +292,7 @@ describe('EditSchemaModePage', () => {
 
   describe('Loading and edge cases', () => {
     test('shows skeleton while loading mode', () => {
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as never);
@@ -304,11 +304,11 @@ describe('EditSchemaModePage', () => {
     });
 
     test('shows skeleton while loading subject details', () => {
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
         isLoading: false,
       } as never);
-      vi.mocked(useSchemaDetailsQuery).mockReturnValue({
+      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
         data: undefined,
         isLoading: true,
       } as never);
@@ -331,7 +331,7 @@ describe('EditSchemaModePage', () => {
     });
 
     test('shows not configured page when schema registry is not configured', () => {
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: null,
         isLoading: false,
       } as never);
@@ -341,7 +341,7 @@ describe('EditSchemaModePage', () => {
       expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
 
       // Restore default mock
-      vi.mocked(useSchemaModeQuery).mockReturnValue({
+      rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
         isLoading: false,
       } as never);

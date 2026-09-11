@@ -174,15 +174,11 @@ function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): Unif
 }
 
 /**
- * Format a proto Duration as the largest single-unit string the sync-behavior
- * inputs accept ("90s", "5m") so it round-trips through durationFromString.
- * Zero or unset durations map to '' so the cluster default applies.
- *
- * Deliberately hand-rolled: protobuf-es durationMs rounds sub-millisecond
- * nanos away (rpk accepts any Go duration, so those values exist and must
- * round-trip exactly), pretty-ms emits either multi-unit strings the input
- * grammar rejects ("1m 30s") or lossy compact ones (90s -> "1m"), and
- * date-fns formatDuration produces prose ("5 minutes").
+ * Formats a proto Duration as the largest single-unit string the sync-behavior inputs accept ("90s",
+ * "5m") so it round-trips through `durationFromString`; zero/unset gives '' to take the cluster
+ * default. Hand-rolled deliberately — protobuf-es `durationMs` rounds away sub-millisecond nanos
+ * (which rpk accepts and so must round-trip), pretty-ms emits either rejected multi-unit strings
+ * ("1m 30s") or lossy ones (90s -> "1m"), and date-fns produces prose.
  */
 export function formatDurationForInput(duration: Duration | undefined): string {
   if (!duration) {

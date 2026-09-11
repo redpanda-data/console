@@ -1,5 +1,5 @@
 {
-  "_comment": "Merged coverage thresholds for the frontend test suite. Baseline was captured with `bun run test:coverage` on branch frontend/upgrade-vitest-4.1.4 (2026-04-16). Values are baseline - 1% so the gate only catches regressions, not natural test-run noise. Update this file when the real baseline rises materially; do NOT set aspirational targets.",
+  "_comment": "Merged coverage thresholds for the frontend test suite. Values are the established baseline minus 1% so the gate only catches regressions, not natural test-run noise. Update this file when the real baseline rises materially; do not set aspirational targets.",
   "thresholds": {
     "lines": 28.73,
     "statements": 28.2,

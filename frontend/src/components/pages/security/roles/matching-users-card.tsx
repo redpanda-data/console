@@ -109,7 +109,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
     const isDeleting = deletingPrincipal === memberPrincipal;
     return (
       <div
-        className="group flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white/40 px-[10px] py-2 font-normal text-gray-900 text-sm transition-colors hover:bg-white/60"
+        className="group flex items-center justify-between gap-2 rounded-lg border border-border bg-card/40 px-[10px] py-2 font-normal text-body text-strong transition-colors hover:bg-card/60"
         key={memberPrincipal}
       >
         <span className="flex-1 text-left">{displayName}</span>
@@ -129,20 +129,20 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
   return (
     <div className="lg:col-span-1">
-      <Card className="bg-slate-100" size="full">
+      <Card className="bg-surface-subtle" size="full">
         <CardHeader>
           <h3>Matching users / principals ({membersCount})</h3>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-1">
             {isLoading && principalType === 'RedpandaRole' && (
-              <div className="text-gray-500 text-sm italic">Loading members...</div>
+              <div className="text-body text-subtle italic">Loading members...</div>
             )}
 
             {principalType === 'RedpandaRole' && !isLoading && (
               <>
                 {/* Users section */}
-                <span className="font-medium text-body-sm text-gray-700 uppercase tracking-wide">Users</span>
+                <span className="font-medium text-body-sm text-foreground uppercase tracking-wide">Users</span>
                 {userMembers.length > 0 ? (
                   userMembers.map((member) => {
                     const name = parsePrincipal(member.principal).name || member.principal;
@@ -157,7 +157,9 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                 {/* Groups section — only when GBAC is enabled */}
                 {gbacEnabled && (
                   <>
-                    <span className="mt-2 font-medium text-body-sm text-gray-700 uppercase tracking-wide">Groups</span>
+                    <span className="mt-2 font-medium text-body-sm text-foreground uppercase tracking-wide">
+                      Groups
+                    </span>
                     {groupMembers.length > 0 ? (
                       groupMembers.map((member) => {
                         const name = parsePrincipal(member.principal).name || member.principal;
@@ -176,7 +178,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
           {/* Add member — only for RedpandaRole */}
           {principalType === 'RedpandaRole' && (
-            <div className="border-gray-200 border-t pt-2">
+            <div className="border-border border-t pt-2">
               {isAddingUser ? (
                 <div className="flex flex-col gap-2">
                   {gbacEnabled && (
@@ -202,7 +204,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                   <div className="flex gap-2">
                     {principalTypeToAdd === 'User' ? (
                       <AutocompleteInput
-                        className="flex-1 text-sm"
+                        className="flex-1 text-body"
                         data-testid="add-user-input"
                         onChange={setNewUserName}
                         placeholder="Select or enter username..."
@@ -249,7 +251,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                 </div>
               ) : (
                 <Button
-                  className="w-full justify-start text-gray-600 hover:bg-white/60 hover:text-gray-900"
+                  className="w-full justify-start text-subtle hover:bg-card/60 hover:text-strong"
                   data-testid="add-user-principal-button"
                   onClick={() => setIsAddingUser(true)}
                   size="sm"

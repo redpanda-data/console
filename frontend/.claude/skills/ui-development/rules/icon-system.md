@@ -28,8 +28,8 @@ import { CheckIcon, TrashIcon, AlertIcon, PlusIcon } from 'components/icons';
 const MyComponent = () => (
   <>
     <CheckIcon size={20} />
-    <TrashIcon size={16} color="#ff0000" />
-    <AlertIcon className="text-yellow-500" />
+    <TrashIcon className="text-destructive" size={16} />
+    <AlertIcon className="text-warning" />
   </>
 );
 ```

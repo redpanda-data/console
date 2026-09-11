@@ -127,7 +127,7 @@ export const DataRefreshButton = () => {
             </TooltipContent>
           </Tooltip>
         )}
-        <span className="ml-3 select-none text-muted-foreground text-sm">
+        <span className="ml-3 select-none text-body text-muted-foreground">
           {isActive && activeRequests === 0 ? <>Refreshing in {remainingSeconds} secs</> : null}
           {activeRequests > 0 ? <>Fetching data... {countStr}</> : null}
         </span>

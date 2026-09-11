@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test } from '@rstest/core';
 import { parse as parseYaml } from 'yaml';
 
 import { mockComponents } from './__fixtures__/component-schemas';

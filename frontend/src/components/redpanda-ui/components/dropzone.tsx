@@ -144,7 +144,7 @@ export const DropzoneContent = ({ children, className }: DropzoneContentProps) =
               .join(', ')} and ${src.length - maxLabelItems} more`
           : src.map((file) => file.name).join(', ')}
       </p>
-      <p className="w-full text-wrap text-muted-foreground text-xs">Drag and drop or click to replace</p>
+      <p className="w-full text-wrap text-body-sm text-subtle">Drag and drop or click to replace</p>
     </div>
   );
 };
@@ -182,12 +182,12 @@ export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStatePr
 
   return (
     <div className={cn('flex flex-col items-center justify-center', className)}>
-      <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
+      <div className="flex size-8 items-center justify-center rounded-md bg-surface-subtle text-subtle transition-colors group-hover:bg-accent group-hover:text-accent-foreground motion-reduce:transition-none">
         <UploadIcon size={16} />
       </div>
       <p className="my-2 w-full truncate text-wrap text-label">Upload {maxFiles === 1 ? 'a file' : 'files'}</p>
-      <p className="w-full truncate text-wrap text-muted-foreground text-xs">Drag and drop or click to upload</p>
-      {caption ? <p className="text-wrap text-body-sm text-muted-foreground">{caption}.</p> : null}
+      <p className="w-full truncate text-wrap text-body-sm text-subtle">Drag and drop or click to upload</p>
+      {caption ? <p className="text-wrap text-body-sm text-subtle">{caption}.</p> : null}
     </div>
   );
 };

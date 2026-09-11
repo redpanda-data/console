@@ -88,7 +88,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         titleNode:
           parsed.context !== 'default' ? (
             <>
-              <span className="text-gray-400">:.{parsed.context}:</span>
+              <span className="text-disabled">:.{parsed.context}:</span>
               {parsed.displayName}
             </>
           ) : undefined,
@@ -175,7 +175,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                   })
                 }
                 size="icon-xs"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <EditIcon />
               </Button>
@@ -197,7 +197,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                   })
                 }
                 size="icon-xs"
-                variant="secondary-ghost"
+                variant="ghost"
               >
                 <EditIcon />
               </Button>
@@ -692,7 +692,7 @@ const SchemaMetadataSection = ({ schema }: { schema: SchemaRegistryVersionedSche
 
   return (
     <>
-      <h3 className="mt-20 font-bold text-lg" data-testid="schema-metadata-heading">
+      <h3 className="mt-20 font-bold text-heading-md" data-testid="schema-metadata-heading">
         Metadata
       </h3>
       <p className="mb-4">Metadata associated with this schema version.</p>
@@ -739,7 +739,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
     <>
       <SchemaMetadataSection schema={schema} />
 
-      <h3 className="mt-20 font-bold text-lg" data-testid="schema-references-heading">
+      <h3 className="mt-20 font-bold text-heading-md" data-testid="schema-references-heading">
         References
       </h3>
       <p className="mb-6">Schemas that are required by this version.</p>
@@ -756,7 +756,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                   search={{ version: String(ref.version) }}
                   to="/schema-registry/subjects/$subjectName"
                 >
-                  {parsed.context !== 'default' && <span className="text-gray-400">:.{parsed.context}:</span>}
+                  {parsed.context !== 'default' && <span className="text-disabled">:.{parsed.context}:</span>}
                   {parsed.displayName}
                 </Link>
               </li>
@@ -767,7 +767,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
         <p>This schema has no references.</p>
       )}
 
-      <h3 className="mt-20 font-bold text-lg" data-testid="schema-referenced-by-heading">
+      <h3 className="mt-20 font-bold text-heading-md" data-testid="schema-referenced-by-heading">
         Referenced By
       </h3>
       <p className="mb-6">Schemas that reference this version.</p>
@@ -786,7 +786,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
                     search={{ version: String(ref.version) }}
                     to="/schema-registry/subjects/$subjectName"
                   >
-                    {parsed.context !== 'default' && <span className="text-gray-400">:.{parsed.context}:</span>}
+                    {parsed.context !== 'default' && <span className="text-disabled">:.{parsed.context}:</span>}
                     {parsed.displayName}
                   </Link>
                 </li>

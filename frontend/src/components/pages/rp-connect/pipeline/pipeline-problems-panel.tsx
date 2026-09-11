@@ -52,13 +52,13 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
       <span className="flex min-w-0 flex-col">
         <span className="text-body-sm text-foreground">{problem.message}</span>
         {onSelect ? (
-          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+          <span className="flex items-center gap-1 text-body-sm text-muted-foreground">
             <MousePointerClick className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
             {problem.nodeLabel}
             {problem.line ? ` · line ${problem.line}` : ''}
           </span>
         ) : (
-          problem.line && <span className="text-muted-foreground text-xs">line {problem.line}</span>
+          problem.line && <span className="text-body-sm text-muted-foreground">line {problem.line}</span>
         )}
       </span>
     </>
@@ -82,7 +82,7 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
       <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Missing secrets</span>
       {onAddSecrets ? (
         <Button
-          className="h-6 gap-1 px-2 text-xs"
+          className="h-6 gap-1 px-2 text-body-sm"
           data-testid="missing-secrets-add"
           icon={<KeyRound className="size-3" />}
           onClick={onAddSecrets}
@@ -137,7 +137,7 @@ export function PipelineProblemsPanel({
   const Icon = hasLint ? AlertCircle : KeyRound;
   const tone = hasLint
     ? 'border-destructive/40 text-destructive hover:bg-destructive/5'
-    : 'border-warning/50 text-warning hover:bg-warning-subtle';
+    : 'border-warning/50 text-warning hover:bg-warning-wash';
 
   return (
     <FloatingChipPanel

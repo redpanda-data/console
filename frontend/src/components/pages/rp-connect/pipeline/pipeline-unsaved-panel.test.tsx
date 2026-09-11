@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
-import { describe, expect, test, vi } from 'vitest';
 
 import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 
 describe('PipelineUnsavedPanel', () => {
   test('renders nothing when there are no unsaved nodes', () => {
-    render(<PipelineUnsavedPanel nodes={[]} onSelect={vi.fn()} />);
+    render(<PipelineUnsavedPanel nodes={[]} onSelect={rs.fn()} />);
     expect(screen.queryByTestId('pipeline-unsaved-chip')).not.toBeInTheDocument();
   });
 
   test('shows the unsaved count and lists nodes, jumping to one on click', async () => {
     const user = userEvent.setup();
-    const onSelect = vi.fn();
+    const onSelect = rs.fn();
     render(
       <PipelineUnsavedPanel
         nodes={[
@@ -47,13 +47,13 @@ describe('PipelineUnsavedPanel', () => {
   });
 
   test('uses the singular label for a single unsaved node', () => {
-    render(<PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={vi.fn()} />);
+    render(<PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={rs.fn()} />);
     expect(screen.getByTestId('pipeline-unsaved-chip')).toHaveTextContent('1 unsaved');
   });
 
   test('dismisses the expanded list on Escape', async () => {
     const user = userEvent.setup();
-    render(<PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={vi.fn()} />);
+    render(<PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={rs.fn()} />);
 
     await user.click(screen.getByTestId('pipeline-unsaved-chip'));
     expect(screen.getByTestId('pipeline-unsaved-list')).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('PipelineUnsavedPanel', () => {
         <button data-testid="outside" type="button">
           outside
         </button>
-        <PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={vi.fn()} />
+        <PipelineUnsavedPanel nodes={[{ id: 'proc-0', label: 'mapping' }]} onSelect={rs.fn()} />
       </div>
     );
 

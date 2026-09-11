@@ -137,12 +137,15 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*"],
+      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*", "rstest.setup*.ts"],
       "javascript": {
-        "globals": ["vi"]
+        "globals": ["rs"]
       },
       "linter": {
         "rules": {
+          "performance": {
+            "noNamespaceImport": "off"
+          },
           "suspicious": {
             "noConsole": "off"
           }

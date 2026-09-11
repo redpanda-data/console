@@ -32,10 +32,12 @@ import { type Control, Controller, type FieldPath, useForm, useWatch } from 'rea
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
+import { FieldDescription } from './field-description';
 import type { FieldLintErrors } from './lint-field-mapping';
 import { ScrollShadow } from './scroll-shadow';
 import { getSecretSyntax, REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import { getFieldDocsUrl } from '../utils/connector-docs';
 import {
   checkRequired,
   fieldHasOptions,
@@ -111,7 +113,7 @@ const ChildItemRow = ({
           {item.name}
         </span>
       </div>
-      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="error" /> : null}
+      {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="destructive" /> : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </button>
   );
@@ -152,6 +154,8 @@ type ResourceFieldContextValue = {
   clusterTopicFields?: boolean;
   /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
   onCreateTopic?: () => void;
+  /** Docs URL for one field of the edited component, by its path. */
+  fieldDocsUrl?: (path: string[]) => string | undefined;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
@@ -531,28 +535,25 @@ function buildComponentEntry({
 
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
-    <Label className="shrink-0 font-medium text-sm" htmlFor={htmlFor}>
+    <Label className="shrink-0 font-medium text-body" htmlFor={htmlFor}>
       {spec.name}
     </Label>
     {checkRequired(spec) ? (
-      <span aria-hidden className="shrink-0 text-destructive text-xs" title="Required">
+      <span aria-hidden className="shrink-0 text-body-sm text-destructive" title="Required">
         *
       </span>
     ) : null}
     {spec.type && spec.type !== 'string' ? (
-      <span className="shrink-0 text-muted-foreground text-xs">{spec.type}</span>
+      <span className="shrink-0 text-body-sm text-muted-foreground">{spec.type}</span>
     ) : null}
     {spec.defaultValue ? (
       // Defaults can be long templates — keep the label on one line and ellipsize, full value on hover.
-      <span className="min-w-0 truncate text-muted-foreground text-xs" title={`default: ${spec.defaultValue}`}>
+      <span className="min-w-0 truncate text-body-sm text-muted-foreground" title={`default: ${spec.defaultValue}`}>
         default: <span className="font-mono">{spec.defaultValue}</span>
       </span>
     ) : null}
   </div>
 );
-
-const FieldDescription = ({ spec }: { spec: RawFieldSpec }) =>
-  spec.description ? <div className="text-body-sm text-muted-foreground">{spec.description}</div> : null;
 
 // Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
 // secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
@@ -616,7 +617,7 @@ const TopicScalarControl = ({
         className={invalid ? 'ring-1 ring-destructive' : undefined}
         creatable
         createLabel="value"
-        loading={isLoading}
+        isLoading={isLoading}
         onChange={onChange}
         onInputValueChange={onChange}
         options={options}
@@ -640,8 +641,8 @@ const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (top
     <div className="flex flex-col gap-2">
       <Combobox
         clearable={false}
+        isLoading={isLoading}
         key={pickCount}
-        loading={isLoading}
         onChange={(topic) => {
           if (topic) {
             onAppend(topic);
@@ -791,7 +792,8 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const docsUrl = fieldDocsUrl?.(leaf.path);
   // The topic picker's combobox can't take an id — don't point the label at a nonexistent one.
   const labelFor = clusterTopicFields && isTopicField(leaf.spec.name ?? '') ? undefined : inputId;
   return (
@@ -820,7 +822,7 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
                 value.
               </div>
             ) : null}
-            <FieldDescription spec={leaf.spec} />
+            <FieldDescription docsUrl={docsUrl} spec={leaf.spec} />
           </div>
         );
       }}
@@ -831,7 +833,8 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
 const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields } = useContext(ResourceFieldContext);
+  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const docsUrl = fieldDocsUrl?.(leaf.path);
   const isTopics = Boolean(clusterTopicFields) && isTopicField(leaf.spec.name ?? '');
   return (
     <Controller
@@ -845,7 +848,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
             <Textarea
               aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
               aria-required={checkRequired(leaf.spec) || undefined}
-              className="font-mono text-sm"
+              className="font-mono text-body"
               id={inputId}
               onChange={field.onChange}
               placeholder="One value per line"
@@ -856,7 +859,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
               <TopicArrayPicker lines={lines} onAppend={(t) => field.onChange([...lines, t].join('\n'))} />
             ) : null}
             <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
-            <FieldDescription spec={leaf.spec} />
+            <FieldDescription docsUrl={docsUrl} spec={leaf.spec} />
           </div>
         );
       }}
@@ -1140,6 +1143,7 @@ export function NodeConfigForm({
     componentResourceKind: resourceKindForComponentName(componentName),
     clusterTopicFields,
     onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
+    fieldDocsUrl: (path) => getFieldDocsUrl(spec.type, componentName, path),
   };
 
   const advancedLintSignature = advanced
@@ -1173,7 +1177,7 @@ export function NodeConfigForm({
             {/* Full-bleed to the scroll edges; padded fields follow. */}
             {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
             <div className="flex flex-col gap-1.5">
-              <Label className="font-medium text-sm" htmlFor={labelId}>
+              <Label className="font-medium text-body" htmlFor={labelId}>
                 label
               </Label>
               <Controller
@@ -1284,7 +1288,7 @@ export function NodeConfigForm({
                 size="sm"
                 title="Apply now (⌘⏎) — edits also apply when you leave a field"
                 type="button"
-                variant="secondary"
+                variant="primary"
               >
                 Apply
               </Button>

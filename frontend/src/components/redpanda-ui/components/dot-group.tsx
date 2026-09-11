@@ -129,7 +129,14 @@ function DotGroup({
 
   if (content) {
     return (
-      <div className={cn('relative inline-flex', className)} data-slot="dot-group" data-testid={testId} {...props}>
+      // `w-fit` as in StatusDot: the dots are positioned against this wrapper, so one
+      // stretched by its parent moves them off the content's corner.
+      <div
+        className={cn('relative inline-flex w-fit', className)}
+        data-slot="dot-group"
+        data-testid={testId}
+        {...props}
+      >
         {content}
         {dots}
       </div>

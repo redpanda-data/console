@@ -9,51 +9,51 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useCreateModeInitialYaml } from './use-create-mode-initial-yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
-const mockStoreSetYamlContent = vi.fn();
+const mockStoreSetYamlContent = rs.fn();
 let mockPersistedYaml: string | undefined;
 
-vi.mock('state/rpcn-wizard-store', () => ({
+rs.mock('state/rpcn-wizard-store', () => ({
   useRpcnWizardStore: Object.assign(
-    vi.fn((selector: (s: { yamlContent: string | undefined }) => unknown) =>
+    rs.fn((selector: (s: { yamlContent: string | undefined }) => unknown) =>
       selector({ yamlContent: mockPersistedYaml })
     ),
     {
       getState: () => ({ setYamlContent: mockStoreSetYamlContent, yamlContent: mockPersistedYaml }),
     }
   ),
-  getWizardConnectionData: vi.fn(() => ({
+  getWizardConnectionData: rs.fn(() => ({
     input: { connectionName: 'generate', connectionType: 'input' },
     output: undefined,
   })),
 }));
 
 const GENERATED_YAML = 'input:\n  generate:\n    mapping: "root = {}"';
-const mockGenerateYaml = vi.fn(() => GENERATED_YAML);
-vi.mock('./yaml', () => ({
+const mockGenerateYaml = rs.fn(() => GENERATED_YAML);
+rs.mock('./yaml', () => ({
   generateYamlFromWizardData: (...args: unknown[]) => mockGenerateYaml(...args),
 }));
 
 const fakeComponents = [{ name: 'generate', type: 'input' }] as ConnectComponentSpec[];
 
 describe('useCreateModeInitialYaml', () => {
-  let onResolved: ReturnType<typeof vi.fn>;
+  let onResolved: ReturnType<typeof rs.fn>;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    rs.useFakeTimers();
     mockPersistedYaml = undefined;
-    onResolved = vi.fn();
+    onResolved = rs.fn();
     mockGenerateYaml.mockReturnValue(GENERATED_YAML);
   });
 
   afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
+    rs.useRealTimers();
+    rs.restoreAllMocks();
   });
 
   it('does not call onResolved and isInitializing=false when disabled', () => {
@@ -140,7 +140,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(result.current.isInitializing).toBe(true);
 
       act(() => {
-        vi.advanceTimersByTime(1000);
+        rs.advanceTimersByTime(1000);
       });
 
       expect(result.current.isInitializing).toBe(false);

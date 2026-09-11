@@ -327,7 +327,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                             { value: ACL_ResourcePatternType.ANY, label: 'Any' },
                           ].map((opt) => (
                             <button
-                              className={`inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                              className={`inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                                 field.value === opt.value
                                   ? 'bg-background text-foreground shadow-sm'
                                   : 'text-muted-foreground hover:text-foreground'
@@ -407,7 +407,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                                   return <span className="text-success">Allow</span>;
                                 }
                                 if (value === String(ACL_PermissionType.DENY)) {
-                                  return <span className="text-error">Deny</span>;
+                                  return <span className="text-destructive">Deny</span>;
                                 }
                                 return null;
                               }}
@@ -419,7 +419,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                             <span className="text-success">Allow</span>
                           </SelectItem>
                           <SelectItem value={String(ACL_PermissionType.DENY)}>
-                            <span className="text-error">Deny</span>
+                            <span className="text-destructive">Deny</span>
                           </SelectItem>
                         </SelectContent>
                       </Select>

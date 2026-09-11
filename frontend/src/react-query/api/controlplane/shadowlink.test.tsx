@@ -16,13 +16,13 @@ import {
 import { listShadowLinks } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { connectQueryWrapper } from 'test-utils';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // Mock config module
-vi.mock('config', () => ({
-  isEmbedded: vi.fn(),
+rs.mock('config', () => ({
+  isEmbedded: rs.fn(),
   config: {
     clusterId: 'default',
     jwt: undefined,
@@ -30,8 +30,8 @@ vi.mock('config', () => ({
 }));
 
 // Mock controlplane transport hook
-vi.mock('hooks/use-controlplane-transport', () => ({
-  useControlplaneTransport: vi.fn(),
+rs.mock('hooks/use-controlplane-transport', () => ({
+  useControlplaneTransport: rs.fn(),
 }));
 
 import { config, isEmbedded } from 'config';
@@ -39,13 +39,13 @@ import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 
 import { useControlplaneListShadowLinksQuery } from './shadowlink';
 
-const mockIsEmbedded = vi.mocked(isEmbedded);
-const mockConfig = vi.mocked(config);
-const mockUseControlplaneTransport = vi.mocked(useControlplaneTransport);
+const mockIsEmbedded = rs.mocked(isEmbedded);
+const mockConfig = rs.mocked(config);
+const mockUseControlplaneTransport = rs.mocked(useControlplaneTransport);
 
 describe('useControlplaneListShadowLinksQuery', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   const testCases = [
@@ -77,7 +77,7 @@ describe('useControlplaneListShadowLinksQuery', () => {
     mockIsEmbedded.mockReturnValue(testCase.isEmbedded);
     mockConfig.clusterId = testCase.clusterId;
 
-    const mockListShadowLinks = vi.fn();
+    const mockListShadowLinks = rs.fn();
     const mockShadowLinks = [
       create(ShadowLinkListItemSchema, {
         id: 'sl-1',

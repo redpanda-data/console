@@ -13,6 +13,7 @@ export const FEATURE_FLAGS = {
   enableNewPipelineLogs: false,
   enablePipelineDiagrams: false,
   enableConnectSlashMenu: false,
+  enableNewTopicMessagesPage: false,
 };
 
 // Cloud-managed tag keys for service account integration

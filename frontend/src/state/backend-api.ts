@@ -15,7 +15,6 @@ import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createLinkedAbortController } from '@connectrpc/connect/protocol';
-import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import {
   consoleHasEnterpriseFeature,
   getLatestExpiringLicense,
@@ -32,7 +31,6 @@ import { appGlobal } from './app-global';
 import {
   AclRequestDefault,
   type AclResource,
-  type AdminInfo,
   AlterConfigOperation,
   type AlterPartitionReassignmentsResponse,
   type ApiError,
@@ -166,6 +164,7 @@ import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
+import { showToast } from '../utils/toast.utils';
 import { ObjToKv } from '../utils/tsx-utils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
@@ -178,11 +177,6 @@ export const REST_CACHE_DURATION_SEC = 20;
  * generous working set; least-recently-used URLs are evicted and simply re-fetched on next use.
  */
 const REST_CACHE_MAX_ENTRIES = 500;
-
-const { toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: redpandaToastOptions.defaultOptions,
-});
 
 declare const registry: Registry;
 
@@ -427,8 +421,6 @@ const _apiCreator = (set: any, get: any) => ({
 
   brokerConfigs: new Map<number, ConfigEntry[] | string>(), // config entries, or error string
 
-  adminInfo: undefined as AdminInfo | undefined | null,
-
   schemaOverviewIsConfigured: undefined as boolean | undefined,
 
   schemaMode: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
@@ -543,40 +535,6 @@ const _apiCreator = (set: any, get: any) => ({
           trackHubspotUser(userData);
           trackHeapUser(userData);
         }
-
-        // if (r.status === 401) {
-        //   // unauthorized / not logged in
-        //   api.userData = null;
-        // } else if (r.status === 404) {
-        //   // not found: frontend is configured as business-version, but backend is non-business-version
-        //   // -> create a local fake user for debugging
-        //   uiState.isUsingDebugUserLogin = true;
-        //   api.userData = {
-        //     canViewConsoleUsers: false,
-        //     canListAcls: true,
-        //     canListQuotas: true,
-        //     canPatchConfigs: true,
-        //     canReassignPartitions: true,
-        //     canCreateSchemas: true,
-        //     canDeleteSchemas: true,
-        //     canManageSchemaRegistry: true,
-        //     canViewSchemas: true,
-        //     canListTransforms: true,
-        //     canCreateTransforms: true,
-        //     canDeleteTransforms: true,
-        //     canViewDebugBundle: true,
-        //     seat: null as any,
-        //     user: {
-        //       providerID: -1,
-        //       providerName: 'debug provider',
-        //       id: 'debug',
-        //       internalIdentifier: 'debug',
-        //       meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' },
-        //     },
-        //   };
-        // } else if (r.status === 403) {
-        //   void handleExpiredLicenseError(r);
-        // }
       })
       .catch((err) => {
         // Clear previous error
@@ -1248,63 +1206,6 @@ const _apiCreator = (set: any, get: any) => ({
     });
 
     await parseOrUnwrap<void>(response, null);
-  },
-
-  refreshAdminInfo(force?: boolean) {
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-    cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force).then((info) => {
-      if (info === null) {
-        set({ adminInfo: null });
-        return;
-      }
-
-      // normalize responses (missing arrays, or arrays with an empty string)
-      // todo: not needed anymore, responses are always correct now
-      for (const role of info.roles) {
-        for (const permission of role.permissions) {
-          for (const k of ['allowedActions', 'includes', 'excludes']) {
-            const ar: string[] = ((permission as Record<string, unknown>)[k] as string[]) ?? [];
-            (permission as Record<string, unknown>)[k] = ar.filter((x) => x.length > 0);
-          }
-        }
-      }
-
-      // resolve role of each binding
-      for (const binding of info.roleBindings) {
-        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-        binding.resolvedRole = info.roles.first((r) => r.name === binding.roleName)!;
-        if (binding.resolvedRole === null) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`could not resolve roleBinding to role: ${toJson(binding)}`);
-        }
-      }
-
-      // resolve bindings, and roles of each user
-      for (const user of info.users) {
-        // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-        user.bindings = user.bindingIds.map((id) => info.roleBindings.first((rb) => rb.ephemeralId === id)!);
-        if (user.bindings.any((b) => b === null)) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`one or more rolebindings could not be resolved for user: ${toJson(user)}`);
-        }
-
-        user.grantedRoles = [];
-        for (const roleName in user.audits) {
-          if (Object.hasOwn(user.audits, roleName)) {
-            user.grantedRoles.push({
-              // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-              role: info.roles.first((r) => r.name === roleName)!,
-              grantedBy: user.audits[roleName].map(
-                // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
-                (bindingId) => info.roleBindings.first((b) => b.ephemeralId === bindingId)!
-              ),
-            });
-          }
-        }
-      }
-
-      set({ adminInfo: info });
-    }, addError);
   },
 
   async refreshSchemaMode() {
@@ -2731,10 +2632,11 @@ export function createMessageSearch() {
                 // error doesn't necessarily mean the whole request is done
                 // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.info(`ws backend error: ${res.controlMessage.value.message}`);
-                toast({
+                showToast({
                   title: 'Backend Error',
                   description: res.controlMessage.value.message,
                   status: 'error',
+                  duration: 5000,
                 });
 
                 break;
@@ -3091,10 +2993,13 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
           (status: any) =>
             status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
         );
-      case 'debugBundleStatus':
-        return s.debugBundleStatuses
+      case 'debugBundleStatus': {
+        // The running job's status when there is one; other brokers can still report an older bundle.
+        const bundleStatuses: DebugBundleStatus[] = s.debugBundleStatuses
           .filter((status: any) => status.value.case === 'bundleStatus')
-          .map((x: any) => x.value.value as DebugBundleStatus)[0];
+          .map((x: any) => x.value.value as DebugBundleStatus);
+        return bundleStatuses.find((x) => x.status === DebugBundleStatus_Status.RUNNING) ?? bundleStatuses[0];
+      }
       default:
         return (s as any)[prop as string];
     }

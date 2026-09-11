@@ -39,7 +39,7 @@ const ListLayoutHeader = React.forwardRef<HTMLDivElement, ListLayoutHeaderProps>
         <h1 className="text-foreground text-heading-lg sm:text-heading-xl">{title}</h1>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>
-      {description ? <p className="text-muted-foreground text-sm sm:text-base">{description}</p> : null}
+      {description ? <p className="text-body text-subtle sm:text-body-lg">{description}</p> : null}
     </div>
   )
 );
@@ -126,7 +126,7 @@ const ListLayoutSearchInput = React.forwardRef<HTMLInputElement, ListLayoutSearc
   ({ className, ...props }, ref) => (
     <input
       className={cn(
-        '!border-input flex h-8 w-full min-w-[140px] max-w-[300px] rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:font-medium file:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-[200px] lg:w-[250px]',
+        '!border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring flex h-8 w-full min-w-[140px] max-w-[300px] rounded-md border bg-input-fill px-3 py-2 text-body outline-none transition-colors file:border-0 file:bg-transparent file:font-medium file:text-body placeholder:text-placeholder hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:w-[200px] lg:w-[250px]',
         className
       )}
       ref={ref}

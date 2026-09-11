@@ -9,26 +9,28 @@
  * by the Apache License, Version 2.0
  */
 
-import { SearchField } from '@redpanda-data/ui';
 import { type ReactNode, useEffect, useMemo } from 'react';
 
+import { SearchInput } from './search-input';
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animation-props';
 
-interface SearchBarProps<TItem> {
+type SearchBarProps<TItem> = {
   dataSource: () => TItem[];
   isFilterMatch: (filter: string, item: TItem) => boolean;
   filterText: string;
   onQueryChanged: (value: string) => void;
   onFilteredDataChanged: (data: TItem[]) => void;
   placeholderText?: string;
-}
+};
 
 function SearchBar<TItem>(props: SearchBarProps<TItem>) {
   const { dataSource, isFilterMatch, filterText, onQueryChanged, onFilteredDataChanged, placeholderText } = props;
 
   const source = dataSource();
   const filteredData = useMemo(() => {
-    if (!source) return [];
+    if (!source) {
+      return [];
+    }
     return source.filter((item) => isFilterMatch(filterText, item));
   }, [source, filterText, isFilterMatch]);
 
@@ -56,33 +58,25 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
       identity: 'r',
       node: (
         <span>
-          <span style={{ fontWeight: 600 }}>{filteredData.length}</span> results
+          <span className="font-semibold">{filteredData.length}</span> results
         </span>
       ),
     };
   }, [source, filterText, filteredData]);
 
   return (
-    <div
-      style={{
-        marginBottom: '.5rem',
-        padding: '0',
-        whiteSpace: 'nowrap',
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
-      <SearchField
-        placeholderText={placeholderText}
-        searchText={filterText}
-        setSearchText={onQueryChanged}
-        width="350px"
+    <div className="mb-2 flex items-center whitespace-nowrap">
+      <SearchInput
+        containerClassName="w-full max-w-[350px]"
+        onChange={onQueryChanged}
+        placeholder={placeholderText ?? 'Search...'}
+        value={filterText}
       />
 
       <AnimatePresence>
         {Boolean(filterSummary) && (
           <MotionSpan identityKey={filterSummary?.identity ?? 'null'} overrideAnimProps={animProps_span_searchResult}>
-            <span style={{ opacity: 0.8, paddingLeft: '1em' }}>{filterSummary?.node}</span>
+            <span className="pl-4 opacity-80">{filterSummary?.node}</span>
           </MotionSpan>
         )}
       </AnimatePresence>

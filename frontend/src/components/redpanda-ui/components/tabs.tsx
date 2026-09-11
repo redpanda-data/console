@@ -16,10 +16,13 @@ const tabsVariants = cva('flex data-[orientation=horizontal]:flex-col', {
       xl: 'gap-4',
       full: 'w-full gap-2',
     },
+    /** Wraps the strip *and* its panels, so it fills its container. `TabsList` styles the trigger. */
     variant: {
       default: '',
       card: 'rounded-xl border bg-card',
-      contained: 'rounded-lg bg-muted',
+      // The root *is* the container, so the list drops its own fill — two layers hide the container
+      // this variant draws. Any descendant, not just a child: `ScrollableTabsList` nests it deeper.
+      contained: 'rounded-lg bg-surface-subtle [&_[data-slot=tabs-list]]:bg-transparent',
     },
   },
   defaultVariants: {
@@ -41,18 +44,28 @@ function Tabs({ className, size, variant, testId, ...props }: TabsProps) {
   );
 }
 
+/**
+ * `variant` owns the chrome — fill, border, indicator; `layout` owns how the triggers divide the
+ * strip. Separating them is what makes the variants behave alike: at the default `layout`, every one
+ * sizes its triggers to their labels and packs them from the start edge. `underline` spans its
+ * container regardless, because a baseline stopping short of the panel it heads is chrome, not layout.
+ */
 const tabsListVariants = cva(
-  'inline-flex h-10 items-center justify-center text-muted-foreground data-[orientation=vertical]:h-fit data-[orientation=vertical]:flex-col',
+  'inline-flex h-10 items-center justify-center text-subtle data-[orientation=vertical]:h-fit data-[orientation=vertical]:flex-col',
   {
     variants: {
       variant: {
-        default: 'w-fit gap-1 rounded-lg bg-muted p-1',
-        underline: '!border-border relative w-full justify-start rounded-t-xl border-b bg-background py-0 text-current',
+        default: 'w-fit gap-1 rounded-lg bg-surface-subtle p-1',
+        // No fill: this variant's chrome is the baseline, so its own ground only slabs over the
+        // surface the strip sits on.
+        underline: '!border-border relative w-full justify-start rounded-t-xl border-b py-0 text-current',
       },
       layout: {
         auto: '',
         equal: 'grid',
-        full: 'w-full',
+        // The triggers grow to fill, rather than each claiming the full width and happening to
+        // land on an even split.
+        full: 'w-full [&>[data-slot=tabs-trigger]]:flex-1',
       },
       gap: {
         none: '',
@@ -97,6 +110,7 @@ function TabsList({
   layout,
   gap,
   columns,
+  activateOnFocus,
   testId,
   style,
   ...props
@@ -105,6 +119,7 @@ function TabsList({
   // `w-max min-w-full` to size the list to its content. See the scrollable tabs demos.
   return (
     <TabsPrimitive.List
+      activateOnFocus={activateOnFocus}
       className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
       data-slot="tabs-list"
       data-testid={testId}
@@ -160,13 +175,18 @@ function ScrollableTabsList({ className, scrollAreaClassName, fadeSize, variant,
 }
 
 const tabsTriggerVariants = cva(
-  // Base UI uses `aria-disabled`/`data-disabled` (not native `disabled`) and `data-active`, so target those.
-  'z-[1] inline-flex size-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-[active]:text-foreground',
+  // Base UI uses `aria-disabled`/`data-disabled` (not native `disabled`) and `data-active`.
+  // Height fills the strip, width comes from the label: a `w-full` here has every trigger claim the
+  // whole list, overriding `layout` and leaving `underline`'s `justify-start` nothing to align.
+  'z-[1] inline-flex h-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-body outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-[active]:text-foreground motion-reduce:transition-none',
   {
     variants: {
       variant: {
-        default: 'px-3 py-1.5 hover:text-foreground dark:hover:text-foreground',
-        underline: 'px-4 py-2 text-muted-foreground data-[active]:text-selected',
+        // A trigger is transparent, so it tints in: an ink-only step between two greys is ~1.47 and
+        // reads as nothing. Scoped off the active tab, which its indicator already marks.
+        default: 'px-3 py-1.5 hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground',
+        underline:
+          'px-4 py-2 text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground data-[active]:text-selected',
       },
     },
     defaultVariants: {

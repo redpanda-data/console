@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, it } from '@rstest/core';
 import { render, screen } from 'test-utils';
-import { describe, expect, it } from 'vitest';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 

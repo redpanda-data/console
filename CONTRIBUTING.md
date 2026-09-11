@@ -28,7 +28,7 @@ The basics:
 
 Prerequisites that should be installed before proceeding:
 
-- Latest Node.js v22 & bun 1.2.4 or newer
+- Latest Node.js v22 and Bun 1.4.0
 - Latest Go version
 - Docker (required to start a local redpanda cluster)
 

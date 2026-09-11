@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { afterEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { config } from 'config';
 import { connectQueryWrapper } from 'test-utils';
-import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { useLegacyListTopicsQuery } from './topic';
 
@@ -27,14 +27,14 @@ const jsonResponse = (body: unknown, init?: ResponseInit) =>
 
 describe('useLegacyListTopicsQuery', () => {
   afterEach(() => {
-    vi.restoreAllMocks();
+    rs.restoreAllMocks();
   });
 
   test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
     // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
     // so without an explicit response.ok check the query settles as a success and the
     // error UI never renders — the user sees 0 topics instead of an auth failure.
-    vi.spyOn(config, 'fetch').mockResolvedValue(
+    rs.spyOn(config, 'fetch').mockResolvedValue(
       jsonResponse({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' })
     );
 
@@ -46,7 +46,7 @@ describe('useLegacyListTopicsQuery', () => {
   });
 
   test('returns topics on a successful response', async () => {
-    vi.spyOn(config, 'fetch').mockResolvedValue(
+    rs.spyOn(config, 'fetch').mockResolvedValue(
       jsonResponse({ topics: [{ topicName: 'orders', isInternal: false }] }, { status: 200 })
     );
 

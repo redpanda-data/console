@@ -51,7 +51,7 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
       <SliderPrimitive.Control className="relative flex w-full grow touch-none select-none items-center data-[orientation=vertical]:h-full data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col">
         <SliderPrimitive.Track
           className={cn(
-            'relative grow overflow-hidden rounded-full bg-muted data-[orientation=horizontal]:h-1.5 data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-1.5'
+            'relative grow overflow-hidden rounded-full bg-surface-subtle data-[orientation=horizontal]:h-1.5 data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-1.5'
           )}
           data-slot="slider-track"
         >
@@ -64,7 +64,10 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
         </SliderPrimitive.Track>
         {Array.from({ length: values.length }, (_, index) => (
           <SliderPrimitive.Thumb
-            className="block size-4 shrink-0 rounded-full border border-selected bg-background shadow-sm ring-selected/50 transition-[color,box-shadow] hover:ring-4 focus-visible:outline-hidden focus-visible:ring-4 disabled:pointer-events-none disabled:opacity-50"
+            /* A 4px ring rather than the registry's usual 3px, for both hover and
+               focus: the thumb is a 16px drag target, so the halo is the whole
+               affordance rather than a hint next to a label. Deliberate exception. */
+            className="block size-4 shrink-0 rounded-full border border-selected bg-background shadow-sm ring-selected/50 transition-[color,box-shadow] hover:ring-4 focus-visible:outline-hidden focus-visible:ring-4 active:ring-4 active:ring-selected/70 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
             data-slot="slider-thumb"
             index={index}
             // biome-ignore lint/suspicious/noArrayIndexKey: part of slider implementation

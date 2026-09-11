@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 /**
  * Types for deep per-icon imports from @icons-pack/react-simple-icons.
  *
@@ -8,7 +10,7 @@
  *
  * Deep imports are deliberate: the package barrel re-exports ~3000 icons
  * (59 MB), which dev-mode bundlers pre-bundle whole and crash browser-mode
- * Vitest; per-icon imports load only what the app uses.
+ * test builds; per-icon imports load only what the app uses.
  */
 declare module '@icons-pack/react-simple-icons/icons/*' {
   import type { ComponentType, SVGProps } from 'react';

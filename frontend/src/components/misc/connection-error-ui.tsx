@@ -49,14 +49,14 @@ export const ConnectionErrorUI: FC<ConnectionErrorUIProps> = ({ error, onRetry }
   const { title, description } = getErrorMessage(error);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-100">
-      <div className="mx-4 w-full max-w-md rounded-lg bg-white p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-surface-subtle">
+      <div className="mx-4 w-full max-w-md rounded-lg bg-card p-8 shadow-sm">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-background-error-subtle">
-            <AlertIcon className="h-6 w-6 text-error" />
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive-wash">
+            <AlertIcon className="h-6 w-6 text-destructive" />
           </div>
-          <h3 className="mb-2 text-heading-md text-neutral-900">{title}</h3>
-          <div className="mb-6 text-body-sm text-neutral-600">{description}</div>
+          <h3 className="mb-2 text-heading-md text-strong">{title}</h3>
+          <div className="mb-6 text-body-sm text-subtle">{description}</div>
           <Button onClick={onRetry}>
             <RefreshIcon className="mr-2 h-4 w-4" />
             Try Again

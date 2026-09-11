@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box } from '@redpanda-data/ui';
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
@@ -143,15 +142,10 @@ export const KowlJsonView = (props: {
   }, [scheduleLayout]);
 
   return (
-    <Box
-      display="block"
-      height="96"
-      position="relative"
-      style={{ minHeight: '10rem', maxHeight: '45rem', ...props.style }}
-    >
-      <Box h="full" position="absolute" ref={containerRef} w="full">
+    <div className="relative h-96 max-h-180 min-h-40" style={props.style}>
+      <div className="absolute inset-0" ref={containerRef}>
         <KowlEditor language="json" onMount={handleMount} options={READ_ONLY_EDITOR_OPTIONS} value={str} />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };

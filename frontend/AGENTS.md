@@ -4,7 +4,7 @@ React 18.3 · Bun · Rsbuild
 
 ## Critical Rules
 
-- New code MUST use Registry components (`src/components/redpanda-ui/`), react-hook-form + Zod, Vitest, and Connect Query
+- New code MUST use Registry components (`src/components/redpanda-ui/`), react-hook-form + Zod, Rstest, and Connect Query
 - See [no-legacy](.claude/skills/code-standards/rules/no-legacy.md) for prohibited patterns
 - `src/protogen/` is generated — DO NOT EDIT
 
@@ -18,7 +18,7 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 | `bun run build` | Production build |
 | `bun run test` | All tests |
 | `bun run test:unit` | `.test.ts` (node) |
-| `bun run test:integration` | `.test.tsx` (jsdom) |
+| `bun run test:integration` | `.test.tsx` (happy-dom) |
 | `bun run lint` | Biome/Ultracite linter |
 | `bun run type:check` | TypeScript |
 

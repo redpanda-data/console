@@ -70,7 +70,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
               </Button>
             ) : (
               <a
-                className="inline-flex items-center gap-1 font-medium text-primary text-xs hover:underline"
+                className="inline-flex items-center gap-1 font-medium text-body-sm text-primary hover:underline"
                 data-testid={`slot-${slot.id}-create`}
                 href={buildTopicsHref()}
                 rel="noopener noreferrer"

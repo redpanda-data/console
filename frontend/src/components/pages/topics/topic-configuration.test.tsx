@@ -1,19 +1,19 @@
+import { rs } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
-import { vi } from 'vitest';
 
 import ConfigurationEditor from './topic-configuration';
 
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+rs.mock('@tanstack/react-router', () => {
+  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     useSearch: () => ({}),
-    useNavigate: () => vi.fn(),
+    useNavigate: () => rs.fn(),
   };
 });
 
-vi.mock('../../../config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../config')>();
+rs.mock('../../../config', () => {
+  const actual = rs.requireActual<typeof import('../../../config')>('../../../config');
   return {
     ...actual,
     isServerless: () => false,

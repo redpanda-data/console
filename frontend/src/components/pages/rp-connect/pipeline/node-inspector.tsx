@@ -544,7 +544,7 @@ const InspectorLintErrors = ({ hints }: { hints: UnmappedLintHint[] }) => (
     <AlertDescription>
       <ul className="flex flex-col gap-1">
         {hints.map(({ hint, fieldLabel }, i) => (
-          <li className="text-xs" key={`${hint.line}-${hint.column}-${i}`}>
+          <li className="text-body-sm" key={`${hint.line}-${hint.column}-${i}`}>
             {hint.hint}
             {fieldLabel ? <span className="text-muted-foreground"> ({fieldLabel})</span> : null}
           </li>
@@ -691,7 +691,7 @@ const SwitchCaseEditor = ({
         </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-4">
-        <Label className="font-medium text-sm" htmlFor={inputId}>
+        <Label className="font-medium text-body" htmlFor={inputId}>
           Condition (check)
         </Label>
         <CaseCheckInput check={check} id={inputId} readOnly={readOnly} setCheck={setCheck} />
@@ -723,7 +723,10 @@ const CaseConditionSection = ({
     <div className="border-warning/30 border-b bg-warning/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
         <Split className="size-3.5 shrink-0 text-warning" />
-        <Label className="font-semibold text-warning text-xs uppercase leading-none tracking-wide" htmlFor={inputId}>
+        <Label
+          className="font-semibold text-body-sm text-warning uppercase leading-none tracking-wide"
+          htmlFor={inputId}
+        >
           Routing condition
         </Label>
         <TooltipProvider>

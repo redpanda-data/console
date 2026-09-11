@@ -16,37 +16,41 @@ export const ShadowTopicStatusBadge = ({ state }: { state: ShadowTopicState }) =
   const stateInfo = {
     [ShadowTopicState.UNSPECIFIED]: {
       text: 'Unknown',
-      variant: 'neutral-inverted' as const,
+      tone: 'default' as const,
     },
     [ShadowTopicState.ACTIVE]: {
       text: 'Active',
-      variant: 'success-inverted' as const,
+      tone: 'success' as const,
     },
     [ShadowTopicState.FAULTED]: {
       text: 'Error',
-      variant: 'destructive-inverted' as const,
+      tone: 'destructive' as const,
     },
     [ShadowTopicState.PAUSED]: {
       text: 'Paused',
-      variant: 'warning-inverted' as const,
+      tone: 'warning' as const,
     },
     [ShadowTopicState.FAILING_OVER]: {
       text: 'Failing over',
-      variant: 'warning-inverted' as const,
+      tone: 'warning' as const,
     },
     [ShadowTopicState.FAILED_OVER]: {
       text: 'Failed over',
-      variant: 'info-inverted' as const,
+      tone: 'informative' as const,
     },
     [ShadowTopicState.PROMOTING]: {
       text: 'Promoting',
-      variant: 'info-inverted' as const,
+      tone: 'informative' as const,
     },
     [ShadowTopicState.PROMOTED]: {
       text: 'Promoted',
-      variant: 'info-inverted' as const,
+      tone: 'informative' as const,
     },
-  }[state] || { text: 'Unknown', variant: 'neutral-inverted' as const };
+  }[state] || { text: 'Unknown', tone: 'default' as const };
 
-  return <Badge variant={stateInfo.variant}>{stateInfo.text}</Badge>;
+  return (
+    <Badge tone={stateInfo.tone} variant="subtle">
+      {stateInfo.text}
+    </Badge>
+  );
 };

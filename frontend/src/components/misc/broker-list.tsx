@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Tooltip } from '@redpanda-data/ui';
 import { ChevronRightIcon } from 'components/icons';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import React, { Component, type JSX } from 'react';
 
 import { api, brokerMap } from '../../state/backend-api';
@@ -99,14 +99,14 @@ export class BrokerList extends Component<BrokerListProps> {
       }
       if (isAdding) {
         additionalContent.push(
-          <div key="added" style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>
+          <div key="added" style={{ color: 'var(--color-success)', marginTop: '5px' }}>
             Partitions are currently being transferred to this broker.
           </div>
         );
       }
       if (isRemoving) {
         additionalContent.push(
-          <div key="removed" style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>
+          <div key="removed" style={{ color: 'var(--color-warning)', marginTop: '5px' }}>
             Once the assignment completes, the partitions of the reassignment will be removed from the broker.
           </div>
         );
@@ -143,8 +143,9 @@ function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; toolt
   const tooltipContent = <div style={{ textAlign: 'left', maxWidth: '300px' }}>{tooltipContentEntries}</div>;
 
   return (
-    <Tooltip hasArrow label={tooltipContent} placement="top">
-      {p.children}
+    <Tooltip>
+      <TooltipTrigger render={p.children} />
+      <TooltipContent side="top">{tooltipContent}</TooltipContent>
     </Tooltip>
   );
 }

@@ -1,0 +1,47 @@
+/* =============================================================================
+   PALETTE OVERRIDES — a starting point. Copy it OUT of this directory before editing: everything under
+   `redpanda-ui/` is ours and gets overwritten on the next `shadcn add`.
+
+     cp components/redpanda-ui/style/theme-overrides.example.css src/theme-overrides.css
+
+   Import it last, after theme.css — `@theme` merges last-wins, and the dark block outranks the
+   registry's by source order. Then hold it to the theme on every build:
+
+     "theme:check": "bun components/redpanda-ui/style/theme-check/cli.mts --overrides src/theme-overrides.css",
+     "build": "npm run theme:check && …"
+
+   Five rules, each of which fails silently — a name the theme does not declare compiles to nothing and
+   paints our value. Full guide: https://redpanda-ui-registry.netlify.app/docs/theming
+
+     1. Name only tokens theme.css declares. There is no palette ramp behind them.
+     2. A family you override the rest of, you override the states of — plus the `-wash` beside it, and
+        `surface-recess`, which is `surface-subtle` at half alpha.
+     3. Override both themes, or neither: our dark block still applies to every rung you leave alone.
+     4. `static-*` has no dark value by definition. Light block only, and always with its `-foreground`.
+     5. Only if you pin a subtree with `data-theme` — repeat your light overrides on the light scope
+        below. `@theme` reaches the root; a pinned island re-declares from theme.css and would
+        otherwise fall back to our light defaults.
+   ============================================================================= */
+
+@theme {
+  /* The one shape knob: 0 squares every corner in the system, 9999px pills them. */
+  /* --radius: 0.5rem; */
+
+  /* The whole `primary` family, as an example of the shape rule 2 asks for. Write your own. */
+  --color-primary: #444ce7;
+  --color-primary-hover: #3736d2;
+  --color-primary-pressed: #2e21c1;
+  --color-primary-foreground: #eef4ff;
+  --color-primary-wash: rgba(53, 56, 205, 0.1);
+  --color-primary-wash-pressed: rgba(53, 56, 205, 0.173);
+}
+
+/* Add `.dark` beside this selector if something in your app sets the class instead. */
+[data-theme='dark'] {
+  --color-primary: #26b5ac;
+  --color-primary-hover: #43c8bf;
+  --color-primary-pressed: #57d9cf;
+  --color-primary-foreground: #080808;
+  --color-primary-wash: rgba(92, 212, 203, 0.09);
+  --color-primary-wash-pressed: rgba(92, 212, 203, 0.145);
+}

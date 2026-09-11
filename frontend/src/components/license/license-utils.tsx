@@ -47,17 +47,7 @@ export const consoleHasEnterpriseFeature = (
   feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS' | 'SHADOW_LINKS'
 ): boolean => AppFeatures[feature] ?? false;
 
-/**
- * Determines if the CORE system includes any enabled enterprise features.
- *
- * This function checks a list of enterprise features and returns `true` if at least one feature is enabled,
- * otherwise `false`.
- *
- * @param features - An array of `ListEnterpriseFeaturesResponse_Feature` objects representing the
- * enterprise features and their enabled statuses.
- *
- * @returns `true` if at least one enterprise feature is enabled; otherwise, `false`.
- */
+/** True when Core has at least one enterprise feature enabled. */
 export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean =>
   features.some((feature) => feature.enabled);
 
@@ -113,17 +103,7 @@ export const licenseSoonToExpire = (
  */
 export const getExpirationDate = (license: License): Date => new Date(Number(license.expiresAt) * 1000);
 
-/**
- * Formats the expiration date of a given license into a user-friendly string format.
- *
- * @param license - The license object containing the expiration date information.
- * @returns A string representing the expiration date in the format MM/DD/YYYY.
- *
- * @remarks
- * This function utilizes `Intl.DateTimeFormat` to ensure consistent date formatting
- * regardless of the user's local environment. It formats the date using the 'en-US' locale
- * with two-digit month, day, and four-digit year.
- */
+/** Expiry as a long en-US date, pinned to that locale so it does not vary by environment. */
 export const getPrettyExpirationDate = (license: License): string =>
   new Intl.DateTimeFormat('en-US', {
     month: 'long',
@@ -147,24 +127,7 @@ export const getMillisecondsToExpiration = (license: License): number => {
   return timeRemaining > 0 ? timeRemaining : -1;
 };
 
-/**
- * Computes a human-readable representation of the time remaining until a license expires.
- *
- * This function takes a `License` object, calculates the time until expiration in milliseconds,
- * and formats it into a user-friendly string. If the license has already expired, it returns
- * a corresponding message.
- *
- * @param license - The `License` object containing expiration information.
- *
- * @returns A string representation of the time until expiration. For example:
- * - If the license has expired: `"License has expired"`
- * - If the license is still valid: `"3 days"` or `"4 hours"`, formatted using `prettyMilliseconds`.
- *
- * @remarks
- * - The function internally uses `getMillisecondsToExpiration` to determine the raw time until expiration.
- * - The `prettyMilliseconds` library is used to format the result in a human-readable way.
- * - The result is truncated to 1 unit of time (e.g., `1 day`), with no decimal places for seconds.
- */
+/** Time until expiry as a single coarse unit ("3 days"), or "License has expired". */
 export const getPrettyTimeToExpiration = (license: License) => {
   const timeToExpiration = getMillisecondsToExpiration(license);
 
@@ -175,17 +138,7 @@ export const getPrettyTimeToExpiration = (license: License) => {
   return prettyMilliseconds(Math.abs(timeToExpiration), { unitCount: 1, verbose: true, secondsDecimalDigits: 0 });
 };
 
-/**
- * Returns a user-friendly string representing the type of a license.
- *
- * @param {License} license - The license object containing the expiration date and type.
- * @param {boolean} showSource - Determines whether to show sourae type of a license.
- * @returns {string} - A pretty, human-readable string for the license type.
- *                     - 'Redpanda Community' for `COMMUNITY`
- *                     - 'Unspecified' for `UNSPECIFIED`
- *                     - 'Redpanda Enterprise' for `ENTERPRISE`
- *                     - 'Trial' for `TRIAL`
- */
+/** Display name for a licence type ("Redpanda Enterprise", "Trial", …), optionally prefixed with its source. */
 export const prettyLicenseType = (license: License, showSource = false): string => {
   const licenseType = {
     [License_Type.COMMUNITY]: 'Community',
@@ -265,69 +218,9 @@ export const getLatestExpiringLicense = (licenses: License[]): License | undefin
 };
 
 /**
- * Simplifies a list of licenses by grouping them based on their type and returning a simplified preview of each type.
- *
- * - If there are multiple licenses of the same type, it displays the type with the expiration date of the license that expires first.
- * - If there is only one license of a specific type, it includes the detailed version of the license (with its name and source) and its expiration date.
- *
- * The function returns an array of objects where each object represents a license type with the earliest expiration date.
- *
- * @param licenses - An array of `License` objects to be simplified.
- *
- * @returns An array of objects with the following properties:
- * - `name`: The license type, simplified if there are multiple licenses of that type, or detailed if there's only one license.
- * - `expiresAt`: The expiration date of the earliest expiring license for that type, represented as a string or an empty string if the license doesn't expire.
- *
- * @example
- * ```typescript
- * const licenses = {
- *   "licenses": [
- *     {
- *       "source": "SOURCE_REDPANDA_CONSOLE",
- *       "type": "TYPE_ENTERPRISE",
- *       "expiresAt": "2041321065"
- *     },
- *     {
- *       "source": "SOURCE_REDPANDA_CORE",
- *       "type": "TYPE_ENTERPRISE",
- *       "expiresAt": "4813575088"
- *     }
- *   ]
- * };
- *
- * const simplifiedPreview = licensesToSimplifiedPreview(licenses.licenses);
- *
- * // Output:
- * // [
- * //   { name: 'Enterprise', expiresAt: '...' }
- * // ]
- * ```
- *
- * @example
- * ```typescript
- * const licenses = {
- *   "licenses": [
- *     {
- *       "source": "SOURCE_REDPANDA_CONSOLE",
- *       "type": "TYPE_COMMUNITY",
- *       "expiresAt": "2041321065"
- *     },
- *     {
- *       "source": "SOURCE_REDPANDA_CORE",
- *       "type": "TYPE_ENTERPRISE",
- *       "expiresAt": "4813575088"
- *     }
- *   ]
- * };
- *
- * const simplifiedPreview = licensesToSimplifiedPreview(licenses.licenses);
- *
- * // Output:
- * // [
- * //   { name: 'Console Community', expiresAt: '' },
- * //   { name: 'Core Enterprise', expiresAt: '...' }
- * // ]
- * ```
+ * Groups licenses by type, one entry per type carrying the earliest expiry. A type with several
+ * licences collapses to the bare type name (`Enterprise`); a type with one keeps its source in the
+ * name (`Core Enterprise`). `expiresAt` is empty for licences that never expire.
  */
 export const licensesToSimplifiedPreview = (
   licenses: License[]

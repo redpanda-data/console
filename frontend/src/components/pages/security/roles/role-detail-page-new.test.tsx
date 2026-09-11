@@ -9,38 +9,38 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
 
-const { updateMembershipMock } = vi.hoisted(() => ({
-  updateMembershipMock: vi.fn().mockResolvedValue(undefined),
+const { updateMembershipMock } = rs.hoisted(() => ({
+  updateMembershipMock: rs.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@tanstack/react-router', () => ({
+rs.mock('@tanstack/react-router', () => ({
   useParams: () => ({ roleName: 'test-role' }),
 }));
 
-vi.mock('../../../../state/ui-state', () => ({
-  setPageHeader: vi.fn(),
+rs.mock('../../../../state/ui-state', () => ({
+  setPageHeader: rs.fn(),
 }));
 
-vi.mock('../shared/acls-card', () => ({
+rs.mock('../shared/acls-card', () => ({
   AclsCard: () => null,
 }));
 
-vi.mock('../../../../react-query/api/acl', () => ({
+rs.mock('../../../../react-query/api/acl', () => ({
   useGetAclsByPrincipal: () => ({ data: [], isLoading: false }),
 }));
 
-vi.mock('../../../../react-query/api/security', () => ({
+rs.mock('../../../../react-query/api/security', () => ({
   useListRoleMembersQuery: () => ({ data: { members: [] }, isLoading: false }),
   useUpdateRoleMembershipMutation: () => ({ mutateAsync: updateMembershipMock, isPending: false }),
 }));
 
-vi.mock('../../../../react-query/api/user', () => ({
+rs.mock('../../../../react-query/api/user', () => ({
   useListUsersQuery: () => ({ data: { users: [{ name: 'scram-user' }] } }),
 }));
 
@@ -55,7 +55,7 @@ const renderPage = () =>
 
 describe('RoleDetailPageNew principal assignment', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    rs.clearAllMocks();
   });
 
   test('assigns an OIDC email principal that is absent from the SCRAM user list', async () => {

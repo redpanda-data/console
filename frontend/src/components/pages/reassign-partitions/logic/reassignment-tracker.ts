@@ -247,9 +247,6 @@ export class ReassignmentTracker {
     const id: unknown[] = [];
     id.push(r.topicName);
 
-    // for (const p of r.partitions)
-    //     id.push(p.partitionId);
-
     return toJson(id);
   }
 

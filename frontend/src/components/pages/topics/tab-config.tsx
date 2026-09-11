@@ -60,10 +60,10 @@ function renderKafkaError(topicName: string, error: KafkaError) {
     <div className="my-8 flex flex-col items-center">
       <div className="flex w-full max-w-4xl flex-col">
         <div className="flex flex-col items-center gap-2 text-center">
-          <h2 className="font-semibold text-destructive text-xl">Kafka Error</h2>
+          <h2 className="font-semibold text-destructive text-heading-lg">Kafka Error</h2>
           <p className="text-muted-foreground">
             Redpanda Console received the following error while fetching the configuration for topic{' '}
-            <code className="rounded bg-muted px-1 py-0.5 text-sm">{topicName}</code> from Kafka:
+            <code className="rounded bg-muted px-1 py-0.5 text-body">{topicName}</code> from Kafka:
           </p>
         </div>
         <div className="m-8">

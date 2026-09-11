@@ -31,11 +31,11 @@ type PermissionBadgeProps = {
 };
 
 const PermissionBadge = ({ isAllow, children, testId }: PermissionBadgeProps) => {
-  const colorClasses = isAllow ? 'bg-background-success-subtle text-success' : 'bg-background-error-subtle text-error';
+  const colorClasses = isAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive';
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-xs ${colorClasses}`}
+      className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-body-sm ${colorClasses}`}
       data-testid={testId}
     >
       {children}
@@ -79,10 +79,10 @@ export const OperationsBadge = ({ rule, showResourceDescription = true }: Operat
 
   return (
     <div className="space-y-3">
-      {Boolean(showResourceDescription) && <div className="font-medium text-gray-900">{resourceText}</div>}
+      {Boolean(showResourceDescription) && <div className="font-medium text-strong">{resourceText}</div>}
       <div>
         {enabledOperations.length === 0 ? (
-          <span className="text-gray-400 text-xs italic">No operations configured</span>
+          <span className="text-body-sm text-disabled italic">No operations configured</span>
         ) : (
           <div className="flex flex-wrap gap-2">
             {showSummary ? (

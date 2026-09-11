@@ -27,7 +27,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
-import { useIsDarkMode } from '../hooks/use-is-dark-mode';
+import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -88,20 +88,14 @@ function FederatedRootLayout() {
 }
 
 /**
- * Fits `#mainLayout` into the host's shell. Neither half can be CSS: every wrapper
- * above it belongs to the host app, so there is no chain to inherit from.
+ * Fits `#mainLayout` into the host's shell. Can't be CSS: every wrapper above it belongs to the
+ * host, so there is no chain to inherit from. Cancels the host's side/bottom padding with measured
+ * negative margins (measured, not hardcoded, so either project can deploy first) and stretches the
+ * layout to the viewport bottom so the footer's `margin-top: auto` lands there. Top padding stays —
+ * cancelling it pulls Console under the host header; pages size off it (layout/page-column.tsx).
  *
- * - Cancels the host's side/bottom padding with equal negative margins, leaving
- *   Console's own gutter as the only one. Measured, not hardcoded, so either project
- *   can deploy first. Top padding stays — cancelling it would pull Console under the
- *   host's header; pages size themselves off it instead (layout/page-column.tsx).
- * - Stretches the layout to the viewport bottom so the footer's `margin-top: auto`
- *   lands there instead of trailing short pages.
- *
- * Requires of the host (Cloud UI `common/layout/layout.tsx`): spacing as `padding`, since
- * margin, gap and `max-width` aren't cancellable here; no `overflow` on those ancestors,
- * which clips the negative margins; and its own `html[data-page-expanded]` `max-width`
- * release for expanded mode.
+ * Requires of the host: spacing as `padding` (margin/gap/max-width aren't cancellable here), no
+ * `overflow` on those ancestors, and its own `html[data-page-expanded]` max-width release.
  */
 const useHostShellFit = () => {
   const layoutRef = useRef<HTMLDivElement>(null);
@@ -163,7 +157,7 @@ const useHostShellFit = () => {
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
-  const toasterTheme = useIsDarkMode() ? 'dark' : 'light';
+  const toasterTheme = useThemeAppearance();
   const layoutRef = useHostShellFit();
 
   return (

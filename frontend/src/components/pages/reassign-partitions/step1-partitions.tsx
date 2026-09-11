@@ -9,22 +9,33 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Checkbox, DataTable, Flex, Popover, Text } from '@redpanda-data/ui';
-import type { Row } from '@tanstack/react-table';
-import { WarningIcon } from 'components/icons';
+import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+  type DataTableRow,
+} from 'components/redpanda-ui/components/data-table';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Component } from 'react';
-import Highlighter from 'react-highlight-words';
 
 import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/rest-interfaces';
-import { uiSettings } from '../../../state/ui';
 import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
-import { SearchTitle } from '../../misc/kowl-table';
+
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 export type TopicWithPartitions = Topic & {
   partitions: Partition[];
@@ -36,7 +47,9 @@ export class StepSelectPartitions extends Component<{
   onPartitionSelectionChange: (newSelection: PartitionSelection) => void;
   throttledTopics: string[];
 }> {
-  filterOpen = false; // topic name searchbar
+  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
+  // remounts the header's sort menu out from under the pointer.
+  private readonly columns: DataTableColumnDef<TopicWithPartitions>[];
 
   constructor(props: {
     selectedTopicPartitions: PartitionSelection;
@@ -51,6 +64,110 @@ export class StepSelectPartitions extends Component<{
     this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
     this.getTopicCheckState = this.getTopicCheckState.bind(this);
     this.getRowKey = this.getRowKey.bind(this);
+    this.columns = [
+      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      {
+        id: 'expander',
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.getCanExpand() ? (
+            <Button
+              aria-expanded={row.getIsExpanded()}
+              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+              onClick={row.getToggleExpandedHandler()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {row.getIsExpanded() ? <ChevronDownIcon /> : <ChevronRightIcon />}
+            </Button>
+          ) : null,
+      },
+      {
+        id: 'check',
+        header: '',
+        cell: ({ row }: { row: DataTableRow<TopicWithPartitions> }) => {
+          const { checked, indeterminate } = this.getTopicCheckState(row.original.topicName);
+          return (
+            <Checkbox
+              aria-label={`Select topic ${row.original.topicName}`}
+              checked={indeterminate ? 'indeterminate' : checked}
+              onCheckedChange={() => this.setTopicSelection(row.original, !checked)}
+            />
+          );
+        },
+      },
+      {
+        id: 'topicName',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
+        accessorKey: 'topicName',
+        cell: ({ row: { original: record } }) => {
+          const content = record.topicName;
+
+          if (this.props.throttledTopics.includes(record.topicName)) {
+            return (
+              <div className="whitespace-break-spaces break-words">
+                <span>{content}</span>
+                <WarningToolip content="Topic replication is throttled" position="top" />
+              </div>
+            );
+          }
+
+          return <div className="whitespace-break-spaces break-words">{content}</div>;
+        },
+      },
+      {
+        id: 'partitionCount',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Partitions" />,
+        accessorKey: 'partitionCount',
+        cell: ({ row: { original: topic } }) => {
+          const errors = topic.partitions.count((p) => p.hasErrors);
+          if (errors === 0) {
+            return topic.partitionCount;
+          }
+
+          return (
+            <div className="flex flex-row items-center gap-2">
+              <PartitionErrorsForTopic partitionsWithErrors={errors} />
+              <div>
+                {topic.partitionCount - errors} / {topic.partitionCount}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'replicationFactor',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Replication Factor" />,
+        accessorKey: 'replicationFactor',
+        cell: ({ row: { original: r } }) => {
+          if (r.activeReassignments.length === 0) {
+            return r.replicationFactor;
+          }
+          return (
+            <InfoText
+              maxWidth="180px"
+              tooltip="While reassignment is active, replication factor is temporarily doubled."
+            >
+              {r.replicationFactor}
+            </InfoText>
+          );
+        },
+      },
+      {
+        // Distinct id: the "Partitions" column above also keyed off `partitions`, so both
+        // resolved to the same TanStack column id.
+        id: 'brokers',
+        enableSorting: false,
+        header: 'Brokers',
+        cell: ({ row: { original: record } }) => record.partitions?.map((p) => p.leader).distinct().length ?? 'N/A',
+      },
+      {
+        id: 'totalSizeBytes',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
+        accessorFn: (topic) => topic.logDirSummary?.totalSizeBytes ?? 0,
+        cell: ({ row: { original: r } }) => renderLogDirSummary(r.logDirSummary),
+      },
+    ];
   }
 
   render() {
@@ -58,117 +175,17 @@ export class StepSelectPartitions extends Component<{
       return DefaultSkeleton;
     }
 
-    const query = uiSettings.reassignment.quickSearch ?? '';
-    const filterActive = query.length > 1;
-
     return (
       <div style={{ margin: '1em 1em 2em 1em' }}>
         {/* Current Selection */}
         <SelectionInfoBar margin="2em 0em 1em 0.3em" partitionSelection={this.props.partitionSelection} />
 
         <DataTable<TopicWithPartitions>
-          columns={[
-            {
-              id: 'check',
-              header: '',
-              cell: ({ row }: { row: Row<TopicWithPartitions> }) => {
-                const { checked, indeterminate } = this.getTopicCheckState(row.original.topicName);
-                return (
-                  <Checkbox
-                    isChecked={checked}
-                    isIndeterminate={indeterminate}
-                    onChange={() => this.setTopicSelection(row.original, !checked)}
-                  />
-                );
-              },
-            },
-            {
-              id: 'topicName',
-              header: () => (
-                <SearchTitle observableFilterOpen={this} observableSettings={uiSettings.reassignment} title="Topic" />
-              ),
-              accessorKey: 'topicName',
-              cell: ({ row: { original: record } }) => {
-                const content = filterActive ? (
-                  <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
-                ) : (
-                  record.topicName
-                );
-
-                if (this.props.throttledTopics.includes(record.topicName)) {
-                  return (
-                    <Box whiteSpace="break-spaces" wordBreak="break-word">
-                      <span>{content}</span>
-                      <WarningToolip content="Topic replication is throttled" position="top" />
-                    </Box>
-                  );
-                }
-
-                return (
-                  <Box whiteSpace="break-spaces" wordBreak="break-word">
-                    {content}
-                  </Box>
-                );
-              },
-              size: Number.POSITIVE_INFINITY,
-            },
-            {
-              header: 'Partitions',
-              cell: ({ row: { original: topic } }) => {
-                const errors = topic.partitions.count((p) => p.hasErrors);
-                if (errors === 0) {
-                  return topic.partitionCount;
-                }
-
-                return (
-                  <Flex alignItems="center" flexDirection="row" gap={2}>
-                    <PartitionErrorsForTopic partitionsWithErrors={errors} />
-                    <Text>
-                      {topic.partitionCount - errors} / {topic.partitionCount}
-                    </Text>
-                  </Flex>
-                );
-              },
-              accessorKey: 'partitions',
-            },
-            {
-              header: 'Replication Factor',
-              cell: ({ row: { original: r } }) => {
-                if (r.activeReassignments.length === 0) {
-                  return r.replicationFactor;
-                }
-                return (
-                  <InfoText
-                    maxWidth="180px"
-                    tooltip="While reassignment is active, replication factor is temporarily doubled."
-                  >
-                    {r.replicationFactor}
-                  </InfoText>
-                );
-              },
-              accessorKey: 'replicationFactor',
-            },
-            {
-              header: 'Brokers',
-              accessorKey: 'partitions',
-              cell: ({ row: { original: record } }) =>
-                record.partitions?.map((p) => p.leader).distinct().length ?? 'N/A',
-            },
-            {
-              header: 'Size',
-              cell: ({ row: { original: r } }) => renderLogDirSummary(r.logDirSummary),
-              accessorKey: 'totalSizeBytes',
-            },
-          ]}
+          columns={this.columns}
           data={this.topicPartitions}
-          onRowSelectionChange={(_data) => {
-            // no op - selection is handled manually
-          }}
-          pagination={true}
-          rowSelection={{
-            _internal_connectors_configs: true,
-          }}
-          sorting={true}
+          // Selection is done by the `check` column; no table-level row selection.
+          pagination={this.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
+          sorting
           subComponent={({ row: { original: topic } }) => (
             <SelectPartitionTable
               getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
@@ -178,6 +195,7 @@ export class StepSelectPartitions extends Component<{
               topicPartitions={topic.partitions}
             />
           )}
+          tableOptions={TABLE_OPTIONS}
         />
       </div>
     );
@@ -294,47 +312,57 @@ export class SelectPartitionTable extends Component<{
   isSelected: (topic: string, partition: number) => boolean;
   getSelectedPartitions: () => number[];
 }> {
+  // Built once, as in StepSelectPartitions above.
+  private readonly columns: DataTableColumnDef<Partition>[] = [
+    {
+      id: 'check',
+      enableSorting: false,
+      header: 'Check',
+      cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) => {
+        const isSelected = this.props.getSelectedPartitions().includes(partition.id);
+        return (
+          <Checkbox
+            aria-label={`Select partition ${partition.id}`}
+            checked={isSelected}
+            onCheckedChange={() => {
+              this.props.setSelection(this.props.topic.topicName, partition.id, !isSelected);
+            }}
+          />
+        );
+      },
+    },
+    {
+      id: 'id',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
+      accessorKey: 'id',
+    },
+    {
+      id: 'replicas',
+      enableSorting: false,
+      header: 'Brokers',
+      cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) =>
+        partition.replicas ? (
+          <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
+        ) : (
+          renderPartitionError(partition)
+        ),
+    },
+    {
+      id: 'replicaSize',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Size" />,
+      accessorKey: 'replicaSize',
+      cell: ({ row: { original: partition } }) => prettyBytesOrNA(partition.replicaSize),
+    },
+  ];
+
   render() {
     return (
       <DataTable<Partition>
-        columns={[
-          {
-            header: 'Check',
-            cell: ({ row: { original: partition } }: { row: Row<Partition> }) => {
-              const isSelected = this.props.getSelectedPartitions().includes(partition.id);
-              return (
-                <Checkbox
-                  isChecked={isSelected}
-                  onChange={() => {
-                    this.props.setSelection(this.props.topic.topicName, partition.id, !isSelected);
-                  }}
-                />
-              );
-            },
-          },
-          {
-            header: 'Partition',
-            accessorKey: 'id',
-            size: Number.POSITIVE_INFINITY,
-          },
-          {
-            header: 'Brokers',
-            cell: ({ row: { original: partition } }: { row: Row<Partition> }) =>
-              partition.replicas ? (
-                <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
-              ) : (
-                renderPartitionError(partition)
-              ),
-          },
-          {
-            header: 'Size',
-            cell: ({ row: { original: partition } }) => prettyBytesOrNA(partition.replicaSize),
-            size: Number.POSITIVE_INFINITY,
-          },
-        ]}
+        columns={this.columns}
         data={this.props.topicPartitions}
-        pagination
+        pagination={this.props.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
         sorting
+        tableOptions={TABLE_OPTIONS}
       />
     );
   }
@@ -348,42 +376,52 @@ function renderPartitionError(partition: Partition) {
   const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
 
   return (
-    <Popover
-      content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>{txt}</div>}
-      hideCloseButton
-      placement="right-start"
-      size="auto"
-      title="Partition Error"
-    >
-      <span>
-        <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
-          <WarningIcon color="orange" size={19} />
-        </ZeroSizeWrapper>
-      </span>
+    <Popover>
+      {/* Hover-to-open, as the Chakra popover was. */}
+      <PopoverTrigger
+        delay={200}
+        openOnHover
+        render={
+          <button aria-label="Partition error" type="button">
+            <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
+              <WarningIcon className="text-warning" size={19} />
+            </ZeroSizeWrapper>
+          </button>
+        }
+      />
+      {/* PopoverContent is a fixed w-72; the error text needs the room. */}
+      <PopoverContent align="start" className="w-auto max-w-[500px]" side="right">
+        <PopoverTitle>Partition Error</PopoverTitle>
+        <div className="whitespace-pre-wrap">{txt}</div>
+      </PopoverContent>
     </Popover>
   );
 }
 
 function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
-    <Popover
-      content={
-        <div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+    <Popover>
+      {/* Hover-to-open, as the Chakra popover was. */}
+      <PopoverTrigger
+        delay={200}
+        openOnHover
+        render={
+          <button aria-label="Partition error" type="button">
+            <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
+              <WarningIcon className="text-warning" size={20} />
+            </ZeroSizeWrapper>
+          </button>
+        }
+      />
+      {/* PopoverContent is a fixed w-72; the error text needs the room. */}
+      <PopoverContent align="start" className="w-auto max-w-[500px]" side="right">
+        <PopoverTitle>Partition Error</PopoverTitle>
+        <div className="whitespace-pre-wrap">
           Some partitions could not be retreived.
           <br />
           Expand the topic to see which partitions are affected.
         </div>
-      }
-      hideCloseButton
-      placement="right-start"
-      size="auto"
-      title="Partition Error"
-    >
-      <span>
-        <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
-          <WarningIcon color="orange" size={20} />
-        </ZeroSizeWrapper>
-      </span>
+      </PopoverContent>
     </Popover>
   );
 }

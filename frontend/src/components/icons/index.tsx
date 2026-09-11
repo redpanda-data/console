@@ -1,23 +1,12 @@
 /**
- * Central Icon System for Redpanda Console
- *
- * This file provides a unified icon export system using lucide-react and @icons-pack/react-simple-icons.
- * All icons are re-exported with consistent naming and typing.
- *
- * Migration Notes:
- * - Replaces react-icons (38 files, 6 sub-packages)
- * - Replaces @chakra-ui/icons (10 files)
- * - Replaces @heroicons/react (11 files)
- * - Replaces @primer/octicons-react (16 files)
- *
- * Usage:
- *   import { CheckIcon, TrashIcon, GitHubIcon } from 'components/icons';
+ * Central icon exports, from lucide-react and @icons-pack/react-simple-icons. The single source for
+ * icons in Console — `import { CheckIcon, GitHubIcon } from 'components/icons'`.
  */
 
 // Social media icons - simple-icons
 // biome-ignore lint/performance/noBarrelFile: Intentional central icon system as per project architecture
 // Deep per-icon imports: the package barrel re-exports ~3000 icons (59MB),
-// which dev-mode bundlers pre-bundle whole — crashing browser-mode vitest.
+// which dev-mode bundlers pre-bundle whole — crashing browser-mode test runs.
 export { default as GitHubIcon } from '@icons-pack/react-simple-icons/icons/SiGithub.mjs'; // FaGithub
 export { default as SlackIcon } from '@icons-pack/react-simple-icons/icons/SiSlack.mjs'; // FaSlack
 export { default as TwitterIcon } from '@icons-pack/react-simple-icons/icons/SiX.mjs'; // FaTwitter (Twitter rebranded to X)
@@ -79,6 +68,7 @@ export {
   HelpCircle as HelpIcon, // MdHelpOutline, MdOutlineQuestionMark
   Home as HomeIcon, // HomeIcon (Heroicons)
   Hourglass as HourglassIcon, // MdHourglassFull
+  Inbox as InboxIcon,
   Info as InfoIcon, // MdInfoOutline, InfoIcon (Chakra/Octicons)
   Key as KeyIcon, // MdKey
   Layers as LayersIcon, // MdOutlineLayers
@@ -108,7 +98,6 @@ export {
   StopCircle as StopCircleIcon, // FaRegStopCircle
   Timer as TimerIcon, // MdOutlineTimer
   Trash2 as TrashIcon, // MdDeleteOutline, DeleteIcon (Chakra), TrashIcon (Heroicons/Octicons), AiOutlineDelete, HiOutlineTrash
-  UserCircle as UserCircleIcon, // UserCircleIcon (Heroicons), MdOutlinePermIdentity
   Wrench as WrenchIcon, // FaWrench
   X as CloseIcon, // MdClose, CloseIcon (Chakra), XIcon (Heroicons/Octicons)
   XCircle as ErrorIcon, // MdError, XCircleIcon (Heroicons/Octicons)
