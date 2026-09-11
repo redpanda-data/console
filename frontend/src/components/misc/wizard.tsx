@@ -17,7 +17,7 @@ import styles from './Wizard.module.scss';
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();
   return (
-    <div>
+    <>
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
@@ -32,22 +32,18 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
           </Button>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
 type WizardState = {
   getCurrentStep(): [number, WizardStep];
 
-  getSteps(): WizardStep[];
-
   canContinue(): boolean;
 
   next(): Promise<void>;
 
   previous(): void;
-
-  isLast(): boolean;
 
   isFirst(): boolean;
 };

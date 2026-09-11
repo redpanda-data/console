@@ -193,10 +193,9 @@ const DateTimePickerPanel = ({
 
 const DEFAULT_PLACEHOLDER = 'Enter unix timestamp';
 
-// Replacement for the legacy `<DateTimeInput>`. The text input
-// shows the raw unix-millisecond number (commits on Enter/blur); the calendar
-// icon opens a popover with a calendar, time input, "Now", and Local/UTC
-// toggle. `value` and `onChange` always operate in UTC milliseconds.
+// The text input shows the raw unix-millisecond number (commits on Enter/blur); the calendar
+// icon opens a popover with a calendar, time input, "Now", and Local/UTC toggle. `value` and
+// `onChange` always operate in UTC milliseconds.
 export const DateTimeInput = ({
   value,
   onChange,
@@ -221,7 +220,7 @@ export const DateTimeInput = ({
     const parsed = Number(draft);
     if (Number.isFinite(parsed)) {
       // Values < 10^11 are treated as unix seconds (10^11 ms is March 1973,
-      // 10^11 s is year 5138). Matches the legacy component's behavior.
+      // 10^11 s is year 5138).
       const utcMs = parsed < 1e11 ? parsed * 1000 : parsed;
       onChange(utcMs);
     }

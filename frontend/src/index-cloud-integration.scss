@@ -1,8 +1,7 @@
-// Layout overrides for #mainLayout, Console's scroll container (routes/__root.tsx, utils.ts).
-// Named for the cloud integration but imported by app.tsx too, so these apply standalone as well —
-// temporary, but not on antd's exit as first noted, and dropping them needs both modes checked.
+// Layout overrides for #mainLayout, Console's scroll container (routes/__root.tsx,
+// federation/federated-routes.tsx). Named for the cloud integration but imported by app.tsx too,
+// so they apply standalone as well.
 
-// Background color
 #mainLayout {
   background: transparent !important;
 }

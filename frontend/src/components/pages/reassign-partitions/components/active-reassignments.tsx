@@ -88,7 +88,7 @@ export class ActiveReassignments extends Component<{
     return (
       <>
         {/* Title */}
-        <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
+        <div className="currentReassignments">
           <span className="title">Current Reassignments</span>
 
           {
