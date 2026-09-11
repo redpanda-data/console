@@ -225,7 +225,7 @@ const PreviewTagSettings = ({
             />
           </Label>
 
-          {/* Chakra's Checkbox took its label as a child and wired it; the Registry's does not. */}
+          {/* The Registry Checkbox does not wire a child label. */}
           <span className="flex items-center gap-2">
             <Checkbox
               checked={tag.searchInMessageKey}

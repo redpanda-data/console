@@ -85,19 +85,17 @@ export const ColumnSettings: FC<{
 
                             let newFields: ColumnList[];
                             if (checked) {
-                              // Add column if not already present (prevent duplicates)
                               newFields = currentFields.some((f) => f.dataIndex === dataIndex)
                                 ? currentFields
                                 : [...currentFields, { title, dataIndex }];
                             } else {
-                              // Remove column
                               newFields = currentFields.filter((x) => x.dataIndex !== dataIndex);
                             }
 
                             setTopicSettings(topicName, { previewColumnFields: newFields });
                           }}
                         />
-                        {/* Chakra's Checkbox took its label as a child and wired it; the Registry's does not. */}
+                        {/* The Registry Checkbox does not wire a child label. */}
                         <CheckboxLabel className="cursor-pointer" htmlFor={`column-${dataIndex}`}>
                           {title}
                         </CheckboxLabel>

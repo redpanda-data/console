@@ -27,7 +27,7 @@ test.describe('Topic messages settings dialogs', () => {
     await expect(dialog.getByText('Column Settings')).toBeVisible();
     await expect(dialog.getByText('Columns shown')).toBeVisible();
 
-    // Chakra's Checkbox took its label as a child and wired it; the Registry's does not.
+    // The Registry Checkbox does not wire a child label.
     await expect(dialog.getByRole('checkbox', { name: 'Offset' })).toBeVisible();
     await expect(dialog.getByRole('checkbox', { name: 'Timestamp' })).toBeVisible();
 
@@ -51,7 +51,6 @@ test.describe('Topic messages settings dialogs', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('Preview fields')).toBeVisible();
 
-    // The glob-pattern help was a Chakra Drawer and is now a Sheet, opened from inside the dialog.
     await dialog.getByRole('button', { name: GLOB_PATTERNS_LINK }).click();
     await expect(page.getByText('Glob Pattern Examples')).toBeVisible();
 
