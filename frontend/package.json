@@ -66,6 +66,7 @@
     "@fontsource/geist-mono": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/devtools": "^4.4.0",
     "@hookform/resolvers": "^5.2.2",
     "@icons-pack/react-simple-icons": "^13.8.0",
     "@lezer/highlight": "^1.2.3",
