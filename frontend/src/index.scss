@@ -775,36 +775,6 @@ tr.consumerGroupNoMemberAssigned {
 }
 
 .reassignPartitions {
-  .ant-steps-item-custom {
-    user-select: none;
-
-    .ant-steps-item-icon > .ant-steps-icon {
-      font-size: 20px;
-    }
-  }
-
-  .ant-table-expanded-row th {
-    cursor: default;
-  }
-
-  .ant-table-expanded-row > td {
-    &::before {
-      content: " ";
-      display: block;
-      position: absolute;
-      box-shadow: 0px 0px 3px 0px #000000;
-      top: 1px;
-      left: 2px;
-      right: 2px;
-      bottom: 0px;
-      z-index: -1;
-      border-radius: 2px;
-    }
-    & {
-      border-radius: 1px;
-    }
-  }
-
     // section
     .currentReassignments {
     display: flex;
@@ -1940,22 +1910,6 @@ body {
   font-family: "Inter" !important;
 }
 
-// Console adjustments to be removed later - Dan added the below
-nav.chakra-stack {
-  a:hover {
-    color: white;
-  }
-}
-
-nav.chakra-breadcrumb {
-  a:hover {
-    color: rgba(0, 0, 0, 0.85);
-  }
-
-  svg {
-    display: block;
-  }
-}
 
 .inputWrapper.hasError {
   border-radius: 8px;
