@@ -10,9 +10,13 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { DataTable, SearchField } from '@redpanda-data/ui';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
 import { InfoIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -23,7 +27,7 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
@@ -34,6 +38,8 @@ import { api } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { Code as CodeEl, DefaultSkeleton } from '../../../../utils/tsx-utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../../constants';
+import { SearchInput } from '../../../misc/search-input';
 import Section from '../../../misc/section';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
@@ -48,29 +54,47 @@ import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
-const AclsTabContent: FC = () => {
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+type AclPrincipalRow = {
+  principal: string;
+  host: string;
+  principalType: string;
+  principalName: string;
+};
+
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
+// is off at table level.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
+
+/**
+ * Owns its own queries so the columns array closes over nothing but the failure setter — a stable
+ * array matters because `DataTableColumnHeader` is a dropdown trigger that a re-render destroys.
+ */
+const AclRowActions: FC<{ record: AclPrincipalRow; onFailure: (failure: { err: unknown }) => void }> = ({
+  record,
+  onFailure,
+}) => {
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
-  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
-  const { data: usersData } = useListUsersQuery(undefined, { enabled: isAdminApiConfigured });
-  const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
+  const { data: usersData } = useListUsersQuery(undefined, {
+    enabled: isRedpandaInfoSuccess && Boolean(redpandaInfo),
+  });
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMut } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
 
-  const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const userExists = usersData?.users?.some((u) => u.name === record.principalName) ?? false;
+  const canDeleteUser = userExists && Boolean(featureDeleteUser);
 
-  const navigate = useNavigate();
-
-  const deleteACLsForPrincipal = async (principal: string, host: string) => {
+  const deleteAcls = async () => {
     const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
       filter: {
-        principal,
+        principal: record.principal,
         resourceType: ACL_ResourceType.ANY,
         resourceName: undefined,
-        host,
+        host: record.host,
         operation: ACL_Operation.ANY,
         permissionType: ACL_PermissionType.ANY,
         resourcePatternType: ACL_ResourcePatternType.ANY,
@@ -79,14 +103,145 @@ const AclsTabContent: FC = () => {
     await deleteACLMutation(deleteRequest);
     toast.success(
       <span>
-        Deleted ACLs for <CodeEl>{principal}</CodeEl>
+        Deleted ACLs for <CodeEl>{record.principal}</CodeEl>
       </span>
     );
   };
 
+  const onDelete = async (user: boolean, acls: boolean) => {
+    if (acls) {
+      try {
+        await deleteAcls();
+      } catch (err: unknown) {
+        // biome-ignore lint/suspicious/noConsole: error logging
+        console.error('failed to delete acls', { error: err });
+        onFailure({ err });
+      }
+    }
+
+    if (user) {
+      try {
+        await deleteUserMut({ name: record.principalName });
+        toast.success(
+          <span>
+            Deleted user <CodeEl>{record.principalName}</CodeEl>
+          </span>
+        );
+      } catch (err: unknown) {
+        // biome-ignore lint/suspicious/noConsole: error logging
+        console.error('failed to delete user', { error: err });
+        onFailure({ err });
+      }
+    }
+
+    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
+  };
+
+  const handle = (user: boolean, acls: boolean) => (e: { stopPropagation: () => void }) => {
+    onDelete(user, acls).catch(() => {
+      // Error handling managed by API layer
+    });
+    e.stopPropagation();
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            aria-label={`Delete ACL for ${record.principalName}`}
+            className="deleteButton"
+            size="icon-sm"
+            variant="destructive-ghost"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent>
+        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, true)}>
+          Delete (User and ACLs)
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
+          Delete (User only)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const AclsTabContent: FC = () => {
+  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
+
+  const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const navigate = useNavigate();
+
   const aclPrincipalGroups =
     principalGroups?.filter((g) => g.principalType === 'User' || g.principalType === 'Group') || [];
   const groups = filterByName(aclPrincipalGroups, searchQuery, (g) => g.principalName);
+
+  // Built once. A fresh array hands `flexRender` new function identities, which re-creates every
+  // header — and `DataTableColumnHeader` is a dropdown trigger, so a re-render would tear an open
+  // sort menu down. `setAclFailed` is a stable setter, so there is nothing to depend on.
+  const columns: DataTableColumnDef<AclPrincipalRow>[] = useMemo(
+    () => [
+      {
+        id: 'principal',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Principal" />,
+        accessorKey: 'principal',
+        cell: ({ row: { original: record } }) => (
+          <Link
+            className="cursor-pointer no-underline hover:text-primary"
+            params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
+            search={(prev) => ({ ...prev, host: record.host })}
+            to="/security/acls/$aclName/details"
+          >
+            <span className="flex items-center gap-1">
+              <span
+                className="whitespace-normal break-words"
+                data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+              >
+                {record.principalName}
+              </span>
+              {record.principalType === 'Group' && (
+                <Badge tone="default" variant="subtle">
+                  Group
+                </Badge>
+              )}
+            </span>
+          </Link>
+        ),
+      },
+      {
+        id: 'host',
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
+        accessorKey: 'host',
+        cell: ({
+          row: {
+            original: { host },
+          },
+        }) =>
+          !host || host === '*' ? (
+            <Badge tone="default" variant="subtle">
+              Any
+            </Badge>
+          ) : (
+            host
+          ),
+      },
+      {
+        id: 'menu',
+        header: '',
+        enableSorting: false,
+        cell: ({ row: { original: record } }) => <AclRowActions onFailure={setAclFailed} record={record} />,
+      },
+    ],
+    []
+  );
 
   if (isError && error) {
     return <ErrorResult error={error} />;
@@ -112,12 +267,7 @@ const AclsTabContent: FC = () => {
           </AlertDescription>
         </Alert>
       )}
-      <SearchField
-        placeholderText="Filter by name"
-        searchText={searchQuery}
-        setSearchText={setSearchQuery}
-        width="300px"
-      />
+      <SearchInput className="w-[300px]" onChange={setSearchQuery} placeholder="Filter by name" value={searchQuery} />
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 
@@ -134,149 +284,12 @@ const AclsTabContent: FC = () => {
         </Button>
 
         <div className="py-4">
-          <DataTable<{
-            principal: string;
-            host: string;
-            principalType: string;
-            principalName: string;
-          }>
-            columns={[
-              {
-                size: Number.POSITIVE_INFINITY,
-                header: 'Principal',
-                accessorKey: 'principal',
-                cell: ({ row: { original: record } }) => (
-                  <Link
-                    className="cursor-pointer no-underline hover:text-primary"
-                    params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
-                    search={(prev) => ({ ...prev, host: record.host })}
-                    to="/security/acls/$aclName/details"
-                  >
-                    <span className="flex items-center gap-1">
-                      <span
-                        className="whitespace-normal break-words"
-                        data-testid={`acl-list-item-${record.principalName}-${record.host}`}
-                      >
-                        {record.principalName}
-                      </span>
-                      {record.principalType === 'Group' && (
-                        <Badge tone="default" variant="subtle">
-                          Group
-                        </Badge>
-                      )}
-                    </span>
-                  </Link>
-                ),
-              },
-              {
-                header: 'Host',
-                accessorKey: 'host',
-                cell: ({
-                  row: {
-                    original: { host },
-                  },
-                }) =>
-                  !host || host === '*' ? (
-                    <Badge tone="default" variant="subtle">
-                      Any
-                    </Badge>
-                  ) : (
-                    host
-                  ),
-              },
-              {
-                size: 60,
-                id: 'menu',
-                header: '',
-                cell: ({ row: { original: record } }) => {
-                  const userExists = usersData?.users?.some((u) => u.name === record.principalName) ?? false;
-
-                  const onDelete = async (user: boolean, acls: boolean) => {
-                    if (acls) {
-                      try {
-                        await deleteACLsForPrincipal(record.principal, record.host);
-                      } catch (err: unknown) {
-                        // biome-ignore lint/suspicious/noConsole: error logging
-                        console.error('failed to delete acls', { error: err });
-                        setAclFailed({ err });
-                      }
-                    }
-
-                    if (user) {
-                      try {
-                        await deleteUserMut({ name: record.principalName });
-                        toast.success(
-                          <span>
-                            Deleted user <CodeEl>{record.principalName}</CodeEl>
-                          </span>
-                        );
-                      } catch (err: unknown) {
-                        // biome-ignore lint/suspicious/noConsole: error logging
-                        console.error('failed to delete user', { error: err });
-                        setAclFailed({ err });
-                      }
-                    }
-
-                    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
-                  };
-
-                  return (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            aria-label={`Delete ACL for ${record.principalName}`}
-                            className="deleteButton"
-                            onClick={() => {}}
-                            size="icon-sm"
-                            variant="destructive-ghost"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent>
-                        <DropdownMenuItem
-                          disabled={!(userExists && featureDeleteUser)}
-                          onClick={(e) => {
-                            onDelete(true, true).catch(() => {
-                              // Error handling managed by API layer
-                            });
-                            e.stopPropagation();
-                          }}
-                        >
-                          Delete (User and ACLs)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={!(userExists && featureDeleteUser)}
-                          onClick={(e) => {
-                            onDelete(true, false).catch(() => {
-                              // Error handling managed by API layer
-                            });
-                            e.stopPropagation();
-                          }}
-                        >
-                          Delete (User only)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            onDelete(false, true).catch(() => {
-                              // Error handling managed by API layer
-                            });
-                            e.stopPropagation();
-                          }}
-                        >
-                          Delete (ACLs only)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  );
-                },
-              },
-            ]}
+          <DataTable<AclPrincipalRow>
+            columns={columns}
             data={groups}
-            pagination
+            pagination={groups.length > DEFAULT_TABLE_PAGE_SIZE}
             sorting
+            tableOptions={TABLE_OPTIONS}
           />
         </div>
       </Section>
