@@ -30,7 +30,7 @@ describe('tanstackRouterConfig', () => {
   it('matches TanStack packages across operating systems', () => {
     expect(TANSTACK_CHUNK_PATTERN.test('/app/node_modules/@tanstack/react-router/dist/index.js')).toBe(true);
     expect(TANSTACK_CHUNK_PATTERN.test(String.raw`C:\app\node_modules\@tanstack\react-query\dist\index.js`)).toBe(true);
-    expect(TANSTACK_CHUNK_PATTERN.test('/app/node_modules/@redpanda-data/ui/dist/index.js')).toBe(false);
+    expect(TANSTACK_CHUNK_PATTERN.test('/app/node_modules/@monaco-editor/react/dist/index.js')).toBe(false);
   });
 });
 

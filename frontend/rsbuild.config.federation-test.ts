@@ -11,7 +11,6 @@ import { pluginYaml } from '@rsbuild/plugin-yaml';
 
 import { moduleFederationConfig } from './module-federation.config';
 import { sharedAliases } from './test.shared';
-import { resolve } from 'node:path';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 const configuredExposes = moduleFederationConfig.exposes;
@@ -53,8 +52,6 @@ export default defineConfig({
   resolve: {
     alias: {
       ...sharedAliases,
-      'react-onclickoutside': resolve(import.meta.dirname, 'src/shims/react-onclickoutside-shim.ts'),
-      'react-router-dom$': resolve(import.meta.dirname, 'node_modules/react-router-dom'),
     },
   },
   output: {

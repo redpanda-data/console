@@ -219,13 +219,8 @@ const SUPPRESSED_PATTERNS = [
   /socket hang up/,
   /ECONNREFUSED/,
   /ECONNRESET/,
-  // `isInPortal` is a valid @redpanda-data/ui Popover prop, but the Popover forwards it to a DOM
-  // element in some render paths (e.g. hover triggers) instead of consuming it. External component,
-  // used correctly on our side — fix upstream in @redpanda-data/ui.
-  // (React formats the prop name as a separate `%s` arg, so match the template + the isInPortal token.)
-  /React does not recognize the[\s\S]+\bisInPortal\b/,
-  // @redpanda-data/ui Accordion renders each item's `heading` inside its AccordionButton
-  // (a real <button>). The consumer-group topic view (pages/consumers/group-details.tsx)
+  // The Registry Accordion renders each item's trigger as a real <button>. The
+  // consumer-group topic view (pages/consumers/group-details.tsx)
   // intentionally keeps the per-topic action controls (edit/delete offsets, "Go to topic")
   // in that always-visible header for discoverability; relocating them into the collapsed
   // panel was considered and rejected as a UX regression. That choice nests <button> inside
@@ -234,12 +229,6 @@ const SUPPRESSED_PATTERNS = [
   // (React logs this as a `%s ... <%s>` template with the tag names as separate args, so we
   // match the phrase + the <button> token rather than the interpolated string.)
   /cannot appear as a descendant of[\s\S]*<button>/,
-  // @redpanda-data/ui hardcodes `debugTable: true` on its DataTable,
-  // which makes @tanstack/table-core emit `console.info('Creating Table
-  // Instance...')` on every table render. Not reachable from our source;
-  // upstream fix requires a release of @redpanda-data/ui with the flag
-  // disabled or gated on process.env.NODE_ENV !== 'test'.
-  /Creating Table Instance/,
 ];
 
 function isSuppressed(args: unknown[]): boolean {
