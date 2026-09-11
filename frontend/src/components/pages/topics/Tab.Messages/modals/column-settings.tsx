@@ -9,22 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
-  Box,
-  Button,
-  Checkbox,
-  Grid,
-  GridItem,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Text,
-} from '@redpanda-data/ui';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Label as CheckboxLabel } from 'components/redpanda-ui/components/label';
 import { PortalContainerProvider } from 'components/redpanda-ui/lib/use-portal-container';
 import { type FC, useState } from 'react';
 
@@ -56,102 +51,107 @@ export const ColumnSettings: FC<{
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
   return (
-    <Modal
-      isOpen={getShowDialog()}
-      onClose={() => {
-        setShowDialog(false);
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          setShowDialog(false);
+        }
       }}
+      open={getShowDialog()}
     >
-      <ModalOverlay />
-      <ModalContent minW="4xl" ref={setContainer}>
-        {/* Registry popups portal into the modal, inside its focus and scroll lock */}
-        <PortalContainerProvider value={container ?? undefined}>
-          <ModalHeader>Column Settings</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text>
-              Choose which columns will be shown in the messages table, as well as the format of the timestamp.
-            </Text>
-            <Box my={6}>
-              <Label text="Columns shown">
-                <Stack direction="row" spacing={5}>
-                  {COLUMN_SETTINGS.map(({ title, dataIndex }) => (
-                    <Checkbox
-                      isChecked={previewColumnFields.some((x) => x.dataIndex === dataIndex)}
-                      key={dataIndex}
-                      onChange={({ target: { checked } }) => {
-                        const currentFields = getTopicSettings(topicName)?.previewColumnFields ?? [];
+      {/* `xl` is `sm:max-w-4xl`, matching the Chakra modal's `minW="4xl"`. */}
+      <DialogContent size="xl">
+        {/* The timestamp select portals in here, inside the dialog's focus lock, as Chakra's did. */}
+        {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
+        <div className="flex min-h-0 flex-col" ref={setContainer}>
+          <PortalContainerProvider value={container ?? undefined}>
+            {/* Room for DialogContent's close button. */}
+            <DialogHeader className="pr-10">
+              <DialogTitle>Column Settings</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <p>Choose which columns will be shown in the messages table, as well as the format of the timestamp.</p>
+              <div className="my-6">
+                <Label text="Columns shown">
+                  <div className="flex flex-row gap-5">
+                    {COLUMN_SETTINGS.map(({ title, dataIndex }) => (
+                      <div className="flex items-center gap-2" key={dataIndex}>
+                        <Checkbox
+                          checked={previewColumnFields.some((x) => x.dataIndex === dataIndex)}
+                          id={`column-${dataIndex}`}
+                          onCheckedChange={(checkedState) => {
+                            const checked = checkedState === true;
+                            const currentFields = getTopicSettings(topicName)?.previewColumnFields ?? [];
 
-                        let newFields: ColumnList[];
-                        if (checked) {
-                          // Add column if not already present (prevent duplicates)
-                          newFields = currentFields.some((f) => f.dataIndex === dataIndex)
-                            ? currentFields
-                            : [...currentFields, { title, dataIndex }];
-                        } else {
-                          // Remove column
-                          newFields = currentFields.filter((x) => x.dataIndex !== dataIndex);
-                        }
+                            let newFields: ColumnList[];
+                            if (checked) {
+                              newFields = currentFields.some((f) => f.dataIndex === dataIndex)
+                                ? currentFields
+                                : [...currentFields, { title, dataIndex }];
+                            } else {
+                              newFields = currentFields.filter((x) => x.dataIndex !== dataIndex);
+                            }
 
-                        setTopicSettings(topicName, { previewColumnFields: newFields });
+                            setTopicSettings(topicName, { previewColumnFields: newFields });
+                          }}
+                        />
+                        {/* The Registry Checkbox does not wire a child label. */}
+                        <CheckboxLabel className="cursor-pointer" htmlFor={`column-${dataIndex}`}>
+                          {title}
+                        </CheckboxLabel>
+                      </div>
+                    ))}
+                  </div>
+                </Label>
+                <Button
+                  className="mt-2 p-0"
+                  onClick={() => {
+                    setTopicSettings(topicName, { previewColumnFields: [] });
+                  }}
+                  variant="link"
+                >
+                  Clear
+                </Button>
+              </div>
+              <div className="my-6 grid grid-cols-[1fr_2fr] gap-4">
+                <div>
+                  <Label text="Timestamp format">
+                    <SingleSelect<TimestampDisplayFormat>
+                      onChange={(e) => {
+                        setTopicSettings(topicName, { previewTimestamps: e });
                       }}
-                      size="lg"
-                    >
-                      {title}
-                    </Checkbox>
-                  ))}
-                </Stack>
-              </Label>
+                      options={[
+                        { label: 'Local DateTime', value: 'default' },
+                        { label: 'Unix DateTime', value: 'unixTimestamp' },
+                        { label: 'Relative', value: 'relative' },
+                        { label: 'Local Date', value: 'onlyDate' },
+                        { label: 'Local Time', value: 'onlyTime' },
+                        { label: 'Unix Millis', value: 'unixMillis' },
+                      ]}
+                      value={previewTimestamps}
+                    />
+                  </Label>
+                </div>
+                <div>
+                  <Label text="Preview">
+                    <TimestampDisplay format={previewTimestamps} unixEpochMillisecond={previewTime} />
+                  </Label>
+                </div>
+              </div>
+            </DialogBody>
+            <DialogFooter>
               <Button
-                mt={2}
                 onClick={() => {
-                  setTopicSettings(topicName, { previewColumnFields: [] });
+                  setShowDialog(false);
                 }}
-                // we need to pass this using sx to increase specificity, using p={0} won't work
-                sx={{ padding: 0 }}
-                variant="link"
+                variant="destructive"
               >
-                Clear
+                Close
               </Button>
-            </Box>
-            <Grid gap={4} my={6} templateColumns="1fr 2fr">
-              <GridItem>
-                <Label text="Timestamp format">
-                  <SingleSelect<TimestampDisplayFormat>
-                    onChange={(e) => {
-                      setTopicSettings(topicName, { previewTimestamps: e });
-                    }}
-                    options={[
-                      { label: 'Local DateTime', value: 'default' },
-                      { label: 'Unix DateTime', value: 'unixTimestamp' },
-                      { label: 'Relative', value: 'relative' },
-                      { label: 'Local Date', value: 'onlyDate' },
-                      { label: 'Local Time', value: 'onlyTime' },
-                      { label: 'Unix Millis', value: 'unixMillis' },
-                    ]}
-                    value={previewTimestamps}
-                  />
-                </Label>
-              </GridItem>
-              <GridItem>
-                <Label text="Preview">
-                  <TimestampDisplay format={previewTimestamps} unixEpochMillisecond={previewTime} />
-                </Label>
-              </GridItem>
-            </Grid>
-          </ModalBody>
-          <ModalFooter gap={2}>
-            <Button
-              colorScheme="red"
-              onClick={() => {
-                setShowDialog(false);
-              }}
-            >
-              Close
-            </Button>
-          </ModalFooter>
-        </PortalContainerProvider>
-      </ModalContent>
-    </Modal>
+            </DialogFooter>
+          </PortalContainerProvider>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

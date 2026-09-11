@@ -17,12 +17,16 @@ import {
   type DropResult,
   type ResponderProvided,
 } from '@hello-pangea/dnd';
-import { Box, Button, Checkbox, Flex, Input, Popover } from '@redpanda-data/ui';
 import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon, SettingsIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Checkbox } from 'components/redpanda-ui/components/checkbox';
+import { Input } from 'components/redpanda-ui/components/input';
+import { Label as CheckboxLabel } from 'components/redpanda-ui/components/label';
+import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import React from 'react';
 
-import { globHelp, PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
+import { PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
 import { usePreviewDisplayMode } from '../../../../hooks/use-preview-display-mode';
 import { usePreviewMultiResultMode } from '../../../../hooks/use-preview-multi-result-mode';
 import { usePreviewTagsCaseSensitive } from '../../../../hooks/use-preview-tags-case-sensitive';
@@ -74,9 +78,8 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
     <>
       <div>
         <span>
-          When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer />
-          <Popover content={globHelp} hideCloseButton placement="bottom" size="auto" trigger={'click'} /> to this list
-          to show found values as previews.
+          When viewing large messages we're often only interested in a few specific fields. Add <PatternHelpDrawer /> to
+          this list to show found values as previews.
         </span>
       </div>
 
@@ -155,7 +158,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
     </>
   );
 
-  return <Box>{content}</Box>;
+  return <div>{content}</div>;
 };
 
 /*
@@ -187,61 +190,66 @@ const PreviewTagSettings = ({
   };
 
   return (
-    <Flex borderRadius={1} gap={1} mb={1.5} p={1} placeItems="center">
+    <div className="mb-1.5 flex place-items-center gap-1 rounded-sm p-1">
       {/* Move Handle */}
       <span className="moveHandle" {...draggableProvided.dragHandleProps}>
         <MenuIcon />
       </span>
 
       {/* Enabled */}
-      <Checkbox isChecked={tag.isActive} onChange={(e) => updateTag({ isActive: e.target.checked })} />
+      <Checkbox
+        aria-label={`Enable pattern ${tag.pattern || tag.id}`}
+        checked={tag.isActive}
+        onCheckedChange={(checked) => updateTag({ isActive: checked === true })}
+      />
 
       {/* Settings */}
-      <Popover
-        content={
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }}>
-            <Label style={{ marginBottom: '.5em' }} text="Display Name">
-              <Input
-                autoComplete={randomId()}
-                flexBasis={50}
-                flexGrow={1}
-                onChange={(e) => updateTag({ customName: e.target.value })}
-                placeholder="Enter a display name..."
-                size="sm"
-                spellCheck={false}
-                value={tag.customName}
-              />
-            </Label>
+      <Popover>
+        <PopoverTrigger
+          render={
+            <span className="inlineButton">
+              <SettingsIcon />
+            </span>
+          }
+        />
+        {/* PopoverContent is a fixed w-72; the Chakra popover sized to its content. */}
+        <PopoverContent align="start" className="flex w-auto flex-col gap-1" side="bottom">
+          <Label style={{ marginBottom: '.5em' }} text="Display Name">
+            <Input
+              autoComplete={randomId()}
+              onChange={(e) => updateTag({ customName: e.target.value })}
+              placeholder="Enter a display name..."
+              size="sm"
+              spellCheck={false}
+              value={tag.customName}
+            />
+          </Label>
 
-            <span>
-              <Checkbox
-                isChecked={tag.searchInMessageKey}
-                onChange={(e) => updateTag({ searchInMessageKey: e.target.checked })}
-              >
-                Search in message key
-              </Checkbox>
-            </span>
-            <span>
-              <Checkbox
-                isChecked={tag.searchInMessageValue}
-                onChange={(e) => updateTag({ searchInMessageValue: e.target.checked })}
-              >
-                Search in message value
-              </Checkbox>
-            </span>
-          </div>
-        }
-        hideCloseButton
-        placement="bottom-start"
-        size="auto"
-        trigger={'click'}
-      >
-        <span className="inlineButton">
-          <SettingsIcon />
-        </span>
+          {/* The Registry Checkbox does not wire a child label. */}
+          <span className="flex items-center gap-2">
+            <Checkbox
+              checked={tag.searchInMessageKey}
+              id={`search-key-${tag.id}`}
+              onCheckedChange={(checked) => updateTag({ searchInMessageKey: checked === true })}
+            />
+            <CheckboxLabel className="cursor-pointer" htmlFor={`search-key-${tag.id}`}>
+              Search in message key
+            </CheckboxLabel>
+          </span>
+          <span className="flex items-center gap-2">
+            <Checkbox
+              checked={tag.searchInMessageValue}
+              id={`search-value-${tag.id}`}
+              onCheckedChange={(checked) => updateTag({ searchInMessageValue: checked === true })}
+            />
+            <CheckboxLabel className="cursor-pointer" htmlFor={`search-value-${tag.id}`}>
+              Search in message value
+            </CheckboxLabel>
+          </span>
+        </PopoverContent>
       </Popover>
 
-      <Box w="full">
+      <div className="w-full">
         <SingleSelect<string>
           creatable
           onChange={(value) => updateTag({ pattern: value })}
@@ -249,13 +257,13 @@ const PreviewTagSettings = ({
           placeholder="Pattern..."
           value={tag.pattern}
         />
-      </Box>
+      </div>
 
       {/* Remove */}
       <button className="inlineButton" onClick={onRemove} type="button">
         <CloseIcon />
       </button>
-    </Flex>
+    </div>
   );
 };
 
