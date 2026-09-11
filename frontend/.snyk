@@ -7,11 +7,14 @@ ignore:
         reason: >-
           Not reachable in browser UI: frontend source has no direct uuid
           runtime imports and does not call uuid v3/v5/v6 with caller-provided
-          output buffers/offsets. The @hookform/devtools path left with
-          @redpanda-data/ui; the remaining path is Docker test tooling, which
-          does not expose the vulnerable external-buffer API to user input. Revisit before expiry
-          or if direct uuid buffer APIs are introduced. Re-triaged 2026-07-20
-          sweep — still present, still non-reachable.
+          output buffers/offsets. Paths are @hookform/devtools — now a direct
+          dependency rather than transitive via @redpanda-data/ui, which was
+          removed — and Docker test tooling; neither exposes the vulnerable
+          external-buffer API to user input. @hookform/devtools is uuid's only
+          dependant, so dropping the production <DevTool> render in
+          shadowlink-create-page.tsx would retire this ignore outright. Revisit
+          before expiry or if direct uuid buffer APIs are introduced.
+          Re-triaged 2026-07-20 sweep — still present, still non-reachable.
         expires: 2026-10-20T00:00:00.000Z
         created: 2026-05-13T09:58:12.566Z
   SNYK-JS-POSTCSS-18313038:
