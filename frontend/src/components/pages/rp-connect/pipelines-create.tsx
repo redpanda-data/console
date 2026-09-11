@@ -309,7 +309,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
         </CardHeader>
         <CardContent>
           <Button onClick={openAddSecret} variant="outline">
-            <PlusIcon className="size-4" color="white" />
+            <PlusIcon className="size-4" />
             Add secrets
           </Button>
         </CardContent>

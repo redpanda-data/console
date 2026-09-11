@@ -70,43 +70,43 @@ export const PipelineStatus = (p: { status: Pipeline_State }) => {
     case Pipeline_State.STARTING:
       return (
         <div className="flex items-center gap-2">
-          <RotateCwIcon color="#444" size={STATUS_ICON_SIZE} /> Starting
+          <RotateCwIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Starting
         </div>
       );
     case Pipeline_State.RUNNING:
       return (
         <div className="flex items-center gap-2">
-          <CheckIcon color="green" size={STATUS_ICON_SIZE} /> Running
+          <CheckIcon className="text-success" size={STATUS_ICON_SIZE} /> Running
         </div>
       );
     case Pipeline_State.COMPLETED:
       return (
         <div className="flex items-center gap-2">
-          <CheckIcon color="green" size={STATUS_ICON_SIZE} /> Completed
+          <CheckIcon className="text-success" size={STATUS_ICON_SIZE} /> Completed
         </div>
       );
     case Pipeline_State.STOPPING:
       return (
         <div className="flex items-center gap-2">
-          <RotateCwIcon color="#444" size={STATUS_ICON_SIZE} /> Stopping
+          <RotateCwIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Stopping
         </div>
       );
     case Pipeline_State.STOPPED:
       return (
         <div className="flex items-center gap-2">
-          <StopCircleIcon color="#444" size={STATUS_ICON_SIZE} /> Stopped
+          <StopCircleIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Stopped
         </div>
       );
     case Pipeline_State.ERROR:
       return (
         <div className="flex items-center gap-2">
-          <CloseIcon color="red" size={STATUS_ICON_SIZE} /> Error
+          <CloseIcon className="text-destructive" size={STATUS_ICON_SIZE} /> Error
         </div>
       );
     default:
       return (
         <div className="flex items-center gap-2">
-          <HelpIcon color="red" size={STATUS_ICON_SIZE} /> Unknown
+          <HelpIcon className="text-destructive" size={STATUS_ICON_SIZE} /> Unknown
         </div>
       );
   }
