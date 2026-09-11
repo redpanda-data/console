@@ -12,18 +12,6 @@
   opacity: 1;
 }
 
-/* Matches only the host's Chakra components — Console renders none, and cloud-ui's globals.css has
-   no copy of this. Layered, so the host's own unlayered Chakra border reset outranks it: it is the
-   fallback for a host that drops that reset while keeping the components, where Preflight's
-   `border: 0 solid` leaves border-color at currentColor. Goes with cloud-ui's Chakra exit. */
-@layer base {
-  [class*="chakra-"],
-  [class*="chakra-"]::before,
-  [class*="chakra-"]::after {
-    border-color: transparent;
-  }
-}
-
 /* The host's Chakra GlobalStyle injects an UNLAYERED `*, ::before, ::after { border-color:
    var(--chakra-colors-chakra-border-color) }`, which outranks every `@layer` rule regardless of
    specificity — so every border came out Chakra's #E2E8F0. We can't edit emotion's output, so we
