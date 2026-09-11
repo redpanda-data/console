@@ -13,12 +13,13 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
-const { getMatchedRoutes } = rs.hoisted(() => ({
+const { getMatchedRoutes, mockPageBreadcrumbs } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
+  mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
 }));
 
 rs.mock('@tanstack/react-router', () => ({
-  Link: ({ children }: PropsWithChildren) => <a href="/">{children}</a>,
+  Link: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
   useLocation: () => ({ pathname: '/sql' }),
   useMatchRoute: () => () => false,
   useRouter: () => ({ getMatchedRoutes }),
@@ -51,7 +52,7 @@ rs.mock('../../state/ui-state', () => ({
     selector: (state: {
       _pageTitle: string;
       backLink: null;
-      pageBreadcrumbs: never[];
+      pageBreadcrumbs: { title: string; linkTo: string }[];
       selectedClusterName: null;
       shouldHidePageHeader: boolean;
     }) => T
@@ -59,7 +60,7 @@ rs.mock('../../state/ui-state', () => ({
     selector({
       _pageTitle: 'Cluster details',
       backLink: null,
-      pageBreadcrumbs: [],
+      pageBreadcrumbs: mockPageBreadcrumbs,
       selectedClusterName: null,
       shouldHidePageHeader: false,
     }),
@@ -73,6 +74,7 @@ rs.mock('../redpanda-ui/components/breadcrumb', () => ({
   BreadcrumbItem: ({ children }: PropsWithChildren) => children,
   BreadcrumbLink: ({ render: content }: { render: ReactNode }) => content,
   BreadcrumbList: ({ children }: PropsWithChildren) => children,
+  BreadcrumbPage: ({ children }: PropsWithChildren) => <span data-testid="breadcrumb-page">{children}</span>,
   BreadcrumbSeparator: () => null,
 }));
 
@@ -87,5 +89,20 @@ describe('AppPageHeader', () => {
     render(<AppPageHeader />);
 
     expect(screen.queryByRole('heading', { name: 'Cluster details' })).not.toBeInTheDocument();
+  });
+
+  // Regression: the current page's crumb used to be a real link back to its own
+  // bare path, which drops query params (filters, pagination, active tab) when
+  // clicked. It must render as non-navigable text instead.
+  it('renders every breadcrumb but the last as a link, and the last as plain text', () => {
+    mockPageBreadcrumbs.push({ title: 'Topics', linkTo: '/topics' }, { title: 'my-topic', linkTo: '/topics/my-topic' });
+
+    render(<AppPageHeader />);
+
+    expect(screen.getByRole('link', { name: 'Topics' })).toHaveAttribute('href', '/topics');
+    expect(screen.queryByRole('link', { name: 'my-topic' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('breadcrumb-page')).toHaveTextContent('my-topic');
+
+    mockPageBreadcrumbs.length = 0;
   });
 });

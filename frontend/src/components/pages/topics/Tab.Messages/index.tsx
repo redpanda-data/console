@@ -168,6 +168,22 @@ function onCopyValue(original: TopicMessage) {
     .catch(navigatorClipboardErrorHandler);
 }
 
+// A rejection during a search that's being torn down by navigation isn't guaranteed to be a
+// proper Error, so never assume `.message` exists on it.
+function getSearchErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error) {
+    return error;
+  }
+  return 'Unknown error';
+}
+
+function toDisplayError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(getSearchErrorMessage(error));
+}
+
 function onCopyKey(original: TopicMessage) {
   navigator.clipboard
     .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
@@ -688,14 +704,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setSearchState((prev) => ({ ...prev, messageSearch: search }));
         const startTime = Date.now();
 
-        const result = await search.startSearch(request, abortSignal).catch((err: Error) => {
-          const msg = err.message ?? String(err);
+        const result = await search.startSearch(request, abortSignal).catch((err: unknown) => {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`error in searchTopicMessages: ${msg}`);
-          setFetchError(err);
-          setSearchPhase(null);
+          console.error(`error in searchTopicMessages: ${getSearchErrorMessage(err)}`);
+          if (isMountedRef.current) {
+            setFetchError(toDisplayError(err));
+            setSearchPhase(null);
+          }
           return [];
         });
+
+        if (!isMountedRef.current) {
+          return result;
+        }
 
         const endTime = Date.now();
         setSearchState((prev) => ({ ...prev, messages: result, windowStartPage: 0 }));
@@ -711,9 +732,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         return result;
       } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-        setFetchError(error as Error);
-        setSearchPhase(null);
+        console.error(`error in searchTopicMessages: ${getSearchErrorMessage(error)}`);
+        if (isMountedRef.current) {
+          setFetchError(toDisplayError(error));
+          setSearchPhase(null);
+        }
         return [];
       }
     },
@@ -878,7 +901,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           (err: unknown) => {
             const shouldReport = isMountedRef.current && !abortController.signal.aborted;
             if (shouldReport) {
-              toast.error('Failed to load more messages', { description: (err as Error).message });
+              toast.error('Failed to load more messages', { description: getSearchErrorMessage(err) });
             }
             return { type: 'error' as const, shouldReport };
           }
@@ -1683,7 +1706,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <AlertDescription>
             <div>Check and modify the request before resubmitting.</div>
             <div className="mt-4">
-              <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
+              <div className="codeBox">{fetchError.message}</div>
             </div>
             <Button className="mt-4" onClick={() => executeMessageSearch()}>
               Retry Search
