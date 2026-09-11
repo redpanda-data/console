@@ -65,8 +65,8 @@ rs.mock('../../../../react-query/api/cluster-status', () => ({
 rs.mock('../../../../react-query/api/user', () => ({
   useInvalidateUsersCache: () => rs.fn(),
   useDeleteUserMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
-  // Only `scram-admin` is a real SASL user; `acl-only` has ACLs but no account.
-  useListUsersQuery: () => ({ data: { users: [{ name: 'scram-admin' }] }, isLoading: false }),
+  // `scram-admin` and `shadowed` are real SASL users; `acl-only` has ACLs but no account.
+  useListUsersQuery: () => ({ data: { users: [{ name: 'scram-admin' }, { name: 'shadowed' }] }, isLoading: false }),
 }));
 
 rs.mock('../../../../react-query/api/acl', () => ({
@@ -76,12 +76,17 @@ rs.mock('../../../../react-query/api/acl', () => ({
       { principal: 'User:scram-admin', principalType: 'User', principalName: 'scram-admin', host: '*' },
       { principal: 'User:acl-only', principalType: 'User', principalName: 'acl-only', host: '10.0.0.1' },
       { principal: 'Group:engineering', principalType: 'Group', principalName: 'engineering', host: '*' },
+      // Name deliberately collides with the `shadowed` SASL user, to pin the principalType guard.
+      { principal: 'Group:shadowed', principalType: 'Group', principalName: 'shadowed', host: '10.0.0.9' },
     ],
     isLoading: false,
     isError: false,
     error: null,
   }),
 }));
+
+const SORT_ASC = /Asc/;
+const ACL_ROW_TESTID = /^acl-list-item-/;
 
 const { AclsTab } = await import('./acls-tab');
 
@@ -123,6 +128,27 @@ describe('AclsTab', () => {
 
     expect(within(menu).getByRole('menuitem', { name: 'Delete (User and ACLs)' })).not.toHaveAttribute('data-disabled');
     expect(within(menu).getByRole('menuitem', { name: 'Delete (ACLs only)' })).not.toHaveAttribute('data-disabled');
+  });
+
+  test('never offers user deletes on a Group row, even when a user shares its name', async () => {
+    render(<AclsTab />);
+    // Same `principalName` as a SASL user, but a Group has no account to delete.
+    const { menu } = await openRowMenu('shadowed');
+
+    expect(within(menu).getByRole('menuitem', { name: 'Delete (User and ACLs)' })).toHaveAttribute('data-disabled');
+    expect(within(menu).getByRole('menuitem', { name: 'Delete (User only)' })).toHaveAttribute('data-disabled');
+    expect(within(menu).getByRole('menuitem', { name: 'Delete (ACLs only)' })).not.toHaveAttribute('data-disabled');
+  });
+
+  test('sorts the Principal column by the name it renders', async () => {
+    render(<AclsTab />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Principal' }));
+    await user.click(await screen.findByRole('menuitem', { name: SORT_ASC }));
+
+    const names = screen.getAllByTestId(ACL_ROW_TESTID).map((el) => el.textContent);
+    expect(names).toEqual([...names].sort());
   });
 
   test('disables the user-delete options for an ACL-only principal', async () => {

@@ -27,7 +27,7 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { FC } from 'react';
-import { useMemo, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
@@ -62,71 +62,60 @@ type AclPrincipalRow = {
 };
 
 // Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
-// is off at table level.
+// is off at table level. `getRowId` keeps a row's open action menu on its own principal when the
+// list refetches and the order shifts.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+  getRowId: (row: AclPrincipalRow) => `${row.principal}:${row.host}`,
 };
 
 /**
- * Owns its own queries so the columns array closes over nothing but the failure setter — a stable
- * array matters because `DataTableColumnHeader` is a dropdown trigger that a re-render destroys.
+ * The row actions read their data from context rather than props so the columns array closes over
+ * nothing and can live at module scope: `DataTableColumnHeader` is a dropdown trigger, and a new
+ * header-function identity remounts it, tearing an open sort menu down. Queries stay in the parent
+ * — `useListUsersQuery` auto-fetches every page from an effect, so one instance per row would fire
+ * a `fetchNextPage()` per row.
  */
-const AclRowActions: FC<{ record: AclPrincipalRow; onFailure: (failure: { err: unknown }) => void }> = ({
-  record,
-  onFailure,
-}) => {
-  const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
-  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
-  const { data: usersData } = useListUsersQuery(undefined, {
-    enabled: isRedpandaInfoSuccess && Boolean(redpandaInfo),
-  });
-  const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
-  const { mutateAsync: deleteUserMut } = useDeleteUserMutation();
-  const invalidateUsersCache = useInvalidateUsersCache();
+type AclRowActionsContextValue = {
+  users: { name: string }[];
+  canDeleteUsers: boolean;
+  deleteAclsForPrincipal: (principal: string, host: string) => Promise<void>;
+  deleteUser: (name: string) => Promise<void>;
+  invalidateUsers: () => Promise<void>;
+  onFailure: (failure: { err: unknown }) => void;
+};
 
-  const userExists = usersData?.users?.some((u) => u.name === record.principalName) ?? false;
-  const canDeleteUser = userExists && Boolean(featureDeleteUser);
+const AclRowActionsContext = createContext<AclRowActionsContextValue | null>(null);
 
-  const deleteAcls = async () => {
-    const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
-      filter: {
-        principal: record.principal,
-        resourceType: ACL_ResourceType.ANY,
-        resourceName: undefined,
-        host: record.host,
-        operation: ACL_Operation.ANY,
-        permissionType: ACL_PermissionType.ANY,
-        resourcePatternType: ACL_ResourcePatternType.ANY,
-      },
-    });
-    await deleteACLMutation(deleteRequest);
-    toast.success(
-      <span>
-        Deleted ACLs for <CodeEl>{record.principal}</CodeEl>
-      </span>
-    );
-  };
+const AclRowActions: FC<{ record: AclPrincipalRow }> = ({ record }) => {
+  const ctx = useContext(AclRowActionsContext);
+  if (!ctx) {
+    return null;
+  }
+  const { users, canDeleteUsers, deleteAclsForPrincipal, deleteUser, invalidateUsers, onFailure } = ctx;
+
+  // A Group principal never has a SASL account, so only a User row may offer the user deletes —
+  // a same-named group would otherwise delete an unrelated user.
+  const hasAccount = record.principalType === 'User' && users.some((u) => u.name === record.principalName);
+  const canDeleteUser = hasAccount && canDeleteUsers;
 
   const onDelete = async (user: boolean, acls: boolean) => {
     if (acls) {
       try {
-        await deleteAcls();
+        await deleteAclsForPrincipal(record.principal, record.host);
       } catch (err: unknown) {
         // biome-ignore lint/suspicious/noConsole: error logging
         console.error('failed to delete acls', { error: err });
         onFailure({ err });
+        // Deleting the account too would orphan the ACLs that just failed to go.
+        return;
       }
     }
 
     if (user) {
       try {
-        await deleteUserMut({ name: record.principalName });
-        toast.success(
-          <span>
-            Deleted user <CodeEl>{record.principalName}</CodeEl>
-          </span>
-        );
+        await deleteUser(record.principalName);
       } catch (err: unknown) {
         // biome-ignore lint/suspicious/noConsole: error logging
         console.error('failed to delete user', { error: err });
@@ -134,7 +123,7 @@ const AclRowActions: FC<{ record: AclPrincipalRow; onFailure: (failure: { err: u
       }
     }
 
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
+    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsers()]);
   };
 
   const handle = (user: boolean, acls: boolean) => (e: { stopPropagation: () => void }) => {
@@ -148,12 +137,7 @@ const AclRowActions: FC<{ record: AclPrincipalRow; onFailure: (failure: { err: u
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            aria-label={`Delete ACL for ${record.principalName}`}
-            className="deleteButton"
-            size="icon-sm"
-            variant="destructive-ghost"
-          >
+          <Button aria-label={`Delete ACL for ${record.principalName}`} size="icon-sm" variant="destructive-ghost">
             <TrashIcon className="h-4 w-4" />
           </Button>
         }
@@ -171,9 +155,71 @@ const AclRowActions: FC<{ record: AclPrincipalRow; onFailure: (failure: { err: u
   );
 };
 
+const columns: DataTableColumnDef<AclPrincipalRow>[] = [
+  {
+    id: 'principal',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Principal" />,
+    // The cell shows `principalName`; sorting on the `User:`-prefixed `principal` would order
+    // the column differently from what is on screen.
+    accessorFn: (row) => row.principalName,
+    cell: ({ row: { original: record } }) => (
+      <Link
+        className="cursor-pointer no-underline hover:text-primary"
+        params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
+        search={(prev) => ({ ...prev, host: record.host })}
+        to="/security/acls/$aclName/details"
+      >
+        <span className="flex items-center gap-1">
+          <span
+            className="whitespace-normal break-words"
+            data-testid={`acl-list-item-${record.principalName}-${record.host}`}
+          >
+            {record.principalName}
+          </span>
+          {record.principalType === 'Group' && (
+            <Badge tone="default" variant="subtle">
+              Group
+            </Badge>
+          )}
+        </span>
+      </Link>
+    ),
+  },
+  {
+    id: 'host',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
+    accessorKey: 'host',
+    cell: ({
+      row: {
+        original: { host },
+      },
+    }) =>
+      !host || host === '*' ? (
+        <Badge tone="default" variant="subtle">
+          Any
+        </Badge>
+      ) : (
+        host
+      ),
+  },
+  {
+    id: 'menu',
+    header: '',
+    enableSorting: false,
+    cell: ({ row: { original: record } }) => <AclRowActions record={record} />,
+  },
+];
+
 const AclsTabContent: FC = () => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
+  const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
+  const isAdminApiConfigured = isRedpandaInfoSuccess && Boolean(redpandaInfo);
+  const { data: usersData } = useListUsersQuery(undefined, { enabled: isAdminApiConfigured });
   const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
+  const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
+  const { mutateAsync: deleteUserMut } = useDeleteUserMutation();
+  const invalidateUsersCache = useInvalidateUsersCache();
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,64 +230,41 @@ const AclsTabContent: FC = () => {
     principalGroups?.filter((g) => g.principalType === 'User' || g.principalType === 'Group') || [];
   const groups = filterByName(aclPrincipalGroups, searchQuery, (g) => g.principalName);
 
-  // Built once. A fresh array hands `flexRender` new function identities, which re-creates every
-  // header — and `DataTableColumnHeader` is a dropdown trigger, so a re-render would tear an open
-  // sort menu down. `setAclFailed` is a stable setter, so there is nothing to depend on.
-  const columns: DataTableColumnDef<AclPrincipalRow>[] = useMemo(
-    () => [
-      {
-        id: 'principal',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Principal" />,
-        accessorKey: 'principal',
-        cell: ({ row: { original: record } }) => (
-          <Link
-            className="cursor-pointer no-underline hover:text-primary"
-            params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
-            search={(prev) => ({ ...prev, host: record.host })}
-            to="/security/acls/$aclName/details"
-          >
-            <span className="flex items-center gap-1">
-              <span
-                className="whitespace-normal break-words"
-                data-testid={`acl-list-item-${record.principalName}-${record.host}`}
-              >
-                {record.principalName}
-              </span>
-              {record.principalType === 'Group' && (
-                <Badge tone="default" variant="subtle">
-                  Group
-                </Badge>
-              )}
-            </span>
-          </Link>
-        ),
-      },
-      {
-        id: 'host',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
-        accessorKey: 'host',
-        cell: ({
-          row: {
-            original: { host },
-          },
-        }) =>
-          !host || host === '*' ? (
-            <Badge tone="default" variant="subtle">
-              Any
-            </Badge>
-          ) : (
-            host
-          ),
-      },
-      {
-        id: 'menu',
-        header: '',
-        enableSorting: false,
-        cell: ({ row: { original: record } }) => <AclRowActions onFailure={setAclFailed} record={record} />,
-      },
-    ],
-    []
-  );
+  // Not memoised: the consumers are the row action cells, which re-render with the parent anyway.
+  // What has to stay stable is `columns`, and that is a module constant.
+  const rowActions: AclRowActionsContextValue = {
+    users: usersData?.users ?? [],
+    canDeleteUsers: Boolean(featureDeleteUser),
+    deleteAclsForPrincipal: async (principal, host) => {
+      const deleteRequest: DeleteACLsRequest = create(DeleteACLsRequestSchema, {
+        filter: {
+          principal,
+          resourceType: ACL_ResourceType.ANY,
+          resourceName: undefined,
+          host,
+          operation: ACL_Operation.ANY,
+          permissionType: ACL_PermissionType.ANY,
+          resourcePatternType: ACL_ResourcePatternType.ANY,
+        },
+      });
+      await deleteACLMutation(deleteRequest);
+      toast.success(
+        <span>
+          Deleted ACLs for <CodeEl>{principal}</CodeEl>
+        </span>
+      );
+    },
+    deleteUser: async (name) => {
+      await deleteUserMut({ name });
+      toast.success(
+        <span>
+          Deleted user <CodeEl>{name}</CodeEl>
+        </span>
+      );
+    },
+    invalidateUsers: invalidateUsersCache,
+    onFailure: setAclFailed,
+  };
 
   if (isError && error) {
     return <ErrorResult error={error} />;
@@ -267,7 +290,12 @@ const AclsTabContent: FC = () => {
           </AlertDescription>
         </Alert>
       )}
-      <SearchInput className="w-[300px]" onChange={setSearchQuery} placeholder="Filter by name" value={searchQuery} />
+      <SearchInput
+        containerClassName="w-[300px]"
+        onChange={setSearchQuery}
+        placeholder="Filter by name"
+        value={searchQuery}
+      />
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 
@@ -284,13 +312,15 @@ const AclsTabContent: FC = () => {
         </Button>
 
         <div className="py-4">
-          <DataTable<AclPrincipalRow>
-            columns={columns}
-            data={groups}
-            pagination={groups.length > DEFAULT_TABLE_PAGE_SIZE}
-            sorting
-            tableOptions={TABLE_OPTIONS}
-          />
+          <AclRowActionsContext.Provider value={rowActions}>
+            <DataTable<AclPrincipalRow>
+              columns={columns}
+              data={groups}
+              pagination={groups.length > DEFAULT_TABLE_PAGE_SIZE}
+              sorting
+              tableOptions={TABLE_OPTIONS}
+            />
+          </AclRowActionsContext.Provider>
         </div>
       </Section>
     </div>

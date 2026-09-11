@@ -1,4 +1,4 @@
-// spec: specs/security.md
+// spec: the security ACLs tab — see the PR for the swap's contract
 
 import { expect, test } from '@playwright/test';
 
