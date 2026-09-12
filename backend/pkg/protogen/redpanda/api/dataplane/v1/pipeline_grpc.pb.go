@@ -42,19 +42,24 @@ const (
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 type PipelineServiceClient interface {
 	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
+	// The pipeline is validated and started unless `PipelineCreate.draft` is set.
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(ctx context.Context, in *GetPipelineRequest, opts ...grpc.CallOption) (*GetPipelineResponse, error)
 	// ListPipelines implements the list pipelines method which lists the pipelines
-	// in the Redpanda cluster.
+	// in the Redpanda cluster. Drafts are omitted unless
+	// `ListPipelinesRequest.Filter.include_drafts` is set.
 	ListPipelines(ctx context.Context, in *ListPipelinesRequest, opts ...grpc.CallOption) (*ListPipelinesResponse, error)
 	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(ctx context.Context, in *UpdatePipelineRequest, opts ...grpc.CallOption) (*UpdatePipelineResponse, error)
 	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(ctx context.Context, in *DeletePipelineRequest, opts ...grpc.CallOption) (*DeletePipelineResponse, error)
 	// StopPipeline stops a specific Redpanda Connect pipeline.
+	// A draft is not running, so stopping one fails with FAILED_PRECONDITION.
 	StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
+	// It also deploys a draft: the configuration is validated first, and an invalid
+	// one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
 	StartPipeline(ctx context.Context, in *StartPipelineRequest, opts ...grpc.CallOption) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(ctx context.Context, in *GetPipelineServiceConfigSchemaRequest, opts ...grpc.CallOption) (*GetPipelineServiceConfigSchemaResponse, error)
@@ -207,19 +212,24 @@ func (c *pipelineServiceClient) LintPipelineConfig(ctx context.Context, in *Lint
 // It exposes the API for creating and managing Redpanda Connect pipelines and their configurations.
 type PipelineServiceServer interface {
 	// CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
+	// The pipeline is validated and started unless `PipelineCreate.draft` is set.
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	// GetPipeline gets a specific Redpanda Connect pipeline.
 	GetPipeline(context.Context, *GetPipelineRequest) (*GetPipelineResponse, error)
 	// ListPipelines implements the list pipelines method which lists the pipelines
-	// in the Redpanda cluster.
+	// in the Redpanda cluster. Drafts are omitted unless
+	// `ListPipelinesRequest.Filter.include_drafts` is set.
 	ListPipelines(context.Context, *ListPipelinesRequest) (*ListPipelinesResponse, error)
 	// UpdatePipeline updates a specific Redpanda Connect pipeline configuration.
 	UpdatePipeline(context.Context, *UpdatePipelineRequest) (*UpdatePipelineResponse, error)
 	// DeletePipeline deletes a specific Redpanda Connect pipeline.
 	DeletePipeline(context.Context, *DeletePipelineRequest) (*DeletePipelineResponse, error)
 	// StopPipeline stops a specific Redpanda Connect pipeline.
+	// A draft is not running, so stopping one fails with FAILED_PRECONDITION.
 	StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error)
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
+	// It also deploys a draft: the configuration is validated first, and an invalid
+	// one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
 	StartPipeline(context.Context, *StartPipelineRequest) (*StartPipelineResponse, error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *GetPipelineServiceConfigSchemaRequest) (*GetPipelineServiceConfigSchemaResponse, error)

@@ -6,6 +6,8 @@ export const BUILDER_API_KEY = '4abd0efa0759420b88149ada5c1eb216';
 
 // By default, most feature flags will be false when there's no embedded mode on.
 export const FEATURE_FLAGS = {
+  // Needs a dataplane with STATE_DRAFT; an older one deploys what was asked to be parked.
+  enableRpcnPipelineDrafts: false,
   enableRpcnTemplateGallery: false,
   enableRpcnVisualEditor: false,
   enableDataplaneObservabilityServerless: false,

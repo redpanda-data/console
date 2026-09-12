@@ -6,6 +6,7 @@ import { PipelineService } from "./pipeline_pb";
 
 /**
  * CreatePipeline creates a Redpanda Connect pipeline in the Redpanda cluster.
+ * The pipeline is validated and started unless `PipelineCreate.draft` is set.
  *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.CreatePipeline
  */
@@ -20,7 +21,8 @@ export const getPipeline = PipelineService.method.getPipeline;
 
 /**
  * ListPipelines implements the list pipelines method which lists the pipelines
- * in the Redpanda cluster.
+ * in the Redpanda cluster. Drafts are omitted unless
+ * `ListPipelinesRequest.Filter.include_drafts` is set.
  *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.ListPipelines
  */
@@ -42,6 +44,7 @@ export const deletePipeline = PipelineService.method.deletePipeline;
 
 /**
  * StopPipeline stops a specific Redpanda Connect pipeline.
+ * A draft is not running, so stopping one fails with FAILED_PRECONDITION.
  *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.StopPipeline
  */
@@ -49,6 +52,8 @@ export const stopPipeline = PipelineService.method.stopPipeline;
 
 /**
  * StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
+ * It also deploys a draft: the configuration is validated first, and an invalid
+ * one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
  *
  * @generated from rpc redpanda.api.dataplane.v1.PipelineService.StartPipeline
  */

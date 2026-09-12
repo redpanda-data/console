@@ -42,12 +42,14 @@ import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { useExpandedPageMode } from 'hooks/use-expanded-page-mode';
 import { useRefFormDialog } from 'hooks/use-ref-form-dialog';
-import { KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
+import { FileClock, KeyRound, LayoutGrid, Plus, User, Zap } from 'lucide-react';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import {
   CreatePipelineRequestSchema,
   DeletePipelineRequestSchema,
+  StartPipelineRequestSchema,
+  StopPipelineRequestSchema,
   UpdatePipelineRequestSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
@@ -61,33 +63,73 @@ import {
   UpdatePipelineRequestSchema as UpdatePipelineRequestSchemaDataPlane,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
+import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect';
 import {
   useCreatePipelineMutation,
   useDeletePipelineMutation,
+  useFetchPipelineNames,
   useGetPipelineQuery,
+  useStartPipelineMutation,
+  useStopPipelineMutation,
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
+import {
+  autosaveTargetKey,
+  type EditorAutosaveEntry,
+  rpcnEditorAutosave,
+  selectAutosaveEntry,
+  useRpcnEditorAutosaveStore,
+} from 'state/rpcn-editor-autosave';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { z } from 'zod';
 
+import { AutosaveRestoreNotice } from './autosave-restore-notice';
+import { ChangesPanel } from './changes-panel';
+import { summarizeComponentChanges, summarizeSettingsChanges, UNSAVED_CHANGES_LANE_LABEL } from './changes-summary';
 import { ConfigDialog } from './config-dialog';
+import { DeleteDraftDialog } from './delete-draft-dialog';
 import { DetailsDialog } from './details-dialog';
+import {
+  areDraftsEnabled,
+  DRAFT_UNSUPPORTED_MESSAGE,
+  DRAFT_UPDATE_UNSUPPORTED_MESSAGE,
+  isDraft,
+  NOTHING_TO_SAVE_MESSAGE,
+  startBlockedMessage,
+  timestampToMillis,
+  UNTITLED_PIPELINE_NAME,
+  untitledPipelineName,
+} from './draft-copy';
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
+import {
+  BLANK_CONFIG_MESSAGE,
+  isBlankConfig,
+  isInvalidConfigError,
+  isNoLongerDraftError,
+  NO_LONGER_DRAFT_MESSAGE,
+  primaryRunIntent,
+  type SaveContext,
+  type SaveIntent,
+  type SaveRunIntent,
+  saveSuccessMessage,
+  unsavedChangesCopy,
+} from './save-actions';
 import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
+import { useEditorAutosave } from './use-editor-autosave';
 import { PipelineEditorProvider, usePipelineEditorStore, usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { usePipelineLint } from './use-pipeline-lint';
 import { useSaveHotkey } from './use-save-hotkey';
 import { useSlashCommand } from './use-slash-command';
+import { takeStartLintHints } from './use-start-draft';
 import { VisualEditorPanel } from './visual-editor-panel';
 import { extractLintHintsFromError } from '../errors';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
@@ -128,10 +170,13 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return type ? `Search ${type}s...` : undefined;
 }
 
-// Tips to show beneath the editor for the active lane; read-only YAML and Monitor get none.
+// Read-only lanes (view YAML, Monitor, the diff) get no tips.
 function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
   if (isView) {
     return viewLane === 'visual' ? 'visual' : null;
+  }
+  if (editLane === 'changes') {
+    return null;
   }
   return editLane === 'visual' ? 'visual' : 'yaml';
 }
@@ -189,6 +234,7 @@ function buildCreateRequest(opts: {
   computeUnits: number;
   userTags: Record<string, string>;
   yamlContent: string;
+  draft: boolean;
 }) {
   const userData = useRpcnWizardStore.getState();
   const tags: Record<string, string> = {
@@ -213,6 +259,7 @@ function buildCreateRequest(opts: {
         resources: { cpuShares: tasksToCPU(opts.computeUnits) || '0', memoryShares: '0' },
         tags: { ...tags, ...opts.userTags },
         serviceAccount: serviceAccountConfig,
+        draft: opts.draft,
       }),
     }),
   });
@@ -240,7 +287,8 @@ function usePipelineSave({
   pipelineId,
   pipeline,
   isPipelineDiagramsEnabled,
-  onBeforeSaveNavigate,
+  onBeforeGuardedNavigate,
+  saveContext,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   /** The editor store — read fresh at save time (after flushing pending visual edits). */
@@ -249,14 +297,29 @@ function usePipelineSave({
   pipelineId: string | undefined;
   pipeline: Pipeline | undefined;
   isPipelineDiagramsEnabled: boolean;
-  /** Called right before a successful save navigates away, so the guard doesn't block it. */
-  onBeforeSaveNavigate?: () => void;
+  /** Stands the unsaved-changes guard down before a navigation this page performs itself. */
+  onBeforeGuardedNavigate?: () => void;
+  saveContext: SaveContext;
 }) {
   const navigate = useNavigate();
-  const { mutate: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
-  const { mutate: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
+  const { mutateAsync: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
+  const { mutateAsync: updateMutation, isPending: isUpdatePending } = useUpdatePipelineMutation();
+  const { mutateAsync: startMutation, isPending: isStartPending } = useStartPipelineMutation();
+  const { mutateAsync: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const { mutate: deleteMutation, isPending: isDeletePending } = useDeletePipelineMutation();
+  const fetchPipelineNames = useFetchPipelineNames();
   const [errorLintHints, setErrorLintHints] = useState<Record<string, LintHint>>({});
+  // The name lookup runs before any mutation is pending, so the button needs its own busy flag.
+  const [isNaming, setIsNaming] = useState(false);
+
+  // A failed lookup must not fail the save; duplicate display names are legal.
+  const nextUntitledName = useCallback(async () => {
+    try {
+      return untitledPipelineName(await fetchPipelineNames(UNTITLED_PIPELINE_NAME));
+    } catch {
+      return UNTITLED_PIPELINE_NAME;
+    }
+  }, [fetchPipelineNames]);
 
   const clearErrorLintHints = useCallback(() => setErrorLintHints({}), []);
 
@@ -267,91 +330,227 @@ function usePipelineSave({
     useRpcnWizardStore.getState().setWizardData({ input: undefined, output: undefined });
   }, [isPipelineDiagramsEnabled]);
 
-  const handleSave = useCallback(async () => {
-    const isValid = await form.trigger();
-    if (!isValid) {
-      // Settings live in the header/dialog, so surface why the save was blocked.
-      const fieldErrors = form.formState.errors;
-      const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
-      toast.error(typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.');
-      return;
-    }
+  const markSaved = useCallback(
+    (yamlContent: string, savedPipelineId: string | undefined, savedUpdateTime: number | null) => {
+      editorStore.getState().markSavedBaseline(yamlContent, savedUpdateTime);
+      form.reset(form.getValues());
+      rpcnEditorAutosave.clear(autosaveTargetKey(mode === 'create' ? undefined : pipelineId));
+      if (savedPipelineId && savedPipelineId !== pipelineId) {
+        rpcnEditorAutosave.clear(autosaveTargetKey(savedPipelineId));
+      }
+    },
+    [editorStore, form, mode, pipelineId]
+  );
 
-    // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
-    editorStore.getState().pendingEditCommit?.();
-    const yamlContent = editorStore.getState().yamlContent;
+  // Resolves to whether the configuration was persisted; a failed start/stop after the write still counts.
+  const handleSave = useCallback(
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one save path covering create/update × draft/deploy × run-state transitions
+    async (intent?: SaveIntent): Promise<boolean> => {
+      const run: SaveRunIntent = intent?.run ?? primaryRunIntent(saveContext);
+      const isDraftSave = run === 'draft';
 
-    const { name, description, computeUnits, tags: formTags } = form.getValues();
-    const userTags = buildUserTags(formTags);
+      // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
+      editorStore.getState().pendingEditCommit?.();
+      const yamlContent = editorStore.getState().yamlContent;
 
-    const onError = (err: ConnectError, action: 'create' | 'update') => {
-      setErrorLintHints(extractLintHintsFromError(err));
-      toast.error(formatToastErrorMessageGRPC({ error: err, action, entity: 'pipeline' }));
-    };
+      if (isDraftSave && mode === 'create' && isBlankConfig(yamlContent) && !form.getValues('name').trim()) {
+        toast.error(NOTHING_TO_SAVE_MESSAGE);
+        return false;
+      }
 
-    if (mode === 'create') {
-      const createRequest = buildCreateRequest({ name, description, computeUnits, userTags, yamlContent });
+      if (isDraftSave && !form.getValues('name').trim()) {
+        setIsNaming(true);
+        try {
+          form.setValue('name', await nextUntitledName(), { shouldValidate: true });
+        } finally {
+          setIsNaming(false);
+        }
+      }
 
-      createMutation(createRequest, {
-        onSuccess: (response) => {
+      const isValid = await form.trigger();
+      if (!isValid) {
+        // Settings live in the header/dialog, so surface why the save was blocked.
+        const fieldErrors = form.formState.errors;
+        const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
+        toast.error(
+          typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.'
+        );
+        return false;
+      }
+
+      if (!isDraftSave && isBlankConfig(yamlContent)) {
+        toast.error(BLANK_CONFIG_MESSAGE);
+        return false;
+      }
+
+      const { name, description, computeUnits, tags: formTags } = form.getValues();
+      const userTags = buildUserTags(formTags);
+
+      try {
+        if (mode === 'create') {
+          const response = await createMutation(
+            buildCreateRequest({ name, description, computeUnits, userTags, yamlContent, draft: isDraftSave })
+          );
+          const createdPipeline = response.response?.pipeline;
+          const newPipelineId = createdPipeline?.id;
           setErrorLintHints({});
+
+          // A pre-drafts proxy drops `draft` silently and deploys for real; trust the response state.
+          const draftWasIgnored =
+            isDraftSave && createdPipeline !== undefined && createdPipeline.state !== Pipeline_State.DRAFT;
+
+          // Without draft support CreatePipeline always starts, so "stopped" is a follow-up stop.
+          let stopFailed = false;
+          if (run === 'stopped' && newPipelineId) {
+            try {
+              await stopMutation(create(StopPipelineRequestSchema, { request: { id: newPipelineId } }));
+            } catch {
+              stopFailed = true;
+              toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
+            }
+          }
+
           clearWizardStore();
-          toast.success('Pipeline created');
-          warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
-          const newPipelineId = response.response?.pipeline?.id;
-          onBeforeSaveNavigate?.();
-          navigate({ to: newPipelineId ? `/rp-connect/${newPipelineId}` : '/connect-clusters' });
-        },
-        onError: (err) => onError(err, 'create'),
-      });
-    } else if (pipelineId) {
-      const updateRequest = create(UpdatePipelineRequestSchema, {
-        request: create(UpdatePipelineRequestSchemaDataPlane, {
-          id: pipelineId,
-          pipeline: create(PipelineUpdateSchema, {
-            displayName: name,
-            configYaml: yamlContent,
-            description: description || '',
-            resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
-            tags: {
-              ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
-              ...userTags,
-            },
-            serviceAccount: pipeline?.serviceAccount,
-          }),
-        }),
-      });
+          markSaved(yamlContent, newPipelineId, timestampToMillis(createdPipeline?.updateTime));
+          if (draftWasIgnored) {
+            toast.error(DRAFT_UNSUPPORTED_MESSAGE);
+          } else if (!stopFailed) {
+            toast.success(saveSuccessMessage(saveContext, run));
+          }
+          warnIfResized(form, createdPipeline?.resources?.cpuShares);
+          onBeforeGuardedNavigate?.();
+          if (intent?.skipNavigation) {
+            return true;
+          }
+          if (!newPipelineId) {
+            navigate({ to: '/connect-clusters' });
+            return true;
+          }
+          // A draft stays in the editor on its own route so the next save updates it.
+          navigate({
+            to: isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
+          });
+          return true;
+        }
 
-      updateMutation(updateRequest, {
-        onSuccess: (response) => {
-          setErrorLintHints({});
-          toast.success('Pipeline updated');
-          warnIfResized(form, response.response?.pipeline?.resources?.cpuShares);
-          onBeforeSaveNavigate?.();
-          navigate({ to: `/rp-connect/${pipelineId}` });
-        },
-        onError: (err) => onError(err, 'update'),
-      });
-    }
-  }, [
-    form,
-    editorStore,
-    mode,
-    pipelineId,
-    createMutation,
-    updateMutation,
-    navigate,
-    clearWizardStore,
-    pipeline,
-    onBeforeSaveNavigate,
-  ]);
+        if (!pipelineId) {
+          return false;
+        }
+
+        const response = await updateMutation(
+          create(UpdatePipelineRequestSchema, {
+            request: create(UpdatePipelineRequestSchemaDataPlane, {
+              id: pipelineId,
+              pipeline: create(PipelineUpdateSchema, {
+                displayName: name,
+                configYaml: yamlContent,
+                description: description || '',
+                resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
+                tags: {
+                  ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
+                  ...userTags,
+                },
+                serviceAccount: pipeline?.serviceAccount,
+                // Asserted so the server refuses the write if the draft was started meanwhile.
+                draft: isDraftSave ? true : undefined,
+              }),
+            }),
+          })
+        );
+        setErrorLintHints({});
+        const updatedPipeline = response.response?.pipeline;
+        // As on create: a pre-drafts proxy drops `draft` and stores the edits deployed; trust the response state.
+        const draftWasIgnored =
+          isDraftSave && updatedPipeline !== undefined && updatedPipeline.state !== Pipeline_State.DRAFT;
+
+        // UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first.
+        let runFailed = false;
+        try {
+          if (run === 'start') {
+            await startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
+          } else if (run === 'stopped') {
+            await stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }));
+          }
+        } catch (runErr) {
+          runFailed = true;
+          const runError = ConnectError.from(runErr);
+          if (run === 'start' && isInvalidConfigError(runError)) {
+            const hints = extractLintHintsFromError(runError);
+            setErrorLintHints(hints);
+            toast.warning(startBlockedMessage(Object.keys(hints).length));
+          } else {
+            toast.warning(
+              formatToastErrorMessageGRPC({
+                error: runError,
+                action: run === 'start' ? 'start' : 'stop',
+                entity: 'pipeline',
+              })
+            );
+          }
+        }
+
+        markSaved(yamlContent, pipelineId, timestampToMillis(updatedPipeline?.updateTime));
+        warnIfResized(form, updatedPipeline?.resources?.cpuShares);
+        if (runFailed) {
+          return true;
+        }
+        if (draftWasIgnored) {
+          // No longer a draft, so the editor's next save would deploy too: hand over to the pipeline's page.
+          toast.error(DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
+        } else {
+          toast.success(saveSuccessMessage(saveContext, run));
+        }
+        if ((isDraftSave && !draftWasIgnored) || intent?.skipNavigation) {
+          return true;
+        }
+        onBeforeGuardedNavigate?.();
+        navigate({ to: `/rp-connect/${pipelineId}` });
+        return true;
+      } catch (err) {
+        const connectError = ConnectError.from(err);
+        setErrorLintHints(extractLintHintsFromError(connectError));
+        if (isDraftSave && isNoLongerDraftError(connectError)) {
+          toast.error(NO_LONGER_DRAFT_MESSAGE);
+          return false;
+        }
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error: connectError,
+            action: mode === 'create' ? 'create' : 'update',
+            entity: 'pipeline',
+          })
+        );
+        return false;
+      }
+    },
+    [
+      form,
+      editorStore,
+      mode,
+      pipelineId,
+      createMutation,
+      updateMutation,
+      startMutation,
+      stopMutation,
+      navigate,
+      clearWizardStore,
+      pipeline,
+      onBeforeGuardedNavigate,
+      markSaved,
+      saveContext,
+      nextUntitledName,
+    ]
+  );
 
   const handleDelete = useCallback(
     (id: string) => {
+      const wasDraft = isDraft(pipeline);
       const deleteRequest = create(DeletePipelineRequestSchema, { request: { id } });
       deleteMutation(deleteRequest, {
         onSuccess: () => {
-          toast.success('Pipeline deleted');
+          rpcnEditorAutosave.clear(autosaveTargetKey(id));
+          toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
+          onBeforeGuardedNavigate?.();
           navigateToConnectClusters(navigate);
         },
         onError: (err) => {
@@ -361,7 +560,7 @@ function usePipelineSave({
         },
       });
     },
-    [deleteMutation, navigate]
+    [deleteMutation, navigate, pipeline, onBeforeGuardedNavigate]
   );
 
   return {
@@ -369,8 +568,9 @@ function usePipelineSave({
     handleDelete,
     clearWizardStore,
     errorLintHints,
+    setErrorLintHints,
     clearErrorLintHints,
-    isSaving: isCreatePending || isUpdatePending,
+    isSaving: isNaming || isCreatePending || isUpdatePending || isStartPending || isStopPending,
     isDeleting: isDeletePending,
   };
 }
@@ -846,7 +1046,14 @@ function SidebarPanel({
 }
 
 /** One tab of the editor surface's lane strip. */
-type LaneTab = { value: string; label: string; onSelect: () => void };
+type LaneTab = {
+  value: string;
+  label: string;
+  onSelect: () => void;
+  count?: number;
+  /** Plain marker when there is something to say but nothing to count. */
+  showDot?: boolean;
+};
 
 // The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
 // embedded Cloud UI.
@@ -942,16 +1149,58 @@ function PipelinePageContent() {
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
-  const { handleSave, handleDelete, clearWizardStore, errorLintHints, clearErrorLintHints, isSaving, isDeleting } =
-    usePipelineSave({
-      form,
-      editorStore,
-      mode,
-      pipelineId,
-      pipeline,
-      isPipelineDiagramsEnabled,
-      onBeforeSaveNavigate: markNavigationAllowed,
-    });
+  const draftsEnabled = areDraftsEnabled();
+  const saveContext = useMemo<SaveContext>(
+    () => ({ mode: mode === 'create' ? 'create' : 'edit', state: pipeline?.state, draftsEnabled }),
+    [mode, pipeline?.state, draftsEnabled]
+  );
+  const editingDraft = isDraft(pipeline);
+
+  const autosaveTarget = autosaveTargetKey(mode === 'create' ? undefined : pipelineId);
+  // A boolean so autosave rewriting the entry isn't a re-render.
+  const hasStoredBuffer = useRpcnEditorAutosaveStore(
+    (s) => mode !== 'view' && selectAutosaveEntry(s.entries, autosaveTarget) !== null
+  );
+  // Snapshot taken when the editor opened; read live, this session's own writes would look recoverable.
+  const [recoverableEntry, setRecoverableEntry] = useState<EditorAutosaveEntry | null>(null);
+  const [isAutosaveDismissed, setIsAutosaveDismissed] = useState(false);
+
+  // Restored work is unsaved, so the form must read dirty against the loaded defaults.
+  const applyAutosave = useCallback(
+    (entry: EditorAutosaveEntry) => {
+      setYamlContent(entry.configYaml);
+      form.reset(
+        {
+          name: entry.name,
+          description: entry.description,
+          computeUnits: entry.computeUnits,
+          tags: entry.tags,
+        },
+        { keepDefaultValues: true }
+      );
+    },
+    [setYamlContent, form]
+  );
+
+  const {
+    handleSave,
+    handleDelete,
+    clearWizardStore,
+    errorLintHints,
+    setErrorLintHints,
+    clearErrorLintHints,
+    isSaving,
+    isDeleting,
+  } = usePipelineSave({
+    form,
+    editorStore,
+    mode,
+    pipelineId,
+    pipeline,
+    isPipelineDiagramsEnabled,
+    onBeforeGuardedNavigate: markNavigationAllowed,
+    saveContext,
+  });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
   // Guard against losing unsaved edits when navigating away from the editor (edit or create).
@@ -975,18 +1224,30 @@ function PipelinePageContent() {
     () => new Set(mapLintHintsToNodes(deferredYamlContent, Object.values(lintHints)).keys()),
     [deferredYamlContent, lintHints]
   );
-  const unsavedNodeIds = useMemo(
+  const changedIds = useMemo(
+    () => (mode !== 'view' && initialYaml !== null ? changedNodeIds(initialYaml, deferredYamlContent) : []),
+    [mode, initialYaml, deferredYamlContent]
+  );
+  const unsavedNodeIds = useMemo(() => (changedIds.length > 0 ? new Set(changedIds) : EMPTY_NODE_IDS), [changedIds]);
+  const componentChanges = useMemo(
     () =>
       mode !== 'view' && initialYaml !== null
-        ? new Set(changedNodeIds(initialYaml, deferredYamlContent))
-        : EMPTY_NODE_IDS,
-    [mode, initialYaml, deferredYamlContent]
+        ? summarizeComponentChanges(initialYaml, deferredYamlContent, changedIds)
+        : [],
+    [mode, initialYaml, deferredYamlContent, changedIds]
+  );
+  // Against the form's default values, which every successful save re-baselines.
+  const settingsValues = useWatch({ control: form.control });
+  const settingsChanges = useMemo(
+    () => (mode === 'edit' ? summarizeSettingsChanges(form.formState.defaultValues, settingsValues) : []),
+    [mode, form.formState.defaultValues, settingsValues]
   );
   const blocker = useBlocker({
     shouldBlockFn: () => checkUnsavedChanges() && !editorStore.getState().allowNavigation,
     enableBeforeUnload: () => checkUnsavedChanges(),
     withResolver: true,
   });
+  const unsavedChanges = useMemo(() => unsavedChangesCopy(saveContext), [saveContext]);
   // Re-arm the guard whenever the mode changes (e.g. after the post-save nav to view).
   useEffect(() => {
     setAllowNavigation(false);
@@ -995,7 +1256,7 @@ function PipelinePageContent() {
   // ⌘S / Ctrl+S saves from both the YAML and Visual lanes.
   useSaveHotkey({ enabled: mode !== 'view', isSaving, onSave: handleSave });
 
-  // On any document change: clear stale lint and mirror the create-mode draft to the wizard store.
+  // On document change: clear stale lint and mirror create-mode YAML to the wizard store.
   useEffect(
     () =>
       editorStore.subscribe((state, prev) => {
@@ -1051,7 +1312,7 @@ function PipelinePageContent() {
   // Hydrate from the loaded pipeline once per id, so re-renders don't clobber edits.
   useEffect(() => {
     if (pipeline && mode !== 'create' && pipeline.id !== hydratedPipelineId) {
-      hydrateFromServer(pipeline.id, pipeline.configYaml);
+      hydrateFromServer(pipeline.id, pipeline.configYaml, timestampToMillis(pipeline.updateTime));
     }
   }, [pipeline, mode, hydratedPipelineId, hydrateFromServer]);
 
@@ -1086,6 +1347,93 @@ function PipelinePageContent() {
     onResolved: handleInitialYamlResolved,
   });
 
+  const handleRestoreAutosave = useCallback(() => {
+    if (recoverableEntry) {
+      applyAutosave(recoverableEntry);
+      setIsAutosaveDismissed(true);
+      toast.success('Your edits were restored — they still need saving');
+    }
+  }, [recoverableEntry, applyAutosave]);
+
+  const handleDiscardAutosave = useCallback(() => {
+    rpcnEditorAutosave.clear(autosaveTarget);
+    setIsAutosaveDismissed(true);
+  }, [autosaveTarget]);
+
+  // Discard clears the recovery buffer too, or the next visit offers the edits back.
+  const handleDiscardAndLeave = useCallback(() => {
+    rpcnEditorAutosave.clear(autosaveTarget);
+    blocker.proceed?.();
+  }, [autosaveTarget, blocker]);
+
+  // The serverless template resolves late enough to overwrite a restore, so create waits on it.
+  const isDocumentLoaded = mode === 'create' ? !isServerlessInitializing : initialYaml !== null;
+  const capturedTargetRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (mode === 'view' || !isDocumentLoaded || capturedTargetRef.current === autosaveTarget) {
+      return;
+    }
+    capturedTargetRef.current = autosaveTarget;
+    setRecoverableEntry(rpcnEditorAutosave.get(autosaveTarget));
+    setIsAutosaveDismissed(false);
+  }, [mode, isDocumentLoaded, autosaveTarget]);
+
+  // A start refused from the list or detail page hands its hints over; seeded after hydration, which clears them.
+  useEffect(() => {
+    if (mode !== 'edit' || !pipelineId || !isDocumentLoaded) {
+      return;
+    }
+    const hints = takeStartLintHints(pipelineId);
+    if (hints) {
+      setErrorLintHints(hints);
+    }
+  }, [mode, pipelineId, isDocumentLoaded, setErrorLintHints]);
+
+  const recoveredSettingsChanges = useMemo(
+    () => (recoverableEntry ? summarizeSettingsChanges(form.formState.defaultValues, recoverableEntry) : []),
+    [recoverableEntry, form.formState.defaultValues]
+  );
+  const showAutosaveRestore =
+    mode !== 'view' &&
+    !isAutosaveDismissed &&
+    !!recoverableEntry &&
+    hasStoredBuffer &&
+    // Against the baseline, not the live editor.
+    (recoverableEntry.configYaml !== (initialYaml ?? '') || recoveredSettingsChanges.length > 0);
+  const savedUpdateTime = timestampToMillis(pipeline?.updateTime);
+
+  // Both sides are the dataplane's `update_time`, so clock skew can't affect this.
+  const isAutosaveStale =
+    !!recoverableEntry &&
+    recoverableEntry.basedOnUpdateTime != null &&
+    savedUpdateTime !== null &&
+    savedUpdateTime !== recoverableEntry.basedOnUpdateTime;
+
+  const { flush: flushAutosave } = useEditorAutosave({
+    enabled: mode !== 'view',
+    pipelineId: mode === 'create' ? undefined : pipelineId,
+    form,
+    editorStore,
+  });
+
+  // Flushed, not debounced: the pending write dies with the page.
+  const handleLeaveAndKeepEdits = useCallback(() => {
+    if (!flushAutosave()) {
+      toast.error('Your edits could not be kept in this browser. Save them, or discard them to leave.');
+      return;
+    }
+    blocker.proceed?.();
+  }, [flushAutosave, blocker]);
+
+  // After a failed draft save the browser buffer is offered beside it, so Discard is never the only exit.
+  const [hasDraftEscapeFailed, setHasDraftEscapeFailed] = useState(false);
+  const canSaveDraftAndLeave = unsavedChanges.escape === 'save-draft';
+  useEffect(() => {
+    if (blocker.status !== 'blocked') {
+      setHasDraftEscapeFailed(false);
+    }
+  }, [blocker.status]);
+
   // Create + diagrams: useCreateModeInitialYaml bails, so seed the baseline here or the unsaved-changes
   // guard never arms. Serverless resolves its own baseline later; seeding '' first would read false-dirty.
   useEffect(() => {
@@ -1114,10 +1462,11 @@ function PipelinePageContent() {
     }
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 
-  // Visual lanes take the full canvas, so the YAML/diagram sidebar is hidden.
+  // Visual and changes lanes take the full canvas.
   const isViewVisualLane = mode === 'view' && activeViewLane === 'visual';
   const isEditVisualLane = mode !== 'view' && activeEditLane === 'visual';
-  const showSidebar = !(isViewVisualLane || isEditVisualLane);
+  const isEditChangesLane = mode === 'edit' && activeEditLane === 'changes';
+  const showSidebar = !(isViewVisualLane || isEditVisualLane || isEditChangesLane);
 
   const {
     expanded,
@@ -1146,14 +1495,16 @@ function PipelinePageContent() {
 
   const isMonitorLane = mode === 'view' && activeViewLane === 'monitor';
 
-  // Empty while a view-mode pipeline is still loading, or in edit mode without the visual editor.
   const lanes = useMemo<LaneTab[]>(() => {
     if (mode === 'view') {
       if (!pipeline) {
         return [];
       }
       const viewLanes: LaneTab[] = [
-        { value: 'monitor', label: 'Monitor', onSelect: () => setActiveViewLane('monitor') },
+        // A draft has never run, so there is nothing to monitor.
+        ...(editingDraft
+          ? []
+          : [{ value: 'monitor', label: 'Monitor', onSelect: () => setActiveViewLane('monitor') } as LaneTab]),
         { value: 'configuration', label: 'YAML', onSelect: () => goToYamlNode() },
       ];
       if (isVisualEditorEnabled) {
@@ -1161,14 +1512,39 @@ function PipelinePageContent() {
       }
       return viewLanes;
     }
-    if (!isVisualEditorEnabled) {
-      return [];
+    const editLanes: LaneTab[] = [{ value: 'yaml', label: 'YAML', onSelect: () => goToYamlNode() }];
+    if (isVisualEditorEnabled) {
+      editLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') });
     }
-    return [
-      { value: 'yaml', label: 'YAML', onSelect: () => goToYamlNode() },
-      { value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') },
-    ];
-  }, [mode, pipeline, isVisualEditorEnabled, goToYamlNode, setActiveViewLane, setActiveEditLane]);
+    // Only where something is saved to compare against.
+    if (mode === 'edit') {
+      editLanes.push({
+        value: 'changes',
+        label: UNSAVED_CHANGES_LANE_LABEL,
+        count: componentChanges.length + settingsChanges.length,
+        showDot: hasUnsavedChanges,
+        onSelect: () => setActiveEditLane('changes'),
+      });
+    }
+    return editLanes;
+  }, [
+    mode,
+    pipeline,
+    editingDraft,
+    isVisualEditorEnabled,
+    goToYamlNode,
+    setActiveViewLane,
+    setActiveEditLane,
+    componentChanges.length,
+    settingsChanges.length,
+    hasUnsavedChanges,
+  ]);
+
+  useEffect(() => {
+    if (mode === 'view' && editingDraft && activeViewLane === 'monitor') {
+      setActiveViewLane('configuration');
+    }
+  }, [mode, editingDraft, activeViewLane, setActiveViewLane]);
 
   return (
     // Editor lanes are viewport-bounded (page-fill-viewport, globals.css) because Monaco needs a
@@ -1188,6 +1564,7 @@ function PipelinePageContent() {
         <PipelineViewHeader
           expanded={expanded}
           onBack={handleCancel}
+          onRequestDelete={() => setIsDeleteAlertOpen(true)}
           onViewDetails={() => setIsViewConfigDialogOpen(true)}
           pipeline={pipeline}
         />
@@ -1203,16 +1580,40 @@ function PipelinePageContent() {
       ) : null}
       {mode !== 'view' ? (
         <PipelineEditHeader
+          draftIssueCount={Object.keys(lintHints).length}
           expanded={expanded}
           form={form}
           hasUnsavedChanges={hasUnsavedChanges}
           isSaving={isSaving}
-          mode={mode as 'create' | 'edit'}
           onBack={handleCancel}
           onEditSettings={() => setIsConfigDialogOpen(true)}
+          onRequestDelete={editingDraft ? () => setIsDeleteAlertOpen(true) : undefined}
           onSave={handleSave}
+          saveContext={saveContext}
           url={pipeline?.url}
         />
+      ) : null}
+      {showAutosaveRestore && recoverableEntry ? (
+        <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
+          <AutosaveRestoreNotice
+            isStale={isAutosaveStale}
+            onDiscard={handleDiscardAutosave}
+            onRestore={handleRestoreAutosave}
+            updatedAt={recoverableEntry.updatedAt}
+          />
+        </div>
+      ) : null}
+      {mode === 'view' && editingDraft ? (
+        <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
+          <Alert icon={<FileClock />} testId="draft-view-notice" variant="informative">
+            <AlertTitle>This pipeline is a draft</AlertTitle>
+            <AlertDescription>
+              It has never run, so there is nothing to monitor yet and it costs nothing. Starting it checks the
+              configuration first — anything it finds is shown in the editor. Once it starts it becomes a regular
+              pipeline, and drafts only exist for pipelines that have never been deployed.
+            </AlertDescription>
+          </Alert>
+        </div>
       ) : null}
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible. */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
@@ -1232,7 +1633,13 @@ function PipelinePageContent() {
                 <TabsList className="pr-12 [&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
                   {lanes.map((lane) => (
                     <TabsTrigger key={lane.value} onClick={lane.onSelect} value={lane.value} variant="underline">
-                      {lane.label}
+                      <span className="flex items-center gap-2">
+                        {lane.label}
+                        {lane.count ? <CountDot count={lane.count} size="sm" variant="informative" /> : null}
+                        {!lane.count && lane.showDot ? (
+                          <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" />
+                        ) : null}
+                      </span>
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -1297,7 +1704,18 @@ function PipelinePageContent() {
                   yamlContent={yamlContent}
                 />
               ) : null}
-              {mode === 'view' || activeEditLane === 'visual' ? null : (
+              {isEditChangesLane ? (
+                <ChangesPanel
+                  changes={componentChanges}
+                  editedYaml={yamlContent}
+                  onEditSettings={() => setIsConfigDialogOpen(true)}
+                  onSelectComponent={goToYamlNode}
+                  pipelineState={pipeline?.state}
+                  savedYaml={initialYaml ?? ''}
+                  settingsChanges={settingsChanges}
+                />
+              ) : null}
+              {mode === 'view' || activeEditLane === 'visual' || isEditChangesLane ? null : (
                 <EditorPanel
                   isLintPending={isLintPending}
                   isServerlessInitializing={isServerlessInitializing}
@@ -1336,7 +1754,18 @@ function PipelinePageContent() {
         pipeline={pipeline}
       />
 
-      {pipeline ? (
+      {pipeline && editingDraft ? (
+        <DeleteDraftDialog
+          draftName={pipeline.displayName}
+          hasUnsavedChanges={hasUnsavedChanges}
+          isDeleting={isDeleting}
+          onConfirm={() => handleDelete(pipeline.id)}
+          onOpenChange={setIsDeleteAlertOpen}
+          open={isDeleteAlertOpen}
+        />
+      ) : null}
+
+      {pipeline && !editingDraft ? (
         <DeleteResourceAlertDialog
           isDeleting={isDeleting}
           onDelete={handleDelete}
@@ -1351,18 +1780,41 @@ function PipelinePageContent() {
       <Dialog onOpenChange={(open) => (open ? undefined : blocker.reset?.())} open={blocker.status === 'blocked'}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Discard unsaved changes?</DialogTitle>
+            <DialogTitle>Leave without saving your changes?</DialogTitle>
           </DialogHeader>
-          <DialogBody>
-            You have unsaved changes to this pipeline. If you leave now, your changes will be lost.
-          </DialogBody>
+          <DialogBody>{unsavedChanges.body}</DialogBody>
           <DialogFooter>
-            <Button onClick={() => blocker.reset?.()} variant="ghost">
+            <Button onClick={handleDiscardAndLeave} testId="discard-and-leave" variant="ghost">
+              Discard changes
+            </Button>
+            <Button onClick={() => blocker.reset?.()} variant="outline">
               Keep editing
             </Button>
-            <Button onClick={() => blocker.proceed?.()} variant="primary">
-              Leave without saving
-            </Button>
+            {canSaveDraftAndLeave ? (
+              <Button
+                onClick={async () => {
+                  if (await handleSave({ run: 'draft', skipNavigation: true })) {
+                    blocker.proceed?.();
+                    return;
+                  }
+                  setHasDraftEscapeFailed(true);
+                }}
+                testId="save-draft-and-leave"
+                variant={hasDraftEscapeFailed ? 'outline' : 'primary'}
+              >
+                Save draft
+              </Button>
+            ) : null}
+            {canSaveDraftAndLeave && !hasDraftEscapeFailed ? null : (
+              <Button
+                onClick={handleLeaveAndKeepEdits}
+                testId="leave-and-keep-edits"
+                title="Your edits stay in this browser, and this editor offers them back next time"
+                variant="primary"
+              >
+                Leave for now
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

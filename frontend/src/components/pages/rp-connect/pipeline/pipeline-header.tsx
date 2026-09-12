@@ -15,20 +15,48 @@ import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
+import { ButtonGroup } from 'components/redpanda-ui/components/button-group';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'components/redpanda-ui/components/dropdown-menu';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { BookOpen, ExternalLink, Info, InfoIcon, Settings } from 'lucide-react';
+import {
+  AlertTriangle,
+  BookOpen,
+  ChevronDown,
+  ExternalLink,
+  Info,
+  InfoIcon,
+  Play,
+  Settings,
+  Trash2,
+} from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 import { docsLinks } from 'utils/docs-links';
 
-import { PipelineStatusToggle } from './pipeline-status-toggle';
+import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
+import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
+import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
+import {
+  alternateRunIntents,
+  primaryRunIntent,
+  runIntentLabel,
+  type SaveContext,
+  type SaveIntent,
+  saveRunHint,
+} from './save-actions';
+import { useStartDraft } from './use-start-draft';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
@@ -172,6 +200,20 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
+const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
+  <Button
+    aria-label="Delete draft"
+    className="shrink-0"
+    onClick={onClick}
+    size="icon"
+    testId="delete-draft"
+    title="Delete draft"
+    variant="ghost"
+  >
+    <Trash2 />
+  </Button>
+);
+
 // Expanded mode insets the header while the panel below it goes flush.
 const headerClassName = (expanded: boolean) =>
   cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
@@ -200,15 +242,35 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
   />
 );
 
+const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
+  const { startDraft, isStartingDraft } = useStartDraft();
+  if (!isDraft(pipeline)) {
+    return <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />;
+  }
+  return (
+    <Button
+      disabled={isStartingDraft}
+      icon={isStartingDraft ? <Spinner /> : <Play />}
+      onClick={() => startDraft(pipeline.id)}
+      testId="start-draft"
+    >
+      Start pipeline
+    </Button>
+  );
+};
+
 export function PipelineViewHeader({
   pipeline,
   onBack,
   onViewDetails,
+  onRequestDelete,
   expanded,
 }: {
   pipeline: Pipeline;
   onBack: () => void;
   onViewDetails: () => void;
+  /** Only offered inline on a draft. */
+  onRequestDelete?: () => void;
   expanded: boolean;
 }) {
   const navigate = useNavigate();
@@ -221,6 +283,9 @@ export function PipelineViewHeader({
     [pipeline.configYaml]
   );
 
+  const viewingDraft = isDraft(pipeline);
+  const editedAt = timestampToMillis(pipeline.updateTime);
+
   const items: MetaEntry[] = [
     { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -232,6 +297,14 @@ export function PipelineViewHeader({
       key: 'url',
       node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
     },
+    {
+      key: 'edited',
+      node: viewingDraft && editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null,
+    },
+    {
+      key: 'author',
+      node: viewingDraft && pipeline.createdBy ? <span>by {pipeline.createdBy}</span> : null,
+    },
   ];
 
   return (
@@ -242,6 +315,7 @@ export function PipelineViewHeader({
           <h1 className="min-w-0 truncate text-heading-xl" title={name}>
             {name}
           </h1>
+          <PipelineStateBadge state={pipeline.state} tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : undefined} />
           <Button
             aria-label="View pipeline details"
             icon={<Info className="size-4!" />}
@@ -259,10 +333,11 @@ export function PipelineViewHeader({
             onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
             variant="outline"
           >
-            Edit pipeline
+            {viewingDraft ? 'Continue editing' : 'Edit pipeline'}
           </Button>
-          <Separator className="mx-1 h-6" orientation="vertical" />
-          <PipelineStatusToggle pipelineId={pipeline.id} pipelineState={pipeline.state} />
+          {viewingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
+          <Separator className="mx-1 h-6 self-center" orientation="vertical" />
+          <RunControl pipeline={pipeline} />
         </div>
       </div>
       <div className="flex flex-col gap-2">
@@ -278,30 +353,80 @@ export function PipelineViewHeader({
   );
 }
 
+const SaveActions = ({
+  context,
+  isSaving,
+  onSave,
+}: {
+  context: SaveContext;
+  isSaving?: boolean;
+  onSave: (intent?: SaveIntent) => void;
+}) => {
+  const primary = primaryRunIntent(context);
+  const alternates = alternateRunIntents(context).filter((intent) => intent !== primary);
+  return (
+    <ButtonGroup>
+      <Button disabled={isSaving} onClick={() => onSave({ run: primary })} testId="save-pipeline">
+        {runIntentLabel(primary, context)}
+        {isSaving ? <Spinner /> : null}
+      </Button>
+      {alternates.length > 0 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button aria-label="More save options" disabled={isSaving} size="icon" testId="save-pipeline-options">
+                <ChevronDown />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            {alternates.map((intent) => (
+              <DropdownMenuItem key={intent} onClick={() => onSave({ run: intent })}>
+                {runIntentLabel(intent, context)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+    </ButtonGroup>
+  );
+};
+
 export function PipelineEditHeader({
   form,
-  mode,
+  saveContext,
   url,
   onBack,
   onSave,
   onEditSettings,
+  onRequestDelete,
   isSaving,
   hasUnsavedChanges,
   expanded,
+  draftIssueCount,
 }: {
   form: UseFormReturn<PipelineFormValues>;
-  mode: 'edit' | 'create';
+  /** The object `handleSave` reads too, so the button's label and its action can't drift apart. */
+  saveContext: SaveContext;
   url?: string;
   onBack: () => void;
-  onSave: () => void;
+  onSave: (intent?: SaveIntent) => void;
   onEditSettings: () => void;
+  /** Only offered while editing a draft. */
+  onRequestDelete?: () => void;
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   expanded: boolean;
+  /** Outstanding lint issues; shown on a draft only. */
+  draftIssueCount?: number;
 }) {
   const description = useWatch({ control: form.control, name: 'description' })?.trim();
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
+  const { mode, state: pipelineState } = saveContext;
+  const runHint = saveRunHint(saveContext);
+  const editingDraft = isDraft({ state: pipelineState });
+  const issueSummary = editingDraft ? draftIssueSummary(draftIssueCount ?? 0) : null;
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -315,6 +440,7 @@ export function PipelineEditHeader({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
+            {editingDraft ? <PipelineStateBadge state={pipelineState} tooltip={DRAFT_BADGE_TOOLTIP} /> : null}
             {mode === 'create' ? (
               <Badge tone="default" variant="outline">
                 New
@@ -323,6 +449,7 @@ export function PipelineEditHeader({
             <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
               Edit settings
             </Button>
+            {editingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
           </div>
           {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
           <div className="relative flex shrink-0 items-center gap-2">
@@ -336,24 +463,28 @@ export function PipelineEditHeader({
             >
               Docs
             </Button>
-            <Button disabled={isSaving} onClick={onSave}>
-              Save
-              {isSaving ? <Spinner /> : null}
-            </Button>
-            {hasUnsavedChanges ? (
-              <span
-                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-body-sm text-muted-foreground"
-                title="You have unsaved changes"
-              >
-                <span aria-hidden className="size-2 rounded-full bg-informative" />
-                Unsaved changes
-              </span>
-            ) : null}
+            <SaveActions context={saveContext} isSaving={isSaving} onSave={onSave} />
+            <span className="absolute top-full right-0 mt-1.5 flex items-center gap-2 whitespace-nowrap text-body-sm text-muted-foreground">
+              {hasUnsavedChanges ? (
+                <span className="flex items-center gap-1.5" role="status" title={UNSAVED_CHANGES_PILL_TOOLTIP}>
+                  <span aria-hidden className="size-2 rounded-full bg-informative" />
+                  Unsaved changes
+                </span>
+              ) : null}
+              {hasUnsavedChanges && runHint ? <span aria-hidden>·</span> : null}
+              {runHint ? <span>{runHint}</span> : null}
+            </span>
           </div>
         </div>
       </div>
       <div className="flex flex-col items-start gap-2">
         <MetaStrip items={items} />
+        {issueSummary ? (
+          <span className="flex items-center gap-1.5 text-body text-warning">
+            <AlertTriangle className="size-3.5" />
+            {issueSummary}
+          </span>
+        ) : null}
         {tags.length > 0 ? (
           <DetailLine label="Tags">
             <TagBadges tags={tags} />

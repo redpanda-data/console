@@ -18,6 +18,7 @@ import {
   matchesNameOrId,
   PIPELINE_STATE_TABS,
   pipelineListEmptyText,
+  stateFilterValues,
 } from './list-utils';
 
 describe('aggregateConnectors', () => {
@@ -66,7 +67,37 @@ describe('countPipelinesPerTab', () => {
       Pipeline_State.ERROR,
       Pipeline_State.UNSPECIFIED,
     ]);
-    expect(counts).toEqual({ all: 5, running: 2, stopped: 1, error: 1 });
+    expect(counts).toEqual({ all: 5, draft: 0, running: 2, stopped: 1, error: 1 });
+  });
+
+  it('counts drafts into the drafts tab and the total, never into a run state', () => {
+    const counts = countPipelinesPerTab([
+      Pipeline_State.DRAFT,
+      Pipeline_State.DRAFT,
+      Pipeline_State.RUNNING,
+      Pipeline_State.STOPPED,
+    ]);
+    expect(counts).toEqual({ all: 4, draft: 2, running: 1, stopped: 1, error: 0 });
+  });
+});
+
+describe('stateFilterValues', () => {
+  it('leaves the All tab unfiltered', () => {
+    const all = PIPELINE_STATE_TABS.find((t) => t.id === 'all');
+    expect(all && stateFilterValues(all)).toBeUndefined();
+  });
+
+  it('filters the Drafts tab on the draft state alone', () => {
+    const drafts = PIPELINE_STATE_TABS.find((t) => t.id === 'draft');
+    expect(drafts && stateFilterValues(drafts)).toEqual([String(Pipeline_State.DRAFT)]);
+  });
+
+  it('stringifies pipeline states to match the status column accessor', () => {
+    const running = PIPELINE_STATE_TABS.find((t) => t.id === 'running');
+    expect(running && stateFilterValues(running)).toEqual([
+      String(Pipeline_State.RUNNING),
+      String(Pipeline_State.STARTING),
+    ]);
   });
 });
 

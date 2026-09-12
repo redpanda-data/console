@@ -21,22 +21,26 @@ type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | 
 type AddConnectorType = ConnectComponentType | 'resource' | null;
 type ConnectorSection = 'input' | 'output';
 export type ViewLane = 'monitor' | 'configuration' | 'visual';
-export type EditLane = 'yaml' | 'visual';
+export type EditLane = 'yaml' | 'visual' | 'changes';
 
 // Canonical config YAML (plus baseline) that all views read/mutate through these actions.
 type DocumentSlice = {
   yamlContent: string;
   initialYaml: string | null;
   hydratedPipelineId: string | null;
+  // The server `update_time` (epoch ms) of the baseline; null while creating.
+  baselineUpdateTime: number | null;
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
   allowNavigation: boolean;
   setYamlContent: (yamlContent: string) => void;
   // Patch one redpanda component; returns false if the YAML couldn't be parsed/patched.
   patchComponent: (section: ConnectorSection, componentName: string, patch: RedpandaSetupResultLike) => boolean;
   // Hydrate from a freshly-loaded server pipeline (content + baseline + id).
-  hydrateFromServer: (pipelineId: string, configYaml: string) => void;
+  hydrateFromServer: (pipelineId: string, configYaml: string, updateTime?: number | null) => void;
   // Resolve the create-mode starting YAML; seeds the baseline only once.
   resolveInitialYaml: (yaml: string) => void;
+  // Re-baseline after a save; unlike hydrateFromServer this keeps the edit history.
+  markSavedBaseline: (yaml: string, updateTime?: number | null) => void;
   setAllowNavigation: (allowNavigation: boolean) => void;
 };
 
@@ -87,6 +91,7 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
   yamlContent: '',
   initialYaml: null,
   hydratedPipelineId: null,
+  baselineUpdateTime: null,
   allowNavigation: false,
   setYamlContent: (yamlContent) => set({ yamlContent }),
   patchComponent: (section, componentName, patch) => {
@@ -97,12 +102,13 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
     set({ yamlContent: patched });
     return true;
   },
-  hydrateFromServer: (pipelineId, configYaml) =>
+  hydrateFromServer: (pipelineId, configYaml, updateTime = null) =>
     // Reset the edit history so the server load isn't recorded as an undoable step.
     set({
       hydratedPipelineId: pipelineId,
       yamlContent: configYaml,
       initialYaml: configYaml,
+      baselineUpdateTime: updateTime,
       editUndoStack: [],
       editRedoStack: [],
       editBaseline: null,
@@ -114,6 +120,7 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
         ? { yamlContent: yaml, initialYaml: yaml, editUndoStack: [], editRedoStack: [], editBaseline: null }
         : { yamlContent: yaml }
     ),
+  markSavedBaseline: (yaml, updateTime = null) => set({ initialYaml: yaml, baselineUpdateTime: updateTime }),
   setAllowNavigation: (allowNavigation) => set({ allowNavigation }),
 });
 
