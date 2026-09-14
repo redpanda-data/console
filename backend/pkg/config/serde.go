@@ -17,10 +17,11 @@ import (
 // Serde configures all serializers / deserializers that require extra
 // configuration.
 type Serde struct {
-	MaxDeserializationPayloadSize int     `yaml:"maxDeserializationPayloadSize"`
-	Protobuf                      Proto   `yaml:"protobuf"`
-	MessagePack                   Msgpack `yaml:"messagePack"`
-	Cbor                          Cbor    `yaml:"cbor"`
+	MaxDeserializationPayloadSize int                `yaml:"maxDeserializationPayloadSize"`
+	Protobuf                      Proto              `yaml:"protobuf"`
+	MessagePack                   Msgpack            `yaml:"messagePack"`
+	Cbor                          Cbor               `yaml:"cbor"`
+	GlueSchemaRegistry            GlueSchemaRegistry `yaml:"glueSchemaRegistry"`
 }
 
 // SetDefaults for Serde config
@@ -28,6 +29,7 @@ func (c *Serde) SetDefaults() {
 	c.MaxDeserializationPayloadSize = DefaultMaxDeserializationPayloadSize
 	c.Protobuf.SetDefaults()
 	c.MessagePack.SetDefaults()
+	c.GlueSchemaRegistry.SetDefaults()
 }
 
 // RegisterFlags registers all nested config flags.
@@ -47,6 +49,10 @@ func (c *Serde) Validate() error {
 
 	if err := c.Cbor.Validate(); err != nil {
 		return fmt.Errorf("failed to validate msgpack config: %w", err)
+	}
+
+	if err := c.GlueSchemaRegistry.Validate(); err != nil {
+		return fmt.Errorf("failed to validate AWS Glue Schema Registry config: %w", err)
 	}
 
 	return nil

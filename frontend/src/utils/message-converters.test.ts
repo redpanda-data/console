@@ -90,6 +90,7 @@ describe('convertListMessageData', () => {
       [PayloadEncoding.TEXT, 'text'],
       [PayloadEncoding.PROTOBUF, 'protobuf'],
       [PayloadEncoding.AVRO, 'avro'],
+      [PayloadEncoding.AVRO_GLUE, 'avroGlue'],
       [PayloadEncoding.BINARY, 'binary'],
       [PayloadEncoding.XML, 'xml'],
       [PayloadEncoding.JSON_SCHEMA, 'jsonSchema'],
@@ -120,6 +121,7 @@ describe('convertListMessageData', () => {
       [PayloadEncoding.JSON, 'json'],
       [PayloadEncoding.TEXT, 'text'],
       [PayloadEncoding.PROTOBUF, 'protobuf'],
+      [PayloadEncoding.AVRO_GLUE, 'avroGlue'],
       [PayloadEncoding.CBOR, 'cbor'],
     ];
 

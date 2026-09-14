@@ -32,6 +32,8 @@ function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['enc
       return 'xml';
     case PayloadEncoding.AVRO:
       return 'avro';
+    case PayloadEncoding.AVRO_GLUE:
+      return 'avroGlue';
     case PayloadEncoding.JSON:
       return 'json';
     case PayloadEncoding.JSON_SCHEMA:

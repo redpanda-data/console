@@ -41,6 +41,7 @@ func NewService(
 	msgPackSvc *msgpack.Service,
 	cachedSchemaClient schema.Client,
 	bsrClient BSRClient,
+	glueClient GlueSchemaRegistryClient,
 	cborConfig config.Cbor,
 ) (*Service, error) {
 	serdes := []Serde{
@@ -49,6 +50,13 @@ func NewService(
 		JSONSchemaSerde{schemaClient: cachedSchemaClient},
 		XMLSerde{},
 		AvroSerde{schemaClient: cachedSchemaClient},
+	}
+
+	// Add the AWS Glue serde right after the Confluent Avro serde. Both wire
+	// formats are unambiguous: Confluent starts with the magic byte 0x00 while
+	// Glue starts with the header version byte 0x03.
+	if glueClient != nil {
+		serdes = append(serdes, AvroGlueSerde{glueClient: glueClient})
 	}
 
 	// Add BSR serde if client is configured - try before other protobuf serdes
