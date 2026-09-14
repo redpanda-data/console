@@ -81,7 +81,9 @@ export const LicenseNotification = () => {
   return (
     <div data-testid="license-notification">
       <Alert
-        className="mb-4"
+        // my-4, not on the wrapper: that div is a direct child of #mainLayout, whose
+        // `margin: 0 !important` (index-cloud-integration.scss) would drop it.
+        className="my-4"
         data-testid="license-alert"
         icon={isWarning ? <TriangleAlertIcon /> : <InfoIcon />}
         variant={isWarning ? 'warning' : 'informative'}
