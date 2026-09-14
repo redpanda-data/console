@@ -36,8 +36,10 @@ import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State; tooltip?: string }) {
-  const label = (state !== undefined && PIPELINE_STATE_LABELS[state]) || 'Unknown';
-  const variant = (state !== undefined && PIPELINE_STATE_STATUS_VARIANT[state]) || 'disabled';
+  // A state a newer server knows and this build does not falls through to the UNSPECIFIED copy.
+  const known = state ?? PipelineState.UNSPECIFIED;
+  const label = PIPELINE_STATE_LABELS[known] ?? PIPELINE_STATE_LABELS[PipelineState.UNSPECIFIED];
+  const variant = PIPELINE_STATE_STATUS_VARIANT[known] ?? PIPELINE_STATE_STATUS_VARIANT[PipelineState.UNSPECIFIED];
   return (
     <StatusBadge role="status" size="sm" testId="pipeline-state-badge" title={tooltip} variant={variant}>
       {label}

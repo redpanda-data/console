@@ -194,8 +194,7 @@ rs.mock('./pipeline-flow-canvas', () => ({
 }));
 rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
 rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
-// Counted, not just queried: the Monitor lane is the default, so a draft used to mount it for one
-// commit before the lane correction landed — long enough for its logs and throughput to fire.
+// Counted, not just queried: mounting is what fires the logs and throughput requests.
 const logsTabRenders = { count: 0 };
 rs.mock('../pipelines-details', () => ({
   LogsTab: () => {
@@ -992,11 +991,8 @@ describe('PipelinePage', () => {
   });
 
   describe('drafts and save semantics', () => {
-    /**
-     * What CreatePipeline answers with. The state is not incidental: the editor believes the response
-     * rather than the flag it sent, so that a deployment which silently ignored `draft` is caught
-     * instead of being reported as a parked draft. Defaults to what a drafts-capable server returns.
-     */
+    // What CreatePipeline answers with. The state is not incidental: the editor trusts the response
+    // over the flag it sent. Defaults to what a drafts-capable server returns.
     const createdPipelineResponse = (id: string, state: Pipeline_State = Pipeline_State.DRAFT) =>
       create(ConsoleCreatePipelineResponseSchema, {
         response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id, state }) }),
@@ -1162,11 +1158,8 @@ describe('PipelinePage', () => {
       expect(sent.configYaml).toBe(configYaml);
     });
 
-    /**
-     * The primary button on the create page is "Save draft", so it is what a curious click lands on.
-     * Parking an untouched page would put an empty row in everyone's pipeline list and spend one of the
-     * cluster's 100 pipeline slots on nothing — and there is no work to protect.
-     */
+    // "Save draft" is the primary button, so a curious click lands on it. Parking an untouched page
+    // would spend one of the cluster's pipeline slots on nothing, and there is no work to protect.
     it('refuses to park a create page with nothing on it, and says what would make it savable', async () => {
       const user = userEvent.setup();
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
@@ -1210,13 +1203,9 @@ describe('PipelinePage', () => {
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('Untitled pipeline');
     });
 
-    /**
-     * The lookup is narrow (the unfiltered list drains every page, and the save mutation awaits its own
-     * invalidation of it — a 30ms write took 13 seconds on a large cluster) and it happens at save time,
-     * not on mount. As a *query* it shared one cache entry with the pipeline list — the input never
-     * reaches the query key, see `useListPipelinesQuery` — so it replaced the list with its filtered
-     * result, and after saving a draft the list showed only that draft.
-     */
+    // Narrow, and at save time rather than on mount: the unfiltered list drains every page, and as a
+    // query this lookup would share the list's one cache entry (the input never reaches the query key,
+    // see `useListPipelinesQuery`) and replace the list with its filtered result.
     it('looks up untitled names only when saving, with a narrow request', async () => {
       const user = userEvent.setup();
       const requests: unknown[] = [];
@@ -1371,8 +1360,7 @@ describe('PipelinePage', () => {
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(false);
     });
 
-    // Create first, stop second, so the stop can fail alone. It used to warn "may be running" and then
-    // immediately claim "it is not running yet".
+    // Create first, stop second, so the stop can fail on its own.
     it('does not claim success when the pipeline it created could not be stopped', async () => {
       const user = userEvent.setup();
       mockIsFeatureFlagEnabled.mockImplementation(() => false);
@@ -1648,8 +1636,7 @@ describe('PipelinePage', () => {
       expect(screen.getByText('Changed')).toBeInTheDocument();
     });
 
-    // The same save writes the settings and the configuration, so a settings-only edit is an unsaved
-    // change. The lane used to say "No unsaved changes" while the header's pill said the opposite.
+    // One save writes the settings and the configuration, so a settings-only edit is unsaved work.
     it('counts and itemises a settings-only change', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -1815,11 +1802,8 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(useRpcnEditorAutosaveStore.getState().entries).toHaveLength(0));
     });
 
-    /**
-     * Deleting is a departure the user has already confirmed. Leaving the guard armed meant confirming a
-     * delete opened the leave-without-saving dialog next, asking whether to save the draft that had just
-     * been deleted — and its Save draft button would have written to a pipeline that no longer existed.
-     */
+    // Deleting is a departure the user has already confirmed, so a second dialog would offer to save
+    // the draft that was just deleted — writing to a pipeline that no longer exists.
     it('stands the unsaved-changes guard down after deleting, so no second dialog follows', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -1884,7 +1868,6 @@ describe('PipelinePage', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    // It used to resume the navigation regardless, taking the explaining toast with the route.
     it('stays put when the draft it offered to save fails', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
@@ -1942,11 +1925,8 @@ describe('PipelinePage', () => {
       expect(screen.getByRole('button', { name: /discard changes/i })).toBeInTheDocument();
     });
 
-    /**
-     * The dialog used to offer only Discard and Keep editing on a deployed pipeline, where no draft is
-     * possible — so someone with real work had to either sit on the page or close the tab, because
-     * closing the tab was the only exit that kept it. Leaving on purpose now keeps it too, and says so.
-     */
+    // No draft is possible on a deployed pipeline, so leaving on purpose is the only exit that keeps
+    // the work, and it has to say so.
     it('lets a deployed pipeline be left with the edits kept in this browser', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
@@ -1967,8 +1947,7 @@ describe('PipelinePage', () => {
       expect(proceed).toHaveBeenCalled();
     });
 
-    // Discard used to leave the recovery buffer behind, so the next visit offered back the very edits
-    // the user had just chosen to throw away.
+    // Or the next visit offers back the very edits the user chose to throw away.
     it('drops the recovery buffer when the changes are discarded on purpose', async () => {
       const user = userEvent.setup();
       const { proceed } = blocked();
@@ -2030,13 +2009,9 @@ describe('PipelinePage', () => {
     const transportWithUpdateTime = (updateTimeMs: number) =>
       createTransport({ getPipelineMock: rs.fn().mockReturnValue(pipelineAt(updateTimeMs)) });
 
-    /**
-     * Staleness is "someone saved this pipeline since these edits were captured", and it
-     * is decided by comparing the pipeline's `update_time` against the one the buffer
-     * recorded — two server values. Comparing the server's clock against the browser's
-     * (the buffer's own `updatedAt`) got this wrong in both directions whenever the two
-     * drifted, which is ordinary.
-     */
+    // Stale means "someone saved this pipeline since these edits were captured": the pipeline's
+    // `update_time` against the one the buffer recorded, two server values. The buffer's own
+    // `updatedAt` is a browser clock and is never compared against either.
     describe('staleness is judged on server timestamps, not the browser clock', () => {
       const SAVED_AT = 1_700_000_000_000;
 
@@ -2060,12 +2035,9 @@ describe('PipelinePage', () => {
         expect(notice).toHaveTextContent(/You left this editor without saving/);
       });
 
-      // A browser hours ahead of the dataplane used to make every buffer look current,
-      // and one hours behind made every buffer look stale. Neither is read any more.
       it('ignores a browser clock that disagrees with the server', async () => {
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-        // updatedAt is stamped from Date.now(), i.e. ~now — decades after SAVED_AT — yet
-        // the recorded baseline still matches what the server reports.
+        // updatedAt is ~now, decades after SAVED_AT, yet the recorded baseline still matches.
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT);
 
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });

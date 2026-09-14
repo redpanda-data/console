@@ -27,14 +27,9 @@ import { toNameContainsFilter, useListPipelinesQuery } from './pipeline';
 const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
 
 describe('useListPipelinesQuery', () => {
-  /**
-   * The trap behind "after saving a draft the list showed only that draft": the input never reaches the
-   * query key, so two callers asking for different things are one cache entry, and the narrower one wins.
-   *
-   * connect-query omits the `pageParamKey` field from the key, and on the console-layer request that
-   * field — `request` — is the entire input. Asserted rather than commented, because the hook's
-   * signature promises a per-input view that TanStack cannot give it.
-   */
+  // connect-query omits the `pageParamKey` field from the key, and on the console-layer request that
+  // field — `request` — is the entire input. So two callers asking for different things share one
+  // cache entry and the narrower one wins, against what the hook's signature promises.
   test('shares one cache entry across callers, whatever input each asks for', async () => {
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listPipelines, (req) =>

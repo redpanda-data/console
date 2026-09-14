@@ -168,8 +168,7 @@ describe('saveRunHint', () => {
   it('describes what saving will do rather than claiming it already happened', () => {
     const hint = saveRunHint(creating);
     expect(hint).toMatch(/won't start/i);
-    // Past tense ("Saved without starting") sits under the button asserting success even when the
-    // save has just failed, which is what it used to do.
+    // The hint sits under the button whether or not the save succeeded, so it must not assert it did.
     expect(hint).not.toMatch(/^saved\b/i);
   });
 

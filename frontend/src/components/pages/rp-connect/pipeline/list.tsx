@@ -191,11 +191,9 @@ const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.st
 
 const PAGE_SIZE = 20;
 
-// Module scope: the query hook memoizes on request identity.
-// Asked for unconditionally: the flag gates making drafts, not seeing the ones already made. Turning
-// it back off must not strand a draft that still counts against the cluster's pipeline quota with no
-// row to delete it from. Every draft affordance below keys off the row's own state, and a pre-drafts
-// dataplane drops the field, so this is inert until there is a draft to show.
+// Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
+// flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
+// draft that still counts against the cluster's quota with no row to delete it from.
 const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
 // One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen

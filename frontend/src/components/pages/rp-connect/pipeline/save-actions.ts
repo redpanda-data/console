@@ -71,8 +71,17 @@ export function isInvalidConfigError(error: unknown): boolean {
  * The service refuses a `draft: true` update once the pipeline has been started. Matched on the message as
  * well as the code: a suspended cluster also answers FAILED_PRECONDITION.
  */
+const NOT_A_DRAFT = /not a draft/i;
+
 export const isNoLongerDraftError = (error: unknown): boolean =>
-  error instanceof ConnectError && error.code === Code.FailedPrecondition && /not a draft/i.test(error.rawMessage);
+  error instanceof ConnectError && error.code === Code.FailedPrecondition && NOT_A_DRAFT.test(error.rawMessage);
+
+/**
+ * A pre-drafts hop drops `draft` (Connect JSON discards unknown fields) and the pipeline deploys for
+ * real, so the saved state is trusted over the flag that was sent.
+ */
+export const wasDraftIgnored = (isDraftSave: boolean, saved: { state?: Pipeline_State } | undefined): boolean =>
+  isDraftSave && saved !== undefined && saved.state !== Pipeline_State.DRAFT;
 
 export const NO_LONGER_DRAFT_MESSAGE =
   'This pipeline has been started since you opened it, so it is no longer a draft. Reload to see the running configuration before saving.';
@@ -86,9 +95,8 @@ const isStartableState = (state: Pipeline_State | undefined): boolean =>
 const isStoppableState = (state: Pipeline_State | undefined): boolean =>
   state !== undefined && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(state);
 
-const isDraftState = (state: Pipeline_State | undefined): boolean => state === Pipeline_State.DRAFT;
-
-const isUndeployed = (context: SaveContext): boolean => context.mode === 'create' || isDraftState(context.state);
+const isUndeployed = (context: SaveContext): boolean =>
+  context.mode === 'create' || context.state === Pipeline_State.DRAFT;
 
 export function primaryRunIntent(context: SaveContext): SaveRunIntent {
   if (isUndeployed(context) && context.draftsEnabled) {

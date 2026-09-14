@@ -122,6 +122,7 @@ import {
   type SaveRunIntent,
   saveSuccessMessage,
   unsavedChangesCopy,
+  wasDraftIgnored,
 } from './save-actions';
 import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
@@ -396,16 +397,13 @@ function usePipelineSave({
           const newPipelineId = createdPipeline?.id;
           setErrorLintHints({});
 
-          // A pre-drafts proxy drops `draft` silently and deploys for real; trust the response state.
-          const draftWasIgnored =
-            isDraftSave && createdPipeline !== undefined && createdPipeline.state !== Pipeline_State.DRAFT;
+          const draftWasIgnored = wasDraftIgnored(isDraftSave, createdPipeline);
 
-          // CreatePipeline always starts without draft support, so "stopped" is a follow-up stop. A
-          // dropped `draft` lands in the same place, and asking the user to park it by hand is the
-          // weakest link on something irreversible: stop it here instead.
+          // CreatePipeline always starts, so "stopped" is a follow-up stop; a dropped `draft` lands
+          // in the same place, and leaving that to the user is the weak link on something
+          // irreversible. Tracked as success rather than absence of failure: a response with no id
+          // skips the stop entirely, and the copy below must not then claim it was parked.
           let stopFailed = false;
-          // Tracked as success, not as absence of failure: a response with no id skips the stop
-          // entirely, and the copy below must not then claim the deployment was parked.
           let stopped = false;
           if ((run === 'stopped' || draftWasIgnored) && newPipelineId) {
             try {
@@ -469,9 +467,7 @@ function usePipelineSave({
         );
         setErrorLintHints({});
         const updatedPipeline = response.response?.pipeline;
-        // As on create: a pre-drafts proxy drops `draft` and stores the edits deployed; trust the response state.
-        const draftWasIgnored =
-          isDraftSave && updatedPipeline !== undefined && updatedPipeline.state !== Pipeline_State.DRAFT;
+        const draftWasIgnored = wasDraftIgnored(isDraftSave, updatedPipeline);
 
         // UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first.
         let runFailed = false;
@@ -1503,9 +1499,8 @@ function PipelinePageContent() {
     [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane, editorStore]
   );
 
-  // Excludes a draft outright rather than leaning on the corrective effect below: that only runs
-  // after the commit, and React mounts this lane's children (logs, throughput) first — they would
-  // each fire a request for a pipeline that has never run.
+  // Excludes a draft here, not just in the corrective effect below: that runs after the commit, by
+  // which point this lane's children have mounted and fired their requests.
   const isMonitorLane = mode === 'view' && activeViewLane === 'monitor' && !editingDraft;
 
   const lanes = useMemo<LaneTab[]>(() => {
