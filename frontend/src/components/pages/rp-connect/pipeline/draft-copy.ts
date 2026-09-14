@@ -28,9 +28,13 @@ export const DRAFT_BADGE_TOOLTIP =
 export const DRAFT_UNSUPPORTED_STOPPED_MESSAGE =
   'Drafts are not available on this cluster yet, so the pipeline was deployed and then stopped again. It may have processed messages while it ran — check it before starting it.';
 
-/** The same, when the follow-up stop did not land: the pipeline is live and only a human can park it. */
+/**
+ * The same, when the follow-up stop did not land — it failed, or there was no id to aim it at. Either
+ * way the pipeline is live and only a human can park it, so don't claim an attempt that may not have
+ * happened.
+ */
 export const DRAFT_UNSUPPORTED_MESSAGE =
-  'Drafts are not available on this cluster yet, so the pipeline was created and is starting. Stopping it automatically failed — stop it from its page if you did not mean to deploy it.';
+  'Drafts are not available on this cluster yet, so the pipeline was created and is starting. It could not be stopped automatically — stop it from its page if you did not mean to deploy it.';
 
 export const DRAFT_UPDATE_UNSUPPORTED_MESSAGE =
   'Drafts are not available on this cluster yet, so this pipeline is no longer a draft. Check its state on its page before starting it.';

@@ -404,9 +404,13 @@ function usePipelineSave({
           // dropped `draft` lands in the same place, and asking the user to park it by hand is the
           // weakest link on something irreversible: stop it here instead.
           let stopFailed = false;
+          // Tracked as success, not as absence of failure: a response with no id skips the stop
+          // entirely, and the copy below must not then claim the deployment was parked.
+          let stopped = false;
           if ((run === 'stopped' || draftWasIgnored) && newPipelineId) {
             try {
               await stopMutation(create(StopPipelineRequestSchema, { request: { id: newPipelineId } }));
+              stopped = true;
             } catch {
               stopFailed = true;
               if (!draftWasIgnored) {
@@ -419,7 +423,7 @@ function usePipelineSave({
           markSaved(yamlContent, newPipelineId, timestampToMillis(createdPipeline?.updateTime));
           if (draftWasIgnored) {
             // Both messages name the deployment; only one of them still needs a human.
-            toast.error(stopFailed ? DRAFT_UNSUPPORTED_MESSAGE : DRAFT_UNSUPPORTED_STOPPED_MESSAGE);
+            toast.error(stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE);
           } else if (!stopFailed) {
             toast.success(saveSuccessMessage(saveContext, run));
           }

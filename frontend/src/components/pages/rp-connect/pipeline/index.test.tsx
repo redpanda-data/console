@@ -1095,6 +1095,24 @@ describe('PipelinePage', () => {
       expect(toast.success).not.toHaveBeenCalled();
     });
 
+    // No id to aim the stop at, so it never runs — the copy must not claim the deployment was parked.
+    it('does not claim it stopped a deployment it could not address', async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('', Pipeline_State.STARTING));
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      expect(stopPipelineMock).not.toHaveBeenCalled();
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(DRAFT_UNSUPPORTED_MESSAGE));
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
     it('stays in the editor when a draft is saved from its own page', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
