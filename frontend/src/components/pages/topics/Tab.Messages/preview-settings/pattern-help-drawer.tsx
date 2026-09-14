@@ -130,7 +130,7 @@ export const PatternHelpDrawer = () => {
         {/* SheetContent is not a flex column, so the header and footer only stay pinned once it is.
             `container` opts out of the dialog's PortalContainerProvider — DialogContent is
             transformed and `overflow-hidden`, so it would clip this fixed panel.
-            `size="full"` drops the variant's 36rem cap; Chakra's drawer `xl` was 56rem. */}
+            `size="full"` drops the variant's 36rem cap, which is too narrow for this content. */}
         <SheetContent
           className="flex flex-col overflow-hidden sm:max-w-4xl"
           container={document.body}

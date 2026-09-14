@@ -377,7 +377,7 @@ function renderPartitionError(partition: Partition) {
 
   return (
     <Popover>
-      {/* Hover-to-open, as the Chakra popover was. */}
+      {/* Hover-to-open. */}
       <PopoverTrigger
         delay={200}
         openOnHover
@@ -401,7 +401,7 @@ function renderPartitionError(partition: Partition) {
 function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
     <Popover>
-      {/* Hover-to-open, as the Chakra popover was. */}
+      {/* Hover-to-open. */}
       <PopoverTrigger
         delay={200}
         openOnHover

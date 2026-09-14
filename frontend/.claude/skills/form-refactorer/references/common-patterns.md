@@ -423,7 +423,6 @@ z.object({
 ```tsx
 // WRONG:
 import { Form } from "components/redpanda-ui/components/form";
-import { Form } from "@redpanda-data/ui";
 
 // CORRECT:
 import { Field, FieldLabel } from "components/redpanda-ui/components/field";

@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * Smoke coverage for the reassign-partitions wizard — 45 distinct Chakra symbols and
- * three steps of state, with no Playwright spec until now.
+ * Smoke coverage for the reassign-partitions wizard: three steps of shared state.
  *
  * It walks step 1 → step 2 and back, because the step state is the thing a re-skin
  * can break invisibly: the wizard owns `currentStep` and every guard reads it, and
