@@ -50,7 +50,7 @@ export default defineConfig({
     },
   },
   resolve: {
-    // Copied: the test projects share this object, and rspack normalises resolve.alias in place.
+    // Spread, not shared: rspack normalises resolve.alias in place.
     alias: { ...sharedAliases },
   },
   output: {

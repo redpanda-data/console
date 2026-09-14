@@ -179,15 +179,8 @@ const SUPPRESSED_PATTERNS = [
   /socket hang up/,
   /ECONNREFUSED/,
   /ECONNRESET/,
-  // The Registry Accordion renders each item's trigger as a real <button>. The
-  // consumer-group topic view (pages/consumers/group-details.tsx)
-  // intentionally keeps the per-topic action controls (edit/delete offsets, "Go to topic")
-  // in that always-visible header for discoverability; relocating them into the collapsed
-  // panel was considered and rejected as a UX regression. That choice nests <button> inside
-  // <button> (invalid HTML). Suppressed pending an Accordion API that supports header-level
-  // actions rendered outside the trigger button — not fixable without changing UX here.
-  // (React logs this as a `%s ... <%s>` template with the tag names as separate args, so we
-  // match the phrase + the <button> token rather than the interpolated string.)
+  // group-details.tsx nests its per-topic actions in the Accordion trigger's own <button>.
+  // Matches phrase and tag separately: React logs it as a `%s ... <%s>` template.
   /cannot appear as a descendant of[\s\S]*<button>/,
 ];
 

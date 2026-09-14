@@ -377,11 +377,8 @@ export function createGroupedSidebarItems(): SidebarGroupedItems[] {
 
   for (const item of SIDEBAR_ITEMS) {
     const processed = processSidebarItem(item);
-    if (processed && item.group) {
-      const list = groupMap.get(item.group);
-      if (list) {
-        list.push(processed);
-      }
+    if (processed) {
+      groupMap.get(item.group)?.push(processed);
     }
   }
 

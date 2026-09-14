@@ -580,8 +580,7 @@ const SchemaEditor = (p: {
             <FieldLabel>Context</FieldLabel>
             <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
             <Combobox
-              // EMBEDDED ONLY since PR 13: the cloud-ui host's Chakra overrides SVG display, which
-              // knocks the icons off-center. Goes with cloud-ui's Chakra exit.
+              // index.scss's base `svg` rule offsets the icons; pl-8 clears the search icon.
               className="[&_svg]:block! [&_input]:pl-8!"
               creatable
               createLabel="context"

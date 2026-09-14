@@ -72,7 +72,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
   // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
   // remounts the header's sort menu out from under the pointer.
   private readonly columns: DataTableColumnDef<TopicWithMoves>[] = [
-    // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+    // `subComponent` renders no affordance of its own, so the expander is explicit.
     {
       id: 'expander',
       enableSorting: false,

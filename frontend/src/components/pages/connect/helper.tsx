@@ -845,14 +845,10 @@ export const TaskState = (p: {
 };
 
 export const okIcon = <CheckCircleIcon className="text-success" />;
-export const warnIcon = <WarningIcon color="orange" />;
-export const errIcon = <AlertIcon color="orangered" />;
-const waitIcon = <HourglassIcon color="#888" />;
-const pauseIcon = (
-  <span style={{ color: '#555' }}>
-    <PauseCircleIcon />
-  </span>
-);
+export const warnIcon = <WarningIcon className="text-warning" />;
+export const errIcon = <AlertIcon className="text-destructive" />;
+const waitIcon = <HourglassIcon className="text-muted-foreground" />;
+const pauseIcon = <PauseCircleIcon className="text-muted-foreground" />;
 
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
