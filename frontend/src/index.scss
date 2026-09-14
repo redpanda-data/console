@@ -315,8 +315,8 @@
   font-size: 85%;
   font-family: monospace;
 
-  background: rgb(241, 241, 241);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--color-surface-recess);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 3px;
 }
 
@@ -671,10 +671,6 @@ tr.consumerGroupNoMemberAssigned {
 
   div.brokerConfigView {
     padding: 16px 16px 8px 16px;
-  }
-
-  .codeBox {
-    background: hsl(0, 45%, 80%);
   }
 }
 
@@ -1751,7 +1747,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       align-items: center;
       gap: 4px;
 
-      background: hsl(0deg, 0%, 97%);
+      background: var(--color-surface-recess);
 
       height: 32px;
       // padding: 0px 4px;
@@ -1768,7 +1764,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         width: 28px;
         margin-left: 2px;
         padding-top: 1px;
-        color: hsl(0deg, 0%, 70%);
+        color: var(--color-subtle);
 
         transform: scale(0.8);
       }
@@ -1780,7 +1776,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 
       // Normal
       .ghostInput:not(:focus-within) {
-        border-color: transparent;
+        // The border colour is a Tailwind class on the element; unlayered !important would lose to it.
         background-color: transparent;
 
         transition: border-color 350ms ease-out, background-color 100ms ease-out;
@@ -1805,7 +1801,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         // margin-right: 4px;
         padding-right: 2px;
 
-        color: hsl(0deg, 0%, 70%);
+        color: var(--color-subtle);
         cursor: pointer;
 
         opacity: 0; // only visible on hover
@@ -1816,8 +1812,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         }
 
         &:hover {
-          color: hsl(0, 0%, 45%);
-          background: hsl(0, 0%, 95%);
+          color: var(--color-foreground);
+          background: var(--color-surface-subtle);
         }
       }
 
@@ -1969,17 +1965,20 @@ nav.chakra-breadcrumb {
   }
 }
 
-p,
-dl,
-dd,
-ol,
-ul,
-h1,
-h2,
-h3,
-h4,
-h5 {
-  margin-bottom: 0;
+// In @layer base so spacing utilities on these elements still apply.
+@layer base {
+  p,
+  dl,
+  dd,
+  ol,
+  ul,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    margin-bottom: 0;
+  }
 }
 
 .BreadcrumbHeading,
@@ -2007,3 +2006,31 @@ $borderRadius: 8px;
   user-select: none;
 }
 
+// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above Chakra's
+// modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below mirrors
+// toast.tsx with the vertical signs flipped; it goes once the registry has a position prop. Keyed
+// on the console test id so it cannot reach a host app's viewport.
+[data-slot='toast-viewport'][data-testid='console-toasts'] {
+  top: 1rem;
+  bottom: auto;
+  z-index: 1500;
+
+  [data-slot='toast'] {
+    top: 0;
+    bottom: auto;
+    transform-origin: top;
+    --offset-y: calc(var(--toast-offset-y) + var(--toast-index) * var(--gap) + var(--toast-swipe-movement-y));
+    transform: translateX(var(--toast-swipe-movement-x))
+      translateY(calc(var(--toast-swipe-movement-y) + var(--toast-index) * var(--peek) + var(--shrink) * var(--height)))
+      scale(var(--scale));
+
+    &[data-expanded] {
+      transform: translateX(var(--toast-swipe-movement-x)) translateY(var(--offset-y));
+    }
+
+    &[data-starting-style],
+    &[data-ending-style]:not([data-limited]):not([data-swipe-direction]) {
+      transform: translateY(-150%);
+    }
+  }
+}

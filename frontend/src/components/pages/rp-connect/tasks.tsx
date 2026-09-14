@@ -24,3 +24,12 @@ export function tasksToCPU(tasks: number | undefined): string | undefined {
   }
   return `${tasks * 100}m`;
 }
+
+/** The Registry Input enforces neither `min` nor `max`, where Chakra's NumberInput enforced both. */
+export function clampTasks(value: string | number): number {
+  const tasks = Number(value);
+  if (!Number.isFinite(tasks) || tasks < MIN_TASKS) {
+    return MIN_TASKS;
+  }
+  return Math.min(Math.trunc(tasks), MAX_TASKS);
+}

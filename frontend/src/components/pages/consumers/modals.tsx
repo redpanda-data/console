@@ -813,6 +813,8 @@ const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; sel
   const table = useDataTable({
     data: items,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting },
     onSortingChange: setSorting,
   });

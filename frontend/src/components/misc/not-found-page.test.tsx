@@ -14,15 +14,6 @@ const { mockConfig, mockLocation, mockRouter } = rs.hoisted(() => ({
   },
 }));
 
-rs.mock('@redpanda-data/ui', () => ({
-  Center: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Heading: ({ as: Component = 'h2', children }: { as?: 'h1' | 'h2'; children: React.ReactNode }) => (
-    <Component>{children}</Component>
-  ),
-  Image: ({ alt, src }: { alt: string; src: string }) => <img alt={alt} src={src} />,
-  Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
 rs.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, ...props }: { children: React.ReactNode; to: string }) => (
     <a href={to} {...props}>

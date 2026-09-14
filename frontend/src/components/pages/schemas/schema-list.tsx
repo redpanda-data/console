@@ -470,6 +470,8 @@ const SchemaList: FC = () => {
   const table = useDataTable({
     data: enrichedSubjects,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination, columnFilters },
     onSortingChange: setSorting,
     onPaginationChange: handlePaginationChange,

@@ -7,7 +7,6 @@ import { cleanup } from '@testing-library/react';
 import _rawUserEvent from '@testing-library/user-event';
 import './src/utils/array-extensions';
 import './tests/mock-document';
-import './tests/mock-react-select';
 
 import { cleanupTestHarness } from './tests/harness-cleanup';
 import { createMemoryStorage } from './tests/memory-storage';

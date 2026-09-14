@@ -1,6 +1,7 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { Box, Flex, IconButton, Text, Tooltip } from '@redpanda-data/ui';
 import { TrashIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 import { config } from '../../config';
 import type {
@@ -32,8 +33,8 @@ const DebugBundleLink = ({
   }
 
   return (
-    <Box>
-      <Flex alignItems="center" gap={1}>
+    <div>
+      <div className="flex items-center gap-1">
         <button
           className="cursor-pointer border-none bg-transparent p-0 font-medium text-primary underline underline-offset-4"
           onClick={() => {
@@ -73,24 +74,31 @@ const DebugBundleLink = ({
           {downloadFilename}
         </button>
         {Boolean(showDeleteButton) && (
-          <Tooltip hasArrow label="Delete bundle" placement="top">
-            <IconButton
-              aria-label="Delete file"
-              icon={<TrashIcon />}
-              onClick={() => {
-                api.deleteDebugBundleFile().catch(() => {
-                  // Error handling should be managed by the API layer
-                });
-              }}
-              variant="destructive-ghost"
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label="Delete file"
+                  onClick={() => {
+                    api.deleteDebugBundleFile().catch(() => {
+                      // Error handling should be managed by the API layer
+                    });
+                  }}
+                  size="icon-sm"
+                  variant="destructive-ghost"
+                >
+                  <TrashIcon />
+                </Button>
+              }
             />
+            <TooltipContent side="top">Delete bundle</TooltipContent>
           </Tooltip>
         )}
-      </Flex>
+      </div>
       {Boolean(showDatetime) && statusWithFilename.createdAt && (
-        <Text>Generated {timestampDate(statusWithFilename.createdAt).toLocaleString()}</Text>
+        <div>Generated {timestampDate(statusWithFilename.createdAt).toLocaleString()}</div>
       )}
-    </Box>
+    </div>
   );
 };
 

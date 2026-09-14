@@ -10,31 +10,23 @@
  */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
-import {
-  Box,
-  Button,
-  createStandaloneToast,
-  Flex,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  redpandaTheme,
-  redpandaToastOptions,
-  Step,
-  StepIcon,
-  StepIndicator,
-  StepNumber,
-  Stepper,
-  StepSeparator,
-  StepStatus,
-} from '@redpanda-data/ui';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Stat } from 'components/redpanda-ui/components/stat';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
+import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
 import { ActiveReassignments } from './components/active-reassignments';
+import { WizardSteps } from './components/wizard-steps';
 import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';
 import { ReassignmentTracker } from './logic/reassignment-tracker';
 import {
@@ -65,7 +57,6 @@ import { showErrorModal } from '../../misc/error-modal';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
-import { Statistic } from '../../misc/statistic';
 import { PageComponent, type PageInitHelper } from '../page';
 
 export type PartitionSelection = {
@@ -75,16 +66,6 @@ export type PartitionSelection = {
 
 const reassignmentTracker = new ReassignmentTracker();
 export { reassignmentTracker };
-
-// TODO - once ReassignPartitions is migrated to FC, we could should move this code to use useToast()
-const { ToastContainer, toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: {
-    ...redpandaToastOptions.defaultOptions,
-    isClosable: true,
-    duration: 2000,
-  },
-});
 
 type ReassignPartitionsState = {
   removeThrottleFromTopicsContent: string[] | null;
@@ -219,233 +200,234 @@ class ReassignPartitions extends PageComponent {
     const nextButtonHelp = typeof nextButtonCheck === 'string' ? (nextButtonCheck as string) : null;
 
     return (
-      <>
-        <ToastContainer />
-        <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
-          <PageContent>
-            <NullFallbackBoundary>
-              <FeatureLicenseNotification featureName="reassignPartitions" />
-            </NullFallbackBoundary>
+      <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
+        <PageContent>
+          <NullFallbackBoundary>
+            <FeatureLicenseNotification featureName="reassignPartitions" />
+          </NullFallbackBoundary>
 
-            {/* Statistics */}
-            <Section py={4}>
-              <Flex>
-                <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
-                <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
-                <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
-                <Statistic
-                  title="Total Partitions"
-                  value={
-                    partitionCountLeaders !== null && partitionCountOnlyReplicated !== null
-                      ? partitionCountLeaders + partitionCountOnlyReplicated
-                      : '...'
-                  }
-                />
-              </Flex>
-            </Section>
-
-            {/* Active Reassignments */}
-            <Section id="activeReassignments">
-              <ActiveReassignments
-                onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
-                throttledTopics={this.state.topicsWithThrottle}
+          {/* Statistics */}
+          <Section className="py-4">
+            {/* Scoped: step 1's SelectionInfoBar repeats these labels. */}
+            <div className="flex gap-8" data-testid="cluster-statistics">
+              <Stat label="Broker Count" size="lg" value={api.clusterInfo?.brokers.length} />
+              <Stat label="Leader Partitions" size="lg" value={partitionCountLeaders ?? '...'} />
+              <Stat label="Replica Partitions" size="lg" value={partitionCountOnlyReplicated ?? '...'} />
+              <Stat
+                label="Total Partitions"
+                size="lg"
+                value={
+                  partitionCountLeaders !== null && partitionCountOnlyReplicated !== null
+                    ? partitionCountLeaders + partitionCountOnlyReplicated
+                    : '...'
+                }
               />
-            </Section>
+            </div>
+          </Section>
+
+          {/* Active Reassignments */}
+          <Section id="activeReassignments">
+            <ActiveReassignments
+              onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
+              throttledTopics={this.state.topicsWithThrottle}
+            />
+          </Section>
+
+          {/* Content */}
+          <Section id="wizard">
+            {/* Steps */}
+            <div style={{ margin: '.75em 1em 1em 1em' }}>
+              <WizardSteps currentStep={currentStep} steps={steps} />
+            </div>
 
             {/* Content */}
-            <Section id="wizard">
-              {/* Steps */}
-              <div style={{ margin: '.75em 1em 1em 1em' }}>
-                <Stepper colorScheme="brand" index={currentStep}>
-                  {steps.map((item) => (
-                    <Step key={item.title} title={item.title}>
-                      <StepIndicator>
-                        <StepStatus active={<StepNumber />} complete={<StepIcon />} incomplete={<StepNumber />} />
-                      </StepIndicator>
-                      <Box>{item.title}</Box>
-                      <StepSeparator />
-                    </Step>
-                  ))}
-                </Stepper>
+            <motion.div {...animProps} key={`step${currentStep}`}>
+              {' '}
+              {(() => {
+                switch (currentStep) {
+                  case 0:
+                    return (
+                      <StepSelectPartitions
+                        onPartitionSelectionChange={(newSelection) =>
+                          this.setState({ partitionSelection: newSelection })
+                        }
+                        partitionSelection={partitionSelection}
+                        throttledTopics={this.state.topicsWithThrottle}
+                      />
+                    );
+                  case 1:
+                    return (
+                      <StepSelectBrokers
+                        onSelectionChange={(newIds) => this.setState({ selectedBrokerIds: newIds })}
+                        partitionSelection={partitionSelection}
+                        selectedBrokerIds={selectedBrokerIds}
+                      />
+                    );
+                  case 2:
+                    return (
+                      <StepReview
+                        // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+                        assignments={reassignmentRequest!}
+                        partitionSelection={partitionSelection}
+                        reassignPartitions={this}
+                        topicsWithMoves={this.topicsWithMoves}
+                      />
+                    );
+                  default:
+                    return null;
+                }
+              })()}
+            </motion.div>
+
+            {/* Navigation */}
+            <div
+              style={{
+                margin: '2.5em 0 1.5em',
+                display: 'flex',
+                alignItems: 'flex-end',
+                height: '2.5em',
+              }}
+            >
+              {/* Back */}
+              {Boolean(step.backButton) && (
+                <Button
+                  className="min-w-56"
+                  disabled={currentStep <= 0 || requestInProgress}
+                  onClick={this.onPreviousPage}
+                >
+                  <span>
+                    <ChevronLeftIcon />
+                  </span>
+                  <span>{step.backButton}</span>
+                </Button>
+              )}
+
+              {/* Next */}
+              <div className="ml-auto flex items-center gap-8">
+                <div>{nextButtonHelp}</div>
+                <Button
+                  className="min-w-56"
+                  disabled={!nextButtonEnabled || requestInProgress}
+                  onClick={this.onNextPage}
+                  variant="primary"
+                >
+                  <span>{step.nextButton.text}</span>
+                  <span>
+                    <ChevronRightIcon />
+                  </span>
+                </Button>
               </div>
-
-              {/* Content */}
-              <motion.div {...animProps} key={`step${currentStep}`}>
-                {' '}
-                {(() => {
-                  switch (currentStep) {
-                    case 0:
-                      return (
-                        <StepSelectPartitions
-                          onPartitionSelectionChange={(newSelection) =>
-                            this.setState({ partitionSelection: newSelection })
-                          }
-                          partitionSelection={partitionSelection}
-                          throttledTopics={this.state.topicsWithThrottle}
-                        />
-                      );
-                    case 1:
-                      return (
-                        <StepSelectBrokers
-                          onSelectionChange={(newIds) => this.setState({ selectedBrokerIds: newIds })}
-                          partitionSelection={partitionSelection}
-                          selectedBrokerIds={selectedBrokerIds}
-                        />
-                      );
-                    case 2:
-                      return (
-                        <StepReview
-                          // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-                          assignments={reassignmentRequest!}
-                          partitionSelection={partitionSelection}
-                          reassignPartitions={this}
-                          topicsWithMoves={this.topicsWithMoves}
-                        />
-                      );
-                    default:
-                      return null;
-                  }
-                })()}
-              </motion.div>
-
-              {/* Navigation */}
-              <div
-                style={{
-                  margin: '2.5em 0 1.5em',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  height: '2.5em',
-                }}
-              >
-                {/* Back */}
-                {Boolean(step.backButton) && (
-                  <Button
-                    isDisabled={currentStep <= 0 || requestInProgress}
-                    onClick={this.onPreviousPage}
-                    style={{ minWidth: '14em' }}
-                  >
-                    <span>
-                      <ChevronLeftIcon />
-                    </span>
-                    <span>{step.backButton}</span>
-                  </Button>
-                )}
-
-                {/* Next */}
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
-                  <div>{nextButtonHelp}</div>
-                  <Button
-                    isDisabled={!nextButtonEnabled || requestInProgress}
-                    onClick={this.onNextPage}
-                    style={{ minWidth: '14em', marginLeft: 'auto' }}
-                    variant="solid"
-                  >
-                    <span>{step.nextButton.text}</span>
-                    <span>
-                      <ChevronRightIcon />
-                    </span>
-                  </Button>
-                </div>
-              </div>
-            </Section>
-          </PageContent>
-          <Modal
-            isOpen={this.state.removeThrottleFromTopicsContent !== null}
-            onClose={() => {
+            </div>
+          </Section>
+        </PageContent>
+        <Dialog
+          onOpenChange={(open) => {
+            if (!open) {
               this.setState({ removeThrottleFromTopicsContent: null });
-            }}
-          >
-            <ModalOverlay />
-            <ModalContent minW="5xl">
-              <ModalHeader>
-                <Flex alignItems="center" gap={2}>
+            }
+          }}
+          open={this.state.removeThrottleFromTopicsContent !== null}
+        >
+          {/* Nearest rung to the old 64rem minimum. */}
+          <DialogContent size="xl">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="flex items-center gap-2">
                   <AlertIcon size={18} />
                   Remove throttle config from topics
-                </Flex>
-              </ModalHeader>
-              <ModalBody>
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <div>
                 <div>
-                  <div>
-                    There are {this.state.topicsWithThrottle.length} topics with throttling applied to their replicas.
-                    <br />
-                    Kowl implements throttling of reassignments by setting{' '}
-                    <span className="tooltip" style={{ textDecoration: 'dotted underline' }}>
-                      two configuration values
-                      <span className="tooltiptext" style={{ textAlign: 'left', width: '500px' }}>
+                  There are {this.state.topicsWithThrottle.length} topics with throttling applied to their replicas.
+                  <br />
+                  Kowl implements throttling of reassignments by setting{' '}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <span className="cursor-help underline decoration-dotted" tabIndex={0}>
+                            two configuration values
+                          </span>
+                        }
+                      />
+                      <TooltipContent className="max-w-[500px] text-left">
                         Kowl sets those two configuration entries when throttling a topic reassignment:
-                        <div style={{ marginTop: '.5em' }}>
+                        <div className="mt-2">
                           <code>leader.replication.throttled.replicas</code>
                           <br />
                           <code>follower.replication.throttled.replicas</code>
                         </div>
-                      </span>
-                    </span>{' '}
-                    in a topics configuration.
-                    <br />
-                    So if you previously used Kowl to reassign any of the partitions of the following topics, the
-                    throttling config might still be active.
-                  </div>
-                  <div style={{ margin: '1em 0' }}>
-                    <h4>Throttled Topics</h4>
-                    <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
-                      {this.state.removeThrottleFromTopicsContent?.map((t) => (
-                        <li key={t}>{t}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>Do you want to remove the throttle config from those topics?</div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>{' '}
+                  in a topics configuration.
+                  <br />
+                  So if you previously used Kowl to reassign any of the partitions of the following topics, the
+                  throttling config might still be active.
                 </div>
-              </ModalBody>
-              <ModalFooter gap={2}>
-                <Button
-                  onClick={() => {
-                    this.setState({ removeThrottleFromTopicsContent: null });
-                  }}
-                  variant="ghost"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  colorScheme="red"
-                  onClick={async () => {
-                    if (this.state.removeThrottleFromTopicsContent === null) {
-                      return;
-                    }
-                    const baseText = 'Removing throttle config from topics';
+                <div style={{ margin: '1em 0' }}>
+                  <h4>Throttled Topics</h4>
+                  <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
+                    {this.state.removeThrottleFromTopicsContent?.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>Do you want to remove the throttle config from those topics?</div>
+              </div>
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  this.setState({ removeThrottleFromTopicsContent: null });
+                }}
+                variant="ghost"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (this.state.removeThrottleFromTopicsContent === null) {
+                    return;
+                  }
+                  const baseText = 'Removing throttle config from topics';
 
-                    const toastId = toast({
-                      status: 'loading',
-                      description: `${baseText}...`,
-                      duration: null,
+                  const toastId = showToast({
+                    status: 'loading',
+                    description: `${baseText}...`,
+                  });
+
+                  const result = await api.resetThrottledReplicas(this.state.removeThrottleFromTopicsContent);
+                  const errors = result.patchedConfigs.filter((r) => r.error);
+
+                  if (errors.length === 0) {
+                    updateToast(toastId, {
+                      status: 'success',
+                      description: `${baseText} - Done`,
+                      duration: 2500,
                     });
+                  } else {
+                    updateToast(toastId, {
+                      status: 'error',
+                      description: `${baseText}: ${errors.length} errors`,
+                      duration: 2500,
+                    });
+                  }
 
-                    const result = await api.resetThrottledReplicas(this.state.removeThrottleFromTopicsContent);
-                    const errors = result.patchedConfigs.filter((r) => r.error);
-
-                    if (errors.length === 0) {
-                      toast.update(toastId, {
-                        status: 'success',
-                        description: `${baseText} - Done`,
-                        duration: 2500,
-                      });
-                    } else {
-                      toast.update(toastId, {
-                        status: 'error',
-                        description: `${baseText}: ${errors.length} errors`,
-                        duration: 2500,
-                      });
-                    }
-
-                    await this.refreshTopicConfigs();
-                  }}
-                >
-                  Remove throttle
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
-        </div>
-      </>
+                  await this.refreshTopicConfigs();
+                  this.setState({ removeThrottleFromTopicsContent: null });
+                }}
+                variant="destructive"
+              >
+                Remove throttle
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     );
   }
 
@@ -458,12 +440,13 @@ class ReassignPartitions extends PageComponent {
     });
 
     if (showSelectionWarning) {
-      toast({
+      showToast({
         status: 'warning',
         title: 'Selection has been reset',
         description:
           'Your selection contained brokers or partitions that are not available anymore after the refresh. \n' +
           'Your selection has been reset.',
+        duration: 2000,
       });
     }
 
@@ -521,7 +504,7 @@ class ReassignPartitions extends PageComponent {
       // Review -> Start
       const request = this.state.reassignmentRequest;
       if (request === null) {
-        toast({
+        showToast({
           status: 'error',
           description: 'reassignment request was null',
           duration: 3000,
@@ -539,7 +522,7 @@ class ReassignPartitions extends PageComponent {
             this.resetSelectionAndPage(true, false);
           }
         } catch (_err) {
-          toast({
+          showToast({
             status: 'error',
             description: 'Error starting partition reassignment.\nSee console for more information.',
             duration: 3000,
@@ -567,10 +550,9 @@ class ReassignPartitions extends PageComponent {
       }
     }
 
-    const toastRef = toast({
+    const toastRef = showToast({
       status: 'loading',
       description: 'Starting reassignment',
-      duration: null,
     });
     try {
       const response = await api.startPartitionReassignment(request);
@@ -588,7 +570,7 @@ class ReassignPartitions extends PageComponent {
 
       if (errors.length === 0) {
         // No errors
-        toast.update(toastRef, {
+        updateToast(toastRef, {
           status: 'success',
           description: 'Reassignment successful',
           duration: 2500,
@@ -597,7 +579,7 @@ class ReassignPartitions extends PageComponent {
       }
       if (startedCount > 0) {
         // Some errors
-        toast.update(toastRef, {
+        updateToast(toastRef, {
           status: 'success',
           description: 'Reassignment successful',
           duration: 2500,
@@ -606,14 +588,15 @@ class ReassignPartitions extends PageComponent {
         return true;
       }
       // All errors
-      toast.update(toastRef, {
+      updateToast(toastRef, {
         status: 'error',
+        description: 'Reassignment failed',
         duration: 2500,
       });
       this.setReassignError(startedCount, errors);
       return false;
     } catch (_err) {
-      toast.close(toastRef);
+      closeToast(toastRef);
 
       return false;
     }
@@ -662,10 +645,9 @@ class ReassignPartitions extends PageComponent {
       });
     }
 
-    const toastRef = toast({
+    const toastRef = showToast({
       status: 'loading',
       description: 'Setting bandwidth throttle... 1/2',
-      duration: null,
     });
     try {
       const brokerIds = api.clusterInfo?.brokers.map((b) => b.brokerId) ?? [];
@@ -675,7 +657,7 @@ class ReassignPartitions extends PageComponent {
         throw new Error(toJson(errors));
       }
 
-      toast.update(toastRef, {
+      updateToast(toastRef, {
         description: 'Setting bandwidth throttle... 2/2',
         duration: 2500,
       });
@@ -686,14 +668,14 @@ class ReassignPartitions extends PageComponent {
         throw new Error(toJson(errors));
       }
 
-      toast.update(toastRef, {
+      updateToast(toastRef, {
         status: 'success',
         description: 'Setting bandwidth throttle... done',
         duration: 2500,
       });
       return true;
     } catch (_err) {
-      toast.close(toastRef);
+      closeToast(toastRef);
       return false;
     }
   }

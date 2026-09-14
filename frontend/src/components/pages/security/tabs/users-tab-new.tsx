@@ -231,6 +231,8 @@ export const UsersTabNew: FC = () => {
   const table = useDataTable({
     data: users,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination, columnFilters },
     onSortingChange: setSorting,
     onPaginationChange: handlePaginationChange,

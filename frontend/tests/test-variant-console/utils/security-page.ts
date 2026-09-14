@@ -31,7 +31,7 @@ export class SecurityPage {
    * User creation operations
    */
   async fillUsername(username: string) {
-    await this.page.getByLabel('Username').fill(username);
+    await this.page.getByTestId('create-user-name').fill(username);
   }
 
   async submitUserCreation() {

@@ -1,17 +1,18 @@
 import { create } from '@bufbuild/protobuf';
-import { Button, ButtonGroup, createStandaloneToast, Flex, FormField, Input, PasswordInput } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
 import { useState } from 'react';
 
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backend-api';
+import { showToast } from '../../../../utils/toast.utils';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import PageContent from '../../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
-
-const { ToastContainer, toast } = createStandaloneToast();
 
 const returnToListTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
 
@@ -59,10 +60,9 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
         })
       )
       .then(() => {
-        toast({
+        showToast({
           status: 'success',
           duration: 4000,
-          isClosable: false,
           title: 'Secret updated',
           id: 'secret-update-success',
         });
@@ -70,10 +70,8 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
         appGlobal.historyPush(returnToListTab);
       })
       .catch((err) => {
-        toast({
+        showToast({
           status: 'error',
-          duration: null,
-          isClosable: true,
           title: 'Failed to update secret',
           description: formatPipelineError(err),
         });
@@ -87,53 +85,59 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
 
   return (
     <PageContent>
-      <ToastContainer />
-      <Flex flexDirection="column" gap={5}>
-        <FormField label="Secret name">
-          <Flex alignItems="center" gap="2">
-            <Input
-              data-testid="secretId"
-              disabled={true}
-              isRequired
-              pattern="^[A-Z][A-Z0-9_]*$"
-              placeholder="Enter a secret name..."
-              value={secretId}
-              width={500}
-            />
-          </Flex>
-        </FormField>
+      <div className="flex flex-col gap-5">
+        <Field>
+          <FieldLabel htmlFor="secretId" required>
+            Secret name
+          </FieldLabel>
+          <Input
+            className="w-[500px]"
+            disabled={true}
+            id="secretId"
+            pattern="^[A-Z][A-Z0-9_]*$"
+            placeholder="Enter a secret name..."
+            required
+            testId="secretId"
+            value={secretId}
+          />
+        </Field>
 
-        <FormField label="Secret value">
-          <Flex alignItems="center" gap="2" width={500}>
-            <PasswordInput
-              data-testid="secretValue"
-              isDisabled={isUpdating}
-              isRequired
-              onChange={(x) => {
-                setSecret(x.target.value);
-              }}
-              placeholder="Enter a new secret value..."
-              type="password"
-              value={secret}
-              width={500}
-            />
-          </Flex>
-        </FormField>
+        <Field>
+          <FieldLabel htmlFor="secretValue" required>
+            Secret value
+          </FieldLabel>
+          <Input
+            className="w-[500px]"
+            disabled={isUpdating}
+            id="secretValue"
+            onChange={(x) => {
+              setSecret(x.target.value);
+            }}
+            placeholder="Enter a new secret value..."
+            required
+            testId="secretValue"
+            type="password"
+            value={secret}
+          />
+        </Field>
 
-        <ButtonGroup>
+        {/* The Registry ButtonGroup attaches its children, where Chakra's spaced them. */}
+        <div className="flex gap-2">
           <Button
-            data-testid="submit-update-secret"
-            isDisabled={isSecretEmpty}
+            // `isLoading` hides the label, so the button needs its own name.
+            aria-label="Update secret"
+            disabled={isSecretEmpty}
             isLoading={isUpdating}
             onClick={updateSecret}
+            testId="submit-update-secret"
           >
             Update secret
           </Button>
           <Button disabled={isUpdating} onClick={cancel} variant="link">
             Cancel
           </Button>
-        </ButtonGroup>
-      </Flex>
+        </div>
+      </div>
     </PageContent>
   );
 };

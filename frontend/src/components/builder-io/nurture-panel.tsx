@@ -7,9 +7,9 @@
  * @see https://www.builder.io/c/blueprints/announcement-bar
  */
 import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-react';
-import { Box, Skeleton, Text } from '@redpanda-data/ui';
 import { builderCustomComponents } from 'components/builder-io/builder-custom-components';
 import { BUILDER_API_KEY } from 'components/constants';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { isEmbedded } from 'config';
 import { useEffect, useState } from 'react';
 import { api } from 'state/backend-api';
@@ -63,44 +63,14 @@ export default function NurturePanel() {
   if (isLoading) {
     return (
       <>
-        <Box alignItems="flex-start" display="flex">
-          {/* Left thumbnail placeholder */}
-          <Skeleton borderRadius="md" height="80px" mr={4} width="120px" />
-
-          {/* Right content */}
-          <Box flex="1">
-            {/* Heading */}
-            <Skeleton height={4} mb={2} width="60%" />
-
-            {/* Paragraph */}
-            <Skeleton height={3} mb={1} width="90%" />
-            <Skeleton height={3} width="75%" />
-          </Box>
-        </Box>
-        <Box alignItems="flex-start" display="flex">
-          {/* Left thumbnail placeholder */}
-          <Skeleton borderRadius="md" height="80px" mr={4} width="120px" />
-
-          {/* Right content */}
-          <Box flex="1">
-            {/* Heading */}
-            <Skeleton height={4} mb={2} width="60%" />
-
-            {/* Paragraph */}
-            <Skeleton height={3} mb={1} width="90%" />
-            <Skeleton height={3} width="75%" />
-          </Box>
-        </Box>
+        <NurtureItemSkeleton />
+        <NurtureItemSkeleton />
       </>
     );
   }
 
   if (hasError || !(content || isPreviewing())) {
-    return (
-      <Box>
-        <Text>No updates available</Text>
-      </Box>
-    );
+    return <p className="text-body">No updates available</p>;
   }
 
   return (
@@ -117,3 +87,20 @@ export default function NurturePanel() {
     </>
   );
 }
+
+const NurtureItemSkeleton = () => (
+  <div className="flex items-start">
+    {/* Left thumbnail placeholder */}
+    <Skeleton className="mr-4 h-20 w-[120px]" />
+
+    {/* Right content */}
+    <div className="flex-1">
+      {/* Heading */}
+      <Skeleton className="mb-2 h-4 w-[60%]" />
+
+      {/* Paragraph */}
+      <Skeleton className="mb-1 h-3 w-[90%]" />
+      <Skeleton className="h-3 w-[75%]" />
+    </div>
+  </div>
+);

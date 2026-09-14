@@ -6,42 +6,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const testsDir = resolve(__dirname, '..');
 
-// Default license file path for enterprise variants
-const DEFAULT_LICENSE_PATH = resolve(
-  __dirname,
-  '../../../../console-enterprise/frontend/tests/config/redpanda.license'
-);
-
-/**
- * Check if a variant can run based on its requirements
- * @param {object} config - Variant configuration
- * @returns {{canRun: boolean, reason: string|null}}
- */
-function checkVariantRequirements(config) {
-  // Check if license is required and available
-  if (config.requiresLicense) {
-    const licensePath = process.env.REDPANDA_LICENSE_PATH || DEFAULT_LICENSE_PATH;
-    const hasLicenseEnv = Boolean(process.env.ENTERPRISE_LICENSE_CONTENT);
-    const hasLicenseFile = existsSync(licensePath);
-
-    if (!(hasLicenseEnv || hasLicenseFile)) {
-      return {
-        canRun: false,
-        reason: `License required but not found. Set ENTERPRISE_LICENSE_CONTENT env var or place license at ${licensePath}`,
-      };
-    }
-  }
-
-  return { canRun: true, reason: null };
-}
-
 /**
  * Discovers all test variants by scanning for test-variant-* directories
- * @param {{includeUnrunnable?: boolean}} options
- * @returns {Array<{name: string, path: string, config: object, canRun: boolean, skipReason: string|null}>}
+ * @returns {Array<{name: string, dirName: string, path: string, config: object}>}
  */
-export function discoverVariants(options = {}) {
-  const { includeUnrunnable = false } = options;
+export function discoverVariants() {
   const variants = [];
 
   const entries = readdirSync(testsDir, { withFileTypes: true });
@@ -54,18 +23,12 @@ export function discoverVariants(options = {}) {
       if (existsSync(configPath)) {
         try {
           const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-          const { canRun, reason } = checkVariantRequirements(config);
-
-          if (canRun || includeUnrunnable) {
-            variants.push({
-              name: config.name,
-              dirName: entry.name,
-              path: variantPath,
-              config,
-              canRun,
-              skipReason: reason,
-            });
-          }
+          variants.push({
+            name: config.name,
+            dirName: entry.name,
+            path: variantPath,
+            config,
+          });
         } catch (error) {
           console.error(`Error reading variant config at ${configPath}:`, error.message);
         }
@@ -84,16 +47,7 @@ export function discoverVariants(options = {}) {
  * @returns {object|null}
  */
 export function getVariant(name) {
-  // First check all variants (including unrunnable) to give better error messages
-  const allVariants = discoverVariants({ includeUnrunnable: true });
-  const variant = allVariants.find((v) => v.name === name);
-
-  if (variant && !variant.canRun) {
-    console.error(`Variant "${name}" found but cannot run: ${variant.skipReason}`);
-    process.exit(1);
-  }
-
-  return variant || null;
+  return discoverVariants().find((v) => v.name === name) ?? null;
 }
 
 /**

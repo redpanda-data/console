@@ -120,7 +120,7 @@ export const useCreateACLMutation = () => {
 // New ACL implementation
 
 // Used by ACLs tab and Permissions List tab in the security section.
-type SimpleAcl = {
+export type SimpleAcl = {
   host: string;
   principal: string;
   principalType: string;

@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from '@redpanda-data/ui';
-import type { FC } from 'react';
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { PortalContainerProvider } from 'components/redpanda-ui/lib/use-portal-container';
+import { type FC, useState } from 'react';
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { PreviewSettings } from '../preview-settings';
@@ -29,30 +29,44 @@ export const PreviewFieldsModal: FC<{
   setShowDialog: (val: boolean) => void;
   messages: TopicMessage[];
   topicName: string;
-}> = ({ getShowDialog, setShowDialog, messages, topicName }) => (
-  <Modal
-    isOpen={getShowDialog()}
-    onClose={() => {
-      setShowDialog(false);
-    }}
-  >
-    <ModalOverlay />
-    <ModalContent minW="4xl">
-      <ModalHeader>Preview fields</ModalHeader>
-      <ModalCloseButton />
-      <ModalBody>
-        <PreviewSettings messages={messages} topicName={topicName} />
-      </ModalBody>
-      <ModalFooter gap={2}>
-        <Button
-          colorScheme="red"
-          onClick={() => {
-            setShowDialog(false);
-          }}
-        >
-          Close
-        </Button>
-      </ModalFooter>
-    </ModalContent>
-  </Modal>
-);
+}> = ({ getShowDialog, setShowDialog, messages, topicName }) => {
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          setShowDialog(false);
+        }
+      }}
+      open={getShowDialog()}
+    >
+      {/* `xl` is `sm:max-w-4xl`, matching the Chakra modal's `minW="4xl"`. */}
+      <DialogContent size="xl">
+        {/* The PreviewSettings popover portals in here, inside the dialog's focus lock, as Chakra's did. */}
+        {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
+        <div className="flex min-h-0 flex-col" ref={setContainer}>
+          <PortalContainerProvider value={container ?? undefined}>
+            {/* Room for DialogContent's close button. */}
+            <DialogHeader className="pr-10">
+              <DialogTitle>Preview fields</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <PreviewSettings messages={messages} topicName={topicName} />
+            </DialogBody>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  setShowDialog(false);
+                }}
+                variant="destructive"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </PortalContainerProvider>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

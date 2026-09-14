@@ -590,21 +590,26 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     setResult(null);
     setIsLoading(true);
     try {
+      const requestedPartitionCount = values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1');
+      const requestedReplicationFactor =
+        values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1');
       const apiResult = await createTopic({
         topic: {
           name: values.topicName,
-          partitionCount: values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1'),
-          replicationFactor:
-            values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1'),
+          partitionCount: requestedPartitionCount,
+          replicationFactor: requestedReplicationFactor,
           configs: buildTopicConfigs(values),
         },
         validateOnly: false,
       });
 
+      // Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
+      // return -1 even when the request named explicit values, so fall back to what we asked for.
       setResult({
         topicName: apiResult.topicName,
-        partitionCount: apiResult.partitionCount,
-        replicationFactor: apiResult.replicationFactor,
+        partitionCount: apiResult.partitionCount === -1 ? requestedPartitionCount : apiResult.partitionCount,
+        replicationFactor:
+          apiResult.replicationFactor === -1 ? requestedReplicationFactor : apiResult.replicationFactor,
       });
       api.refreshClusterOverview();
       api.refreshClusterHealth().catch(() => {

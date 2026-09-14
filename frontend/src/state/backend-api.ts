@@ -15,7 +15,6 @@ import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createLinkedAbortController } from '@connectrpc/connect/protocol';
-import { createStandaloneToast, redpandaTheme, redpandaToastOptions } from '@redpanda-data/ui';
 import {
   consoleHasEnterpriseFeature,
   getLatestExpiringLicense,
@@ -166,6 +165,7 @@ import fetchWithTimeout from '../utils/fetch-with-timeout';
 import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
+import { showToast } from '../utils/toast.utils';
 import { ObjToKv } from '../utils/tsx-utils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
@@ -178,11 +178,6 @@ export const REST_CACHE_DURATION_SEC = 20;
  * generous working set; least-recently-used URLs are evicted and simply re-fetched on next use.
  */
 const REST_CACHE_MAX_ENTRIES = 500;
-
-const { toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: redpandaToastOptions.defaultOptions,
-});
 
 declare const registry: Registry;
 
@@ -2640,10 +2635,11 @@ export function createMessageSearch() {
                 // error doesn't necessarily mean the whole request is done
                 // biome-ignore lint/suspicious/noConsole: intentional console usage
                 console.info(`ws backend error: ${res.controlMessage.value.message}`);
-                toast({
+                showToast({
                   title: 'Backend Error',
                   description: res.controlMessage.value.message,
                   status: 'error',
+                  duration: 5000,
                 });
 
                 break;
@@ -3000,10 +2996,13 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
           (status: any) =>
             status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
         );
-      case 'debugBundleStatus':
-        return s.debugBundleStatuses
+      case 'debugBundleStatus': {
+        // The running job's status when there is one; other brokers can still report an older bundle.
+        const bundleStatuses: DebugBundleStatus[] = s.debugBundleStatuses
           .filter((status: any) => status.value.case === 'bundleStatus')
-          .map((x: any) => x.value.value as DebugBundleStatus)[0];
+          .map((x: any) => x.value.value as DebugBundleStatus);
+        return bundleStatuses.find((x) => x.status === DebugBundleStatus_Status.RUNNING) ?? bundleStatuses[0];
+      }
       default:
         return (s as any)[prop as string];
     }

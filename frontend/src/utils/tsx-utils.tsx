@@ -9,26 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  Box,
-  createStandaloneToast,
-  Flex,
-  type PlacementWithLogical,
-  Progress,
-  RadioGroup,
-  redpandaTheme,
-  redpandaToastOptions,
-  Skeleton,
-  Text,
-  type ToastId,
-  Tooltip,
-} from '@redpanda-data/ui';
 import { CopyIcon, DownloadIcon, InfoIcon } from 'components/icons';
+import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
 import React, { Component, type CSSProperties, type JSX, useEffect, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
+import { closeToast, showToast, updateToast } from './toast.utils';
 import { prettyMilliseconds, simpleUniqueId } from './utils';
 import type { TimestampDisplayFormat } from '../state/ui';
 
@@ -256,7 +246,7 @@ export const InfoText = (p: {
 
   maxWidth?: string;
   align?: 'center' | 'left';
-  placement?: PlacementWithLogical;
+  placement?: 'top' | 'bottom' | 'left' | 'right';
 
   gap?: string;
   transform?: string;
@@ -268,7 +258,6 @@ export const InfoText = (p: {
   const gap = p.gap ?? '4px';
 
   const gray = 'var(--color-subtle)';
-  // const blue = 'hsl(209deg, 100%, 55%)';
   const color = p.iconColor ?? gray;
   const placement = p.placement ?? 'top';
 
@@ -288,23 +277,24 @@ export const InfoText = (p: {
     </span>
   );
 
+  const tooltip = (
+    <Tooltip>
+      <TooltipTrigger render={<span style={{ display: 'inline-flex', alignItems: 'center' }} />}>
+        {p.tooltipOverText === true ? p.children : null}
+        {icon}
+      </TooltipTrigger>
+      <TooltipContent side={placement}>{overlay}</TooltipContent>
+    </Tooltip>
+  );
+
   if (p.tooltipOverText === true) {
-    return (
-      <Tooltip hasArrow label={overlay} placement={placement}>
-        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-          {p.children}
-          {icon}
-        </span>
-      </Tooltip>
-    );
+    return tooltip;
   }
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
       {p.children}
-      <Tooltip hasArrow label={overlay} placement={placement}>
-        {icon}
-      </Tooltip>
+      {tooltip}
     </span>
   );
 };
@@ -322,17 +312,23 @@ export class OptionGroup<T extends string> extends Component<{
 
     return (
       <Label text={p.label}>
-        <RadioGroup
-          name={p.label}
-          onChange={(val) => {
-            p.onChange(val);
+        <ToggleGroup
+          aria-label={p.label}
+          onValueChange={([next]) => {
+            // Single-select: ignore the deselect that toggling the active segment reports.
+            if (next !== undefined && next !== p.value) {
+              p.onChange(next as T);
+            }
           }}
-          options={ObjToKv(p.options).map((kv) => ({
-            value: String(kv.value),
-            label: kv.key,
-          }))}
-          value={p.value}
-        />
+          value={[p.value]}
+          variant="outline"
+        >
+          {ObjToKv(p.options).map((kv) => (
+            <ToggleGroupItem key={kv.key} value={String(kv.value)}>
+              {kv.key}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </Label>
     );
   }
@@ -347,17 +343,9 @@ type StatusIndicatorProps = {
   progressText: string;
 };
 
-// TODO - once StatusIndicator is migrated to FC, we could should move this code to use useToast()
-const { ToastContainer, toast } = createStandaloneToast({
-  theme: redpandaTheme,
-  defaultOptions: {
-    ...redpandaToastOptions.defaultOptions,
-    isClosable: false,
-  },
-});
-
 export class StatusIndicator extends Component<StatusIndicatorProps, { showWaitingText: boolean }> {
-  toastRef: ToastId | null = null;
+  toastRef: string | null = null;
+  dismissed = false;
 
   timerHandle: NodeJS.Timeout;
   lastUpdateTimestamp: number;
@@ -406,58 +394,75 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
   componentWillUnmount() {
     clearInterval(this.timerHandle);
     if (this.toastRef) {
-      toast.close(this.toastRef);
+      closeToast(this.toastRef);
     }
     this.toastRef = null;
   }
 
   customRender() {
+    if (this.dismissed) {
+      return;
+    }
+    const indeterminate = this.props.statusText === 'Connecting';
+    const percent = Math.round(this.props.fillFactor * 100);
+    const showCounters = Boolean(this.props.bytesConsumed && this.props.messagesConsumed);
+
+    // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
     const content = (
-      <Box mb="0.2em">
-        <Box minW={300}>
-          <Progress
-            colorScheme="blue"
-            isIndeterminate={this.props.statusText === 'Connecting'}
-            value={this.props.fillFactor * 100}
+      <span className="flex flex-col gap-1 text-body text-foreground">
+        <span
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={indeterminate ? undefined : percent}
+          className="block h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
+          role="progressbar"
+        >
+          <span
+            className={
+              indeterminate
+                ? 'block h-full w-full animate-pulse rounded-full bg-primary'
+                : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
+            }
+            style={indeterminate ? undefined : { width: `${percent}%` }}
           />
-        </Box>
-        <Flex fontSize="sm" fontWeight="bold">
-          <div>
+        </span>
+        <span className="flex font-semibold">
+          <span>
             {this.state.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}
-          </div>
-          <Text ml="auto" pl="2em">
-            {this.props.progressText}
-          </Text>
-        </Flex>
-        {Boolean(this.props.bytesConsumed && this.props.messagesConsumed) && (
-          <Flex fontSize="sm" fontWeight="bold" justifyContent="space-between">
-            <Flex alignItems="center" gap={2}>
+          </span>
+          <span className="ml-auto pl-8">{this.props.progressText}</span>
+        </span>
+        {showCounters ? (
+          <span className="flex justify-between font-semibold">
+            <span className="inline-flex items-center gap-2">
               <DownloadIcon className="text-brand" size={14} /> {this.props.bytesConsumed}
-            </Flex>
-            <Flex alignItems="center" gap={2}>
+            </span>
+            <span className="inline-flex items-center gap-2">
               <CopyIcon className="text-brand" size={14} /> {this.props.messagesConsumed} messages
-            </Flex>
-          </Flex>
-        )}
-      </Box>
+            </span>
+          </span>
+        ) : null}
+      </span>
     );
 
     if (this.toastRef === null) {
-      this.toastRef = toast({
+      this.toastRef = showToast({
         status: 'info',
         description: content,
         duration: null,
+        // A closed progress toast stays closed for this search.
+        onClose: () => {
+          this.toastRef = null;
+          this.dismissed = true;
+        },
       });
     } else {
-      toast.update(this.toastRef, {
-        description: content,
-        duration: null,
-      });
+      updateToast(this.toastRef, { description: content });
     }
   }
 
   render() {
-    return <ToastContainer />;
+    return null;
   }
 }
 
@@ -497,10 +502,9 @@ export class ZeroSizeWrapper extends Component<{
 }
 
 const defaultSkeletonStyle = { margin: '2rem' };
-const innerSkeleton = <Skeleton height={4} noOfLines={8} />;
 export const DefaultSkeleton = (
   <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
-    {innerSkeleton}
+    <SkeletonText lines={8} width="full" />
   </motion.div>
 );
 
@@ -524,8 +528,9 @@ export const Code = (p: { children?: React.ReactNode; nowrap?: boolean }) => {
 };
 
 export const navigatorClipboardErrorHandler = (e: DOMException) => {
-  toast({
+  showToast({
     status: 'error',
+    duration: 5000,
     description: 'Unable to copy settings to clipboard. See console for more information.',
   });
   // biome-ignore lint/suspicious/noConsole: error logging for debugging clipboard failures

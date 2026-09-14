@@ -169,6 +169,8 @@ export const RolesTabNew: FC = () => {
   const table = useDataTable({
     data: rolesWithMembers,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination, columnFilters },
     onSortingChange: setSorting,
     onPaginationChange: handlePaginationChange,

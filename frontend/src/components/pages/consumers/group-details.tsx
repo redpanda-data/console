@@ -454,6 +454,8 @@ const PartitionTable = ({
   const table = useDataTable({
     data: partitions,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,

@@ -9,20 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import { type ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
-import type { ReactNode } from 'react';
+import { Card, type CardProps } from 'components/redpanda-ui/components/card';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import type { CSSProperties } from 'react';
 
-// Note: this component is intended to be temporary until all components are migrated @redpanda-data/ui
-function Section(props: { children: ReactNode; id?: string } & ChakraProps) {
+type SectionProps = Pick<CardProps, 'children' | 'id' | 'className'> & {
+  // Grid placement only; everything else is a class.
+  style?: Pick<CSSProperties, 'gridArea'>;
+};
+
+// Legacy page section: block flow and Section's padding on a Card. New pages compose Card directly.
+function Section({ children, id, className, style }: SectionProps) {
   return (
-    <ChakraSection
-      border="1px solid var(--color-border)"
-      borderRadius="8px"
-      boxShadow="var(--shadow-elevated)"
-      px={6}
-      py={6}
-      {...props}
-    />
+    <Card className={cn('block px-6', className)} id={id} size="full" style={style}>
+      {children}
+    </Card>
   );
 }
 

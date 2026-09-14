@@ -9,18 +9,32 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, DataTable, Empty } from '@redpanda-data/ui';
-import { Component } from 'react';
+import { ChevronDownIcon, ChevronRightIcon, InboxIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
+import { Component, useMemo } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
 import type ReassignPartitions from './reassign-partitions';
 import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/rest-interfaces';
-import { uiSettings } from '../../../state/ui';
+import { uiSettings, useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton, InfoText } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
+
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
 
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
@@ -39,18 +53,104 @@ export type TopicWithMoves = {
   selectedPartitions: PartitionWithMoves[];
 };
 
-export class StepReview extends Component<{
+type StepReviewProps = {
   partitionSelection: PartitionSelection;
   topicsWithMoves: TopicWithMoves[];
   assignments: PartitionReassignmentRequest;
   reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
-}> {
+};
+
+export function StepReview(props: StepReviewProps) {
+  // Subscribed here, not read through `uiSettings`: proxy reads do not notify, so the slider and
+  // the summary would only catch up on the next poll.
+  const maxReplicationTraffic = useUISettingsStore((state) => state.reassignment.maxReplicationTraffic);
+
+  return <StepReviewContent {...props} maxReplicationTraffic={maxReplicationTraffic} />;
+}
+
+class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraffic: number | null }> {
+  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
+  // remounts the header's sort menu out from under the pointer.
+  private readonly columns: DataTableColumnDef<TopicWithMoves>[] = [
+    // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+    {
+      id: 'expander',
+      enableSorting: false,
+      cell: ({ row }) =>
+        row.getCanExpand() ? (
+          <Button
+            aria-expanded={row.getIsExpanded()}
+            aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
+            onClick={row.getToggleExpandedHandler()}
+            size="icon-xs"
+            variant="ghost"
+          >
+            {row.getIsExpanded() ? <ChevronDownIcon /> : <ChevronRightIcon />}
+          </Button>
+        ) : null,
+    },
+    {
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Topic" />,
+      accessorKey: 'topicName',
+    },
+    {
+      header: 'Brokers Before',
+      cell: ({ row: { original: topic } }) => {
+        const brokersBefore = topic.selectedPartitions
+          .flatMap((x) => x.brokersBefore)
+          .distinct()
+          .sort((a, b) => a - b);
+        return <BrokerList brokerIds={brokersBefore} />;
+      },
+    },
+    {
+      // Derived from the plan, so there is nothing to sort on — and table-level `sorting`
+      // would otherwise mark it sortable with no header affordance to trigger it.
+      enableSorting: false,
+      header: 'Brokers After',
+      id: 'brokersAfter',
+      cell: ({ row: { original: topic } }) => {
+        const plannedBrokers = topic.selectedPartitions
+          .flatMap((x) => x.brokersAfter)
+          .distinct()
+          .sort((a, b) => a - b);
+        return <BrokerList brokerIds={plannedBrokers} />;
+      },
+    },
+    {
+      id: 'numAddedBrokers',
+      header: () => (
+        <InfoText maxWidth="180px" tooltip="The number of replicas that will be moved to a different broker.">
+          Reassignments
+        </InfoText>
+      ),
+      cell: ({ row: { original: topic } }) => topic.selectedPartitions.sum((p) => p.numAddedBrokers),
+    },
+    {
+      header: 'Estimated Traffic',
+      cell: ({ row: { original: topic } }) =>
+        prettyBytesOrNA(topic.selectedPartitions.sum((p) => p.numAddedBrokers * p.replicaSize)),
+    },
+  ];
+
   render() {
     if (!api.topics) {
       return DefaultSkeleton;
     }
     if (api.topicPartitions.size === 0) {
-      return <Empty />;
+      return (
+        // `border` explicitly: the Empty root sets only `border-dashed`, and Preflight leaves
+        // border-width at 0, so without it the panel is unframed text.
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <InboxIcon />
+            </EmptyMedia>
+            <EmptyTitle>No partitions</EmptyTitle>
+            <EmptyDescription>Partition data has not loaded yet, so there is nothing to review.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      );
     }
 
     return (
@@ -64,53 +164,12 @@ export class StepReview extends Component<{
         </div>
 
         <DataTable<TopicWithMoves>
-          columns={[
-            {
-              header: 'Topic',
-              accessorKey: 'topicName',
-            },
-            {
-              header: 'Brokers Before',
-              size: 50,
-              cell: ({ row: { original: topic } }) => {
-                const brokersBefore = topic.selectedPartitions
-                  .flatMap((x) => x.brokersBefore)
-                  .distinct()
-                  .sort((a, b) => a - b);
-                return <BrokerList brokerIds={brokersBefore} />;
-              },
-            },
-            {
-              accessorKey: 'Brokers After',
-              size: 50,
-              cell: ({ row: { original: topic } }) => {
-                const plannedBrokers = topic.selectedPartitions
-                  .flatMap((x) => x.brokersAfter)
-                  .distinct()
-                  .sort((a, b) => a - b);
-                return <BrokerList brokerIds={plannedBrokers} />;
-              },
-            },
-            {
-              id: 'numAddedBrokers',
-              size: 100,
-              header: () => (
-                <InfoText maxWidth="180px" tooltip="The number of replicas that will be moved to a different broker.">
-                  Reassignments
-                </InfoText>
-              ),
-              cell: ({ row: { original: topic } }) => topic.selectedPartitions.sum((p) => p.numAddedBrokers),
-            },
-            {
-              header: 'Estimated Traffic',
-              size: 120,
-              cell: ({ row: { original: topic } }) =>
-                prettyBytesOrNA(topic.selectedPartitions.sum((p) => p.numAddedBrokers * p.replicaSize)),
-            },
-          ]}
+          columns={this.columns}
           data={this.props.topicsWithMoves}
+          pagination={this.props.topicsWithMoves.length > DEFAULT_TABLE_PAGE_SIZE}
+          sorting
           subComponent={({ row: { original: topic } }) => (
-            <Box px={10} py={6}>
+            <div className="px-10 py-6">
               {topic.selectedPartitions ? (
                 <ReviewPartitionTable
                   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
@@ -121,8 +180,9 @@ export class StepReview extends Component<{
               ) : (
                 'Error loading partitions'
               )}
-            </Box>
+            </div>
           )}
+          tableOptions={TABLE_OPTIONS}
         />
 
         {this.reassignmentOptions()}
@@ -133,8 +193,6 @@ export class StepReview extends Component<{
   }
 
   reassignmentOptions() {
-    const settings = uiSettings.reassignment;
-
     return (
       <div style={{ margin: '4em 1em 3em 1em' }}>
         <h2>Bandwidth Throttle</h2>
@@ -143,9 +201,11 @@ export class StepReview extends Component<{
         <div style={{ marginTop: '2em', paddingBottom: '1em' }}>
           <BandwidthSlider
             onSettingsChange={(x) => {
-              settings.maxReplicationTraffic = x;
+              // Whole-section assignment: only a top-level set goes through the `uiSettings`
+              // proxy's trap, so a nested write would never notify the store.
+              uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: x };
             }}
-            settings={settings}
+            settings={{ maxReplicationTraffic: this.props.maxReplicationTraffic }}
           />
         </div>
 
@@ -162,8 +222,7 @@ export class StepReview extends Component<{
   }
 
   summary() {
-    const settings = uiSettings.reassignment;
-    const maxReplicationTraffic = settings.maxReplicationTraffic ?? 0;
+    const maxReplicationTraffic = this.props.maxReplicationTraffic ?? 0;
 
     const trafficStats = this.props.topicsWithMoves.map((t) => {
       const partitionStats = t.selectedPartitions.map((p) => {
@@ -209,8 +268,8 @@ export class StepReview extends Component<{
 
     const totalTraffic = trafficStats.sum((t) => t.partitionStats.sum((p) => p.totalTraffic));
 
-    const isThrottled = settings.maxReplicationTraffic !== null && settings.maxReplicationTraffic > 0;
-    const trafficThrottle = isThrottled ? `${prettyBytesOrNA(settings.maxReplicationTraffic ?? 0)}/s` : 'disabled';
+    const isThrottled = this.props.maxReplicationTraffic !== null && this.props.maxReplicationTraffic > 0;
+    const trafficThrottle = isThrottled ? `${prettyBytesOrNA(maxReplicationTraffic)}/s` : 'disabled';
 
     const estimatedTime = (() => {
       if (!isThrottled) {
@@ -256,36 +315,49 @@ export class StepReview extends Component<{
   }
 }
 
-const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => (
-  <Box py={2} width="full">
-    <DataTable<Partition>
-      columns={[
-        {
-          header: 'Partition',
-          accessorKey: 'id',
+const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => {
+  // Memoized: the page force-updates on every poll, and a fresh `header`/`cell` identity
+  // remounts the header's sort menu out from under the pointer. The plan itself only changes
+  // when the wizard recomputes it.
+  const columns = useMemo<DataTableColumnDef<Partition>[]>(
+    () => [
+      {
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Partition" />,
+        accessorKey: 'id',
+      },
+      {
+        header: 'Brokers Before',
+        cell: ({ row: { original: partition } }) => (
+          <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
+        ),
+      },
+      {
+        header: 'Brokers After',
+        cell: ({ row: { original: partition } }) => {
+          const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
+          if (
+            partitionAssignments === null ||
+            partitionAssignments === undefined ||
+            partitionAssignments.replicas === null
+          ) {
+            return '??';
+          }
+          return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />;
         },
-        {
-          header: 'Brokers Before',
-          cell: ({ row: { original: partition } }) => (
-            <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
-          ),
-        },
-        {
-          header: 'Brokers After',
-          cell: ({ row: { original: partition } }) => {
-            const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
-            if (
-              partitionAssignments === null ||
-              partitionAssignments === undefined ||
-              partitionAssignments.replicas === null
-            ) {
-              return '??';
-            }
-            return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />;
-          },
-        },
-      ]}
-      data={props.topicPartitions}
-    />
-  </Box>
-);
+      },
+    ],
+    [props.assignments]
+  );
+
+  return (
+    <div className="w-full py-2">
+      <DataTable<Partition>
+        columns={columns}
+        data={props.topicPartitions}
+        pagination={props.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
+        sorting
+        tableOptions={TABLE_OPTIONS}
+      />
+    </div>
+  );
+};

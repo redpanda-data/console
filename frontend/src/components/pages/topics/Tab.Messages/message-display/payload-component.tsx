@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -122,7 +122,12 @@ function preparePayloadData(payload: Payload): PayloadRenderData {
   }
 }
 
-export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => Promise<void> }) => {
+export const PayloadComponent = (p: {
+  payload: Payload;
+  loadLargeMessage: () => Promise<void>;
+  /** Style overrides for the JSON viewer (e.g. lift the default max-height in full-height layouts). */
+  viewerStyle?: CSSProperties;
+}) => {
   const { payload, loadLargeMessage } = p;
   const [isLoadingLargeMessage, setLoadingLargeMessage] = useState(false);
   const renderData = useMemo(() => preparePayloadData(payload), [payload]);
@@ -179,7 +184,9 @@ export const PayloadComponent = (p: { payload: Payload; loadLargeMessage: () => 
     // Avro JSON encodes bytes fields as \u00XX escape sequences. Re-escape
     // Latin-1 code points in the viewer so copy-paste yields the original
     // bytes rather than their UTF-8 encoding.
-    return <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} />;
+    return (
+      <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} style={p.viewerStyle} />
+    );
   }
   return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {renderData.content}</span>;
 };
