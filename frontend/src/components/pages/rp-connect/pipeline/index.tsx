@@ -1503,7 +1503,10 @@ function PipelinePageContent() {
     [mode, selectedNodeId, requestRevealNode, setActiveViewLane, setActiveEditLane, editorStore]
   );
 
-  const isMonitorLane = mode === 'view' && activeViewLane === 'monitor';
+  // Excludes a draft outright rather than leaning on the corrective effect below: that only runs
+  // after the commit, and React mounts this lane's children (logs, throughput) first — they would
+  // each fire a request for a pipeline that has never run.
+  const isMonitorLane = mode === 'view' && activeViewLane === 'monitor' && !editingDraft;
 
   const lanes = useMemo<LaneTab[]>(() => {
     if (mode === 'view') {
@@ -1682,7 +1685,7 @@ function PipelinePageContent() {
               </div>
             ) : null}
             <div className="min-w-0 flex-1">
-              {mode === 'view' && activeViewLane === 'monitor' ? <ViewModePanel pipeline={pipeline} /> : null}
+              {isMonitorLane ? <ViewModePanel pipeline={pipeline} /> : null}
               {mode === 'view' && pipeline && activeViewLane === 'configuration' ? (
                 <YamlViewPanel configYaml={pipeline.configYaml} schema={yamlEditorSchema} />
               ) : null}

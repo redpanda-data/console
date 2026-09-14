@@ -194,7 +194,15 @@ rs.mock('./pipeline-flow-canvas', () => ({
 }));
 rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
 rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
-rs.mock('../pipelines-details', () => ({ LogsTab: () => <div data-testid="logs-tab" /> }));
+// Counted, not just queried: the Monitor lane is the default, so a draft used to mount it for one
+// commit before the lane correction landed — long enough for its logs and throughput to fire.
+const logsTabRenders = { count: 0 };
+rs.mock('../pipelines-details', () => ({
+  LogsTab: () => {
+    logsTabRenders.count += 1;
+    return <div data-testid="logs-tab" />;
+  },
+}));
 rs.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: () => <div data-testid="log-explorer" /> }));
 rs.mock('../onboarding/add-connector-dialog', () => ({
   AddConnectorDialog: (props: {
@@ -2341,6 +2349,7 @@ describe('PipelinePage', () => {
       });
 
     it('explains itself instead of offering monitoring it cannot have', async () => {
+      logsTabRenders.count = 0;
       render(<PipelinePage />, { transport: draftTransport() });
 
       expect(await screen.findByTestId('draft-view-notice')).toBeInTheDocument();
@@ -2348,6 +2357,8 @@ describe('PipelinePage', () => {
       expect(screen.queryByRole('tab', { name: 'Monitor' })).not.toBeInTheDocument();
       expect(screen.queryByTestId('log-explorer')).not.toBeInTheDocument();
       expect(screen.queryByTestId('logs-tab')).not.toBeInTheDocument();
+      // Not even for the one commit before the lane correction: mounting is what fires the requests.
+      expect(logsTabRenders.count).toBe(0);
     });
 
     it('starts from the detail view', async () => {
