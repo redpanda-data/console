@@ -341,9 +341,10 @@ describe('PipelineListPage', () => {
       expect(screen.queryByRole('tab', { name: /^Drafts/ })).not.toBeInTheDocument();
     });
 
-    // Drafts are excluded from ListPipelines unless asked for, so a client that doesn't understand
-    // them never receives a state it would render as a broken pipeline.
-    it('asks for drafts only when it can show them', async () => {
+    // The flag gates making drafts, not seeing them. Turning it back off would otherwise strand a
+    // draft that still counts against the cluster's pipeline quota with no row to delete it from —
+    // and the request is inert against a pre-drafts dataplane, which drops the field.
+    it('asks for drafts whether or not the feature is enabled', async () => {
       const requests: unknown[] = [];
       renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ onRequest: (r) => requests.push(r) }) });
 
@@ -355,7 +356,17 @@ describe('PipelineListPage', () => {
       renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ onRequest: (r) => requests.push(r) }) });
 
       await waitFor(() => expect(requests.length).toBeGreaterThan(0));
-      expect(requests.every((r) => !(r as ListRequest).request?.filter?.includeDrafts)).toBe(true);
+      expect(requests.every((r) => (r as ListRequest).request?.filter?.includeDrafts === true)).toBe(true);
+    });
+
+    // The stranded-draft case the request above exists for: flag off, draft still there, still
+    // deletable from its row.
+    it('shows and can delete a leftover draft with the feature disabled', async () => {
+      mockIsFeatureFlagEnabled.mockImplementation(() => false);
+      renderList({ withDraft: true });
+
+      await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+      expect(screen.getByRole('tab', { name: /^Drafts/ })).toBeInTheDocument();
     });
 
     it('lists a draft alongside deployed pipelines, marked as a draft', async () => {

@@ -88,7 +88,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { parseConfigComponentsCached } from './config-components-cache';
 import { DeleteDraftDialog } from './delete-draft-dialog';
-import { areDraftsEnabled, DRAFT_BADGE_TOOLTIP, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
+import { DRAFT_BADGE_TOOLTIP, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
 import {
   aggregateConnectors,
   countPipelinesPerTab,
@@ -192,6 +192,10 @@ const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.st
 const PAGE_SIZE = 20;
 
 // Module scope: the query hook memoizes on request identity.
+// Asked for unconditionally: the flag gates making drafts, not seeing the ones already made. Turning
+// it back off must not strand a draft that still counts against the cluster's pipeline quota with no
+// row to delete it from. Every draft affordance below keys off the row's own state, and a pre-drafts
+// dataplane drops the field, so this is inert until there is a draft to show.
 const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
 // One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
@@ -583,7 +587,7 @@ const createColumns = ({
       <StatusBadge
         size="sm"
         title={row.original.isDraft ? DRAFT_BADGE_TOOLTIP : undefined}
-        variant={PIPELINE_STATE_STATUS_VARIANT[row.original.state]}
+        variant={PIPELINE_STATE_STATUS_VARIANT[row.original.state] ?? 'disabled'}
       >
         {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
       </StatusBadge>
@@ -616,7 +620,7 @@ const PipelineListPageContent = () => {
     isLoading,
     error,
     hasNextPage,
-  } = useListPipelinesQuery(areDraftsEnabled() ? LIST_WITH_DRAFTS : undefined, {
+  } = useListPipelinesQuery(LIST_WITH_DRAFTS, {
     enableSmartPolling: true,
   });
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();

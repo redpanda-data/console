@@ -61,7 +61,11 @@ import { toast } from 'sonner';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
-import { DRAFT_UNSUPPORTED_MESSAGE, DRAFT_UPDATE_UNSUPPORTED_MESSAGE } from './draft-copy';
+import {
+  DRAFT_UNSUPPORTED_MESSAGE,
+  DRAFT_UNSUPPORTED_STOPPED_MESSAGE,
+  DRAFT_UPDATE_UNSUPPORTED_MESSAGE,
+} from './draft-copy';
 import { NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
@@ -1045,14 +1049,16 @@ describe('PipelinePage', () => {
     });
 
     // The flag can be on before the API that understands it has rolled out, in which case `draft` is
-    // dropped in transit and the pipeline deploys for real. Never report that as a parked draft.
-    it('reports a create that came back deployed instead of drafted', async () => {
+    // dropped in transit and the pipeline deploys for real. Never report that as a parked draft, and
+    // do not leave the deployment running on the strength of a toast the user may not read.
+    it('stops a create that came back deployed instead of drafted', async () => {
       const user = userEvent.setup();
       const createPipelineMock = rs
         .fn()
         .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
 
-      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
       fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
@@ -1060,12 +1066,33 @@ describe('PipelinePage', () => {
 
       await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(true);
-      // The crux: never "Draft saved. It isn't running yet." over a pipeline that is starting.
-      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(DRAFT_UNSUPPORTED_MESSAGE));
+      // The crux: the pipeline the user asked to park does not stay running.
+      await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
+      expect(stopPipelineMock.mock.calls[0][0].request.id).toBe('new-pipeline');
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(DRAFT_UNSUPPORTED_STOPPED_MESSAGE));
       expect(toast.success).not.toHaveBeenCalled();
-      // Sent to the pipeline's page, not the draft editor: there is a running pipeline to stop.
+      // Sent to the pipeline's page, not the draft editor: it is a deployed pipeline now.
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
       expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' });
+    });
+
+    // Nothing else can park it, so the copy has to hand the job back to the user.
+    it('tells the user to stop it when the follow-up stop fails', async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = rs
+        .fn()
+        .mockReturnValue(createdPipelineResponse('new-pipeline', Pipeline_State.STARTING));
+      const stopPipelineMock = rs.fn().mockRejectedValue(new ConnectError('nope', Code.Unavailable));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(DRAFT_UNSUPPORTED_MESSAGE));
+      expect(toast.success).not.toHaveBeenCalled();
     });
 
     it('stays in the editor when a draft is saved from its own page', async () => {

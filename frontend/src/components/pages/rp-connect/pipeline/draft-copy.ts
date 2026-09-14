@@ -21,9 +21,16 @@ export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boole
 export const DRAFT_BADGE_TOOLTIP =
   'Saved but never deployed — it uses no compute and processes no data. Starting it makes it a regular pipeline.';
 
-/** A pre-drafts proxy drops `draft` silently (Connect JSON discards unknown fields) and deploys for real. */
+/**
+ * A pre-drafts proxy drops `draft` silently (Connect JSON discards unknown fields) and deploys for
+ * real, so the editor stops what it could not park. The stop does not undo what already ran.
+ */
+export const DRAFT_UNSUPPORTED_STOPPED_MESSAGE =
+  'Drafts are not available on this cluster yet, so the pipeline was deployed and then stopped again. It may have processed messages while it ran — check it before starting it.';
+
+/** The same, when the follow-up stop did not land: the pipeline is live and only a human can park it. */
 export const DRAFT_UNSUPPORTED_MESSAGE =
-  'Drafts are not available on this cluster yet, so the pipeline was created and is starting. Stop it from its page if you did not mean to deploy it.';
+  'Drafts are not available on this cluster yet, so the pipeline was created and is starting. Stopping it automatically failed — stop it from its page if you did not mean to deploy it.';
 
 export const DRAFT_UPDATE_UNSUPPORTED_MESSAGE =
   'Drafts are not available on this cluster yet, so this pipeline is no longer a draft. Check its state on its page before starting it.';

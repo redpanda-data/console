@@ -96,6 +96,7 @@ import { DetailsDialog } from './details-dialog';
 import {
   areDraftsEnabled,
   DRAFT_UNSUPPORTED_MESSAGE,
+  DRAFT_UNSUPPORTED_STOPPED_MESSAGE,
   DRAFT_UPDATE_UNSUPPORTED_MESSAGE,
   isDraft,
   NOTHING_TO_SAVE_MESSAGE,
@@ -399,21 +400,26 @@ function usePipelineSave({
           const draftWasIgnored =
             isDraftSave && createdPipeline !== undefined && createdPipeline.state !== Pipeline_State.DRAFT;
 
-          // Without draft support CreatePipeline always starts, so "stopped" is a follow-up stop.
+          // CreatePipeline always starts without draft support, so "stopped" is a follow-up stop. A
+          // dropped `draft` lands in the same place, and asking the user to park it by hand is the
+          // weakest link on something irreversible: stop it here instead.
           let stopFailed = false;
-          if (run === 'stopped' && newPipelineId) {
+          if ((run === 'stopped' || draftWasIgnored) && newPipelineId) {
             try {
               await stopMutation(create(StopPipelineRequestSchema, { request: { id: newPipelineId } }));
             } catch {
               stopFailed = true;
-              toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
+              if (!draftWasIgnored) {
+                toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
+              }
             }
           }
 
           clearWizardStore();
           markSaved(yamlContent, newPipelineId, timestampToMillis(createdPipeline?.updateTime));
           if (draftWasIgnored) {
-            toast.error(DRAFT_UNSUPPORTED_MESSAGE);
+            // Both messages name the deployment; only one of them still needs a human.
+            toast.error(stopFailed ? DRAFT_UNSUPPORTED_MESSAGE : DRAFT_UNSUPPORTED_STOPPED_MESSAGE);
           } else if (!stopFailed) {
             toast.success(saveSuccessMessage(saveContext, run));
           }
