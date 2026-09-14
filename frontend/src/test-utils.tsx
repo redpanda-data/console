@@ -3,7 +3,6 @@ import { TransportProvider } from '@connectrpc/connect-query';
 // Copyright 2026 Redpanda Data, Inc.
 
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { type RenderOptions, render } from '@testing-library/react';
@@ -14,7 +13,6 @@ import React, {
   type ReactElement,
   useState,
 } from 'react';
-import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
@@ -73,9 +71,7 @@ const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRend
 
     return (
       <TransportProvider transport={finalTransport}>
-        <QueryClientProvider client={queryClient}>
-          <ChakraProvider theme={redpandaTheme}>{children}</ChakraProvider>
-        </QueryClientProvider>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       </TransportProvider>
     );
   }
@@ -130,11 +126,9 @@ export function renderWithFileRoutes(
     return (
       <TransportProvider transport={finalTransport}>
         <QueryClientProvider client={queryClient}>
-          <ChakraProvider theme={redpandaTheme}>
-            <RouterContextProvider router={router}>
-              <TooltipProvider>{children}</TooltipProvider>
-            </RouterContextProvider>
-          </ChakraProvider>
+          <RouterContextProvider router={router}>
+            <TooltipProvider>{children}</TooltipProvider>
+          </RouterContextProvider>
         </QueryClientProvider>
       </TransportProvider>
     );

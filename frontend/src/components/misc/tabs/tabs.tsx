@@ -54,7 +54,7 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
         ))}
       </TabsList>
       {tabs.map((t) => (
-        // Legacy tab bodies space themselves; keep Chakra's 1rem panel padding, drop the registry rhythm.
+        // Tab bodies space themselves, so the panel carries padding instead of the registry rhythm.
         <TabsContent className="space-y-0 pt-2 pb-4" key={t.key} value={t.key}>
           <TabSlot slot={t.content} />
         </TabsContent>

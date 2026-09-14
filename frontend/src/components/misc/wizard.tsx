@@ -17,7 +17,8 @@ import styles from './Wizard.module.scss';
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();
   return (
-    <div className={styles.wizard}>
+    // One element: PageContent is `flex flex-col gap-3`, so separate children would gain a gap.
+    <div>
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
@@ -39,15 +40,11 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
 type WizardState = {
   getCurrentStep(): [number, WizardStep];
 
-  getSteps(): WizardStep[];
-
   canContinue(): boolean;
 
   next(): Promise<void>;
 
   previous(): void;
-
-  isLast(): boolean;
 
   isFirst(): boolean;
 };
