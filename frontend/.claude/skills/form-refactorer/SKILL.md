@@ -1,6 +1,6 @@
 ---
 name: form-refactorer
-description: Refactor legacy forms to use modern Redpanda UI Registry Field components with react-hook-form and Zod validation. Use when user requests: (1) Form refactoring or modernization, (2) Converting Chakra UI or @redpanda-data/ui forms, (3) Updating forms to use Field components, (4) Migrating from legacy form patterns, (5) Implementing forms with react-hook-form and Zod validation.
+description: Refactor legacy forms to use modern Redpanda UI Registry Field components with react-hook-form and Zod validation. Use when user requests: (1) Form refactoring or modernization, (2) Updating forms to use Field components, (3) Migrating from legacy form patterns, (4) Implementing forms with react-hook-form and Zod validation.
 ---
 
 # Form Refactorer
@@ -61,7 +61,7 @@ FieldSet              - Semantic fieldset container for related fields
 
 Before completing refactoring, verify:
 
-- [ ] All legacy form imports removed (Chakra, @redpanda-data/ui, legacy Form)
+- [ ] All legacy form imports removed (the legacy `Form` component)
 - [ ] Field components used for all fields
 - [ ] FieldLabel has `htmlFor` matching Input `id`
 - [ ] Errors show `data-invalid` on Field and `aria-invalid` on Input
@@ -73,5 +73,4 @@ Before completing refactoring, verify:
 ## References
 
 - [Common Patterns](references/common-patterns.md) — Dynamic fields, field arrays, multi-section forms, pitfalls, Zod patterns
-- [Migration Examples](references/migration-examples.md) — Before/after examples for Chakra/legacy -> modern
 - [Field Component Docs](https://redpanda-ui-registry.netlify.app/docs/field)

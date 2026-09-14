@@ -48,7 +48,6 @@ ls src/components/redpanda-ui/
 
 ### NEVER
 
-- Use `@redpanda-data/ui` (deprecated) - see [no-legacy](../code-standards/rules/no-legacy.md)
 - Copy/paste registry source (install via CLI)
 - Install external UI libraries without user request
 - Use inline `style` prop on registry components

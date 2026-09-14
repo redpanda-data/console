@@ -37,7 +37,7 @@ export const LinkedInIcon = ({ size = 16, className }: { size?: number; classNam
 export {
   Activity as ActivityIcon,
   AlertCircle as AlertIcon, // MdOutlineError, MdOutlineErrorOutline, AiOutlineExclamationCircle, AlertIcon (Octicons)
-  AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber, WarningIcon (Chakra)
+  AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber
   Archive as ArchiveIcon, // ArchiveIcon (Heroicons)
   ArrowBigUp as ArrowBigUpIcon,
   ArrowLeft as ArrowLeftIcon,
@@ -48,12 +48,12 @@ export {
   Bot as AIIcon, // MdOutlineSmartToy
   Box as CubeIcon, // CubeTransparentIcon (Heroicons)
   Calendar as CalendarIcon, // MdCalendarToday
-  Check as CheckIcon, // MdCheck, CheckIcon (Chakra/Octicons)
+  Check as CheckIcon, // MdCheck, CheckIcon (Octicons)
   CheckCircle as CheckCircleIcon, // MdCheckCircle
-  ChevronDown as ChevronDownIcon, // ChevronDownIcon (Chakra)
+  ChevronDown as ChevronDownIcon,
   ChevronLeft as ChevronLeftIcon, // ChevronLeftIcon (Octicons)
   ChevronRight as ChevronRightIcon, // ChevronRightIcon (Heroicons/Octicons)
-  ChevronUp as ChevronUpIcon, // ChevronUpIcon (Chakra)
+  ChevronUp as ChevronUpIcon,
   Code as CodeIcon, // MdJavascript
   Command as CommandIcon,
   Copy as CopyIcon, // MdContentCopy
@@ -69,7 +69,7 @@ export {
   Home as HomeIcon, // HomeIcon (Heroicons)
   Hourglass as HourglassIcon, // MdHourglassFull
   Inbox as InboxIcon,
-  Info as InfoIcon, // MdInfoOutline, InfoIcon (Chakra/Octicons)
+  Info as InfoIcon, // MdInfoOutline, InfoIcon (Octicons)
   Key as KeyIcon, // MdKey
   Layers as LayersIcon, // MdOutlineLayers
   LayoutGrid as CollectionIcon, // CollectionIcon (Heroicons) - Note: 3x3 grid → 2x2 grid
@@ -77,7 +77,7 @@ export {
   Loader2 as LoaderIcon, // Loading spinner
   Lock as LockIcon, // LockIcon (Octicons)
   Menu as MenuIcon, // ThreeBarsIcon (Octicons)
-  Minus as MinusIcon, // MinusIcon (Chakra)
+  Minus as MinusIcon,
   MoreHorizontal as MoreHorizontalIcon, // BsThreeDots, KebabHorizontalIcon (Octicons)
   Pause as PauseIcon, // MdPause
   PauseCircle as PauseCircleIcon, // MdOutlinePauseCircle
@@ -97,9 +97,9 @@ export {
   SkipForward as SkipIcon, // SkipIcon (Octicons)
   StopCircle as StopCircleIcon, // FaRegStopCircle
   Timer as TimerIcon, // MdOutlineTimer
-  Trash2 as TrashIcon, // MdDeleteOutline, DeleteIcon (Chakra), TrashIcon (Heroicons/Octicons), AiOutlineDelete, HiOutlineTrash
+  Trash2 as TrashIcon, // MdDeleteOutline, TrashIcon (Heroicons/Octicons), AiOutlineDelete, HiOutlineTrash
   Wrench as WrenchIcon, // FaWrench
-  X as CloseIcon, // MdClose, CloseIcon (Chakra), XIcon (Heroicons/Octicons)
+  X as CloseIcon, // MdClose, XIcon (Heroicons/Octicons)
   XCircle as ErrorIcon, // MdError, XCircleIcon (Heroicons/Octicons)
 } from 'lucide-react';
 

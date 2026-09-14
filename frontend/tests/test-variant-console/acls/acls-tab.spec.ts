@@ -6,9 +6,8 @@ const PRINCIPAL_HEADER = /^Principal$/;
 const HOST_HEADER = /^Host$/;
 const SORT_ASC = /Asc/;
 
-// The Registry sorts only through `DataTableColumnHeader`, where Chakra painted an affordance on
-// every header, so a swap can leave sorting unreachable with nothing failing. A fresh cluster has
-// no ACLs, so this asserts the chrome rather than rows.
+// Sorting is reachable only through `DataTableColumnHeader`, and nothing fails if it is missing,
+// so this asserts it is present. A fresh cluster has no ACLs, so it checks the chrome, not rows.
 test.describe('Security ACLs tab', () => {
   test('renders the filter, the table and reachable sorting', async ({ page }) => {
     await page.goto('/security/acls');

@@ -9,26 +9,20 @@ tags: components, registry, ui, imports
 
 ## Explanation
 
-Always use components from `src/components/redpanda-ui/`. The `@redpanda-data/ui` package is deprecated and should never be used. Registry components are maintained, tested, and follow design system standards.
+Always use components from `src/components/redpanda-ui/`. Registry components are maintained, tested, and follow design system standards.
 
 ## Incorrect
 
 ```tsx
-// Using deprecated library
-import { Button } from '@redpanda-data/ui';
-
+// Hand-rolling a component the registry already ships
 export function MyComponent() {
-  return <Button>Click me</Button>;
+  return <button className="rounded-md bg-primary px-3 py-2">Click me</button>;
 }
 ```
 
 ```tsx
-// Using Chakra directly
-import { Button } from '@chakra-ui/react';
-
-export function MyComponent() {
-  return <Button>Click me</Button>;
-}
+// Installing an external UI library for something the registry covers
+import { Button } from 'some-other-ui-kit';
 ```
 
 ## Correct
