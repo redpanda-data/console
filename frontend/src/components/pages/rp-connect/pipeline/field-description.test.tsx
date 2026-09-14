@@ -67,8 +67,7 @@ describe('FieldDescription', () => {
   test('renders nothing when the field carries no prose', () => {
     const { container } = render(<FieldDescription spec={field({})} />);
 
-    // The render wrapper adds a hidden Chakra node, so assert on text rather than an empty DOM.
-    expect(container.textContent).toBe('');
+    expect(container).toBeEmptyDOMElement();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 

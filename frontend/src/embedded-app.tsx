@@ -37,13 +37,11 @@ import './globals.css';
 
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
-import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
@@ -154,15 +152,13 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
 
   return (
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
-      <ChakraProvider resetCSS={false} theme={redpandaTheme}>
-        {/* showToast viewport, above the router so the error boundary and login can toast */}
-        <BaseUiToaster testId="console-toasts" />
-        <TransportProvider transport={dataplaneTransport}>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-          </QueryClientProvider>
-        </TransportProvider>
-      </ChakraProvider>
+      {/* showToast viewport, above the router so the error boundary and login can toast */}
+      <BaseUiToaster testId="console-toasts" />
+      <TransportProvider transport={dataplaneTransport}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </TransportProvider>
     </CustomFeatureFlagProvider>
   );
 }

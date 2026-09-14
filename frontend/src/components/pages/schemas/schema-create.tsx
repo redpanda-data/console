@@ -580,7 +580,8 @@ const SchemaEditor = (p: {
             <FieldLabel>Context</FieldLabel>
             <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
             <Combobox
-              // Our chakra UI has a global override for SVGs that make icons look off-center in UI registry components.
+              // EMBEDDED ONLY since PR 13: the cloud-ui host's Chakra overrides SVG display, which
+              // knocks the icons off-center. Goes with cloud-ui's Chakra exit.
               className="[&_svg]:block! [&_input]:pl-8!"
               creatable
               createLabel="context"

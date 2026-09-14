@@ -34,7 +34,6 @@ export default defineProject({
       ...sharedAliases,
       'monaco-editor$': fromHere('./tests/mocks/monaco-editor.ts'),
       '@monaco-editor/react$': fromHere('./tests/mocks/monaco-editor-react.ts'),
-      '@redpanda-data/ui$': fromHere('./tests/mocks/redpanda-ui.ts'),
       './console-app$': false,
     },
   },

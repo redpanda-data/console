@@ -4,7 +4,6 @@
 import { afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
-import _rawUserEvent from '@testing-library/user-event';
 import './src/utils/array-extensions';
 import './tests/mock-document';
 
@@ -25,43 +24,6 @@ Object.defineProperty(globalThis, 'localStorage', {
 Object.defineProperty(window, 'localStorage', {
   configurable: true,
   value: testLocalStorage,
-});
-
-// ── Chakra + userEvent compatibility ─────────────────────────────────
-// userEvent.setup() patches HTMLElement.prototype.focus as a getter-only
-// property. Chakra UI's @zag-js/focus-visible later tries to override it
-// via simple assignment, causing "Cannot set property focus of [object
-// Object] which has only a getter". Wrapping setup() makes the patched
-// focus descriptor accept assignment after the patch.
-function makeFocusPatchWritable() {
-  const desc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'focus');
-  if (desc?.get && !desc.set && desc.configurable) {
-    const getter = desc.get;
-    let override: ((...args: unknown[]) => void) | null = null;
-    Object.defineProperty(HTMLElement.prototype, 'focus', {
-      configurable: true,
-      get() {
-        return override ?? getter();
-      },
-      set(fn: (...args: unknown[]) => void) {
-        override = fn;
-      },
-    });
-  }
-}
-
-// Monkey-patch userEvent.setup globally so every test file gets the fix
-// without migrating imports. Any `import userEvent from '@testing-library/user-event'`
-// call receives the patched setup transparently.
-const _rawSetup = _rawUserEvent.setup.bind(_rawUserEvent);
-const patchedSetup = ((...args: Parameters<typeof _rawUserEvent.setup>) => {
-  const instance = _rawSetup(...args);
-  makeFocusPatchWritable();
-  return instance;
-}) as typeof _rawUserEvent.setup;
-Object.defineProperty(_rawUserEvent, 'setup', {
-  configurable: true,
-  value: patchedSetup,
 });
 
 // ── happy-dom network / resource isolation ───────────────────────────
@@ -128,9 +90,9 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
 }
 
 // ── Mocks ────────────────────────────────────────────────────────────
-// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively,
-// but Chakra components still expect matchMedia to be an rs.fn so their
-// colorMode polling sees deterministic breakpoint results.
+// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
+// matchMedia must be an rs.fn so media-query reads (the theme provider's
+// prefers-color-scheme, responsive hooks) return a deterministic `matches: false`.
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -200,8 +162,6 @@ afterEach(async () => {
 const originalWarn = console.warn;
 // biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalError = console.error;
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for info suppression
-const originalInfo = console.info;
 
 const SUPPRESSED_PATTERNS = [
   // Radix UI ref-forwarding — fixed in React 19, not actionable in React 18
@@ -219,13 +179,8 @@ const SUPPRESSED_PATTERNS = [
   /socket hang up/,
   /ECONNREFUSED/,
   /ECONNRESET/,
-  // `isInPortal` is a valid @redpanda-data/ui Popover prop, but the Popover forwards it to a DOM
-  // element in some render paths (e.g. hover triggers) instead of consuming it. External component,
-  // used correctly on our side — fix upstream in @redpanda-data/ui.
-  // (React formats the prop name as a separate `%s` arg, so match the template + the isInPortal token.)
-  /React does not recognize the[\s\S]+\bisInPortal\b/,
-  // @redpanda-data/ui Accordion renders each item's `heading` inside its AccordionButton
-  // (a real <button>). The consumer-group topic view (pages/consumers/group-details.tsx)
+  // The Registry Accordion renders each item's trigger as a real <button>. The
+  // consumer-group topic view (pages/consumers/group-details.tsx)
   // intentionally keeps the per-topic action controls (edit/delete offsets, "Go to topic")
   // in that always-visible header for discoverability; relocating them into the collapsed
   // panel was considered and rejected as a UX regression. That choice nests <button> inside
@@ -234,12 +189,6 @@ const SUPPRESSED_PATTERNS = [
   // (React logs this as a `%s ... <%s>` template with the tag names as separate args, so we
   // match the phrase + the <button> token rather than the interpolated string.)
   /cannot appear as a descendant of[\s\S]*<button>/,
-  // @redpanda-data/ui hardcodes `debugTable: true` on its DataTable,
-  // which makes @tanstack/table-core emit `console.info('Creating Table
-  // Instance...')` on every table render. Not reachable from our source;
-  // upstream fix requires a release of @redpanda-data/ui with the flag
-  // disabled or gated on process.env.NODE_ENV !== 'test'.
-  /Creating Table Instance/,
 ];
 
 function isSuppressed(args: unknown[]): boolean {
@@ -257,10 +206,5 @@ console.warn = (...args: unknown[]) => {
 console.error = (...args: unknown[]) => {
   if (!isSuppressed(args)) {
     originalError(...args);
-  }
-};
-console.info = (...args: unknown[]) => {
-  if (!isSuppressed(args)) {
-    originalInfo(...args);
   }
 };

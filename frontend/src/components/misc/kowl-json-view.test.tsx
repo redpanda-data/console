@@ -1,15 +1,6 @@
 import { act, render, waitFor } from '@testing-library/react';
 import * as React from 'react';
 
-rs.mock('@redpanda-data/ui', () => ({
-  __esModule: true,
-  Box: React.forwardRef<HTMLDivElement, Record<string, unknown>>(({ children, ...props }, ref) => (
-    <div ref={ref} {...props}>
-      {children}
-    </div>
-  )),
-}));
-
 import { KowlJsonView } from './kowl-json-view';
 
 const { editorLayoutSpy, editorPropsSpy } = rs.hoisted(() => ({
