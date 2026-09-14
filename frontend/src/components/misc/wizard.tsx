@@ -17,8 +17,7 @@ import styles from './Wizard.module.scss';
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();
   return (
-    // Kept as one element: the parent PageContent is `flex flex-col gap-3`, so exposing content
-    // and footer as separate children would add a gap between them.
+    // One element: PageContent is `flex flex-col gap-3`, so separate children would gain a gap.
     <div>
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>

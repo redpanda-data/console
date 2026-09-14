@@ -1,6 +1,5 @@
 // Layout overrides for #mainLayout, Console's scroll container (routes/__root.tsx,
-// federation/federated-routes.tsx). Named for the cloud integration but imported by app.tsx too,
-// so they apply standalone as well.
+// federation/federated-routes.tsx). Imported standalone as well as embedded.
 
 #mainLayout {
   background: transparent !important;

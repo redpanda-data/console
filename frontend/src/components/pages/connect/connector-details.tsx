@@ -646,9 +646,8 @@ const ConnectorDetails = (p: {
 };
 
 /**
- * Wraps a control that is disabled without `canEditConnectCluster`, explaining why. Chakra's
- * Tooltip took `isDisabled` to suppress itself; Base UI has no such prop, so the wrapper renders
- * the child bare when the permission is present.
+ * Wraps a control that is disabled without `canEditConnectCluster`, explaining why. Tooltip has no
+ * prop to suppress itself, so the wrapper renders the child bare when the permission is present.
  */
 const NoEditPermissionTooltip = ({
   canEdit,

@@ -179,9 +179,8 @@ const SUPPRESSED_PATTERNS = [
   /socket hang up/,
   /ECONNREFUSED/,
   /ECONNRESET/,
-  // pages/consumers/group-details.tsx keeps its per-topic actions in the Accordion trigger,
-  // which is itself a <button>. Needs an Accordion API for header-level actions to fix.
-  // Matched on the phrase + the tag token because React logs it as a `%s ... <%s>` template.
+  // group-details.tsx nests its per-topic actions in the Accordion trigger's own <button>.
+  // Matches phrase and tag separately: React logs it as a `%s ... <%s>` template.
   /cannot appear as a descendant of[\s\S]*<button>/,
 ];
 

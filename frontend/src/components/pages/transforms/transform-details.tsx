@@ -281,7 +281,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
-      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      // `subComponent` renders no affordance of its own, so the expander is explicit.
       // The Registry only sets aria-expanded on the row, and only for `expandRowByClick`, so it goes here.
       {
         id: 'expander',
@@ -359,7 +359,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
-          // No pager under the loading or empty row, as the legacy table.
+          // No pager under the loading or empty row.
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}

@@ -339,7 +339,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
-      // Chakra's DataTable injected this column with `subComponent`; the Registry renders no affordance.
+      // `subComponent` renders no affordance of its own, so the expander is explicit.
       {
         id: 'expander',
         enableSorting: false,
@@ -425,7 +425,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
-          // No pager under the loading or empty row, as the legacy table.
+          // No pager under the loading or empty row.
           data={filteredMessages}
           emptyText="No messages"
           getRowCanExpand={() => true}

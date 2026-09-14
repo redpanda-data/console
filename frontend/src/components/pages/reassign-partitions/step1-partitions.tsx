@@ -65,7 +65,7 @@ export class StepSelectPartitions extends Component<{
     this.getTopicCheckState = this.getTopicCheckState.bind(this);
     this.getRowKey = this.getRowKey.bind(this);
     this.columns = [
-      // Chakra's DataTable injected this column whenever `subComponent` was set; the Registry one does not.
+      // `subComponent` renders no affordance of its own, so the expander is explicit.
       {
         id: 'expander',
         enableSorting: false,
