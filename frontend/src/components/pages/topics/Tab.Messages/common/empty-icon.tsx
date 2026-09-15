@@ -9,16 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { Tooltip } from '@redpanda-data/ui';
 import { SkipIcon } from 'components/icons';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 export function renderEmptyIcon(tooltipText?: string) {
   const text = tooltipText || 'Empty';
   return (
-    <Tooltip hasArrow label={text} openDelay={1} placement="top">
-      <span style={{ opacity: 0.66, marginLeft: '2px' }}>
-        <SkipIcon />
-      </span>
+    // Chakra's `openDelay={1}` was effectively instant; Base UI's default is 600ms.
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger
+        render={
+          <span className="ml-0.5 opacity-[0.66]">
+            <SkipIcon />
+          </span>
+        }
+      />
+      <TooltipContent side="top">{text}</TooltipContent>
     </Tooltip>
   );
 }

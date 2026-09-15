@@ -428,9 +428,9 @@ const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
     accessorKey: 'connectorName',
     cell: ({ row: { original } }) => (
-      // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
-      // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
-      // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior, previously hidden inside the deprecated <Text> wrapper
+      // biome-ignore lint/a11y/useKeyWithClickEvents: pre-existing behavior
+      // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior
+      // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior
       <div
         className="hoverLink whitespace-break-spaces break-words text-body"
         onClick={() =>

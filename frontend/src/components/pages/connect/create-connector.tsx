@@ -481,8 +481,6 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
     },
   ];
 
-  const isLast = () => currentStep === steps.length - 1;
-
   if (!isStoreInitialized) {
     return (
       <div className="mt-5">
@@ -523,10 +521,8 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
 
             return currentStep > 0 ? setCurrentStep((n) => n - 1) : undefined;
           },
-          isLast,
           isFirst: () => currentStep === 0,
           getCurrentStep: () => [currentStep, steps[currentStep]],
-          getSteps: () => steps,
         }}
       />
 

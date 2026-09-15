@@ -9,10 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Button, DataTable, Flex, Image, SearchField, Text } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
-import { Button as NewButton } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  DataTable,
+  type DataTableColumnDef,
+  DataTableColumnHeader,
+} from 'components/redpanda-ui/components/data-table';
+import { Text } from 'components/redpanda-ui/components/typography';
+import type { FC } from 'react';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -21,20 +27,24 @@ import { type Pipeline, Pipeline_State } from '../../../protogen/redpanda/api/da
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi } from '../../../state/backend-api';
 import { Features } from '../../../state/supported-features';
-import { uiSettings } from '../../../state/ui';
+import { useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
+import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
+
+const STATUS_ICON_SIZE = 24;
 
 /**
  * Navigates to /rp-connect/create (legacy flow)
  */
 const LegacyCreatePipelineButton = () => (
   <div>
-    <NewButton as={Link} to="/rp-connect/create">
+    <Button as={Link} to="/rp-connect/create">
       Create pipeline
-    </NewButton>
+    </Button>
   </div>
 );
 
@@ -42,62 +52,62 @@ const LegacyCreatePipelineButton = () => (
  * Shows image, text, and create button
  */
 const LegacyEmptyState = () => (
-  <Flex alignItems="center" flexDirection="column" gap="4" justifyContent="center" mb="4">
-    <Image src={EmptyConnectors} />
-    <Box>You have no Redpanda Connect pipelines.</Box>
+  <div className="mb-4 flex flex-col items-center justify-center gap-4">
+    <img alt="" src={EmptyConnectors} />
+    <div>You have no Redpanda Connect pipelines.</div>
     <LegacyCreatePipelineButton />
-  </Flex>
+  </div>
 );
 
 export const PipelineStatus = (p: { status: Pipeline_State }) => {
   switch (p.status) {
     case Pipeline_State.UNSPECIFIED:
       return (
-        <Flex alignItems="center" gap="2">
-          <CloseIcon color="orange" fontSize="17px" width="auto" /> Unspecified
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CloseIcon color="orange" size={STATUS_ICON_SIZE} /> Unspecified
+        </div>
       );
     case Pipeline_State.STARTING:
       return (
-        <Flex alignItems="center" gap="2">
-          <RotateCwIcon color="#444" size={24} /> Starting
-        </Flex>
+        <div className="flex items-center gap-2">
+          <RotateCwIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Starting
+        </div>
       );
     case Pipeline_State.RUNNING:
       return (
-        <Flex alignItems="center" gap="2">
-          <CheckIcon color="green" size={24} /> Running
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CheckIcon className="text-success" size={STATUS_ICON_SIZE} /> Running
+        </div>
       );
     case Pipeline_State.COMPLETED:
       return (
-        <Flex alignItems="center" gap="2">
-          <CheckIcon color="green" size={24} /> Completed
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CheckIcon className="text-success" size={STATUS_ICON_SIZE} /> Completed
+        </div>
       );
     case Pipeline_State.STOPPING:
       return (
-        <Flex alignItems="center" gap="2">
-          <RotateCwIcon color="#444" size={24} /> Stopping
-        </Flex>
+        <div className="flex items-center gap-2">
+          <RotateCwIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Stopping
+        </div>
       );
     case Pipeline_State.STOPPED:
       return (
-        <Flex alignItems="center" gap="2">
-          <StopCircleIcon color="#444" size={24} /> Stopped
-        </Flex>
+        <div className="flex items-center gap-2">
+          <StopCircleIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Stopped
+        </div>
       );
     case Pipeline_State.ERROR:
       return (
-        <Flex alignItems="center" gap="2">
-          <CloseIcon color="red" size={24} /> Error
-        </Flex>
+        <div className="flex items-center gap-2">
+          <CloseIcon className="text-destructive" size={STATUS_ICON_SIZE} /> Error
+        </div>
       );
     default:
       return (
-        <Flex alignItems="center" gap="2">
-          <HelpIcon color="red" size={24} /> Unknown
-        </Flex>
+        <div className="flex items-center gap-2">
+          <HelpIcon className="text-destructive" size={STATUS_ICON_SIZE} /> Unknown
+        </div>
       );
   }
 };
@@ -114,6 +124,101 @@ export const PipelineThroughput = (p: { pipeline: Pipeline }) => {
     </>
   );
 };
+
+// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
+// is off at table level.
+const TABLE_OPTIONS = {
+  enableHiding: false,
+  initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
+};
+
+// Hoisted: `PageComponent` force-updates on every api-store write, and a fresh array would
+// re-create every header and cell.
+const columns: DataTableColumnDef<Pipeline>[] = [
+  {
+    header: 'ID',
+    id: 'id',
+    enableSorting: false,
+    cell: ({ row: { original } }) => (
+      <Link
+        params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+        search={{} as never}
+        to="/rp-connect/$pipelineId"
+      >
+        <Text>{original.id}</Text>
+      </Link>
+    ),
+  },
+  {
+    header: 'Pipeline',
+    id: 'pipeline',
+    enableSorting: false,
+    // The Registry DataTable ignores column sizes.
+    cell: ({ row: { original } }) => (
+      <div className="w-screen max-w-full">
+        <Link
+          params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+          search={{} as never}
+          to="/rp-connect/$pipelineId"
+        >
+          <Text className="whitespace-break-spaces break-words">{original.displayName}</Text>
+        </Link>
+      </div>
+    ),
+  },
+  {
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
+    id: 'description',
+    accessorKey: 'description',
+    cell: ({ row: { original } }) => (
+      <Text className="min-w-[200px] whitespace-break-spaces break-words">{original.description}</Text>
+    ),
+  },
+  {
+    header: 'State',
+    id: 'state',
+    enableSorting: false,
+    cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
+  },
+  {
+    header: '',
+    id: 'actions',
+    enableSorting: false,
+    cell: ({ row: { original: r } }) => (
+      <Button
+        aria-label={`Delete pipeline ${r.displayName}`}
+        onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+          e.stopPropagation();
+          e.preventDefault();
+
+          openDeleteModal(r.displayName, () => {
+            pipelinesApi
+              .deletePipeline(r.id)
+              .then(async () => {
+                showToast({
+                  status: 'success',
+                  duration: 4000,
+                  title: 'Pipeline deleted',
+                });
+                await pipelinesApi.refreshPipelines(true);
+              })
+              .catch((err) => {
+                showToast({
+                  status: 'error',
+                  title: 'Failed to delete pipeline',
+                  description: String(err),
+                });
+              });
+          });
+        }}
+        size="icon-xs"
+        variant="ghost"
+      >
+        <TrashIcon />
+      </Button>
+    ),
+  },
+];
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesList extends PageComponent<{}> {
@@ -148,145 +253,68 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   }
 
   render() {
-    if (!pipelinesApi.pipelines) {
-      return DefaultSkeleton;
-    }
-
-    const filteredPipelines = (pipelinesApi.pipelines ?? [])
-      ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
-      .filter((u) => {
-        const filter = uiSettings.pipelinesList.quickSearch;
-        if (!filter) {
-          return true;
-        }
-        try {
-          const quickSearchRegExp = new RegExp(filter, 'i');
-          if (u.id.match(quickSearchRegExp)) {
-            return true;
-          }
-          if (u.displayName.match(quickSearchRegExp)) {
-            return true;
-          }
-          return false;
-        } catch {
-          return false;
-        }
-      });
-
-    return (
-      <PageContent>
-        {/* Pipeline List */}
-
-        {pipelinesApi.pipelines.length !== 0 && (
-          <div className="my-5 flex flex-col gap-2">
-            <LegacyCreatePipelineButton />
-            <SearchField
-              placeholderText="Enter search term / regex..."
-              searchText={uiSettings.pipelinesList.quickSearch}
-              setSearchText={(x) => {
-                uiSettings.pipelinesList.quickSearch = x;
-              }}
-              width="350px"
-            />
-          </div>
-        )}
-
-        {(pipelinesApi.pipelines ?? []).length === 0 ? (
-          <LegacyEmptyState />
-        ) : (
-          <DataTable<Pipeline>
-            columns={[
-              {
-                header: 'ID',
-                cell: ({ row: { original } }) => (
-                  <Link
-                    params={{ pipelineId: encodeURIComponentPercents(original.id) }}
-                    search={{} as never}
-                    to="/rp-connect/$pipelineId"
-                  >
-                    <Text>{original.id}</Text>
-                  </Link>
-                ),
-                size: 100,
-              },
-              {
-                header: 'Pipeline',
-                cell: ({ row: { original } }) => (
-                  <Link
-                    params={{ pipelineId: encodeURIComponentPercents(original.id) }}
-                    search={{} as never}
-                    to="/rp-connect/$pipelineId"
-                  >
-                    <Text whiteSpace="break-spaces" wordBreak="break-word">
-                      {original.displayName}
-                    </Text>
-                  </Link>
-                ),
-                size: Number.POSITIVE_INFINITY,
-              },
-              {
-                header: 'Description',
-                accessorKey: 'description',
-                cell: ({ row: { original } }) => (
-                  <Text minWidth="200px" whiteSpace="break-spaces" wordBreak="break-word">
-                    {original.description}
-                  </Text>
-                ),
-                size: 200,
-              },
-              {
-                header: 'State',
-                cell: ({ row: { original } }) => <PipelineStatus status={original.state} />,
-              },
-              {
-                header: '',
-                id: 'actions',
-                cell: ({ row: { original: r } }) => (
-                  <Button
-                    color="gray.500"
-                    height="16px"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-
-                      openDeleteModal(r.displayName, () => {
-                        pipelinesApi
-                          .deletePipeline(r.id)
-                          .then(async () => {
-                            showToast({
-                              status: 'success',
-                              duration: 4000,
-                              title: 'Pipeline deleted',
-                            });
-                            await pipelinesApi.refreshPipelines(true);
-                          })
-                          .catch((err) => {
-                            showToast({
-                              status: 'error',
-                              title: 'Failed to delete pipeline',
-                              description: String(err),
-                            });
-                          });
-                      });
-                    }}
-                    variant="icon"
-                  >
-                    <TrashIcon />
-                  </Button>
-                ),
-                size: 1,
-              },
-            ]}
-            data={filteredPipelines}
-            defaultPageSize={10}
-            emptyText=""
-            pagination
-            sorting
-          />
-        )}
-      </PageContent>
-    );
+    return <RpConnectPipelinesListContent />;
   }
 }
+
+// A nested write on the `uiSettings` proxy notifies nobody, so this subscribes to the store.
+const RpConnectPipelinesListContent: FC = () => {
+  const { pipelinesList, updateSettings } = useUISettingsStore();
+
+  if (!pipelinesApi.pipelines) {
+    return DefaultSkeleton;
+  }
+
+  const quickSearch = pipelinesList.quickSearch;
+  // Compiled once, not once per row. An invalid pattern matches nothing, as before.
+  let quickSearchRegExp: RegExp | null = null;
+  if (quickSearch) {
+    try {
+      quickSearchRegExp = new RegExp(quickSearch, 'i');
+    } catch {
+      quickSearchRegExp = null;
+    }
+  }
+
+  const filteredPipelines = (pipelinesApi.pipelines ?? [])
+    ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
+    .filter((u) => {
+      if (!quickSearch) {
+        return true;
+      }
+      if (!quickSearchRegExp) {
+        return false;
+      }
+      return quickSearchRegExp.test(u.id) || quickSearchRegExp.test(u.displayName);
+    });
+
+  return (
+    <PageContent>
+      {pipelinesApi.pipelines.length !== 0 && (
+        <div className="my-5 flex flex-col gap-2">
+          <LegacyCreatePipelineButton />
+          <SearchInput
+            containerClassName="max-w-[350px]"
+            onChange={(value) => updateSettings({ pipelinesList: { quickSearch: value } })}
+            placeholder="Enter search term / regex..."
+            value={quickSearch}
+          />
+        </div>
+      )}
+
+      {(pipelinesApi.pipelines ?? []).length === 0 ? (
+        <LegacyEmptyState />
+      ) : (
+        <DataTable<Pipeline>
+          columns={columns}
+          data={filteredPipelines}
+          pagination={filteredPipelines.length > DEFAULT_TABLE_PAGE_SIZE}
+          sorting
+          tableOptions={TABLE_OPTIONS}
+        />
+      )}
+    </PageContent>
+  );
+};
 
 export default RpConnectPipelinesList;

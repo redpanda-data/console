@@ -918,6 +918,14 @@ async function startBackendServerWithConfig({
   const environment = isEnterprise ? resolveEnterpriseLicenseEnv() : {};
 
   let containerId;
+  // Buffer the container's own output from the moment it starts: when the backend crashes
+  // during startup, `.start()` throws and Ryuk reaps the container before `docker logs` can
+  // reach it — this live stream is the only record of WHY the backend died.
+  const startupLogs = [];
+  const consumeLogs = (stream) => {
+    stream.on('data', (line) => startupLogs.push(String(line)));
+    stream.on('err', (line) => startupLogs.push(String(line)));
+  };
   try {
     const backend = await new GenericContainer(imageTag)
       .withNetwork(network)
@@ -926,6 +934,7 @@ async function startBackendServerWithConfig({
       .withBindMounts(bindMounts)
       .withEnvironment(environment)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
+      .withLogConsumer(consumeLogs)
       .withWaitStrategy(Wait.forListeningPorts())
       .start();
 
@@ -949,13 +958,18 @@ async function startBackendServerWithConfig({
   } catch (error) {
     console.error(`Failed to start backend on port ${externalPort}:`, error.message);
 
+    // The buffered log stream is the reliable record: when `.start()` throws, Ryuk reaps the
+    // container almost immediately, so `docker logs` against it races removal and loses.
+    if (startupLogs.length > 0) {
+      console.error(`Backend container output (${imageTag}):`);
+      console.error(startupLogs.join(''));
+    }
+
     if (containerId) {
       try {
-        const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
         const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
         const inspectJson = JSON.parse(inspect);
         console.error('Container state:', JSON.stringify(inspectJson[0].State, null, 2));
-        console.error('Container logs:', logs);
       } catch (logError) {
         console.error('Could not fetch container diagnostics:', logError.message);
       }

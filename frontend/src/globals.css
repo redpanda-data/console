@@ -2,45 +2,27 @@
 @import "./components/redpanda-ui/style/theme.css";
 @import "tw-animate-css";
 
-/* Tailwind's source detection walks markdown too, so class names in the agent skill docs — including
-   the deliberately-wrong ones in "Incorrect" examples — would ship as real CSS. */
+/* Tailwind's source detection walks markdown, so class names in the skill docs would ship as CSS. */
 @source not "../.claude";
 
-/* tw-animate-css's .fade-in sets opacity: 0, colliding with Monaco's own .monaco-hover.fade-in and
-   leaving hover widgets invisible. */
+/* tw-animate-css's .fade-in sets opacity: 0, which hides Monaco's own .monaco-hover.fade-in. */
 .monaco-hover.fade-in {
   opacity: 1;
 }
 
-/* Tailwind v4 Preflight sets `border: 0 solid`, so border-color defaults to currentColor. Legacy
-   Chakra components were authored against v3's transparent default and would otherwise paint any
-   border they set a width for. Scoped to Chakra's own prefix so Registry components are unaffected. */
-@layer base {
-  [class*="chakra-"],
-  [class*="chakra-"]::before,
-  [class*="chakra-"]::after {
-    border-color: transparent;
-  }
-}
-
-/* Chakra injects an UNLAYERED `*, ::before, ::after { border-color:
-   var(--chakra-colors-chakra-border-color) }`, which outranks every `@layer` rule regardless of
-   specificity — so every border in the app silently came out Chakra's #E2E8F0. We can't edit
-   emotion's output, so we repoint what its var computes to. Scoping by element is impossible:
-   ChakraProvider classes <body> and this is a custom property, so it inherits from there down; the
-   real fix is upstream, wrapping that reset in @layer base. Doubled attribute (0,3,0) beats Chakra's
-   own `:root[data-theme="light"]` without relying on source order. Lives here, not in
-   registry-synced theme.css, so it survives a re-sync. (UX-1259) */
+/* The host's Chakra injects an unlayered `*, ::before, ::after { border-color:
+   var(--chakra-colors-chakra-border-color) }` that outranks every `@layer` rule, so repoint the var
+   rather than fight the reset. Doubled attribute (0,3,0) beats Chakra's own
+   `:root[data-theme="light"]` without relying on source order. Lives here, not in registry-synced
+   theme.css, so a re-sync keeps it; cloud-ui has a value-identical copy — change both or neither.
+   (UX-1259) */
 :root[data-theme][data-theme] {
   --chakra-colors-chakra-border-color: var(--color-border);
 }
 
-/* …and this is what makes `border-<tone>-line` paint again: `revert-layer` hands the property back to
-   the cascade layers — `@layer utilities` when the element carries a colour utility, else
-   `@layer base`'s --color-border. Keyed on the substring every Tailwind border utility shares, which
-   is also why it leaves Chakra alone: emotion only emits `chakra-*` and `css-<hash>` class names,
-   never one containing `border-`. Until the upstream fix lands, explicit `border-<tone>-line`
-   utilities stay inert on Chakra nodes — convey tone with fill + ink instead. */
+/* …and this hands border-color back to the cascade layers so Tailwind's border utilities paint.
+   Keyed on the substring every border utility shares, which also spares emotion's `chakra-*` and
+   `css-<hash>` classes. Duplicated value-identically in cloud-ui — change both or neither. */
 [class*="border-"] {
   border-color: revert-layer;
 }
@@ -53,8 +35,8 @@
   }
 }
 
-/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width cap. Not a
-   Tailwind variant: the generated variant CSS went missing on some routes in the federated build. */
+/* Expanded page mode (hooks/use-expanded-page-mode.ts) releases the page gutter and width cap.
+   Not a Tailwind variant: the generated variant CSS is missing on some federated routes. */
 @layer utilities {
   /* 100%, not none — so the release animates. */
   html[data-page-expanded] .page-expanded-uncap {
@@ -73,9 +55,8 @@
   }
 }
 
-/* Dev-only bottom-right cluster for floating debug triggers, raised clear of the host's Feedback tab.
-   These selectors only match dev builds. The container carries 4px padding around the button, so the
-   offsets are -4 from where the visible circle should sit. */
+/* Dev-only floating debug triggers, raised clear of the host's Feedback tab. The container carries
+   4px padding around the button, so the offsets are -4 from where the visible circle sits. */
 .tsqd-open-btn-container {
   right: 8px !important;
   bottom: 64px !important;
@@ -111,5 +92,21 @@ button[aria-label="Open TanStack Router Devtools"]:hover {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Topic messages live tail: freshly arrived rows flash green then fade. A Tailwind v4
+   `--animate-*` token, so `animate-message-flash` is generated like any other animation
+   utility; no built-in animation expresses a background flash. */
+@theme {
+  --animate-message-flash: message-flash 2.6s ease-out;
+
+  @keyframes message-flash {
+    0% {
+      background-color: var(--color-green-100, #d1fadf);
+    }
+    100% {
+      background-color: transparent;
+    }
   }
 }

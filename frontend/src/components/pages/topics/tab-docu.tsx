@@ -14,7 +14,14 @@ import { docsLinks } from 'utils/docs-links';
 
 import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
-import { Button, Empty, VStack } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { motion } from 'motion/react';
 import ReactMarkdown, { defaultUrlTransform as baseUriTransformer } from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -159,13 +166,17 @@ const errorEmpty = renderDocuError(
 function renderDocuError(title: string, body: JSX.Element) {
   return (
     <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
-      <VStack gap={4}>
-        <Empty description={title} />
-        {body}
-        <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
-          <Button variant="solid">Redpanda Console Documentation</Button>
-        </a>
-      </VStack>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>{title}</EmptyTitle>
+          <EmptyDescription>{body}</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
+            <Button variant="primary">Redpanda Console Documentation</Button>
+          </a>
+        </EmptyContent>
+      </Empty>
     </motion.div>
   );
 }

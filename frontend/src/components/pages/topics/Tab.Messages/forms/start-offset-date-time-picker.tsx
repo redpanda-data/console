@@ -18,9 +18,11 @@ type StartOffsetDateTimePickerProps = {
   topicName: string;
   value: number;
   onChange: (value: number) => void;
+  /** Render the calendar/time panel inline instead of behind a click-to-open popup — for callers already inside their own popup. */
+  inline?: boolean;
 };
 
-export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartOffsetDateTimePickerProps) => {
+export const StartOffsetDateTimePicker = ({ topicName, value, onChange, inline }: StartOffsetDateTimePickerProps) => {
   const getSearchParams = useTopicSettingsStore((s) => s.getSearchParams);
   const searchParams = getSearchParams(topicName);
 
@@ -43,7 +45,7 @@ export const StartOffsetDateTimePicker = ({ topicName, value, onChange }: StartO
 
   return (
     <div data-testid="start-timestamp-input">
-      <DateTimeInput onChange={onChange} value={value === -1 ? initialTimestamp : value} />
+      <DateTimeInput inline={inline} onChange={onChange} value={value === -1 ? initialTimestamp : value} />
     </div>
   );
 };

@@ -25,6 +25,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbPage,
   BreadcrumbSeparator,
 } from '../redpanda-ui/components/breadcrumb';
 import { Button as RegistryButton } from '../redpanda-ui/components/button';
@@ -55,7 +56,14 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
                 <Fragment key={`${index}-${item.linkTo}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
-                    <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
+                    {index === breadcrumbItems.length - 1 ? (
+                      // The current page's crumb isn't a link: it points at the exact URL
+                      // we're already on, and re-navigating to that bare path (no search/hash)
+                      // would drop the page's query params (filters, pagination, active tab).
+                      <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
+                    )}
                   </BreadcrumbItem>
                 </Fragment>
               ))}

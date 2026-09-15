@@ -24,3 +24,12 @@ export function tasksToCPU(tasks: number | undefined): string | undefined {
   }
   return `${tasks * 100}m`;
 }
+
+/** The Input enforces neither `min` nor `max`, so the bounds are applied here. */
+export function clampTasks(value: string | number): number {
+  const tasks = Number(value);
+  if (!Number.isFinite(tasks) || tasks < MIN_TASKS) {
+    return MIN_TASKS;
+  }
+  return Math.min(Math.trunc(tasks), MAX_TASKS);
+}

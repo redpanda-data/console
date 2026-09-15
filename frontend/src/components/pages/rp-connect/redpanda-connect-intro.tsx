@@ -1,21 +1,7 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  Link as ChakraLink,
-  CodeBlock,
-  Flex,
-  Grid,
-  Heading,
-  Image,
-  ListItem,
-  OrderedList,
-  Stack,
-  Text,
-} from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { Heading, List, ListItem, Text, Link as UILink } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
@@ -72,55 +58,47 @@ redpanda:
   const options = Object.keys(installInstructions).map((x) => ({ value: x as typeof selectedInstall }));
 
   return (
-    <Grid gap={10} templateColumns="1fr 320px">
-      <Stack spacing={3}>
+    <div className="grid grid-cols-[1fr_320px] gap-10">
+      <div className="flex flex-col gap-3">
         <Heading as="h2">Using Redpanda Connect</Heading>
         <Text>
           Redpanda Connect is a declarative data streaming service with wide range of{' '}
-          <ChakraLink
-            href={docsLinks.connect.componentCatalog}
-            isExternal
-            style={{ textDecoration: 'underline solid 1px' }}
-          >
+          <UILink href={docsLinks.connect.componentCatalog} rel="noopener noreferrer" target="_blank">
             connectors and processors
-          </ChakraLink>
+          </UILink>
           .
         </Text>
 
-        <OrderedList display="flex" flexDirection="column" gap="0.5rem">
+        <List className="flex flex-col gap-2" ordered>
           <ListItem>
-            <Text mt={3}>Install Redpanda Connect</Text>
-            <Box>
-              <Stack gap={2} mb={6}>
-                <Text fontWeight="bold">Choose your install method</Text>
-                <Box width="275px">
+            <Text className="mt-3">Install Redpanda Connect</Text>
+            <div>
+              <div className="mb-6 flex flex-col gap-2">
+                <Text className="font-bold">Choose your install method</Text>
+                <div className="w-[275px]">
                   <SingleSelect<typeof selectedInstall>
                     onChange={setSelectedInstall}
                     options={options}
                     value={selectedInstall}
                   />
-                </Box>
-                <Box>
-                  <CodeBlock codeString={installInstructions[selectedInstall]} language="bash" />
-                </Box>
-              </Stack>
-            </Box>
+                </div>
+                <div>
+                  <DynamicCodeBlock code={installInstructions[selectedInstall]} lang="bash" />
+                </div>
+              </div>
+            </div>
           </ListItem>
 
           <ListItem>
-            <Text mt={3}>
+            <Text className="mt-3">
               Build your first pipeline. Start from the Redpanda data generator example below. Explore the components
               using autocomplete (CTRL/CMD+Space). For other examples and use cases, see{' '}
-              <ChakraLink
-                href={docsLinks.connect.cookbookCustomMetrics}
-                isExternal
-                style={{ textDecoration: 'underline solid 1px' }}
-              >
+              <UILink href={docsLinks.connect.cookbookCustomMetrics} rel="noopener noreferrer" target="_blank">
                 our documentation
-              </ChakraLink>
+              </UILink>
               .
             </Text>
-            <Flex minHeight="550px" minWidth="500px" ml="-1rem" mt={3}>
+            <div className="mt-3 -ml-4 flex min-h-[550px] min-w-[500px]">
               <PipelinesYamlEditor
                 defaultPath="config.yaml"
                 language="yaml"
@@ -132,83 +110,74 @@ redpanda:
                 path="config.yaml"
                 value={editorText}
               />
-            </Flex>
+            </div>
           </ListItem>
 
           <ListItem>
-            <Text mt={3}>
+            <Text className="mt-3">
               Set up your connection to Redpanda for data in the{' '}
-              <ChakraLink
-                href={docsLinks.connect.outputKafkaFranz}
-                isExternal
-                style={{ textDecoration: 'underline solid 1px' }}
-              >
+              <UILink href={docsLinks.connect.outputKafkaFranz} rel="noopener noreferrer" target="_blank">
                 kafka_franz
-              </ChakraLink>{' '}
+              </UILink>{' '}
               component and{' '}
-              <ChakraLink
-                href={docsLinks.connect.redpandaComponent}
-                isExternal
-                style={{ textDecoration: 'underline solid 1px' }}
-              >
+              <UILink href={docsLinks.connect.redpandaComponent} rel="noopener noreferrer" target="_blank">
                 logs
-              </ChakraLink>{' '}
+              </UILink>{' '}
               in the redpanda component.
             </Text>
           </ListItem>
 
           <ListItem>
-            <Text mt={3}>Make sure that your output topic and logs topic both exist.</Text>
+            <Text className="mt-3">Make sure that your output topic and logs topic both exist.</Text>
           </ListItem>
 
           <ListItem>
-            <Text mt={3}>
+            <Text className="mt-3">
               To test the above config in the Terminal, first save your configuration from the editor to your working
               directory as <code>config.yaml</code>.
             </Text>
           </ListItem>
 
           <ListItem>
-            <Text mt={3}>Test the config by executing it:</Text>
-            <Box marginBlock={3} maxWidth="400px">
-              <CodeBlock codeString="rpk connect run ./config.yaml" language="sh" />
-              <Text mt={3}>Anything you write to stdin will be written unchanged to stdout.</Text>
-            </Box>
+            <Text className="mt-3">Test the config by executing it:</Text>
+            <div className="my-3 max-w-[400px]">
+              <DynamicCodeBlock code="rpk connect run ./config.yaml" lang="sh" />
+              <Text className="mt-3">Anything you write to stdin will be written unchanged to stdout.</Text>
+            </div>
           </ListItem>
 
           <ListItem>
-            <Text mt={3}>
+            <Text className="mt-3">
               Go to the{' '}
-              <ChakraLink as={Link} style={{ textDecoration: 'underline solid 1px' }} to="/topics">
+              <UILink as={Link} to="/topics">
                 Topics
-              </ChakraLink>{' '}
+              </UILink>{' '}
               page to read the logs and your output topic.{' '}
             </Text>
           </ListItem>
-        </OrderedList>
-      </Stack>
+        </List>
+      </div>
 
-      <Stack mt={12} spacing={8}>
-        <Image alt="redpanda bot icon" src={RedpandaConnectLogo} />
+      <div className="mt-12 flex flex-col gap-8">
+        <img alt="redpanda bot icon" src={RedpandaConnectLogo} />
 
-        <Alert status="info">
-          <AlertIcon />
-          <Box>
-            <AlertTitle>Hint</AlertTitle>
-            <AlertDescription>
+        {/* The Registry Alert renders its own icon; AlertDescription is a grid. */}
+        <Alert variant="informative">
+          <AlertTitle>Hint</AlertTitle>
+          <AlertDescription>
+            <div>
               In the Terminal, to show the full menu of components available, use <code>rpk connect list</code>.
-              <br />
-              <br />
-              Then, to generate a config with a specific listed component, use
-              <br />
+            </div>
+            <div>
+              Then, to generate a config with a specific listed component, use{' '}
               <code>rpk connect create [component]</code>.
-              <br />
-              <br />
+            </div>
+            <div>
               For more help: <code>rpk connect create -h</code>
-            </AlertDescription>
-          </Box>
+            </div>
+          </AlertDescription>
         </Alert>
-      </Stack>
-    </Grid>
+      </div>
+    </div>
   );
 }

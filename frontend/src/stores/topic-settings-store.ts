@@ -16,6 +16,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type {
   ColumnList,
+  DataColumnKey,
   FilterEntry,
   PartitionOffsetOriginType,
   PreviewTagV2,
@@ -23,6 +24,27 @@ import type {
   TopicDetailsSettings,
 } from '../state/ui';
 import { uiSettings } from '../state/ui';
+
+/** Row density for the messages table: `detailed` adds a deserializer badge and byte size under key/value cells. */
+export type RowDensity = 'compact' | 'detailed';
+
+/** One entry per message-table column; array order is display order. */
+export type MessageColumnConfig = {
+  id: DataColumnKey;
+  visible: boolean;
+};
+
+export const DEFAULT_MESSAGE_COLUMNS: MessageColumnConfig[] = [
+  { id: 'timestamp', visible: true },
+  { id: 'partitionID', visible: false },
+  { id: 'offset', visible: false },
+  { id: 'key', visible: true },
+  { id: 'value', visible: true },
+  { id: 'keySize', visible: false },
+  { id: 'valueSize', visible: false },
+];
+
+export const DEFAULT_ROW_DENSITY: RowDensity = 'detailed';
 
 /**
  * Search parameters for topic messages
@@ -72,6 +94,10 @@ export type TopicSettings = {
   produceRecordEncoding: PayloadEncoding | 'base64';
   produceRecordCompression: CompressionType;
   quickSearch: string;
+  // Added for the new messages UX; optional so entries persisted before these
+  // fields existed still typecheck — read through the fallback getters.
+  rowDensity?: RowDensity;
+  messageColumns?: MessageColumnConfig[];
 };
 
 export type TopicSettingsStore = {
@@ -101,6 +127,13 @@ export type TopicSettingsStore = {
   // Actions for preview display mode
   setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => void;
   getPreviewDisplayMode: (topicName: string) => 'single' | 'wrap' | 'rows';
+
+  // Actions for the messages-table view settings (new messages UX)
+  setRowDensity: (topicName: string, density: RowDensity) => void;
+  getRowDensity: (topicName: string) => RowDensity;
+  setMessageColumns: (topicName: string, columns: MessageColumnConfig[]) => void;
+  getMessageColumns: (topicName: string) => MessageColumnConfig[];
+  resetViewSettings: (topicName: string) => void;
 
   // Actions for complete topic settings
   getTopicSettings: (topicName: string) => TopicSettings | undefined;
@@ -375,6 +408,63 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
         getPreviewDisplayMode: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
           return topic?.previewDisplayMode ?? 'wrap';
+        },
+
+        setRowDensity: (topicName: string, density: RowDensity) => {
+          get().setTopicSettings(topicName, { rowDensity: density });
+        },
+
+        getRowDensity: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          return topic?.rowDensity ?? DEFAULT_ROW_DENSITY;
+        },
+
+        setMessageColumns: (topicName: string, columns: MessageColumnConfig[]) => {
+          get().setTopicSettings(topicName, { messageColumns: columns });
+        },
+
+        getMessageColumns: (topicName: string) => {
+          const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
+          const columns = topic?.messageColumns;
+          if (!columns || columns.length === 0) {
+            return DEFAULT_MESSAGE_COLUMNS;
+          }
+          // Heal entries corrupted by the legacy assignDeep array merge (which
+          // duplicated some column ids and dropped others): keep the first
+          // occurrence of each id and restore any missing columns.
+          const seen = new Set<MessageColumnConfig['id']>();
+          const unique = columns.filter((c) => {
+            if (seen.has(c.id)) {
+              return false;
+            }
+            seen.add(c.id);
+            return true;
+          });
+          const missing = DEFAULT_MESSAGE_COLUMNS.filter((d) => !seen.has(d.id));
+          return unique.length === columns.length && missing.length === 0 ? columns : [...unique, ...missing];
+        },
+
+        resetViewSettings: (topicName: string) => {
+          get().setTopicSettings(topicName, {
+            rowDensity: DEFAULT_ROW_DENSITY,
+            messageColumns: DEFAULT_MESSAGE_COLUMNS,
+            previewTags: [],
+            previewTagsCaseSensitive: 'ignoreCase',
+            previewMultiResultMode: 'showAll',
+            previewDisplayMode: 'single',
+            previewTimestamps: 'default',
+          });
+          const searchParams = get().getSearchParams(topicName);
+          if (
+            searchParams &&
+            (searchParams.keyDeserializer !== PayloadEncoding.UNSPECIFIED ||
+              searchParams.valueDeserializer !== PayloadEncoding.UNSPECIFIED)
+          ) {
+            get().setSearchParams(topicName, {
+              keyDeserializer: PayloadEncoding.UNSPECIFIED,
+              valueDeserializer: PayloadEncoding.UNSPECIFIED,
+            });
+          }
         },
 
         getTopicSettings: (topicName: string) => get().perTopicSettings.find((t) => t.topicName === topicName),

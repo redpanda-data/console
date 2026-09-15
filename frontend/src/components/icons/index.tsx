@@ -68,6 +68,7 @@ export {
   HelpCircle as HelpIcon, // MdHelpOutline, MdOutlineQuestionMark
   Home as HomeIcon, // HomeIcon (Heroicons)
   Hourglass as HourglassIcon, // MdHourglassFull
+  Inbox as InboxIcon,
   Info as InfoIcon, // MdInfoOutline, InfoIcon (Chakra/Octicons)
   Key as KeyIcon, // MdKey
   Layers as LayersIcon, // MdOutlineLayers
