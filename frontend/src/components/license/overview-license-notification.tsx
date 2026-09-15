@@ -5,6 +5,7 @@ import { type FC, type ReactElement, useEffect, useState } from 'react';
 
 import {
   consoleHasEnterpriseFeature,
+  coreHasActiveEnterpriseLicense,
   DISABLE_SSO_DOCS_LINK,
   ENTERPRISE_FEATURES_DOCS_LINK,
   getEnterpriseCTALink,
@@ -280,6 +281,11 @@ export const OverviewLicenseNotification: FC = () => {
   }
 
   if (trialLicenses.length === 0) {
+    return null;
+  }
+
+  // The cluster's own Enterprise licence supersedes any trial notice.
+  if (coreHasActiveEnterpriseLicense(licenses)) {
     return null;
   }
 
