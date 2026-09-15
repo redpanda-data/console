@@ -521,7 +521,9 @@ class ReassignPartitions extends PageComponent {
             // Reset settings, go back to first page
             this.resetSelectionAndPage(true, false);
           }
-        } catch (_err) {
+        } catch (err) {
+          // biome-ignore lint/suspicious/noConsole: the toast promises console detail
+          console.error('start partition reassignment failed', err);
           showToast({
             status: 'error',
             description: 'Error starting partition reassignment.\nSee console for more information.',
@@ -595,9 +597,16 @@ class ReassignPartitions extends PageComponent {
       });
       this.setReassignError(startedCount, errors);
       return false;
-    } catch (_err) {
+    } catch (err) {
       closeToast(toastRef);
-
+      // biome-ignore lint/suspicious/noConsole: the toast promises console detail
+      console.error('startReassignment failed', err);
+      showToast({
+        status: 'error',
+        title: 'Could not start the reassignment',
+        description: err instanceof Error ? err.message : String(err),
+        duration: 6000,
+      });
       return false;
     }
   }
@@ -674,8 +683,18 @@ class ReassignPartitions extends PageComponent {
         duration: 2500,
       });
       return true;
-    } catch (_err) {
+    } catch (err) {
       closeToast(toastRef);
+      // The per-broker patch fails outright on Redpanda ("Setting broker properties on named
+      // brokers is unsupported"), so the message itself is what an operator needs.
+      // biome-ignore lint/suspicious/noConsole: the toast promises console detail
+      console.error('setTrafficLimit failed', err);
+      showToast({
+        status: 'error',
+        title: 'Could not set the bandwidth throttle',
+        description: err instanceof Error ? err.message : String(err),
+        duration: 6000,
+      });
       return false;
     }
   }
