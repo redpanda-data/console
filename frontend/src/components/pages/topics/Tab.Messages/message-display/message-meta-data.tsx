@@ -16,7 +16,7 @@ import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { numberToThousandsString } from '../../../../../utils/tsx-utils';
 import { prettyBytes, titleCase } from '../../../../../utils/utils';
 
-export const MessageMetaData = (props: { msg: TopicMessage }) => {
+export const MessageMetaData = (props: { msg: TopicMessage; topicName?: string }) => {
   const msg = props.msg;
   const data: { [k: string]: React.ReactNode } = {
     Partition: msg.partitionID,
@@ -31,7 +31,7 @@ export const MessageMetaData = (props: { msg: TopicMessage }) => {
   };
 
   if (msg.value.schemaId) {
-    data.Schema = <MessageSchema schemaId={msg.value.schemaId} />;
+    data.Schema = <MessageSchema schemaId={msg.value.schemaId} topicName={props.topicName} />;
   }
 
   return (

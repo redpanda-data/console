@@ -47,6 +47,7 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
+import { subjectSchemaContext } from '../schemas/schema-context-utils';
 
 type EncodingOption = {
   value: PayloadEncoding | 'base64';
@@ -310,6 +311,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           );
           if (selectedSchema) {
             req.key.schemaId = selectedSchema.id;
+            req.key.schemaContext = subjectSchemaContext(data.key.schemaName);
           }
         }
       }
@@ -345,6 +347,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           );
           if (selectedSchema) {
             req.value.schemaId = selectedSchema.id;
+            req.value.schemaContext = subjectSchemaContext(data.value.schemaName);
           }
         }
       }
