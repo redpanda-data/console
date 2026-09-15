@@ -11,6 +11,7 @@
 
 import { isFeatureFlagEnabled } from 'config';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { pluralize } from 'utils/string';
 import { prettyMilliseconds } from 'utils/utils';
 
 export const areDraftsEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnPipelineDrafts');
@@ -34,7 +35,6 @@ export const DRAFT_UPDATE_UNSUPPORTED_MESSAGE =
 
 export const DRAFT_VIEW_NOTICE_TITLE = 'This pipeline is a draft';
 
-/** The one-way-door warning lives on the start confirmation, where it is actionable. */
 export const DRAFT_VIEW_NOTICE_BODY =
   "It has never run, so it costs nothing and there's nothing to monitor yet. Starting it checks the configuration, then deploys it for real.";
 
@@ -88,7 +88,6 @@ export function draftIssueSummary(issueCount: number): string | null {
 
 export const START_DRAFT_CONFIRM_TITLE = 'Start pipeline?';
 
-/** Starting is the one-way door: it deploys for real, and the pipeline is never a draft again. */
 export const START_DRAFT_CONFIRM_IRREVERSIBLE =
   "It becomes a regular pipeline — you can stop it, but it can't go back to being a draft.";
 
@@ -96,16 +95,17 @@ const MAX_LISTED_TOPICS = 3;
 
 /** "a", "a and b", "a, b and c", "a, b, c and 2 more". */
 export function formatTopicList(topics: string[]): string {
-  if (topics.length <= MAX_LISTED_TOPICS) {
-    const head = topics.slice(0, -1).join(', ');
-    return head ? `${head} and ${topics.at(-1)}` : (topics[0] ?? '');
+  if (topics.length > MAX_LISTED_TOPICS) {
+    return `${topics.slice(0, MAX_LISTED_TOPICS).join(', ')} and ${topics.length - MAX_LISTED_TOPICS} more`;
   }
-  return `${topics.slice(0, MAX_LISTED_TOPICS).join(', ')} and ${topics.length - MAX_LISTED_TOPICS} more`;
+  if (topics.length < 2) {
+    return topics[0] ?? '';
+  }
+  return `${topics.slice(0, -1).join(', ')} and ${topics.at(-1)}`;
 }
 
-/** A draft has never run, so the confirmation names the topics and the compute it is about to use. */
-export function startDraftConfirmBody({ topics, computeUnits }: { topics: string[]; computeUnits: number }): string {
-  const units = `${computeUnits} compute ${computeUnits === 1 ? 'unit' : 'units'}`;
+export function startDraftConfirmBody(topics: string[], computeUnits: number): string {
+  // No topics: the clause goes rather than reading "through  and uses".
   const through = topics.length > 0 ? ` through ${formatTopicList(topics)}` : '';
-  return `Starting checks the configuration, then deploys the pipeline for real. It begins processing data${through} and uses ${units}.`;
+  return `Starting checks the configuration, then deploys the pipeline for real. It begins processing data${through} and uses ${computeUnits} compute ${pluralize(computeUnits, 'unit')}.`;
 }

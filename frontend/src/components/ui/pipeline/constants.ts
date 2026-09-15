@@ -46,6 +46,21 @@ export const PIPELINE_STATE_STATUS_VARIANT: Record<Pipeline_State, StatusBadgeVa
 };
 
 /**
+ * Rank for "needs attention first" ordering. Problems, then transitions, then drafts — a draft is
+ * nobody's incident — and idle last. Exhaustive, so a new proto state fails the build here.
+ */
+export const PIPELINE_STATE_SORT_PRIORITY: Record<Pipeline_State, number> = {
+  [Pipeline_State.ERROR]: 0,
+  [Pipeline_State.STARTING]: 1,
+  [Pipeline_State.STOPPING]: 2,
+  [Pipeline_State.DRAFT]: 3,
+  [Pipeline_State.RUNNING]: 4,
+  [Pipeline_State.COMPLETED]: 5,
+  [Pipeline_State.STOPPED]: 6,
+  [Pipeline_State.UNSPECIFIED]: 7,
+};
+
+/**
  * Issue filter options for filtering pipelines by log severity.
  */
 export const ISSUE_FILTER_OPTIONS = [

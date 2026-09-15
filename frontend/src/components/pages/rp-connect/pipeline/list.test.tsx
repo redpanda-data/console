@@ -378,12 +378,11 @@ describe('PipelineListPage', () => {
       expect(within(row).getByText('Draft')).toBeInTheDocument();
       // Its connectors are parsed from its YAML like any other row.
       expect(within(row).getByText('generate')).toBeInTheDocument();
-      // Drafts sort ahead of healthy pipelines, but a draft is nobody's incident: the error row still leads.
+      // Drafts sort ahead of healthy pipelines; the error row still leads.
       expect(visibleLinkNames().slice(0, 2)).toEqual(['clickstream-sink', 'half-built-pipeline']);
     });
 
-    // Age rather than the id: what decides whether to pick a draft up or bin it. Not the author —
-    // `created_by` is attribution for the create, and beside an edit time it reads as who edited it.
+    // Age, not the author: what decides whether to pick a draft up or bin it.
     it('says when a draft was last edited, and nothing about who', async () => {
       renderList({ withDraft: true });
 
@@ -453,7 +452,7 @@ describe('PipelineListPage', () => {
 
       await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
       await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
-      // Same confirmation as the detail view: the row menu is where the config has not been seen at all.
+      // The row menu goes through the same confirmation.
       expect(await screen.findByText(/can't go back to being a draft/)).toBeInTheDocument();
       await user.click(screen.getByTestId('confirm-start-draft'));
 

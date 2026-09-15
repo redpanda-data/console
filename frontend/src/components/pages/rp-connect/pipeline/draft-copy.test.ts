@@ -119,7 +119,6 @@ describe('formatTopicList', () => {
     expect(formatTopicList(['a', 'b', 'c'])).toBe('a, b and c');
   });
 
-  // A pipeline can touch dozens; the confirmation stays one sentence.
   it('counts the rest past three', () => {
     expect(formatTopicList(['a', 'b', 'c', 'd', 'e'])).toBe('a, b, c and 2 more');
   });
@@ -130,20 +129,18 @@ describe('formatTopicList', () => {
 });
 
 describe('startDraftConfirmBody', () => {
-  // The two consequences a draft has never had: it touches real topics, and it costs compute.
   it('names the topics and the compute the start will use', () => {
-    const body = startDraftConfirmBody({ topics: ['orders', 'orders-dlq'], computeUnits: 2 });
+    const body = startDraftConfirmBody(['orders', 'orders-dlq'], 2);
     expect(body).toMatch(/orders and orders-dlq/);
     expect(body).toMatch(/2 compute units/);
   });
 
   it('keeps the compute singular for one unit', () => {
-    expect(startDraftConfirmBody({ topics: [], computeUnits: 1 })).toMatch(/1 compute unit\./);
+    expect(startDraftConfirmBody([], 1)).toMatch(/1 compute unit\./);
   });
 
-  // An HTTP-only pipeline names no topics, so the clause goes rather than reading "through ".
   it('drops the topic clause when the configuration names none', () => {
-    const body = startDraftConfirmBody({ topics: [], computeUnits: 1 });
+    const body = startDraftConfirmBody([], 1);
     expect(body).toMatch(/begins processing data and uses/);
     expect(body).not.toMatch(/through/);
   });

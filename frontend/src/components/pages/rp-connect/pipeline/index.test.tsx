@@ -2326,7 +2326,6 @@ describe('PipelinePage', () => {
         ...overrides,
       });
 
-    /** Starting a draft deploys it for real, so every start goes through the confirmation. */
     const confirmStart = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(await screen.findByTestId('start-draft'));
       await user.click(await screen.findByTestId('confirm-start-draft'));
@@ -2403,7 +2402,6 @@ describe('PipelinePage', () => {
       expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/)).toBeInTheDocument();
     });
 
-    // The click that ends the draft: it deploys for real, and the pipeline is never a draft again.
     it('names the topics and the compute before it commits to starting', async () => {
       const user = userEvent.setup();
       const startPipelineMock = rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));

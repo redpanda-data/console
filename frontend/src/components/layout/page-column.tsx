@@ -13,7 +13,7 @@ import { type ReactNode, useLayoutEffect, useState } from 'react';
 
 import { chainToBody, documentTop } from '../../utils/dom-position';
 
-/** Read by `.page-fill-viewport` (globals.css). */
+/** Read by `.page-fill-viewport` and `.page-fill-viewport-min` (globals.css). */
 const PAGE_TOP_VAR = '--console-page-top';
 
 /**
@@ -74,7 +74,7 @@ const usePublishPageTop = () => {
 
 /**
  * The column every page renders into: the gap below the app header, plus the offset
- * `page-fill-viewport` pages size against. Must sit directly inside `#mainLayout`.
+ * the `page-fill-viewport` utilities size against. Must sit directly inside `#mainLayout`.
  */
 export const PageColumn = ({ children }: { children: ReactNode }) => {
   const ref = usePublishPageTop();

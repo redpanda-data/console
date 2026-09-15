@@ -20,16 +20,13 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Play } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { START_DRAFT_CONFIRM_IRREVERSIBLE, START_DRAFT_CONFIRM_TITLE, startDraftConfirmBody } from './draft-copy';
+import { useStartDraft } from './use-start-draft';
 import { extractAllTopics } from '../utils/yaml';
 
-/**
- * Starting a draft deploys it for real and it is never a draft again, so it confirms first —
- * naming the topics it will touch and the compute it will use.
- */
-export function StartDraftDialog({
+function StartDraftDialog({
   open,
   configYaml,
   computeUnits,
@@ -54,7 +51,7 @@ export function StartDraftDialog({
           <DialogTitle>{START_DRAFT_CONFIRM_TITLE}</DialogTitle>
         </DialogHeader>
         <DialogBody spacing="sm">
-          <p>{startDraftConfirmBody({ topics, computeUnits })}</p>
+          <p>{startDraftConfirmBody(topics, computeUnits)}</p>
           <p>{START_DRAFT_CONFIRM_IRREVERSIBLE}</p>
         </DialogBody>
         <DialogFooter>
@@ -73,4 +70,39 @@ export function StartDraftDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * The only way to start a draft: `confirmDialog` must be rendered for `requestStart` to reach the
+ * start. Rendered outside the trigger's own tree — a dropdown item's menu closes over it.
+ */
+export function useStartDraftConfirm({
+  id,
+  configYaml,
+  computeUnits,
+}: {
+  id: string;
+  configYaml: string;
+  computeUnits: number;
+}) {
+  const { startDraft, isStartingDraft } = useStartDraft();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return {
+    requestStart: () => setIsOpen(true),
+    isStartingDraft,
+    confirmDialog: (
+      <StartDraftDialog
+        computeUnits={computeUnits}
+        configYaml={configYaml}
+        isStarting={isStartingDraft}
+        onConfirm={async () => {
+          await startDraft(id);
+          setIsOpen(false);
+        }}
+        onOpenChange={setIsOpen}
+        open={isOpen}
+      />
+    ),
+  };
 }

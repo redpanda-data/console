@@ -40,7 +40,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { Fragment, type ReactNode, useMemo, useState } from 'react';
+import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 import { docsLinks } from 'utils/docs-links';
@@ -56,8 +56,7 @@ import {
   type SaveIntent,
   saveRunHint,
 } from './save-actions';
-import { StartDraftDialog } from './start-draft-dialog';
-import { useStartDraft } from './use-start-draft';
+import { useStartDraftConfirm } from './start-draft-dialog';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
@@ -243,33 +242,23 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
   />
 );
 
-const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
-  const { startDraft, isStartingDraft } = useStartDraft();
-  const [isStartConfirmOpen, setIsStartConfirmOpen] = useState(false);
-  if (!isDraft(pipeline)) {
-    return <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />;
-  }
+const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: number }) => {
+  const { requestStart, isStartingDraft, confirmDialog } = useStartDraftConfirm({
+    id: pipeline.id,
+    configYaml: pipeline.configYaml,
+    computeUnits: units,
+  });
   return (
     <>
       <Button
         disabled={isStartingDraft}
         icon={isStartingDraft ? <Spinner /> : <Play />}
-        onClick={() => setIsStartConfirmOpen(true)}
+        onClick={requestStart}
         testId="start-draft"
       >
         Start pipeline
       </Button>
-      <StartDraftDialog
-        computeUnits={cpuToTasks(pipeline.resources?.cpuShares) ?? 0}
-        configYaml={pipeline.configYaml}
-        isStarting={isStartingDraft}
-        onConfirm={async () => {
-          await startDraft(pipeline.id);
-          setIsStartConfirmOpen(false);
-        }}
-        onOpenChange={setIsStartConfirmOpen}
-        open={isStartConfirmOpen}
-      />
+      {confirmDialog}
     </>
   );
 };
@@ -348,7 +337,11 @@ export function PipelineViewHeader({
           </Button>
           {viewingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
           <Separator className="mx-1 h-6 self-center" orientation="vertical" />
-          <RunControl pipeline={pipeline} />
+          {viewingDraft ? (
+            <StartDraftControl pipeline={pipeline} units={units} />
+          ) : (
+            <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />
+          )}
         </div>
       </div>
       <div className="flex flex-col gap-2">

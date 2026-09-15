@@ -46,6 +46,7 @@ import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui
 import { FadePresence } from 'components/ui/fade-presence';
 import {
   PIPELINE_STATE_LABELS,
+  PIPELINE_STATE_SORT_PRIORITY,
   PIPELINE_STATE_STATUS_VARIANT,
   STARTABLE_STATES,
   STOPPABLE_STATES,
@@ -98,8 +99,7 @@ import {
   pipelineListEmptyText,
   stateFilterValues,
 } from './list-utils';
-import { StartDraftDialog } from './start-draft-dialog';
-import { useStartDraft } from './use-start-draft';
+import { useStartDraftConfirm } from './start-draft-dialog';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { cpuToTasks } from '../tasks';
@@ -117,7 +117,7 @@ type Pipeline = {
   isDraft: boolean;
   /** Epoch ms of the last edit. */
   editedAt: number | null;
-  /** For the draft start confirmation, which names the topics it will touch. */
+  /** Empty on a deployed row: only a draft opens the start confirmation, which names these. */
   configYaml: string;
   computeUnits: number;
 };
@@ -125,6 +125,7 @@ type Pipeline = {
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   const { inputs, outputs } = parseConfigComponentsCached(apiPipeline.configYaml);
   const tags = getUserTagEntries(apiPipeline.tags);
+  const draft = isDraft(apiPipeline);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
@@ -133,10 +134,10 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     inputs,
     outputs,
     tags,
-    isDraft: isDraft(apiPipeline),
+    isDraft: draft,
     editedAt: timestampToMillis(apiPipeline.updateTime),
-    configYaml: apiPipeline.configYaml,
-    computeUnits: cpuToTasks(apiPipeline.resources?.cpuShares) ?? 0,
+    configYaml: draft ? apiPipeline.configYaml : '',
+    computeUnits: draft ? (cpuToTasks(apiPipeline.resources?.cpuShares) ?? 0) : 0,
   };
 };
 
@@ -180,19 +181,7 @@ const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, f
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-// Problems first — a draft is nobody's incident — then transitions, drafts, idle last.
-const pipelineStateSortPriority: Record<Pipeline_State, number> = {
-  [Pipeline_State.ERROR]: 0,
-  [Pipeline_State.STARTING]: 1,
-  [Pipeline_State.STOPPING]: 2,
-  [Pipeline_State.DRAFT]: 3,
-  [Pipeline_State.RUNNING]: 4,
-  [Pipeline_State.COMPLETED]: 5,
-  [Pipeline_State.STOPPED]: 6,
-  [Pipeline_State.UNSPECIFIED]: 7,
-};
-
-const sortPriority = (row: Pipeline): number => pipelineStateSortPriority[row.state] ?? Number.MAX_SAFE_INTEGER;
+const sortPriority = (row: Pipeline): number => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
 
 const PAGE_SIZE = 20;
 
@@ -313,8 +302,11 @@ const ActionsCell = memo(
     const isStarting = pipeline.state === Pipeline_State.STARTING;
     const isStopping = pipeline.state === Pipeline_State.STOPPING;
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isStartConfirmOpen, setIsStartConfirmOpen] = useState(false);
-    const { startDraft, isStartingDraft } = useStartDraft();
+    const { requestStart, isStartingDraft, confirmDialog } = useStartDraftConfirm({
+      id: pipeline.id,
+      configYaml: pipeline.configYaml,
+      computeUnits: pipeline.computeUnits,
+    });
     // The dialog says so when this browser also holds unsaved edits for the draft.
     const hasUnsavedChanges = useRpcnEditorAutosaveStore(
       (s) => isDraftRow && selectAutosaveEntry(s.entries, autosaveTargetKey(pipeline.id)) !== null
@@ -405,7 +397,7 @@ const ActionsCell = memo(
               {isDraftRow ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>
             {isDraftRow ? (
-              <DropdownMenuItem disabled={isStartingDraft} onClick={() => setIsStartConfirmOpen(true)}>
+              <DropdownMenuItem disabled={isStartingDraft} onClick={requestStart}>
                 Start
               </DropdownMenuItem>
             ) : null}
@@ -421,19 +413,7 @@ const ActionsCell = memo(
             />
           </DropdownMenuContent>
         </DropdownMenu>
-        {isDraftRow ? (
-          <StartDraftDialog
-            computeUnits={pipeline.computeUnits}
-            configYaml={pipeline.configYaml}
-            isStarting={isStartingDraft}
-            onConfirm={async () => {
-              await startDraft(pipeline.id);
-              setIsStartConfirmOpen(false);
-            }}
-            onOpenChange={setIsStartConfirmOpen}
-            open={isStartConfirmOpen}
-          />
-        ) : null}
+        {isDraftRow ? confirmDialog : null}
         {isDraftRow ? (
           <DeleteDraftDialog
             draftName={pipeline.name}

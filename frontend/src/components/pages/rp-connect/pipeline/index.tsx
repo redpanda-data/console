@@ -1557,12 +1557,12 @@ function PipelinePageContent() {
   }, [mode, editingDraft, activeViewLane, setActiveViewLane]);
 
   return (
-    // The viewport fill (--console-page-top, page-column.tsx) is a floor, not a fixed height: notices
-    // above the editor push the page taller instead of shrinking it, and the Monitor lane flows with the
-    // document, keeping its logs pagination out from behind an inner fold.
+    // The viewport measure is a floor here, not a fixed height: notices above the editor push the page
+    // taller rather than shrinking it, and the Monitor lane flows with the document, keeping its logs
+    // pagination out from behind an inner fold.
     // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
     <div
-      className="-ml-3.5 flex min-h-[calc(100dvh_-_var(--console-page-top,7rem)_-_1rem)] min-w-0 flex-col gap-4 overflow-x-clip pl-3.5"
+      className="page-fill-viewport-min -ml-3.5 flex min-w-0 flex-col gap-4 overflow-x-clip pl-3.5"
       ref={expandedModeRef}
     >
       {mode === 'view' && pipeline ? (
@@ -1617,7 +1617,7 @@ function PipelinePageContent() {
         </div>
       ) : null}
       {/* Editor frame flexes to fill the column; the tips strip is pinned just beneath so it stays visible.
-          Monaco needs a bounded box, so the frame only ever fills this floor — it never grows with content. */}
+          Monaco needs a bounded box: the frame fills this floor and never grows with content. */}
       <div className="flex min-h-[600px] min-w-0 flex-1 flex-col gap-2">
         {/* Boxed: rounded frame. Fullscreen: flush sides, top/bottom borders kept so the
             clipped scroll area still has a visible edge. */}
