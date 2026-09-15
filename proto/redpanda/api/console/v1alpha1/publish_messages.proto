@@ -26,6 +26,7 @@ message PublishMessagePayloadOptions {
   optional int32 schema_id = 9; // Optional schema ID.
   optional int32 index = 10; // Deprecated single-index. Prefer index_path for Protobuf messages so nested types are addressable.
   repeated int32 index_path = 11; // Optional message-index path for Protobuf. Each element selects the Nth nested MessageDescriptor; e.g. [0] = first top-level, [1, 0] = first nested message of the second top-level. Empty = first top-level.
+  string schema_context = 12; // Optional Schema Registry context of schema_id. Empty uses the topic's context, then the default context.
 }
 
 // PublishMessageResponse is the response for PublishMessage call.
@@ -41,6 +42,7 @@ message PublishMessageResponse {
 message GenerateSchemaSampleRequest {
   int32 schema_id = 1 [(buf.validate.field).int32.gt = 0];
   repeated int32 index_path = 2;
+  string schema_context = 3; // Optional Schema Registry context of schema_id. Empty means the default context.
 }
 
 // GenerateSchemaSampleResponse returns the JSON skeleton.
