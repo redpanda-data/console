@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
+import { callUnaryMethod, createConnectQueryKey, useMutation, useQuery, useTransport } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   GetPipelineRequestSchema,
@@ -33,7 +33,7 @@ import {
   Pipeline_State,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { Secret } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -149,6 +149,37 @@ export const useListPipelinesQuery = (
     ...listPipelinesResult,
     data,
   };
+};
+
+const NAME_LOOKUP_PAGE_SIZE = 100;
+
+// `name_contains` is validated server-side against `^[A-Za-z0-9-_ /]+$`, max 128; strip rather than 400.
+const DISALLOWED_IN_NAME_FILTER = /[^A-Za-z0-9\-_ /]/g;
+const NAME_FILTER_MAX_LENGTH = 128;
+
+export const toNameContainsFilter = (nameContains: string): string =>
+  nameContains.replace(DISALLOWED_IN_NAME_FILTER, '').slice(0, NAME_FILTER_MAX_LENGTH);
+
+// Bypasses useListPipelinesQuery: its cache key omits the input, so a narrower filter would overwrite the list.
+export const useFetchPipelineNames = () => {
+  const transport = useTransport();
+  return useCallback(
+    async (nameContains: string): Promise<string[]> => {
+      const safeNameContains = toNameContainsFilter(nameContains);
+      const response = await callUnaryMethod(
+        transport,
+        listPipelines,
+        create(ListPipelinesRequestSchema, {
+          request: create(ListPipelinesRequestSchemaDataPlane, {
+            pageSize: NAME_LOOKUP_PAGE_SIZE,
+            filter: { includeDrafts: true, ...(safeNameContains ? { nameContains: safeNameContains } : {}) },
+          }),
+        })
+      );
+      return (response.response?.pipelines ?? []).map((pipeline) => pipeline.displayName);
+    },
+    [transport]
+  );
 };
 
 export const useCreatePipelineMutation = () => {

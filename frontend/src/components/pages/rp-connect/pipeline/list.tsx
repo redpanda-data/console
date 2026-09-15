@@ -37,14 +37,20 @@ import {
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
+import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { FadePresence } from 'components/ui/fade-presence';
-import { PIPELINE_STATE_LABELS, STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
+import {
+  PIPELINE_STATE_LABELS,
+  PIPELINE_STATE_SORT_PRIORITY,
+  PIPELINE_STATE_STATUS_VARIANT,
+  STARTABLE_STATES,
+  STOPPABLE_STATES,
+} from 'components/ui/pipeline/constants';
 import { AlertCircle, Box, MoreHorizontal, Search, X } from 'lucide-react';
 import {
   DeletePipelineRequestSchema,
@@ -70,12 +76,20 @@ import {
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
+import {
+  autosaveTargetKey,
+  rpcnEditorAutosave,
+  selectAutosaveEntry,
+  useRpcnEditorAutosaveStore,
+} from 'state/rpcn-editor-autosave';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { parseConfigComponentsCached } from './config-components-cache';
+import { DeleteDraftDialog } from './delete-draft-dialog';
+import { DRAFT_BADGE_TOOLTIP, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
 import {
   aggregateConnectors,
   countPipelinesPerTab,
@@ -83,9 +97,12 @@ import {
   PIPELINE_STATE_TABS,
   type PipelineStateTabId,
   pipelineListEmptyText,
+  stateFilterValues,
 } from './list-utils';
+import { useStartDraftConfirm } from './start-draft-dialog';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { cpuToTasks } from '../tasks';
 
 type TagPair = { key: string; value: string };
 
@@ -97,11 +114,18 @@ type Pipeline = {
   inputs: string[];
   outputs: string[];
   tags: TagPair[];
+  isDraft: boolean;
+  /** Epoch ms of the last edit. */
+  editedAt: number | null;
+  /** Empty on a deployed row: only a draft opens the start confirmation, which names these. */
+  configYaml: string;
+  computeUnits: number;
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
   const { inputs, outputs } = parseConfigComponentsCached(apiPipeline.configYaml);
   const tags = getUserTagEntries(apiPipeline.tags);
+  const draft = isDraft(apiPipeline);
   return {
     id: apiPipeline.id,
     name: apiPipeline.displayName,
@@ -110,6 +134,10 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     inputs,
     outputs,
     tags,
+    isDraft: draft,
+    editedAt: timestampToMillis(apiPipeline.updateTime),
+    configYaml: draft ? apiPipeline.configYaml : '',
+    computeUnits: draft ? (cpuToTasks(apiPipeline.resources?.cpuShares) ?? 0) : 0,
   };
 };
 
@@ -148,33 +176,19 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
   );
 };
 
-const pipelineStateToStatusVariant: Record<Pipeline_State, StatusBadgeVariant> = {
-  [Pipeline_State.COMPLETED]: 'success',
-  [Pipeline_State.STARTING]: 'starting',
-  [Pipeline_State.STOPPING]: 'stopping',
-  [Pipeline_State.STOPPED]: 'disabled',
-  [Pipeline_State.ERROR]: 'destructive',
-  [Pipeline_State.RUNNING]: 'success',
-  [Pipeline_State.UNSPECIFIED]: 'disabled',
-};
-
 // autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
 const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-// Problems and transitions first, idle last.
-const pipelineStateSortPriority: Record<Pipeline_State, number> = {
-  [Pipeline_State.ERROR]: 0,
-  [Pipeline_State.STARTING]: 1,
-  [Pipeline_State.STOPPING]: 2,
-  [Pipeline_State.RUNNING]: 3,
-  [Pipeline_State.COMPLETED]: 4,
-  [Pipeline_State.STOPPED]: 5,
-  [Pipeline_State.UNSPECIFIED]: 6,
-};
+const sortPriority = (row: Pipeline): number => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
 
 const PAGE_SIZE = 20;
+
+// Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
+// flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
+// draft that still counts against the cluster's quota with no row to delete it from.
+const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
 // One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
 // reader announces "tab, 1 of 4" with nowhere to move into.
@@ -282,11 +296,21 @@ type ActionsCellProps = {
 
 const ActionsCell = memo(
   ({ pipeline, navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline }: ActionsCellProps) => {
-    const canStart = (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
-    const canStop = (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+    const isDraftRow = pipeline.isDraft;
+    const canStart = !isDraftRow && (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
+    const canStop = !isDraftRow && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
     const isStarting = pipeline.state === Pipeline_State.STARTING;
     const isStopping = pipeline.state === Pipeline_State.STOPPING;
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const { requestStart, isStartingDraft, confirmDialog } = useStartDraftConfirm({
+      id: pipeline.id,
+      configYaml: pipeline.configYaml,
+      computeUnits: pipeline.computeUnits,
+    });
+    // The dialog says so when this browser also holds unsaved edits for the draft.
+    const hasUnsavedChanges = useRpcnEditorAutosaveStore(
+      (s) => isDraftRow && selectAutosaveEntry(s.entries, autosaveTargetKey(pipeline.id)) !== null
+    );
 
     const handleStart = () => {
       const startRequest = create(StartPipelineRequestSchema, {
@@ -294,7 +318,7 @@ const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
-          toast.success('Pipeline started');
+          toast.success('Pipeline starting');
         },
         onError: (err) => {
           toast.error(
@@ -314,7 +338,7 @@ const ActionsCell = memo(
       });
       stopMutation(stopRequest, {
         onSuccess: () => {
-          toast.success('Pipeline stopped');
+          toast.success('Pipeline stopping');
         },
         onError: (err) => {
           toast.error(
@@ -335,7 +359,8 @@ const ActionsCell = memo(
 
       deleteMutation(deleteRequest, {
         onSuccess: () => {
-          toast.success('Pipeline deleted');
+          rpcnEditorAutosave.clear(autosaveTargetKey(id));
+          toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
         },
         onError: (err) => {
           toast.error(
@@ -369,25 +394,46 @@ const ActionsCell = memo(
                 })
               }
             >
-              Edit
+              {isDraftRow ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>
+            {isDraftRow ? (
+              <DropdownMenuItem disabled={isStartingDraft} onClick={requestStart}>
+                Start
+              </DropdownMenuItem>
+            ) : null}
             {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
             {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
             {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
             {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
             <DropdownMenuSeparator />
-            <DeleteResourceMenuItem isDeleting={isDeletingPipeline} onSelect={() => setIsDeleteDialogOpen(true)} />
+            <DeleteResourceMenuItem
+              isDeleting={isDeletingPipeline}
+              onSelect={() => setIsDeleteDialogOpen(true)}
+              text={isDraftRow ? 'Delete draft' : undefined}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
-        <DeleteResourceAlertDialog
-          isDeleting={isDeletingPipeline}
-          onDelete={handleDelete}
-          onOpenChange={setIsDeleteDialogOpen}
-          open={isDeleteDialogOpen}
-          resourceId={pipeline.id}
-          resourceName={pipeline.name}
-          resourceType="Pipeline"
-        />
+        {isDraftRow ? confirmDialog : null}
+        {isDraftRow ? (
+          <DeleteDraftDialog
+            draftName={pipeline.name}
+            hasUnsavedChanges={hasUnsavedChanges}
+            isDeleting={isDeletingPipeline}
+            onConfirm={() => handleDelete(pipeline.id)}
+            onOpenChange={setIsDeleteDialogOpen}
+            open={isDeleteDialogOpen}
+          />
+        ) : (
+          <DeleteResourceAlertDialog
+            isDeleting={isDeletingPipeline}
+            onDelete={handleDelete}
+            onOpenChange={setIsDeleteDialogOpen}
+            open={isDeleteDialogOpen}
+            resourceId={pipeline.id}
+            resourceName={pipeline.name}
+            resourceType="Pipeline"
+          />
+        )}
       </div>
     );
   }
@@ -437,7 +483,7 @@ const createColumns = ({
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
     cell: ({ row }) => {
-      const id = row.original.id;
+      const { id, isDraft: isDraftRow, editedAt } = row.original;
       const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
@@ -451,7 +497,10 @@ const createColumns = ({
           >
             {name}
           </Link>
-          {id !== name ? (
+          {isDraftRow && editedAt ? (
+            <span className="truncate text-body-sm text-muted-foreground">Edited {relativeAgeLabel(editedAt)}</span>
+          ) : null}
+          {!isDraftRow && id !== name ? (
             // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
             <span className="cursor-text select-all truncate font-mono text-body-sm text-muted-foreground" title={id}>
               {id}
@@ -517,14 +566,22 @@ const createColumns = ({
     accessorFn: (row) => String(row.state),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     filterFn: stateInFilterFn,
-    // Enum values the generated Pipeline_State doesn't know yet sort last, not NaN.
-    sortFn: (rowA, rowB) =>
-      (pipelineStateSortPriority[rowA.original.state] ?? Number.MAX_SAFE_INTEGER) -
-      (pipelineStateSortPriority[rowB.original.state] ?? Number.MAX_SAFE_INTEGER),
+    // Unknown states sort last; drafts tie-break on recency.
+    sortFn: (rowA, rowB) => {
+      const byState = sortPriority(rowA.original) - sortPriority(rowB.original);
+      if (byState !== 0 || !(rowA.original.isDraft && rowB.original.isDraft)) {
+        return byState;
+      }
+      return (rowB.original.editedAt ?? 0) - (rowA.original.editedAt ?? 0);
+    },
     // Label from the state, not the variant: COMPLETED and RUNNING share `success`, whose default
     // copy is "Running".
     cell: ({ row }) => (
-      <StatusBadge size="sm" variant={pipelineStateToStatusVariant[row.original.state]}>
+      <StatusBadge
+        size="sm"
+        title={row.original.isDraft ? DRAFT_BADGE_TOOLTIP : undefined}
+        variant={PIPELINE_STATE_STATUS_VARIANT[row.original.state] ?? 'disabled'}
+      >
         {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
       </StatusBadge>
     ),
@@ -556,7 +613,7 @@ const PipelineListPageContent = () => {
     isLoading,
     error,
     hasNextPage,
-  } = useListPipelinesQuery(undefined, {
+  } = useListPipelinesQuery(LIST_WITH_DRAFTS, {
     enableSmartPolling: true,
   });
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
@@ -572,6 +629,7 @@ const PipelineListPageContent = () => {
         .map(transformAPIPipeline),
     [pipelinesData]
   );
+  const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   const columns = useMemo(
     () =>
@@ -655,11 +713,23 @@ const PipelineListPageContent = () => {
         return;
       }
       setActiveTab(tabId);
-      const states = PIPELINE_STATE_TABS.find((t) => t.id === tabId)?.states;
-      table.getColumn('state')?.setFilterValue(states ? states.map(String) : undefined);
+      const tab = PIPELINE_STATE_TABS.find((t) => t.id === tabId);
+      table.getColumn('state')?.setFilterValue(tab ? stateFilterValues(tab) : undefined);
     },
     [table, activeTab]
   );
+
+  const visibleTabs = useMemo(
+    () => PIPELINE_STATE_TABS.filter((tab) => tab.id !== 'draft' || draftCount > 0),
+    [draftCount]
+  );
+
+  // Deleting or starting the last draft hides its tab; not while the drain is still filling it.
+  useEffect(() => {
+    if (!isLoading && activeTab === 'draft' && draftCount === 0) {
+      handleTabChange('all');
+    }
+  }, [isLoading, activeTab, draftCount, handleTabChange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -742,7 +812,7 @@ const PipelineListPageContent = () => {
       <div className="flex items-center justify-between gap-4">
         <Tabs onValueChange={(value) => handleTabChange(value as PipelineStateTabId)} value={activeTab}>
           <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
-            {PIPELINE_STATE_TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <TabsTrigger
                 aria-controls={STATUS_PANEL_ID}
                 id={statusTabId(tab.id)}
