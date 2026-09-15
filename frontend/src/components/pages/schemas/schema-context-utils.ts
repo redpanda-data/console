@@ -10,7 +10,7 @@
  */
 
 import type { SchemaRegistryContextResponse } from '../../../react-query/api/schema-registry';
-import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
+import type { SchemaRegistrySubject, SchemaVersion } from '../../../state/rest-interfaces';
 
 export const CONTEXT_PREFIX_RE = /^:\.([^:]+):(.+)$/;
 
@@ -36,6 +36,29 @@ export function parseSubjectContext(name: string): ParsedSubject {
     displayName: name,
     qualifiedName: name,
   };
+}
+
+// Schema Registry context of a subject as the backend expects it:
+// ":.staging:my-topic" → ".staging", "my-topic" → "." (the default context).
+export function subjectSchemaContext(name: string): string {
+  const match = CONTEXT_PREFIX_RE.exec(name);
+  return match ? `.${match[1]}` : '.';
+}
+
+// Schema Registry context a topic is bound to via redpanda.schema.registry.context,
+// "." (default) if none.
+export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>): string {
+  const raw = configEntries?.find((e) => e.name === 'redpanda.schema.registry.context')?.value?.trim() ?? '';
+  const name = raw.replace(/^:|:$/g, '');
+  if (name === '' || name === '.') {
+    return '.';
+  }
+  return name.startsWith('.') ? name : `.${name}`;
+}
+
+// Schema IDs are context-local: prefer the subject that lives in the given context.
+export function pickSubjectForContext(subjects: SchemaVersion[], schemaContext: string): SchemaVersion | undefined {
+  return subjects.find((s) => subjectSchemaContext(s.subject) === schemaContext) ?? subjects[0];
 }
 
 export const ALL_CONTEXT_ID = '__all__';

@@ -20,7 +20,10 @@ import {
   deriveContexts,
   isNamedContext,
   parseSubjectContext,
+  pickSubjectForContext,
   pluralize,
+  subjectSchemaContext,
+  topicSchemaContext,
 } from './schema-context-utils';
 
 describe('parseSubjectContext', () => {
@@ -58,6 +61,49 @@ describe('parseSubjectContext', () => {
       displayName: ':.:subject',
       qualifiedName: ':.:subject',
     });
+  });
+});
+
+describe('subjectSchemaContext', () => {
+  test('named context keeps the leading dot', () => {
+    expect(subjectSchemaContext(':.staging:my-topic')).toBe('.staging');
+    expect(subjectSchemaContext(':.team.sub:my-topic')).toBe('.team.sub');
+  });
+
+  test('unprefixed subject is the default context', () => {
+    expect(subjectSchemaContext('my-topic')).toBe('.');
+  });
+});
+
+describe('topicSchemaContext', () => {
+  test('reads and normalizes the topic config', () => {
+    expect(topicSchemaContext([{ name: 'redpanda.schema.registry.context', value: '.outgo' }])).toBe('.outgo');
+    expect(topicSchemaContext([{ name: 'redpanda.schema.registry.context', value: 'outgo' }])).toBe('.outgo');
+    expect(topicSchemaContext([{ name: 'redpanda.schema.registry.context', value: ':.outgo:' }])).toBe('.outgo');
+  });
+
+  test('missing or default config is the default context', () => {
+    expect(topicSchemaContext(undefined)).toBe('.');
+    expect(topicSchemaContext([{ name: 'cleanup.policy', value: 'delete' }])).toBe('.');
+    expect(topicSchemaContext([{ name: 'redpanda.schema.registry.context', value: '.' }])).toBe('.');
+    expect(topicSchemaContext([{ name: 'redpanda.schema.registry.context', value: null }])).toBe('.');
+  });
+});
+
+describe('pickSubjectForContext', () => {
+  const subjects = [
+    { subject: 'orders-value', version: 1 },
+    { subject: ':.outgo:convoy-value', version: 3 },
+  ];
+
+  test('prefers the subject of the given context', () => {
+    expect(pickSubjectForContext(subjects, '.outgo')).toEqual({ subject: ':.outgo:convoy-value', version: 3 });
+    expect(pickSubjectForContext(subjects, '.')).toEqual({ subject: 'orders-value', version: 1 });
+  });
+
+  test('falls back to the first subject when none matches', () => {
+    expect(pickSubjectForContext(subjects, '.other')).toEqual({ subject: 'orders-value', version: 1 });
+    expect(pickSubjectForContext([], '.outgo')).toBeUndefined();
   });
 });
 
